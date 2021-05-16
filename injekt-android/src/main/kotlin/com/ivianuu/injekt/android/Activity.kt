@@ -42,50 +42,36 @@ typealias ActivityGivenScope = GivenScope
 
 typealias ActivityContext = Context
 
-object ActivityContextGivens {
-  @Given inline val ComponentActivity.activityContext: ActivityContext
-    get() = this
-}
+@Given inline val ComponentActivity.activityContext: ActivityContext
+  get() = this
 
 typealias ActivityResources = Resources
 
-object ActivityResourcesGivens {
-  @Given inline val ComponentActivity.activityResources: ActivityResources
-    get() = resources
-}
+@Given inline val ComponentActivity.activityResources: ActivityResources
+  get() = resources
 
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-object ActivityLifecycleOwnerGivens {
-  @Given inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
-    get() = this
-}
+@Given inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
+  get() = this
 
 typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
 
-object ActivityOnBackPressedDispatcherOwnerGivens {
-  @Given
-  inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
-    get() = this
-}
+@Given
+inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
+  get() = this
 
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-object ActivitySavedStateRegistryOwnerGivens {
-  @Given inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
-    get() = this
-}
+@Given inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
+  get() = this
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-object ActivityViewModelStoreOwnerGivens {
-  @Given inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
-    get() = this
-}
+@Given inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
+  get() = this
 
 typealias ActivityCoroutineScope = LifecycleCoroutineScope
 
-object ActivityCoroutineScopeGivens {
-  @Given inline val ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
-    get() = lifecycleScope
-}
+@Given inline val ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
+  get() = lifecycleScope

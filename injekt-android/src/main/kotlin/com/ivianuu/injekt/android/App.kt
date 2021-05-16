@@ -40,21 +40,15 @@ inline fun Application.createAppGivenScope(
 
 typealias AppContext = Context
 
-object AppContextGivens {
-  @Given inline val Application.appContext: AppContext
-    get() = this
-}
+@Given inline val Application.appContext: AppContext
+  get() = this
 
 typealias AppResources = Resources
 
-object AppResourcesGivens {
-  @Given inline val AppContext.appResources: AppResources
-    get() = resources
-}
+@Given inline val AppContext.appResources: AppResources
+  get() = resources
 
 typealias AppLifecycleOwner = LifecycleOwner
 
-object AppLifecycleOwnerGivens {
-  @Given inline val appLifecycleOwner: AppLifecycleOwner
-    get() = ProcessLifecycleOwner.get()
-}
+@Given inline val appLifecycleOwner: AppLifecycleOwner
+  get() = ProcessLifecycleOwner.get()

@@ -310,35 +310,49 @@ fun TypeRef.collectTypeScopeGivens(
   val givens = mutableListOf<CallableRef>()
   visitRecursive { currentType ->
     if (currentType.isStarProjection) return@visitRecursive
-    givens += currentType.collectPackageTypeScopeGivens(context, trace)
+    givens += currentType.collectGivensForSingleType(context, trace, lookupLocation)
+  }
+  return givens
+}
 
-    when {
-      currentType.classifier.isTypeAlias -> {
-        context.classifierDescriptorForFqName(
-          currentType.classifier.fqName.parent()
-            .child("${currentType.classifier.fqName.shortName()}Givens".asNameId()),
-          lookupLocation
-        )
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
-          ?.let { givens += it.getGivenReceiver(context, trace) }
-      }
-      currentType.classifier.isObject -> {
-        currentType.classifier.descriptor!!
-          .cast<ClassDescriptor>()
-          .let { givens += it.getGivenReceiver(context, trace) }
-      }
-      else -> {
-        currentType.classifier.descriptor!!
-          .safeAs<ClassDescriptor>()
-          ?.let { clazz ->
-            givens += clazz.getGivenConstructors(context, trace)
-            clazz.companionObjectDescriptor
-              ?.let { givens += it.getGivenReceiver(context, trace) }
-          }
-      }
+private fun TypeRef.collectGivensForSingleType(
+  context: InjektContext,
+  trace: BindingTrace,
+  lookupLocation: LookupLocation
+): List<CallableRef> {
+  trace[InjektWritableSlices.TYPE_SCOPE_GIVENS, this]?.let { return it }
+  val givens = mutableListOf<CallableRef>()
+  givens += collectPackageTypeScopeGivens(context, trace)
+
+  when {
+    classifier.isTypeAlias -> {
+      context.classifierDescriptorForFqName(
+        classifier.fqName.parent()
+          .child("${classifier.fqName.shortName()}Givens".asNameId()),
+        lookupLocation
+      )
+        ?.safeAs<ClassDescriptor>()
+        ?.takeIf { it.kind == ClassKind.OBJECT }
+        ?.let { givens += it.getGivenReceiver(context, trace) }
+    }
+    classifier.isObject -> {
+      classifier.descriptor!!
+        .cast<ClassDescriptor>()
+        .let { givens += it.getGivenReceiver(context, trace) }
+    }
+    else -> {
+      classifier.descriptor!!
+        .safeAs<ClassDescriptor>()
+        ?.let { clazz ->
+          givens += clazz.getGivenConstructors(context, trace)
+          clazz.companionObjectDescriptor
+            ?.let { givens += it.getGivenReceiver(context, trace) }
+        }
     }
   }
+
+  trace.record(InjektWritableSlices.TYPE_SCOPE_GIVENS, this, givens)
+
   return givens
 }
 
@@ -346,8 +360,7 @@ private fun TypeRef.collectPackageTypeScopeGivens(
   context: InjektContext,
   trace: BindingTrace
 ): List<CallableRef> {
-  if (classifier.fqName == InjektFqNames.Any ||
-      classifier.isTypeParameter) return emptyList()
+  if (classifier.fqName == InjektFqNames.Any || classifier.isTypeParameter) return emptyList()
 
   val packageDescriptor = classifier.descriptor!!.findPackage()
   val module = packageDescriptor.module

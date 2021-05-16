@@ -28,7 +28,7 @@ import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
-@GivenImports("com.ivianuu.injekt.common.CommonGivens.*")
+@GivenImports("com.ivianuu.injekt.common.*")
 class InstallWorkerTest {
   @Test fun testWorkerBinding() {
     val workerFactory = given<(@Given Context) -> WorkerFactory>()(mockk())

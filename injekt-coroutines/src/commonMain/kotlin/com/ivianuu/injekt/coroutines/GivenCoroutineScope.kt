@@ -59,11 +59,9 @@ val GivenScope.coroutineScope: CoroutineScope get() = element()
  */
 typealias GivenCoroutineContext<S> = CoroutineContext
 
-object GivenCoroutineContextGivens {
-  /**
-   * The default [GivenCoroutineContext] for type [S]
-   */
-  @Given inline fun <S : GivenScope> defaultGivenCoroutineContext(
-    @Given dispatcher: DefaultDispatcher
-  ): GivenCoroutineContext<S> = dispatcher
-}
+/**
+ * The default [GivenCoroutineContext] for type [S]
+ */
+@Given inline fun <S : GivenScope> defaultGivenCoroutineContext(
+  @Given dispatcher: DefaultDispatcher
+): GivenCoroutineContext<S> = dispatcher

@@ -27,7 +27,7 @@ import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
-@GivenImports("com.ivianuu.injekt.common.CommonGivens.*")
+@GivenImports("com.ivianuu.injekt.common.*")
 class SystemServiceTest {
   @Test fun testCanRequestSystemService() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)

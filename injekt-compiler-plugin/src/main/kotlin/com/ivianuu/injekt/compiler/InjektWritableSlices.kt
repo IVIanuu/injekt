@@ -46,6 +46,7 @@ object InjektWritableSlices {
     BasicWritableSlice<ClassifierDescriptor, ClassifierInfo>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_FOR_KEY =
     BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
+  val TYPE_SCOPE_GIVENS = BasicWritableSlice<TypeRef, List<CallableRef>>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)
