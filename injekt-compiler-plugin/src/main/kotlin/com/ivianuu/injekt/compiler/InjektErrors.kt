@@ -219,11 +219,11 @@ interface InjektErrors {
       }
 
     @JvmField
-    val TYPE_ALIAS_GIVENS_NOT_DECLARED_IN_SAME_FILE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    val TYPE_ALIAS_GIVENS_NOT_DECLARED_IN_SAME_MODULE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "typealias givens must be declared in the same file"
+            "typealias givens must be declared in the same compilation unit"
         })
       }
 

@@ -43,31 +43,14 @@ class TypeAliasGivensTest {
     compilationShouldHaveFailed("typealias givens must be an object")
   }
 
-  @Test fun typeAliasGivensInDifferentFile() = codegen(
-    listOf(
-      source(
-        """
-          typealias MyAlias = String
-        """
-      ),
-      source(
-        """
-          object MyAliasGivens
-        """
-      )
-    )
-  ) {
-    compilationShouldHaveFailed("typealias givens must be declared in the same file")
-  }
-
-  @Test fun actualTypeAliasGivensInDifferentFile() = multiPlatformCodegen(
+  @Test fun typeAliasGivensInDifferentModule() = multiCodegen(
     """
       typealias MyAlias = String
-      
-      expect object MyAliasGivens
     """,
     """
-      actual object MyAliasGivens
+      object MyAliasGivens
     """
-  )
+  ) {
+    compilationShouldHaveFailed("typealias givens must be declared in the same compilation unit")
+  }
 }
