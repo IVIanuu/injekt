@@ -31,8 +31,8 @@ import kotlin.reflect.*
  * @Given
  * @InstallWorker
  * class MyWorker(
- *     @Given context: AppContext,
- *     @Given parameters: WorkerParameters
+ *   @Given context: AppContext,
+ *   @Given parameters: WorkerParameters
  * ) : CoroutineWorker(context, parameters)
  * ```
  */

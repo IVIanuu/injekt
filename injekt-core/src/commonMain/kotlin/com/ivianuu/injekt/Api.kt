@@ -27,8 +27,8 @@ package com.ivianuu.injekt
  * @Given fun bar(@Given foo: Foo) = Bar(foo)
  *
  * fun main() {
- *     val bar = given<Bar>()
- *     println("Got $bar")
+ *   val bar = given<Bar>()
+ *   println("Got $bar")
  * }
  * ```
  */
@@ -105,10 +105,10 @@ inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = va
  * @Given val username: @Username String = "Foo"
  *
  * fun main() {
- *     val userId = given<@UserId String>()
- *     // userId = 123
- *     val username = given<@Username String>()
- *     // username = "Foo"
+ *   val userId = given<@UserId String>()
+ *   // userId = 123
+ *   val username = given<@Username String>()
+ *   // username = "Foo"
  * }
  * ```
  */

@@ -29,9 +29,9 @@ import com.ivianuu.injekt.common.*
  * class MyRepo
  *
  * fun runApp(@Given appScope: AppGivenScope) {
- *     val repo1 = given<MyRepo>()
- *     val repo2 = given<MyRepo>()
- *     // repo === repo2
+ *   val repo1 = given<MyRepo>()
+ *   val repo2 = given<MyRepo>()
+ *   // repo === repo2
  * }
  * ```
  */

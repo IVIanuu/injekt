@@ -176,7 +176,7 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
  * class MyAppDeps(@Given api: Api, @Given database: Database)
  *
  * fun runApp(@Given appScope: AppGivenScope) {
- *    val deps = appScope.element<MyAppDeps>()
+ *   val deps = appScope.element<MyAppDeps>()
  * }
  * ```
  */
@@ -204,7 +204,7 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
  * Example:
  * ```
  * @Given fun imageLoaderInitializer(@Given app: App): GivenScopeInitializer<AppGivenScope> = {
- *     ImageLoader.init(app)
+ *   ImageLoader.init(app)
  * }
  * ```
  */
