@@ -306,6 +306,8 @@ fun TypeRef.collectTypeScopeGivens(
 ): List<CallableRef> {
   val givens = mutableListOf<CallableRef>()
   visitRecursive { currentType ->
+    if (currentType.isStarProjection) return@visitRecursive
+
     when {
       currentType.classifier.isTypeAlias -> {
         context.classifierDescriptorForFqName(
