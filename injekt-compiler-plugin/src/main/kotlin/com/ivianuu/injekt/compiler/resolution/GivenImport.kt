@@ -37,8 +37,8 @@ fun GivenImport.toResolvedImport(packageFqName: FqName) = ResolvedGivenImport(
 fun GivenImport.resolve(context: InjektContext): ResolvedGivenImport {
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
-    val objectForFqName = context.classifierDescriptorForFqName(
-      packageFqName, NoLookupLocation.FROM_BACKEND)
+    val objectForFqName = context.classifierDescriptorForFqName(packageFqName,
+      element.lookupLocation)
     objectForFqName?.findPackage()?.fqName ?: packageFqName
   } else {
     val fqName = FqName(importPath)

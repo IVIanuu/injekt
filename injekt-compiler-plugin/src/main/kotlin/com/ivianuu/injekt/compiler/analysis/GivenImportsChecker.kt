@@ -21,6 +21,8 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.incremental.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
@@ -158,7 +160,7 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
           )
           return@forEach
         }
-        if (context.memberScopeForFqName(packageFqName) == null) {
+        if (context.memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
           trace.report(
             InjektErrors.UNRESOLVED_GIVEN_IMPORT
               .on(element!!)
@@ -176,7 +178,8 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
           return@forEach
         }
         val shortName = fqName.shortName()
-        val importedDeclarations = context.memberScopeForFqName(parentFqName)
+        val importedDeclarations = context.memberScopeForFqName(parentFqName,
+          import.element.lookupLocation)
           ?.getContributedDescriptors()
           ?.filter {
             it !is PackageViewDescriptor &&

@@ -21,6 +21,8 @@ import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.incremental.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.interpreter.*
@@ -36,7 +38,7 @@ import java.util.concurrent.*
 import kotlin.collections.set
 import kotlin.reflect.*
 
-val isIde: Boolean get() = Project::class.java.name == "com.intellij.openapi.project.Project"
+val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
 
@@ -244,3 +246,7 @@ fun givensLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asStr
   ?.plus("_givens")
   ?.asNameId()
   ?: "givens".asNameId()
+
+val KtElement?.lookupLocation: LookupLocation
+  get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
+  else KotlinLookupLocation(this)

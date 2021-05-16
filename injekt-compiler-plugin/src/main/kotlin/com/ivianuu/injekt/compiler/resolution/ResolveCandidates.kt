@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed class GivenGraph {
@@ -168,7 +169,7 @@ data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
 
 fun ResolutionScope.resolveRequests(
   requests: List<GivenRequest>,
-  lookupLocation: KotlinLookupLocation,
+  lookupLocation: LookupLocation,
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
 ): GivenGraph = measureTimeMillisWithResult {
   recordLookup(lookupLocation)
@@ -202,7 +203,7 @@ fun ResolutionScope.resolveRequests(
 
 private fun ResolutionScope.resolveRequest(
   request: GivenRequest,
-  lookupLocation: KotlinLookupLocation
+  lookupLocation: LookupLocation
 ): ResolutionResult {
   checkCancelled()
   resultsByType[request.type]?.let { return it }
@@ -265,7 +266,7 @@ private fun ResolutionScope.computeForCandidate(
 private fun ResolutionScope.resolveCandidates(
   request: GivenRequest,
   candidates: List<GivenNode>,
-  lookupLocation: KotlinLookupLocation
+  lookupLocation: LookupLocation
 ): ResolutionResult {
   if (candidates.size == 1) {
     val candidate = candidates.single()
@@ -316,7 +317,7 @@ private fun ResolutionScope.resolveCandidates(
 private fun ResolutionScope.resolveCandidate(
   request: GivenRequest,
   candidate: GivenNode,
-  lookupLocation: KotlinLookupLocation
+  lookupLocation: LookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
   if (!callContext.canCall(candidate.callContext)) {
     return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)

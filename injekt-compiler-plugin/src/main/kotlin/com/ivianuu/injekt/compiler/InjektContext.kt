@@ -57,9 +57,8 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   fun classifierDescriptorForFqName(
     fqName: FqName,
     lookupLocation: LookupLocation
-  ): ClassifierDescriptor? = memberScopeForFqName(fqName.parent())!!.getContributedClassifier(
-    fqName.shortName(), lookupLocation
-  )
+  ): ClassifierDescriptor? = memberScopeForFqName(fqName.parent(), lookupLocation)!!
+    .getContributedClassifier(fqName.shortName(), lookupLocation)
 
   fun classifierDescriptorForKey(
     key: String,
@@ -67,7 +66,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   ): ClassifierDescriptor {
     trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
     val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent())?.getContributedClassifier(
+    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
     )?.takeIf { it.uniqueKey(this) == key }
       ?: functionDescriptorsForFqName(fqName.parent())
@@ -90,28 +89,28 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   }
 
   private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> {
-    return memberScopeForFqName(fqName.parent())?.getContributedFunctions(
+    return memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedFunctions(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
     )?.toList() ?: emptyList()
   }
 
   private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> {
-    return memberScopeForFqName(fqName.parent())?.getContributedVariables(
+    return memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedVariables(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
     )?.toList() ?: emptyList()
   }
 
-  fun memberScopeForFqName(fqName: FqName): MemberScope? {
+  fun memberScopeForFqName(fqName: FqName, lookupLocation: LookupLocation): MemberScope? {
     val pkg = module.getPackage(fqName)
 
     if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
-    val parentMemberScope = memberScopeForFqName(fqName.parent()) ?: return null
+    val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation) ?: return null
 
     val classDescriptor =
       parentMemberScope.getContributedClassifier(
         fqName.shortName(),
-        NoLookupLocation.FROM_BACKEND
+        lookupLocation
       ) as? ClassDescriptor ?: return null
 
     return classDescriptor.unsubstitutedMemberScope

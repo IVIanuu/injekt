@@ -33,7 +33,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     container.useInstance(TypeKeyChecker(context))
     container.useInstance(QualifierChecker())
     container.useInstance(GivenImportsChecker(context))
-    container.useInstance(TypeAliasGivensChecker())
+    container.useInstance(TypeAliasGivensChecker(context))
     container.useInstance(GivenCallChecker(context))
     container.useInstance(InfoAnnotationPatcher(context))
   }

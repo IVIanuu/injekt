@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
@@ -172,9 +173,9 @@ class ResolutionScope(
     }
   }
 
-  fun recordLookup(location: KotlinLookupLocation) {
+  fun recordLookup(lookupLocation: LookupLocation) {
     if (isIde) return
-    parent?.recordLookup(location)
+    parent?.recordLookup(lookupLocation)
     fun recordLookup(declaration: DeclarationDescriptor) {
       if (declaration is ConstructorDescriptor) {
         recordLookup(declaration.constructedClass)
@@ -189,7 +190,7 @@ class ResolutionScope(
         is ClassDescriptor -> containingDeclaration.unsubstitutedMemberScope
         is PackageFragmentDescriptor -> containingDeclaration.getMemberScope()
         else -> null
-      }?.recordLookup(declaration.name, location)
+      }?.recordLookup(declaration.name, lookupLocation)
     }
     givens.forEach {
       if (it.value.type.frameworkKey == 0)
@@ -200,13 +201,13 @@ class ResolutionScope(
         recordLookup(it.callable.callable)
     }
     imports.forEach { import ->
-        context.memberScopeForFqName(import.packageFqName)
+        context.memberScopeForFqName(import.packageFqName, lookupLocation)
           ?.recordLookup(
             givensLookupName(
               FqName(import.importPath!!.removeSuffix(".*")),
               import.packageFqName
             ),
-            location
+            lookupLocation
           )
       }
   }

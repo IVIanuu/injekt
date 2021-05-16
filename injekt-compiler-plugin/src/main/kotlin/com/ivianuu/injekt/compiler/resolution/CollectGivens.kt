@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
@@ -236,9 +235,7 @@ fun List<GivenImport>.collectImportGivens(
     fun importObjectIfExists(
       fqName: FqName,
       doNotIncludeChildren: Boolean
-    ) = context.classifierDescriptorForFqName(fqName, import.element?.let {
-      KotlinLookupLocation(it)
-    } ?: NoLookupLocation.FROM_BACKEND)
+    ) = context.classifierDescriptorForFqName(fqName, import.element.lookupLocation)
       ?.safeAs<ClassDescriptor>()
       ?.takeIf { it.kind == ClassKind.OBJECT }
       ?.let { clazz ->
@@ -253,7 +250,7 @@ fun List<GivenImport>.collectImportGivens(
       val packageFqName = FqName(import.importPath.removeSuffix(".*"))
 
       // import all givens in the package
-      context.memberScopeForFqName(packageFqName)
+      context.memberScopeForFqName(packageFqName, import.element.lookupLocation)
         ?.collectGivens(context, trace)
         ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
         ?.let { this += it }
@@ -266,7 +263,7 @@ fun List<GivenImport>.collectImportGivens(
       val name = fqName.shortName()
 
       // import all givens with the specified name
-      context.memberScopeForFqName(parentFqName)
+      context.memberScopeForFqName(parentFqName, import.element.lookupLocation)
         ?.collectGivens(context, trace)
         ?.filter {
           it.callable.name == name ||
@@ -289,8 +286,7 @@ fun List<GivenImport>.collectImportGivens(
       importObjectIfExists(parentFqName, true)
 
       // include givens from the givens object of a type alias with the fq name
-      context.classifierDescriptorForFqName(fqName, import.element
-        ?.let { KotlinLookupLocation(it) } ?: NoLookupLocation.FROM_BACKEND)
+      context.classifierDescriptorForFqName(fqName, import.element.lookupLocation)
         ?.safeAs<TypeAliasDescriptor>()
         ?.let { typeAlias ->
           importObjectIfExists(

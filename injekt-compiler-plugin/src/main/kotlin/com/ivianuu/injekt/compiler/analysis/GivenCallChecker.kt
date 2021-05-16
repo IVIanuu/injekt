@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -92,7 +91,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
 
     val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
 
-    when (val graph = scope.resolveRequests(requests, KotlinLookupLocation(callExpression)) { result ->
+    when (val graph = scope.resolveRequests(requests, callExpression.lookupLocation) { result ->
       if (result.candidate is CallableGivenNode) {
         context.trace.record(
           InjektWritableSlices.USED_GIVEN,
