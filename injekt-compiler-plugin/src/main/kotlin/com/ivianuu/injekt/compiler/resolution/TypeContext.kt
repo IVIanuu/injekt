@@ -149,7 +149,8 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
               typeVariable,
               constraint.type,
               ConstraintKind.EQUAL,
-              constraint.position
+              constraint.position,
+              constraint.derivedFrom
             )
           } else constraint
           constraints.removeAll { it.type == actualConstraint.type }
@@ -176,7 +177,8 @@ data class Constraint(
   val typeVariable: ClassifierRef,
   val type: TypeRef,
   val kind: ConstraintKind,
-  val position: ConstraintPosition
+  val position: ConstraintPosition,
+  val derivedFrom: Set<ClassifierRef>
 )
 
 enum class ConstraintKind {
@@ -291,7 +293,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     addPossibleNewConstraint(
       Constraint(
         typeVariable.classifier, equalType,
-        ConstraintKind.EQUAL, ConstraintPosition.FixVariable
+        ConstraintKind.EQUAL, ConstraintPosition.FixVariable,
+        emptySet()
       )
     )
 
@@ -491,7 +494,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     addPossibleNewConstraint(
       Constraint(
         typeVariable.classifier, superType, ConstraintKind.UPPER,
-        ConstraintPosition.Unknown
+        ConstraintPosition.Unknown,
+        emptySet()
       )
     )
 
@@ -509,7 +513,8 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     addPossibleNewConstraint(
       Constraint(
         typeVariable.classifier,
-        subType, ConstraintKind.LOWER, ConstraintPosition.Unknown
+        subType, ConstraintKind.LOWER, ConstraintPosition.Unknown,
+        emptySet()
       )
     )
     return true
@@ -588,10 +593,16 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     newConstraint: TypeRef,
     kind: ConstraintKind
   ) {
+    val derivedFrom = baseConstraint.derivedFrom.toMutableSet()
+      .also { it.addAll(otherConstraint.derivedFrom) }
+    if (otherVariable in derivedFrom) return
+
+    derivedFrom.add(otherVariable)
     addPossibleNewConstraint(
       Constraint(
         targetVariable, newConstraint,
-        kind, ConstraintPosition.Unknown
+        kind, ConstraintPosition.Unknown,
+        derivedFrom
       )
     )
   }

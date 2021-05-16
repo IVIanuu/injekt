@@ -310,6 +310,16 @@ private fun ResolutionScope.resolveCandidates(
 
   return if (successes.isNotEmpty()) {
     successes.singleOrNull()
+      ?: successes
+        .distinctBy {
+          it.cast<ResolutionResult.Success.WithCandidate.Value>()
+            .candidate
+            .cast<CallableGivenNode>()
+            .callable
+            .callable
+            .uniqueKey(context)
+        }
+        .singleOrNull()
       ?: ResolutionResult.Failure.CandidateAmbiguity(successes.cast())
   } else failure!!
 }

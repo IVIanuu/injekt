@@ -21,9 +21,11 @@ import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.load.java.lazy.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -88,10 +90,12 @@ fun TypeRef.collectGivens(
 
 fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace,
+  onEach: (DeclarationDescriptor) -> Unit = {}
 ): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
     checkCancelled()
+    onEach(declaration)
     when (declaration) {
       is ClassDescriptor -> declaration
         .getGivenConstructors(context, trace) + listOfNotNull(
@@ -115,7 +119,6 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
       else -> emptyList()
     }
   }
-  .distinctBy { it.callable.uniqueKey(context) }
 
 fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -307,6 +310,7 @@ fun TypeRef.collectTypeScopeGivens(
   val givens = mutableListOf<CallableRef>()
   visitRecursive { currentType ->
     if (currentType.isStarProjection) return@visitRecursive
+    givens += currentType.collectPackageTypeScopeGivens(context, trace)
 
     when {
       currentType.classifier.isTypeAlias -> {
@@ -338,11 +342,43 @@ fun TypeRef.collectTypeScopeGivens(
   return givens
 }
 
+private fun TypeRef.collectPackageTypeScopeGivens(
+  context: InjektContext,
+  trace: BindingTrace
+): List<CallableRef> {
+  if (classifier.fqName == InjektFqNames.Any ||
+      classifier.isTypeParameter) return emptyList()
+
+  val packageDescriptor = classifier.descriptor!!.findPackage()
+  val module = packageDescriptor.module
+  val givens = mutableListOf<CallableRef>()
+  fun collectGivens(scope: MemberScope) {
+    givens += scope.collectGivens(
+      context = context,
+      trace = trace,
+      onEach = { declaration ->
+        if (declaration is ClassDescriptor &&
+            declaration !is LazyJavaClassDescriptor)
+          collectGivens(declaration.unsubstitutedMemberScope)
+      }
+    )
+      .filter { callable ->
+        module.shouldSeeInternalsOf(callable.callable.module) &&
+            callable.callable.containingDeclaration
+              .safeAs<ClassDescriptor>()
+              ?.let { it.kind == ClassKind.OBJECT } != false &&
+            callable.type.buildContext(context, emptyList(), this).isOk
+      }
+  }
+  collectGivens(packageDescriptor.getMemberScope())
+  return givens
+}
+
 private fun ResolutionScope.canSee(callable: CallableRef): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
-      (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          !callable.callable.isExternalDeclaration(context)) ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
+      (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
+          DescriptorVisibilities.INTERNAL.isVisible(null, callable.callable, context.module)) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapQualifiers().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->

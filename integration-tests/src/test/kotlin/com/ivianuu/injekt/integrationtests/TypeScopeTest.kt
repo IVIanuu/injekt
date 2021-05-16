@@ -71,7 +71,7 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testTypeAliasTypeScope() = singleAndMultiCodegen(
+  @Test fun testTypeAliasGivensTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -166,4 +166,102 @@ class TypeScopeTest {
       )
     )
   )
+
+  @Test fun testPackageTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class Dep
+
+            @Given val dep = Dep()
+          """,
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = given<givens.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testPackageNestedClassTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class Dep
+
+            object DepImplicits {
+              @Given val dep = Dep() 
+            }
+          """,
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = given<givens.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testMultiplatformPackageTypeScope() = multiPlatformCodegen(
+    listOf(
+      source(
+        """
+          class Dep
+        """,
+        packageFqName = FqName("givens")
+      )
+    ),
+    listOf(
+      source(
+        """
+          @Given val dep = Dep()
+        """,
+        packageFqName = FqName("givens")
+      ),
+      source(
+        """
+          fun invoke() = given<givens.Dep>()
+        """
+      )
+    )
+  )
+
+  @Test fun testExternalDeclarationsDoNotContributeToPackageTypeScope() = multiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class Dep
+          """,
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Given val dep = Dep()
+          """,
+          packageFqName = FqName("givens")
+        ),
+        source(
+          """
+            fun invoke() = given<givens.Dep>()
+          """
+        )
+      )
+    )
+  ) {
+    compilationShouldHaveFailed("no given argument found of type givens.Dep for parameter value of function com.ivianuu.injekt.given")
+  }
 }

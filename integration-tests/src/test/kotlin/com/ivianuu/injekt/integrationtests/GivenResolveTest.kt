@@ -351,11 +351,11 @@ class GivenResolveTest {
 
   @Test fun testCannotResolveExternalInternalGiven() = multiCodegen(
     """
-            @Given internal val foo = Foo()
-        """,
+      @Given internal val foo = Foo()
+    """,
     """
-         fun invoke() = given<Foo>()
-        """
+     fun invoke() = given<Foo>()
+    """
   ) {
     compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
   }
