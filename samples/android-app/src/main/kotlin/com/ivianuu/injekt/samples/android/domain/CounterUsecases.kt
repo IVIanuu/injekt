@@ -22,16 +22,16 @@ import kotlinx.coroutines.flow.*
 
 typealias CounterFlow = Flow<Int>
 
-@Given fun counterFlow(@Given storage: CounterStorage): CounterFlow = storage.counterState
+@Given fun counterFlow(@Given db: CounterDb): CounterFlow = db.counterState
 
 typealias IncCounterUseCase = suspend () -> Unit
 
-@Given fun incCounterUseCase(@Given storage: CounterStorage): IncCounterUseCase = {
-  storage.updateCounter { this + 1 }
+@Given fun incCounterUseCase(@Given db: CounterDb): IncCounterUseCase = {
+  db.updateCounter { this + 1 }
 }
 
 typealias DecCounterUseCase = suspend () -> Unit
 
-@Given fun decCounterUseCase(@Given storage: CounterStorage): DecCounterUseCase = {
-  storage.updateCounter { this - 1 }
+@Given fun decCounterUseCase(@Given db: CounterDb): DecCounterUseCase = {
+  db.updateCounter { this - 1 }
 }
