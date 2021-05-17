@@ -151,10 +151,11 @@ fun singleAndMultiCodegen(
 ) {
   codegen(sources.flatten(), {
     workingDir = Files.createTempDirectory("single-compilation").toFile()
+    moduleName = "single-compilation"
     config(-1)
   }, { assertions(false) })
   multiCodegen(sources, {
-    workingDir = Files.createTempDirectory("multi-compilation").toFile()
+    workingDir = Files.createTempDirectory("multi-compilation-$it").toFile()
     config(it)
   }, { assertions(true) })
 }
@@ -196,7 +197,9 @@ fun multiCodegen(
   val prevCompilations = mutableListOf<KotlinCompilation>()
   val results = sources.mapIndexed { index, sourceFiles ->
     compile {
+      this.workingDir = Files.createTempDirectory("multi-compilation-$index").toFile()
       this.sources = sourceFiles
+      this.moduleName = "multi-compilation-$index"
       this.classpaths += prevCompilations.map { it.classesDir }
       config(index)
       prevCompilations += this
