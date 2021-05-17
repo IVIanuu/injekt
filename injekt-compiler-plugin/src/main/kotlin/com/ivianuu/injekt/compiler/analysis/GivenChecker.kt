@@ -76,7 +76,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: ClassDescriptor,
     trace: BindingTrace
   ) {
-    val givenConstructors = descriptor.getGivenConstructors(context, trace)
+    val givenConstructors = descriptor.givenConstructors(context, trace)
     val isGiven = givenConstructors.isNotEmpty()
 
     if (isGiven && descriptor.kind == ClassKind.ANNOTATION_CLASS) {

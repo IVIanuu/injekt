@@ -156,7 +156,7 @@ class IncrementalFixTransformer(
       declaration.descriptor.isGiven(context, trace)
     ) {
       givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
-        is IrClass -> declaration.descriptor.getGivenConstructors(context, trace)
+        is IrClass -> declaration.descriptor.givenConstructors(context, trace)
         is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
         is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))
         else -> return super.visitDeclaration(declaration)

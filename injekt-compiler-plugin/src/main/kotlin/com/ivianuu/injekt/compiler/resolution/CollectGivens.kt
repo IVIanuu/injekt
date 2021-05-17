@@ -98,9 +98,9 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     onEach(declaration)
     when (declaration) {
       is ClassDescriptor -> declaration
-        .getGivenConstructors(context, trace) + listOfNotNull(
+        .givenConstructors(context, trace) + listOfNotNull(
         declaration.companionObjectDescriptor
-          ?.getGivenReceiver(context, trace)
+          ?.givenReceiver(context, trace)
       )
       is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
         listOf(
@@ -156,7 +156,7 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
   return isGiven
 }
 
-fun ClassDescriptor.getGivenConstructors(
+fun ClassDescriptor.givenConstructors(
   context: InjektContext,
   trace: BindingTrace
 ): List<CallableRef> {
@@ -179,7 +179,7 @@ fun ClassDescriptor.getGivenConstructors(
   return givenConstructors
 }
 
-fun ClassDescriptor.getGivenReceiver(context: InjektContext, trace: BindingTrace): CallableRef {
+fun ClassDescriptor.givenReceiver(context: InjektContext, trace: BindingTrace): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef(context, trace)
   val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
   return callable.copy(isGiven = true, type = qualifiedType, originalType = qualifiedType)
@@ -242,7 +242,7 @@ fun List<GivenImport>.collectImportGivens(
       ?.safeAs<ClassDescriptor>()
       ?.takeIf { it.kind == ClassKind.OBJECT }
       ?.let { clazz ->
-        this += clazz.getGivenReceiver(context, trace)
+        this += clazz.givenReceiver(context, trace)
           .copy(
             doNotIncludeChildren = doNotIncludeChildren,
             import = import.toResolvedImport(clazz.findPackage().fqName)
@@ -305,12 +305,13 @@ fun List<GivenImport>.collectImportGivens(
 fun TypeRef.collectTypeScopeGivens(
   context: InjektContext,
   trace: BindingTrace,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  seen: MutableSet<TypeRef> = mutableSetOf()
 ): List<CallableRef> {
   val givens = mutableListOf<CallableRef>()
-  visitRecursive { currentType ->
+  visitRecursive(seen) { currentType ->
     if (currentType.isStarProjection) return@visitRecursive
-    givens += currentType.collectGivensForSingleType(context, trace, lookupLocation)
+    givens += currentType.collectGivensForSingleType(context, trace, lookupLocation, seen)
   }
   return givens
 }
@@ -318,7 +319,8 @@ fun TypeRef.collectTypeScopeGivens(
 private fun TypeRef.collectGivensForSingleType(
   context: InjektContext,
   trace: BindingTrace,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  seen: MutableSet<TypeRef>
 ): List<CallableRef> {
   trace[InjektWritableSlices.TYPE_SCOPE_GIVENS, this]?.let { return it }
   val givens = mutableListOf<CallableRef>()
@@ -333,20 +335,23 @@ private fun TypeRef.collectGivensForSingleType(
       )
         ?.safeAs<ClassDescriptor>()
         ?.takeIf { it.kind == ClassKind.OBJECT }
-        ?.let { givens += it.getGivenReceiver(context, trace) }
-    }
-    classifier.isObject -> {
-      classifier.descriptor!!
-        .cast<ClassDescriptor>()
-        .let { givens += it.getGivenReceiver(context, trace) }
+        ?.let { givens += it.givenReceiver(context, trace) }
     }
     else -> {
       classifier.descriptor!!
         .safeAs<ClassDescriptor>()
         ?.let { clazz ->
-          givens += clazz.getGivenConstructors(context, trace)
-          clazz.companionObjectDescriptor
-            ?.let { givens += it.getGivenReceiver(context, trace) }
+          if (clazz.kind == ClassKind.OBJECT) {
+            givens += clazz.givenReceiver(context, trace)
+          } else {
+            givens += clazz.givenConstructors(context, trace)
+            clazz.companionObjectDescriptor
+              ?.let { givens += it.givenReceiver(context, trace) }
+          }
+          clazz.classifierInfo(context, trace)
+            .qualifiers.forEach {
+              givens += it.collectTypeScopeGivens(context, trace, lookupLocation, seen)
+            }
         }
     }
   }

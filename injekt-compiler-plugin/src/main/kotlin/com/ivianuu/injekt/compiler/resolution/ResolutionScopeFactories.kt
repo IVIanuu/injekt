@@ -168,7 +168,7 @@ private fun ClassResolutionScope(
     parent = finalParent,
     ownerDescriptor = clazz,
     trace = trace,
-    initialGivens = listOf(clazz.getGivenReceiver(context, trace)),
+    initialGivens = listOf(clazz.givenReceiver(context, trace)),
     imports = emptyList(),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
   ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz, it) }

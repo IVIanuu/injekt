@@ -189,6 +189,36 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testClassQualifierScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Qualifier annotation class MyQualifier {
+              companion object {
+                @Given val dep = givens.Dep()
+              }
+            }
+          """,
+          packageFqName = FqName("qualifiers")
+        ),
+        source(
+          """
+            @Given @qualifiers.MyQualifier class Dep
+          """,
+          packageFqName = FqName("givens")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = given<givens.Dep>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testPackageNestedClassTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
