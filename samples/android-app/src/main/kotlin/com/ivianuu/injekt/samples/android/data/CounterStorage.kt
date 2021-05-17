@@ -21,8 +21,7 @@ import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.*
 
-@Given
-@Scoped<AppGivenScope>
+@Given @Scoped<AppGivenScope>
 class CounterStorage {
   private val _counterState = MutableStateFlow(0)
   val counterState: Flow<Int> by this::_counterState

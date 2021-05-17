@@ -37,7 +37,7 @@ class InstallWorkerTest {
   }
 }
 
-@InstallWorker @Given class TestWorker(
+@Given @InstallWorker class TestWorker(
   @Given appContext: Context,
   @Given workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
