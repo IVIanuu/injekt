@@ -37,10 +37,7 @@ fun CallableDescriptor.callableInfo(
 
   annotations
     .findAnnotation(InjektFqNames.CallableInfo)
-    ?.allValueArguments
-    ?.get("value".asNameId())
-    ?.value
-    ?.cast<String>()
+    ?.readChunkedValue()
     ?.decode<PersistedCallableInfo>()
     ?.toCallableInfo(context, trace)
     ?.let {
@@ -143,7 +140,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
           InjektFqNames.CallableInfo
         )
       )?.defaultType ?: return,
-      mapOf("value".asNameId() to StringValue(serializedInfo)),
+      serializedInfo.toChunkedAnnotationArguments(),
       SourceElement.NO_SOURCE
     )
   )
@@ -201,10 +198,7 @@ fun ClassifierDescriptor.classifierInfo(
     containingDeclaration
       .annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)
-      ?.allValueArguments
-      ?.get("value".asNameId())
-      ?.value
-      ?.cast<String>()
+      ?.readChunkedValue()
       ?.split("=:=")
       ?.get(cast<TypeParameterDescriptor>().index)
       ?.takeIf { it.isNotEmpty() }
@@ -213,9 +207,7 @@ fun ClassifierDescriptor.classifierInfo(
   } else {
     annotations
       .findAnnotation(InjektFqNames.ClassifierInfo)
-      ?.allValueArguments
-      ?.get("value".asNameId())
-      ?.value
+      ?.readChunkedValue()
       ?.cast<String>()
       ?.decode<PersistedClassifierInfo>()
       ?.toClassifierInfo(context, trace)
@@ -336,10 +328,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
 
     val typeParameterInfos = (container.annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)
-      ?.allValueArguments
-      ?.get("value".asNameId())
-      ?.value
-      ?.cast<String>()
+      ?.readChunkedValue()
       ?.split("=:=")
       ?: run {
         when (container) {
@@ -356,7 +345,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
           context.module.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektFqNames.TypeParameterInfos)
           )?.defaultType ?: return,
-          mapOf("value".asNameId() to StringValue(typeParameterInfos.joinToString("=:="))),
+          typeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
           SourceElement.NO_SOURCE
         )
       )
@@ -383,12 +372,25 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
             InjektFqNames.ClassifierInfo
           )
         )?.defaultType ?: return,
-        mapOf("value".asNameId() to StringValue(serializedInfo)),
+        serializedInfo.toChunkedAnnotationArguments(),
         SourceElement.NO_SOURCE
       )
     )
   }
 }
+
+private fun AnnotationDescriptor.readChunkedValue() = allValueArguments
+  .toList()
+  .sortedBy {
+    it.first.asString()
+      .removePrefix("value")
+      .toInt()
+  }
+  .joinToString(separator = "") { it.second.value as String }
+
+private fun String.toChunkedAnnotationArguments() = chunked(65535 / 2)
+  .mapIndexed { index, chunk -> "value$index".asNameId() to StringValue(chunk) }
+  .toMap()
 
 private fun TypeRef.shouldBePersisted() = anyType {
   (it.classifier.isQualifier && it.classifier.typeParameters.size > 1) ||

@@ -167,4 +167,21 @@ class PersistenceTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testSupportsLargeFunction() = singleAndMultiCodegen(
+    """
+      typealias MyAlias<T> = OtherAlias<T>
+      typealias OtherAlias<S> = String
+      fun <T> largeFunc(${
+        (1..150).map { "@Given p$it: MyAlias<T>" }.joinToString("\n,")
+      }): String = ""
+    """,
+    """
+      fun invoke() {
+        withGivens("" as MyAlias<String>) { largeFunc<String>() }
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
 }
