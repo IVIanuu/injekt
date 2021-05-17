@@ -305,22 +305,24 @@ fun List<GivenImport>.collectImportGivens(
 fun TypeRef.collectTypeScopeGivens(
   context: InjektContext,
   trace: BindingTrace,
-  lookupLocation: LookupLocation,
-  seen: MutableSet<TypeRef> = mutableSetOf()
+  lookupLocation: LookupLocation
 ): List<CallableRef> {
   val givens = mutableListOf<CallableRef>()
-  visitRecursive(seen) { currentType ->
+  visitRecursive { currentType ->
     if (currentType.isStarProjection) return@visitRecursive
-    givens += currentType.collectGivensForSingleType(context, trace, lookupLocation, seen)
+    givens += currentType.collectGivensForSingleType(context, trace, lookupLocation)
   }
-  return givens
+  return givens.filter {
+    it.typeParameters.none { typeParameter ->
+      typeParameter.isGivenConstraint
+    }
+  }
 }
 
 private fun TypeRef.collectGivensForSingleType(
   context: InjektContext,
   trace: BindingTrace,
-  lookupLocation: LookupLocation,
-  seen: MutableSet<TypeRef>
+  lookupLocation: LookupLocation
 ): List<CallableRef> {
   trace[InjektWritableSlices.TYPE_SCOPE_GIVENS, this]?.let { return it }
   val givens = mutableListOf<CallableRef>()
@@ -350,7 +352,7 @@ private fun TypeRef.collectGivensForSingleType(
           }
           clazz.classifierInfo(context, trace)
             .qualifiers.forEach {
-              givens += it.collectTypeScopeGivens(context, trace, lookupLocation, seen)
+              givens += it.collectTypeScopeGivens(context, trace, lookupLocation)
             }
         }
     }
