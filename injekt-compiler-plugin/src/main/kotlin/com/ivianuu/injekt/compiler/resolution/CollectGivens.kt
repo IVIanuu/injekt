@@ -29,10 +29,7 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun TypeRef.collectGivens(
-  context: InjektContext,
-  trace: BindingTrace
-): List<CallableRef> {
+fun TypeRef.collectGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> {
   // special case to support @Given () -> Foo
   if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
     return listOf(
@@ -100,7 +97,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
       is ClassDescriptor -> declaration
         .givenConstructors(context, trace) + listOfNotNull(
         declaration.companionObjectDescriptor
-          ?.givenReceiver(context, trace)
+          ?.givenReceiver(context, trace, false)
       )
       is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
         listOf(
@@ -179,10 +176,15 @@ fun ClassDescriptor.givenConstructors(
   return givenConstructors
 }
 
-fun ClassDescriptor.givenReceiver(context: InjektContext, trace: BindingTrace): CallableRef {
+fun ClassDescriptor.givenReceiver(
+  context: InjektContext,
+  trace: BindingTrace,
+  qualified: Boolean
+): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef(context, trace)
-  val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
-  return callable.copy(isGiven = true, type = qualifiedType, originalType = qualifiedType)
+  val finalType = if (qualified) callable.type.classifier.qualifiers.wrap(callable.type)
+  else callable.type
+  return callable.copy(isGiven = true, type = finalType, originalType = finalType)
 }
 
 fun CallableRef.collectGivens(
@@ -242,7 +244,7 @@ fun List<GivenImport>.collectImportGivens(
       ?.safeAs<ClassDescriptor>()
       ?.takeIf { it.kind == ClassKind.OBJECT }
       ?.let { clazz ->
-        this += clazz.givenReceiver(context, trace)
+        this += clazz.givenReceiver(context, trace, false)
           .copy(
             doNotIncludeChildren = doNotIncludeChildren,
             import = import.toResolvedImport(clazz.findPackage().fqName)
@@ -337,18 +339,18 @@ private fun TypeRef.collectGivensForSingleType(
       )
         ?.safeAs<ClassDescriptor>()
         ?.takeIf { it.kind == ClassKind.OBJECT }
-        ?.let { givens += it.givenReceiver(context, trace) }
+        ?.let { givens += it.givenReceiver(context, trace, false) }
     }
     else -> {
       classifier.descriptor!!
         .safeAs<ClassDescriptor>()
         ?.let { clazz ->
           if (clazz.kind == ClassKind.OBJECT) {
-            givens += clazz.givenReceiver(context, trace)
+            givens += clazz.givenReceiver(context, trace, false)
           } else {
             givens += clazz.givenConstructors(context, trace)
             clazz.companionObjectDescriptor
-              ?.let { givens += it.givenReceiver(context, trace) }
+              ?.let { givens += it.givenReceiver(context, trace, false) }
           }
           clazz.classifierInfo(context, trace)
             .qualifiers.forEach {

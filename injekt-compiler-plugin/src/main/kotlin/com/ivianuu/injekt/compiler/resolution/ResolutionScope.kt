@@ -453,9 +453,7 @@ class ResolutionScope(
    * without removing the property this would result in a divergent request
    */
   private fun CallableRef.isNonRecursiveConstructorGivens(): Boolean {
-    if (callable !is PropertyDescriptor ||
-      callable.dispatchReceiverParameter == null
-    ) return true
+    if (callable !is PropertyDescriptor || callable.dispatchReceiverParameter == null) return true
     val containing = callable.containingDeclaration as ClassDescriptor
     if (containing.kind == ClassKind.OBJECT) return true
     val containingClassifier = containing.toClassifierRef(context, trace)

@@ -457,20 +457,20 @@ class GivenResolveTest {
 
   @Test fun testCanResolveGivenConstructorParameterFromInsideTheClass() = codegen(
     """
-            @Given class MyClass(@Given val foo: Foo) {
-             fun invoke() = given<Foo>()
-            }
+      @Given class MyClass(@Given val foo: Foo) {
+        fun invoke() = given<Foo>()
+      }
     """
   )
 
   @Test fun testResolvesGivenWithTypeParameterInScope() = singleAndMultiCodegen(
     """
-            @Given fun <T> list(): List<T> = emptyList()
+      @Given fun <T> list(): List<T> = emptyList()
     """,
     """
-            fun <T> invoke() {
-                given<List<T>>()
-            } 
+      fun <T> invoke() {
+        given<List<T>>()
+      } 
     """
   )
 
