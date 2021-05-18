@@ -10,9 +10,9 @@ Minimal example:
 @Given fun bar(foo: Foo) = Bar(foo)
 
 fun main() {
-    // retrieve instance
-    val bar = summon<Bar>()
-    println("Got $bar")
+  // retrieve instance
+  val bar = summon<Bar>()
+  println("Got $bar")
 }
 ```
 
@@ -30,26 +30,26 @@ buildscript {
 
 // in your app module
 plugins {
-    apply("com.ivianuu.injekt")
+  apply("com.ivianuu.injekt")
 }
 
 dependencies {
-    // core runtime
-    classpath("com.ivianuu.injekt:injekt-core:${latest_version}")
-    // optional - common utilities
-    classpath("com.ivianuu.injekt:injekt-common:${latest_version}")
-    // optional - scope runtime
-    classpath("com.ivianuu.injekt:injekt-scope:${latest_version}")
-    // optional - coroutines support
-    classpath("com.ivianuu.injekt:injekt-coroutines:${latest_version}")
-    // optional - android support
-    classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
-    // optional - androidx work support
-    classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
-    // optional - compose support
-    classpath("com.ivianuu.injekt:injekt-compose:${latest_version}")
-    // optional - ktor support
-    classpath("com.ivianuu.injekt:injekt-ktor:${latest_version}")
+  // core runtime
+  classpath("com.ivianuu.injekt:injekt-core:${latest_version}")
+  // optional - common utilities
+  classpath("com.ivianuu.injekt:injekt-common:${latest_version}")
+  // optional - scope runtime
+  classpath("com.ivianuu.injekt:injekt-scope:${latest_version}")
+  // optional - coroutines support
+  classpath("com.ivianuu.injekt:injekt-coroutines:${latest_version}")
+  // optional - android support
+  classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
+  // optional - androidx work support
+  classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
+  // optional - compose support
+  classpath("com.ivianuu.injekt:injekt-compose:${latest_version}")
+  // optional - ktor support
+  classpath("com.ivianuu.injekt:injekt-ktor:${latest_version}")
 }
 ```
 It's also required to install the Injekt IDE plugin
