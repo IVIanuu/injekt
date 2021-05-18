@@ -41,7 +41,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       is ConstructorDescriptor -> checkConstructor(declaration, descriptor, context.trace)
       is ClassDescriptor -> checkClass(declaration, descriptor, context.trace)
       is PropertyDescriptor -> checkProperty(declaration, descriptor, context.trace)
-      is TypeAliasDescriptor -> checkTypeAlias(declaration, descriptor, context.trace)
+      is TypeAliasDescriptor -> checkTypeAlias(descriptor, context.trace)
     }
   }
 
@@ -53,7 +53,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     if (descriptor.isGiven(this.context, trace)) {
       descriptor.valueParameters
         .checkGivenCallableDoesNotHaveGivenMarkedParameters(declaration, trace)
-      checkSpreadingGiven(declaration, descriptor, descriptor.typeParameters, trace)
+      checkSpreadingGiven(declaration, descriptor.typeParameters, trace)
       checkGivenTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)
@@ -148,12 +148,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
 
     if (givenConstructors.isNotEmpty()) {
       givenConstructors
-        .forEach {
-          checkSpreadingGiven(
-            declaration, it.callable,
-            descriptor.declaredTypeParameters, trace
-          )
-        }
+        .forEach { checkSpreadingGiven(declaration, descriptor.declaredTypeParameters, trace) }
     } else {
       checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
     }
@@ -199,7 +194,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
   }
 
   private fun checkTypeAlias(
-    declaration: KtDeclaration,
     descriptor: TypeAliasDescriptor,
     trace: BindingTrace
   ) {
@@ -208,7 +202,6 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
 
   private fun checkSpreadingGiven(
     declaration: KtDeclaration,
-    descriptor: CallableDescriptor,
     typeParameters: List<TypeParameterDescriptor>,
     trace: BindingTrace
   ) {

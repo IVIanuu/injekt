@@ -113,8 +113,8 @@ private val composeCompilerInClasspath = try {
   false
 }
 
-fun HierarchicalScope.callContext(bindingContext: BindingContext): CallContext {
-  return generateSequence(this) { it.parent }
+fun HierarchicalScope.callContext(bindingContext: BindingContext): CallContext =
+  generateSequence(this) { it.parent }
     .filterIsInstance<LexicalScope>()
     .mapNotNull { it.ownerDescriptor as? FunctionDescriptor }
     .firstOrNull()
@@ -124,4 +124,3 @@ fun HierarchicalScope.callContext(bindingContext: BindingContext): CallContext {
       } else it.callContext(bindingContext)
     }
     ?: CallContext.DEFAULT
-}

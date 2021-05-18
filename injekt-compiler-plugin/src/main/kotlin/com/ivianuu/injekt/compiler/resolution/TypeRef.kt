@@ -470,9 +470,6 @@ val TypeRef.isSuspendFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
 
-val TypeRef.fullyExpandedType: TypeRef
-  get() = if (classifier.isTypeAlias) superTypes.single().fullyExpandedType else this
-
 val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
   get() {
     if (!isFunctionType) return false

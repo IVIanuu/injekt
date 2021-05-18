@@ -240,8 +240,8 @@ fun IrBuilderWithScope.irLambda(
   )
 }
 
-fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
-  return when (descriptor) {
+fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor =
+  when (descriptor) {
     is PropertyGetterDescriptor ->
       WrappedPropertyGetterDescriptor()
     is PropertySetterDescriptor ->
@@ -252,7 +252,6 @@ fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescrip
       override fun getSource(): SourceElement = descriptor.source
     }
   }
-}
 
 fun IrBuilderWithScope.jvmNameAnnotation(
   name: String,
@@ -342,13 +341,11 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
 }
 
 
-private fun dexSafeName(name: Name): Name {
-  return if (name.isSpecial && name.asString().contains(' ')) {
-    val sanitized = name
-      .asString()
-      .replace(' ', '$')
-      .replace('<', '$')
-      .replace('>', '$')
-    Name.identifier(sanitized)
-  } else name
-}
+private fun dexSafeName(name: Name): Name = if (name.isSpecial && name.asString().contains(' ')) {
+  val sanitized = name
+    .asString()
+    .replace(' ', '$')
+    .replace('<', '$')
+    .replace('>', '$')
+  Name.identifier(sanitized)
+} else name

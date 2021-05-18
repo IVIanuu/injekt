@@ -42,18 +42,16 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
     location: LookupLocation,
     dispatchReceiver: ReceiverValueWithSmartCastInfo?,
     extensionReceiver: ReceiverValueWithSmartCastInfo?,
-  ): Collection<FunctionDescriptor> {
-    return if (candidates.isEmpty()) emptyList()
-    else {
-      val context = resolutionContext.scope.ownerDescriptor.module.injektContext
-      candidates
-        .map { candidate ->
-          if (candidate.allParameters.any { it.isGiven(context, resolutionContext.trace) }) {
-            candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
-          } else {
-            candidate
-          }
+  ): Collection<FunctionDescriptor> = if (candidates.isEmpty()) emptyList()
+  else {
+    val context = resolutionContext.scope.ownerDescriptor.module.injektContext
+    candidates
+      .map { candidate ->
+        if (candidate.allParameters.any { it.isGiven(context, resolutionContext.trace) }) {
+          candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
+        } else {
+          candidate
         }
-    }
+      }
   }
 }
