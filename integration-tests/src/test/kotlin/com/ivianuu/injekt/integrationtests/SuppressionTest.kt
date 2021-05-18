@@ -60,9 +60,9 @@ class SuppressionTest {
     shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
   }
 
-  @Test fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
+  @Test fun testCanUseUnderscoreForInjectParameter() = singleAndMultiCodegen(
     """
-      fun func(@Provide _: String, @Provide _: Int) {
+      fun func(@Inject _: String, @Inject _: Int) {
         inject<String>()
         inject<Int>()
       }
@@ -78,7 +78,7 @@ class SuppressionTest {
   @Test fun testCanUseUnderscoreForGivenParameterWithTypeAlias() = singleAndMultiCodegen(
     """
       typealias MyAlias = Int
-      fun func(@Provide _: String, @Provide _: MyAlias) {
+      fun func(@Inject _: String, @Inject _: MyAlias) {
         inject<String>()
         inject<MyAlias>()
       }
@@ -91,13 +91,13 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
+  @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
         fun plus(a: T, b: T): T
       }
 
-      infix fun <T> T.combine(other: T, @Provide combine: Combine<T>): T = combine.plus(this, other)
+      infix fun <T> T.combine(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
       
       @Provide object StringCombine : Combine<String> {
         override fun plus(a: String, b: String) = a + b
@@ -110,13 +110,13 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
+  @Test fun testCanUseOperatorWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
           fun plus(a: T, b: T): T
       }
   
-      operator fun <T> T.plus(other: T, @Provide combine: Combine<T>): T = combine.plus(this, other)
+      operator fun <T> T.plus(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
   
       inline class Key(val value: String)
   
@@ -131,7 +131,7 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
+  @Test fun testUsedInjectParameterIsNotMarkedAsUnused() = codegen(
     """
       fun func1(foo: Foo) {
         func2()                

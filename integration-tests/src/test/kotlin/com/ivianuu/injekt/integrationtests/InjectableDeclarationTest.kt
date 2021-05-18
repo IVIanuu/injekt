@@ -251,7 +251,7 @@ class InjectableDeclarationTest {
 
   @Test fun testImportedProvideFunctionInObject() = singleAndMultiCodegen(
     """
-      object FooModuel {
+      object FooModule {
         @Provide fun foo() = Foo()
       }
     """,

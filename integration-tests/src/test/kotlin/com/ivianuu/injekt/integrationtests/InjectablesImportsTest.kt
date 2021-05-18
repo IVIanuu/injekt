@@ -30,7 +30,7 @@ class InjectablesImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("Unresolved injectable import")
+    compilationShouldHaveFailed("unresolved injectable import")
   }
 
   @Test fun testUnresolvedStarImport() = codegen(
@@ -40,7 +40,7 @@ class InjectablesImportsTest {
             }
     """
   ) {
-    compilationShouldHaveFailed("Unresolved injectable import")
+    compilationShouldHaveFailed("unresolved injectable import")
   }
 
   @Test fun testImportsJustAPackage() = codegen(
@@ -50,7 +50,7 @@ class InjectablesImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("Unresolved injectable import")
+    compilationShouldHaveFailed("unresolved injectable import")
   }
 
   @Test fun testMalformedImport() = codegen(
@@ -60,7 +60,7 @@ class InjectablesImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("Cannot read injectable import")
+    compilationShouldHaveFailed("cannot read injectable import")
   }
 
   @Test fun testDuplicatedImports() = codegen(
@@ -70,19 +70,19 @@ class InjectablesImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("Duplicated injectable import")
+    compilationShouldHaveFailed("duplicated injectable import")
   }
 
   @Test fun testNestedDuplicatedImports() = codegen(
     """
       @Providers("kotlin.collections.*")
       fun invoke() {
-        withGivenImports("kotlin.collections.*") {
+        withProviders("kotlin.collections.*") {
         }
       }
     """
   ) {
-    compilationShouldHaveFailed("Duplicated injectable import")
+    compilationShouldHaveFailed("duplicated injectable import")
   }
 
   @Test fun testUnusedImport() = codegen(
@@ -92,7 +92,7 @@ class InjectablesImportsTest {
       }
     """
   ) {
-    shouldContainMessage("Unused injectable import")
+    shouldContainMessage("unused injectable import")
   }
 
   @Test fun testUsedImport() = singleAndMultiCodegen(
@@ -116,7 +116,7 @@ class InjectablesImportsTest {
       )
     )
   ) {
-    shouldNotContainMessage("Unused injectable import")
+    shouldNotContainMessage("unused injectable import")
   }
 
   @Test fun testUsedStarImport() = singleAndMultiCodegen(
@@ -140,7 +140,7 @@ class InjectablesImportsTest {
       )
     )
   ) {
-    shouldNotContainMessage("Unused injectable import")
+    shouldNotContainMessage("unused injectable import")
   }
 
   @Test fun testStarImportSamePackage() = codegen(
@@ -244,7 +244,7 @@ class InjectablesImportsTest {
     listOf(
       source(
         """
-          fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
+          fun invoke() = withProviders("com.ivianuu.injekt.common.*") {
             inject<TypeKey<Foo>>().value
           }
         """,

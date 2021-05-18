@@ -35,7 +35,11 @@ package com.ivianuu.injekt
   AnnotationTarget.LOCAL_VARIABLE,
 
   // fun func(@Provide foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER
+  AnnotationTarget.VALUE_PARAMETER,
+
+  // Lambda
+  // val func: (Foo) -> Bar = { foo: @Provide Foo -> bar() }
+  AnnotationTarget.TYPE
 )
 annotation class Provide
 
@@ -43,8 +47,8 @@ annotation class Provide
   // fun func(@Inject foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
 
-  // Providers
-  // val provider = inject<(@Inject Foo) -> Bar>()
+  // Lambda
+  // val func: (@Inject Foo) -> Bar = { bar() }
   AnnotationTarget.TYPE
 )
 annotation class Inject

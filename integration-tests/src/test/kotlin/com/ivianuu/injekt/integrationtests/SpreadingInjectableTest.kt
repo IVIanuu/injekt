@@ -106,17 +106,17 @@ class SpreadingInjectableTest {
     """
       @Qualifier annotation class A
       
-      @Provide fun <@Spread T : @A S, S> aImpl() = AModule<S>()
+      @Provide fun <@Spread T : @A S, S> aImpl() = AModule_<S>()
       
-      class AModule<T> {
+      class AModule_<T> {
           @Provide
           fun my(instance: T): @B T = instance
       }
       
       @Qualifier annotation class B
-      @Provide fun <@Spread T : @B S, S> bImpl() = BModule<T>()
+      @Provide fun <@Spread T : @B S, S> bImpl() = BModule_<T>()
       
-      class BModule<T> {
+      class BModule_<T> {
           @Provide
           fun my(instance: T): @C Any? = instance
       }

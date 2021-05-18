@@ -39,7 +39,7 @@ import kotlin.reflect.*
 @Qualifier annotation class InstallWorker {
   companion object {
     @Provide inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
-      noinline factory: (@Inject WorkerParameters) -> T,
+      noinline factory: (@Provide WorkerParameters) -> T,
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }

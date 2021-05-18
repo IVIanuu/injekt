@@ -234,7 +234,7 @@ class InjectableResolutionTest {
   @Test fun testPrefersProviderArgument() = codegen(
     """
       @Provide fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(@Provide Foo) -> Foo>()(foo)
+      fun invoke(foo: Foo) = inject<(@Inject Foo) -> Foo>()(foo)
     """
   ) {
     val foo = Foo()
@@ -244,7 +244,7 @@ class InjectableResolutionTest {
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
     """
       @Provide fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(@Provide Foo) -> (@Provide Foo) -> Foo>()(Foo())(foo)
+      fun invoke(foo: Foo) = inject<(@Inject Foo) -> (@Inject Foo) -> Foo>()(Foo())(foo)
     """
   ) {
     val foo = Foo()
@@ -354,7 +354,7 @@ class InjectableResolutionTest {
       interface Ord<in T>
       @Provide object IntOrd : Ord<Int>
       @Provide object NumberOrd : Ord<Number>
-      fun <T> useOrd(@Provide ord: Ord<T>) = ord
+      fun <T> useOrd(@Inject ord: Ord<T>) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -400,7 +400,7 @@ class InjectableResolutionTest {
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
       fun invoke() {
-        fun inner(@Provide bar: Bar = Bar(Foo())) = bar
+        fun inner(@Inject bar: Bar = Bar(Foo())) = bar
         return inner()
       }
     """

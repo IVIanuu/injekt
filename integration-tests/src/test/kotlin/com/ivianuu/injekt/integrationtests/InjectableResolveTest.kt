@@ -220,10 +220,10 @@ class InjectableResolveTest {
     foo.shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testFunctionInvocationWithGivens() = singleAndMultiCodegen(
+  @Test fun testFunctionInvocationWithInjectables() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      fun usesFoo(@Provide foo: Foo) {
+      fun usesFoo(@Inject foo: Foo) {
       }
     """,
     """
@@ -235,11 +235,11 @@ class InjectableResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testLocalFunctionInvocationWithGivens() = codegen(
+  @Test fun testLocalFunctionInvocationWithInjectables() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke() {
-        fun usesFoo(@Provide foo: Foo) {
+        fun usesFoo(@Inject foo: Foo) {
         }                    
         usesFoo()
       }
@@ -248,10 +248,10 @@ class InjectableResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testConstructorInvocationWithGivens() = singleAndMultiCodegen(
+  @Test fun testConstructorInvocationWithInjectables() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      class UsesFoo(@Provide foo: Foo)
+      class UsesFoo(@Inject foo: Foo)
     """,
     """
       fun invoke() {
@@ -276,11 +276,11 @@ class InjectableResolveTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
-  @Test fun testLocalConstructorInvocationWithGivens() = codegen(
+  @Test fun testLocalConstructorInvocationWithInjectables() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke() {
-        class UsesFoo(@Provide foo: Foo)
+        class UsesFoo(@Inject foo: Foo)
         UsesFoo()
       }
     """

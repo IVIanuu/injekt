@@ -47,7 +47,7 @@ interface InjektErrors {
     val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
-          MAP.put(it, "parameters of a provide declaration are automatically treated as inject parameters")
+          MAP.put(it, "parameters of a injectable are automatically treated as inject parameters")
         }
 
     @JvmField
@@ -75,27 +75,27 @@ interface InjektErrors {
     @JvmField
     val PROVIDE_ANNOTATION_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "annotation class cannot be provided") }
+        .also { MAP.put(it, "annotation class cannot be injectable") }
 
     @JvmField
     val PROVIDE_ENUM_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "enum class cannot be provided") }
+        .also { MAP.put(it, "enum class cannot be injectable") }
 
     @JvmField
     val PROVIDE_INNER_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "inner class cannot be provided") }
+        .also { MAP.put(it, "inner class cannot be injectable") }
 
     @JvmField
     val PROVIDE_ABSTRACT_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract class cannot be provided") }
+        .also { MAP.put(it, "abstract class cannot be injectable") }
 
     @JvmField
     val PROVIDE_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "interface cannot be provided") }
+        .also { MAP.put(it, "interface cannot be injectable") }
 
     @JvmField
     val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
@@ -397,7 +397,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       printCall(
         failureRequest,
         failure,
-        if (failureRequest.type.isFunctionType) failureRequest.type.callContext
+        if (failureRequest.type.isProviderFunctionType) failureRequest.type.callContext
         else scope.callContext
       )
     }

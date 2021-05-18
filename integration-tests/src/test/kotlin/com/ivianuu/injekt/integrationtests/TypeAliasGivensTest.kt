@@ -6,13 +6,13 @@ import org.jetbrains.kotlin.name.*
 import org.junit.*
 
 class TypeAliasGivensTest {
-  @Test fun testImportingTypeAliasAlsoImportsItsGivensObject() = singleAndMultiCodegen(
+  @Test fun testImportingTypeAliasAlsoImportsItsModuleObject() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             typealias Dep = String
-            object DepGivens {
+            object DepModule {
               @Provide val foo = Foo()
             }
           """,
@@ -37,20 +37,20 @@ class TypeAliasGivensTest {
     """
       typealias MyAlias = String
 
-      class MyAliasGivens
+      class MyAliasModule
     """
   ) {
-    compilationShouldHaveFailed("typealias injectables must be an object")
+    compilationShouldHaveFailed("typealias module must be an object")
   }
 
-  @Test fun typeAliasGivensInDifferentModule() = multiCodegen(
+  @Test fun typeAliasModuleInDifferentModule() = multiCodegen(
     """
       typealias MyAlias = String
     """,
     """
-      object MyAliasGivens
+      object MyAliasModule
     """
   ) {
-    compilationShouldHaveFailed("typealias injectables must be declared in the same compilation unit")
+    compilationShouldHaveFailed("typealias module must be declared in the same compilation unit")
   }
 }

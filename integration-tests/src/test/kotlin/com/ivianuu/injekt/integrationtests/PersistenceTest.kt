@@ -87,10 +87,10 @@ class PersistenceTest {
     shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testNonGivenFunctionWithGivenParameters() = singleAndMultiCodegen(
+  @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
     """
       fun myFunction(
-          @Provide scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
+          @Inject scopeFactory: (@Inject @InstallElement<AppGivenScope> Any) -> AppGivenScope
       ): AppGivenScope = TODO()
     """,
     """
@@ -102,7 +102,7 @@ class PersistenceTest {
   @Test fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
     """
       class MyClass(
-          @Provide scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
+          @Inject scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
       )
     """,
     """
@@ -115,7 +115,7 @@ class PersistenceTest {
     """
       class MyClass {
           constructor(
-            @Provide scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
+            @Inject scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
           )
       }
     """,
@@ -168,12 +168,12 @@ class PersistenceTest {
       typealias MyAlias<T> = OtherAlias<T>
       typealias OtherAlias<S> = String
       fun <T> largeFunc(${
-        (1..150).map { "@Provide p$it: MyAlias<T>" }.joinToString("\n,")
+        (1..150).map { "@Inject p$it: MyAlias<T>" }.joinToString("\n,")
       }): String = ""
     """,
     """
       fun invoke() {
-        withGivens("" as MyAlias<String>) { largeFunc<String>() }
+        withProvidedInstances("" as MyAlias<String>) { largeFunc<String>() }
       }
     """
   ) {

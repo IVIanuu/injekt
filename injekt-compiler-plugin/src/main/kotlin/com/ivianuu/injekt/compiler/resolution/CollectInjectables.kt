@@ -35,7 +35,7 @@ fun TypeRef.collectInjectables(
   classBodyView: Boolean
 ): List<CallableRef> {
   // special case to support @Provide () -> Foo
-  if (isProvide && isFunctionType) {
+  if (isProvideFunctionType) {
     return listOf(
       classifier.descriptor!!
         .defaultType

@@ -111,7 +111,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = inject<@Provides.MyQualifier String>()
+            fun invoke() = inject<@injectables.MyQualifier String>()
           """
         )
       )

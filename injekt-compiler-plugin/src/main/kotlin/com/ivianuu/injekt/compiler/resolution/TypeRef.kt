@@ -469,6 +469,31 @@ val TypeRef.superTypes: List<TypeRef>
       .map { it.substitute(substitutionMap) }
   }
 
+val TypeRef.isProviderFunctionType: Boolean
+  get() {
+    if (!isFunctionType) return false
+    for (i in arguments.indices) {
+      val argument = arguments[i]
+      if (i < arguments.lastIndex && !argument.isProvide)
+        return false
+    }
+
+    return true
+  }
+
+val TypeRef.isProvideFunctionType: Boolean
+  get() {
+    if (!isFunctionType) return false
+    if (!isProvide)
+    for (i in arguments.indices) {
+      val argument = arguments[i]
+      if (i < arguments.lastIndex && argument.isInject)
+        return false
+    }
+
+    return true
+  }
+
 val TypeRef.isFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||

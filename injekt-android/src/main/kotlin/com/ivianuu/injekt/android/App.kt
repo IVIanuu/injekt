@@ -35,7 +35,7 @@ interface AppGivenScopeOwner {
 }
 
 inline fun Application.createAppGivenScope(
-  @Inject scopeFactory: (@Inject @InstallElement<AppGivenScope> Application) -> AppGivenScope
+  @Inject scopeFactory: (@Provide @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ): AppGivenScope = scopeFactory(this)
 
 typealias AppContext = Context
