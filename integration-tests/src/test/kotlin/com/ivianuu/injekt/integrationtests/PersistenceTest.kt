@@ -23,40 +23,40 @@ import org.junit.*
 class PersistenceTest {
   @Test fun testPrimaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
     """
-            @Given class Dep(@Given value: MyAlias)
-            typealias MyAlias = String
-            @Given val myAlias: MyAlias = ""
-            """,
+      @Given class Dep(value: MyAlias)
+      typealias MyAlias = String
+      @Given val myAlias: MyAlias = ""
+    """,
     """
-         fun invoke() = summon<Dep>()
-            """
+      fun invoke() = summon<Dep>()
+    """
   )
 
   @Test fun testSecondaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
     """
-            class Dep {
-                @Given constructor(@Given value: MyAlias)
-            }
-            typealias MyAlias = String
-            @Given val myAlias: MyAlias = ""
-            """,
+      class Dep {
+        @Given constructor(value: MyAlias)
+      }
+      typealias MyAlias = String
+      @Given val myAlias: MyAlias = ""
+    """,
     """
-         fun invoke() = summon<Dep>()
-            """
+      fun invoke() = summon<Dep>()
+    """
   )
 
   @Test fun testModuleDispatchReceiverTypeInference() = singleAndMultiCodegen(
     """
-            class MyModule<T : S, S> {
-                @Given fun provide(@Given value: S): T = value as T
-            }
-
-            @Given val module = MyModule<String, CharSequence>()
-
-            @Given val value: CharSequence = "42"
+      class MyModule<T : S, S> {
+        @Given fun provide(value: S): T = value as T
+      }
+  
+      @Given val module = MyModule<String, CharSequence>()
+  
+      @Given val value: CharSequence = "42"
     """,
     """
-        fun invoke() = summon<String>() 
+      fun invoke() = summon<String>() 
     """
   ) {
     "42" shouldBe invokeSingleFile()
@@ -64,25 +64,24 @@ class PersistenceTest {
 
   @Test fun testFunctionTypeParameterClassifier() = singleAndMultiCodegen(
     """
-            var callCount = 0
-            @Qualifier annotation class MyQualifier
-            @Qualifier annotation class MyOtherQualifier
-            @Given fun <@Spread T : @MyQualifier S, S : FuncA> impl(@Given instance: T): @MyOtherQualifier S {
-                return instance
-            }
-
-            typealias FuncA = suspend () -> Unit
-            typealias FuncB = suspend () -> Boolean
-
-            @Given fun funcA(@Given funcB: FuncB): @MyQualifier FuncA = { }
-            @Given fun funcB(): @MyQualifier FuncB = { true }
-            """,
+      var callCount = 0
+      @Qualifier annotation class MyQualifier
+      @Qualifier annotation class MyOtherQualifier
+      @Given fun <@Spread T : @MyQualifier S, S : FuncA> impl(instance: T): @MyOtherQualifier S =
+        instance
+  
+      typealias FuncA = suspend () -> Unit
+      typealias FuncB = suspend () -> Boolean
+  
+      @Given fun funcA(funcB: FuncB): @MyQualifier FuncA = { }
+      @Given fun funcB(): @MyQualifier FuncB = { true }
+    """,
     """
-         fun invoke() {
-                summon<@MyOtherQualifier FuncA>()
-                summon<@MyOtherQualifier FuncB>()
-            } 
-            """
+      fun invoke() {
+        summon<@MyOtherQualifier FuncA>()
+        summon<@MyOtherQualifier FuncB>()
+      } 
+    """
   ) {
     shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.summon")
     shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.summon")
@@ -90,80 +89,76 @@ class PersistenceTest {
 
   @Test fun testNonGivenFunctionWithGivenParameters() = singleAndMultiCodegen(
     """
-            fun myFunction(
-                @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
-            ): AppGivenScope = TODO()
-            """,
+      fun myFunction(
+          @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
+      ): AppGivenScope = TODO()
+    """,
     """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-         fun invoke() = myFunction()
-            """
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun invoke() = myFunction()
+    """
   )
 
   @Test fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
     """
-            class MyClass(
-                @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
-            )
-            """,
+      class MyClass(
+          @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
+      )
+    """,
     """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-         fun invoke() = MyClass()
-            """
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun invoke() = MyClass()
+    """
   )
 
   @Test fun testNonGivenSecondaryConstructorWithGivenParameters() = singleAndMultiCodegen(
     """
-            class MyClass {
-                constructor(
-                    @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
-                )
-            }
-            """,
+      class MyClass {
+          constructor(
+            @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
+          )
+      }
+    """,
     """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-         fun invoke() = MyClass()
-            """
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun invoke() = MyClass()
+    """
   )
 
   @Test fun testNonGivenClassWithGivenMembers() = singleAndMultiCodegen(
     """ 
-            abstract class MyModule<T : S, S> {
-                @Given fun func(@Given t: T): S = t
-            }
-            class MyModuleImpl<T> : MyModule<@Qualifier1 T, T>()
-        """,
+      abstract class MyModule<T : S, S> {
+        @Given fun func(t: T): S = t
+      }
+      class MyModuleImpl<T> : MyModule<@Qualifier1 T, T>()
+    """,
     """
-            @Given val myFooModule = MyModuleImpl<Foo>()
-            @Given val foo: @Qualifier1 Foo = Foo()
-         fun invoke() = summon<Foo>()
+      @Given val myFooModule = MyModuleImpl<Foo>()
+      @Given val foo: @Qualifier1 Foo = Foo()
+      fun invoke() = summon<Foo>()
         """
   )
 
   @Test fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
     """ 
-            abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
-                @Given fun factory(
-                    @Given scopeFactory: S
-                ): @InstallElement<P> @ChildScopeFactory T = scopeFactory
-            }
-            
-            class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
-                        (P1) -> C,
-                        (@Given @InstallElement<C> P1) -> C>()
-        """,
+      abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
+        @Given fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+      }
+      
+      class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
+        (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
+    """,
     """
-            typealias TestGivenScope1 = GivenScope
-            typealias TestGivenScope2 = GivenScope
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-         fun invoke() {
-                @Given val childScopeModule =
-                    MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-                val parentScope = summon<TestGivenScope1>()
-                val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
-                childScope.element<String>()
-            }
-        """
+      typealias TestGivenScope1 = GivenScope
+      typealias TestGivenScope2 = GivenScope
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun invoke() {
+        @Given val childScopeModule = MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+        val parentScope = summon<TestGivenScope1>()
+        val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
+        childScope.element<String>()
+      }
+    """
   ) {
     invokeSingleFile()
   }

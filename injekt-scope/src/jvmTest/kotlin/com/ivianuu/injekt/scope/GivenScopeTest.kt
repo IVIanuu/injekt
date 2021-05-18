@@ -35,7 +35,7 @@ class GivenScopeTest {
     var called = false
 
     @Given
-    fun initializer(@Given givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
+    fun initializer(givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
       called = true
     }
 

@@ -23,15 +23,13 @@ class DivergenceTest {
   @Test fun testUnresolvableDivergence() = singleAndMultiCodegen(
     """
       interface Wrapper<T> {
-          val value: T
+        val value: T
       }
   
-      @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
+      @Given fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
     """,
     """
-      fun invoke() {
-          summon<Foo>()
-      }
+      fun invoke() = summon<Foo>()
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -40,24 +38,22 @@ class DivergenceTest {
   @Test fun testResolvableDivergence() = singleAndMultiCodegen(
     """
       interface Wrapper<T> {
-          val value: T
+        val value: T
       }
   
-      @Given fun <T> unwrapped(@Given wrapped: Wrapper<T>): T = wrapped.value
+      @Given fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
   
       @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
     """,
     """
-      fun invoke() {
-          summon<Foo>()
-      } 
+      fun invoke() = summon<Foo>()
     """
   )
 
   @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
     """
-      @Given class A(@Given b: B)
-      @Given class B(@Given a: A)
+      @Given class A(b: B)
+      @Given class B(a: A)
     """,
     """
       fun invoke() = summon<A>() 
@@ -68,9 +64,9 @@ class DivergenceTest {
 
   @Test fun testProviderBreaksCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(@Given b: B)
-      @Given class B(@Given a: () -> A)
-     """,
+      @Given class A(b: B)
+      @Given class B(a: () -> A)
+    """,
     """
       fun invoke() = summon<B>()
     """
@@ -80,13 +76,13 @@ class DivergenceTest {
 
   @Test fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(@Given b: () -> B)
-      @Given class B(@Given b: C)
-      @Given class C(@Given b: B)
+      @Given class A(b: () -> B)
+      @Given class B(b: C)
+      @Given class C(b: B)
      """,
-    """
+     """
       fun invoke() = summon<C>() 
-    """
+     """
   ) {
     compilationShouldHaveFailed("diverging")
   }
@@ -94,9 +90,9 @@ class DivergenceTest {
   @Test fun testLazyRequestInSetBreaksCircularDependency() = singleAndMultiCodegen(
     """
       typealias A = () -> Unit
-      @Given fun a(@Given b: () -> B): A = {}
+      @Given fun a(b: () -> B): A = {}
       typealias B = () -> Unit
-      @Given fun b(@Given a: () -> A): B = {}
+      @Given fun b(a: () -> A): B = {}
      """,
     """
      fun invoke() = summon<Set<() -> Unit>>() 

@@ -38,30 +38,30 @@ class QualifierTest {
 
   @Test fun testTypeParameterWithQualifierUpperBound() = singleAndMultiCodegen(
     """
-            @Given class Dep<T>(@Given val value: @Qualifier1 T)
+      @Given class Dep<T>(val value: @Qualifier1 T)
             
-            @Given fun qualified(): @Qualifier1 String = ""
-        """,
+      @Given fun qualified(): @Qualifier1 String = ""
+    """,
     """
-        fun invoke() = summon<Dep<String>>() 
+      fun invoke() = summon<Dep<String>>() 
     """
   )
 
   @Test fun testQualifiedClass() = singleAndMultiCodegen(
     """ 
-            @Given @Qualifier1 class Dep
-        """,
+      @Given @Qualifier1 class Dep
+    """,
     """
-         fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = summon<@Qualifier1 Dep>()
     """
   )
 
   @Test fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
     """ 
-                class Dep @Given @Qualifier1 constructor()
-        """,
+      class Dep @Given @Qualifier1 constructor()
+    """,
     """
-         fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = summon<@Qualifier1 Dep>()
     """
   )
 
@@ -131,7 +131,7 @@ class QualifierTest {
     """
             @Qualifier annotation class UiState
 
-            @Given fun <T> uiState(@Given instance: @UiState T): T = instance
+            @Given fun <T> uiState(instance: @UiState T): T = instance
 
             @Given val foo: @UiState Foo = Foo()
         """,
@@ -145,22 +145,19 @@ class QualifierTest {
 
   @Test fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
     """
-            @Given 
-            fun foo(): @Eager<AppGivenScope> Foo = Foo()
-
-            typealias ChildGivenScope = GivenScope
-
-            @Given val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
-
-            @InstallElement<ChildGivenScope>
-            @Given
-            class MyElement(@Given val foo: Foo)
+      @Given fun foo(): @Eager<AppGivenScope> Foo = Foo()
+  
+      typealias ChildGivenScope = GivenScope
+  
+      @Given val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
+  
+      @InstallElement<ChildGivenScope>
+      @Given
+      class MyElement(val foo: Foo)
     """,
     """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-         fun invoke() {
-                val givenScope = summon<AppGivenScope>()
-            } 
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun invoke() = summon<AppGivenScope>()
     """
   ) {
     compilationShouldBeOk()

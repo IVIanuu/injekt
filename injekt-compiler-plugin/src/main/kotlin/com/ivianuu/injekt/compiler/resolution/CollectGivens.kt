@@ -142,9 +142,11 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
   if (!isGiven && this is ParameterDescriptor) {
     isGiven = type.isGiven(context, trace) ||
         containingDeclaration.safeAs<FunctionDescriptor>()
-          ?.takeIf { it.isDeserializedDeclaration() }
-          ?.callableInfo(context, trace)
-          ?.let { name.asString() in it.givenParameters } == true
+          ?.let { containingFunction ->
+            containingFunction.isGiven(context, trace) ||
+                containingFunction.isDeserializedDeclaration() &&
+                name.asString() in containingFunction.callableInfo(context, trace).givenParameters
+          } == true
   }
   if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
     isGiven = constructedClass.isGiven(context, trace)

@@ -44,10 +44,10 @@ interface InjektErrors {
         }
 
     @JvmField
-    val NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION =
+    val GIVEN_PARAMETER_ON_GIVEN_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
-          MAP.put(it, "non @Given parameter on @Given declaration")
+          MAP.put(it, "parameters of a @Given declaration are automatically treated as @Given")
         }
 
     @JvmField

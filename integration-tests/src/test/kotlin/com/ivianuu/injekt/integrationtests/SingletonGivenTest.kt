@@ -64,11 +64,11 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithConstructorParameters() = singleAndMultiCodegen(
     """
-            @Given class MyModule(@Given val foo: Foo)
-            @Given val foo = Foo()
+      @Given class MyModule(val foo: Foo)
+      @Given val foo = Foo()
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")

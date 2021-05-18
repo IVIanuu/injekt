@@ -30,7 +30,7 @@ import kotlinx.coroutines.*
 
 typealias AppUi = @Composable () -> Unit
 
-@Given fun appUi(@Given viewModel: CounterViewModel): AppUi = {
+@Given fun appUi(viewModel: CounterViewModel): AppUi = {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -60,10 +60,10 @@ typealias AppUi = @Composable () -> Unit
 
 @Given @Scoped<ActivityRetainedGivenScope>
 class CounterViewModel(
-  @Given private val incCounter: IncCounterUseCase,
-  @Given private val decCounter: DecCounterUseCase,
-  @Given val state: CounterFlow,
-  @Given private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
+  private val incCounter: IncCounterUseCase,
+  private val decCounter: DecCounterUseCase,
+  val state: CounterFlow,
+  private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
 ) {
   fun inc() {
     scope.launch { incCounter() }

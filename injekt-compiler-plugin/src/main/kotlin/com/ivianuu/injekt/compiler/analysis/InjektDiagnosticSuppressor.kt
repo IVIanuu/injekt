@@ -54,7 +54,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED) {
       val parameter = diagnostic.psiElement.getParentOfType<KtParameter>(false)
-      return parameter?.hasAnnotation(InjektFqNames.Given) == true
+        ?.descriptor<ParameterDescriptor>(bindingContext)
+      return parameter?.hasAnnotation(InjektFqNames.Given) == true ||
+          parameter?.containingDeclaration?.hasAnnotation(InjektFqNames.Given) == true ||
+          parameter?.containingDeclaration?.safeAs<ConstructorDescriptor>()
+            ?.takeIf { it.isPrimary }
+            ?.constructedClass?.hasAnnotation(InjektFqNames.Given) == true
     }
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {

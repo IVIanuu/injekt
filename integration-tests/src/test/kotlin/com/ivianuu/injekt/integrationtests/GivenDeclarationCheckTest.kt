@@ -81,18 +81,18 @@ class GivenDeclarationCheckTest {
 
   @Test fun testNonGivenValueParameterOnGivenFunction() = codegen(
     """
-      @Given fun bar(foo: Foo) = Bar(foo)
+      @Given fun bar(@Given foo: Foo) = Bar(foo)
     """
   ) {
-    compilationShouldHaveFailed("non @Given parameter")
+    compilationShouldHaveFailed("parameters of a @Given declaration are automatically treated as @Given")
   }
 
-  @Test fun testNonGivenValueParameterOnGivenClass() = codegen(
+  @Test fun testGivenValueParameterOnGivenClass() = codegen(
     """
-      @Given class MyBar(foo: Foo)
+      @Given class MyBar(@Given foo: Foo)
     """
   ) {
-    compilationShouldHaveFailed("non @Given parameter")
+    compilationShouldHaveFailed("parameters of a @Given declaration are automatically treated as @Given")
   }
 
   @Test fun testGivenReceiverOnFunction() = codegen(

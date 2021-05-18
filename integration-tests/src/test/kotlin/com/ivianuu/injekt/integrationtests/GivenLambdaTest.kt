@@ -46,7 +46,7 @@ class GivenLambdaTest {
     """
             typealias MyAlias = @Composable () -> Unit
             @Given fun myAlias(): MyAlias = {}
-            @Given class MyComposeView(@Given val content: @Composable () -> Unit)
+            @Given class MyComposeView(val content: @Composable () -> Unit)
     """,
     """
         fun invoke() = summon<(@Given @Composable () -> Unit) -> MyComposeView>() 

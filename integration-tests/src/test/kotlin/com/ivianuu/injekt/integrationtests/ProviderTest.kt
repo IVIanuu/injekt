@@ -48,7 +48,7 @@ class ProviderTest {
 
   @Test fun testProviderWithGivenArgs() = codegen(
     """
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
         fun invoke() = summon<(@Given Foo) -> Bar>()(Foo()) 
@@ -60,11 +60,11 @@ class ProviderTest {
 
   @Test fun testProviderWithQualifiedGivenArgs() = singleAndMultiCodegen(
     """
-            @Qualifier annotation class MyQualifier
-            @Given fun bar(@Given foo: @MyQualifier Foo) = Bar(foo)
+      @Qualifier annotation class MyQualifier
+      @Given fun bar(foo: @MyQualifier Foo) = Bar(foo)
     """,
     """
-        fun invoke() = summon<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
+      fun invoke() = summon<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -73,45 +73,43 @@ class ProviderTest {
 
   @Test fun testProviderWithGenericGivenArgs() = singleAndMultiCodegen(
     """ 
-            typealias GivenScopeA = GivenScope
+      typealias GivenScopeA = GivenScope
 
-            typealias GivenScopeB = GivenScope
+      typealias GivenScopeB = GivenScope
 
-            @Given fun givenScopeBFactory(
-                @Given parent: GivenScopeA,
-                @Given scopeFactory: () -> GivenScopeB
-            ): @InstallElement<GivenScopeA> () -> GivenScopeB = scopeFactory
+      @Given fun givenScopeBFactory(
+        parent: GivenScopeA,
+        scopeFactory: () -> GivenScopeB
+      ): @InstallElement<GivenScopeA> () -> GivenScopeB = scopeFactory
 
-            typealias GivenScopeC = GivenScope
+      typealias GivenScopeC = GivenScope
 
-            @Given fun givenScopeCFactory(
-                @Given parent: GivenScopeB,
-                @Given scopeFactory: () -> GivenScopeC
-            ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
-        """,
+      @Given fun givenScopeCFactory(
+        parent: GivenScopeB,
+        scopeFactory: () -> GivenScopeC
+      ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
+    """,
     """
-            @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-            fun createGivenScopeA() = summon<GivenScopeA>()
+      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun createGivenScopeA() = summon<GivenScopeA>()
 
-            @InstallElement<GivenScopeC>
-            @Given 
-            class MyComponent(
-                @Given val a: GivenScopeA,
-                @Given val b: GivenScopeB,
-                @Given val c: GivenScopeC
-            ) 
+      @InstallElement<GivenScopeC>
+      @Given 
+      class MyComponent(
+        val a: GivenScopeA,
+        val b: GivenScopeB,
+        val c: GivenScopeC
+      )
     """
   )
 
   @Test fun testProviderModule() = singleAndMultiCodegen(
     """
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
-            class FooModule(@Given val foo: Foo)
+      @Given fun bar(foo: Foo) = Bar(foo)
+      class FooModule(@Given val foo: Foo)
     """,
     """
-         fun invoke(): Bar {
-                return summon<(@Given FooModule) -> Bar>()(FooModule(Foo()))
-            } 
+      fun invoke() = summon<(@Given FooModule) -> Bar>()(FooModule(Foo()))
     """
   )
 
@@ -141,28 +139,26 @@ class ProviderTest {
   @Test fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() =
     singleAndMultiCodegen(
       """
-            typealias MyGivenScope = GivenScope
-            @Given val MyGivenScope.key: String get() = ""
-            @Given fun foo(@Given key: String) = Foo()
-            @Given fun fooIntoSet(@Given provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
-            @Given class Dep(@Given key: String)
-            @Given fun depIntoSet(@Given provider: (@Given MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
+        typealias MyGivenScope = GivenScope
+        @Given val MyGivenScope.key: String get() = ""
+        @Given fun foo(key: String) = Foo()
+        @Given fun fooIntoSet(provider: (@Given MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
+        @Given class Dep(key: String)
+        @Given fun depIntoSet(provider: (@Given MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
     """,
       """
-         fun invoke() {
-                summon<Set<(MyGivenScope) -> Any>>()
-            } 
+        fun invoke() {
+          summon<Set<(MyGivenScope) -> Any>>()
+        } 
     """
     )
 
   @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
+      @Given val foo = Foo()
     """,
     """
-         fun invoke(): Foo {
-                return summon<(@Given Foo) -> Foo>()(Foo())
-            } 
+      fun invoke() = summon<(@Given Foo) -> Foo>()(Foo())
     """
   ) {
     invokeSingleFile()
@@ -189,7 +185,7 @@ class ProviderTest {
 
   @Test fun testProviderWithNullableReturnTypeAndDefaultOnAllErrors() = codegen(
     """
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            @Given fun bar(foo: Foo) = Bar(foo)
          fun invoke() = summon<@DefaultOnAllErrors () -> Bar?>()()
     """
   ) {

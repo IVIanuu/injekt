@@ -41,7 +41,4 @@ class MainActivity : ComponentActivity() {
 // Declare dependencies we want to retrieve from the activity scope
 @Given
 @InstallElement<ActivityGivenScope>
-class MainActivityDependencies(
-  @Given val theme: AppTheme,
-  @Given val appUi: AppUi
-)
+class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)

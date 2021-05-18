@@ -10,8 +10,8 @@ class NotGiven<out T> private constructor() {
   }
 
   companion object : LowPriorityGivens() {
-    @Given fun <T> amb1(@Given value: T): NotGiven<T> = throw AssertionError()
+    @Given fun <T> amb1(value: T): NotGiven<T> = throw AssertionError()
 
-    @Given fun <T> amb2(@Given value: T): NotGiven<T> = throw AssertionError()
+    @Given fun <T> amb2(value: T): NotGiven<T> = throw AssertionError()
   }
 }

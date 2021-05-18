@@ -24,7 +24,7 @@ package com.ivianuu.injekt
  * Example
  * ```
  * @Given val foo = Foo()
- * @Given fun bar(@Given foo: Foo) = Bar(foo)
+ * @Given fun bar(foo: Foo) = Bar(foo)
  *
  * fun main() {
  *   val bar = summon<Bar>()
@@ -48,7 +48,7 @@ package com.ivianuu.injekt
   // @Given val myVariable: Foo = ...
   AnnotationTarget.LOCAL_VARIABLE,
 
-  // fun func(@Given Foo: Foo)
+  // fun func(foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
 
   // Providers

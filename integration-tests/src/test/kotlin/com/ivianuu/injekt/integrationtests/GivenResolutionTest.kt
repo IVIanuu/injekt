@@ -268,7 +268,7 @@ class GivenResolutionTest {
   @Test fun testPrefersResolvableGiven() = singleAndMultiCodegen(
     """
       @Given fun a() = "a"
-      @Given fun b(@Given long: Long) = "b"
+      @Given fun b(long: Long) = "b"
     """,
     """
       fun invoke() = summon<String>() 
@@ -375,7 +375,7 @@ class GivenResolutionTest {
 
   @Test fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = singleAndMultiCodegen(
     """
-      @Given fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
+      @Given fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
     """,
     """
       fun invoke() = summon<() -> Foo>() 
@@ -387,7 +387,7 @@ class GivenResolutionTest {
   @Test fun testUsesDefaultValueIfNoCandidateExists() = codegen(
     """
       fun invoke(_foo: Foo): Foo {
-        fun inner(@Given foo: Foo = _foo) = foo
+        fun inner(foo: Foo = _foo) = foo
         return inner()
       }
     """
@@ -398,7 +398,7 @@ class GivenResolutionTest {
 
   @Test fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
     """
-      @Given fun bar(@Given foo: Foo) = Bar(foo)
+      @Given fun bar(foo: Foo) = Bar(foo)
       fun invoke() {
         fun inner(@Given bar: Bar = Bar(Foo())) = bar
         return inner()
@@ -411,7 +411,7 @@ class GivenResolutionTest {
   @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() =
     codegen(
       """
-        @Given fun bar(@Given foo: Foo) = Bar(foo)
+        @Given fun bar(foo: Foo) = Bar(foo)
         fun invoke(foo: Foo): Foo {
           fun inner(@Given @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
           return inner().foo
@@ -430,7 +430,7 @@ class GivenResolutionTest {
 
       @Qualifier annotation class MyQualifier
 
-      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
     """,
     """
       fun invoke() = summon<Foo>() 
@@ -449,7 +449,7 @@ class GivenResolutionTest {
 
       @Qualifier annotation class MyQualifier
 
-      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
     """,
     """
       fun invoke() = summon<Foo>() 

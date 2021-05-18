@@ -38,8 +38,8 @@ class InstallWorkerTest {
 }
 
 @Given @InstallWorker class TestWorker(
-  @Given appContext: Context,
-  @Given workerParams: WorkerParameters
+  appContext: Context,
+  workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
   override fun doWork(): Result = Result.success()
 }

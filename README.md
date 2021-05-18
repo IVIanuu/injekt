@@ -7,7 +7,7 @@ Minimal example:
 ```kotlin
 // declare givens
 @Given val foo = Foo()
-@Given fun bar(@Given foo: Foo) = Bar(foo)
+@Given fun bar(foo: Foo) = Bar(foo)
 
 fun main() {
     // retrieve instance

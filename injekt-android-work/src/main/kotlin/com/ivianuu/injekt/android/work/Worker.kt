@@ -39,8 +39,8 @@ import kotlin.reflect.*
 @Qualifier annotation class InstallWorker {
   companion object {
     @Given inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
-      @Given noinline factory: (@Given WorkerParameters) -> T,
-      @Given workerClass: KClass<S>
+      noinline factory: (@Given WorkerParameters) -> T,
+      workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
 }
@@ -51,7 +51,7 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
  * Factory which is able to create [ListenableWorker]s installed via [InstallWorker]
  */
 @Given class InjektWorkerFactory(
-  @Given private val workers: Map<String, SingleWorkerFactory>
+  private val workers: Map<String, SingleWorkerFactory>
 ) : WorkerFactory() {
   override fun createWorker(
     appContext: Context,
@@ -68,9 +68,9 @@ object WorkerInitializerGivens {
    * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
    */
   @Given fun workerScopeInitializer(
-    @Given context: AppContext,
-    @Given configuration: Configuration? = null,
-    @Given defaultConfiguration: () -> @Default Configuration
+    context: AppContext,
+    configuration: Configuration? = null,
+    defaultConfiguration: () -> @Default Configuration
   ): GivenScopeInitializer<AppGivenScope> = {
     WorkManager.initialize(context, configuration ?: defaultConfiguration())
   }
@@ -79,7 +79,7 @@ object WorkerInitializerGivens {
    * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
    */
   @Given fun defaultWorkerConfiguration(
-    @Given workerFactory: WorkerFactory
+    workerFactory: WorkerFactory
   ): @Default Configuration = Configuration.Builder()
     .setWorkerFactory(workerFactory)
     .build()

@@ -23,13 +23,11 @@ class ExpressionWrappingTest {
   @Test fun testDoesFunctionWrapGivenWithMultipleUsages() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given fun bar(@Given foo: Foo) = Bar(foo)
-      @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+      @Given fun bar(foo: Foo) = Bar(foo)
+      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() {
-          summon<Pair<Bar, Bar>>()
-      } 
+      fun invoke() = summon<Pair<Bar, Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
@@ -38,13 +36,11 @@ class ExpressionWrappingTest {
   @Test fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given fun bar(@Given foo: Foo) = Bar(foo)
-      @Given fun <T> pair(@Given a: T, @Given b: () -> T): Pair<T, () -> T> = a to b
+      @Given fun bar(foo: Foo) = Bar(foo)
+      @Given fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
     """,
     """
-      fun invoke() {
-          summon<Pair<Bar, () -> Bar>>()
-      } 
+      fun invoke() = summon<Pair<Bar, () -> Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
@@ -53,12 +49,10 @@ class ExpressionWrappingTest {
   @Test fun testDoesNotFunctionWrapGivenWithSingleUsage() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given fun bar(@Given foo: Foo) = Bar(foo)
+      @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() {
-        summon<Bar>()
-      } 
+      fun invoke() = summon<Bar>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Bar {")
@@ -67,12 +61,10 @@ class ExpressionWrappingTest {
   @Test fun testDoesNotWrapGivenWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() {
-        summon<Pair<Foo, Foo>>()
-      } 
+      fun invoke() = summon<Pair<Foo, Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Foo {")
@@ -81,12 +73,10 @@ class ExpressionWrappingTest {
   @Test fun testDoesCacheProviderWithMultipleUsages() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() {
-        summon<Pair<() -> Foo, () -> Foo>>()
-      } 
+      fun invoke() = summon<Pair<() -> Foo, () -> Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
@@ -98,9 +88,7 @@ class ExpressionWrappingTest {
       @Given val foo = Foo()
     """,
     """
-      fun invoke() {
-        summon<() -> Foo>()
-      } 
+      fun invoke() = summon<() -> Foo>()
     """
   ) {
     irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
@@ -109,13 +97,11 @@ class ExpressionWrappingTest {
   @Test fun testDoesNotCacheInlineProvider() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given inline fun bar(@Given fooProvider: () -> Foo) = Bar(fooProvider())
-      @Given fun <T> pair(@Given a: T, @Given b: T): Pair<T, T> = a to b
+      @Given inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
+      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() {
-          summon<Pair<Bar, Bar>>()
-      } 
+      fun invoke() = summon<Pair<Bar, Bar>>()
     """
   ) {
     irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
@@ -123,8 +109,8 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(@Given b: B)
-      @Given class B(@Given a: () -> A, @Given a2: () -> A)
+      @Given class A(b: B)
+      @Given class B(a: () -> A, a2: () -> A)
      """,
     """
       fun invoke() = summon<B>() 

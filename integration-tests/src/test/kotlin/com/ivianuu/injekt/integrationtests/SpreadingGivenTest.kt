@@ -26,7 +26,7 @@ class SpreadingGivenTest {
   @Test fun testSpreadingGivenFunction() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Spread T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
+      @Given fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
 
       @Given fun foo(): @Trigger Foo = Foo()
     """,
@@ -40,7 +40,7 @@ class SpreadingGivenTest {
   @Test fun testSpreadingGivenClass() = singleAndMultiCodegen(
     """
       @Given class MyModule<@Spread T : @Trigger S, S> {
-          @Given fun intoSet(@Given instance: T): @Final S = instance
+          @Given fun intoSet(instance: T): @Final S = instance
       }
       @Qualifier annotation class Trigger
 
@@ -91,7 +91,7 @@ class SpreadingGivenTest {
   @Test fun testSpreadingGivenTriggeredByClas() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Spread T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
+      @Given fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
       
       @Trigger @Given class NotAny
     """,
@@ -110,7 +110,7 @@ class SpreadingGivenTest {
       
       class AModule<T> {
           @Given
-          fun my(@Given instance: T): @B T = instance
+          fun my(instance: T): @B T = instance
       }
       
       @Qualifier annotation class B
@@ -118,7 +118,7 @@ class SpreadingGivenTest {
       
       class BModule<T> {
           @Given
-          fun my(@Given instance: T): @C Any? = instance
+          fun my(instance: T): @C Any? = instance
       }
       
       @Qualifier annotation class C
@@ -151,7 +151,7 @@ class SpreadingGivenTest {
   @Test fun testMultipleSpreadCandidatesWithSameType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Spread T : @Trigger String> triggerImpl(@Given instance: T): String = instance
+      @Given fun <@Spread T : @Trigger String> triggerImpl(instance: T): String = instance
 
       @Given fun a(): @Trigger String = "a"
       @Given fun b(): @Trigger String = "b"
@@ -185,9 +185,7 @@ class SpreadingGivenTest {
   @Test fun testCanResolveTypeBasedOnSpreadConstraintType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Spread T : @Trigger S, S> triggerImpl(
-          @Given pair: Pair<S, S>
-      ): Int = 0
+      @Given fun <@Spread T : @Trigger S, S> triggerImpl(pair: Pair<S, S>): Int = 0
       
       @Given val string: @Trigger String = ""
       
@@ -200,9 +198,7 @@ class SpreadingGivenTest {
 
   @Test fun testCanResolveTypeWithSpreadTypeArgument() = singleAndMultiCodegen(
     """
-      @Given fun <@Spread T : String> triggerImpl(
-          @Given pair: Pair<T, T>
-      ): Int = 0
+      @Given fun <@Spread T : String> triggerImpl(pair: Pair<T, T>): Int = 0
 
       @Given val string = ""
 
@@ -220,7 +216,7 @@ class SpreadingGivenTest {
       @Qualifier annotation class UiDecoratorBinding
   
       @Given fun <@Spread T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
-          @Given instance: T
+          instance: T
       ): UiDecorator = instance as UiDecorator
   
       typealias RootSystemBarsProvider = UiDecorator
@@ -240,22 +236,22 @@ class SpreadingGivenTest {
   
       @Scoped<AppGivenScope>
       @Given
-      class Dep(@Given app: App)
+      class Dep(app: App)
   
       @Scoped<AppGivenScope>
       @Given
-      class DepWrapper(@Given dep: Dep)
+      class DepWrapper(dep: Dep)
   
       @Scoped<AppGivenScope>
       @Given
-      class DepWrapper2(@Given dep: () -> Dep, @Given wrapper: () -> DepWrapper)
+      class DepWrapper2(dep: () -> Dep, wrapper: () -> DepWrapper)
   
       @InstallElement<AppGivenScope>
       @Given
-      class MyComponent(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2)
+      class MyComponent(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2)
   
       @Given
-      fun myInitializer(@Given dep: Dep, @Given wrapper: () -> () -> DepWrapper, @Given wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
+      fun myInitializer(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
     """,
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
@@ -270,11 +266,11 @@ class SpreadingGivenTest {
       @Qualifier annotation class ClassSingleton
       
       @Given inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
-          @Given factory: () -> T
+        factory: () -> T
       ): U = factory()
   
       class MyModule<T : S, S> {
-          @Given fun value(@Given v: T): S = v
+          @Given fun value(v: T): S = v
       }
   
       @Given fun <@Spread T : @Qualifier1 S, S> myModule():
@@ -294,15 +290,15 @@ class SpreadingGivenTest {
       @Qualifier annotation class ClassSingleton
       
       @Given inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
-        @Given factory: () -> T,
-        @Given scope: AppGivenScope
+        factory: () -> T,
+        scope: AppGivenScope
       ): U = scope.getOrCreateScopedValue(U::class, factory)
       
       class MyModule<T : S, S> {
-        @Given fun value(@Given v: T): S = v
+        @Given fun value(v: T): S = v
       }
       
-      @Given fun <@Spread T : @Qualifier1 S, S> myModule():
+      @Given fun <@Spread T : @Qualifier1 S, S> myModule(): 
         @ClassSingleton MyModule<T, S> = MyModule()
       
       @Given val foo: @Qualifier1 Foo = Foo()

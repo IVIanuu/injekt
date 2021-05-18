@@ -23,8 +23,7 @@ import com.ivianuu.injekt.*
 @Qualifier annotation class ChildScopeFactory
 
 abstract class AbstractChildScopeModule<P : GivenScope, T, S : T> {
-  @Given fun factory(@Given scopeFactory: S):
-      @InstallElement<P> @ChildScopeFactory T = scopeFactory
+  @Given fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
 }
 
 class ChildScopeModule0<P : GivenScope, C : GivenScope> :

@@ -23,8 +23,8 @@ import org.junit.*
 class SuppressionTest {
   @Test fun testDoesNotWarnFinalUpperBound() = codegen(
     """
-            fun <T : Int> func() {
-            }
+      fun <T : Int> func() {
+      }
     """
   ) {
     shouldNotContainMessage("'Int' is a final type, and thus a value of the type parameter is predetermined")
@@ -32,7 +32,7 @@ class SuppressionTest {
 
   @Test fun testTypeAliasTypeParameter() = codegen(
     """
-            typealias Alias<T> = String
+      typealias Alias<T> = String
     """
   ) {
     shouldNotContainMessage("Type alias parameter T is not used in the expanded type String and does not affect type checking")
@@ -40,12 +40,12 @@ class SuppressionTest {
 
   @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
     """
-            typealias MyBuilder = StringBuilder.() -> Unit
-            @Given fun <@Spread T : MyBuilder> toString(@Given builder: MyBuilder): String = buildString(builder)
-            @Given val myBuilder: MyBuilder = { append("42") }
+      typealias MyBuilder = StringBuilder.() -> Unit
+      @Given fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
+      @Given val myBuilder: MyBuilder = { append("42") }
     """,
     """
-         fun invoke() = summon<String>() 
+      fun invoke() = summon<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "42"
@@ -53,8 +53,8 @@ class SuppressionTest {
 
   @Test fun testDoesNotWarnInlineOnGivenDeclaration() = codegen(
     """
-            @Given inline fun func() {
-            }
+      @Given inline fun func() {
+      }
     """
   ) {
     shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
@@ -112,34 +112,34 @@ class SuppressionTest {
 
   @Test fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
     """
-            interface Combine<T> {
-                fun plus(a: T, b: T): T
-            }
-
-            operator fun <T> T.plus(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
-
-            inline class Key(val value: String)
-
-            @Given object KeyCombine : Combine<Key> {
-                override fun plus(a: Key, b: Key) = Key(a.value + b.value)
-            }
+      interface Combine<T> {
+          fun plus(a: T, b: T): T
+      }
+  
+      operator fun <T> T.plus(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+  
+      inline class Key(val value: String)
+  
+      @Given object KeyCombine : Combine<Key> {
+          override fun plus(a: Key, b: Key) = Key(a.value + b.value)
+      }
     """,
     """
-         fun invoke() {
-                Key("a") + Key("b")
-            } 
+      fun invoke() {
+        Key("a") + Key("b")
+      } 
     """
   )
 
   @Test fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
     """
-            fun func1(@Given foo: Foo) {
-                func2()                
-            }
-
-            fun func2(@Given foo: Foo) {
-                foo
-            }
+      fun func1(foo: Foo) {
+        func2()                
+      }
+  
+      fun func2(foo: Foo) {
+        foo
+      }
     """
   ) {
     shouldNotContainMessage("Parameter 'foo' is never used")
@@ -147,12 +147,12 @@ class SuppressionTest {
 
   @Test fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
     """
-            fun func1(@Given foo: Foo) {
-            }
-
-            fun func2(@Given foo: Foo) {
-                foo
-            } 
+      fun func1(foo: Foo) {
+      }
+  
+      fun func2(foo: Foo) {
+        foo
+      } 
     """
   ) {
     shouldContainMessage("Parameter 'foo' is never used")
@@ -160,10 +160,10 @@ class SuppressionTest {
 
   @Test fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
     """
-         fun invoke() {
-                @Given val foo = Foo()
-                summon<Foo>()
-            }
+      fun invoke() {
+        @Given val foo = Foo()
+        summon<Foo>()
+      }
     """
   ) {
     shouldNotContainMessage("Variable 'foo' is never used")
@@ -171,9 +171,9 @@ class SuppressionTest {
 
   @Test fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
     """
-         fun invoke() {
-                @Given val foo = Foo()
-            }
+      fun invoke() {
+        @Given val foo = Foo()
+      }
     """
   ) {
     shouldContainMessage("Variable 'foo' is never used")

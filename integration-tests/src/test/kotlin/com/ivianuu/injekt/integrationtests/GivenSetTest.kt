@@ -103,7 +103,7 @@ class GivenSetTest {
 
   @Test fun testImplicitProviderSet() = singleAndMultiCodegen(
     """
-            @Given fun bar(@Given foo: Foo) = Bar(foo)
+            @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
         fun invoke() = summon<Set<(@Given Foo) -> Bar>>() 
@@ -119,7 +119,7 @@ class GivenSetTest {
 
   @Test fun testNestedImplicitProviderSet() = singleAndMultiCodegen(
     """
-            @Given fun bar(@Given foo: Foo): Any = Bar(foo)
+            @Given fun bar(foo: Foo): Any = Bar(foo)
 
             @Given fun commandA(): Command = CommandA()
 
@@ -157,7 +157,7 @@ class GivenSetTest {
   @Test fun testSetWithIgnoreElementsWithErrors() = singleAndMultiCodegen(
     """
             @Given val a = "a"
-            @Given fun b(@Given foo: Foo) = "b"
+            @Given fun b(foo: Foo) = "b"
     """,
     """
         fun invoke(): @IgnoreElementsWithErrors Set<String> = summon() 

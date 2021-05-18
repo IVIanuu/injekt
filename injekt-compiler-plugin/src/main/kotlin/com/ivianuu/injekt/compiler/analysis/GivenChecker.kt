@@ -52,7 +52,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
   ) {
     if (descriptor.isGiven(this.context, trace)) {
       descriptor.valueParameters
-        .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
+        .checkGivenCallableDoesNotHaveGivenMarkedParameters(declaration, trace)
       checkSpreadingGiven(declaration, descriptor, descriptor.typeParameters, trace)
       checkGivenTypeParametersMismatch(descriptor, declaration, trace)
     } else {
@@ -60,7 +60,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       checkExceptActual(declaration, descriptor, trace)
       checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
     }
-    if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Given) == true ||
+        descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) == true) {
       trace.report(
         InjektErrors.GIVEN_RECEIVER
           .on(
@@ -167,7 +168,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
   ) {
     if (descriptor.isGiven(this.context, trace)) {
       descriptor.valueParameters
-        .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
+        .checkGivenCallableDoesNotHaveGivenMarkedParameters(declaration, trace)
     } else {
       checkExceptActual(declaration, descriptor, trace)
     }
@@ -185,7 +186,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       checkOverrides(declaration, descriptor, trace)
       checkExceptActual(declaration, descriptor, trace)
     }
-    if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Given) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) == true) {
       trace.report(
         InjektErrors.GIVEN_RECEIVER
           .on(
@@ -303,17 +305,17 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       }
   }
 
-  private fun List<ParameterDescriptor>.checkGivenCallableHasOnlyGivenParameters(
+  private fun List<ParameterDescriptor>.checkGivenCallableDoesNotHaveGivenMarkedParameters(
     declaration: KtDeclaration,
     trace: BindingTrace,
   ) {
     if (isEmpty()) return
     this
       .asSequence()
-      .filter { !it.isGiven(context, trace) }
+      .filter { it.hasAnnotation(InjektFqNames.Given) }
       .forEach {
         trace.report(
-          InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+          InjektErrors.GIVEN_PARAMETER_ON_GIVEN_DECLARATION
             .on(it.findPsi() ?: declaration)
         )
       }
