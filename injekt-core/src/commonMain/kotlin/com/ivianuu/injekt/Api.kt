@@ -18,47 +18,36 @@
 
 package com.ivianuu.injekt
 
-/**
- * Considers the annotated declaration in the current scope when resolving given arguments
- *
- * Example
- * ```
- * @Given val foo = Foo()
- * @Given fun bar(@Given foo: Foo) = Bar(foo)
- *
- * fun main() {
- *   val bar = given<Bar>()
- *   println("Got $bar")
- * }
- * ```
- */
 @Target(
-  // @Given class MyClass
+  // @Provide class MyClass
   AnnotationTarget.CLASS,
 
-  // class MyClass @Given constructor()
+  // class MyClass @Provide constructor()
   AnnotationTarget.CONSTRUCTOR,
 
-  // @Given myFunction(): Foo = ...
+  // @Provide myFunction(): Foo = ...
   AnnotationTarget.FUNCTION,
 
-  // @Given val myProperty: Foo get() = ...
+  // @Provide val myProperty: Foo get() = ...
   AnnotationTarget.PROPERTY,
 
-  // @Given val myVariable: Foo = ...
-  AnnotationTarget.LOCAL_VARIABLE,
+  // @Provide val myVariable: Foo = ...
+  AnnotationTarget.LOCAL_VARIABLE
+)
+annotation class Provide
 
-  // fun func(@Given Foo: Foo)
+@Target(
+  // fun func(@Using foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
 
   // Providers
-  // val provider = given<(@Given Foo) -> Bar>()
+  // val provider = summon<(@Using Foo) -> Bar>()
   AnnotationTarget.TYPE,
-
-  // @Given fun <@Given T> func()
-  AnnotationTarget.TYPE_PARAMETER
 )
-annotation class Given
+annotation class Using
+
+@Target(AnnotationTarget.TYPE_PARAMETER)
+annotation class ForEach
 
 /**
  * Imports givens from the specified [paths] and use them when resolving given arguments inside the declaration
@@ -70,12 +59,12 @@ annotation class Given
   AnnotationTarget.FUNCTION,
   AnnotationTarget.FILE
 )
-annotation class GivenImports(vararg val paths: String)
+annotation class Providers(vararg val paths: String)
 
 /**
  * Runs the [block] and imports givens from [paths] and use them when resolving given arguments inside [block]
  */
-inline fun <R> withGivenImports(
+inline fun <R> withProviders(
   @Suppress("UNUSED_PARAMETER") vararg paths: String,
   block: () -> R
 ): R = block()
@@ -83,12 +72,12 @@ inline fun <R> withGivenImports(
 /**
  * Returns a given argument of type [T]
  */
-inline fun <T> given(@Given value: T): T = value
+inline fun <T> summon(@Using value: T): T = value
 
 /**
  * Returns a given argument of type [T] or null
  */
-inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
+inline fun <T> summonOrNull(@Using @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
  * Marks an annotation as an qualifier which can then be used
@@ -105,9 +94,9 @@ inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = va
  * @Given val username: @Username String = "Foo"
  *
  * fun main() {
- *   val userId = given<@UserId String>()
+ *   val userId = summon<@UserId String>()
  *   // userId = 123
- *   val username = given<@Username String>()
+ *   val username = summon<@Username String>()
  *   // username = "Foo"
  * }
  * ```
@@ -125,7 +114,7 @@ annotation class Qualifier
   AnnotationTarget.VALUE_PARAMETER,
 
   // nullable providers
-  // val elements = given<@DefaultOnAllErrors () -> Bar?>()
+  // val elements = summon<@DefaultOnAllErrors () -> Bar?>()
   AnnotationTarget.TYPE
 )
 annotation class DefaultOnAllErrors
@@ -135,7 +124,7 @@ annotation class DefaultOnAllErrors
  *
  * Should be used like so:
  * ```
- * val elements = given<@IgnoreElementsWithErrors Set<Interceptor>>()
+ * val elements = summon<@IgnoreElementsWithErrors Set<Interceptor>>()
  * ```
  */
 @Target(AnnotationTarget.TYPE)

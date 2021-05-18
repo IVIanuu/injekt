@@ -28,7 +28,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-          given<Pair<Bar, Bar>>()
+          summon<Pair<Bar, Bar>>()
       } 
     """
   ) {
@@ -43,7 +43,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-          given<Pair<Bar, () -> Bar>>()
+          summon<Pair<Bar, () -> Bar>>()
       } 
     """
   ) {
@@ -57,7 +57,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-        given<Bar>()
+        summon<Bar>()
       } 
     """
   ) {
@@ -71,7 +71,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-        given<Pair<Foo, Foo>>()
+        summon<Pair<Foo, Foo>>()
       } 
     """
   ) {
@@ -85,7 +85,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-        given<Pair<() -> Foo, () -> Foo>>()
+        summon<Pair<() -> Foo, () -> Foo>>()
       } 
     """
   ) {
@@ -99,7 +99,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-        given<() -> Foo>()
+        summon<() -> Foo>()
       } 
     """
   ) {
@@ -114,7 +114,7 @@ class ExpressionWrappingTest {
     """,
     """
       fun invoke() {
-          given<Pair<Bar, Bar>>()
+          summon<Pair<Bar, Bar>>()
       } 
     """
   ) {
@@ -127,7 +127,7 @@ class ExpressionWrappingTest {
       @Given class B(@Given a: () -> A, @Given a2: () -> A)
      """,
     """
-      fun invoke() = given<B>() 
+      fun invoke() = summon<B>() 
     """
   ) {
     invokeSingleFile()

@@ -14,24 +14,36 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.*
 import io.kotest.matchers.*
 import io.kotest.matchers.nulls.*
 import org.junit.*
+import kotlin.reflect.*
 
-class GivenTest {
-  @Test fun testGiven() {
-    @Given val value = "42"
-    given<String>() shouldBe "42"
+class CommonProvidersTest {
+  @Test fun testCanUseMapForSetOfPairs() {
+    @Provide val elementsA = setOf("a" to "a")
+    @Provide val elementB = setOf("b" to "b")
+    val map = summonOrNull<Map<String, String>>()
+    map.shouldNotBeNull()
+    map.size shouldBe 2
+    map["a"] shouldBe "a"
+    map["b"] shouldBe "b"
   }
 
-  @Test fun testGivenOrNullReturnsExistingGiven() {
-    @Given val value = "42"
-    givenOrNull<String>() shouldBe "42"
+  @Test fun testCanUseLazy() {
+    summonOrNull<Lazy<Foo>>().shouldNotBeNull()
   }
 
-  @Test fun testGivenOrNullReturnsNullForUnexistingGiven() {
-    givenOrNull<String>().shouldBeNull()
+  @Test fun testCanUseKClass() {
+    summonOrNull<KClass<Foo>>().shouldNotBeNull()
   }
+
+  @Test fun testCanUseType() {
+    summonOrNull<TypeKey<Foo>>().shouldNotBeNull()
+  }
+
+  @Provide private class Foo
 }

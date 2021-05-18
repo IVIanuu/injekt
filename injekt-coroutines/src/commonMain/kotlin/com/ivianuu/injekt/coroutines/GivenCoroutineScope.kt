@@ -32,8 +32,8 @@ typealias GivenCoroutineScope<S> = CoroutineScope
 /**
  * Installs a [GivenCoroutineScope] for scope [S]
  */
-@Given fun <S : GivenScope> givenCoroutineScopeElement(
-  @Given context: GivenCoroutineContext<S>
+@Provide fun <S : GivenScope> givenCoroutineScopeElement(
+  context: GivenCoroutineContext<S>
 ): @Scoped<S> @InstallElement<S> GivenCoroutineScope<S> =
   object : CoroutineScope, GivenScopeDisposable {
     override val coroutineContext: CoroutineContext = context + SupervisorJob()
@@ -50,8 +50,8 @@ val GivenScope.coroutineScope: CoroutineScope get() = element()
 /**
  * Installs a [CoroutineScope] for scope [S]
  */
-@Given inline fun <S : GivenScope> coroutineScopeElement(
-  @Given scope: GivenCoroutineScope<S>
+@Provide inline fun <S : GivenScope> coroutineScopeElement(
+  scope: GivenCoroutineScope<S>
 ): @InstallElement<S> CoroutineScope = scope
 
 /**
@@ -62,6 +62,6 @@ typealias GivenCoroutineContext<S> = CoroutineContext
 /**
  * The default [GivenCoroutineContext] for type [S]
  */
-@Given inline fun <S : GivenScope> defaultGivenCoroutineContext(
-  @Given dispatcher: DefaultDispatcher
+@Provide inline fun <S : GivenScope> defaultGivenCoroutineContext(
+  dispatcher: DefaultDispatcher
 ): GivenCoroutineContext<S> = dispatcher

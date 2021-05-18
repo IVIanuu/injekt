@@ -38,9 +38,9 @@ import kotlin.reflect.*
  */
 @Qualifier annotation class InstallWorker {
   companion object {
-    @Given inline fun <@Given T : @InstallWorker S, S : ListenableWorker> workerFactory(
-      @Given noinline factory: (@Given WorkerParameters) -> T,
-      @Given workerClass: KClass<S>
+    @Provide inline fun <@ForEach T : @InstallWorker S, S : ListenableWorker> workerFactory(
+      noinline factory: (@Using WorkerParameters) -> T,
+      workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
 }
@@ -50,8 +50,8 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 /**
  * Factory which is able to create [ListenableWorker]s installed via [InstallWorker]
  */
-@Given class InjektWorkerFactory(
-  @Given private val workers: Map<String, SingleWorkerFactory>
+@Provide class InjektWorkerFactory(
+  private val workers: Map<String, SingleWorkerFactory>
 ) : WorkerFactory() {
   override fun createWorker(
     appContext: Context,
@@ -63,14 +63,14 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 /**
  * Defines givens to initialize the work manager library
  */
-object WorkerInitializerGivens {
+object WorkerInitializerModule {
   /**
    * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
    */
-  @Given fun workerScopeInitializer(
-    @Given context: AppContext,
-    @Given configuration: Configuration? = null,
-    @Given defaultConfiguration: () -> @Default Configuration
+  @Provide fun workerScopeInitializer(
+    context: AppContext,
+    configuration: Configuration? = null,
+    defaultConfiguration: () -> @Default Configuration
   ): GivenScopeInitializer<AppGivenScope> = {
     WorkManager.initialize(context, configuration ?: defaultConfiguration())
   }
@@ -78,8 +78,8 @@ object WorkerInitializerGivens {
   /**
    * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
    */
-  @Given fun defaultWorkerConfiguration(
-    @Given workerFactory: WorkerFactory
+  @Provide fun defaultWorkerConfiguration(
+    workerFactory: WorkerFactory
   ): @Default Configuration = Configuration.Builder()
     .setWorkerFactory(workerFactory)
     .build()
@@ -87,5 +87,5 @@ object WorkerInitializerGivens {
   @Qualifier private annotation class Default
 }
 
-@Given inline val AppContext.workManager: WorkManager
+@Provide inline val AppContext.workManager: WorkManager
   get() = WorkManager.getInstance(this)

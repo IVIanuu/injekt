@@ -32,15 +32,15 @@ fun Service.createServiceGivenScope(): ServiceGivenScope =
 
 typealias ServiceGivenScope = GivenScope
 
-@Given val serviceGivenScopeModule =
+@Provide val serviceGivenScopeModule =
   ChildScopeModule1<AppGivenScope, Service, ServiceGivenScope>()
 
 typealias ServiceContext = Context
 
-@Given inline val Service.serviceContext: ServiceContext
+@Provide inline val Service.serviceContext: ServiceContext
   get() = this
 
 typealias ServiceResources = Resources
 
-@Given inline val Service.serviceResources: ServiceResources
+@Provide inline val Service.serviceResources: ServiceResources
   get() = resources

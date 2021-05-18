@@ -25,14 +25,12 @@ import kotlin.reflect.*
  *
  * Example:
  * ```
- * fun Notification.post(@Given notificationManager: @SystemService NotificationManager) { ... }
+ * fun Notification.post(@Using notificationManager: @SystemService NotificationManager) { ... }
  * ```
  */
 @Qualifier annotation class SystemService {
   companion object {
-    @Given inline fun <T : Any> systemService(
-      @Given context: AppContext,
-      @Given serviceClass: KClass<T>
-    ): @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
+    @Provide inline fun <T : Any> systemService(context: AppContext, serviceClass: KClass<T>):
+        @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
   }
 }

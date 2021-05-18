@@ -20,7 +20,7 @@ import com.ivianuu.injekt.*
 import io.kotest.matchers.*
 import org.junit.*
 
-@GivenImports("com.ivianuu.injekt.common.*")
+@Providers("com.ivianuu.injekt.common.*")
 class EagerTest {
   @Qualifier private annotation class Element
 
@@ -29,13 +29,13 @@ class EagerTest {
 
     class Foo
 
-    @Given fun eagerFoo(): @Eager<TestGivenScope1> Foo {
+    @Provide fun eagerFoo(): @Eager<TestGivenScope1> Foo {
       callCount ++
       return Foo()
     }
 
-    @Given fun fooElement(@Given foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
-    val scope = given<TestGivenScope1>()
+    @Provide fun fooElement(foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
+    val scope = summon<TestGivenScope1>()
     callCount shouldBe 1
     scope.element<@Element Foo>()
     callCount shouldBe 1

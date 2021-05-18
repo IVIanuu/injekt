@@ -24,7 +24,7 @@ import com.ivianuu.injekt.scope.*
 class App : Application(), AppGivenScopeOwner {
   override lateinit var appGivenScope: AppGivenScope
   override fun onCreate() {
-    withGivenImports(
+    withProviders(
       "com.ivianuu.injekt.android.*",
       "com.ivianuu.injekt.common.*",
       "com.ivianuu.injekt.coroutines.*",

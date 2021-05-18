@@ -73,7 +73,7 @@ object Deps {
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
   object Injekt {
-    const val version = "0.0.1-dev531"
+    const val version = "0.0.1-dev556"
     const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
   }
 

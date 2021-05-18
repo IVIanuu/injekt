@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.common
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.*
-import kotlin.reflect.*
+import io.kotest.matchers.*
+import io.kotest.matchers.nulls.*
+import org.junit.*
 
-/**
- * Allows to use a Map<K, V> for each Set<Pair<K, V>>
- */
-@Given inline fun <K, V> givenMap(@Given pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
+class SummonTest {
+  @Test fun testSummon() {
+    @Provide val value = "42"
+    summon<String>() shouldBe "42"
+  }
 
-/**
- * Allows to use a [KClass] for [T]
- */
-@Given inline fun <reified T : Any> givenKClass(): KClass<T> = T::class
+  @Test fun testSummonOrNullReturnProvidedValue() {
+    @Provide val value = "42"
+    summonOrNull<String>() shouldBe "42"
+  }
 
-/**
- * Allows to use a [Lazy] for [T]
- */
-@Given inline fun <T> givenLazy(@Given noinline init: () -> T): Lazy<T> = lazy(init)
+  @Test fun testSummonOrNullReturnsNullForMissingValue() {
+    summonOrNull<String>().shouldBeNull()
+  }
+}

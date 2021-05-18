@@ -26,7 +26,7 @@ import org.junit.*
 import org.junit.runner.*
 
 @RunWith(AndroidJUnit4::class)
-@GivenImports(
+@Providers(
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )
@@ -36,7 +36,7 @@ class ComposeTest {
 
   @Test fun testRememberElement() {
     @Given val element: @InstallElement<TestGivenScope1> String = "value"
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     composeRule.setContent {
       CompositionLocalProvider(LocalGivenScope provides scope) {
         rememberElement<String>() shouldBe "value"
@@ -45,7 +45,7 @@ class ComposeTest {
   }
 
   @Test fun testInitialRememberScopedValue() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     composeRule.setContent {
       CompositionLocalProvider(LocalGivenScope provides scope) {
         val value = rememberScopedValue(key = "key") { "a" }
@@ -60,7 +60,7 @@ class ComposeTest {
   }
 
   @Test fun testExistingInitialRememberScopedValue() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     scope.setScopedValue("key", "b")
     composeRule.setContent {
       CompositionLocalProvider(LocalGivenScope provides scope) {
@@ -76,7 +76,7 @@ class ComposeTest {
   }
 
   /*@Test fun testRememberScopedValueAcrossRecompositions() {
-      val scope = given<TestGivenScope1>()
+      val scope = summon<TestGivenScope1>()
       val composed = MutableStateFlow(0)
       composeRule.setContent {
           CompositionLocalProvider(LocalGivenScope provides scope) {

@@ -122,7 +122,7 @@ class GivenDeclarationCheckTest {
           @Given override fun foo() = Foo()
       }
 
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -140,7 +140,7 @@ class GivenDeclarationCheckTest {
       }
     """,
     """
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()

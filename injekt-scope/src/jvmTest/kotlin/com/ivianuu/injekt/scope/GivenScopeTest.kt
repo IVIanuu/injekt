@@ -23,49 +23,49 @@ import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-@GivenImports("com.ivianuu.injekt.common.*")
+@Providers("com.ivianuu.injekt.common.*")
 class GivenScopeTest {
   @Test fun testGetElement() {
-    @Given val element: @InstallElement<TestGivenScope1> String = "value"
-    val scope = given<TestGivenScope1>()
+    @Provide val element: @InstallElement<TestGivenScope1> String = "value"
+    val scope = summon<TestGivenScope1>()
     scope.element<String>() shouldBe "value"
   }
 
   @Test fun testGivenScopeInitializer() {
     var called = false
 
-    @Given
-    fun initializer(@Given givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
+    @Provide
+    fun initializer(givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
       called = true
     }
 
     var otherCalled = false
 
-    @Given fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
+    @Provide fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
       otherCalled = true
     }
 
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     called shouldBe true
     otherCalled shouldBe false
   }
 
   @Test fun testChildGivenScopeModule() {
-    @Given val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-    val parentScope = given<TestGivenScope1>()
+    @Provide val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+    val parentScope = summon<TestGivenScope1>()
     val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
     childScope.element<String>() shouldBe "42"
   }
 
   @Test fun testGetSetScopedValue() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     scope.getScopedValueOrNull<String>(0) shouldBe null
     scope.setScopedValue(0, "value")
     scope.getScopedValueOrNull<String>(0) shouldBe "value"
   }
 
   @Test fun testRemoveScopedValueDisposesValue() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var disposed = false
     scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
@@ -75,7 +75,7 @@ class GivenScopeTest {
   }
 
   @Test fun testSetScopedValueDisposesOldValue() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var disposed = false
     scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
@@ -85,7 +85,7 @@ class GivenScopeTest {
   }
 
   @Test fun testDisposeDisposesValues() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var disposed = false
     scope.setScopedValue(0, GivenScopeDisposable { disposed = true })
 
@@ -95,7 +95,7 @@ class GivenScopeTest {
   }
 
   @Test fun testGetOrCreateScopedValue() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var calls = 0
     scope.getOrCreateScopedValue(0) { calls++ }
     scope.getOrCreateScopedValue(0) { calls++ }
@@ -104,14 +104,14 @@ class GivenScopeTest {
   }
 
   @Test fun testDispose() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     scope.isDisposed.shouldBeFalse()
     scope.dispose()
     scope.isDisposed.shouldBeTrue()
   }
 
   @Test fun testInvokeOnDispose() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var called = false
     scope.invokeOnDispose { called = true }
     called.shouldBeFalse()
@@ -120,7 +120,7 @@ class GivenScopeTest {
   }
 
   @Test fun testInvokeOnDisposeOnDisposedScope() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var called = false
     scope.dispose()
     scope.invokeOnDispose { called = true }
@@ -128,7 +128,7 @@ class GivenScopeTest {
   }
 
   @Test fun testDoesNotInvokeOnDisposeIfReturnDisposableWasDisposed() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     var called = false
     val disposable = scope.invokeOnDispose { called = true }
     disposable.dispose()
@@ -138,14 +138,14 @@ class GivenScopeTest {
   }
 
   @Test fun testTypeKey() {
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     scope.typeKey shouldBe typeKeyOf<TestGivenScope1>()
   }
 
   @Test fun testParentScope() {
-    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-    @Given val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
-    val parentScope = given<TestGivenScope1>()
+    @Provide val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    @Provide val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
+    val parentScope = summon<TestGivenScope1>()
     val childScope1 = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
       .invoke()
     val childScope2 = childScope1.element<@ChildScopeFactory () -> TestGivenScope3>()
@@ -155,17 +155,17 @@ class GivenScopeTest {
   }
 
   @Test fun testChildReturnsParentElement() {
-    @Given val parentElement: @InstallElement<TestGivenScope1> String = "value"
-    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-    val parentScope = given<TestGivenScope1>()
+    @Provide val parentElement: @InstallElement<TestGivenScope1> String = "value"
+    @Provide val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    val parentScope = summon<TestGivenScope1>()
     val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
       .invoke()
     childScope.element<String>() shouldBe "value"
   }
 
   @Test fun testDisposingParentDisposesChild() {
-    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-    val parentScope = given<TestGivenScope1>()
+    @Provide val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    val parentScope = summon<TestGivenScope1>()
     val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
       .invoke()
     childScope.isDisposed.shouldBeFalse()

@@ -29,7 +29,7 @@ class GivenDeclarationTest {
       @Given fun foo() = Foo()
     """,
     """
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -41,7 +41,7 @@ class GivenDeclarationTest {
             @Given val foo = Foo()
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -54,7 +54,7 @@ class GivenDeclarationTest {
             @Given class Dep(@Given val foo: Foo)
     """,
     """
-      fun invoke() = given<Dep>() 
+      fun invoke() = summon<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -66,7 +66,7 @@ class GivenDeclarationTest {
             class Dep @Given constructor(@Given val foo: Foo)
     """,
     """
-        fun invoke() = given<Dep>() 
+        fun invoke() = summon<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -80,7 +80,7 @@ class GivenDeclarationTest {
             }
     """,
     """
-        fun invoke() = given<Dep>() 
+        fun invoke() = summon<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -95,7 +95,7 @@ class GivenDeclarationTest {
             @Given val foo = Foo()
     """,
     """
-        fun invoke() = given<Dep>() 
+        fun invoke() = summon<Dep>() 
     """
   )
 
@@ -108,7 +108,7 @@ class GivenDeclarationTest {
     """,
     """
             @GivenImports("com.ivianuu.injekt.integrationtests.Outer.Dep")
-      fun invoke() = given<Outer.Dep>() 
+      fun invoke() = summon<Outer.Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Outer\$Dep"
@@ -119,12 +119,12 @@ class GivenDeclarationTest {
             @Given val foo = Foo()
             @Given object Dep {
                 init {
-                    given<Foo>()
+                    summon<Foo>()
                 }
             }
     """,
     """
-        fun invoke() = given<Dep>() 
+        fun invoke() = summon<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -136,13 +136,13 @@ class GivenDeclarationTest {
             class Dep {
                 @Given companion object {
                     init {
-                        given<Foo>()
+                        summon<Foo>()
                     }
                 }
             }
     """,
     """
-        fun invoke() = given<Dep.Companion>() 
+        fun invoke() = summon<Dep.Companion>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
@@ -153,7 +153,7 @@ class GivenDeclarationTest {
             @Given fun Foo.bar() = Bar(this)
     """,
     """
-           fun invoke(@Given foo: Foo) = given<Bar>() 
+           fun invoke(@Given foo: Foo) = summon<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -165,7 +165,7 @@ class GivenDeclarationTest {
             @Given val Foo.bar get() = Bar(this)
     """,
     """
-           fun invoke(@Given foo: Foo) = given<Bar>() 
+           fun invoke(@Given foo: Foo) = summon<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -174,7 +174,7 @@ class GivenDeclarationTest {
 
   @Test fun testGivenValueParameter() = codegen(
     """
-            fun invoke(@Given foo: Foo) = given<Foo>()
+            fun invoke(@Given foo: Foo) = summon<Foo>()
     """
   ) {
     val foo = Foo()
@@ -196,7 +196,7 @@ class GivenDeclarationTest {
   @Test fun testGivenConstructorParameterInFieldInitializer() = singleAndMultiCodegen(
     """
             class MyClass(@Given foo: Foo) {
-                val foo = given<Foo>()
+                val foo = summon<Foo>()
             }
     """,
     """
@@ -249,7 +249,7 @@ class GivenDeclarationTest {
     """,
     """
             @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.foo")
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -264,7 +264,7 @@ class GivenDeclarationTest {
     """,
     """
             @GivenImports("com.ivianuu.injekt.integrationtests.FooGivens.*")
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -289,7 +289,7 @@ class GivenDeclarationTest {
         invokableSource(
           """
                         @GivenImports("givens.FooGivens")
-                  fun invoke() = given<Foo>()
+                  fun invoke() = summon<Foo>()
                 """
         )
       )
@@ -305,7 +305,7 @@ class GivenDeclarationTest {
     """,
     """
             fun invoke(foo: Foo): Foo {
-                return diyWithGiven(foo) { given<Foo>() }
+                return diyWithGiven(foo) { summon<Foo>() }
             } 
     """
   ) {
@@ -319,7 +319,7 @@ class GivenDeclarationTest {
     """,
     """
             fun invoke(foo: Foo): Foo {
-                return withGiven(foo) { given<Foo>() }
+                return withGiven(foo) { summon<Foo>() }
             } 
     """
   ) {
@@ -334,7 +334,7 @@ class GivenDeclarationTest {
     """,
     """
             fun invoke(foo: Foo): Foo {
-                return withGiven(foo) { given<Foo>() }
+                return withGiven(foo) { summon<Foo>() }
             } 
     """
   ) {
@@ -344,7 +344,7 @@ class GivenDeclarationTest {
 
   @Test fun testCanLeaveOutGivenLambdaParameters() = singleAndMultiCodegen(
     """
-            val lambda: (@Given Foo) -> Foo = { given<Foo>() }
+            val lambda: (@Given Foo) -> Foo = { summon<Foo>() }
     """,
     """
             fun invoke(@Given foo: Foo): Foo {
@@ -359,7 +359,7 @@ class GivenDeclarationTest {
   @Test fun testCanLeaveOutGivenLambdaParametersWithTypeAlias() = singleAndMultiCodegen(
     """
             typealias LambdaType = (@Given Foo) -> Foo
-            val lambda: LambdaType = { given<Foo>() }
+            val lambda: LambdaType = { summon<Foo>() }
     """,
     """
             fun invoke(@Given foo: Foo): Foo {
@@ -377,7 +377,7 @@ class GivenDeclarationTest {
     """,
     """
             fun invoke(foo: Foo): Foo {
-                return withGiven(foo) { foo: @Given Foo -> given<Foo>() }
+                return withGiven(foo) { foo: @Given Foo -> summon<Foo>() }
             } 
     """
   ) {
@@ -390,9 +390,9 @@ class GivenDeclarationTest {
             fun invoke(a: Foo, b: Foo): Pair<Foo, Foo> {
                 return run {
                     @Given val givenA = a
-                    given<Foo>() to run {
+                    summon<Foo>() to run {
                         @Given val givenB = b
-                        given<Foo>()
+                        summon<Foo>()
                     }
                 }
             }
@@ -408,9 +408,9 @@ class GivenDeclarationTest {
   @Test fun testGivenInTheMiddleOfABlock() = codegen(
     """
             fun invoke(provided: Foo): Pair<Foo?, Foo?> {
-                val a = givenOrNull<Foo>()
+                val a = summonOrNull<Foo>()
                 @Given val given = provided
-                val b = givenOrNull<Foo>()
+                val b = summonOrNull<Foo>()
                 return a to b
             }
     """
@@ -427,7 +427,7 @@ class GivenDeclarationTest {
                 @Given class FooProvider(@Given __foo: Foo = _foo) {
                     val foo = __foo
                 }
-                return given<FooProvider>().foo
+                return summon<FooProvider>().foo
             }
     """
   ) {
@@ -439,7 +439,7 @@ class GivenDeclarationTest {
     """
             fun invoke(foo: Foo): Foo {
                 @Given fun foo() = foo
-                return given<Foo>()
+                return summon<Foo>()
             }
     """
   ) {
@@ -454,8 +454,8 @@ class GivenDeclarationTest {
       fun invoke() {
                 @Given val instance = object : A, B  {
                 }
-                given<A>()
-                given<B>()
+                summon<A>()
+                summon<B>()
             }
     """
   )
@@ -465,7 +465,7 @@ class GivenDeclarationTest {
             @Given suspend fun foo() = Foo()
     """,
     """
-        fun invoke() = runBlocking { given<Foo>() } 
+        fun invoke() = runBlocking { summon<Foo>() } 
     """
   ) {
     invokeSingleFile()
@@ -477,7 +477,7 @@ class GivenDeclarationTest {
             @Given @Composable fun foo() = Foo()
     """,
     """
-           @Composable fun invoke() { given<Foo>() } 
+           @Composable fun invoke() { summon<Foo>() } 
     """
   )
 
@@ -487,7 +487,7 @@ class GivenDeclarationTest {
     """,
     """
             @Given object MySubClass : MySuperClass(Foo())
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   )
 }

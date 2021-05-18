@@ -17,33 +17,21 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
-import io.kotest.matchers.*
-import io.kotest.matchers.nulls.*
-import org.junit.*
 import kotlin.reflect.*
 
-class CommonGivensTest {
-  @Test fun testCanUseMapForSetOfPairs() {
-    @Given val elementsA = setOf("a" to "a")
-    @Given val elementB = setOf("b" to "b")
-    val map = givenOrNull<Map<String, String>>()
-    map.shouldNotBeNull()
-    map.size shouldBe 2
-    map["a"] shouldBe "a"
-    map["b"] shouldBe "b"
-  }
+@Provide object CommonProviders {
+  /**
+   * Allows to use a Map<K, V> for each Set<Pair<K, V>>
+   */
+  @Provide inline fun <K, V> mapOfPairs(pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
 
-  @Test fun testCanUseLazy() {
-    givenOrNull<Lazy<Foo>>().shouldNotBeNull()
-  }
+  /**
+   * Allows to use a [KClass] for [T]
+   */
+  @Provide inline fun <reified T : Any> kClass(): KClass<T> = T::class
 
-  @Test fun testCanUseKClass() {
-    givenOrNull<KClass<Foo>>().shouldNotBeNull()
-  }
-
-  @Test fun testCanUseType() {
-    givenOrNull<TypeKey<Foo>>().shouldNotBeNull()
-  }
-
-  @Given private class Foo
+  /**
+   * Allows to use a [Lazy] for [T]
+   */
+  @Provide inline fun <T> lazy(noinline init: () -> T): Lazy<T> = kotlin.lazy(init)
 }

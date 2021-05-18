@@ -18,7 +18,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -42,7 +42,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -64,7 +64,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -87,7 +87,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -111,7 +111,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<@givens.MyQualifier String>()
+            fun invoke() = summon<@givens.MyQualifier String>()
           """
         )
       )
@@ -135,7 +135,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<List<givens.Dep>>()
+            fun invoke() = summon<List<givens.Dep>>()
           """
         )
       )
@@ -160,7 +160,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -182,7 +182,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -212,7 +212,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -236,7 +236,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )
@@ -261,7 +261,7 @@ class TypeScopeTest {
       ),
       source(
         """
-          fun invoke() = given<givens.Dep>()
+          fun invoke() = summon<givens.Dep>()
         """
       )
     )
@@ -286,7 +286,7 @@ class TypeScopeTest {
         ),
         source(
           """
-            fun invoke() = given<givens.Dep>()
+            fun invoke() = summon<givens.Dep>()
           """
         )
       )

@@ -22,11 +22,13 @@ fun interface Ord<in T> {
   fun compare(a: T, b: T): Int
 
   companion object {
-    @Given val int = Ord<Int> { a, b -> a.compareTo(b) }
+    @Provide val int = Ord<Int> { a, b -> a.compareTo(b) }
   }
 }
 
-fun <T> List<T>.sorted(@Given ord: Ord<T>): List<T> = sortedWith { a, b -> ord.compare(a, b,) }
+infix fun <T> T.compareWith(other: T, @Using ord: Ord<T>) = ord.compare(this, other)
+
+fun <T> List<T>.sorted(@Using _: Ord<T>): List<T> = sortedWith { a, b -> a compareWith b }
 
 fun main() {
   val items = listOf(5, 3, 4, 1, 2).sorted()

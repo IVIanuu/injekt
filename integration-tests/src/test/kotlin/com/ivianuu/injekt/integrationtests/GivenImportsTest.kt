@@ -110,7 +110,7 @@ class GivenImportsTest {
         source(
           """
                     @GivenImports("givens.foo")
-              fun invoke() = given<Foo>()
+              fun invoke() = summon<Foo>()
                 """,
           name = "File.kt"
         )
@@ -134,7 +134,7 @@ class GivenImportsTest {
         source(
           """
                     @GivenImports("givens.*")
-              fun invoke() = given<Foo>()
+              fun invoke() = summon<Foo>()
                 """,
           name = "File.kt"
         )
@@ -180,7 +180,7 @@ class GivenImportsTest {
           """
                     @GivenImports("givens.*")
                     class MyClass {
-                  fun invoke() = given<Foo>()
+                  fun invoke() = summon<Foo>()
                     }
               fun invoke() = MyClass().invoke()
                 """,
@@ -206,7 +206,7 @@ class GivenImportsTest {
         source(
           """
                     @GivenImports("givens.*")
-              fun invoke() = given<Foo>()
+              fun invoke() = summon<Foo>()
                 """,
           name = "File.kt"
         )
@@ -230,7 +230,7 @@ class GivenImportsTest {
         source(
           """
                     @GivenImports("givens.*")
-                    val givenFoo = given<Foo>()
+                    val givenFoo = summon<Foo>()
               fun invoke() = givenFoo
                 """,
           name = "File.kt"
@@ -246,7 +246,7 @@ class GivenImportsTest {
       source(
         """
               fun invoke() = withGivenImports("com.ivianuu.injekt.common.*") {
-                        given<TypeKey<Foo>>().value
+                        summon<TypeKey<Foo>>().value
                     }
             """,
         name = "File.kt"

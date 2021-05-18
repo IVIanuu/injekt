@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun TypeRef.collectGivens(context: InjektContext, trace: BindingTrace): List<CallableRef> {
-  // special case to support @Given () -> Foo
+  // special case to support @Provide () -> Foo
   if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
     return listOf(
       classifier.descriptor!!
@@ -42,7 +42,7 @@ fun TypeRef.collectGivens(context: InjektContext, trace: BindingTrace): List<Cal
         .let { callable ->
           callable.copy(
             type = arguments.last(),
-            isGiven = true,
+            givenKind = GivenKind.USING,
             parameterTypes = callable.parameterTypes.toMutableMap()
               .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = this }
           ).substitute(classifier.typeParameters.toMap(arguments))
@@ -70,7 +70,7 @@ fun TypeRef.collectGivens(context: InjektContext, trace: BindingTrace): List<Cal
         callable.copy(
           overriddenDepth = overriddenDepth,
           owner = this.classifier,
-          isGiven = true,
+          givenKind = GivenKind.PROVIDE,
           parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
             callable.parameterTypes.toMutableMap()
               .also {
@@ -99,7 +99,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
         declaration.companionObjectDescriptor
           ?.givenReceiver(context, trace, false)
       )
-      is CallableMemberDescriptor -> if (declaration.isGiven(context, trace)) {
+      is CallableMemberDescriptor -> if (declaration.givenKind(context, trace)) {
         listOf(
           declaration.toCallableRef(context, trace)
             .let { callable ->
@@ -110,14 +110,14 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
             }
         )
       } else emptyList()
-      is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
+      is VariableDescriptor -> if (declaration.givenKind(context, trace)) {
         listOf(declaration.toCallableRef(context, trace).makeGiven())
       } else emptyList()
       else -> emptyList()
     }
   }
 
-fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
+fun Annotated.givenKind(context: InjektContext, trace: BindingTrace): GivenKind {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   trace.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
@@ -133,21 +133,21 @@ fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
           ?.filter {
             it.name == name &&
                 it.name in clazzClassifier.primaryConstructorPropertyParameters &&
-                it.isGiven(context, trace)
+                it.givenKind(context, trace)
           }
           ?: emptyList()
       }
       .any() == true
   }
   if (!isGiven && this is ParameterDescriptor) {
-    isGiven = type.isGiven(context, trace) ||
+    isGiven = type.givenKind(context, trace) ||
         containingDeclaration.safeAs<FunctionDescriptor>()
           ?.takeIf { it.isDeserializedDeclaration() }
           ?.callableInfo(context, trace)
           ?.let { name.asString() in it.givenParameters } == true
   }
   if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
-    isGiven = constructedClass.isGiven(context, trace)
+    isGiven = constructedClass.givenKind(context, trace)
   }
   trace.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
   return isGiven

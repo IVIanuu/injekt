@@ -29,7 +29,7 @@ data class CallableRef(
   val givenParameters: Set<String>,
   val defaultOnAllErrorParameters: Set<String>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val isGiven: Boolean,
+  val givenKind: GivenKind,
   val source: CallableRef?,
   val callContext: CallContext,
   val owner: ClassifierRef?,
@@ -62,7 +62,8 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   )
 }
 
-fun CallableRef.makeGiven(): CallableRef = if (isGiven) this else copy(isGiven = true)
+fun CallableRef.withGivenKind(givenKind: GivenKind): CallableRef =
+  if (this.givenKind == givenKind) this else copy(givenKind = givenKind)
 
 fun CallableDescriptor.toCallableRef(
   context: InjektContext,
@@ -82,7 +83,7 @@ fun CallableDescriptor.toCallableRef(
     typeArguments = typeParameters
       .map { it to it.defaultType }
       .toMap(),
-    isGiven = isGiven(context, trace),
+    givenKind = givenKind(context, trace),
     source = null,
     callContext = callContext(trace.bindingContext),
     owner = null,

@@ -35,20 +35,20 @@ interface AppGivenScopeOwner {
 }
 
 inline fun Application.createAppGivenScope(
-  @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
+  @Using scopeFactory: (@Using @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ): AppGivenScope = scopeFactory(this)
 
 typealias AppContext = Context
 
-@Given inline val Application.appContext: AppContext
+@Provide inline val Application.appContext: AppContext
   get() = this
 
 typealias AppResources = Resources
 
-@Given inline val AppContext.appResources: AppResources
+@Provide inline val AppContext.appResources: AppResources
   get() = resources
 
 typealias AppLifecycleOwner = LifecycleOwner
 
-@Given inline val appLifecycleOwner: AppLifecycleOwner
+@Provide inline val appLifecycleOwner: AppLifecycleOwner
   get() = ProcessLifecycleOwner.get()

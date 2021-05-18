@@ -33,5 +33,5 @@ val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
 
 typealias ActivityRetainedGivenScope = GivenScope
 
-@Given val activityRetainedGivenScopeModule =
+@Provide val activityRetainedGivenScopeModule =
   ChildScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()

@@ -26,7 +26,7 @@ class CallContextTest {
       @Given suspend fun bar(@Given foo: Foo) = Bar(foo)
     """,
     """
-      @Composable fun invoke() = given<Bar>()
+      @Composable fun invoke() = summon<Bar>()
     """
   ) {
     compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a suspend function but current call context is composable")
@@ -38,7 +38,7 @@ class CallContextTest {
       @Given fun bar(@Given foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = runBlocking { given<Bar>() } 
+      fun invoke() = runBlocking { summon<Bar>() } 
     """
   )
 
@@ -49,7 +49,7 @@ class CallContextTest {
     """,
     """
       suspend fun invoke() {
-        given<Bar>()
+        summon<Bar>()
       }
     """
   ) {
@@ -64,7 +64,7 @@ class CallContextTest {
     """,
       """
       fun invoke() {
-        given<suspend () -> Bar>()
+        summon<suspend () -> Bar>()
       }
     """
     )
@@ -76,7 +76,7 @@ class CallContextTest {
       @Given fun bar(@Given foo: Foo) = Bar(foo)
     """,
       """
-      fun invoke() = given<suspend () -> Bar>() 
+      fun invoke() = summon<suspend () -> Bar>() 
     """
     )
 
@@ -89,7 +89,7 @@ class CallContextTest {
     """,
       """
       fun invoke() {
-        given<SuspendFactory<Bar>>()
+        summon<SuspendFactory<Bar>>()
       }
     """
     )
@@ -102,7 +102,7 @@ class CallContextTest {
     """,
       """
         fun invoke() {
-          given<@Composable () -> Bar>()
+          summon<@Composable () -> Bar>()
         }
     """
     )
@@ -117,7 +117,7 @@ class CallContextTest {
     """,
       """
         fun invoke() {
-          given<ComposableFactory<Bar>>()
+          summon<ComposableFactory<Bar>>()
         }
     """
     )
@@ -130,7 +130,7 @@ class CallContextTest {
       fun invoke() = runBlocking {
         run {
           run {
-            given<Foo>()
+            summon<Foo>()
           }
         }
       } 
@@ -146,7 +146,7 @@ class CallContextTest {
       @Composable fun invoke() {
         run {
           run {
-            given<Foo>()
+            summon<Foo>()
           }
         }
       } 

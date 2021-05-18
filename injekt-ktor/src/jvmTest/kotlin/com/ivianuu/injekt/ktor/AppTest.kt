@@ -22,7 +22,7 @@ import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
 import org.junit.*
 
-@GivenImports(
+@Providers(
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )
@@ -39,9 +39,7 @@ class AppTest {
   }
 }
 
-@Given
-@Scoped<AppGivenScope>
-@InstallElement<AppGivenScope>
+@Provide @Scoped<AppGivenScope> @InstallElement<AppGivenScope>
 class ScopeDisposeListener : GivenScopeDisposable {
   var disposed = false
   override fun dispose() {

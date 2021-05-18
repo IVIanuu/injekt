@@ -178,7 +178,7 @@ fun KotlinType.toTypeRef(
             it += context.nullableAnyType
         },
       isMarkedComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
-      isGiven = kotlinType.isGiven(context, trace),
+      isGiven = kotlinType.givenKind(context, trace),
       isStarProjection = false,
       frameworkKey = 0,
       defaultOnAllErrors = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors),

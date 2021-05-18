@@ -28,7 +28,7 @@ class PersistenceTest {
             @Given val myAlias: MyAlias = ""
             """,
     """
-         fun invoke() = given<Dep>()
+         fun invoke() = summon<Dep>()
             """
   )
 
@@ -41,7 +41,7 @@ class PersistenceTest {
             @Given val myAlias: MyAlias = ""
             """,
     """
-         fun invoke() = given<Dep>()
+         fun invoke() = summon<Dep>()
             """
   )
 
@@ -56,7 +56,7 @@ class PersistenceTest {
             @Given val value: CharSequence = "42"
     """,
     """
-        fun invoke() = given<String>() 
+        fun invoke() = summon<String>() 
     """
   ) {
     "42" shouldBe invokeSingleFile()
@@ -79,8 +79,8 @@ class PersistenceTest {
             """,
     """
          fun invoke() {
-                given<@MyOtherQualifier FuncA>()
-                given<@MyOtherQualifier FuncB>()
+                summon<@MyOtherQualifier FuncA>()
+                summon<@MyOtherQualifier FuncB>()
             } 
             """
   ) {
@@ -136,7 +136,7 @@ class PersistenceTest {
     """
             @Given val myFooModule = MyModuleImpl<Foo>()
             @Given val foo: @Qualifier1 Foo = Foo()
-         fun invoke() = given<Foo>()
+         fun invoke() = summon<Foo>()
         """
   )
 
@@ -159,7 +159,7 @@ class PersistenceTest {
          fun invoke() {
                 @Given val childScopeModule =
                     MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-                val parentScope = given<TestGivenScope1>()
+                val parentScope = summon<TestGivenScope1>()
                 val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
                 childScope.element<String>()
             }

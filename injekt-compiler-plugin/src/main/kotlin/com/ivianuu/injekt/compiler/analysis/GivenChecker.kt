@@ -50,7 +50,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: FunctionDescriptor,
     trace: BindingTrace
   ) {
-    if (descriptor.isGiven(this.context, trace)) {
+    if (descriptor.givenKind(this.context, trace)) {
       descriptor.valueParameters
         .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
       checkConstrainedGiven(declaration, descriptor, descriptor.typeParameters, trace)
@@ -60,7 +60,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       checkExceptActual(declaration, descriptor, trace)
       checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
     }
-    if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+    if (descriptor.extensionReceiverParameter?.givenKind(this.context, trace) == true) {
       trace.report(
         InjektErrors.GIVEN_RECEIVER
           .on(
@@ -165,7 +165,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: ConstructorDescriptor,
     trace: BindingTrace
   ) {
-    if (descriptor.isGiven(this.context, trace)) {
+    if (descriptor.givenKind(this.context, trace)) {
       descriptor.valueParameters
         .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
     } else {
@@ -179,13 +179,13 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     trace: BindingTrace
   ) {
     checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
-    if (descriptor.isGiven(this.context, trace)) {
+    if (descriptor.givenKind(this.context, trace)) {
       checkGivenTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)
       checkExceptActual(declaration, descriptor, trace)
     }
-    if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
+    if (descriptor.extensionReceiverParameter?.givenKind(this.context, trace) == true) {
       trace.report(
         InjektErrors.GIVEN_RECEIVER
           .on(
@@ -272,8 +272,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       .filter { overriddenDescriptor ->
         var hasDifferentTypeParameters = false
         descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
-          hasDifferentTypeParameters = hasDifferentTypeParameters || b.isGiven(context, trace) &&
-              !a.isGiven(context, trace)
+          hasDifferentTypeParameters = hasDifferentTypeParameters || b.givenKind(context, trace) &&
+              !a.givenKind(context, trace)
         }
         hasDifferentTypeParameters
       }
@@ -310,7 +310,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     if (isEmpty()) return
     this
       .asSequence()
-      .filter { !it.isGiven(context, trace) }
+      .filter { !it.givenKind(context, trace) }
       .forEach {
         trace.report(
           InjektErrors.NON_GIVEN_PARAMETER_ON_GIVEN_DECLARATION

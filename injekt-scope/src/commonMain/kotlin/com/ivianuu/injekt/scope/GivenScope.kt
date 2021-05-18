@@ -70,11 +70,11 @@ interface GivenScope : GivenScopeDisposable {
   companion object {
     @Qualifier private annotation class Parent
 
-    @Given inline fun <S : GivenScope> GivenScope(
-      @Given parent: @Parent GivenScope? = null,
-      @Given typeKey: TypeKey<S>,
-      @Given elements: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
-      @Given initializers: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
+    @Provide inline fun <S : GivenScope> GivenScope(
+      parent: @Parent GivenScope? = null,
+      typeKey: TypeKey<S>,
+      elements: (@Using S, @Using @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
+      initializers: (@Using S, @Using @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
     ): S {
       val scope = GivenScopeImpl(typeKey, parent)
       scope as S
@@ -182,19 +182,19 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
  */
 @Qualifier annotation class InstallElement<S : GivenScope> {
   companion object {
-    @Given class Module<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
-      @Given inline fun givenScopeElement(
-        @Given noinline factory: () -> T,
-        @Given key: @Private TypeKey<U>
+    @Provide class Module<@ForEach T : @InstallElement<S> U, U : Any, S : GivenScope> {
+      @Provide inline fun givenScopeElement(
+        noinline factory: () -> T,
+        key: @Private TypeKey<U>
       ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
-      @Given inline fun elementAccessor(@Given scope: S, @Given key: @Private TypeKey<U>): U =
+      @Provide inline fun elementAccessor(scope: S, key: @Private TypeKey<U>): U =
         scope.element(key)
     }
 
     @Qualifier private annotation class Private
 
-    @Given inline fun <@ForTypeKey T> elementTypeKey(): @Private TypeKey<T> = typeKeyOf()
+    @Provide inline fun <@ForTypeKey T> elementTypeKey(): @Private TypeKey<T> = typeKeyOf()
   }
 }
 

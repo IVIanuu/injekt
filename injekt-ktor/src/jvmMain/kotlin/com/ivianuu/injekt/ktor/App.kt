@@ -33,7 +33,7 @@ val ApplicationCall.appGivenScope: AppGivenScope
   get() = application.appGivenScope
 
 inline fun Application.initializeAppGivenScope(
-  @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Application) -> AppGivenScope
+  @Using scopeFactory: (@Using @InstallElement<AppGivenScope> Application) -> AppGivenScope
 ) {
   val scope = scopeFactory(this)
   registerAppGivenScope(scope)

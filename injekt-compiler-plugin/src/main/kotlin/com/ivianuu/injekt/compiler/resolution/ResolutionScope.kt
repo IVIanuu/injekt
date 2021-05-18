@@ -459,7 +459,7 @@ class ResolutionScope(
     val containingClassifier = containing.toClassifierRef(context, trace)
     if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
     return allScopes.any { it.ownerDescriptor == containing } ||
-        !containingClassifier.descriptor!!.isGiven(context, trace)
+        !containingClassifier.descriptor!!.givenKind(context, trace)
   }
 
   /**
