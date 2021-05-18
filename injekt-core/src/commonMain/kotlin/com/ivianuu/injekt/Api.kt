@@ -78,12 +78,12 @@ inline fun <R> withGivenImports(
 ): R = block()
 
 /**
- * Returns a given argument of type [T]
+ * Returns a given instance of [T]
  */
 inline fun <T> summon(@Given value: T): T = value
 
 /**
- * Returns a given argument of type [T] or null
+ * Returns a given instance of [T] or null
  */
 inline fun <T> summonOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
 
