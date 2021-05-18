@@ -4,7 +4,7 @@ import com.ivianuu.injekt.*
 import io.kotest.matchers.nulls.*
 import org.junit.*
 
-class NotGivenTest {
+class NotinjectableTest {
   @Test fun yes() {
     @Provide fun value(_: NotProvided<String>) = Unit
     injectOrNull<Unit>().shouldNotBeNull()

@@ -24,7 +24,7 @@ import com.ivianuu.injekt.scope.*
 import kotlin.reflect.*
 
 /**
- * Installs the given [ListenableWorker] in the [InjektWorkerFactory]
+ * Installs the injectable [ListenableWorker] in the [InjektWorkerFactory]
  *
  * Example:
  * ```

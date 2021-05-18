@@ -109,15 +109,15 @@ inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors value: T? = null): T? = 
 annotation class Qualifier
 
 /**
- * Creates a version of the annotated given for each other given whose type matches the constraints
+ * Creates a version of the annotated injectable for each other injectable whose type matches the constraints
  * of the the annotated type parameter
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
 
 /**
- * Falls back to the default value if a given exists but has an error.
- * Normally the default value will only be used if no given was found but not if it has errors
+ * Falls back to the default value if a injectable exists but has an error.
+ * Normally the default value will only be used if no injectable was found but not if it has errors
  */
 @Target(
   // value parameters

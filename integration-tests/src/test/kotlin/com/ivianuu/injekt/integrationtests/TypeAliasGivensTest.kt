@@ -5,7 +5,7 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
-class TypeAliasGivensTest {
+class TypeAliasinjectablesTest {
   @Test fun testImportingTypeAliasAlsoImportsItsModuleObject() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -33,7 +33,7 @@ class TypeAliasGivensTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun nonObjectTypeAliasGivens() = codegen(
+  @Test fun nonObjectTypeAliasinjectables() = codegen(
     """
       typealias MyAlias = String
 

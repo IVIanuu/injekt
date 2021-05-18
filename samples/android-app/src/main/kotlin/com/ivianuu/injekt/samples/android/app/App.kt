@@ -22,7 +22,7 @@ import com.ivianuu.injekt.android.*
 import com.ivianuu.injekt.scope.*
 
 class App : Application(), AppScopeOwner {
-  lateinit var appScope: AppScope
+  override lateinit var appScope: AppScope
   override fun onCreate() {
     withProviders(
       "com.ivianuu.injekt.android.*",

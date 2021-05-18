@@ -101,7 +101,7 @@ class TypeSubstitutionTest {
     map[scopedS] shouldBe appScope
   }
 
-  @Test fun testGetSubstitutionMapInInstallElementAndGivenCoroutineScopeLikeScenario() =
+  @Test fun testGetSubstitutionMapInInstallElementAndinjectableCoroutineScopeLikeScenario() =
     withTypeCheckerContext {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
         injektContext.classifierDescriptorForFqName(
@@ -113,13 +113,13 @@ class TypeSubstitutionTest {
           .toCallableRef(injektContext, injektContext.trace)
           .typeParameters
 
-      val givenCoroutineScopeElementReturnType =
+      val injectableCoroutineScopeElementReturnType =
         injektContext.memberScopeForFqName(
           FqName("com.ivianuu.injekt.coroutines"),
           NoLookupLocation.FROM_BACKEND
         )!!
           .getContributedFunctions(
-            "givenCoroutineScopeElement".asNameId(),
+            "injectableCoroutineScopeElement".asNameId(),
             NoLookupLocation.FROM_BACKEND
           )
           .single()
@@ -131,24 +131,24 @@ class TypeSubstitutionTest {
       val (_, map) = buildContextForSpreadingInjectable(
         injektContext,
         installElementModuleT.defaultType,
-        givenCoroutineScopeElementReturnType,
+        injectableCoroutineScopeElementReturnType,
         emptyList()
       )
-      val givenCoroutineScopeElementS = givenCoroutineScopeElementReturnType.arguments
+      val injectableCoroutineScopeElementS = injectableCoroutineScopeElementReturnType.arguments
         .first()
         .classifier
 
-      map[installElementModuleT] shouldBe givenCoroutineScopeElementReturnType
+      map[installElementModuleT] shouldBe injectableCoroutineScopeElementReturnType
         .substitute(
           mapOf(
-            givenCoroutineScopeElementS to installElementModuleS.defaultType
+            injectableCoroutineScopeElementS to installElementModuleS.defaultType
           )
         )
       map[installElementModuleU] shouldBe
-          givenCoroutineScopeElementReturnType.arguments.last()
+          injectableCoroutineScopeElementReturnType.arguments.last()
             .substitute(
               mapOf(
-                givenCoroutineScopeElementS to installElementModuleS.defaultType
+                injectableCoroutineScopeElementS to installElementModuleS.defaultType
               )
             )
       map[installElementModuleS] shouldBe installElementModuleS.defaultType

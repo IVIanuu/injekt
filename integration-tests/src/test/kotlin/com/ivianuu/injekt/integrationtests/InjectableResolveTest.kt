@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.name.*
 import org.junit.*
 
 class InjectableResolveTest {
-  @Test fun testResolvesExternalGivenInSamePackage() = singleAndMultiCodegen(
+  @Test fun testResolvesExternalInjectableInSamePackage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
     """,
@@ -33,7 +33,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesExternalGivenInDifferentPackage() = singleAndMultiCodegen(
+  @Test fun testResolvesExternalInjectableInDifferentPackage() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -57,7 +57,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesInternalGivenFromDifferentPackageWithAllUnderImport() = codegen(
+  @Test fun testResolvesInternalInjectableFromDifferentPackageWithAllUnderImport() = codegen(
     listOf(
       source(
         """
@@ -77,7 +77,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesGivenInSamePackageAndSameFile() = codegen(
+  @Test fun testResolvesInjectableInSamePackageAndSameFile() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke() = inject<Foo>()
@@ -86,7 +86,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionGivenFromWithinTheClass() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionInjectableFromWithinTheClass() = singleAndMultiCodegen(
     """
       class MyClass {
         fun resolve() = inject<Foo>()
@@ -102,7 +102,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionGivenFromOuterClass() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionInjectableFromOuterClass() = singleAndMultiCodegen(
     """
       class MyClass {
         companion object {
@@ -117,7 +117,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionClassGivenFromOuterClass() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionClassInjectableFromOuterClass() = singleAndMultiCodegen(
     """
       class MyClass {
         companion object {
@@ -134,7 +134,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassConstructorGiven() = singleAndMultiCodegen(
+  @Test fun testResolvesClassConstructorInjectable() = singleAndMultiCodegen(
     """
       class MyClass(@Provide val foo: Foo = Foo()) {
         fun resolve() = inject<Foo>()
@@ -147,7 +147,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassGiven() = singleAndMultiCodegen(
+  @Test fun testResolvesClassInjectable() = singleAndMultiCodegen(
     """
       class MyClass {
         @Provide val foo = Foo()
@@ -161,7 +161,7 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testDerivedGiven() = singleAndMultiCodegen(
+  @Test fun testDerivedInjectable() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide val bar: Bar = Bar(inject())
@@ -174,7 +174,7 @@ class InjectableResolveTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testCanResolveSubTypeOfGiven() = singleAndMultiCodegen(
+  @Test fun testCanResolveSubTypeOfInjectable() = singleAndMultiCodegen(
     """
       interface Repo
       @Provide class RepoImpl : Repo
@@ -186,7 +186,7 @@ class InjectableResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testUnresolvedGiven() = codegen(
+  @Test fun testUnresolvedInjectable() = codegen(
     """
       fun invoke() {
         inject<String>()
@@ -196,7 +196,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type kotlin.String")
   }
 
-  @Test fun testNestedUnresolvedGiven() = singleAndMultiCodegen(
+  @Test fun testNestedUnresolvedInjectable() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
@@ -207,10 +207,10 @@ class InjectableResolveTest {
     compilationShouldHaveFailed(" no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testGenericGiven() = singleAndMultiCodegen(
+  @Test fun testGenericInjectable() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      @Provide fun <T> givenList(value: T): List<T> = listOf(value)
+      @Provide fun <T> injectableList(value: T): List<T> = listOf(value)
     """,
     """
       fun invoke() = inject<List<Foo>>() 
@@ -262,7 +262,7 @@ class InjectableResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testPrimaryConstructorGivenWithReceiver() = singleAndMultiCodegen(
+  @Test fun testPrimaryConstructorInjectableWithReceiver() = singleAndMultiCodegen(
     """
       class UsesFoo(@Provide val foo: Foo)
     """,
@@ -288,7 +288,7 @@ class InjectableResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testCanResolveGivenOfGivenThisFunction() = codegen(
+  @Test fun testCanResolveInjectableOfInjectableThisFunction() = codegen(
     """
       class Dep(@Provide val foo: Foo)
       fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
@@ -298,7 +298,7 @@ class InjectableResolveTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
-  @Test fun testCanResolveGivenWhichDependsOnAssistedGivenOfTheSameType() = singleAndMultiCodegen(
+  @Test fun testCanResolveInjectableWhichDependsOnAssistedInjectableOfTheSameType() = singleAndMultiCodegen(
     """
       typealias SpecialScope = Unit
       
@@ -323,7 +323,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveObjectWithoutGiven() = singleAndMultiCodegen(
+  @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(
     """
       object MyObject
     """,
@@ -334,7 +334,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable")
   }
 
-  @Test fun testCanResolveObjectWithGiven() = singleAndMultiCodegen(
+  @Test fun testCanResolveObjectWithInjectable() = singleAndMultiCodegen(
     """
       @Provide object MyObject
     """,
@@ -343,7 +343,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveExternalInternalGiven() = multiCodegen(
+  @Test fun testCannotResolveExternalInternalInjectable() = multiCodegen(
     """
       @Provide internal val foo = Foo()
     """,
@@ -354,7 +354,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCannotResolvePrivateGivenFromOuterScope() = singleAndMultiCodegen(
+  @Test fun testCannotResolvePrivateInjectableFromOuterScope() = singleAndMultiCodegen(
     """
       @Provide class FooHolder {
         @Provide private val foo = Foo()
@@ -367,7 +367,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCanResolvePrivateGivenFromInnerScope() = codegen(
+  @Test fun testCanResolvePrivateInjectableFromInnerScope() = codegen(
     """
       @Provide class FooHolder {
         @Provide private val foo = Foo()
@@ -376,7 +376,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveProtectedGivenFromOuterScope() = singleAndMultiCodegen(
+  @Test fun testCannotResolveProtectedInjectableFromOuterScope() = singleAndMultiCodegen(
     """
       @Provide open class FooHolder {
         @Provide protected val foo = Foo()
@@ -389,7 +389,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCanResolveProtectedGivenFromSameClass() = codegen(
+  @Test fun testCanResolveProtectedInjectableFromSameClass() = codegen(
     """
       @Provide open class FooHolder {
         @Provide protected val foo = Foo()
@@ -398,7 +398,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCanResolveProtectedGivenFromSubClass() = singleAndMultiCodegen(
+  @Test fun testCanResolveProtectedInjectableFromSubClass() = singleAndMultiCodegen(
     """
       abstract class AbstractFooHolder {
         @Provide protected val foo = Foo()
@@ -411,7 +411,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() =
+  @Test fun testCannotResolvePropertyWithTheSameNameAsAnInjectablePrimaryConstructorParameter() =
     singleAndMultiCodegen(
       """
         @Provide class MyClass(foo: Foo) {
@@ -425,7 +425,7 @@ class InjectableResolveTest {
       compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
 
-  @Test fun testCanResolveExplicitMarkedGivenConstructorParameterFromOutsideTheClass() =
+  @Test fun testCanResolveExplicitMarkedInjectableConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
         class MyClass(@Provide val foo: Foo)
@@ -435,7 +435,7 @@ class InjectableResolveTest {
       """
     )
 
-  @Test fun testCannotResolveImplicitGivenConstructorParameterFromOutsideTheClass() =
+  @Test fun testCannotResolveImplicitInjectableConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
         @Provide class MyClass(val foo: Foo)
@@ -447,7 +447,7 @@ class InjectableResolveTest {
       compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
 
-  @Test fun testCanResolveImplicitGivenConstructorParameterFromInsideTheClass() = codegen(
+  @Test fun testCanResolveImplicitInjectableConstructorParameterFromInsideTheClass() = codegen(
     """
       @Provide class MyClass(private val foo: Foo) {
         fun invoke() = inject<Foo>()
@@ -455,7 +455,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testResolvesGivenWithTypeParameterInScope() = singleAndMultiCodegen(
+  @Test fun testResolvesInjectableWithTypeParameterInScope() = singleAndMultiCodegen(
     """
       @Provide fun <T> list(): List<T> = emptyList()
     """,
@@ -466,7 +466,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotUseNonReifiedTypeParameterForReifiedGiven() = singleAndMultiCodegen(
+  @Test fun testCannotUseNonReifiedTypeParameterForReifiedInjectable() = singleAndMultiCodegen(
     """
       @Provide inline fun <reified T> list(): List<T> {
         T::class
@@ -484,7 +484,7 @@ class InjectableResolveTest {
     )
   }
 
-  @Test fun testCannotUseNonForTypeKeyTypeParameterForForTypeKeyGiven() = singleAndMultiCodegen(
+  @Test fun testCannotUseNonForTypeKeyTypeParameterForForTypeKeyInjectable() = singleAndMultiCodegen(
     """
       @Provide fun <@ForTypeKey T> list(): List<T> {
         typeKeyOf<T>()
@@ -502,7 +502,7 @@ class InjectableResolveTest {
     )
   }
 
-  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedGiven() = singleAndMultiCodegen(
+  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedInjectable() = singleAndMultiCodegen(
     """
       typealias TypedString<T> = String
   
@@ -515,7 +515,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedGivenWithQualifiers() =
+  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedInjectableWithQualifiers() =
     singleAndMultiCodegen(
       """
         typealias TypedString<T> = String

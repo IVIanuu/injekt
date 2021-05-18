@@ -71,13 +71,13 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testTypeAliasGivensTypeScope() = singleAndMultiCodegen(
+  @Test fun testTypeAliasModuleTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             typealias Dep = String
-            object DepGivens {
+            object DepModule {
               @Provide val default: Dep = ""
             }
           """,

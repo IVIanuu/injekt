@@ -24,16 +24,16 @@ import kotlin.coroutines.*
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
  *
- * [CoroutineContext] of the scope can be specified with a given [GivenCoroutineContext]<S> and
+ * [CoroutineContext] of the scope can be specified with a injectable [InjectableCoroutineContext]<S> and
  * defaults to [DefaultDispatcher]
  */
-typealias GivenCoroutineScope<S> = CoroutineScope
+typealias InjectableCoroutineScope<S> = CoroutineScope
 
 /**
- * Installs a [GivenCoroutineScope] for scope [S]
+ * Installs a [InjectableCoroutineScope] for scope [S]
  */
-@Provide fun <S : Scope> givenCoroutineScopeElement(context: GivenCoroutineContext<S>):
-    @Scoped<S> @InstallElement<S> GivenCoroutineScope<S> =
+@Provide fun <S : Scope> injectableCoroutineScopeElement(context: InjectableCoroutineContext<S>):
+    @Scoped<S> @InstallElement<S> InjectableCoroutineScope<S> =
   object : CoroutineScope, ScopeDisposable {
     override val coroutineContext: CoroutineContext = context + SupervisorJob()
     override fun dispose() {
@@ -49,16 +49,16 @@ val Scope.coroutineScope: CoroutineScope get() = element()
 /**
  * Installs a [CoroutineScope] for scope [S]
  */
-@Provide inline fun <S : Scope> coroutineScopeElement(scope: GivenCoroutineScope<S>):
+@Provide inline fun <S : Scope> coroutineScopeElement(scope: InjectableCoroutineScope<S>):
     @InstallElement<S> CoroutineScope = scope
 
 /**
- * [CoroutineContext] of a [GivenCoroutineScope]
+ * [CoroutineContext] of a [InjectableCoroutineScope]
  */
-typealias GivenCoroutineContext<S> = CoroutineContext
+typealias InjectableCoroutineContext<S> = CoroutineContext
 
 /**
- * The default [GivenCoroutineContext] for type [S]
+ * The default [InjectableCoroutineContext] for type [S]
  */
-@Provide inline fun <S : Scope> defaultGivenCoroutineContext(dispatcher: DefaultDispatcher):
-    GivenCoroutineContext<S> = dispatcher
+@Provide inline fun <S : Scope> defaultInjectableCoroutineContext(dispatcher: DefaultDispatcher):
+    InjectableCoroutineContext<S> = dispatcher

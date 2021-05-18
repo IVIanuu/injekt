@@ -23,7 +23,7 @@ import com.ivianuu.injekt.*
 class InstanceProvider1<A>(@Provide val a: A)
 
 /**
- * Calls the specified function [block] with [a] as given and returns it's result
+ * Calls the specified function [block] with [a] as injectable and returns it's result
  */
 inline fun <A, R> withProvidedInstances(a: A, block: InstanceProvider1<A>.() -> R): R =
   block(InstanceProvider1(a))
@@ -31,7 +31,7 @@ inline fun <A, R> withProvidedInstances(a: A, block: InstanceProvider1<A>.() -> 
 class InstanceProvider2<A, B>(@Provide val a: A, @Provide val b: B)
 
 /**
- * Calls the specified function [block] with [a] and [b] as given and returns it's result
+ * Calls the specified function [block] with [a] and [b] as injectable and returns it's result
  */
 inline fun <A, B, R> withProvidedInstances(a: A, b: B, block: InstanceProvider2<A, B>.() -> R) =
   block(InstanceProvider2(a, b))
@@ -39,7 +39,7 @@ inline fun <A, B, R> withProvidedInstances(a: A, b: B, block: InstanceProvider2<
 class InstanceProvider3<A, B, C>(@Provide val a: A, @Provide val b: B, @Provide val c: C)
 
 /**
- * Calls the specified function [block] with [a], [b] and [c] as given and returns it's result
+ * Calls the specified function [block] with [a], [b] and [c] as injectable and returns it's result
  */
 inline fun <A, B, C, R> withProvidedInstances(
   a: A,
@@ -56,7 +56,7 @@ class InstanceProvider4<A, B, C, D>(
 )
 
 /**
- * Calls the specified function [block] with [a], [b], [c] and [d] as given and returns it's result
+ * Calls the specified function [block] with [a], [b], [c] and [d] as injectable and returns it's result
  */
 inline fun <A, B, C, D, R> withProvidedInstances(
   a: A,
@@ -75,7 +75,7 @@ class InstanceProvider5<A, B, C, D, E>(
 )
 
 /**
- * Calls the specified function [block] with [a], [b], [c], [d] and [e] as given and returns it's result
+ * Calls the specified function [block] with [a], [b], [c], [d] and [e] as injectable and returns it's result
  */
 inline fun <A, B, C, D, E, R> withProvidedInstances(
   a: A,

@@ -20,7 +20,7 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class SingletonGivenTest {
+class SingletoninjectableTest {
   @Test fun testSingleton() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
@@ -62,7 +62,7 @@ class SingletonGivenTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeGivenWithConstructorParameters() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeinjectableWithConstructorParameters() = singleAndMultiCodegen(
     """
       @Provide class MyModule(val foo: Foo)
       @Provide val foo = Foo()
@@ -75,7 +75,7 @@ class SingletonGivenTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeinjectableWithForTypeKeyParameters() = singleAndMultiCodegen(
     """
       @Provide class MyModule<@ForTypeKey T> {
         @Provide val instance = Foo() as T
@@ -89,7 +89,7 @@ class SingletonGivenTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeGivenWithFields() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeinjectableWithFields() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         @Provide val foo = Foo()
@@ -103,7 +103,7 @@ class SingletonGivenTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeGivenWithInnerClass() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeinjectableWithInnerClass() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         inner class Inner
@@ -118,7 +118,7 @@ class SingletonGivenTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesOptimizeGivenWithComputedProperties() = singleAndMultiCodegen(
+  @Test fun testDoesOptimizeinjectableWithComputedProperties() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         @Provide val foo get() = Foo()

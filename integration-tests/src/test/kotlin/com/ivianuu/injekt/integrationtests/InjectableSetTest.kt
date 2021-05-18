@@ -141,7 +141,7 @@ class InjectableSetTest {
     childSet[1]().shouldBeTypeOf<CommandB>()
   }
 
-  @Test fun testUsesAllProviderArgumentsForGivenRequest() = codegen(
+  @Test fun testUsesAllProviderArgumentsForinjectableRequest() = codegen(
     """
          fun invoke(): Set<Any> {
                 return inject<(@Provide String, @Provide String) -> Set<String>>()("a", "b")

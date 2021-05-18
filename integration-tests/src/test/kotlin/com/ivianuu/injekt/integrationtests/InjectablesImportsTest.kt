@@ -153,7 +153,7 @@ class InjectablesImportsTest {
     compilationShouldHaveFailed("injectables of the same package are automatically imported")
   }
 
-  @Test fun testImportGivenSamePackage() = codegen(
+  @Test fun testImportinjectableSamePackage() = codegen(
     """
       @Provide val foo = Foo()
       @Providers("com.ivianuu.injekt.integrationtests.foo")
@@ -191,7 +191,7 @@ class InjectablesImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testFunctionWithGivenImports() = singleAndMultiCodegen(
+  @Test fun testFunctionWithinjectableImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -215,7 +215,7 @@ class InjectablesImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testPropertyWithGivenImports() = singleAndMultiCodegen(
+  @Test fun testPropertyWithinjectableImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -229,8 +229,8 @@ class InjectablesImportsTest {
         source(
           """
             @Providers("injectables.*")
-            val givenFoo = inject<Foo>()
-            fun invoke() = givenFoo
+            val injectableFoo = inject<Foo>()
+            fun invoke() = injectableFoo
           """,
           name = "File.kt"
         )
@@ -240,7 +240,7 @@ class InjectablesImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testWithGivenImports() = codegen(
+  @Test fun testWithinjectableImports() = codegen(
     listOf(
       source(
         """

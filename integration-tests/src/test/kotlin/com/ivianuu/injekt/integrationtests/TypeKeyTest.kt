@@ -176,7 +176,7 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
-  @Test fun testTypeKeyFromGivenCall() = singleAndMultiCodegen(
+  @Test fun testTypeKeyFrominjectableCall() = singleAndMultiCodegen(
     """
       @Provide fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
     """,

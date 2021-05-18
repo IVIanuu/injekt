@@ -99,7 +99,7 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
+  @Test fun testNoninjectablePrimaryConstructorWithinjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass(
           @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
@@ -111,7 +111,7 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNonGivenSecondaryConstructorWithGivenParameters() = singleAndMultiCodegen(
+  @Test fun testNoninjectableSecondaryConstructorWithinjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass {
           constructor(
@@ -125,7 +125,7 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNonGivenClassWithGivenMembers() = singleAndMultiCodegen(
+  @Test fun testNoninjectableClassWithinjectableMembers() = singleAndMultiCodegen(
     """ 
       abstract class MyModule<T : S, S> {
         @Provide fun func(t: T): S = t
@@ -139,7 +139,7 @@ class PersistenceTest {
         """
   )
 
-  @Test fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
+  @Test fun testNoninjectableClassWithinjectableMembers2() = singleAndMultiCodegen(
     """ 
       abstract class MyAbstractChildScopeModule<P : Scope, T : Any, S : T> {
         @Provide fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
