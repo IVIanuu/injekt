@@ -31,7 +31,7 @@ class ConstrainedGivenTest {
       @Given fun foo(): @Trigger Foo = Foo()
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -50,7 +50,7 @@ class ConstrainedGivenTest {
       @Given fun string(): @Trigger String = ""
     """,
     """
-      fun invoke() = given<Set<@Final Foo>>() 
+      fun invoke() = summon<Set<@Final Foo>>() 
     """
   ) {
     invokeSingleFile<Set<Foo>>().size shouldBe 1
@@ -96,7 +96,7 @@ class ConstrainedGivenTest {
       @Trigger @Given class NotAny
     """,
     """
-      fun invoke() = given<NotAny>() 
+      fun invoke() = summon<NotAny>() 
     """
   ) {
     invokeSingleFile()
@@ -127,7 +127,7 @@ class ConstrainedGivenTest {
       @Given fun dummy(): @A Long = 0L
     """,
     """
-      fun invoke() = given<Set<Foo>>().single() 
+      fun invoke() = summon<Set<Foo>>().single() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -142,7 +142,7 @@ class ConstrainedGivenTest {
     """
       @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = given<Foo>()
+      fun invoke() = summon<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -157,7 +157,7 @@ class ConstrainedGivenTest {
       @Given fun b(): @Trigger String = "b"
     """,
     """
-      fun invoke() = given<Set<String>>() 
+      fun invoke() = summon<Set<String>>() 
     """
   ) {
     invokeSingleFile<Set<String>>()
@@ -194,7 +194,7 @@ class ConstrainedGivenTest {
       @Given fun stringPair() = "a" to "b"
     """,
     """
-     fun invoke() = given<Int>() 
+     fun invoke() = summon<Int>() 
     """
   )
 
@@ -209,7 +209,7 @@ class ConstrainedGivenTest {
       @Given fun stringPair() = "a" to "b"
     """,
     """
-      fun invoke() = given<Int>() 
+      fun invoke() = summon<Int>() 
     """
   )
 
@@ -228,7 +228,7 @@ class ConstrainedGivenTest {
       @Given fun rootSystemBarsProvider(): @UiDecoratorBinding RootSystemBarsProvider = {}
     """,
     """
-      fun invoke() = given<Set<UiDecorator>>().size 
+      fun invoke() = summon<Set<UiDecorator>>().size 
     """
   ) {
     1 shouldBe invokeSingleFile()
@@ -260,7 +260,7 @@ class ConstrainedGivenTest {
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-          given<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
+          summon<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
       }
     """
   )
@@ -283,7 +283,7 @@ class ConstrainedGivenTest {
       @Given val foo: @Qualifier1 Foo = Foo()
     """,
     """
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
@@ -309,7 +309,7 @@ class ConstrainedGivenTest {
     """,
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = given<Set<Foo>>()
+      fun invoke() = summon<Set<Foo>>()
     """
   ) {
     irShouldContain(1, "setOf")
@@ -326,10 +326,10 @@ class ConstrainedGivenTest {
       @Given fun dummy(): @A<String> Long = 0L
     """,
     """
-      fun invoke() = given<Unit>() 
+      fun invoke() = summon<Unit>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.given")
+    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.summon")
   }
 
   @Test fun testConstrainedGivenWithInvariantTypeParameter() = singleAndMultiCodegen(
@@ -345,7 +345,7 @@ class ConstrainedGivenTest {
       @Given val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = { Any() }
     """,
     """
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

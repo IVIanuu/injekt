@@ -30,7 +30,7 @@ class DivergenceTest {
     """,
     """
       fun invoke() {
-          given<Foo>()
+          summon<Foo>()
       }
     """
   ) {
@@ -49,7 +49,7 @@ class DivergenceTest {
     """,
     """
       fun invoke() {
-          given<Foo>()
+          summon<Foo>()
       } 
     """
   )
@@ -60,7 +60,7 @@ class DivergenceTest {
       @Given class B(@Given a: A)
     """,
     """
-      fun invoke() = given<A>() 
+      fun invoke() = summon<A>() 
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -72,7 +72,7 @@ class DivergenceTest {
       @Given class B(@Given a: () -> A)
      """,
     """
-      fun invoke() = given<B>()
+      fun invoke() = summon<B>()
     """
   ) {
     invokeSingleFile()
@@ -85,7 +85,7 @@ class DivergenceTest {
       @Given class C(@Given b: B)
      """,
     """
-      fun invoke() = given<C>() 
+      fun invoke() = summon<C>() 
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -99,7 +99,7 @@ class DivergenceTest {
       @Given fun b(@Given a: () -> A): B = {}
      """,
     """
-     fun invoke() = given<Set<() -> Unit>>() 
+     fun invoke() = summon<Set<() -> Unit>>() 
     """
   ) {
     invokeSingleFile()

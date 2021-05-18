@@ -27,7 +27,7 @@ package com.ivianuu.injekt
  * @Given fun bar(@Given foo: Foo) = Bar(foo)
  *
  * fun main() {
- *   val bar = given<Bar>()
+ *   val bar = summon<Bar>()
  *   println("Got $bar")
  * }
  * ```
@@ -52,7 +52,7 @@ package com.ivianuu.injekt
   AnnotationTarget.VALUE_PARAMETER,
 
   // Providers
-  // val provider = given<(@Given Foo) -> Bar>()
+  // val provider = summon<(@Given Foo) -> Bar>()
   AnnotationTarget.TYPE,
 
   // @Given fun <@Given T> func()
@@ -83,12 +83,12 @@ inline fun <R> withGivenImports(
 /**
  * Returns a given argument of type [T]
  */
-inline fun <T> given(@Given value: T): T = value
+inline fun <T> summon(@Given value: T): T = value
 
 /**
  * Returns a given argument of type [T] or null
  */
-inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
+inline fun <T> summonOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
  * Marks an annotation as an qualifier which can then be used
@@ -105,9 +105,9 @@ inline fun <T> givenOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = va
  * @Given val username: @Username String = "Foo"
  *
  * fun main() {
- *   val userId = given<@UserId String>()
+ *   val userId = summon<@UserId String>()
  *   // userId = 123
- *   val username = given<@Username String>()
+ *   val username = summon<@Username String>()
  *   // username = "Foo"
  * }
  * ```
@@ -125,7 +125,7 @@ annotation class Qualifier
   AnnotationTarget.VALUE_PARAMETER,
 
   // nullable providers
-  // val elements = given<@DefaultOnAllErrors () -> Bar?>()
+  // val elements = summon<@DefaultOnAllErrors () -> Bar?>()
   AnnotationTarget.TYPE
 )
 annotation class DefaultOnAllErrors
@@ -135,7 +135,7 @@ annotation class DefaultOnAllErrors
  *
  * Should be used like so:
  * ```
- * val elements = given<@IgnoreElementsWithErrors Set<Interceptor>>()
+ * val elements = summon<@IgnoreElementsWithErrors Set<Interceptor>>()
  * ```
  */
 @Target(AnnotationTarget.TYPE)

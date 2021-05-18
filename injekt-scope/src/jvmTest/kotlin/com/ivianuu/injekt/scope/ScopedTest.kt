@@ -35,7 +35,7 @@ class ScopedTest {
     }
 
     @Given fun fooElement(@Given foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
-    val scope = given<TestGivenScope1>()
+    val scope = summon<TestGivenScope1>()
     callCount shouldBe 0
     scope.element<@Element Foo>()
     callCount shouldBe 1

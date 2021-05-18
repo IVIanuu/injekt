@@ -32,7 +32,7 @@ class GivenResolutionTest {
       fun invoke(internal: Foo, external: Foo): Foo {
         externalFoo = external
         internalFoo = internal
-        return given<Foo>()
+        return summon<Foo>()
       }
     """
   ) {
@@ -47,7 +47,7 @@ class GivenResolutionTest {
       @Given lateinit var internalFoo: Foo
       object MyObject {
         @Given lateinit var objectFoo: Foo
-        fun resolve() = given<Foo>()
+        fun resolve() = summon<Foo>()
       }
 
       fun invoke(internal: Foo, objectFoo: Foo): Foo {
@@ -67,7 +67,7 @@ class GivenResolutionTest {
     """
       @Given lateinit var internalFoo: Foo
       class MyClass {
-        fun resolve() = given<Foo>()
+        fun resolve() = summon<Foo>()
         companion object {
           @Given lateinit var companionFoo: Foo
         }
@@ -90,7 +90,7 @@ class GivenResolutionTest {
     """
       @Given lateinit var internalFoo: Foo
       class MyClass(@Given val classFoo: Foo) {
-        fun resolve() = given<Foo>()
+        fun resolve() = summon<Foo>()
       }
   
       fun invoke(internal: Foo, classFoo: Foo): Foo {
@@ -108,7 +108,7 @@ class GivenResolutionTest {
   @Test fun testPrefersClassGivenOverClassCompanionGiven() = codegen(
     """
       class MyClass(@Given val classFoo: Foo) {
-        fun resolve() = given<Foo>()
+        fun resolve() = summon<Foo>()
         companion object {
             @Given lateinit var companionFoo: Foo
         }
@@ -130,7 +130,7 @@ class GivenResolutionTest {
     """
       lateinit var classBodyFoo: Foo
       class MyClass(@Given constructorFoo: Foo) {
-        val finalFoo = given<Foo>()
+        val finalFoo = summon<Foo>()
         @Given val classFoo get() = classBodyFoo
       }
 
@@ -150,7 +150,7 @@ class GivenResolutionTest {
     """
       abstract class MySuperClass(@Given val superClassFoo: Foo)
       class MySubClass(@Given val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
-        fun finalFoo(): Foo = given()
+        fun finalFoo(): Foo = summon()
       }
     """,
     """
@@ -170,7 +170,7 @@ class GivenResolutionTest {
       @Given lateinit var internalFoo: Foo
       fun invoke(internal: Foo, @Given functionFoo: Foo): Foo {
         internalFoo = internal
-        return given()
+        return summon()
       }
     """
   ) {
@@ -183,7 +183,7 @@ class GivenResolutionTest {
   @Test fun testPrefersFunctionParameterGivenOverClassGiven() = codegen(
     """
       class MyClass(@Given val classFoo: Foo) {
-        fun resolve(@Given functionFoo: Foo) = given<Foo>()
+        fun resolve(@Given functionFoo: Foo) = summon<Foo>()
       }
 
       fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
@@ -202,7 +202,7 @@ class GivenResolutionTest {
       @Given lateinit var internalFoo: Foo
       fun Foo.invoke(internal: Foo): Foo {
         internalFoo = internal
-        return given()
+        return summon()
       }
     """
   ) {
@@ -215,7 +215,7 @@ class GivenResolutionTest {
   @Test fun testPrefersFunctionReceiverGivenOverClassGiven() = codegen(
     """
       class MyClass(@Given val classFoo: Foo) {
-        fun Foo.resolve() = given<Foo>()
+        fun Foo.resolve() = summon<Foo>()
       }
 
       fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
@@ -234,7 +234,7 @@ class GivenResolutionTest {
   @Test fun testPrefersProviderArgument() = codegen(
     """
       @Given fun foo() = Foo()
-      fun invoke(foo: Foo) = given<(@Given Foo) -> Foo>()(foo)
+      fun invoke(foo: Foo) = summon<(@Given Foo) -> Foo>()(foo)
     """
   ) {
     val foo = Foo()
@@ -244,7 +244,7 @@ class GivenResolutionTest {
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
     """
       @Given fun foo() = Foo()
-      fun invoke(foo: Foo) = given<(@Given Foo) -> (@Given Foo) -> Foo>()(Foo())(foo)
+      fun invoke(foo: Foo) = summon<(@Given Foo) -> (@Given Foo) -> Foo>()(Foo())(foo)
     """
   ) {
     val foo = Foo()
@@ -255,9 +255,9 @@ class GivenResolutionTest {
     """
       fun invoke(): Pair<String, String> {
         @Given val givenA = "a"
-        return given<String>() to run {
+        return summon<String>() to run {
             @Given val givenB = "b"
-            given<String>()
+            summon<String>()
         }
       }
     """
@@ -271,7 +271,7 @@ class GivenResolutionTest {
       @Given fun b(@Given long: Long) = "b"
     """,
     """
-      fun invoke() = given<String>() 
+      fun invoke() = summon<String>() 
     """
   ) {
     "a" shouldBe invokeSingleFile()
@@ -283,7 +283,7 @@ class GivenResolutionTest {
         @Given val a: String = "a"
         run {
           @Given val b: CharSequence = "b"
-          return given<CharSequence>()
+          return summon<CharSequence>()
         }
       }
     """
@@ -297,14 +297,14 @@ class GivenResolutionTest {
       @Given val b = "b"
     """,
     """
-      fun invoke() = given<String>() 
+      fun invoke() = summon<String>() 
     """
   ) {
     compilationShouldHaveFailed(
       "ambiguous given arguments:\n" +
           "com.ivianuu.injekt.integrationtests.a\n" +
           "com.ivianuu.injekt.integrationtests.b\n" +
-          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given"
+          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.summon"
     )
   }
 
@@ -313,7 +313,7 @@ class GivenResolutionTest {
       fun invoke() {
         @Given val givenA = "a"
         @Given val givenB = "b"
-        given<String>()
+        summon<String>()
       }
     """
   ) {
@@ -321,7 +321,7 @@ class GivenResolutionTest {
       "ambiguous given arguments:\n" +
           "com.ivianuu.injekt.integrationtests.invoke.givenA\n" +
           "com.ivianuu.injekt.integrationtests.invoke.givenB\n" +
-          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.given"
+          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.summon"
     )
   }
 
@@ -331,7 +331,7 @@ class GivenResolutionTest {
       @Given fun <T> anyList(): List<T> = emptyList()
     """,
     """
-      fun invoke() = given<List<String>>() 
+      fun invoke() = summon<List<String>>() 
     """
   ) {
     listOf("a", "b", "c") shouldBe invokeSingleFile()
@@ -343,7 +343,7 @@ class GivenResolutionTest {
       @Given fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
     """,
     """
-      fun invoke() = given<List<List<String>>>() 
+      fun invoke() = summon<List<List<String>>>() 
     """
   ) {
     invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
@@ -367,7 +367,7 @@ class GivenResolutionTest {
       @Given val nullable: String? = "nullable"
     """,
     """
-      fun invoke() = given<String?>() 
+      fun invoke() = summon<String?>() 
     """
   ) {
     invokeSingleFile() shouldBe "nonnull"
@@ -378,7 +378,7 @@ class GivenResolutionTest {
       @Given fun <T> diyProvider(@Given unit: Unit): () -> T = { TODO() } 
     """,
     """
-      fun invoke() = given<() -> Foo>() 
+      fun invoke() = summon<() -> Foo>() 
     """
   ) {
     compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
@@ -433,7 +433,7 @@ class GivenResolutionTest {
       @Given fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
     """,
     """
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   )
 
@@ -452,7 +452,7 @@ class GivenResolutionTest {
       @Given fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
     """,
     """
-      fun invoke() = given<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   )
 }

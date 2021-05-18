@@ -7,12 +7,12 @@ import org.junit.*
 class NotGivenTest {
   @Test fun yes() {
     @Given fun value(@Given _: NotGiven<String>) = Unit
-    givenOrNull<Unit>().shouldNotBeNull()
+    summonOrNull<Unit>().shouldNotBeNull()
   }
 
   @Test fun no() {
     @Given fun value(@Given _: NotGiven<String>) = Unit
     @Given val string = ""
-    givenOrNull<Unit>().shouldBeNull()
+    summonOrNull<Unit>().shouldBeNull()
   }
 }

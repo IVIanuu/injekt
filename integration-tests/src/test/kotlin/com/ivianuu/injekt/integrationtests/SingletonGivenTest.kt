@@ -28,7 +28,7 @@ class SingletonGivenTest {
             }
     """,
     """
-        fun invoke() = given<MyModule>()
+        fun invoke() = summon<MyModule>()
     """
   ) {
     invokeSingleFile()
@@ -41,7 +41,7 @@ class SingletonGivenTest {
             @Given val foo = Foo()
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -55,7 +55,7 @@ class SingletonGivenTest {
             }
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -68,7 +68,7 @@ class SingletonGivenTest {
             @Given val foo = Foo()
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -82,7 +82,7 @@ class SingletonGivenTest {
             }
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -96,7 +96,7 @@ class SingletonGivenTest {
             }
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -111,7 +111,7 @@ class SingletonGivenTest {
             @Given val foo = Foo()
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -125,7 +125,7 @@ class SingletonGivenTest {
             }
     """,
     """
-        fun invoke() = given<Foo>() 
+        fun invoke() = summon<Foo>() 
     """
   ) {
     irShouldContain(if (!it) 2 else 1, "INSTANCE")

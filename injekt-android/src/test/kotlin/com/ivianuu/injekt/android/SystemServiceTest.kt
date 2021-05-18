@@ -33,7 +33,7 @@ class SystemServiceTest {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     scenario.onActivity {
       withGivens(it.application as AppContext) {
-        given<@SystemService PowerManager>()
+        summon<@SystemService PowerManager>()
           .isPowerSaveMode
       }
     }

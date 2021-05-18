@@ -181,7 +181,7 @@ class TypeKeyTest {
       @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
     """,
     """
-      fun invoke() = given<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
+      fun invoke() = summon<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
     """
   ) {
     invokeSingleFile() shouldBe
@@ -222,7 +222,7 @@ class TypeKeyTest {
       }
     """,
     """
-       fun invoke() = given<@Qualifier1 TypeKey<String>>()
+       fun invoke() = summon<@Qualifier1 TypeKey<String>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -239,7 +239,7 @@ class TypeKeyTest {
   @Test fun testTypeKeyWithStar2() = codegen(
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      val scope = given<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
+      val scope = summon<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
         .invoke(emptyMap<Any?, Any?>())
       fun invoke() = scope.element<Map<*, *>>()
     """

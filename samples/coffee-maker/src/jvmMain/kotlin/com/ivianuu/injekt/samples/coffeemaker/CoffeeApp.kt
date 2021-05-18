@@ -19,9 +19,9 @@ package com.ivianuu.injekt.samples.coffeemaker
 import com.ivianuu.injekt.*
 
 fun main() {
-  val heater = given<Heater>()
+  val heater = summon<Heater>()
   heater.on()
-  given<Pump>().pump()
+  summon<Pump>().pump()
   println(" [_]P coffee! [_]P ")
   heater.off()
 }

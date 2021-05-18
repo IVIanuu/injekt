@@ -26,10 +26,10 @@ class CallContextTest {
       @Given suspend fun bar(@Given foo: Foo) = Bar(foo)
     """,
     """
-      @Composable fun invoke() = given<Bar>()
+      @Composable fun invoke() = summon<Bar>()
     """
   ) {
-    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a suspend function but current call context is composable")
+    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.summon is a suspend function but current call context is composable")
   }
 
   @Test fun testNonSuspendGivenCanReceiveSuspendGivenInSuspendContext() = singleAndMultiCodegen(
@@ -38,7 +38,7 @@ class CallContextTest {
       @Given fun bar(@Given foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = runBlocking { given<Bar>() } 
+      fun invoke() = runBlocking { summon<Bar>() } 
     """
   )
 
@@ -49,22 +49,22 @@ class CallContextTest {
     """,
     """
       suspend fun invoke() {
-        given<Bar>()
+        summon<Bar>()
       }
     """
   ) {
-    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.given is a composable function but current call context is suspend")
+    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.summon is a composable function but current call context is suspend")
   }
 
   @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() =
     singleAndMultiCodegen(
       """
       @Given suspend fun foo() = Foo()
-      @Given fun lazyBar(): suspend () -> Bar = { Bar(given()) }
+      @Given fun lazyBar(): suspend () -> Bar = { Bar(summon()) }
     """,
       """
       fun invoke() {
-        given<suspend () -> Bar>()
+        summon<suspend () -> Bar>()
       }
     """
     )
@@ -76,7 +76,7 @@ class CallContextTest {
       @Given fun bar(@Given foo: Foo) = Bar(foo)
     """,
       """
-      fun invoke() = given<suspend () -> Bar>() 
+      fun invoke() = summon<suspend () -> Bar>() 
     """
     )
 
@@ -85,11 +85,11 @@ class CallContextTest {
       """
       typealias SuspendFactory<T> = suspend () -> T
       @Given suspend fun foo() = Foo()
-      @Given fun lazyBar(): SuspendFactory<Bar> = { Bar(given()) }
+      @Given fun lazyBar(): SuspendFactory<Bar> = { Bar(summon()) }
     """,
       """
       fun invoke() {
-        given<SuspendFactory<Bar>>()
+        summon<SuspendFactory<Bar>>()
       }
     """
     )
@@ -98,11 +98,11 @@ class CallContextTest {
     singleAndMultiCodegen(
       """
         @Given @Composable fun foo() = Foo()
-        @Given fun lazyBar(): @Composable () -> Bar = { Bar(given()) }
+        @Given fun lazyBar(): @Composable () -> Bar = { Bar(summon()) }
     """,
       """
         fun invoke() {
-          given<@Composable () -> Bar>()
+          summon<@Composable () -> Bar>()
         }
     """
     )
@@ -113,11 +113,11 @@ class CallContextTest {
       """
         typealias ComposableFactory<T> = @Composable () -> T
         @Given @Composable fun foo() = Foo()
-        @Given fun lazyBar(): ComposableFactory<Bar> = { Bar(given()) }
+        @Given fun lazyBar(): ComposableFactory<Bar> = { Bar(summon()) }
     """,
       """
         fun invoke() {
-          given<ComposableFactory<Bar>>()
+          summon<ComposableFactory<Bar>>()
         }
     """
     )
@@ -130,7 +130,7 @@ class CallContextTest {
       fun invoke() = runBlocking {
         run {
           run {
-            given<Foo>()
+            summon<Foo>()
           }
         }
       } 
@@ -146,7 +146,7 @@ class CallContextTest {
       @Composable fun invoke() {
         run {
           run {
-            given<Foo>()
+            summon<Foo>()
           }
         }
       } 
@@ -171,7 +171,7 @@ class CallContextTest {
     """,
       """
       val fooGetter: Foo
-        @Composable get() = given()
+        @Composable get() = summon()
     """
     )
 }

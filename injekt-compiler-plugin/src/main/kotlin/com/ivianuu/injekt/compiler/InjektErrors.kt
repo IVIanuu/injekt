@@ -374,7 +374,7 @@ private fun GivenGraph.Error.render(): String = buildString {
           if (failure is ResolutionResult.Failure.CallContextMismatch) {
             appendLine("${failure.candidate.callableFqName}()")
           } else {
-            appendLine("given<${request.type.render()}>()")
+            appendLine("summon<${request.type.render()}>()")
           }
         }
       }
