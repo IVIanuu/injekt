@@ -395,6 +395,7 @@ private fun ResolutionScope.resolveCandidate(
 
 private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
   if (a === b) return 0
+
   if (a != null && b == null) return -1
   if (b != null && a == null) return 1
   if (a == null && b == null) return 0
@@ -442,9 +443,10 @@ private inline fun <T> ResolutionScope.compareCandidate(
   subClassNesting: (T) -> Int
 ): Int {
   if (a === b) return 0
+
   if (a != null && b == null) return -1
   if (b != null && a == null) return 1
-  if (a == null && b == null) return 0
+
   a!!
   b!!
 
@@ -480,8 +482,14 @@ private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int 
   subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 }
 )
 
-fun ResolutionScope.compareType(a: TypeRef, b: TypeRef, requestedType: TypeRef?): Int {
+fun ResolutionScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
   if (a == b) return 0
+
+  if (a != null && b == null) return -1
+  if (b != null && a == null) return 1
+  a!!
+  b!!
+
   if (!a.isStarProjection && b.isStarProjection) return -1
   if (a.isStarProjection && !b.isStarProjection) return 1
 
@@ -491,7 +499,14 @@ fun ResolutionScope.compareType(a: TypeRef, b: TypeRef, requestedType: TypeRef?)
   if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
   if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
-  fun compareSameClassifier(a: TypeRef, b: TypeRef): Int {
+  fun compareSameClassifier(a: TypeRef?, b: TypeRef?): Int {
+    if (a == b) return 0
+
+    if (a != null && b == null) return -1
+    if (b != null && a == null) return 1
+    a!!
+    b!!
+
     var diff = 0
     a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
       diff += compareType(aTypeArgument, bTypeArgument, null)
@@ -507,8 +522,8 @@ fun ResolutionScope.compareType(a: TypeRef, b: TypeRef, requestedType: TypeRef?)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
     if (requestedType != null) {
-      val aSubTypeView = a.subtypeView(requestedType.classifier)!!
-      val bSubTypeView = b.subtypeView(requestedType.classifier)!!
+      val aSubTypeView = a.subtypeView(requestedType.classifier)
+      val bSubTypeView = b.subtypeView(requestedType.classifier)
       val diff = compareSameClassifier(aSubTypeView, bSubTypeView)
       if (diff < 0) return -1
       if (diff > 0) return 1

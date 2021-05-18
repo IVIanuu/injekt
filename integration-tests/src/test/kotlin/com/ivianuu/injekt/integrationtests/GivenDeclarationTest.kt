@@ -38,10 +38,10 @@ class GivenDeclarationTest {
 
   @Test fun testGivenProperty() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
+      @Given val foo = Foo()
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -74,13 +74,13 @@ class GivenDeclarationTest {
 
   @Test fun testGivenClassSecondaryConstructor() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
-            class Dep {
-                @Given constructor(foo: Foo)
-            }
+      @Given val foo = Foo()
+      class Dep {
+          @Given constructor(foo: Foo)
+      }
     """,
     """
-        fun invoke() = summon<Dep>() 
+      fun invoke() = summon<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
