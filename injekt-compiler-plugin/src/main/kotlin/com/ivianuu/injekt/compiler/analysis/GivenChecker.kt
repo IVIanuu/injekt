@@ -53,7 +53,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     if (descriptor.isGiven(this.context, trace)) {
       descriptor.valueParameters
         .checkGivenCallableHasOnlyGivenParameters(declaration, trace)
-      checkConstrainedGiven(declaration, descriptor, descriptor.typeParameters, trace)
+      checkSpreadingGiven(declaration, descriptor, descriptor.typeParameters, trace)
       checkGivenTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)
@@ -148,7 +148,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     if (givenConstructors.isNotEmpty()) {
       givenConstructors
         .forEach {
-          checkConstrainedGiven(
+          checkSpreadingGiven(
             declaration, it.callable,
             descriptor.declaredTypeParameters, trace
           )
@@ -204,7 +204,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
   }
 
-  private fun checkConstrainedGiven(
+  private fun checkSpreadingGiven(
     declaration: KtDeclaration,
     descriptor: CallableDescriptor,
     typeParameters: List<TypeParameterDescriptor>,
@@ -212,14 +212,14 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
   ) {
     val givenConstraints = typeParameters.filter {
       it.classifierInfo(context, trace)
-        .isGivenConstraint
+        .isSpread
     }
     if (givenConstraints.size > 1) {
       givenConstraints
         .drop(1)
         .forEach {
           trace.report(
-            InjektErrors.MULTIPLE_GIVEN_CONSTRAINTS
+            InjektErrors.MULTIPLE_SPREADS
               .on(it.findPsi() ?: declaration)
           )
         }
@@ -294,10 +294,10 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     if (typeParameters.isEmpty()) return
     typeParameters
       .asSequence()
-      .filter { it.classifierInfo(context, trace).isGivenConstraint }
+      .filter { it.classifierInfo(context, trace).isSpread }
       .forEach { typeParameter ->
         trace.report(
-          InjektErrors.GIVEN_CONSTRAINT_ON_NON_GIVEN_DECLARATION
+          InjektErrors.SPREAD_ON_NON_GIVEN_DECLARATION
             .on(typeParameter.findPsi()!!)
         )
       }

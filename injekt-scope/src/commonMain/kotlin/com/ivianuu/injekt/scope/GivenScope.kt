@@ -182,7 +182,7 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
  */
 @Qualifier annotation class InstallElement<S : GivenScope> {
   companion object {
-    @Given class Module<@Given T : @InstallElement<S> U, U : Any, S : GivenScope> {
+    @Given class Module<@Spread T : @InstallElement<S> U, U : Any, S : GivenScope> {
       @Given inline fun givenScopeElement(
         @Given noinline factory: () -> T,
         @Given key: @Private TypeKey<U>

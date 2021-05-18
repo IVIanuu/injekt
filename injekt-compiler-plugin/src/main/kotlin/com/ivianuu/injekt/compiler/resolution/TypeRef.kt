@@ -126,7 +126,7 @@ fun ClassifierDescriptor.toClassifierRef(
     isTypeAlias = this is TypeAliasDescriptor,
     descriptor = this,
     qualifiers = info.qualifiers,
-    isGivenConstraint = info.isGivenConstraint,
+    isGivenConstraint = info.isSpread,
     isForTypeKey = info.isForTypeKey,
     primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
       .map { it.asNameId() },

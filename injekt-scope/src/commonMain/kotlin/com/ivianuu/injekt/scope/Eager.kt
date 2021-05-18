@@ -23,7 +23,7 @@ import com.ivianuu.injekt.*
  */
 @Qualifier annotation class Eager<S : GivenScope> {
   companion object {
-    @Given class Module<@Given T : @Eager<S> U, U : Any, S : GivenScope> {
+    @Given class Module<@Spread T : @Eager<S> U, U : Any, S : GivenScope> {
       @Given inline fun scopedValue(@Given value: T): @Scoped<S> U = value
 
       @Given

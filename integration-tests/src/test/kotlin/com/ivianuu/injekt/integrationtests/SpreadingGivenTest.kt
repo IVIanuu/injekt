@@ -22,7 +22,7 @@ import io.kotest.matchers.collections.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class ConstrainedGivenTest {
+class SpreadingGivenTest {
   @Test fun testGivenWithGivenConstraint() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
@@ -148,7 +148,7 @@ class ConstrainedGivenTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testMultipleConstrainedContributionsWithSameType() = singleAndMultiCodegen(
+  @Test fun testMultipleSpreadingContributionsWithSameType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
       @Given fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
@@ -265,7 +265,7 @@ class ConstrainedGivenTest {
     """
   )
 
-  @Test fun testConstrainedGivenWithModuleLikeConstrainedReturnType() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class ClassSingleton
       
@@ -289,7 +289,7 @@ class ConstrainedGivenTest {
     irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
   }
 
-  @Test fun testConstrainedGivenWithModuleLikeConstrainedReturnType2() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
     """
       @Qualifier annotation class ClassSingleton
       
@@ -315,7 +315,7 @@ class ConstrainedGivenTest {
     irShouldContain(1, "setOf")
   }
 
-  @Test fun testNestedConstrainedGivensWithGenerics() = singleAndMultiCodegen(
+  @Test fun testNestedSpreadingGivensWithGenerics() = singleAndMultiCodegen(
     """
       @Qualifier annotation class A<T>
       
@@ -332,7 +332,7 @@ class ConstrainedGivenTest {
     compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.summon")
   }
 
-  @Test fun testConstrainedGivenWithInvariantTypeParameter() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenWithInvariantTypeParameter() = singleAndMultiCodegen(
     """
       interface IntentKey
       

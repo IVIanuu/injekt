@@ -65,7 +65,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true ||
+      if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true ||
         typeParameter?.hasAnnotation(InjektFqNames.ForTypeKey) == true
       ) return true
     }

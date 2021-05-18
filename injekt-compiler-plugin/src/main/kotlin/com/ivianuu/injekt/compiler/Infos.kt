@@ -181,7 +181,7 @@ class ClassifierInfo(
   val qualifiers: List<TypeRef> = emptyList(),
   val lazySuperTypes: Lazy<List<TypeRef>> = unsafeLazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  val isGivenConstraint: Boolean,
+  val isSpread: Boolean,
   val isForTypeKey: Boolean,
   val isSingletonGiven: Boolean = false
 ) {
@@ -238,8 +238,8 @@ fun ClassifierDescriptor.classifierInfo(
     ?.toList()
     ?: emptyList()
 
-  val isGivenConstraint = hasAnnotation(InjektFqNames.Given) ||
-      findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Given) == true
+  val isSpread = hasAnnotation(InjektFqNames.Spread) ||
+      findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
 
   val isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
@@ -269,7 +269,7 @@ fun ClassifierDescriptor.classifierInfo(
       .map { it.type.toTypeRef(context, trace) },
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-    isGivenConstraint = isGivenConstraint,
+    isSpread = isSpread,
     isForTypeKey = isForTypeKey,
     isSingletonGiven = isSingletonGiven
   )
@@ -286,7 +286,7 @@ data class PersistedClassifierInfo(
   @SerialName("0") val qualifiers: List<PersistedTypeRef> = emptyList(),
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  @SerialName("3") val isGivenConstraint: Boolean = false,
+  @SerialName("3") val isSpread: Boolean = false,
   @SerialName("4") val isForTypeKey: Boolean = false,
   @SerialName("5") val isSingletonGiven: Boolean = false
 )
@@ -298,7 +298,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
   qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
   lazySuperTypes = unsafeLazy { superTypes.map { it.toTypeRef(context, trace) } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  isGivenConstraint = isGivenConstraint,
+  isSpread = isSpread,
   isForTypeKey = isForTypeKey,
   isSingletonGiven = isSingletonGiven
 )
@@ -309,7 +309,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   qualifiers = qualifiers.map { it.toPersistedTypeRef(context) },
   superTypes = superTypes.map { it.toPersistedTypeRef(context) },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  isGivenConstraint = isGivenConstraint,
+  isSpread = isSpread,
   isForTypeKey = isForTypeKey,
   isSingletonGiven = isSingletonGiven
 )
@@ -321,7 +321,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
     val container = containingDeclaration
     if (container is TypeAliasDescriptor) return
 
-    if (!info.isGivenConstraint &&
+    if (!info.isSpread &&
       !info.isForTypeKey &&
       info.superTypes.none { it.shouldBePersisted() }
     ) return

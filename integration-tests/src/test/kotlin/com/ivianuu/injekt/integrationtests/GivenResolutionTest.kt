@@ -422,7 +422,7 @@ class GivenResolutionTest {
       foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
-  @Test fun testConstrainedGivenWithTheSameOrigin() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenWithTheSameOrigin() = singleAndMultiCodegen(
     """
       @Given @MyQualifier class FooModule {
         @Given val foo = Foo()
@@ -437,7 +437,7 @@ class GivenResolutionTest {
     """
   )
 
-  @Test fun testConstrainedGivenWithTheSameOrigin2() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenWithTheSameOrigin2() = singleAndMultiCodegen(
     """
       abstract class FooModule {
         @Given val foo = Foo()

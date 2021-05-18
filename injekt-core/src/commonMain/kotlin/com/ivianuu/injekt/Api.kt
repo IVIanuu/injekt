@@ -53,10 +53,7 @@ package com.ivianuu.injekt
 
   // Providers
   // val provider = summon<(@Given Foo) -> Bar>()
-  AnnotationTarget.TYPE,
-
-  // @Given fun <@Given T> func()
-  AnnotationTarget.TYPE_PARAMETER
+  AnnotationTarget.TYPE
 )
 annotation class Given
 
@@ -114,6 +111,13 @@ inline fun <T> summonOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = v
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Qualifier
+
+/**
+ * Creates a version of the annotated given for each other given whose type matches the constraints
+ * of the the annotated type parameter
+ */
+@Target(AnnotationTarget.TYPE_PARAMETER)
+annotation class Spread
 
 /**
  * Falls back to the default value if a given exists but has an error.

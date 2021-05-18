@@ -109,22 +109,22 @@ interface InjektErrors {
         }
 
     @JvmField
-    val MULTIPLE_GIVEN_CONSTRAINTS =
+    val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "a declaration may have only one @Given type constraint"
+            "a declaration may have only one @Spread type parameter"
           )
         }
 
     @JvmField
-    val GIVEN_CONSTRAINT_ON_NON_GIVEN_DECLARATION =
+    val SPREAD_ON_NON_GIVEN_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "a @Given type constraint is only supported on @Given functions and @Given classes"
+            "a @Spread type parameter is only supported on @Given functions and @Given classes"
           )
         }
 

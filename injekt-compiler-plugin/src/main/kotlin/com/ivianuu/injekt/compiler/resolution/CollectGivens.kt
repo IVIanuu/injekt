@@ -193,7 +193,7 @@ fun CallableRef.collectGivens(
   trace: BindingTrace,
   addImport: (FqName, FqName) -> Unit,
   addGiven: (CallableRef) -> Unit,
-  addConstrainedGiven: (CallableRef) -> Unit,
+  addSpreadingGiven: (CallableRef) -> Unit,
   seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
   checkCancelled()
@@ -202,7 +202,7 @@ fun CallableRef.collectGivens(
   if (!scope.canSee(this)) return
 
   if (source == null && typeParameters.any { it.isGivenConstraint }) {
-    addConstrainedGiven(this)
+    addSpreadingGiven(this)
     return
   }
 
@@ -225,7 +225,7 @@ fun CallableRef.collectGivens(
         trace,
         addImport,
         addGiven,
-        addConstrainedGiven,
+        addSpreadingGiven,
         seen
       )
     }

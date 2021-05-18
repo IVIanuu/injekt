@@ -76,10 +76,10 @@ class ResolutionScope(
 
   private val givens = mutableMapOf<GivenKey, CallableRef>()
 
-  private val constrainedGivens = mutableListOf<ConstrainedGivenNode>()
-  private val constrainedGivenCandidates = mutableListOf<ConstrainedGivenCandidate>()
+  private val spreadingGivens = mutableListOf<SpreadingGivenNode>()
+  private val spreadingGivenCandidates = mutableListOf<SpreadingGivenCandidate>()
 
-  private data class ConstrainedGivenNode(
+  private data class SpreadingGivenNode(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
       it.isGivenConstraint
@@ -87,7 +87,7 @@ class ResolutionScope(
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
     val resultingFrameworkKeys: MutableSet<Int> = mutableSetOf()
   ) {
-    fun copy() = ConstrainedGivenNode(
+    fun copy() = SpreadingGivenNode(
       callable,
       constraintType,
       processedCandidateTypes.toMutableSet(),
@@ -95,7 +95,7 @@ class ResolutionScope(
     )
   }
 
-  private data class ConstrainedGivenCandidate(
+  private data class SpreadingGivenCandidate(
     val type: TypeRef,
     val rawType: TypeRef,
     val source: CallableRef?
@@ -140,33 +140,33 @@ class ResolutionScope(
               val typeWithFrameworkKey = callable.type
                 .copy(frameworkKey = generateFrameworkKey())
               addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = given))
-              constrainedGivenCandidates += ConstrainedGivenCandidate(
+              spreadingGivenCandidates += SpreadingGivenCandidate(
                 type = typeWithFrameworkKey,
                 rawType = callable.type,
                 source = given
               )
             },
-            addConstrainedGiven = { constrainedGivens += ConstrainedGivenNode(it) }
+            addSpreadingGiven = { spreadingGivens += SpreadingGivenNode(it) }
           )
         }
 
-      val hasConstrainedGivens = constrainedGivens.isNotEmpty()
-      val hasConstrainedGivensCandidates = constrainedGivenCandidates.isNotEmpty()
+      val hasSpreadingGivens = spreadingGivens.isNotEmpty()
+      val hasSpreadingGivenCandidates = spreadingGivenCandidates.isNotEmpty()
       if (parent != null) {
-        constrainedGivens.addAll(
+        spreadingGivens.addAll(
           0,
-          parent.constrainedGivens
-            .map { if (hasConstrainedGivensCandidates) it.copy() else it }
+          parent.spreadingGivens
+            .map { if (hasSpreadingGivenCandidates) it.copy() else it }
         )
-        constrainedGivenCandidates.addAll(0, parent.constrainedGivenCandidates)
+        spreadingGivenCandidates.addAll(0, parent.spreadingGivenCandidates)
       }
 
-      if ((hasConstrainedGivens && constrainedGivenCandidates.isNotEmpty()) ||
-        (hasConstrainedGivensCandidates && constrainedGivens.isNotEmpty())
+      if ((hasSpreadingGivens && spreadingGivenCandidates.isNotEmpty()) ||
+        (hasSpreadingGivenCandidates && spreadingGivens.isNotEmpty())
       ) {
-        constrainedGivenCandidates
+        spreadingGivenCandidates
           .toList()
-          .forEach { collectConstrainedGivens(it) }
+          .forEach { spreadGivens(it) }
       }
     }.let {
       println("initializing scope $name took ${it.first} ms")
@@ -196,7 +196,7 @@ class ResolutionScope(
       if (it.value.type.frameworkKey == 0)
         recordLookup(it.value.callable)
     }
-    constrainedGivens.forEach {
+    spreadingGivens.forEach {
       if (it.callable.type.frameworkKey == 0)
         recordLookup(it.callable.callable)
     }
@@ -360,38 +360,38 @@ class ResolutionScope(
     }
   }
 
-  private fun collectConstrainedGivens(candidate: ConstrainedGivenCandidate) {
-    for (constrainedGiven in constrainedGivens.toList()) {
+  private fun spreadGivens(candidate: SpreadingGivenCandidate) {
+    for (spreadingGiven in spreadingGivens.toList()) {
       checkCancelled()
-      collectConstrainedGivens(constrainedGiven, candidate)
+      spreadGivens(spreadingGiven, candidate)
     }
   }
 
-  private fun collectConstrainedGivens(
-    constrainedGiven: ConstrainedGivenNode,
-    candidate: ConstrainedGivenCandidate
+  private fun spreadGivens(
+    spreadingGiven: SpreadingGivenNode,
+    candidate: SpreadingGivenCandidate
   ) {
-    if (candidate.type.frameworkKey in constrainedGiven.resultingFrameworkKeys) return
-    if (candidate.type in constrainedGiven.processedCandidateTypes) return
-    constrainedGiven.processedCandidateTypes += candidate.type
-    val (context, substitutionMap) = buildContextForConstrainedGiven(
+    if (candidate.type.frameworkKey in spreadingGiven.resultingFrameworkKeys) return
+    if (candidate.type in spreadingGiven.processedCandidateTypes) return
+    spreadingGiven.processedCandidateTypes += candidate.type
+    val (context, substitutionMap) = buildContextForSpreadingGiven(
       context,
-      constrainedGiven.constraintType,
+      spreadingGiven.constraintType,
       candidate.type,
       allStaticTypeParameters
     )
     if (!context.isOk) return
 
-    val newGivenType = constrainedGiven.callable.type
+    val newGivenType = spreadingGiven.callable.type
       .substitute(substitutionMap)
       .copy(frameworkKey = 0)
-    val newGiven = constrainedGiven.callable
+    val newGiven = spreadingGiven.callable
       .copy(
         type = newGivenType,
         originalType = newGivenType,
-        parameterTypes = constrainedGiven.callable.parameterTypes
+        parameterTypes = spreadingGiven.callable.parameterTypes
           .mapValues { it.value.substitute(substitutionMap) },
-        typeArguments = constrainedGiven.callable
+        typeArguments = spreadingGiven.callable
           .typeArguments
           .mapValues { it.value.substitute(substitutionMap) },
         source = candidate.source
@@ -418,30 +418,30 @@ class ResolutionScope(
         val newInnerGivenWithFrameworkKey = finalNewInnerGiven.copy(
           type = finalNewInnerGiven.type.copy(
             frameworkKey = generateFrameworkKey()
-              .also { constrainedGiven.resultingFrameworkKeys += it }
+              .also { spreadingGiven.resultingFrameworkKeys += it }
           )
         )
         addGivenIfAbsentOrBetter(newInnerGivenWithFrameworkKey)
-        val newCandidate = ConstrainedGivenCandidate(
+        val newCandidate = SpreadingGivenCandidate(
           type = newInnerGivenWithFrameworkKey.type,
           rawType = finalNewInnerGiven.type,
           source = candidate.source
         )
-        constrainedGivenCandidates += newCandidate
-        collectConstrainedGivens(newCandidate)
+        spreadingGivenCandidates += newCandidate
+        spreadGivens(newCandidate)
       },
-      addConstrainedGiven = { newInnerConstrainedGiven ->
-        val finalNewInnerConstrainedGiven = newInnerConstrainedGiven
+      addSpreadingGiven = { newInnerSpreadingGiven ->
+        val finalNewInnerSpreadingGiven = newInnerSpreadingGiven
           .copy(
             source = candidate.source,
-            originalType = newInnerConstrainedGiven.type
+            originalType = newInnerSpreadingGiven.type
           )
-        val newConstrainedGiven = ConstrainedGivenNode(finalNewInnerConstrainedGiven)
-        constrainedGivens += newConstrainedGiven
-        constrainedGivenCandidates
+        val newSpreadingGivenNode = SpreadingGivenNode(finalNewInnerSpreadingGiven)
+        spreadingGivens += newSpreadingGivenNode
+        spreadingGivenCandidates
           .toList()
           .forEach {
-            collectConstrainedGivens(newConstrainedGiven, it)
+            spreadGivens(newSpreadingGivenNode, it)
           }
       }
     )
