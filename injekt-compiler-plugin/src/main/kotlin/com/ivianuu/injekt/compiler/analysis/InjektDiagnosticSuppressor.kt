@@ -38,7 +38,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     )
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
         ?.valueParameters
-        ?.count { !it.hasAnnotation(InjektFqNames.Given) } == 1
+        ?.count { !it.hasAnnotation(InjektFqNames.Inject) } == 1
 
     if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
       return true
@@ -55,16 +55,16 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED) {
       val parameter = diagnostic.psiElement.getParentOfType<KtParameter>(false)
         ?.descriptor<ParameterDescriptor>(bindingContext)
-      return parameter?.hasAnnotation(InjektFqNames.Given) == true ||
-          parameter?.containingDeclaration?.hasAnnotation(InjektFqNames.Given) == true ||
+      return parameter?.hasAnnotation(InjektFqNames.Inject) == true ||
+          parameter?.containingDeclaration?.hasAnnotation(InjektFqNames.Provide) == true ||
           parameter?.containingDeclaration?.safeAs<ConstructorDescriptor>()
             ?.takeIf { it.isPrimary }
-            ?.constructedClass?.hasAnnotation(InjektFqNames.Given) == true
+            ?.constructedClass?.hasAnnotation(InjektFqNames.Provide) == true
     }
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
       val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-      if (function?.hasAnnotation(InjektFqNames.Given) == true)
+      if (function?.hasAnnotation(InjektFqNames.Provide) == true)
         return true
     }
 
@@ -77,7 +77,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
       val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(InjektFqNames.Given) == true) return true
+      if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true) return true
     }
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {

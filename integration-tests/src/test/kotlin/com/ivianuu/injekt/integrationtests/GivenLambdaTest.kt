@@ -23,7 +23,7 @@ import org.junit.*
 class GivenLambdaTest {
   @Test fun testGivenLambda() = codegen(
     """
-            fun invoke(foo: Foo) = summon<@Given (@Given () -> Foo) -> Foo>()({ foo })
+            fun invoke(foo: Foo) = inject<@Given (@Given () -> Foo) -> Foo>()({ foo })
     """
   ) {
     val foo = Foo()
@@ -35,7 +35,7 @@ class GivenLambdaTest {
             @Given val fooModule: @Given () -> @Given () -> Foo = { { Foo() } }
     """,
     """
-        fun invoke() = summon<Foo>() 
+        fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -49,7 +49,7 @@ class GivenLambdaTest {
             @Given class MyComposeView(val content: @Composable () -> Unit)
     """,
     """
-        fun invoke() = summon<(@Given @Composable () -> Unit) -> MyComposeView>() 
+        fun invoke() = inject<(@Given @Composable () -> Unit) -> MyComposeView>() 
     """
   )
 }

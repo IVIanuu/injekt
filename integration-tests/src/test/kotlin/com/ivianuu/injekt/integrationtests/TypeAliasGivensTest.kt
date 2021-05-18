@@ -23,7 +23,7 @@ class TypeAliasGivensTest {
         source(
           """
             @GivenImports("givens.Dep")
-            fun invoke() = summon<Foo>()
+            fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
         )

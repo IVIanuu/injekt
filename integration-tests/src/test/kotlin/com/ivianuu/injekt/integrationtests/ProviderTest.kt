@@ -28,7 +28,7 @@ class ProviderTest {
     """,
     """
          fun invoke(): Foo {
-                return summon<() -> Foo>()()
+                return inject<() -> Foo>()()
             } 
     """
   ) {
@@ -39,11 +39,11 @@ class ProviderTest {
   @Test fun testCannotRequestProviderForNonExistingGiven() = codegen(
     """ 
          fun invoke(): Foo {
-                return summon<() -> Foo>()()
+                return inject<() -> Foo>()()
             }
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.summon")
+    compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testProviderWithGivenArgs() = codegen(
@@ -51,7 +51,7 @@ class ProviderTest {
             @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
-        fun invoke() = summon<(@Given Foo) -> Bar>()(Foo()) 
+        fun invoke() = inject<(@Given Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -64,7 +64,7 @@ class ProviderTest {
       @Given fun bar(foo: @MyQualifier Foo) = Bar(foo)
     """,
     """
-      fun invoke() = summon<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
+      fun invoke() = inject<(@Given @MyQualifier Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -91,7 +91,7 @@ class ProviderTest {
     """,
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun createGivenScopeA() = summon<GivenScopeA>()
+      fun createGivenScopeA() = inject<GivenScopeA>()
 
       @InstallElement<GivenScopeC>
       @Given 
@@ -109,7 +109,7 @@ class ProviderTest {
       class FooModule(@Given val foo: Foo)
     """,
     """
-      fun invoke() = summon<(@Given FooModule) -> Bar>()(FooModule(Foo()))
+      fun invoke() = inject<(@Given FooModule) -> Bar>()(FooModule(Foo()))
     """
   )
 
@@ -118,7 +118,7 @@ class ProviderTest {
             @Given suspend fun foo() = Foo()
     """,
     """
-        fun invoke(): Foo = runBlocking { summon<suspend () -> Foo>()() } 
+        fun invoke(): Foo = runBlocking { inject<suspend () -> Foo>()() } 
     """
   ) {
     invokeSingleFile()
@@ -130,7 +130,7 @@ class ProviderTest {
             @Given val foo: Foo @Composable get() = Foo()
     """,
     """
-        fun invoke() = summon<@Composable () -> Foo>() 
+        fun invoke() = inject<@Composable () -> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -148,7 +148,7 @@ class ProviderTest {
     """,
       """
         fun invoke() {
-          summon<Set<(MyGivenScope) -> Any>>()
+          inject<Set<(MyGivenScope) -> Any>>()
         } 
     """
     )
@@ -158,7 +158,7 @@ class ProviderTest {
       @Given val foo = Foo()
     """,
     """
-      fun invoke() = summon<(@Given Foo) -> Foo>()(Foo())
+      fun invoke() = inject<(@Given Foo) -> Foo>()(Foo())
     """
   ) {
     invokeSingleFile()
@@ -168,16 +168,16 @@ class ProviderTest {
   @Test fun testProviderWithoutCandidatesError() = codegen(
     """
          fun invoke() {
-                summon<() -> Foo>()
+                inject<() -> Foo>()
             }
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.summon")
+    compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testProviderWithNullableReturnTypeUsesNullAsDefault() = codegen(
     """
-         fun invoke() = summon<() -> Foo?>()()
+         fun invoke() = inject<() -> Foo?>()()
     """
   ) {
     invokeSingleFile().shouldBeNull()
@@ -186,7 +186,7 @@ class ProviderTest {
   @Test fun testProviderWithNullableReturnTypeAndDefaultOnAllErrors() = codegen(
     """
             @Given fun bar(foo: Foo) = Bar(foo)
-         fun invoke() = summon<@DefaultOnAllErrors () -> Bar?>()()
+         fun invoke() = inject<@DefaultOnAllErrors () -> Bar?>()()
     """
   ) {
     invokeSingleFile().shouldBeNull()

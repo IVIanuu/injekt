@@ -47,7 +47,7 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
     val context = resolutionContext.scope.ownerDescriptor.module.injektContext
     candidates
       .map { candidate ->
-        if (candidate.allParameters.any { it.isGiven(context, resolutionContext.trace) }) {
+        if (candidate.allParameters.any { it.isProvided(context, resolutionContext.trace) }) {
           candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
         } else {
           candidate

@@ -11,7 +11,7 @@ Minimal example:
 
 fun main() {
     // retrieve instance
-    val bar = summon<Bar>()
+    val bar = inject<Bar>()
     println("Got $bar")
 }
 ```

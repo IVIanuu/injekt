@@ -22,19 +22,19 @@ import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 
-data class GivenImport(val element: KtElement?, val importPath: String?)
+data class ProviderImport(val element: KtElement?, val importPath: String?)
 
-data class ResolvedGivenImport(
+data class ResolvedProviderImport(
   val element: KtElement?,
   val importPath: String?,
   val packageFqName: FqName
 )
 
-fun GivenImport.toResolvedImport(packageFqName: FqName) = ResolvedGivenImport(
+fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImport(
   element, importPath, packageFqName
 )
 
-fun GivenImport.resolve(context: InjektContext): ResolvedGivenImport {
+fun ProviderImport.resolve(context: InjektContext): ResolvedProviderImport {
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
     val objectForFqName = context.classifierDescriptorForFqName(packageFqName,
@@ -51,10 +51,10 @@ fun GivenImport.resolve(context: InjektContext): ResolvedGivenImport {
   return toResolvedImport(packageFqName)
 }
 
-fun KtAnnotated.getGivenImports(): List<GivenImport> = findAnnotation(InjektFqNames.GivenImports)
+fun KtAnnotated.getProviderImports(): List<ProviderImport> = findAnnotation(InjektFqNames.Providers)
   ?.valueArguments
-  ?.map { it.toGivenImport() } ?: emptyList()
+  ?.map { it.toProviderImport() } ?: emptyList()
 
-fun ValueArgument.toGivenImport() = GivenImport(
+fun ValueArgument.toProviderImport() = ProviderImport(
   getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")
 )

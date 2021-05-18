@@ -29,14 +29,14 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
 
-class SingletonGivenTransformer(
+class SingletonTransformer(
   private val context: InjektContext,
   private val trace: BindingTrace,
   private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
   private val ignoredExpressions = mutableListOf<IrExpression>()
   override fun visitClass(declaration: IrClass): IrStatement {
-    if (declaration.descriptor.classifierInfo(context, trace).isSingletonGiven) {
+    if (declaration.descriptor.classifierInfo(context, trace).isSingleton) {
       instanceFieldForDeclaration(declaration)
     }
     return super.visitClass(declaration)
@@ -45,7 +45,7 @@ class SingletonGivenTransformer(
   override fun visitConstructorCall(expression: IrConstructorCall): IrExpression {
     if (expression in ignoredExpressions) return super.visitConstructorCall(expression)
     if (expression.type.classifierOrNull?.descriptor
-        ?.classifierInfo(context, trace)?.isSingletonGiven == true
+        ?.classifierInfo(context, trace)?.isSingleton == true
     ) {
       val module = expression.type.classOrNull!!.owner
       val instanceField = instanceFieldForDeclaration(module)

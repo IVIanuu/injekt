@@ -26,10 +26,10 @@ class DivergenceTest {
         val value: T
       }
   
-      @Given fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
+      @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
     """,
     """
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -46,7 +46,7 @@ class DivergenceTest {
       @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
     """,
     """
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   )
 
@@ -56,7 +56,7 @@ class DivergenceTest {
       @Given class B(a: A)
     """,
     """
-      fun invoke() = summon<A>() 
+      fun invoke() = inject<A>() 
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -68,7 +68,7 @@ class DivergenceTest {
       @Given class B(a: () -> A)
     """,
     """
-      fun invoke() = summon<B>()
+      fun invoke() = inject<B>()
     """
   ) {
     invokeSingleFile()
@@ -81,7 +81,7 @@ class DivergenceTest {
       @Given class C(b: B)
      """,
      """
-      fun invoke() = summon<C>() 
+      fun invoke() = inject<C>() 
      """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -95,7 +95,7 @@ class DivergenceTest {
       @Given fun b(a: () -> A): B = {}
      """,
     """
-     fun invoke() = summon<Set<() -> Unit>>() 
+     fun invoke() = inject<Set<() -> Unit>>() 
     """
   ) {
     invokeSingleFile()

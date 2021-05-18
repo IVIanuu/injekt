@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 data class CallableInfo(
   val type: TypeRef,
   val parameterTypes: Map<String, TypeRef> = emptyMap(),
-  val givenParameters: Set<String> = emptySet(),
+  val injectParameters: Set<String> = emptySet(),
   val defaultOnAllErrorsParameters: Set<String> = emptySet()
 )
 
@@ -58,11 +58,11 @@ fun CallableDescriptor.callableInfo(
 
   val givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
     .filter {
-      it.hasAnnotation(InjektFqNames.Given) ||
+      it.hasAnnotation(InjektFqNames.Inject) ||
           (this is FunctionInvokeDescriptor ||
               (this is GivenFunctionDescriptor &&
                   underlyingDescriptor is FunctionInvokeDescriptor) &&
-              it.type.hasAnnotation(InjektFqNames.Given))
+              it.type.hasAnnotation(InjektFqNames.Inject))
     }
     .mapTo(mutableSetOf()) { it.injektName() }
 
@@ -74,7 +74,7 @@ fun CallableDescriptor.callableInfo(
   val info = CallableInfo(
     type = type,
     parameterTypes = parameterTypes,
-    givenParameters = givenParameters,
+    injectParameters = givenParameters,
     defaultOnAllErrorsParameters = defaultOnAllErrorParameters
   )
 
@@ -101,15 +101,15 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   if (hasAnnotation(InjektFqNames.CallableInfo))
     return
 
-  val shouldPersistInfo = hasAnnotation(InjektFqNames.Given) ||
+  val shouldPersistInfo = hasAnnotation(InjektFqNames.Provide) ||
       (this is ConstructorDescriptor &&
-          constructedClass.hasAnnotation(InjektFqNames.Given)) ||
+          constructedClass.hasAnnotation(InjektFqNames.Provide)) ||
       (this is PropertyDescriptor &&
           primaryConstructorPropertyValueParameter(context, trace)
-            ?.isGiven(context, trace) == true) ||
+            ?.isProvided(context, trace) == true) ||
       safeAs<FunctionDescriptor>()
         ?.valueParameters
-        ?.any { it.hasAnnotation(InjektFqNames.Given) } == true ||
+        ?.any { it.hasAnnotation(InjektFqNames.Provide) } == true ||
       info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
@@ -136,7 +136,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
 data class PersistedCallableInfo(
   @SerialName("0") val type: PersistedTypeRef,
   @SerialName("1") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
-  @SerialName("2") val givenParameters: Set<String> = emptySet(),
+  @SerialName("2") val injectParameters: Set<String> = emptySet(),
   @SerialName("3") val defaultOnAllErrorsParameters: Set<String> = emptySet()
 )
 
@@ -144,7 +144,7 @@ fun CallableInfo.toPersistedCallableInfo(context: InjektContext) = PersistedCall
   type = type.toPersistedTypeRef(context),
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef(context) },
-  givenParameters = givenParameters,
+  injectParameters = injectParameters,
   defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
 )
 
@@ -155,7 +155,7 @@ fun PersistedCallableInfo.toCallableInfo(
   type = type.toTypeRef(context, trace),
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef(context, trace) },
-  givenParameters = givenParameters,
+  injectParameters = injectParameters,
   defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
 )
 
@@ -169,7 +169,7 @@ class ClassifierInfo(
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean,
   val isForTypeKey: Boolean,
-  val isSingletonGiven: Boolean = false
+  val isSingleton: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 }
@@ -235,8 +235,8 @@ fun ClassifierDescriptor.classifierInfo(
       kind == ClassKind.CLASS &&
       constructors
         .filter {
-          it.hasAnnotation(InjektFqNames.Given) ||
-              (hasAnnotation(InjektFqNames.Given) && it.isPrimary)
+          it.hasAnnotation(InjektFqNames.Provide) ||
+              (it.isPrimary && hasAnnotation(InjektFqNames.Provide))
         }
         .any { it.valueParameters.isEmpty() } &&
       declaredTypeParameters.none {
@@ -257,7 +257,7 @@ fun ClassifierDescriptor.classifierInfo(
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
     isForTypeKey = isForTypeKey,
-    isSingletonGiven = isSingletonGiven
+    isSingleton = isSingletonGiven
   )
 
   trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
@@ -286,7 +286,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
   isForTypeKey = isForTypeKey,
-  isSingletonGiven = isSingletonGiven
+  isSingleton = isSingletonGiven
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(
@@ -297,7 +297,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
   isForTypeKey = isForTypeKey,
-  isSingletonGiven = isSingletonGiven
+  isSingletonGiven = isSingleton
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, context: InjektContext) {
@@ -340,12 +340,12 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
     if (!visibility.shouldPersistInfo()) return
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
-    if (!info.isSingletonGiven &&
+    if (!info.isSingleton &&
       info.qualifiers.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
-      !hasAnnotation(InjektFqNames.Given) &&
+      !hasAnnotation(InjektFqNames.Provide) &&
       (this !is ClassDescriptor ||
-          constructors.none { it.hasAnnotation(InjektFqNames.Given) }) &&
+          constructors.none { it.hasAnnotation(InjektFqNames.Provide) }) &&
       info.superTypes.none { it.shouldBePersisted() }
     ) return
 

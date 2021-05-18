@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.multiplatform.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class GivenChecker(private val context: InjektContext) : DeclarationChecker {
+class ProvideInjectChecker(private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
@@ -50,26 +50,17 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: FunctionDescriptor,
     trace: BindingTrace
   ) {
-    if (descriptor.isGiven(this.context, trace)) {
+    if (descriptor.isProvided(this.context, trace)) {
       descriptor.valueParameters
-        .checkGivenCallableDoesNotHaveGivenMarkedParameters(declaration, trace)
+        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
       checkSpreadingGiven(declaration, descriptor.typeParameters, trace)
-      checkGivenTypeParametersMismatch(descriptor, declaration, trace)
+      checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)
       checkExceptActual(declaration, descriptor, trace)
       checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
     }
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Given) == true ||
-        descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) == true) {
-      trace.report(
-        InjektErrors.GIVEN_RECEIVER
-          .on(
-            declaration.safeAs<KtNamedFunction>()
-              ?.receiverTypeReference ?: declaration
-          )
-      )
-    }
+    checkReceiver(descriptor, declaration, trace)
   }
 
   private fun checkClass(
@@ -77,44 +68,42 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: ClassDescriptor,
     trace: BindingTrace
   ) {
-    val givenConstructors = descriptor.givenConstructors(context, trace)
-    val isGiven = givenConstructors.isNotEmpty()
+    val provideConstructors = descriptor.provideConstructors(context, trace)
+    val isProvider = provideConstructors.isNotEmpty()
 
-    if (isGiven && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
+    if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
       trace.report(
-        InjektErrors.GIVEN_ANNOTATION_CLASS
+        InjektErrors.PROVIDE_ANNOTATION_CLASS
           .on(
-            declaration.findAnnotation(InjektFqNames.Given)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
     }
 
-    if (isGiven && descriptor.kind == ClassKind.ENUM_CLASS) {
+    if (isProvider && descriptor.kind == ClassKind.ENUM_CLASS) {
       trace.report(
-        InjektErrors.GIVEN_ENUM_CLASS
+        InjektErrors.PROVIDE_ENUM_CLASS
           .on(
-            declaration.findAnnotation(InjektFqNames.Given)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
     }
 
-    if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(InjektFqNames.Given)
-    ) {
+    if (descriptor.kind == ClassKind.INTERFACE && descriptor.hasAnnotation(InjektFqNames.Provide)) {
       trace.report(
-        InjektErrors.GIVEN_INTERFACE
+        InjektErrors.PROVIDE_INTERFACE
           .on(
-            declaration.findAnnotation(InjektFqNames.Given)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
     }
 
-    if (isGiven && descriptor.modality == Modality.ABSTRACT) {
+    if (isProvider && descriptor.modality == Modality.ABSTRACT) {
       trace.report(
-        InjektErrors.GIVEN_ABSTRACT_CLASS
+        InjektErrors.PROVIDE_ABSTRACT_CLASS
           .on(
             declaration.modalityModifier()
               ?: declaration
@@ -122,9 +111,9 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       )
     }
 
-    if (isGiven && descriptor.isInner) {
+    if (isProvider && descriptor.isInner) {
       trace.report(
-        InjektErrors.GIVEN_INNER_CLASS
+        InjektErrors.PROVIDE_INNER_CLASS
           .on(
             declaration.modifierList
               ?.getModifier(KtTokens.INNER_KEYWORD)
@@ -133,21 +122,21 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       )
     }
 
-    if (descriptor.hasAnnotation(InjektFqNames.Given) &&
+    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
       descriptor.unsubstitutedPrimaryConstructor
-        ?.hasAnnotation(InjektFqNames.Given) == true
+        ?.hasAnnotation(InjektFqNames.Provide) == true
     ) {
       trace.report(
-        InjektErrors.GIVEN_ON_CLASS_WITH_PRIMARY_GIVEN_CONSTRUCTOR
+        InjektErrors.PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR
           .on(
-            declaration.findAnnotation(InjektFqNames.Given)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
     }
 
-    if (givenConstructors.isNotEmpty()) {
-      givenConstructors
+    if (provideConstructors.isNotEmpty()) {
+      provideConstructors
         .forEach { checkSpreadingGiven(declaration, descriptor.declaredTypeParameters, trace) }
     } else {
       checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
@@ -161,9 +150,9 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: ConstructorDescriptor,
     trace: BindingTrace
   ) {
-    if (descriptor.isGiven(this.context, trace)) {
+    if (descriptor.isProvided(this.context, trace)) {
       descriptor.valueParameters
-        .checkGivenCallableDoesNotHaveGivenMarkedParameters(declaration, trace)
+        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
     } else {
       checkExceptActual(declaration, descriptor, trace)
     }
@@ -175,21 +164,12 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     trace: BindingTrace
   ) {
     checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
-    if (descriptor.isGiven(this.context, trace)) {
-      checkGivenTypeParametersMismatch(descriptor, declaration, trace)
+    checkReceiver(descriptor, declaration, trace)
+    if (descriptor.isProvided(this.context, trace)) {
+      checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)
       checkExceptActual(declaration, descriptor, trace)
-    }
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Given) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Given) == true) {
-      trace.report(
-        InjektErrors.GIVEN_RECEIVER
-          .on(
-            declaration.safeAs<KtProperty>()
-              ?.receiverTypeReference ?: declaration
-          )
-      )
     }
   }
 
@@ -198,6 +178,34 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     trace: BindingTrace
   ) {
     checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+  }
+
+  private fun checkReceiver(
+    descriptor: CallableDescriptor,
+    declaration: KtDeclaration,
+    trace: BindingTrace
+  ) {
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Provide) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true) {
+      trace.report(
+        InjektErrors.PROVIDE_RECEIVER
+          .on(
+            declaration.safeAs<KtProperty>()
+              ?.receiverTypeReference ?: declaration
+          )
+      )
+    }
+
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true) {
+      trace.report(
+        InjektErrors.INJECT_RECEIVER
+          .on(
+            declaration.safeAs<KtProperty>()
+              ?.receiverTypeReference ?: declaration
+          )
+      )
+    }
   }
 
   private fun checkSpreadingGiven(
@@ -226,11 +234,11 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: CallableMemberDescriptor,
     trace: BindingTrace
   ) {
-    val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
-    if (isGiven) return
+    val isProvide = descriptor.hasAnnotation(InjektFqNames.Provide)
+    if (isProvide) return
     if (descriptor.overriddenTreeUniqueAsSequence(false)
         .drop(1)
-        .any { it.hasAnnotation(InjektFqNames.Given) }
+        .any { it.hasAnnotation(InjektFqNames.Provide) }
     ) {
       trace.report(
         Errors.NOTHING_TO_OVERRIDE
@@ -245,9 +253,9 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     trace: BindingTrace
   ) {
     if (!descriptor.isActual) return
-    val isGiven = descriptor.hasAnnotation(InjektFqNames.Given)
-    if (isGiven) return
-    if (descriptor.findExpects().any { it.hasAnnotation(InjektFqNames.Given) }) {
+    val isProvide = descriptor.hasAnnotation(InjektFqNames.Provide)
+    if (isProvide) return
+    if (descriptor.findExpects().any { it.hasAnnotation(InjektFqNames.Provide) }) {
       trace.report(
         Errors.ACTUAL_WITHOUT_EXPECT
           .on(declaration.cast(), descriptor, emptyMap())
@@ -255,7 +263,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     }
   }
 
-  private fun checkGivenTypeParametersMismatch(
+  private fun checkSpreadTypeParametersMismatch(
     descriptor: CallableDescriptor,
     declaration: KtDeclaration,
     trace: BindingTrace
@@ -268,7 +276,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
         var hasDifferentTypeParameters = false
         descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
           hasDifferentTypeParameters = hasDifferentTypeParameters ||
-              a.classifierInfo(context, trace).isSpread != b.classifierInfo(context, trace).isSpread
+              a.classifierInfo(context, trace).isSpread !=
+              b.classifierInfo(context, trace).isSpread
         }
         hasDifferentTypeParameters
       }
@@ -298,17 +307,17 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       }
   }
 
-  private fun List<ParameterDescriptor>.checkGivenCallableDoesNotHaveGivenMarkedParameters(
+  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
     declaration: KtDeclaration,
     trace: BindingTrace,
   ) {
     if (isEmpty()) return
     this
       .asSequence()
-      .filter { it.hasAnnotation(InjektFqNames.Given) }
+      .filter { it.hasAnnotation(InjektFqNames.Inject) }
       .forEach {
         trace.report(
-          InjektErrors.GIVEN_PARAMETER_ON_GIVEN_DECLARATION
+          InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
             .on(it.findPsi() ?: declaration)
         )
       }

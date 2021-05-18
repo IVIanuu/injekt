@@ -53,7 +53,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 
-class GivenCallTransformer(
+class InjectCallTransformer(
   private val context: InjektContext,
   private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
@@ -416,7 +416,7 @@ class GivenCallTransformer(
                 given.singleElementType.toIrType(
                   pluginContext,
                   localClasses,
-                  this@GivenCallTransformer.context
+                  this@InjectCallTransformer.context
                 ).typeOrNull
               )
             },
@@ -428,7 +428,7 @@ class GivenCallTransformer(
             if (dependency !is ResolutionResult.Success.WithCandidate.Value)
               return@forEach
             if (dependency.candidate.type
-                .isSubTypeOf(this@GivenCallTransformer.context, given.collectionElementType)
+                .isSubTypeOf(this@InjectCallTransformer.context, given.collectionElementType)
             ) {
               +irCall(setAddAll).apply {
                 dispatchReceiver = irGet(tmpSet)

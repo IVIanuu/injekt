@@ -29,12 +29,12 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun TypeRef.collectGivens(
+fun TypeRef.collectInstances(
   context: InjektContext,
   trace: BindingTrace,
   classBodyView: Boolean
 ): List<CallableRef> {
-  // special case to support @Given () -> Foo
+  // special case to support @Provide () -> Foo
   if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
     return listOf(
       classifier.descriptor!!
@@ -64,7 +64,7 @@ fun TypeRef.collectGivens(
     callables += type.classifier.descriptor!!
       .defaultType
       .memberScope
-      .collectGivens(context, trace, classBodyView)
+      .collectInstances(context, trace, classBodyView)
       .filter {
         (it.callable as CallableMemberDescriptor)
           .kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
@@ -89,7 +89,7 @@ fun TypeRef.collectGivens(
   return callables
 }
 
-fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
+fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectInstances(
   context: InjektContext,
   trace: BindingTrace,
   classBodyView: Boolean,
@@ -100,17 +100,17 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
     onEach(declaration)
     when (declaration) {
       is ClassDescriptor -> declaration
-        .givenConstructors(context, trace) + listOfNotNull(
+        .provideConstructors(context, trace) + listOfNotNull(
         declaration.companionObjectDescriptor
           ?.givenReceiver(context, trace, false)
       )
       is CallableMemberDescriptor -> {
-        if (declaration.isGiven(context, trace) &&
+        if (declaration.isProvided(context, trace) &&
           (declaration !is PropertyDescriptor ||
               classBodyView ||
-              declaration.hasAnnotation(InjektFqNames.Given) ||
+              declaration.hasAnnotation(InjektFqNames.Provide) ||
               declaration.primaryConstructorPropertyValueParameter(context, trace)
-                ?.hasAnnotation(InjektFqNames.Given) == true)) {
+                ?.hasAnnotation(InjektFqNames.Provide) == true)) {
           listOf(
             declaration.toCallableRef(context, trace)
               .let { callable ->
@@ -122,47 +122,48 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectGivens(
           )
         } else emptyList()
       }
-      is VariableDescriptor -> if (declaration.isGiven(context, trace)) {
+      is VariableDescriptor -> if (declaration.isProvided(context, trace)) {
         listOf(declaration.toCallableRef(context, trace).makeGiven())
       } else emptyList()
       else -> emptyList()
     }
   }
 
-fun Annotated.isGiven(context: InjektContext, trace: BindingTrace): Boolean {
+fun Annotated.isProvided(context: InjektContext, trace: BindingTrace): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  trace.get(InjektWritableSlices.IS_GIVEN, key)?.let { return it }
-  var isGiven = hasAnnotation(InjektFqNames.Given)
-  if (!isGiven && this is PropertyDescriptor) {
-    isGiven = primaryConstructorPropertyValueParameter(context, trace)
-      ?.isGiven(context, trace) == true
+  trace.get(InjektWritableSlices.IS_PROVIDED, key)?.let { return it }
+  var isProvided = hasAnnotation(InjektFqNames.Provide) ||
+      hasAnnotation(InjektFqNames.Inject)
+  if (!isProvided && this is PropertyDescriptor) {
+    isProvided = primaryConstructorPropertyValueParameter(context, trace)
+      ?.isProvided(context, trace) == true
   }
-  if (!isGiven && this is ParameterDescriptor) {
-    isGiven = type.isGiven(context, trace) ||
+  if (!isProvided && this is ParameterDescriptor) {
+    isProvided = type.isProvided(context, trace) ||
         containingDeclaration.safeAs<FunctionDescriptor>()
           ?.let { containingFunction ->
-            containingFunction.isGiven(context, trace) ||
+            containingFunction.isProvided(context, trace) ||
                 containingFunction.isDeserializedDeclaration() &&
-                name.asString() in containingFunction.callableInfo(context, trace).givenParameters
+                name.asString() in containingFunction.callableInfo(context, trace).injectParameters
           } == true
   }
-  if (!isGiven && this is ClassConstructorDescriptor && isPrimary) {
-    isGiven = constructedClass.isGiven(context, trace)
+  if (!isProvided && this is ClassConstructorDescriptor && isPrimary) {
+    isProvided = constructedClass.isProvided(context, trace)
   }
-  trace.record(InjektWritableSlices.IS_GIVEN, key, isGiven)
-  return isGiven
+  trace.record(InjektWritableSlices.IS_PROVIDED, key, isProvided)
+  return isProvided
 }
 
-fun ClassDescriptor.givenConstructors(
+fun ClassDescriptor.provideConstructors(
   context: InjektContext,
   trace: BindingTrace
 ): List<CallableRef> {
   trace.get(InjektWritableSlices.GIVEN_CONSTRUCTORS, this)?.let { return it }
   val givenConstructors = constructors
     .filter { constructor ->
-      constructor.hasAnnotation(InjektFqNames.Given) ||
-          (constructor.isPrimary && hasAnnotation(InjektFqNames.Given))
+      constructor.hasAnnotation(InjektFqNames.Provide) ||
+          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide))
     }
     .map { constructor ->
       val callable = constructor.toCallableRef(context, trace)
@@ -188,7 +189,7 @@ fun ClassDescriptor.givenReceiver(
   return callable.copy(isGiven = true, type = finalType, originalType = finalType)
 }
 
-fun CallableRef.collectGivens(
+fun CallableRef.collectInstances(
   context: InjektContext,
   scope: ResolutionScope,
   trace: BindingTrace,
@@ -218,7 +219,7 @@ fun CallableRef.collectGivens(
   nextCallable
     .type
     .also { addImport(it.classifier.fqName, it.classifier.descriptor!!.findPackage().fqName) }
-    .collectGivens(
+    .collectInstances(
       context = context,
       trace = trace,
       classBodyView = scope.allScopes.any {
@@ -226,7 +227,7 @@ fun CallableRef.collectGivens(
       }
     )
     .forEach { innerCallable ->
-      innerCallable.collectGivens(
+      innerCallable.collectInstances(
         context,
         scope,
         trace,
@@ -238,7 +239,7 @@ fun CallableRef.collectGivens(
     }
 }
 
-fun List<GivenImport>.collectImportGivens(
+fun List<ProviderImport>.collectImportGivens(
   context: InjektContext,
   trace: BindingTrace
 ): List<CallableRef> = flatMap { import ->
@@ -263,7 +264,7 @@ fun List<GivenImport>.collectImportGivens(
 
       // import all givens in the package
       context.memberScopeForFqName(packageFqName, import.element.lookupLocation)
-        ?.collectGivens(context, trace, false)
+        ?.collectInstances(context, trace, false)
         ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
         ?.let { this += it }
 
@@ -276,7 +277,7 @@ fun List<GivenImport>.collectImportGivens(
 
       // import all givens with the specified name
       context.memberScopeForFqName(parentFqName, import.element.lookupLocation)
-        ?.collectGivens(context, trace, false)
+        ?.collectInstances(context, trace, false)
         ?.filter {
           it.callable.name == name ||
               it.callable.safeAs<ClassConstructorDescriptor>()
@@ -355,7 +356,7 @@ private fun TypeRef.collectGivensForSingleType(
           if (clazz.kind == ClassKind.OBJECT) {
             givens += clazz.givenReceiver(context, trace, false)
           } else {
-            givens += clazz.givenConstructors(context, trace)
+            givens += clazz.provideConstructors(context, trace)
             clazz.companionObjectDescriptor
               ?.let { givens += it.givenReceiver(context, trace, false) }
           }
@@ -382,7 +383,7 @@ private fun TypeRef.collectPackageTypeScopeGivens(
   val module = packageDescriptor.module
   val givens = mutableListOf<CallableRef>()
   fun collectGivens(scope: MemberScope) {
-    givens += scope.collectGivens(
+    givens += scope.collectInstances(
       context = context,
       trace = trace,
       onEach = { declaration ->

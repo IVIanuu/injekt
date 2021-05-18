@@ -22,6 +22,9 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.GivenScope.Companion.GivenScope
 
+inline fun <@ForTypeKey R : Any> scoped(@Inject scope: GivenScope, init: () -> R) =
+  scope.getOrCreateScopedValue(init)
+
 /**
  * A hierarchical construct with a lifecycle which hosts a map of keys to elements
  * which can be retrieved via [GivenScope.element]
@@ -70,11 +73,11 @@ interface GivenScope : GivenScopeDisposable {
   companion object {
     @Qualifier private annotation class Parent
 
-    @Given inline fun <S : GivenScope> GivenScope(
+    @Provide inline fun <S : GivenScope> GivenScope(
       parent: @Parent GivenScope? = null,
       typeKey: TypeKey<S>,
-      elements: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
-      initializers: (@Given S, @Given @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
+      elements: (@Inject S, @Inject @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
+      initializers: (@Inject S, @Inject @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
     ): S {
       val scope = GivenScopeImpl(typeKey, parent)
       scope as S
@@ -182,18 +185,18 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
  */
 @Qualifier annotation class InstallElement<S : GivenScope> {
   companion object {
-    @Given class Module<@Spread T : @InstallElement<S> U, U : Any, S : GivenScope> {
-      @Given inline fun givenScopeElement(
+    @Provide class Module<@Spread T : @InstallElement<S> U, U : Any, S : GivenScope> {
+      @Provide inline fun givenScopeElement(
         noinline factory: () -> T,
         key: @Private TypeKey<U>
       ): GivenScopeElement<S> = GivenScopeElement(key, factory)
 
-      @Given inline fun elementAccessor(scope: S, key: @Private TypeKey<U>): U = scope.element(key)
+      @Provide inline fun elementAccessor(scope: S, key: @Private TypeKey<U>): U = scope.element(key)
     }
 
     @Qualifier private annotation class Private
 
-    @Given inline fun <@ForTypeKey T> elementTypeKey(): @Private TypeKey<T> = typeKeyOf()
+    @Provide inline fun <@ForTypeKey T> elementTypeKey(): @Private TypeKey<T> = typeKeyOf()
   }
 }
 

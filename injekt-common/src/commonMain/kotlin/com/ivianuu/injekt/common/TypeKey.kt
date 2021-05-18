@@ -27,7 +27,7 @@ inline class TypeKey<out T>(val value: String) {
     /**
      * Allows to use a [TypeKey] for [T]
      */
-    @Given inline fun <@ForTypeKey T> givenTypeKey(): TypeKey<T> = typeKeyOf()
+    @Provide inline fun <@ForTypeKey T> typeKey(): TypeKey<T> = typeKeyOf()
   }
 }
 

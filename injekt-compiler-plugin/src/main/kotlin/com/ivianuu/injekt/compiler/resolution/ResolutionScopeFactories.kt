@@ -50,7 +50,7 @@ fun HierarchicalResolutionScope(
     .cast<KtElement>()
     .containingKtFile
 
-  val fileImports = (file.getGivenImports() + GivenImport(null, "${file.packageFqName}.*"))
+  val fileImports = (file.getProviderImports() + ProviderImport(null, "${file.packageFqName}.*"))
     .sortedBy { it.importPath }
 
   val importsResolutionScope = ImportResolutionScope(
@@ -101,7 +101,7 @@ private fun HierarchicalScope.isApplicableScope() = this is LexicalScope && (
     )
 
 private fun ImportResolutionScope(
-  imports: List<GivenImport>,
+  imports: List<ProviderImport>,
   namePrefix: String,
   parent: ResolutionScope?,
   context: InjektContext,
@@ -149,7 +149,7 @@ private fun ClassResolutionScope(
   val finalParent = clazz
     .findPsi()
     .safeAs<KtClassOrObject>()
-    ?.getGivenImports()
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let {
       ImportResolutionScope(
@@ -185,7 +185,7 @@ private fun FunctionResolutionScope(
   val finalParent = function
     .findPsi()
     .safeAs<KtFunction>()
-    ?.getGivenImports()
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportResolutionScope(it, "FUNCTION ${function.fqNameSafe}", parent, context, trace) }
     ?: parent
@@ -198,7 +198,7 @@ private fun FunctionResolutionScope(
     trace = trace,
     initialGivens = function.allParameters
         .asSequence()
-        .filter { it.isGiven(context, trace) || it === function.extensionReceiverParameter }
+        .filter { it.isProvided(context, trace) || it === function.extensionReceiverParameter }
         .map { it.toCallableRef(context, trace).makeGiven() }
         .toList(),
     imports = emptyList(),
@@ -217,7 +217,7 @@ private fun PropertyResolutionScope(
   val finalParent = property
     .findPsi()
     .safeAs<KtProperty>()
-    ?.getGivenImports()
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportResolutionScope(it, "PROPERTY ${property.fqNameSafe}", parent, context, trace) }
     ?: parent
@@ -257,7 +257,7 @@ private fun CodeBlockResolutionScope(
     ?.firstOrNull()
     ?.safeAs<VarargValueArgument>()
     ?.arguments
-    ?.map { it.toGivenImport() }
+    ?.map { it.toProviderImport() }
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportResolutionScope(it, "BLOCK", parent, context, trace) }
     ?: parent
@@ -268,7 +268,7 @@ private fun CodeBlockResolutionScope(
     parent = finalParent,
     ownerDescriptor = ownerDescriptor,
     trace = trace,
-    initialGivens = scope.collectGivens(context, trace, true),
+    initialGivens = scope.collectInstances(context, trace, true),
     imports = emptyList(),
     typeParameters = emptyList()
   )

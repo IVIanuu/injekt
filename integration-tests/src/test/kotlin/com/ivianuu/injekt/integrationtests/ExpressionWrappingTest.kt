@@ -27,7 +27,7 @@ class ExpressionWrappingTest {
       @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Bar, Bar>>()
+      fun invoke() = inject<Pair<Bar, Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
@@ -40,7 +40,7 @@ class ExpressionWrappingTest {
       @Given fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Bar, () -> Bar>>()
+      fun invoke() = inject<Pair<Bar, () -> Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
@@ -52,7 +52,7 @@ class ExpressionWrappingTest {
       @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = summon<Bar>()
+      fun invoke() = inject<Bar>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Bar {")
@@ -64,7 +64,7 @@ class ExpressionWrappingTest {
       @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Foo, Foo>>()
+      fun invoke() = inject<Pair<Foo, Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Foo {")
@@ -76,7 +76,7 @@ class ExpressionWrappingTest {
       @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<() -> Foo, () -> Foo>>()
+      fun invoke() = inject<Pair<() -> Foo, () -> Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
@@ -88,7 +88,7 @@ class ExpressionWrappingTest {
       @Given val foo = Foo()
     """,
     """
-      fun invoke() = summon<() -> Foo>()
+      fun invoke() = inject<() -> Foo>()
     """
   ) {
     irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
@@ -101,7 +101,7 @@ class ExpressionWrappingTest {
       @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Bar, Bar>>()
+      fun invoke() = inject<Pair<Bar, Bar>>()
     """
   ) {
     irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
@@ -113,7 +113,7 @@ class ExpressionWrappingTest {
       @Given class B(a: () -> A, a2: () -> A)
      """,
     """
-      fun invoke() = summon<B>() 
+      fun invoke() = inject<B>() 
     """
   ) {
     invokeSingleFile()

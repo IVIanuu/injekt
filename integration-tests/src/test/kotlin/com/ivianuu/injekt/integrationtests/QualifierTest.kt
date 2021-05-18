@@ -28,7 +28,7 @@ class QualifierTest {
         """,
     """
         fun invoke(): Pair<Foo, Foo> {
-                return summon<Foo>() to summon<@Qualifier1 Foo>()
+                return inject<Foo>() to inject<@Qualifier1 Foo>()
            } 
     """
   ) {
@@ -43,7 +43,7 @@ class QualifierTest {
       @Given fun qualified(): @Qualifier1 String = ""
     """,
     """
-      fun invoke() = summon<Dep<String>>() 
+      fun invoke() = inject<Dep<String>>() 
     """
   )
 
@@ -52,7 +52,7 @@ class QualifierTest {
       @Given @Qualifier1 class Dep
     """,
     """
-      fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
@@ -61,7 +61,7 @@ class QualifierTest {
       class Dep @Given @Qualifier1 constructor()
     """,
     """
-      fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
@@ -72,7 +72,7 @@ class QualifierTest {
                 }
         """,
     """
-         fun invoke() = summon<@Qualifier1 Dep>()
+         fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
@@ -81,7 +81,7 @@ class QualifierTest {
             @Given @Qualifier1 object Dep
         """,
     """
-         fun invoke() = summon<@Qualifier1 Dep>()
+         fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
@@ -107,7 +107,7 @@ class QualifierTest {
             @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
         """,
     """
-        fun invoke() = summon<@MyQualifier<String> Foo>() 
+        fun invoke() = inject<@MyQualifier<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -120,7 +120,7 @@ class QualifierTest {
             @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
         """,
     """
-        fun invoke() = summon<@MyQualifier<String> Foo>() 
+        fun invoke() = inject<@MyQualifier<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -136,7 +136,7 @@ class QualifierTest {
             @Given val foo: @UiState Foo = Foo()
         """,
     """
-         fun invoke() = summon<Foo>() 
+         fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -157,7 +157,7 @@ class QualifierTest {
     """,
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = summon<AppGivenScope>()
+      fun invoke() = inject<AppGivenScope>()
     """
   ) {
     compilationShouldBeOk()

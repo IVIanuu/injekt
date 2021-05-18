@@ -36,11 +36,11 @@ class InjektTypeResolutionInterceptorExtension : TypeResolutionInterceptorExtens
   ): KotlinType {
     if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
     if (element !is KtLambdaExpression) return resultType
-    if (!resultType.hasAnnotation(InjektFqNames.Given)) return resultType
+    if (!resultType.hasAnnotation(InjektFqNames.Provide)) return resultType
     val annotation = element.safeAs<KtAnnotated>()
-      ?.findAnnotation(InjektFqNames.Given)
-      ?: element.parent.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Given)
-      ?: context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Given)
+      ?.findAnnotation(InjektFqNames.Provide)
+      ?: element.parent.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Provide)
+      ?: context.expectedType.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Provide)
     if (annotation != null) {
       val annotationDescriptor = context.trace[BindingContext.ANNOTATION, annotation]
       if (annotationDescriptor != null) {

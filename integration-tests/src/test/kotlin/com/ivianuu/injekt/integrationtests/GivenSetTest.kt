@@ -29,7 +29,7 @@ class GivenSetTest {
             @Given fun commandsB() = setOf(CommandB())
     """,
     """
-        fun invoke() = summon<Set<Command>>() 
+        fun invoke() = inject<Set<Command>>() 
     """
   ) {
     val set = invokeSingleFile<Set<Command>>().toList()
@@ -44,11 +44,11 @@ class GivenSetTest {
 
             class InnerObject {
                 @Given fun commandsB() = listOf(CommandB())
-                val set = summon<Set<Command>>()
+                val set = inject<Set<Command>>()
             }
     """,
     """
-        fun invoke() = summon<Set<Command>>() to InnerObject().set 
+        fun invoke() = inject<Set<Command>>() to InnerObject().set 
     """
   ) {
     val (parentSet, childSet) = invokeSingleFile<Pair<Set<Command>, Set<Command>>>()
@@ -65,7 +65,7 @@ class GivenSetTest {
             @Given fun commandA() = CommandA()
     """,
     """
-         fun invoke() = summon<Set<Command>>() 
+         fun invoke() = inject<Set<Command>>() 
     """
   ) {
     irShouldContain(1, "setOf")
@@ -76,7 +76,7 @@ class GivenSetTest {
             @Given fun commandA() = listOf(CommandA())
     """,
     """
-        fun invoke() = summon<Set<Command>>() 
+        fun invoke() = inject<Set<Command>>() 
     """
   ) {
     irShouldContain(1, "toSet")
@@ -87,18 +87,18 @@ class GivenSetTest {
             @Given fun commandA() = setOf(CommandA())
     """,
     """
-        fun invoke() = summon<Set<Command>>() 
+        fun invoke() = inject<Set<Command>>() 
     """
   ) {
-    irShouldContain(1, "summon<Set<Command>>(value = commandA())")
+    irShouldContain(1, "inject<Set<Command>>(value = commandA())")
   }
 
   @Test fun testSetWithoutElements() = codegen(
     """
-         fun invoke() = summon<Set<Command>>()
+         fun invoke() = inject<Set<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.summon")
+    compilationShouldHaveFailed("no given argument found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testImplicitProviderSet() = singleAndMultiCodegen(
@@ -106,7 +106,7 @@ class GivenSetTest {
             @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
-        fun invoke() = summon<Set<(@Given Foo) -> Bar>>() 
+        fun invoke() = inject<Set<(@Given Foo) -> Bar>>() 
     """
   ) {
     val set = invokeSingleFile<Set<(Foo) -> Bar>>().toList()
@@ -125,11 +125,11 @@ class GivenSetTest {
 
             class InnerObject {
                 @Given fun commandB(): Command = CommandB()
-                val set = summon<Set<() -> Command>>()
+                val set = inject<Set<() -> Command>>()
             }
     """,
     """
-        fun invoke() = summon<Set<() -> Command>>() to InnerObject().set 
+        fun invoke() = inject<Set<() -> Command>>() to InnerObject().set 
     """
   ) {
     val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>()
@@ -144,7 +144,7 @@ class GivenSetTest {
   @Test fun testUsesAllProviderArgumentsForGivenRequest() = codegen(
     """
          fun invoke(): Set<Any> {
-                return summon<(@Given String, @Given String) -> Set<String>>()("a", "b")
+                return inject<(@Given String, @Given String) -> Set<String>>()("a", "b")
             }
     """
   ) {
@@ -160,7 +160,7 @@ class GivenSetTest {
             @Given fun b(foo: Foo) = "b"
     """,
     """
-        fun invoke(): @IgnoreElementsWithErrors Set<String> = summon() 
+        fun invoke(): @IgnoreElementsWithErrors Set<String> = inject() 
     """
   ) {
     val set = invokeSingleFile<Set<Any>>().toList()

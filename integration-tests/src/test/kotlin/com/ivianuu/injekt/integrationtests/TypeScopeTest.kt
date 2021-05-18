@@ -18,7 +18,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -42,7 +42,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -64,7 +64,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -87,7 +87,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -111,7 +111,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<@givens.MyQualifier String>()
+            fun invoke() = inject<@givens.MyQualifier String>()
           """
         )
       )
@@ -135,7 +135,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<List<givens.Dep>>()
+            fun invoke() = inject<List<givens.Dep>>()
           """
         )
       )
@@ -160,7 +160,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -182,7 +182,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -212,7 +212,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -236,7 +236,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
@@ -261,7 +261,7 @@ class TypeScopeTest {
       ),
       source(
         """
-          fun invoke() = summon<givens.Dep>()
+          fun invoke() = inject<givens.Dep>()
         """
       )
     )
@@ -286,12 +286,12 @@ class TypeScopeTest {
         ),
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<givens.Dep>()
           """
         )
       )
     )
   ) {
-    compilationShouldHaveFailed("no given argument found of type givens.Dep for parameter value of function com.ivianuu.injekt.summon")
+    compilationShouldHaveFailed("no given argument found of type givens.Dep for parameter value of function com.ivianuu.injekt.inject")
   }
 }

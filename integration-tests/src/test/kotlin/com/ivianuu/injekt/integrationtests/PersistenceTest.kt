@@ -28,7 +28,7 @@ class PersistenceTest {
       @Given val myAlias: MyAlias = ""
     """,
     """
-      fun invoke() = summon<Dep>()
+      fun invoke() = inject<Dep>()
     """
   )
 
@@ -41,7 +41,7 @@ class PersistenceTest {
       @Given val myAlias: MyAlias = ""
     """,
     """
-      fun invoke() = summon<Dep>()
+      fun invoke() = inject<Dep>()
     """
   )
 
@@ -56,7 +56,7 @@ class PersistenceTest {
       @Given val value: CharSequence = "42"
     """,
     """
-      fun invoke() = summon<String>() 
+      fun invoke() = inject<String>() 
     """
   ) {
     "42" shouldBe invokeSingleFile()
@@ -78,13 +78,13 @@ class PersistenceTest {
     """,
     """
       fun invoke() {
-        summon<@MyOtherQualifier FuncA>()
-        summon<@MyOtherQualifier FuncB>()
+        inject<@MyOtherQualifier FuncA>()
+        inject<@MyOtherQualifier FuncB>()
       } 
     """
   ) {
-    shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.summon")
-    shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.summon")
+    shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
+    shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testNonGivenFunctionWithGivenParameters() = singleAndMultiCodegen(
@@ -135,7 +135,7 @@ class PersistenceTest {
     """
       @Given val myFooModule = MyModuleImpl<Foo>()
       @Given val foo: @Qualifier1 Foo = Foo()
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
         """
   )
 
@@ -154,7 +154,7 @@ class PersistenceTest {
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
         @Given val childScopeModule = MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-        val parentScope = summon<TestGivenScope1>()
+        val parentScope = inject<TestGivenScope1>()
         val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
         childScope.element<String>()
       }

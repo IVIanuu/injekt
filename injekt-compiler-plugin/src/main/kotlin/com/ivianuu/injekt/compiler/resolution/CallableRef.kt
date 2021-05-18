@@ -35,7 +35,7 @@ data class CallableRef(
   val owner: ClassifierRef?,
   val overriddenDepth: Int,
   val doNotIncludeChildren: Boolean,
-  val import: ResolvedGivenImport?
+  val import: ResolvedProviderImport?
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -77,12 +77,12 @@ fun CallableDescriptor.toCallableRef(
     originalType = info.type,
     typeParameters = typeParameters,
     parameterTypes = info.parameterTypes,
-    givenParameters = info.givenParameters,
+    givenParameters = info.injectParameters,
     defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
     typeArguments = typeParameters
       .map { it to it.defaultType }
       .toMap(),
-    isGiven = isGiven(context, trace),
+    isGiven = isProvided(context, trace),
     source = null,
     callContext = callContext(trace.bindingContext),
     owner = null,

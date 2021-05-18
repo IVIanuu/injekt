@@ -29,15 +29,15 @@ import com.ivianuu.injekt.common.*
  * class MyRepo
  *
  * fun runApp(@Given appScope: AppGivenScope) {
- *   val repo1 = summon<MyRepo>()
- *   val repo2 = summon<MyRepo>()
+ *   val repo1 = inject<MyRepo>()
+ *   val repo2 = inject<MyRepo>()
  *   // repo === repo2
  * }
  * ```
  */
 @Qualifier annotation class Scoped<S : GivenScope> {
   companion object {
-    @Given inline fun <@Spread T : @Scoped<S> U, U : Any, S : GivenScope> scopedValue(
+    @Provide inline fun <@Spread T : @Scoped<S> U, U : Any, S : GivenScope> scopedValue(
       factory: () -> T,
       scope: S,
       key: TypeKey<U>

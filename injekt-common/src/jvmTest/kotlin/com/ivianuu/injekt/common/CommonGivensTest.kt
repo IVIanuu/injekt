@@ -26,7 +26,7 @@ class CommonGivensTest {
   @Test fun testCanUseMapForSetOfPairs() {
     @Given val elementsA = setOf("a" to "a")
     @Given val elementB = setOf("b" to "b")
-    val map = summonOrNull<Map<String, String>>()
+    val map = injectOrNull<Map<String, String>>()
     map.shouldNotBeNull()
     map.size shouldBe 2
     map["a"] shouldBe "a"
@@ -34,15 +34,15 @@ class CommonGivensTest {
   }
 
   @Test fun testCanUseLazy() {
-    summonOrNull<Lazy<Foo>>().shouldNotBeNull()
+    injectOrNull<Lazy<Foo>>().shouldNotBeNull()
   }
 
   @Test fun testCanUseKClass() {
-    summonOrNull<KClass<Foo>>().shouldNotBeNull()
+    injectOrNull<KClass<Foo>>().shouldNotBeNull()
   }
 
   @Test fun testCanUseType() {
-    summonOrNull<TypeKey<Foo>>().shouldNotBeNull()
+    injectOrNull<TypeKey<Foo>>().shouldNotBeNull()
   }
 
   @Given private class Foo

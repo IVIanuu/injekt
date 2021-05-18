@@ -23,13 +23,13 @@ import io.kotest.matchers.types.*
 import kotlinx.coroutines.*
 import org.junit.*
 
-@GivenImports(
+@Providers(
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )
 class GivenCoroutineScopeTest {
   @Test fun testGivenCoroutineScopeLifecycle() {
-    val scope = summon<TestGivenScope1>()
+    val scope = inject<TestGivenScope1>()
     val coroutineScope = scope.coroutineScope
     coroutineScope.isActive.shouldBeTrue()
     scope.dispose()
@@ -37,7 +37,7 @@ class GivenCoroutineScopeTest {
   }
 
   @Test fun testGivenCoroutineScopeAccessors() {
-    val scope = summon<TestGivenScope1>()
+    val scope = inject<TestGivenScope1>()
     val a = scope.coroutineScope
     val b = scope.element<CoroutineScope>()
     val c = scope.element<GivenCoroutineScope<TestGivenScope1>>()
@@ -47,8 +47,8 @@ class GivenCoroutineScopeTest {
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Given val customContext: GivenCoroutineContext<TestGivenScope1> = Dispatchers.Main
-    val scope = summon<TestGivenScope1>()
+    @Provide val customContext: GivenCoroutineContext<TestGivenScope1> = Dispatchers.Main
+    val scope = inject<TestGivenScope1>()
     scope.coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
 }

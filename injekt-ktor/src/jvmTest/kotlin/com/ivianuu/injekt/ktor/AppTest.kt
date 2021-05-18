@@ -22,7 +22,7 @@ import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
 import org.junit.*
 
-@GivenImports(
+@Providers(
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )

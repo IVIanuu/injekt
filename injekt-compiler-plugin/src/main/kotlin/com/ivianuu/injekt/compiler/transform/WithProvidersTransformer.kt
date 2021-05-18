@@ -21,9 +21,9 @@ import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
-class WithGivenImportsTransformer : IrElementTransformerVoid() {
+class WithProvidersTransformer : IrElementTransformerVoid() {
   override fun visitCall(expression: IrCall): IrExpression {
-    if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.withGivenImports) {
+    if (expression.symbol.descriptor.fqNameSafe == InjektFqNames.withProviders) {
       // we just remove the import paths parameter to make sure that they don't exist anymore
       // and then we let the inline lowering handle the rest
       expression.putValueArgument(0, null)

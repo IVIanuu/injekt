@@ -27,7 +27,7 @@ class GivenResolveTest {
       @Given val foo = Foo()
     """,
     """
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -47,7 +47,7 @@ class GivenResolveTest {
         source(
           """
             @GivenImports("givens.*")
-            fun invoke() = summon<Foo>()
+            fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
         )
@@ -68,7 +68,7 @@ class GivenResolveTest {
       source(
         """
           @GivenImports("givens.*")
-          fun invoke() = summon<Foo>()
+          fun invoke() = inject<Foo>()
         """,
         name = "File.kt"
       )
@@ -80,7 +80,7 @@ class GivenResolveTest {
   @Test fun testResolvesGivenInSamePackageAndSameFile() = codegen(
     """
       @Given val foo = Foo()
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -89,7 +89,7 @@ class GivenResolveTest {
   @Test fun testResolvesClassCompanionGivenFromWithinTheClass() = singleAndMultiCodegen(
     """
       class MyClass {
-        fun resolve() = summon<Foo>()
+        fun resolve() = inject<Foo>()
         companion object {
           @Given val foo = Foo()
         }
@@ -111,7 +111,7 @@ class GivenResolveTest {
       }
     """,
     """
-      fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -128,7 +128,7 @@ class GivenResolveTest {
       }
     """,
     """
-        fun invoke() = summon<Foo>() 
+        fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -137,7 +137,7 @@ class GivenResolveTest {
   @Test fun testResolvesClassConstructorGiven() = singleAndMultiCodegen(
     """
       class MyClass(@Given val foo: Foo = Foo()) {
-        fun resolve() = summon<Foo>()
+        fun resolve() = inject<Foo>()
       }
     """,
     """
@@ -151,7 +151,7 @@ class GivenResolveTest {
     """
       class MyClass {
         @Given val foo = Foo()
-        fun resolve() = summon<Foo>()
+        fun resolve() = inject<Foo>()
       }
     """,
     """
@@ -164,10 +164,10 @@ class GivenResolveTest {
   @Test fun testDerivedGiven() = singleAndMultiCodegen(
     """
       @Given val foo = Foo()
-      @Given val bar: Bar = Bar(summon())
+      @Given val bar: Bar = Bar(inject())
     """,
     """
-      fun invoke() = summon<Bar>() 
+      fun invoke() = inject<Bar>() 
     """
   ) {
     invokeSingleFile()
@@ -180,7 +180,7 @@ class GivenResolveTest {
       @Given class RepoImpl : Repo
     """,
     """
-      fun invoke() = summon<Repo>() 
+      fun invoke() = inject<Repo>() 
     """
   ) {
     invokeSingleFile()
@@ -189,7 +189,7 @@ class GivenResolveTest {
   @Test fun testUnresolvedGiven() = codegen(
     """
       fun invoke() {
-        summon<String>()
+        inject<String>()
       }
     """
   ) {
@@ -201,7 +201,7 @@ class GivenResolveTest {
       @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = summon<Bar>() 
+      fun invoke() = inject<Bar>() 
     """
   ) {
     compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
@@ -213,7 +213,7 @@ class GivenResolveTest {
       @Given fun <T> givenList(value: T): List<T> = listOf(value)
     """,
     """
-      fun invoke() = summon<List<Foo>>() 
+      fun invoke() = inject<List<Foo>>() 
     """
   ) {
     val (foo) = invokeSingleFile<List<Any>>()
@@ -268,7 +268,7 @@ class GivenResolveTest {
     """,
     """
       fun invoke(foo: Foo) = with(UsesFoo(foo)) {
-        summon<Foo>()
+        inject<Foo>()
       }
     """.trimIndent()
   ) {
@@ -291,7 +291,7 @@ class GivenResolveTest {
   @Test fun testCanResolveGivenOfGivenThisFunction() = codegen(
     """
       class Dep(@Given val foo: Foo)
-      fun invoke(foo: Foo) = with(Dep(foo)) { summon<Foo>() }
+      fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
     """
   ) {
     val foo = Foo()
@@ -307,7 +307,7 @@ class GivenResolveTest {
       @Given fun raw(scope: SpecialScope): List<String> = listOf("")
     """,
     """
-      fun invoke() = summon<List<String>>()
+      fun invoke() = inject<List<String>>()
     """
   )
 
@@ -319,7 +319,7 @@ class GivenResolveTest {
       @Given fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
     """,
     """
-      fun invoke() = summon<@First Foo>() 
+      fun invoke() = inject<@First Foo>() 
     """
   )
 
@@ -328,7 +328,7 @@ class GivenResolveTest {
       object MyObject
     """,
     """
-      fun invoke() = summon<MyObject>() 
+      fun invoke() = inject<MyObject>() 
     """
   ) {
     compilationShouldHaveFailed("no given argument")
@@ -339,7 +339,7 @@ class GivenResolveTest {
       @Given object MyObject
     """,
     """
-      fun invoke() = summon<MyObject>() 
+      fun invoke() = inject<MyObject>() 
     """
   )
 
@@ -348,7 +348,7 @@ class GivenResolveTest {
       @Given internal val foo = Foo()
     """,
     """
-     fun invoke() = summon<Foo>()
+     fun invoke() = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
@@ -361,7 +361,7 @@ class GivenResolveTest {
       }
     """,
     """
-      fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
@@ -371,7 +371,7 @@ class GivenResolveTest {
     """
       @Given class FooHolder {
         @Given private val foo = Foo()
-        fun invoke() = summon<Foo>()
+        fun invoke() = inject<Foo>()
       }
     """
   )
@@ -383,7 +383,7 @@ class GivenResolveTest {
       }
     """,
     """
-      fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
@@ -393,7 +393,7 @@ class GivenResolveTest {
     """
       @Given open class FooHolder {
         @Given protected val foo = Foo()
-        fun invoke() = summon<Foo>()
+        fun invoke() = inject<Foo>()
       }
     """
   )
@@ -406,7 +406,7 @@ class GivenResolveTest {
     """,
     """
       class FooHolderImpl : AbstractFooHolder() {
-        fun invoke() = summon<Foo>()
+        fun invoke() = inject<Foo>()
       } 
     """
   )
@@ -419,10 +419,10 @@ class GivenResolveTest {
         }
       """,
       """
-        fun invoke() = summon<Foo>() 
+        fun invoke() = inject<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.summon")
+      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
 
   @Test fun testCanResolveExplicitMarkedGivenConstructorParameterFromOutsideTheClass() =
@@ -431,7 +431,7 @@ class GivenResolveTest {
         class MyClass(@Given val foo: Foo)
       """,
       """
-        fun invoke(@Given myClass: MyClass) = summon<Foo>() 
+        fun invoke(@Given myClass: MyClass) = inject<Foo>() 
       """
     )
 
@@ -441,16 +441,16 @@ class GivenResolveTest {
         @Given class MyClass(val foo: Foo)
       """,
       """
-        fun invoke() = summon<Foo>() 
+        fun invoke() = inject<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.summon")
+      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
 
   @Test fun testCanResolveImplicitGivenConstructorParameterFromInsideTheClass() = codegen(
     """
       @Given class MyClass(private val foo: Foo) {
-        fun invoke() = summon<Foo>()
+        fun invoke() = inject<Foo>()
       }
     """
   )
@@ -461,7 +461,7 @@ class GivenResolveTest {
     """,
     """
       fun <T> invoke() {
-        summon<List<T>>()
+        inject<List<T>>()
       } 
     """
   )
@@ -475,12 +475,12 @@ class GivenResolveTest {
     """,
     """
       fun <T> invoke() {
-        summon<List<T>>()
+        inject<List<T>>()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.summon is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
+      "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
     )
   }
 
@@ -493,12 +493,12 @@ class GivenResolveTest {
     """,
     """
       fun <T> invoke() {
-        summon<List<T>>()
+        inject<List<T>>()
       } 
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.summon is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
+      "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
     )
   }
 
@@ -511,7 +511,7 @@ class GivenResolveTest {
       @Given fun <T : Foo> typedString(value: T): TypedString<T> = ""
     """,
     """
-      fun invoke() = summon<String>() 
+      fun invoke() = inject<String>() 
     """
   )
 
@@ -525,7 +525,7 @@ class GivenResolveTest {
         @Given fun <T : Foo> typedString(value: T): @TypedQualifier<T> TypedString<T> = ""
     """,
     """
-      fun invoke() = summon<@TypedQualifier<Foo> String>() 
+      fun invoke() = inject<@TypedQualifier<Foo> String>() 
     """
     )
 }

@@ -44,7 +44,7 @@ class ResolutionScope(
   val ownerDescriptor: DeclarationDescriptor?,
   val trace: BindingTrace,
   val initialGivens: List<CallableRef>,
-  imports: List<ResolvedGivenImport>,
+  imports: List<ResolvedProviderImport>,
   val typeParameters: List<ClassifierRef>
 ) {
   val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
@@ -123,12 +123,12 @@ class ResolutionScope(
     measureTimeMillisWithResult {
       initialGivens
         .forEach { given ->
-          given.collectGivens(
+          given.collectInstances(
             context = context,
             scope = this,
             trace = trace,
             addImport = { importFqName, packageFqName ->
-              this.imports += ResolvedGivenImport(
+              this.imports += ResolvedProviderImport(
                 null,
                 "${importFqName}.*",
                 packageFqName
@@ -202,7 +202,7 @@ class ResolutionScope(
     imports.forEach { import ->
         context.memberScopeForFqName(import.packageFqName, lookupLocation)
           ?.recordLookup(
-            givensLookupName(
+            providersLookupName(
               FqName(import.importPath!!.removeSuffix(".*")),
               import.packageFqName
             ),
@@ -297,7 +297,7 @@ class ResolutionScope(
                 defaultStrategy = if (request.type.ignoreElementsWithErrors)
                   GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
                 else GivenRequest.DefaultStrategy.NONE,
-                callableFqName = FqName("com.ivianuu.injekt.summonSetOf<${request.type.arguments[0].render()}>"),
+                callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].render()}>"),
                 parameterName = "element$index".asNameId(),
                 isInline = false,
                 isLazy = false
@@ -396,12 +396,12 @@ class ResolutionScope(
         source = candidate.source
       )
 
-    newGiven.collectGivens(
+    newGiven.collectInstances(
       context = this.context,
       scope = this,
       trace = trace,
       addImport = { importFqName, packageFqName ->
-        this.imports += ResolvedGivenImport(
+        this.imports += ResolvedProviderImport(
           null,
           "${importFqName}.*",
           packageFqName
@@ -447,11 +447,11 @@ class ResolutionScope(
   }
 
   /**
-   * We add implicit givens for objects under some circumstances to allow
+   * We add implicit providers for objects under some circumstances to allow
    * object callables to resolve their dispatch receiver parameter
    *
    * Here we ensure that the user cannot resolve such implicit object givens if they are not
-   * marked as given
+   * provided by the user
    */
   private fun GivenNode.isValidObjectRequest(request: GivenRequest): Boolean {
     if (!request.type.classifier.isObject) return true
@@ -460,7 +460,7 @@ class ResolutionScope(
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Given)
+            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide)
         )
   }
 

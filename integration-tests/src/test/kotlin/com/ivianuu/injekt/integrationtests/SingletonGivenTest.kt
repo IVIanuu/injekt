@@ -21,14 +21,14 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class SingletonGivenTest {
-  @Test fun testSingletonGiven() = singleAndMultiCodegen(
+  @Test fun testSingleton() = singleAndMultiCodegen(
     """
-            @Given class MyModule {
-                @Given fun foo() = Foo()
-            }
+      @Given class MyModule {
+        @Given fun foo() = Foo()
+      }
     """,
     """
-        fun invoke() = summon<MyModule>()
+      fun invoke() = inject<MyModule>()
     """
   ) {
     invokeSingleFile()
@@ -37,11 +37,11 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeNormalClass() = singleAndMultiCodegen(
     """
-            class MyModule
-            @Given val foo = Foo()
+      class MyModule
+      @Given val foo = Foo()
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -50,12 +50,12 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeObject() = singleAndMultiCodegen(
     """
-            @Given object MyModule {
-                @Given val foo = Foo()
-            }
+      @Given object MyModule {
+        @Given val foo = Foo()
+      }
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -68,7 +68,7 @@ class SingletonGivenTest {
       @Given val foo = Foo()
     """,
     """
-      fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -77,12 +77,12 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = singleAndMultiCodegen(
     """
-            @Given class MyModule<@ForTypeKey T> {
-                @Given val instance = Foo() as T
-            }
+      @Given class MyModule<@ForTypeKey T> {
+        @Given val instance = Foo() as T
+      }
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -91,12 +91,12 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithFields() = singleAndMultiCodegen(
     """
-            @Given class MyModule {
-                @Given val foo = Foo()
-            }
+      @Given class MyModule {
+        @Given val foo = Foo()
+      }
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -105,13 +105,13 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithInnerClass() = singleAndMultiCodegen(
     """
-            @Given class MyModule {
-                inner class Inner
-            }
-            @Given val foo = Foo()
+      @Given class MyModule {
+        inner class Inner
+      }
+      @Given val foo = Foo()
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldNotContain("INSTANCE")
@@ -120,12 +120,12 @@ class SingletonGivenTest {
 
   @Test fun testDoesOptimizeGivenWithComputedProperties() = singleAndMultiCodegen(
     """
-            @Given class MyModule {
-                @Given val foo get() = Foo()
-            }
+      @Given class MyModule {
+        @Given val foo get() = Foo()
+      }
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldContain(if (!it) 2 else 1, "INSTANCE")

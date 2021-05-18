@@ -65,7 +65,7 @@ class SetGivenNode(
   val collectionElementType: TypeRef
 ) : GivenNode() {
   override val callableFqName: FqName =
-    FqName("com.ivianuu.injekt.summonSetOf<${type.arguments[0].render()}>")
+    FqName("com.ivianuu.injekt.injectSetOf<${type.arguments[0].render()}>")
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val dependencyScope: ResolutionScope?
@@ -146,7 +146,7 @@ fun CallableRef.getGivenRequests(
   .filter {
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isGiven(context, trace) ||
+        it.isProvided(context, trace) ||
         parameterTypes[it.injektName()]!!.isGiven
   }
   .map { parameter ->

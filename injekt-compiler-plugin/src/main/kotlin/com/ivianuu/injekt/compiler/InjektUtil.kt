@@ -256,14 +256,14 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-fun givensLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
+fun providersLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
   .removePrefix(packageFqName.asString())
   .replace(".", "_")
   .removePrefix("_")
   .takeIf { it.isNotEmpty() }
-  ?.plus("_givens")
+  ?.plus("_providers")
   ?.asNameId()
-  ?: "givens".asNameId()
+  ?: "providers".asNameId()
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND

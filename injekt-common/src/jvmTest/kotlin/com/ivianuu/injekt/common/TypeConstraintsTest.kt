@@ -22,34 +22,34 @@ import org.junit.*
 
 class TypeConstraintsTest {
   @Test fun testIsEqualWithMatchingType() {
-    summonOrNull<IsEqual<String, String>>().shouldNotBeNull()
+    injectOrNull<IsEqual<String, String>>().shouldNotBeNull()
   }
 
   @Test fun testIsEqualWithNotMatchingType() {
-    summonOrNull<IsEqual<CharSequence, String>>().shouldBeNull()
+    injectOrNull<IsEqual<CharSequence, String>>().shouldBeNull()
   }
 
   @Test fun testIsSubTypeWithMatchingType() {
-    summonOrNull<IsSubType<String, CharSequence>>().shouldNotBeNull()
+    injectOrNull<IsSubType<String, CharSequence>>().shouldNotBeNull()
   }
 
   @Test fun testIsSubTypeWithNotMatchingType() {
-    summonOrNull<IsSubType<Int, CharSequence>>().shouldBeNull()
+    injectOrNull<IsSubType<Int, CharSequence>>().shouldBeNull()
   }
 
   @Test fun testIsNotSubTypeWithMatchingType() {
-    summonOrNull<IsNotSubType<String, CharSequence>>().shouldBeNull()
+    injectOrNull<IsNotSubType<String, CharSequence>>().shouldBeNull()
   }
 
   @Test fun testIsNotSubTypeWithNotMatchingType() {
-    summonOrNull<IsNotSubType<Int, CharSequence>>().shouldNotBeNull()
+    injectOrNull<IsNotSubType<Int, CharSequence>>().shouldNotBeNull()
   }
 
   @Test fun testIsNotEqualWithMatchingType() {
-    summonOrNull<IsNotEqual<String, String>>().shouldBeNull()
+    injectOrNull<IsNotEqual<String, String>>().shouldBeNull()
   }
 
   @Test fun testIsNotEqualWithNotMatchingType() {
-    summonOrNull<IsNotEqual<CharSequence, String>>().shouldNotBeNull()
+    injectOrNull<IsNotEqual<CharSequence, String>>().shouldNotBeNull()
   }
 }

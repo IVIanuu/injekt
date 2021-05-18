@@ -20,7 +20,7 @@ import com.ivianuu.injekt.*
 import io.kotest.matchers.*
 import org.junit.*
 
-@GivenImports("com.ivianuu.injekt.common.*")
+@Providers("com.ivianuu.injekt.common.*")
 class ScopedTest {
   @Qualifier private annotation class Element
 
@@ -35,7 +35,7 @@ class ScopedTest {
     }
 
     @Given fun fooElement(foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
-    val scope = summon<TestGivenScope1>()
+    val scope = inject<TestGivenScope1>()
     callCount shouldBe 0
     scope.element<@Element Foo>()
     callCount shouldBe 1

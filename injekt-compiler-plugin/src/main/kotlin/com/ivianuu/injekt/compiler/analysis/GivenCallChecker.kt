@@ -50,7 +50,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
     }
 
     if (resultingDescriptor.valueParameters.none {
-        it.isGiven(this.context, context.trace)
+        it.isProvided(this.context, context.trace)
       }) return
 
     val substitutionMap = resolvedCall.typeArguments

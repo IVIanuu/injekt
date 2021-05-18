@@ -19,7 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.*
 import com.ivianuu.injekt.*
 
-@GivenImports(
+@Providers(
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )

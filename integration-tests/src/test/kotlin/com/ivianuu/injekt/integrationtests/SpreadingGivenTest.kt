@@ -31,7 +31,7 @@ class SpreadingGivenTest {
       @Given fun foo(): @Trigger Foo = Foo()
     """,
     """
-        fun invoke() = summon<Foo>() 
+        fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -50,7 +50,7 @@ class SpreadingGivenTest {
       @Given fun string(): @Trigger String = ""
     """,
     """
-      fun invoke() = summon<Set<@Final Foo>>() 
+      fun invoke() = inject<Set<@Final Foo>>() 
     """
   ) {
     invokeSingleFile<Set<Foo>>().size shouldBe 1
@@ -96,7 +96,7 @@ class SpreadingGivenTest {
       @Trigger @Given class NotAny
     """,
     """
-      fun invoke() = summon<NotAny>() 
+      fun invoke() = inject<NotAny>() 
     """
   ) {
     invokeSingleFile()
@@ -127,7 +127,7 @@ class SpreadingGivenTest {
       @Given fun dummy(): @A Long = 0L
     """,
     """
-      fun invoke() = summon<Set<Foo>>().single() 
+      fun invoke() = inject<Set<Foo>>().single() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -142,7 +142,7 @@ class SpreadingGivenTest {
     """
       @Given fun foo(): @Scoped<AppGivenScope> Foo = Foo()
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -157,7 +157,7 @@ class SpreadingGivenTest {
       @Given fun b(): @Trigger String = "b"
     """,
     """
-      fun invoke() = summon<Set<String>>() 
+      fun invoke() = inject<Set<String>>() 
     """
   ) {
     invokeSingleFile<Set<String>>()
@@ -192,7 +192,7 @@ class SpreadingGivenTest {
       @Given fun stringPair() = "a" to "b"
     """,
     """
-     fun invoke() = summon<Int>() 
+     fun invoke() = inject<Int>() 
     """
   )
 
@@ -205,7 +205,7 @@ class SpreadingGivenTest {
       @Given fun stringPair() = "a" to "b"
     """,
     """
-      fun invoke() = summon<Int>() 
+      fun invoke() = inject<Int>() 
     """
   )
 
@@ -224,7 +224,7 @@ class SpreadingGivenTest {
       @Given fun rootSystemBarsProvider(): @UiDecoratorBinding RootSystemBarsProvider = {}
     """,
     """
-      fun invoke() = summon<Set<UiDecorator>>().size 
+      fun invoke() = inject<Set<UiDecorator>>().size 
     """
   ) {
     1 shouldBe invokeSingleFile()
@@ -256,7 +256,7 @@ class SpreadingGivenTest {
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-          summon<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
+          inject<(@Given @InstallElement<AppGivenScope> App) -> AppGivenScope>()
       }
     """
   )
@@ -279,7 +279,7 @@ class SpreadingGivenTest {
       @Given val foo: @Qualifier1 Foo = Foo()
     """,
     """
-      fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
@@ -305,7 +305,7 @@ class SpreadingGivenTest {
     """,
     """
       @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = summon<Set<Foo>>()
+      fun invoke() = inject<Set<Foo>>()
     """
   ) {
     irShouldContain(1, "setOf")
@@ -322,10 +322,10 @@ class SpreadingGivenTest {
       @Given fun dummy(): @A<String> Long = 0L
     """,
     """
-      fun invoke() = summon<Unit>() 
+      fun invoke() = inject<Unit>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.summon")
+    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testSpreadingGivenWithInvariantTypeParameter() = singleAndMultiCodegen(
@@ -341,7 +341,7 @@ class SpreadingGivenTest {
       @Given val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = { Any() }
     """,
     """
-      fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

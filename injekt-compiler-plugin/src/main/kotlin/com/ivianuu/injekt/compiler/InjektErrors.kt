@@ -44,53 +44,58 @@ interface InjektErrors {
         }
 
     @JvmField
-    val GIVEN_PARAMETER_ON_GIVEN_DECLARATION =
+    val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
-          MAP.put(it, "parameters of a @Given declaration are automatically treated as @Given")
+          MAP.put(it, "parameters of a provided declaration are automatically treated as inject parameters")
         }
 
     @JvmField
-    val GIVEN_RECEIVER =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(it, "receiver cannot be marked as @Given because it is implicitly @Given")
-        }
+    val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+      .also {
+        MAP.put(it, "receiver cannot be injected")
+      }
 
     @JvmField
-    val GIVEN_ON_CLASS_WITH_PRIMARY_GIVEN_CONSTRUCTOR =
+    val PROVIDE_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+      .also {
+        MAP.put(it, "receiver is automatically provided")
+      }
+
+    @JvmField
+    val PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "class cannot be marked with @Given if it has a @Given primary constructor"
+            "class cannot be marked with @Provide if it has a @Provide primary constructor"
           )
         }
 
     @JvmField
-    val GIVEN_ANNOTATION_CLASS =
+    val PROVIDE_ANNOTATION_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "annotation class cannot be @Given") }
+        .also { MAP.put(it, "annotation class cannot be provided") }
 
     @JvmField
-    val GIVEN_ENUM_CLASS =
+    val PROVIDE_ENUM_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "enum class cannot be @Given") }
+        .also { MAP.put(it, "enum class cannot be provided") }
 
     @JvmField
-    val GIVEN_INNER_CLASS =
+    val PROVIDE_INNER_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "@Given class cannot be inner") }
+        .also { MAP.put(it, "inner class cannot be provided") }
 
     @JvmField
-    val GIVEN_ABSTRACT_CLASS =
+    val PROVIDE_ABSTRACT_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "@Given class cannot be abstract") }
+        .also { MAP.put(it, "abstract class cannot be provided") }
 
     @JvmField
-    val GIVEN_INTERFACE =
+    val PROVIDE_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "interface cannot be @Given") }
+        .also { MAP.put(it, "interface cannot be provided") }
 
     @JvmField
     val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
@@ -374,7 +379,7 @@ private fun GivenGraph.Error.render(): String = buildString {
           if (failure is ResolutionResult.Failure.CallContextMismatch) {
             appendLine("${failure.candidate.callableFqName}()")
           } else {
-            appendLine("summon<${request.type.render()}>()")
+            appendLine("inject<${request.type.render()}>()")
           }
         }
       }
@@ -419,12 +424,12 @@ private fun GivenGraph.Error.render(): String = buildString {
       is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
       is ResolutionResult.Failure.DivergentGiven -> {
         appendLine(
-          "but given ${unwrappedFailure.candidate.callableFqName} " +
+          "but provided instance ${unwrappedFailure.candidate.callableFqName} " +
               "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.render()}"
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no givens were found that match type ${unwrappedFailureRequest.type.render()}")
+        appendLine("but no provided instances were found that match type ${unwrappedFailureRequest.type.render()}")
       }
     }.let { }
   }

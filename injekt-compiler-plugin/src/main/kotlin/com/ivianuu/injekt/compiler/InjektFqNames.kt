@@ -23,12 +23,13 @@ object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
 
   val DefaultOnAllErrors = InjektPackage.child("DefaultOnAllErrors".asNameId())
-  val Given = InjektPackage.child("Given".asNameId())
-  val GivenImports = InjektPackage.child("GivenImports".asNameId())
   val IgnoreElementsWithErrors = InjektPackage.child("IgnoreElementsWithErrors".asNameId())
+  val Inject = InjektPackage.child("Inject".asNameId())
+  val Provide = InjektPackage.child("Provide".asNameId())
+  val Providers = InjektPackage.child("Providers".asNameId())
   val Qualifier = InjektPackage.child("Qualifier".asNameId())
   val Spread = InjektPackage.child("Spread".asNameId())
-  val withGivenImports = InjektPackage.child("withGivenImports".asNameId())
+  val withProviders = InjektPackage.child("withProviders".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val CallableInfo = InternalPackage.child("CallableInfo".asNameId())

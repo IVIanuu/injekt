@@ -45,7 +45,7 @@ class SuppressionTest {
       @Given val myBuilder: MyBuilder = { append("42") }
     """,
     """
-      fun invoke() = summon<String>() 
+      fun invoke() = inject<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "42"
@@ -63,8 +63,8 @@ class SuppressionTest {
   @Test fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
     """
       fun func(@Given _: String, @Given _: Int) {
-        summon<String>()
-        summon<Int>()
+        inject<String>()
+        inject<Int>()
       }
     """,
     """
@@ -79,8 +79,8 @@ class SuppressionTest {
     """
       typealias MyAlias = Int
       fun func(@Given _: String, @Given _: MyAlias) {
-        summon<String>()
-        summon<MyAlias>()
+        inject<String>()
+        inject<MyAlias>()
       }
     """,
     """
@@ -162,7 +162,7 @@ class SuppressionTest {
     """
       fun invoke() {
         @Given val foo = Foo()
-        summon<Foo>()
+        inject<Foo>()
       }
     """
   ) {

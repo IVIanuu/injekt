@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class GivenImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
+class ProviderImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
   private val checkedFiles = mutableSetOf<KtFile>()
   override fun check(
     declaration: KtDeclaration,
@@ -46,18 +46,18 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
   ) {
     val file = declaration.containingKtFile
     checkFile(file, context.trace)
-    if (!declaration.hasAnnotation(InjektFqNames.GivenImports)) return
-    val outerImports = file.getGivenImports() + descriptor.parents
+    if (!declaration.hasAnnotation(InjektFqNames.Providers)) return
+    val outerImports = file.getProviderImports() + descriptor.parents
       .distinct()
       .flatMap { parent ->
         parent.findPsi()
           .safeAs<KtAnnotated>()
-          ?.getGivenImports() ?: emptyList()
+          ?.getProviderImports() ?: emptyList()
       }
       .toList()
     checkImports(
       file.packageFqName, outerImports,
-      declaration.getGivenImports(), context.trace
+      declaration.getProviderImports(), context.trace
     )
   }
 
@@ -66,44 +66,44 @@ class GivenImportsChecker(private val context: InjektContext) : DeclarationCheck
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
-    if (resolvedCall.resultingDescriptor.fqNameSafe !=
-      InjektFqNames.withGivenImports
-    ) return
+    if (resolvedCall.resultingDescriptor.fqNameSafe != InjektFqNames.withProviders) return
+
     val file = context.scope
       .ownerDescriptor
       .findPsi()!!
       .cast<KtElement>()
       .containingKtFile
-    val outerImports = file.getGivenImports() + context.scope.parentsWithSelf
+
+    val outerImports = file.getProviderImports() + context.scope.parentsWithSelf
       .filterIsInstance<LexicalScope>()
       .distinctBy { it.ownerDescriptor }
       .flatMap { scope ->
         scope.ownerDescriptor.findPsi()
           .safeAs<KtAnnotated>()
-          ?.getGivenImports() ?: emptyList()
+          ?.getProviderImports() ?: emptyList()
       }
       .toList()
+
     resolvedCall.valueArguments
       .values
       .firstOrNull()
       ?.arguments
-      ?.map { it.toGivenImport() }
+      ?.map { it.toProviderImport() }
       ?.let {
         checkImports(file.packageFqName, outerImports, it, context.trace)
       }
-
   }
 
   private fun checkFile(file: KtFile, trace: BindingTrace) {
     if (file in checkedFiles) return
     checkedFiles += file
-    checkImports(file.packageFqName, emptyList(), file.getGivenImports(), trace)
+    checkImports(file.packageFqName, emptyList(), file.getProviderImports(), trace)
   }
 
   private fun checkImports(
     currentPackage: FqName,
-    outerImports: List<GivenImport>,
-    imports: List<GivenImport>,
+    outerImports: List<ProviderImport>,
+    imports: List<ProviderImport>,
     trace: BindingTrace
   ) {
     if (imports.isEmpty()) return

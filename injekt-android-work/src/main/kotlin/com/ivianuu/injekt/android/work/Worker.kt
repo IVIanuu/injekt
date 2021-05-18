@@ -38,8 +38,8 @@ import kotlin.reflect.*
  */
 @Qualifier annotation class InstallWorker {
   companion object {
-    @Given inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
-      noinline factory: (@Given WorkerParameters) -> T,
+    @Provide inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
+      noinline factory: (@Inject WorkerParameters) -> T,
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
@@ -50,7 +50,7 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 /**
  * Factory which is able to create [ListenableWorker]s installed via [InstallWorker]
  */
-@Given class InjektWorkerFactory(
+@Provide class InjektWorkerFactory(
   private val workers: Map<String, SingleWorkerFactory>
 ) : WorkerFactory() {
   override fun createWorker(
@@ -61,13 +61,13 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 }
 
 /**
- * Defines givens to initialize the work manager library
+ * Defines providers to initialize the work manager library
  */
-object WorkerInitializerGivens {
+object WorkerInitializerProviders {
   /**
    * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
    */
-  @Given fun workerScopeInitializer(
+  @Provide fun workerScopeInitializer(
     context: AppContext,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
@@ -78,7 +78,7 @@ object WorkerInitializerGivens {
   /**
    * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
    */
-  @Given fun defaultWorkerConfiguration(
+  @Provide fun defaultWorkerConfiguration(
     workerFactory: WorkerFactory
   ): @Default Configuration = Configuration.Builder()
     .setWorkerFactory(workerFactory)
@@ -87,5 +87,5 @@ object WorkerInitializerGivens {
   @Qualifier private annotation class Default
 }
 
-@Given inline val AppContext.workManager: WorkManager
+@Provide inline val AppContext.workManager: WorkManager
   get() = WorkManager.getInstance(this)

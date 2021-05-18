@@ -28,7 +28,7 @@ class ModuleTest {
       }
     """,
     """
-      fun invoke() = summon<Bar>() 
+      fun invoke() = inject<Bar>() 
     """
   )
 
@@ -40,7 +40,7 @@ class ModuleTest {
       }
     """,
     """
-      fun invoke() = summon<Bar>() 
+      fun invoke() = inject<Bar>() 
     """
   )
 
@@ -59,7 +59,7 @@ class ModuleTest {
     """,
     """
       fun invoke() = withModule { 
-            summon<Bar>()
+            inject<Bar>()
       } 
     """
   )
@@ -73,7 +73,7 @@ class ModuleTest {
             @Given val stringModule = MyModule("__")
     """,
     """
-        fun invoke() = summon<Pair<Foo, Foo>>() 
+        fun invoke() = inject<Pair<Foo, Foo>>() 
     """
   )
 
@@ -88,7 +88,7 @@ class ModuleTest {
             @Given val stringModule = MyModule("__")
             """,
     """
-         fun invoke() = summon<@MyQualifier<Int> Pair<Foo, Foo>>() 
+         fun invoke() = inject<@MyQualifier<Int> Pair<Foo, Foo>>() 
             """
   )
 
@@ -103,8 +103,8 @@ class ModuleTest {
     """,
     """
          fun invoke() {
-                summon<Pair<Foo, Foo>>()
-                summon<Pair<Bar, Bar>>()
+                inject<Pair<Foo, Foo>>()
+                inject<Pair<Bar, Bar>>()
             } 
     """
   )
@@ -122,8 +122,8 @@ class ModuleTest {
     """,
     """
       fun invoke() {
-        summon<Pair<Foo, Foo>>()
-        summon<Pair<Bar, Bar>>() 
+        inject<Pair<Foo, Foo>>()
+        inject<Pair<Bar, Bar>>() 
       } 
     """
   )
@@ -137,7 +137,7 @@ class ModuleTest {
       @Given class BarModule(private val foo: Foo) : BaseBarModule(foo)
     """,
     """
-      fun invoke() = summon<Bar>() 
+      fun invoke() = inject<Bar>() 
     """
   )
 }
