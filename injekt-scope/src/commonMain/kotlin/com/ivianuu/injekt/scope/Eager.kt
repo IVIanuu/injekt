@@ -26,8 +26,7 @@ import com.ivianuu.injekt.*
     @Given class Module<@Spread T : @Eager<S> U, U : Any, S : GivenScope> {
       @Given inline fun scopedValue(value: T): @Scoped<S> U = value
 
-      @Given
-      inline fun initializer(crossinline factory: () -> U): GivenScopeInitializer<S> = {
+      @Given inline fun initializer(crossinline factory: () -> U): GivenScopeInitializer<S> = {
         factory()
       }
     }

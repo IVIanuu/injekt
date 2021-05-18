@@ -38,8 +38,8 @@ import com.ivianuu.injekt.common.*
 @Qualifier annotation class Scoped<S : GivenScope> {
   companion object {
     @Given inline fun <@Spread T : @Scoped<S> U, U : Any, S : GivenScope> scopedValue(
-      scope: S,
       factory: () -> T,
+      scope: S,
       key: TypeKey<U>
     ): U = scope.getOrCreateScopedValue(key, factory)
   }
