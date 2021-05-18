@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
@@ -37,6 +38,23 @@ import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
 import kotlin.reflect.*
+
+fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
+  context: InjektContext,
+  trace: BindingTrace
+): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
+  .map { it.containingDeclaration }
+  .filterIsInstance<ClassDescriptor>()
+  .mapNotNull { clazz ->
+    val clazzClassifier = clazz.toClassifierRef(context, trace)
+    clazz.unsubstitutedPrimaryConstructor
+      ?.valueParameters
+      ?.firstOrNull {
+        it.name == name &&
+            it.name in clazzClassifier.primaryConstructorPropertyParameters
+      }
+  }
+  .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 

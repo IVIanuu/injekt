@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.constants.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -106,21 +105,8 @@ private fun CallableDescriptor.persistInfoIfNeeded(
       (this is ConstructorDescriptor &&
           constructedClass.hasAnnotation(InjektFqNames.Given)) ||
       (this is PropertyDescriptor &&
-          overriddenTreeUniqueAsSequence(false)
-            .map { it.containingDeclaration }
-            .filterIsInstance<ClassDescriptor>()
-            .flatMap { clazz ->
-              val clazzClassifier = clazz.toClassifierRef(context, trace)
-              clazz.unsubstitutedPrimaryConstructor
-                ?.valueParameters
-                ?.filter {
-                  it.name == name &&
-                      it.name in clazzClassifier.primaryConstructorPropertyParameters &&
-                      it.isGiven(context, trace)
-                }
-                ?: emptyList()
-            }
-            .any()) ||
+          primaryConstructorPropertyValueParameter(context, trace)
+            ?.isGiven(context, trace) == true) ||
       safeAs<FunctionDescriptor>()
         ?.valueParameters
         ?.any { it.hasAnnotation(InjektFqNames.Given) } == true ||

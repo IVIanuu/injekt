@@ -268,7 +268,7 @@ private fun CodeBlockResolutionScope(
     parent = finalParent,
     ownerDescriptor = ownerDescriptor,
     trace = trace,
-    initialGivens = scope.collectGivens(context, trace),
+    initialGivens = scope.collectGivens(context, trace, true),
     imports = emptyList(),
     typeParameters = emptyList()
   )

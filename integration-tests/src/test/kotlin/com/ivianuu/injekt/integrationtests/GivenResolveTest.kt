@@ -444,7 +444,7 @@ class GivenResolveTest {
         fun invoke() = summon<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyClass.<init>")
+      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.summon")
     }
 
   @Test fun testCanResolveImplicitGivenConstructorParameterFromInsideTheClass() = codegen(

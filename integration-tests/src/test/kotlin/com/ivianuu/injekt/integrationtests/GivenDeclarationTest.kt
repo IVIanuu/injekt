@@ -473,7 +473,7 @@ class GivenDeclarationTest {
     """,
     """
       @Given object MySubClass : MySuperClass(Foo())
-      fun invoke() = summon<Foo>() 
+      fun invoke() = summon<Foo>()
     """
   )
 }
