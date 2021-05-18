@@ -29,12 +29,12 @@ class ScopedTest {
 
     class Foo
 
-    @Given fun scopedFoo(): @Scoped<TestGivenScope1> Foo {
+    @Provide fun scopedFoo(): @Scoped<TestGivenScope1> Foo {
       callCount++
       return Foo()
     }
 
-    @Given fun fooElement(foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
+    @Provide fun fooElement(foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
     val scope = inject<TestGivenScope1>()
     callCount shouldBe 0
     scope.element<@Element Foo>()

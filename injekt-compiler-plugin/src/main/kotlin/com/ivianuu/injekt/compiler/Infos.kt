@@ -106,7 +106,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
           constructedClass.hasAnnotation(InjektFqNames.Provide)) ||
       (this is PropertyDescriptor &&
           primaryConstructorPropertyValueParameter(context, trace)
-            ?.isProvided(context, trace) == true) ||
+            ?.isProvide(context, trace) == true) ||
       safeAs<FunctionDescriptor>()
         ?.valueParameters
         ?.any { it.hasAnnotation(InjektFqNames.Provide) } == true ||

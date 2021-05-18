@@ -5,12 +5,12 @@ Injekt is highly experimental and the api is unstable.
 
 Minimal example:
 ```kotlin
-// declare givens
-@Given val foo = Foo()
-@Given fun bar(foo: Foo) = Bar(foo)
+// provide instances
+@Provide val foo = Foo()
+@Provide fun bar(foo: Foo) = Bar(foo)
 
 fun main() {
-  // retrieve instance
+  // inject instance
   val bar = inject<Bar>()
   println("Got $bar")
 }

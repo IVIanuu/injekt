@@ -39,7 +39,7 @@ class AppTest {
   }
 }
 
-@Given
+@Provide
 @Scoped<AppGivenScope>
 @InstallElement<AppGivenScope>
 class ScopeDisposeListener : GivenScopeDisposable {

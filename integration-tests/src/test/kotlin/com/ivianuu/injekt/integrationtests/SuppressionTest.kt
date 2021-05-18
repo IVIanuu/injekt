@@ -41,8 +41,8 @@ class SuppressionTest {
   @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
     """
       typealias MyBuilder = StringBuilder.() -> Unit
-      @Given fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
-      @Given val myBuilder: MyBuilder = { append("42") }
+      @Provide fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
+      @Provide val myBuilder: MyBuilder = { append("42") }
     """,
     """
       fun invoke() = inject<String>() 
@@ -53,7 +53,7 @@ class SuppressionTest {
 
   @Test fun testDoesNotWarnInlineOnGivenDeclaration() = codegen(
     """
-      @Given inline fun func() {
+      @Provide inline fun func() {
       }
     """
   ) {
@@ -62,14 +62,14 @@ class SuppressionTest {
 
   @Test fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
     """
-      fun func(@Given _: String, @Given _: Int) {
+      fun func(@Provide _: String, @Provide _: Int) {
         inject<String>()
         inject<Int>()
       }
     """,
     """
       fun invoke() {
-        @Given val string = ""
+        @Provide val string = ""
         func(int = 0)
       } 
     """
@@ -78,14 +78,14 @@ class SuppressionTest {
   @Test fun testCanUseUnderscoreForGivenParameterWithTypeAlias() = singleAndMultiCodegen(
     """
       typealias MyAlias = Int
-      fun func(@Given _: String, @Given _: MyAlias) {
+      fun func(@Provide _: String, @Provide _: MyAlias) {
         inject<String>()
         inject<MyAlias>()
       }
     """,
     """
       fun invoke() {
-        @Given val string = ""
+        @Provide val string = ""
         func(myAlias = 0)
       } 
     """
@@ -97,9 +97,9 @@ class SuppressionTest {
         fun plus(a: T, b: T): T
       }
 
-      infix fun <T> T.combine(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+      infix fun <T> T.combine(other: T, @Provide combine: Combine<T>): T = combine.plus(this, other)
       
-      @Given object StringCombine : Combine<String> {
+      @Provide object StringCombine : Combine<String> {
         override fun plus(a: String, b: String) = a + b
       }
     """,
@@ -116,11 +116,11 @@ class SuppressionTest {
           fun plus(a: T, b: T): T
       }
   
-      operator fun <T> T.plus(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+      operator fun <T> T.plus(other: T, @Provide combine: Combine<T>): T = combine.plus(this, other)
   
       inline class Key(val value: String)
   
-      @Given object KeyCombine : Combine<Key> {
+      @Provide object KeyCombine : Combine<Key> {
           override fun plus(a: Key, b: Key) = Key(a.value + b.value)
       }
     """,
@@ -161,7 +161,7 @@ class SuppressionTest {
   @Test fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
     """
       fun invoke() {
-        @Given val foo = Foo()
+        @Provide val foo = Foo()
         inject<Foo>()
       }
     """
@@ -172,7 +172,7 @@ class SuppressionTest {
   @Test fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
     """
       fun invoke() {
-        @Given val foo = Foo()
+        @Provide val foo = Foo()
       }
     """
   ) {

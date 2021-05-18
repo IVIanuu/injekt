@@ -10,7 +10,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Given class Dep
+            @Provide class Dep
           """,
           packageFqName = FqName("givens")
         )
@@ -32,7 +32,7 @@ class TypeScopeTest {
           """
             class Dep {
               companion object {
-                @Given val dep = Dep()
+                @Provide val dep = Dep()
               }
             }
           """,
@@ -55,7 +55,7 @@ class TypeScopeTest {
         source(
           """
             object Dep {
-              @Given val defaultDep = this
+              @Provide val defaultDep = this
             }
           """,
           packageFqName = FqName("givens")
@@ -78,7 +78,7 @@ class TypeScopeTest {
           """
             typealias Dep = String
             object DepGivens {
-              @Given val default: Dep = ""
+              @Provide val default: Dep = ""
             }
           """,
           packageFqName = FqName("givens")
@@ -101,7 +101,7 @@ class TypeScopeTest {
           """
             @Qualifier annotation class MyQualifier {
               companion object {
-                @Given val default: @MyQualifier String = ""
+                @Provide val default: @MyQualifier String = ""
               }
             }
           """,
@@ -111,7 +111,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = inject<@givens.MyQualifier String>()
+            fun invoke() = inject<@Provides.MyQualifier String>()
           """
         )
       )
@@ -125,7 +125,7 @@ class TypeScopeTest {
           """
             class Dep {
               companion object {
-                @Given val listOfDeps = listOf(Dep())
+                @Provide val listOfDeps = listOf(Dep())
               }
             }
           """,
@@ -149,7 +149,7 @@ class TypeScopeTest {
           """
             abstract class AbstractDep {
               companion object {
-                @Given val dep = Dep()
+                @Provide val dep = Dep()
               }
             }
             class Dep : AbstractDep()
@@ -174,7 +174,7 @@ class TypeScopeTest {
           """
             class Dep
 
-            @Given val dep = Dep()
+            @Provide val dep = Dep()
           """,
           packageFqName = FqName("givens")
         )
@@ -196,7 +196,7 @@ class TypeScopeTest {
           """
             @Qualifier annotation class MyQualifier {
               companion object {
-                @Given val dep = givens.Dep()
+                @Provide val dep = givens.Dep()
               }
             }
           """,
@@ -204,7 +204,7 @@ class TypeScopeTest {
         ),
         source(
           """
-            @Given @qualifiers.MyQualifier class Dep
+            @Provide @qualifiers.MyQualifier class Dep
           """,
           packageFqName = FqName("givens")
         )
@@ -227,7 +227,7 @@ class TypeScopeTest {
             class Dep
 
             object DepImplicits {
-              @Given val dep = Dep() 
+              @Provide val dep = Dep() 
             }
           """,
           packageFqName = FqName("givens")
@@ -255,7 +255,7 @@ class TypeScopeTest {
     listOf(
       source(
         """
-          @Given val dep = Dep()
+          @Provide val dep = Dep()
         """,
         packageFqName = FqName("givens")
       ),
@@ -280,7 +280,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Given val dep = Dep()
+            @Provide val dep = Dep()
           """,
           packageFqName = FqName("givens")
         ),

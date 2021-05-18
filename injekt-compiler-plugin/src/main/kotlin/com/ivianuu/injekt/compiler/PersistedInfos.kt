@@ -38,7 +38,7 @@ fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = Persi
   isStarProjection = isStarProjection,
   isMarkedNullable = isMarkedNullable,
   isMarkedComposable = isMarkedComposable,
-  isGiven = isGiven,
+  isGiven = isProvide,
   defaultOnAllErrors = defaultOnAllErrors,
   ignoreElementsWithErrors = ignoreElementsWithErrors
 )
@@ -61,7 +61,7 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace): Typ
       arguments = arguments,
       isMarkedNullable = isMarkedNullable,
       isMarkedComposable = isMarkedComposable,
-      isGiven = isGiven,
+      isProvide = isGiven,
       defaultOnAllErrors = defaultOnAllErrors,
       ignoreElementsWithErrors = ignoreElementsWithErrors
     )

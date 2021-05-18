@@ -20,36 +20,36 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class GivenLambdaTest {
-  @Test fun testGivenLambda() = codegen(
+class ProvideLambdaTest {
+  @Test fun testProvideLambda() = codegen(
     """
-            fun invoke(foo: Foo) = inject<@Given (@Given () -> Foo) -> Foo>()({ foo })
+      fun invoke(foo: Foo) = inject<@Provide (@Provide () -> Foo) -> Foo>()({ foo })
     """
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testGivenLambdaChain() = singleAndMultiCodegen(
+  @Test fun testProvideLambdaChain() = singleAndMultiCodegen(
     """
-            @Given val fooModule: @Given () -> @Given () -> Foo = { { Foo() } }
+      @Provide val fooModule: @Provide () -> @Provide () -> Foo = { { Foo() } }
     """,
     """
-        fun invoke() = inject<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testCanRequestGivenLambda() = singleAndMultiCodegen(
+  @Test fun testCanRequestProvideLambda() = singleAndMultiCodegen(
     """
-            typealias MyAlias = @Composable () -> Unit
-            @Given fun myAlias(): MyAlias = {}
-            @Given class MyComposeView(val content: @Composable () -> Unit)
+      typealias MyAlias = @Composable () -> Unit
+      @Provide fun myAlias(): MyAlias = {}
+      @Provide class MyComposeView(val content: @Composable () -> Unit)
     """,
     """
-        fun invoke() = inject<(@Given @Composable () -> Unit) -> MyComposeView>() 
+      fun invoke() = inject<(@Provide @Composable () -> Unit) -> MyComposeView>() 
     """
   )
 }

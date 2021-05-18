@@ -35,7 +35,7 @@ fun TypeRef.collectInstances(
   classBodyView: Boolean
 ): List<CallableRef> {
   // special case to support @Provide () -> Foo
-  if (isGiven && isFunctionTypeWithOnlyGivenParameters) {
+  if (isProvide && isFunctionTypeWithOnlyGivenParameters) {
     return listOf(
       classifier.descriptor!!
         .defaultType
@@ -105,7 +105,7 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectInstances(
           ?.givenReceiver(context, trace, false)
       )
       is CallableMemberDescriptor -> {
-        if (declaration.isProvided(context, trace) &&
+        if (declaration.isProvide(context, trace) &&
           (declaration !is PropertyDescriptor ||
               classBodyView ||
               declaration.hasAnnotation(InjektFqNames.Provide) ||
@@ -122,37 +122,62 @@ fun org.jetbrains.kotlin.resolve.scopes.ResolutionScope.collectInstances(
           )
         } else emptyList()
       }
-      is VariableDescriptor -> if (declaration.isProvided(context, trace)) {
+      is VariableDescriptor -> if (declaration.isProvide(context, trace)) {
         listOf(declaration.toCallableRef(context, trace).makeGiven())
       } else emptyList()
       else -> emptyList()
     }
   }
 
-fun Annotated.isProvided(context: InjektContext, trace: BindingTrace): Boolean {
+fun Annotated.isProvide(context: InjektContext, trace: BindingTrace): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  trace.get(InjektWritableSlices.IS_PROVIDED, key)?.let { return it }
+  trace.get(InjektWritableSlices.IS_PROVIDE, key)?.let { return it }
   var isProvided = hasAnnotation(InjektFqNames.Provide) ||
       hasAnnotation(InjektFqNames.Inject)
   if (!isProvided && this is PropertyDescriptor) {
     isProvided = primaryConstructorPropertyValueParameter(context, trace)
-      ?.isProvided(context, trace) == true
+      ?.isProvide(context, trace) == true
   }
   if (!isProvided && this is ParameterDescriptor) {
-    isProvided = type.isProvided(context, trace) ||
+    isProvided = type.isProvide(context, trace) ||
         containingDeclaration.safeAs<FunctionDescriptor>()
           ?.let { containingFunction ->
-            containingFunction.isProvided(context, trace) ||
+            containingFunction.isProvide(context, trace) ||
                 containingFunction.isDeserializedDeclaration() &&
                 name.asString() in containingFunction.callableInfo(context, trace).injectParameters
           } == true
   }
   if (!isProvided && this is ClassConstructorDescriptor && isPrimary) {
-    isProvided = constructedClass.isProvided(context, trace)
+    isProvided = constructedClass.isProvide(context, trace)
   }
-  trace.record(InjektWritableSlices.IS_PROVIDED, key, isProvided)
+  trace.record(InjektWritableSlices.IS_PROVIDE, key, isProvided)
   return isProvided
+}
+
+fun Annotated.isInject(context: InjektContext, trace: BindingTrace): Boolean {
+  @Suppress("IMPLICIT_CAST_TO_ANY")
+  val key = if (this is KotlinType) System.identityHashCode(this) else this
+  trace.get(InjektWritableSlices.IS_INJECT, key)?.let { return it }
+  var isInject = hasAnnotation(InjektFqNames.Inject)
+  if (!isInject && this is PropertyDescriptor) {
+    isInject = primaryConstructorPropertyValueParameter(context, trace)
+      ?.isInject(context, trace) == true
+  }
+  if (!isInject && this is ParameterDescriptor) {
+    isInject = type.isProvide(context, trace) ||
+        containingDeclaration.safeAs<FunctionDescriptor>()
+          ?.let { containingFunction ->
+            containingFunction.isProvide(context, trace) ||
+                containingFunction.isDeserializedDeclaration() &&
+                name.asString() in containingFunction.callableInfo(context, trace).injectParameters
+          } == true
+  }
+  if (!isInject && this is ClassConstructorDescriptor && isPrimary) {
+    isInject = constructedClass.isProvide(context, trace)
+  }
+  trace.record(InjektWritableSlices.IS_INJECT, key, isInject)
+  return isInject
 }
 
 fun ClassDescriptor.provideConstructors(
@@ -208,7 +233,7 @@ fun CallableRef.collectInstances(
     return
   }
 
-  val nextCallable = if (type.isGiven && type.isFunctionTypeWithOnlyGivenParameters) {
+  val nextCallable = if (type.isProvide && type.isFunctionTypeWithOnlyGivenParameters) {
     addGiven(this)
     copy(type = type.copy(frameworkKey = generateFrameworkKey()))
   } else this

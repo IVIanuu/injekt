@@ -41,7 +41,7 @@ class GivenValueParameterDescriptor(
   underlyingDescriptor.annotations,
   underlyingDescriptor.injektName().asNameId(),
   underlyingDescriptor.type,
-  underlyingDescriptor.isProvided(context, trace) ||
+  underlyingDescriptor.isProvide(context, trace) ||
       underlyingDescriptor.declaresDefaultValue(),
   underlyingDescriptor.isCrossinline,
   underlyingDescriptor.isNoinline,

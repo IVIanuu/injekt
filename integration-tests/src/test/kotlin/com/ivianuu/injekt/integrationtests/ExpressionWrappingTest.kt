@@ -22,9 +22,9 @@ import org.junit.*
 class ExpressionWrappingTest {
   @Test fun testDoesFunctionWrapGivenWithMultipleUsages() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
       fun invoke() = inject<Pair<Bar, Bar>>()
@@ -35,9 +35,9 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
-      @Given fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
     """,
     """
       fun invoke() = inject<Pair<Bar, () -> Bar>>()
@@ -48,8 +48,8 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotFunctionWrapGivenWithSingleUsage() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
       fun invoke() = inject<Bar>()
@@ -60,8 +60,8 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotWrapGivenWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
       fun invoke() = inject<Pair<Foo, Foo>>()
@@ -72,8 +72,8 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesCacheProviderWithMultipleUsages() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
       fun invoke() = inject<Pair<() -> Foo, () -> Foo>>()
@@ -85,7 +85,7 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheProviderWithSingleUsage() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
     """,
     """
       fun invoke() = inject<() -> Foo>()
@@ -96,9 +96,9 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheInlineProvider() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
       fun invoke() = inject<Pair<Bar, Bar>>()
@@ -109,8 +109,8 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(b: B)
-      @Given class B(a: () -> A, a2: () -> A)
+      @Provide class A(b: B)
+      @Provide class B(a: () -> A, a2: () -> A)
      """,
     """
       fun invoke() = inject<B>() 

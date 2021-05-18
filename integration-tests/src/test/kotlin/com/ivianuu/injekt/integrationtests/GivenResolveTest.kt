@@ -24,7 +24,7 @@ import org.junit.*
 class GivenResolveTest {
   @Test fun testResolvesExternalGivenInSamePackage() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
     """,
     """
       fun invoke() = inject<Foo>()
@@ -38,7 +38,7 @@ class GivenResolveTest {
       listOf(
         source(
           """
-            @Given val foo = Foo()
+            @Provide val foo = Foo()
           """,
           packageFqName = FqName("givens")
         )
@@ -46,7 +46,7 @@ class GivenResolveTest {
       listOf(
         source(
           """
-            @GivenImports("givens.*")
+            @ProvideImports("givens.*")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -61,13 +61,13 @@ class GivenResolveTest {
     listOf(
       source(
         """
-          @Given val foo = Foo()
+          @Provide val foo = Foo()
         """,
         packageFqName = FqName("givens")
       ),
       source(
         """
-          @GivenImports("givens.*")
+          @ProvideImports("givens.*")
           fun invoke() = inject<Foo>()
         """,
         name = "File.kt"
@@ -79,7 +79,7 @@ class GivenResolveTest {
 
   @Test fun testResolvesGivenInSamePackageAndSameFile() = codegen(
     """
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
       fun invoke() = inject<Foo>()
     """
   ) {
@@ -91,7 +91,7 @@ class GivenResolveTest {
       class MyClass {
         fun resolve() = inject<Foo>()
         companion object {
-          @Given val foo = Foo()
+          @Provide val foo = Foo()
         }
       }
     """,
@@ -106,7 +106,7 @@ class GivenResolveTest {
     """
       class MyClass {
         companion object {
-          @Given val foo = Foo()
+          @Provide val foo = Foo()
         }
       }
     """,
@@ -121,8 +121,8 @@ class GivenResolveTest {
     """
       class MyClass {
         companion object {
-          @Given class MyModule {
-            @Given val foo = Foo()
+          @Provide class MyModule {
+            @Provide val foo = Foo()
           }
         }
       }
@@ -136,7 +136,7 @@ class GivenResolveTest {
 
   @Test fun testResolvesClassConstructorGiven() = singleAndMultiCodegen(
     """
-      class MyClass(@Given val foo: Foo = Foo()) {
+      class MyClass(@Provide val foo: Foo = Foo()) {
         fun resolve() = inject<Foo>()
       }
     """,
@@ -150,7 +150,7 @@ class GivenResolveTest {
   @Test fun testResolvesClassGiven() = singleAndMultiCodegen(
     """
       class MyClass {
-        @Given val foo = Foo()
+        @Provide val foo = Foo()
         fun resolve() = inject<Foo>()
       }
     """,
@@ -163,8 +163,8 @@ class GivenResolveTest {
 
   @Test fun testDerivedGiven() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given val bar: Bar = Bar(inject())
+      @Provide val foo = Foo()
+      @Provide val bar: Bar = Bar(inject())
     """,
     """
       fun invoke() = inject<Bar>() 
@@ -177,7 +177,7 @@ class GivenResolveTest {
   @Test fun testCanResolveSubTypeOfGiven() = singleAndMultiCodegen(
     """
       interface Repo
-      @Given class RepoImpl : Repo
+      @Provide class RepoImpl : Repo
     """,
     """
       fun invoke() = inject<Repo>() 
@@ -198,7 +198,7 @@ class GivenResolveTest {
 
   @Test fun testNestedUnresolvedGiven() = singleAndMultiCodegen(
     """
-      @Given fun bar(foo: Foo) = Bar(foo)
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
       fun invoke() = inject<Bar>() 
@@ -209,8 +209,8 @@ class GivenResolveTest {
 
   @Test fun testGenericGiven() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun <T> givenList(value: T): List<T> = listOf(value)
+      @Provide val foo = Foo()
+      @Provide fun <T> givenList(value: T): List<T> = listOf(value)
     """,
     """
       fun invoke() = inject<List<Foo>>() 
@@ -222,8 +222,8 @@ class GivenResolveTest {
 
   @Test fun testFunctionInvocationWithGivens() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      fun usesFoo(@Given foo: Foo) {
+      @Provide val foo = Foo()
+      fun usesFoo(@Provide foo: Foo) {
       }
     """,
     """
@@ -237,9 +237,9 @@ class GivenResolveTest {
 
   @Test fun testLocalFunctionInvocationWithGivens() = codegen(
     """
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
       fun invoke() {
-        fun usesFoo(@Given foo: Foo) {
+        fun usesFoo(@Provide foo: Foo) {
         }                    
         usesFoo()
       }
@@ -250,8 +250,8 @@ class GivenResolveTest {
 
   @Test fun testConstructorInvocationWithGivens() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      class UsesFoo(@Given foo: Foo)
+      @Provide val foo = Foo()
+      class UsesFoo(@Provide foo: Foo)
     """,
     """
       fun invoke() {
@@ -264,7 +264,7 @@ class GivenResolveTest {
 
   @Test fun testPrimaryConstructorGivenWithReceiver() = singleAndMultiCodegen(
     """
-      class UsesFoo(@Given val foo: Foo)
+      class UsesFoo(@Provide val foo: Foo)
     """,
     """
       fun invoke(foo: Foo) = with(UsesFoo(foo)) {
@@ -278,9 +278,9 @@ class GivenResolveTest {
 
   @Test fun testLocalConstructorInvocationWithGivens() = codegen(
     """
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
       fun invoke() {
-        class UsesFoo(@Given foo: Foo)
+        class UsesFoo(@Provide foo: Foo)
         UsesFoo()
       }
     """
@@ -290,7 +290,7 @@ class GivenResolveTest {
 
   @Test fun testCanResolveGivenOfGivenThisFunction() = codegen(
     """
-      class Dep(@Given val foo: Foo)
+      class Dep(@Provide val foo: Foo)
       fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
     """
   ) {
@@ -302,9 +302,9 @@ class GivenResolveTest {
     """
       typealias SpecialScope = Unit
       
-      @Given fun <E> asRunnable(factory: (@Given SpecialScope) -> List<E>): List<E> = factory(Unit)
+      @Provide fun <E> asRunnable(factory: (@Provide SpecialScope) -> List<E>): List<E> = factory(Unit)
       
-      @Given fun raw(scope: SpecialScope): List<String> = listOf("")
+      @Provide fun raw(scope: SpecialScope): List<String> = listOf("")
     """,
     """
       fun invoke() = inject<List<String>>()
@@ -313,10 +313,10 @@ class GivenResolveTest {
 
   @Test fun testCanResolveStarProjectedType() = singleAndMultiCodegen(
     """
-      @Given fun foos() = Foo() to Foo()
+      @Provide fun foos() = Foo() to Foo()
       
       @Qualifier annotation class First
-      @Given fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
+      @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
     """,
     """
       fun invoke() = inject<@First Foo>() 
@@ -336,7 +336,7 @@ class GivenResolveTest {
 
   @Test fun testCanResolveObjectWithGiven() = singleAndMultiCodegen(
     """
-      @Given object MyObject
+      @Provide object MyObject
     """,
     """
       fun invoke() = inject<MyObject>() 
@@ -345,7 +345,7 @@ class GivenResolveTest {
 
   @Test fun testCannotResolveExternalInternalGiven() = multiCodegen(
     """
-      @Given internal val foo = Foo()
+      @Provide internal val foo = Foo()
     """,
     """
      fun invoke() = inject<Foo>()
@@ -356,8 +356,8 @@ class GivenResolveTest {
 
   @Test fun testCannotResolvePrivateGivenFromOuterScope() = singleAndMultiCodegen(
     """
-      @Given class FooHolder {
-        @Given private val foo = Foo()
+      @Provide class FooHolder {
+        @Provide private val foo = Foo()
       }
     """,
     """
@@ -369,8 +369,8 @@ class GivenResolveTest {
 
   @Test fun testCanResolvePrivateGivenFromInnerScope() = codegen(
     """
-      @Given class FooHolder {
-        @Given private val foo = Foo()
+      @Provide class FooHolder {
+        @Provide private val foo = Foo()
         fun invoke() = inject<Foo>()
       }
     """
@@ -378,8 +378,8 @@ class GivenResolveTest {
 
   @Test fun testCannotResolveProtectedGivenFromOuterScope() = singleAndMultiCodegen(
     """
-      @Given open class FooHolder {
-        @Given protected val foo = Foo()
+      @Provide open class FooHolder {
+        @Provide protected val foo = Foo()
       }
     """,
     """
@@ -391,8 +391,8 @@ class GivenResolveTest {
 
   @Test fun testCanResolveProtectedGivenFromSameClass() = codegen(
     """
-      @Given open class FooHolder {
-        @Given protected val foo = Foo()
+      @Provide open class FooHolder {
+        @Provide protected val foo = Foo()
         fun invoke() = inject<Foo>()
       }
     """
@@ -401,7 +401,7 @@ class GivenResolveTest {
   @Test fun testCanResolveProtectedGivenFromSubClass() = singleAndMultiCodegen(
     """
       abstract class AbstractFooHolder {
-        @Given protected val foo = Foo()
+        @Provide protected val foo = Foo()
       }
     """,
     """
@@ -414,7 +414,7 @@ class GivenResolveTest {
   @Test fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() =
     singleAndMultiCodegen(
       """
-        @Given class MyClass(foo: Foo) {
+        @Provide class MyClass(foo: Foo) {
           val foo = foo
         }
       """,
@@ -428,17 +428,17 @@ class GivenResolveTest {
   @Test fun testCanResolveExplicitMarkedGivenConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
-        class MyClass(@Given val foo: Foo)
+        class MyClass(@Provide val foo: Foo)
       """,
       """
-        fun invoke(@Given myClass: MyClass) = inject<Foo>() 
+        fun invoke(@Provide myClass: MyClass) = inject<Foo>() 
       """
     )
 
   @Test fun testCannotResolveImplicitGivenConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
-        @Given class MyClass(val foo: Foo)
+        @Provide class MyClass(val foo: Foo)
       """,
       """
         fun invoke() = inject<Foo>() 
@@ -449,7 +449,7 @@ class GivenResolveTest {
 
   @Test fun testCanResolveImplicitGivenConstructorParameterFromInsideTheClass() = codegen(
     """
-      @Given class MyClass(private val foo: Foo) {
+      @Provide class MyClass(private val foo: Foo) {
         fun invoke() = inject<Foo>()
       }
     """
@@ -457,7 +457,7 @@ class GivenResolveTest {
 
   @Test fun testResolvesGivenWithTypeParameterInScope() = singleAndMultiCodegen(
     """
-      @Given fun <T> list(): List<T> = emptyList()
+      @Provide fun <T> list(): List<T> = emptyList()
     """,
     """
       fun <T> invoke() {
@@ -468,7 +468,7 @@ class GivenResolveTest {
 
   @Test fun testCannotUseNonReifiedTypeParameterForReifiedGiven() = singleAndMultiCodegen(
     """
-      @Given inline fun <reified T> list(): List<T> {
+      @Provide inline fun <reified T> list(): List<T> {
         T::class
         return emptyList()
       }
@@ -486,7 +486,7 @@ class GivenResolveTest {
 
   @Test fun testCannotUseNonForTypeKeyTypeParameterForForTypeKeyGiven() = singleAndMultiCodegen(
     """
-      @Given fun <@ForTypeKey T> list(): List<T> {
+      @Provide fun <@ForTypeKey T> list(): List<T> {
         typeKeyOf<T>()
         return emptyList()
       }
@@ -506,9 +506,9 @@ class GivenResolveTest {
     """
       typealias TypedString<T> = String
   
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
   
-      @Given fun <T : Foo> typedString(value: T): TypedString<T> = ""
+      @Provide fun <T : Foo> typedString(value: T): TypedString<T> = ""
     """,
     """
       fun invoke() = inject<String>() 
@@ -520,9 +520,9 @@ class GivenResolveTest {
       """
         typealias TypedString<T> = String
 
-        @Given val foo = Foo()
+        @Provide val foo = Foo()
 
-        @Given fun <T : Foo> typedString(value: T): @TypedQualifier<T> TypedString<T> = ""
+        @Provide fun <T : Foo> typedString(value: T): @TypedQualifier<T> TypedString<T> = ""
     """,
     """
       fun invoke() = inject<@TypedQualifier<Foo> String>() 

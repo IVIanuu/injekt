@@ -198,7 +198,7 @@ private fun FunctionResolutionScope(
     trace = trace,
     initialGivens = function.allParameters
         .asSequence()
-        .filter { it.isProvided(context, trace) || it === function.extensionReceiverParameter }
+        .filter { it.isProvide(context, trace) || it === function.extensionReceiverParameter }
         .map { it.toCallableRef(context, trace).makeGiven() }
         .toList(),
     imports = emptyList(),

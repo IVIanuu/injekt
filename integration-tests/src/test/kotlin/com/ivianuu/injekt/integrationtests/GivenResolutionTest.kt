@@ -24,10 +24,10 @@ import org.junit.*
 class GivenResolutionTest {
   @Test fun testPrefersInternalGivenOverExternal() = multiCodegen(
     """
-      @Given lateinit var externalFoo: Foo
+      @Provide lateinit var externalFoo: Foo
     """,
     """
-      @Given lateinit var internalFoo: Foo
+      @Provide lateinit var internalFoo: Foo
   
       fun invoke(internal: Foo, external: Foo): Foo {
         externalFoo = external
@@ -44,9 +44,9 @@ class GivenResolutionTest {
 
   @Test fun testPrefersObjectGivenOverInternalGiven() = codegen(
     """
-      @Given lateinit var internalFoo: Foo
+      @Provide lateinit var internalFoo: Foo
       object MyObject {
-        @Given lateinit var objectFoo: Foo
+        @Provide lateinit var objectFoo: Foo
         fun resolve() = inject<Foo>()
       }
 
@@ -65,11 +65,11 @@ class GivenResolutionTest {
 
   @Test fun testPrefersClassCompanionGivenOverInternalGiven() = codegen(
     """
-      @Given lateinit var internalFoo: Foo
+      @Provide lateinit var internalFoo: Foo
       class MyClass {
         fun resolve() = inject<Foo>()
         companion object {
-          @Given lateinit var companionFoo: Foo
+          @Provide lateinit var companionFoo: Foo
         }
       }
 
@@ -88,8 +88,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersClassGivenOverInternalGiven() = codegen(
     """
-      @Given lateinit var internalFoo: Foo
-      class MyClass(@Given val classFoo: Foo) {
+      @Provide lateinit var internalFoo: Foo
+      class MyClass(@Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
       }
   
@@ -107,10 +107,10 @@ class GivenResolutionTest {
 
   @Test fun testPrefersClassGivenOverClassCompanionGiven() = codegen(
     """
-      class MyClass(@Given val classFoo: Foo) {
+      class MyClass(@Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
         companion object {
-            @Given lateinit var companionFoo: Foo
+            @Provide lateinit var companionFoo: Foo
         }
       }
 
@@ -129,9 +129,9 @@ class GivenResolutionTest {
   @Test fun testPrefersConstructorParameterGivenOverClassBodyGiven() = codegen(
     """
       lateinit var classBodyFoo: Foo
-      class MyClass(@Given constructorFoo: Foo) {
+      class MyClass(@Provide constructorFoo: Foo) {
         val finalFoo = inject<Foo>()
-        @Given val classFoo get() = classBodyFoo
+        @Provide val classFoo get() = classBodyFoo
       }
 
       fun invoke(constructorFoo: Foo, _classBodyFoo: Foo): Foo {
@@ -148,8 +148,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersSubClassGivenOverSuperClassGiven() = singleAndMultiCodegen(
     """
-      abstract class MySuperClass(@Given val superClassFoo: Foo)
-      class MySubClass(@Given val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
+      abstract class MySuperClass(@Provide val superClassFoo: Foo)
+      class MySubClass(@Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
         fun finalFoo(): Foo = inject()
       }
     """,
@@ -167,8 +167,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersFunctionParameterGivenOverInternalGiven() = codegen(
     """
-      @Given lateinit var internalFoo: Foo
-      fun invoke(internal: Foo, @Given functionFoo: Foo): Foo {
+      @Provide lateinit var internalFoo: Foo
+      fun invoke(internal: Foo, @Provide functionFoo: Foo): Foo {
         internalFoo = internal
         return inject()
       }
@@ -182,8 +182,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersFunctionParameterGivenOverClassGiven() = codegen(
     """
-      class MyClass(@Given val classFoo: Foo) {
-        fun resolve(@Given functionFoo: Foo) = inject<Foo>()
+      class MyClass(@Provide val classFoo: Foo) {
+        fun resolve(@Provide functionFoo: Foo) = inject<Foo>()
       }
 
       fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
@@ -199,7 +199,7 @@ class GivenResolutionTest {
 
   @Test fun testPrefersFunctionReceiverGivenOverInternalGiven() = codegen(
     """
-      @Given lateinit var internalFoo: Foo
+      @Provide lateinit var internalFoo: Foo
       fun Foo.invoke(internal: Foo): Foo {
         internalFoo = internal
         return inject()
@@ -214,7 +214,7 @@ class GivenResolutionTest {
 
   @Test fun testPrefersFunctionReceiverGivenOverClassGiven() = codegen(
     """
-      class MyClass(@Given val classFoo: Foo) {
+      class MyClass(@Provide val classFoo: Foo) {
         fun Foo.resolve() = inject<Foo>()
       }
 
@@ -233,8 +233,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersProviderArgument() = codegen(
     """
-      @Given fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(@Given Foo) -> Foo>()(foo)
+      @Provide fun foo() = Foo()
+      fun invoke(foo: Foo) = inject<(@Provide Foo) -> Foo>()(foo)
     """
   ) {
     val foo = Foo()
@@ -243,8 +243,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
     """
-      @Given fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(@Given Foo) -> (@Given Foo) -> Foo>()(Foo())(foo)
+      @Provide fun foo() = Foo()
+      fun invoke(foo: Foo) = inject<(@Provide Foo) -> (@Provide Foo) -> Foo>()(Foo())(foo)
     """
   ) {
     val foo = Foo()
@@ -254,9 +254,9 @@ class GivenResolutionTest {
   @Test fun testPrefsInnerBlockGiven() = codegen(
     """
       fun invoke(): Pair<String, String> {
-        @Given val givenA = "a"
+        @Provide val givenA = "a"
         return inject<String>() to run {
-            @Given val givenB = "b"
+            @Provide val givenB = "b"
             inject<String>()
         }
       }
@@ -267,8 +267,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersResolvableGiven() = singleAndMultiCodegen(
     """
-      @Given fun a() = "a"
-      @Given fun b(long: Long) = "b"
+      @Provide fun a() = "a"
+      @Provide fun b(long: Long) = "b"
     """,
     """
       fun invoke() = inject<String>() 
@@ -280,9 +280,9 @@ class GivenResolutionTest {
   @Test fun testPrefersNearerGivenOverBetterType() = codegen(
     """
       fun invoke(): CharSequence {
-        @Given val a: String = "a"
+        @Provide val a: String = "a"
         run {
-          @Given val b: CharSequence = "b"
+          @Provide val b: CharSequence = "b"
           return inject<CharSequence>()
         }
       }
@@ -293,8 +293,8 @@ class GivenResolutionTest {
 
   @Test fun testAmbiguousGivens() = codegen(
     """
-      @Given val a = "a"
-      @Given val b = "b"
+      @Provide val a = "a"
+      @Provide val b = "b"
     """,
     """
       fun invoke() = inject<String>() 
@@ -311,8 +311,8 @@ class GivenResolutionTest {
   @Test fun testCannotDeclareMultipleGivensOfTheSameTypeInTheSameCodeBlock() = codegen(
     """
       fun invoke() {
-        @Given val givenA = "a"
-        @Given val givenB = "b"
+        @Provide val givenA = "a"
+        @Provide val givenB = "b"
         inject<String>()
       }
     """
@@ -327,8 +327,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
     """
-      @Given fun stringList(): List<String> = listOf("a", "b", "c")
-      @Given fun <T> anyList(): List<T> = emptyList()
+      @Provide fun stringList(): List<String> = listOf("a", "b", "c")
+      @Provide fun <T> anyList(): List<T> = emptyList()
     """,
     """
       fun invoke() = inject<List<String>>() 
@@ -339,8 +339,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersMoreSpecificType2() = singleAndMultiCodegen(
     """
-      @Given fun <T> list(): List<T> = emptyList()
-      @Given fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
+      @Provide fun <T> list(): List<T> = emptyList()
+      @Provide fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
     """,
     """
       fun invoke() = inject<List<List<String>>>() 
@@ -352,9 +352,9 @@ class GivenResolutionTest {
   @Test fun testPrefersMoreSpecificType3() = singleAndMultiCodegen(
     """
       interface Ord<in T>
-      @Given object IntOrd : Ord<Int>
-      @Given object NumberOrd : Ord<Number>
-      fun <T> useOrd(@Given ord: Ord<T>) = ord
+      @Provide object IntOrd : Ord<Int>
+      @Provide object NumberOrd : Ord<Number>
+      fun <T> useOrd(@Provide ord: Ord<T>) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -363,8 +363,8 @@ class GivenResolutionTest {
 
   @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
     """
-      @Given val nonNull = "nonnull"
-      @Given val nullable: String? = "nullable"
+      @Provide val nonNull = "nonnull"
+      @Provide val nullable: String? = "nullable"
     """,
     """
       fun invoke() = inject<String?>() 
@@ -375,7 +375,7 @@ class GivenResolutionTest {
 
   @Test fun testDoesNotUseFrameworkGivensIfThereAreUserGivens() = singleAndMultiCodegen(
     """
-      @Given fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
+      @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
     """,
     """
       fun invoke() = inject<() -> Foo>() 
@@ -398,9 +398,9 @@ class GivenResolutionTest {
 
   @Test fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
     """
-      @Given fun bar(foo: Foo) = Bar(foo)
+      @Provide fun bar(foo: Foo) = Bar(foo)
       fun invoke() {
-        fun inner(@Given bar: Bar = Bar(Foo())) = bar
+        fun inner(@Provide bar: Bar = Bar(Foo())) = bar
         return inner()
       }
     """
@@ -411,9 +411,9 @@ class GivenResolutionTest {
   @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() =
     codegen(
       """
-        @Given fun bar(foo: Foo) = Bar(foo)
+        @Provide fun bar(foo: Foo) = Bar(foo)
         fun invoke(foo: Foo): Foo {
-          fun inner(@Given @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
+          fun inner(@Provide @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
           return inner().foo
         }
     """
@@ -424,13 +424,13 @@ class GivenResolutionTest {
 
   @Test fun testSpreadingGivenWithTheSameOrigin() = singleAndMultiCodegen(
     """
-      @Given @MyQualifier class FooModule {
-        @Given val foo = Foo()
+      @Provide @MyQualifier class FooModule {
+        @Provide val foo = Foo()
       }
 
       @Qualifier annotation class MyQualifier
 
-      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
+      @Provide fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
     """,
     """
       fun invoke() = inject<Foo>() 
@@ -440,16 +440,16 @@ class GivenResolutionTest {
   @Test fun testSpreadingGivenWithTheSameOrigin2() = singleAndMultiCodegen(
     """
       abstract class FooModule {
-        @Given val foo = Foo()
+        @Provide val foo = Foo()
         companion object {
-          @Given fun create(): @MyQualifier FooModule = object : FooModule() {
+          @Provide fun create(): @MyQualifier FooModule = object : FooModule() {
           }
         }
       }
 
       @Qualifier annotation class MyQualifier
 
-      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
+      @Provide fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
     """,
     """
       fun invoke() = inject<Foo>() 

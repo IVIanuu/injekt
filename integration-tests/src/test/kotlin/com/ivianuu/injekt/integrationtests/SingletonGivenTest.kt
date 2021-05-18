@@ -23,8 +23,8 @@ import org.junit.*
 class SingletonGivenTest {
   @Test fun testSingleton() = singleAndMultiCodegen(
     """
-      @Given class MyModule {
-        @Given fun foo() = Foo()
+      @Provide class MyModule {
+        @Provide fun foo() = Foo()
       }
     """,
     """
@@ -38,7 +38,7 @@ class SingletonGivenTest {
   @Test fun testDoesNotOptimizeNormalClass() = singleAndMultiCodegen(
     """
       class MyModule
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
     """,
     """
       fun invoke() = inject<Foo>() 
@@ -50,8 +50,8 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeObject() = singleAndMultiCodegen(
     """
-      @Given object MyModule {
-        @Given val foo = Foo()
+      @Provide object MyModule {
+        @Provide val foo = Foo()
       }
     """,
     """
@@ -64,8 +64,8 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithConstructorParameters() = singleAndMultiCodegen(
     """
-      @Given class MyModule(val foo: Foo)
-      @Given val foo = Foo()
+      @Provide class MyModule(val foo: Foo)
+      @Provide val foo = Foo()
     """,
     """
       fun invoke() = inject<Foo>() 
@@ -77,8 +77,8 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithForTypeKeyParameters() = singleAndMultiCodegen(
     """
-      @Given class MyModule<@ForTypeKey T> {
-        @Given val instance = Foo() as T
+      @Provide class MyModule<@ForTypeKey T> {
+        @Provide val instance = Foo() as T
       }
     """,
     """
@@ -91,8 +91,8 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithFields() = singleAndMultiCodegen(
     """
-      @Given class MyModule {
-        @Given val foo = Foo()
+      @Provide class MyModule {
+        @Provide val foo = Foo()
       }
     """,
     """
@@ -105,10 +105,10 @@ class SingletonGivenTest {
 
   @Test fun testDoesNotOptimizeGivenWithInnerClass() = singleAndMultiCodegen(
     """
-      @Given class MyModule {
+      @Provide class MyModule {
         inner class Inner
       }
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
     """,
     """
       fun invoke() = inject<Foo>() 
@@ -120,8 +120,8 @@ class SingletonGivenTest {
 
   @Test fun testDoesOptimizeGivenWithComputedProperties() = singleAndMultiCodegen(
     """
-      @Given class MyModule {
-        @Given val foo get() = Foo()
+      @Provide class MyModule {
+        @Provide val foo get() = Foo()
       }
     """,
     """

@@ -26,7 +26,7 @@ import org.junit.*
 @Providers("com.ivianuu.injekt.common.*")
 class GivenScopeTest {
   @Test fun testGetElement() {
-    @Given val element: @InstallElement<TestGivenScope1> String = "value"
+    @Provide val element: @InstallElement<TestGivenScope1> String = "value"
     val scope = inject<TestGivenScope1>()
     scope.element<String>() shouldBe "value"
   }
@@ -34,14 +34,14 @@ class GivenScopeTest {
   @Test fun testGivenScopeInitializer() {
     var called = false
 
-    @Given
+    @Provide
     fun initializer(givenScope: TestGivenScope1): GivenScopeInitializer<TestGivenScope1> = {
       called = true
     }
 
     var otherCalled = false
 
-    @Given fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
+    @Provide fun otherInitializer(): GivenScopeInitializer<TestGivenScope2> = {
       otherCalled = true
     }
 
@@ -51,7 +51,7 @@ class GivenScopeTest {
   }
 
   @Test fun testChildGivenScopeModule() {
-    @Given val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+    @Provide val childScopeModule = ChildScopeModule1<TestGivenScope1, String, TestGivenScope2>()
     val parentScope = inject<TestGivenScope1>()
     val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
     childScope.element<String>() shouldBe "42"
@@ -143,8 +143,8 @@ class GivenScopeTest {
   }
 
   @Test fun testParentScope() {
-    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
-    @Given val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
+    @Provide val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    @Provide val childScope2Module = ChildScopeModule0<TestGivenScope2, TestGivenScope3>()
     val parentScope = inject<TestGivenScope1>()
     val childScope1 = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
       .invoke()
@@ -155,8 +155,8 @@ class GivenScopeTest {
   }
 
   @Test fun testChildReturnsParentElement() {
-    @Given val parentElement: @InstallElement<TestGivenScope1> String = "value"
-    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    @Provide val parentElement: @InstallElement<TestGivenScope1> String = "value"
+    @Provide val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
     val parentScope = inject<TestGivenScope1>()
     val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
       .invoke()
@@ -164,7 +164,7 @@ class GivenScopeTest {
   }
 
   @Test fun testDisposingParentDisposesChild() {
-    @Given val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
+    @Provide val childScopeModule = ChildScopeModule0<TestGivenScope1, TestGivenScope2>()
     val parentScope = inject<TestGivenScope1>()
     val childScope = parentScope.element<@ChildScopeFactory () -> TestGivenScope2>()
       .invoke()

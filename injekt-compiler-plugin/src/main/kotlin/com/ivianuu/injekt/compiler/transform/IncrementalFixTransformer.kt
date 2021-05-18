@@ -153,7 +153,7 @@ class IncrementalFixTransformer(
           (declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC ||
               declaration.constructedClass.visibility == DescriptorVisibilities.INTERNAL ||
               declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
-      declaration.descriptor.isProvided(context, trace)
+      declaration.descriptor.isProvide(context, trace)
     ) {
       providersByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
         is IrClass -> declaration.descriptor.provideConstructors(context, trace)

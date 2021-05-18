@@ -50,7 +50,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
     descriptor: FunctionDescriptor,
     trace: BindingTrace
   ) {
-    if (descriptor.isProvided(this.context, trace)) {
+    if (descriptor.isProvide(this.context, trace)) {
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
       checkSpreadingGiven(declaration, descriptor.typeParameters, trace)
@@ -150,7 +150,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
     descriptor: ConstructorDescriptor,
     trace: BindingTrace
   ) {
-    if (descriptor.isProvided(this.context, trace)) {
+    if (descriptor.isProvide(this.context, trace)) {
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
     } else {
@@ -165,7 +165,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
   ) {
     checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
     checkReceiver(descriptor, declaration, trace)
-    if (descriptor.isProvided(this.context, trace)) {
+    if (descriptor.isProvide(this.context, trace)) {
       checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)

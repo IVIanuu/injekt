@@ -6,13 +6,13 @@ import org.junit.*
 
 class NotGivenTest {
   @Test fun yes() {
-    @Given fun value(_: NotProvided<String>) = Unit
+    @Provide fun value(_: NotProvided<String>) = Unit
     injectOrNull<Unit>().shouldNotBeNull()
   }
 
   @Test fun no() {
-    @Given fun value(_: NotProvided<String>) = Unit
-    @Given val string = ""
+    @Provide fun value(_: NotProvided<String>) = Unit
+    @Provide val string = ""
     injectOrNull<Unit>().shouldBeNull()
   }
 }

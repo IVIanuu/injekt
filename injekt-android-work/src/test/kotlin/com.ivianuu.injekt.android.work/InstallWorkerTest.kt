@@ -31,13 +31,13 @@ import org.robolectric.annotation.*
 @Providers("com.ivianuu.injekt.common.*")
 class InstallWorkerTest {
   @Test fun testWorkerBinding() {
-    val workerFactory = inject<(@Given Context) -> WorkerFactory>()(mockk())
+    val workerFactory = inject<(@Provide Context) -> WorkerFactory>()(mockk())
     workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
       .shouldNotBeNull()
   }
 }
 
-@Given @InstallWorker class TestWorker(
+@Provide @InstallWorker class TestWorker(
   appContext: Context,
   workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {

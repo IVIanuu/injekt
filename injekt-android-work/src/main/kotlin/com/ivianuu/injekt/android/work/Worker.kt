@@ -28,11 +28,11 @@ import kotlin.reflect.*
  *
  * Example:
  * ```
- * @Given
+ * @Provide
  * @InstallWorker
  * class MyWorker(
- *   @Given context: AppContext,
- *   @Given parameters: WorkerParameters
+ *   @Provide context: AppContext,
+ *   @Provide parameters: WorkerParameters
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
@@ -63,7 +63,7 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 /**
  * Defines providers to initialize the work manager library
  */
-object WorkerInitializerProviders {
+object WorkerInitializerModule {
   /**
    * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
    */

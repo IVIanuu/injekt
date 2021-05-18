@@ -178,7 +178,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyFromGivenCall() = singleAndMultiCodegen(
     """
-      @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
+      @Provide fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
     """,
     """
       fun invoke() = inject<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
@@ -217,8 +217,8 @@ class TypeKeyTest {
 
   @Test fun testNonTopLevelInlineForTypeKeyFunction() = singleAndMultiCodegen(
     """
-      @Given object MyClass {
-        @Given inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
+      @Provide object MyClass {
+        @Provide inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
       }
     """,
     """
@@ -238,8 +238,8 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithStar2() = codegen(
     """
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      val scope = inject<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
+      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      val scope = inject<(@Provide @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
         .invoke(emptyMap<Any?, Any?>())
       fun invoke() = scope.element<Map<*, *>>()
     """

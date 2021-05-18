@@ -13,7 +13,7 @@ class TypeAliasGivensTest {
           """
             typealias Dep = String
             object DepGivens {
-              @Given val foo = Foo()
+              @Provide val foo = Foo()
             }
           """,
           packageFqName = FqName("givens")
@@ -22,7 +22,7 @@ class TypeAliasGivensTest {
       listOf(
         source(
           """
-            @GivenImports("givens.Dep")
+            @ProvideImports("givens.Dep")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"

@@ -25,10 +25,10 @@ import com.ivianuu.injekt.common.*
  * In the following example each request to Repo resolvers to the same instance
  * ```
  * @Scoped<AppGivenScope>
- * @Given
+ * @Provide
  * class MyRepo
  *
- * fun runApp(@Given appScope: AppGivenScope) {
+ * fun runApp(@Provide appScope: AppGivenScope) {
  *   val repo1 = inject<MyRepo>()
  *   val repo2 = inject<MyRepo>()
  *   // repo === repo2

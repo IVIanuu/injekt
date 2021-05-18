@@ -82,7 +82,7 @@ fun CallableDescriptor.toCallableRef(
     typeArguments = typeParameters
       .map { it to it.defaultType }
       .toMap(),
-    isGiven = isProvided(context, trace),
+    isGiven = isProvide(context, trace),
     source = null,
     callContext = callContext(trace.bindingContext),
     owner = null,

@@ -23,76 +23,76 @@ import org.junit.*
 class GivenDeclarationCheckTest {
   @Test fun testGivenAnnotationClass() = codegen(
     """
-      @Given annotation class MyAnnotation
+      @Provide annotation class MyAnnotation
     """
   ) {
-    compilationShouldHaveFailed("annotation class cannot be @Given")
+    compilationShouldHaveFailed("annotation class cannot be @Provide")
   }
 
   @Test fun testGivenConstructorOnAnnotationClass() = codegen(
     """
-      annotation class MyAnnotation @Given constructor()
+      annotation class MyAnnotation @Provide constructor()
     """
   ) {
-    compilationShouldHaveFailed("annotation class cannot be @Given")
+    compilationShouldHaveFailed("annotation class cannot be @Provide")
   }
 
   @Test fun testGivenEnumClass() = codegen(
     """
-      @Given enum class MyEnum
+      @Provide enum class MyEnum
     """
   ) {
-    compilationShouldHaveFailed("enum class cannot be @Given")
+    compilationShouldHaveFailed("enum class cannot be @Provide")
   }
 
   @Test fun testGivenInnerClass() = codegen(
     """
       class MyOuterClass {
-        @Given inner class MyInnerClass
+        @Provide inner class MyInnerClass
       }
     """
   ) {
-    compilationShouldHaveFailed("@Given class cannot be inner")
+    compilationShouldHaveFailed("@Provide class cannot be inner")
   }
 
   @Test fun testGivenAbstractClass() = codegen(
     """
-      @Given abstract class MyClass
+      @Provide abstract class MyClass
     """
   ) {
-    compilationShouldHaveFailed("@Given class cannot be abstract")
+    compilationShouldHaveFailed("@Provide class cannot be abstract")
   }
 
   @Test fun testGivenConstructorAbstractClass() = codegen(
     """
-      abstract class MyClass @Given constructor()
+      abstract class MyClass @Provide constructor()
     """
   ) {
-    compilationShouldHaveFailed("@Given class cannot be abstract")
+    compilationShouldHaveFailed("@Provide class cannot be abstract")
   }
 
   @Test fun testGivenInterface() = codegen(
     """
-      @Given interface MyInterface
+      @Provide interface MyInterface
     """
   ) {
-    compilationShouldHaveFailed("interface cannot be @Given")
+    compilationShouldHaveFailed("interface cannot be @Provide")
   }
 
   @Test fun testNonGivenValueParameterOnGivenFunction() = codegen(
     """
-      @Given fun bar(@Given foo: Foo) = Bar(foo)
+      @Provide fun bar(@Provide foo: Foo) = Bar(foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a @Given declaration are automatically treated as @Given")
+    compilationShouldHaveFailed("parameters of a @Provide declaration are automatically treated as @Provide")
   }
 
   @Test fun testGivenValueParameterOnGivenClass() = codegen(
     """
-      @Given class MyBar(@Given foo: Foo)
+      @Provide class MyBar(@Provide foo: Foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a @Given declaration are automatically treated as @Given")
+    compilationShouldHaveFailed("parameters of a @Provide declaration are automatically treated as @Provide")
   }
 
   @Test fun testGivenReceiverOnFunction() = codegen(
@@ -100,7 +100,7 @@ class GivenDeclarationCheckTest {
       fun @receiver:Given Foo.bar() = Bar(this)
     """
   ) {
-    compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
+    compilationShouldHaveFailed("receiver cannot be marked as @Provide because it is implicitly @Provide")
   }
 
   @Test fun testGivenReceiverOnNonGivenFunction() = codegen(
@@ -108,18 +108,18 @@ class GivenDeclarationCheckTest {
       val @receiver:Given Foo.bar get() = Bar(this)
     """
   ) {
-    compilationShouldHaveFailed("receiver cannot be marked as @Given because it is implicitly @Given")
+    compilationShouldHaveFailed("receiver cannot be marked as @Provide because it is implicitly @Provide")
   }
 
   @Test fun testGivenFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-        @Given abstract fun foo(): Foo
+        @Provide abstract fun foo(): Foo
       }
     """,
     """
-      @Given class MySubClass : MySuperClass() {
-          @Given override fun foo() = Foo()
+      @Provide class MySubClass : MySuperClass() {
+          @Provide override fun foo() = Foo()
       }
 
       fun invoke() = inject<Foo>() 
@@ -135,8 +135,8 @@ class GivenDeclarationCheckTest {
           abstract fun foo(): Foo
       }
   
-      @Given class MySubClass : MySuperClass() {
-          @Given override fun foo() = Foo()
+      @Provide class MySubClass : MySuperClass() {
+          @Provide override fun foo() = Foo()
       }
     """,
     """
@@ -150,7 +150,7 @@ class GivenDeclarationCheckTest {
   @Test fun testGivenFunctionOverrideWithoutGivenAnnotation() = codegen(
     """
       abstract class MySuperClass {
-          @Given abstract fun foo(): Foo
+          @Provide abstract fun foo(): Foo
       }
     """,
     """
@@ -165,12 +165,12 @@ class GivenDeclarationCheckTest {
   @Test fun testNonSpreadTypeParameterOverrideWithSpreadOverridden() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-          @Given abstract fun <@Spread T : Bar> foo(): Foo
+          @Provide abstract fun <@Spread T : Bar> foo(): Foo
       }
     """,
     """
       class MySubClass : MySuperClass() {
-          @Given override fun <T : Bar> foo(): Foo = TODO()
+          @Provide override fun <T : Bar> foo(): Foo = TODO()
       } 
     """
   ) {
@@ -180,7 +180,7 @@ class GivenDeclarationCheckTest {
   @Test fun testGivenPropertyOverrideWithoutGivenAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-          @Given abstract val foo: Foo
+          @Provide abstract val foo: Foo
       }
     """,
     """
@@ -194,7 +194,7 @@ class GivenDeclarationCheckTest {
 
   @Test fun testActualGivenFunctionWithoutGivenAnnotation() = multiPlatformCodegen(
     """
-      @Given expect fun foo(): Foo 
+      @Provide expect fun foo(): Foo 
     """,
     """
       actual fun foo(): Foo = Foo()
@@ -205,7 +205,7 @@ class GivenDeclarationCheckTest {
 
   @Test fun testActualGivenPropertyWithoutGivenAnnotation() = multiPlatformCodegen(
     """
-      @Given expect val foo: Foo 
+      @Provide expect val foo: Foo 
     """,
     """
       actual val foo: Foo = Foo()
@@ -216,7 +216,7 @@ class GivenDeclarationCheckTest {
 
   @Test fun testActualGivenClassWithoutGivenAnnotation() = multiPlatformCodegen(
     """
-      @Given expect class Dep 
+      @Provide expect class Dep 
     """,
     """
       actual class Dep
@@ -228,7 +228,7 @@ class GivenDeclarationCheckTest {
   @Test fun testActualGivenConstructorWithoutGivenAnnotation() = multiPlatformCodegen(
     """
       expect class Dep {
-        @Given constructor()
+        @Provide constructor()
       } 
     """,
     """

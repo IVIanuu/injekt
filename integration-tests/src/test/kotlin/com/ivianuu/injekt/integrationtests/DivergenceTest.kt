@@ -41,9 +41,9 @@ class DivergenceTest {
         val value: T
       }
   
-      @Given fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
+      @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
   
-      @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
+      @Provide fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
     """,
     """
       fun invoke() = inject<Foo>()
@@ -52,8 +52,8 @@ class DivergenceTest {
 
   @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
     """
-      @Given class A(b: B)
-      @Given class B(a: A)
+      @Provide class A(b: B)
+      @Provide class B(a: A)
     """,
     """
       fun invoke() = inject<A>() 
@@ -64,8 +64,8 @@ class DivergenceTest {
 
   @Test fun testProviderBreaksCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(b: B)
-      @Given class B(a: () -> A)
+      @Provide class A(b: B)
+      @Provide class B(a: () -> A)
     """,
     """
       fun invoke() = inject<B>()
@@ -76,9 +76,9 @@ class DivergenceTest {
 
   @Test fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(b: () -> B)
-      @Given class B(b: C)
-      @Given class C(b: B)
+      @Provide class A(b: () -> B)
+      @Provide class B(b: C)
+      @Provide class C(b: B)
      """,
      """
       fun invoke() = inject<C>() 
@@ -90,9 +90,9 @@ class DivergenceTest {
   @Test fun testLazyRequestInSetBreaksCircularDependency() = singleAndMultiCodegen(
     """
       typealias A = () -> Unit
-      @Given fun a(b: () -> B): A = {}
+      @Provide fun a(b: () -> B): A = {}
       typealias B = () -> Unit
-      @Given fun b(a: () -> A): B = {}
+      @Provide fun b(a: () -> A): B = {}
      """,
     """
      fun invoke() = inject<Set<() -> Unit>>() 

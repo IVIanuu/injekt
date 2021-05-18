@@ -129,7 +129,7 @@ interface InjektErrors {
         .also {
           MAP.put(
             it,
-            "a @Spread type parameter is only supported on @Given functions and @Given classes"
+            "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
           )
         }
 

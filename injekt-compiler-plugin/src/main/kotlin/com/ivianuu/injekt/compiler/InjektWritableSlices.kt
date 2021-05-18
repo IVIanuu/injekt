@@ -38,7 +38,8 @@ object InjektWritableSlices {
     BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_REF_FOR_CLASSIFIER =
     BasicWritableSlice<ClassifierDescriptor, ClassifierRef>(RewritePolicy.DO_NOTHING)
-  val IS_PROVIDED = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
+  val IS_PROVIDE = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
+  val IS_INJECT = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
   val GIVEN_CONSTRUCTORS =
     BasicWritableSlice<ClassDescriptor, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, CallableInfo>(RewritePolicy.DO_NOTHING)

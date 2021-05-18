@@ -23,9 +23,9 @@ import org.junit.*
 class PersistenceTest {
   @Test fun testPrimaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
     """
-      @Given class Dep(value: MyAlias)
+      @Provide class Dep(value: MyAlias)
       typealias MyAlias = String
-      @Given val myAlias: MyAlias = ""
+      @Provide val myAlias: MyAlias = ""
     """,
     """
       fun invoke() = inject<Dep>()
@@ -35,10 +35,10 @@ class PersistenceTest {
   @Test fun testSecondaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
     """
       class Dep {
-        @Given constructor(value: MyAlias)
+        @Provide constructor(value: MyAlias)
       }
       typealias MyAlias = String
-      @Given val myAlias: MyAlias = ""
+      @Provide val myAlias: MyAlias = ""
     """,
     """
       fun invoke() = inject<Dep>()
@@ -48,12 +48,12 @@ class PersistenceTest {
   @Test fun testModuleDispatchReceiverTypeInference() = singleAndMultiCodegen(
     """
       class MyModule<T : S, S> {
-        @Given fun provide(value: S): T = value as T
+        @Provide fun provide(value: S): T = value as T
       }
   
-      @Given val module = MyModule<String, CharSequence>()
+      @Provide val module = MyModule<String, CharSequence>()
   
-      @Given val value: CharSequence = "42"
+      @Provide val value: CharSequence = "42"
     """,
     """
       fun invoke() = inject<String>() 
@@ -67,14 +67,14 @@ class PersistenceTest {
       var callCount = 0
       @Qualifier annotation class MyQualifier
       @Qualifier annotation class MyOtherQualifier
-      @Given fun <@Spread T : @MyQualifier S, S : FuncA> impl(instance: T): @MyOtherQualifier S =
+      @Provide fun <@Spread T : @MyQualifier S, S : FuncA> impl(instance: T): @MyOtherQualifier S =
         instance
   
       typealias FuncA = suspend () -> Unit
       typealias FuncB = suspend () -> Boolean
   
-      @Given fun funcA(funcB: FuncB): @MyQualifier FuncA = { }
-      @Given fun funcB(): @MyQualifier FuncB = { true }
+      @Provide fun funcA(funcB: FuncB): @MyQualifier FuncA = { }
+      @Provide fun funcB(): @MyQualifier FuncB = { true }
     """,
     """
       fun invoke() {
@@ -90,11 +90,11 @@ class PersistenceTest {
   @Test fun testNonGivenFunctionWithGivenParameters() = singleAndMultiCodegen(
     """
       fun myFunction(
-          @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
+          @Provide scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
       ): AppGivenScope = TODO()
     """,
     """
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = myFunction()
     """
   )
@@ -102,11 +102,11 @@ class PersistenceTest {
   @Test fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
     """
       class MyClass(
-          @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
+          @Provide scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
       )
     """,
     """
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = MyClass()
     """
   )
@@ -115,12 +115,12 @@ class PersistenceTest {
     """
       class MyClass {
           constructor(
-            @Given scopeFactory: (@Given @InstallElement<AppGivenScope> Any) -> AppGivenScope
+            @Provide scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
           )
       }
     """,
     """
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = MyClass()
     """
   )
@@ -128,13 +128,13 @@ class PersistenceTest {
   @Test fun testNonGivenClassWithGivenMembers() = singleAndMultiCodegen(
     """ 
       abstract class MyModule<T : S, S> {
-        @Given fun func(t: T): S = t
+        @Provide fun func(t: T): S = t
       }
       class MyModuleImpl<T> : MyModule<@Qualifier1 T, T>()
     """,
     """
-      @Given val myFooModule = MyModuleImpl<Foo>()
-      @Given val foo: @Qualifier1 Foo = Foo()
+      @Provide val myFooModule = MyModuleImpl<Foo>()
+      @Provide val foo: @Qualifier1 Foo = Foo()
       fun invoke() = inject<Foo>()
         """
   )
@@ -142,18 +142,18 @@ class PersistenceTest {
   @Test fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
     """ 
       abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
-        @Given fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+        @Provide fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
       }
       
       class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
-        (P1) -> C, (@Given @InstallElement<C> P1) -> C>()
+        (P1) -> C, (@Provide @InstallElement<C> P1) -> C>()
     """,
     """
       typealias TestGivenScope1 = GivenScope
       typealias TestGivenScope2 = GivenScope
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-        @Given val childScopeModule = MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
+        @Provide val childScopeModule = MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
         val parentScope = inject<TestGivenScope1>()
         val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
         childScope.element<String>()
@@ -168,7 +168,7 @@ class PersistenceTest {
       typealias MyAlias<T> = OtherAlias<T>
       typealias OtherAlias<S> = String
       fun <T> largeFunc(${
-        (1..150).map { "@Given p$it: MyAlias<T>" }.joinToString("\n,")
+        (1..150).map { "@Provide p$it: MyAlias<T>" }.joinToString("\n,")
       }): String = ""
     """,
     """

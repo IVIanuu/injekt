@@ -25,7 +25,7 @@ import org.junit.*
 class GivenImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
-      @GivenImports("a")
+      @ProvideImports("a")
       fun invoke() {
       }
     """
@@ -35,7 +35,7 @@ class GivenImportsTest {
 
   @Test fun testUnresolvedStarImport() = codegen(
     """
-            @GivenImports("a.*")
+            @ProvideImports("a.*")
       fun invoke() {
             }
     """
@@ -45,7 +45,7 @@ class GivenImportsTest {
 
   @Test fun testImportsJustAPackage() = codegen(
     """
-      @GivenImports("kotlin.collections")
+      @ProvideImports("kotlin.collections")
       fun invoke() {
       }
     """
@@ -55,7 +55,7 @@ class GivenImportsTest {
 
   @Test fun testMalformedImport() = codegen(
     """
-      @GivenImports("-_;-")
+      @ProvideImports("-_;-")
       fun invoke() {
       }
     """
@@ -65,7 +65,7 @@ class GivenImportsTest {
 
   @Test fun testDuplicatedImports() = codegen(
     """
-      @GivenImports("kotlin.collections.*", "kotlin.collections.*")
+      @ProvideImports("kotlin.collections.*", "kotlin.collections.*")
       fun invoke() {
       }
     """
@@ -75,7 +75,7 @@ class GivenImportsTest {
 
   @Test fun testNestedDuplicatedImports() = codegen(
     """
-      @GivenImports("kotlin.collections.*")
+      @ProvideImports("kotlin.collections.*")
       fun invoke() {
         withGivenImports("kotlin.collections.*") {
         }
@@ -87,7 +87,7 @@ class GivenImportsTest {
 
   @Test fun testUnusedImport() = codegen(
     """
-      @GivenImports("kotlin.collections.*")
+      @ProvideImports("kotlin.collections.*")
       fun invoke() {
       }
     """
@@ -100,7 +100,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @Given val foo = Foo()
+            @Provide val foo = Foo()
           """,
           packageFqName = FqName("givens")
         )
@@ -108,7 +108,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @GivenImports("givens.foo")
+            @ProvideImports("givens.foo")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -124,7 +124,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @Given val foo = Foo()
+            @Provide val foo = Foo()
           """,
           packageFqName = FqName("givens")
         )
@@ -132,7 +132,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @GivenImports("givens.*")
+            @ProvideImports("givens.*")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -145,7 +145,7 @@ class GivenImportsTest {
 
   @Test fun testStarImportSamePackage() = codegen(
     """
-      @GivenImports("com.ivianuu.injekt.integrationtests.*")
+      @ProvideImports("com.ivianuu.injekt.integrationtests.*")
       fun invoke() {
       }
     """
@@ -155,8 +155,8 @@ class GivenImportsTest {
 
   @Test fun testImportGivenSamePackage() = codegen(
     """
-      @Given val foo = Foo()
-      @GivenImports("com.ivianuu.injekt.integrationtests.foo")
+      @Provide val foo = Foo()
+      @ProvideImports("com.ivianuu.injekt.integrationtests.foo")
       fun invoke() {
       }
     """
@@ -169,7 +169,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @Given val foo = Foo()
+            @Provide val foo = Foo()
           """,
           packageFqName = FqName("givens")
         )
@@ -177,7 +177,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @GivenImports("givens.*")
+            @ProvideImports("givens.*")
             class MyClass {
               fun invoke() = inject<Foo>()
             }
@@ -196,7 +196,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @Given val foo = Foo()
+            @Provide val foo = Foo()
           """,
           packageFqName = FqName("givens")
         )
@@ -204,7 +204,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @GivenImports("givens.*")
+            @ProvideImports("givens.*")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -220,7 +220,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @Given val foo = Foo()
+            @Provide val foo = Foo()
           """,
           packageFqName = FqName("givens")
         )
@@ -228,7 +228,7 @@ class GivenImportsTest {
       listOf(
         source(
           """
-            @GivenImports("givens.*")
+            @ProvideImports("givens.*")
             val givenFoo = inject<Foo>()
             fun invoke() = givenFoo
           """,

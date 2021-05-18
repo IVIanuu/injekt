@@ -70,7 +70,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   }
   if (annotationEntry != null) return annotationEntry
 
-  // Check if the simple name is used, e.g. `@Given`.
+  // Check if the simple name is used, e.g. `@Provide`.
   val annotationEntryShort = annotationEntries
     .firstOrNull {
       it.shortName == fqName.shortName()

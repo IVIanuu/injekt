@@ -35,7 +35,7 @@ class ComposeTest {
   val composeRule = createComposeRule()
 
   @Test fun testRememberElement() {
-    @Given val element: @InstallElement<TestGivenScope1> String = "value"
+    @Provide val element: @InstallElement<TestGivenScope1> String = "value"
     val scope = inject<TestGivenScope1>()
     composeRule.setContent {
       CompositionLocalProvider(LocalGivenScope provides scope) {

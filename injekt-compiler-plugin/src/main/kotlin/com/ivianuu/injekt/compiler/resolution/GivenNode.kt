@@ -146,8 +146,8 @@ fun CallableRef.getGivenRequests(
   .filter {
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isProvided(context, trace) ||
-        parameterTypes[it.injektName()]!!.isGiven
+        it.isProvide(context, trace) ||
+        parameterTypes[it.injektName()]!!.isProvide
   }
   .map { parameter ->
     val name = parameter.injektName()
