@@ -82,7 +82,7 @@ class ResolutionScope(
   private data class SpreadingGivenNode(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
-      it.isGivenConstraint
+      it.isSpread
     }.defaultType.substitute(callable.typeArguments),
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
     val resultingFrameworkKeys: MutableSet<Int> = mutableSetOf()

@@ -37,7 +37,7 @@ class ClassifierRef(
   val isQualifier: Boolean = false,
   val descriptor: ClassifierDescriptor? = null,
   val qualifiers: List<TypeRef> = emptyList(),
-  val isGivenConstraint: Boolean = false,
+  val isSpread: Boolean = false,
   val isForTypeKey: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV
@@ -61,13 +61,13 @@ class ClassifierRef(
     isQualifier: Boolean = this.isQualifier,
     descriptor: ClassifierDescriptor? = this.descriptor,
     qualifiers: List<TypeRef> = this.qualifiers,
-    isGivenConstraint: Boolean = this.isGivenConstraint,
+    isSpread: Boolean = this.isSpread,
     isForTypeKey: Boolean = this.isForTypeKey,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isQualifier, descriptor, qualifiers, isGivenConstraint, isForTypeKey,
+    isTypeAlias, isQualifier, descriptor, qualifiers, isSpread, isForTypeKey,
     primaryConstructorPropertyParameters, variance
   )
 
@@ -126,7 +126,7 @@ fun ClassifierDescriptor.toClassifierRef(
     isTypeAlias = this is TypeAliasDescriptor,
     descriptor = this,
     qualifiers = info.qualifiers,
-    isGivenConstraint = info.isSpread,
+    isSpread = info.isSpread,
     isForTypeKey = info.isForTypeKey,
     primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
       .map { it.asNameId() },

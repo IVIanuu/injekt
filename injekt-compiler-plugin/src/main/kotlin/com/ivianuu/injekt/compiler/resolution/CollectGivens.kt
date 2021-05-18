@@ -201,7 +201,7 @@ fun CallableRef.collectGivens(
   seen += this
   if (!scope.canSee(this)) return
 
-  if (source == null && typeParameters.any { it.isGivenConstraint }) {
+  if (source == null && typeParameters.any { it.isSpread }) {
     addSpreadingGiven(this)
     return
   }
@@ -316,7 +316,7 @@ fun TypeRef.collectTypeScopeGivens(
   }
   return givens.filter {
     it.typeParameters.none { typeParameter ->
-      typeParameter.isGivenConstraint
+      typeParameter.isSpread
     }
   }
 }

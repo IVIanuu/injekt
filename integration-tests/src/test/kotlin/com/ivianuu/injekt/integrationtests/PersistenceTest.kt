@@ -67,7 +67,7 @@ class PersistenceTest {
             var callCount = 0
             @Qualifier annotation class MyQualifier
             @Qualifier annotation class MyOtherQualifier
-            @Given fun <@Given T : @MyQualifier S, S : FuncA> impl(@Given instance: T): @MyOtherQualifier S {
+            @Given fun <@Spread T : @MyQualifier S, S : FuncA> impl(@Given instance: T): @MyOtherQualifier S {
                 return instance
             }
 

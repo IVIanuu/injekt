@@ -430,7 +430,7 @@ class GivenResolutionTest {
 
       @Qualifier annotation class MyQualifier
 
-      @Given fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
     """,
     """
       fun invoke() = summon<Foo>() 
@@ -449,7 +449,7 @@ class GivenResolutionTest {
 
       @Qualifier annotation class MyQualifier
 
-      @Given fun <@Given T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
+      @Given fun <@Spread T : @MyQualifier S, S> myQualifier(@Given instance: T): S = instance
     """,
     """
       fun invoke() = summon<Foo>() 

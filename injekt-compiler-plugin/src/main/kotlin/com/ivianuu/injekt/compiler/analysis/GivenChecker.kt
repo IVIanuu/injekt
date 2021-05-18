@@ -58,7 +58,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     } else {
       checkOverrides(declaration, descriptor, trace)
       checkExceptActual(declaration, descriptor, trace)
-      checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
+      checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
     }
     if (descriptor.extensionReceiverParameter?.isGiven(this.context, trace) == true) {
       trace.report(
@@ -154,7 +154,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
           )
         }
     } else {
-      checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+      checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
     }
 
     checkExceptActual(declaration, descriptor, trace)
@@ -178,7 +178,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: PropertyDescriptor,
     trace: BindingTrace
   ) {
-    checkGivenConstraintsOnNonGivenDeclaration(descriptor.typeParameters, trace)
+    checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
     if (descriptor.isGiven(this.context, trace)) {
       checkGivenTypeParametersMismatch(descriptor, declaration, trace)
     } else {
@@ -201,7 +201,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     descriptor: TypeAliasDescriptor,
     trace: BindingTrace
   ) {
-    checkGivenConstraintsOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+    checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
   }
 
   private fun checkSpreadingGiven(
@@ -210,12 +210,12 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
     typeParameters: List<TypeParameterDescriptor>,
     trace: BindingTrace
   ) {
-    val givenConstraints = typeParameters.filter {
+    val spreadParameters = typeParameters.filter {
       it.classifierInfo(context, trace)
         .isSpread
     }
-    if (givenConstraints.size > 1) {
-      givenConstraints
+    if (spreadParameters.size > 1) {
+      spreadParameters
         .drop(1)
         .forEach {
           trace.report(
@@ -272,8 +272,8 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       .filter { overriddenDescriptor ->
         var hasDifferentTypeParameters = false
         descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
-          hasDifferentTypeParameters = hasDifferentTypeParameters || b.isGiven(context, trace) &&
-              !a.isGiven(context, trace)
+          hasDifferentTypeParameters = hasDifferentTypeParameters ||
+              a.classifierInfo(context, trace).isSpread != b.classifierInfo(context, trace).isSpread
         }
         hasDifferentTypeParameters
       }
@@ -287,7 +287,7 @@ class GivenChecker(private val context: InjektContext) : DeclarationChecker {
       }
   }
 
-  private fun checkGivenConstraintsOnNonGivenDeclaration(
+  private fun checkSpreadingTypeParametersOnNonGivenDeclaration(
     typeParameters: List<TypeParameterDescriptor>,
     trace: BindingTrace
   ) {

@@ -41,7 +41,7 @@ class SuppressionTest {
   @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
     """
             typealias MyBuilder = StringBuilder.() -> Unit
-            @Given fun <@Given T : MyBuilder> toString(@Given builder: MyBuilder): String = buildString(builder)
+            @Given fun <@Spread T : MyBuilder> toString(@Given builder: MyBuilder): String = buildString(builder)
             @Given val myBuilder: MyBuilder = { append("42") }
     """,
     """

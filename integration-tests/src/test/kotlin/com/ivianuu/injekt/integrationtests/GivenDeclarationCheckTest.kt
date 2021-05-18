@@ -162,10 +162,10 @@ class GivenDeclarationCheckTest {
     compilationShouldHaveFailed("'foo' overrides nothing")
   }
 
-  @Test fun testNonGivenTypeParameterOverrideWithGivenOverridden() = singleAndMultiCodegen(
+  @Test fun testNonSpreadTypeParameterOverrideWithSpreadOverridden() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-          @Given abstract fun <@Given T : Bar> foo(): Foo
+          @Given abstract fun <@Spread T : Bar> foo(): Foo
       }
     """,
     """

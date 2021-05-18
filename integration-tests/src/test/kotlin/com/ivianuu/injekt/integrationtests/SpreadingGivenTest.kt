@@ -23,10 +23,10 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class SpreadingGivenTest {
-  @Test fun testGivenWithGivenConstraint() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenFunction() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
+      @Given fun <@Spread T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
 
       @Given fun foo(): @Trigger Foo = Foo()
     """,
@@ -37,9 +37,9 @@ class SpreadingGivenTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testClassWithGivenConstraint() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenClass() = singleAndMultiCodegen(
     """
-      @Given class MyModule<@Given T : @Trigger S, S> {
+      @Given class MyModule<@Spread T : @Trigger S, S> {
           @Given fun intoSet(@Given instance: T): @Final S = instance
       }
       @Qualifier annotation class Trigger
@@ -56,42 +56,42 @@ class SpreadingGivenTest {
     invokeSingleFile<Set<Foo>>().size shouldBe 1
   }
 
-  @Test fun testGivenConstraintOnNonGivenClass() = codegen(
+  @Test fun testSpreadingNonGivenClass() = codegen(
     """
-      class MyModule<@Given T>
-    """
-  ) {
-    compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions and @Given classes")
-  }
-
-  @Test fun testGivenConstraintOnNonGivenFunction() = codegen(
-    """
-      fun <@Given T> triggerImpl() = Unit
+      class MyModule<@Spread T>
     """
   ) {
-    compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions and @Given classes")
+    compilationShouldHaveFailed("a @Spread type parameter is only supported on @Given functions and @Given classes")
   }
 
-  @Test fun testGivenConstraintOnNonFunction() = codegen(
+  @Test fun testSpreadingNonGivenFunction() = codegen(
     """
-      val <@Given T> T.prop get() = Unit
+      fun <@Spread T> triggerImpl() = Unit
     """
   ) {
-    compilationShouldHaveFailed("a @Given type constraint is only supported on @Given functions and @Given classes")
+    compilationShouldHaveFailed("a @Spread type parameter is only supported on @Given functions and @Given classes")
   }
 
-  @Test fun testMultipleGivenConstraints() = codegen(
+  @Test fun testSpreadingProperty() = codegen(
     """
-      @Given fun <@Given T, @Given S> triggerImpl() = Unit
+      val <@Spread T> T.prop get() = Unit
     """
   ) {
-    compilationShouldHaveFailed("a declaration may have only one @Given type constraint")
+    compilationShouldHaveFailed("a @Spread type parameter is only supported on @Given functions and @Given classes")
   }
 
-  @Test fun testGivenConstraintTriggeredByClass() = singleAndMultiCodegen(
+  @Test fun testMultipleSpreadTypeParameters() = codegen(
+    """
+      @Given fun <@Spread T, @Spread S> triggerImpl() = Unit
+    """
+  ) {
+    compilationShouldHaveFailed("a declaration may have only one @Spread type parameter")
+  }
+
+  @Test fun testSpreadingGivenTriggeredByClas() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Given T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
+      @Given fun <@Spread T : @Trigger S, S> triggerImpl(@Given instance: T): S = instance
       
       @Trigger @Given class NotAny
     """,
@@ -102,11 +102,11 @@ class SpreadingGivenTest {
     invokeSingleFile()
   }
 
-  @Test fun testGivenConstraintChain() = singleAndMultiCodegen(
+  @Test fun testSpreadingGivenChain() = singleAndMultiCodegen(
     """
       @Qualifier annotation class A
       
-      @Given fun <@Given T : @A S, S> aImpl() = AModule<S>()
+      @Given fun <@Spread T : @A S, S> aImpl() = AModule<S>()
       
       class AModule<T> {
           @Given
@@ -114,7 +114,7 @@ class SpreadingGivenTest {
       }
       
       @Qualifier annotation class B
-      @Given fun <@Given T : @B S, S> bImpl() = BModule<T>()
+      @Given fun <@Spread T : @B S, S> bImpl() = BModule<T>()
       
       class BModule<T> {
           @Given
@@ -122,7 +122,7 @@ class SpreadingGivenTest {
       }
       
       @Qualifier annotation class C
-      @Given fun <@Given T : @C Any?> cImpl() = Foo()
+      @Given fun <@Spread T : @C Any?> cImpl() = Foo()
       
       @Given fun dummy(): @A Long = 0L
     """,
@@ -148,10 +148,10 @@ class SpreadingGivenTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testMultipleSpreadingContributionsWithSameType() = singleAndMultiCodegen(
+  @Test fun testMultipleSpreadCandidatesWithSameType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Given T : @Trigger String> triggerImpl(@Given instance: T): String = instance
+      @Given fun <@Spread T : @Trigger String> triggerImpl(@Given instance: T): String = instance
 
       @Given fun a(): @Trigger String = "a"
       @Given fun b(): @Trigger String = "b"
@@ -164,28 +164,28 @@ class SpreadingGivenTest {
       .shouldContainExactly("a", "b")
   }
 
-  @Test fun testGivenConstraintTypeParameterNotMarkedAsUnused() = codegen(
+  @Test fun testSpreadTypeParameterIsNotMarkedAsUnused() = codegen(
     """
       @Qualifier annotation class Trigger
-      @GivenSetElement fun <@Given T : @Trigger String> triggerImpl(): String = ""
+      @GivenSetElement fun <@Spread T : @Trigger String> triggerImpl(): String = ""
     """
   ) {
     shouldNotContainMessage("Type parameter \"T\" is never used")
   }
 
-  @Test fun testNoFinalTypeWarningOnGivenConstraintTypeParameter() = codegen(
+  @Test fun testNoFinalTypeWarningOnSpreadTypeParameter() = codegen(
     """
       @Qualifier annotation class Trigger
-      @GivenSetElement fun <@Given T : @Trigger String> triggerImpl(): String = ""
+      @GivenSetElement fun <@Spread T : @Trigger String> triggerImpl(): String = ""
     """
   ) {
     shouldNotContainMessage("'String' is a final type, and thus a value of the type parameter is predetermined")
   }
 
-  @Test fun testCanResolveTypeBasedOnGivenConstraintType() = singleAndMultiCodegen(
+  @Test fun testCanResolveTypeBasedOnSpreadConstraintType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
-      @Given fun <@Given T : @Trigger S, S> triggerImpl(
+      @Given fun <@Spread T : @Trigger S, S> triggerImpl(
           @Given pair: Pair<S, S>
       ): Int = 0
       
@@ -198,9 +198,9 @@ class SpreadingGivenTest {
     """
   )
 
-  @Test fun testCanResolveTypeWithConstraintTypeArgument() = singleAndMultiCodegen(
+  @Test fun testCanResolveTypeWithSpreadTypeArgument() = singleAndMultiCodegen(
     """
-      @Given fun <@Given T : String> triggerImpl(
+      @Given fun <@Spread T : String> triggerImpl(
           @Given pair: Pair<T, T>
       ): Int = 0
 
@@ -219,7 +219,7 @@ class SpreadingGivenTest {
   
       @Qualifier annotation class UiDecoratorBinding
   
-      @Given fun <@Given T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
+      @Given fun <@Spread T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
           @Given instance: T
       ): UiDecorator = instance as UiDecorator
   
@@ -234,7 +234,7 @@ class SpreadingGivenTest {
     1 shouldBe invokeSingleFile()
   }
 
-  @Test fun testComplexGivenConstraintSetup() = singleAndMultiCodegen(
+  @Test fun testComplexSpreadingSetup() = singleAndMultiCodegen(
     """
       typealias App = Any
   
@@ -269,7 +269,7 @@ class SpreadingGivenTest {
     """
       @Qualifier annotation class ClassSingleton
       
-      @Given inline fun <@Given T : @ClassSingleton U, reified U : Any> classSingleton(
+      @Given inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
           @Given factory: () -> T
       ): U = factory()
   
@@ -277,7 +277,7 @@ class SpreadingGivenTest {
           @Given fun value(@Given v: T): S = v
       }
   
-      @Given fun <@Given T : @Qualifier1 S, S> myModule():
+      @Given fun <@Spread T : @Qualifier1 S, S> myModule():
           @ClassSingleton MyModule<T, S> = MyModule()
   
       @Given val foo: @Qualifier1 Foo = Foo()
@@ -293,7 +293,7 @@ class SpreadingGivenTest {
     """
       @Qualifier annotation class ClassSingleton
       
-      @Given inline fun <@Given T : @ClassSingleton U, reified U : Any> classSingleton(
+      @Given inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
         @Given factory: () -> T,
         @Given scope: AppGivenScope
       ): U = scope.getOrCreateScopedValue(U::class, factory)
@@ -302,7 +302,7 @@ class SpreadingGivenTest {
         @Given fun value(@Given v: T): S = v
       }
       
-      @Given fun <@Given T : @Qualifier1 S, S> myModule():
+      @Given fun <@Spread T : @Qualifier1 S, S> myModule():
         @ClassSingleton MyModule<T, S> = MyModule()
       
       @Given val foo: @Qualifier1 Foo = Foo()
@@ -319,8 +319,8 @@ class SpreadingGivenTest {
     """
       @Qualifier annotation class A<T>
       
-      @Given class Outer<@Given T : @A<U> S, S, U> {
-        @Given fun <@Given K : U> inner(): Unit = Unit
+      @Given class Outer<@Spread T : @A<U> S, S, U> {
+        @Given fun <@Spread K : U> inner(): Unit = Unit
       }
       
       @Given fun dummy(): @A<String> Long = 0L
@@ -338,7 +338,7 @@ class SpreadingGivenTest {
       
       typealias KeyIntentFactory<K> = (K) -> Any
       
-      @Given fun <@Given T : KeyIntentFactory<K>, K : IntentKey> impl() = Foo()
+      @Given fun <@Spread T : KeyIntentFactory<K>, K : IntentKey> impl() = Foo()
       
       class IntentKeyImpl : IntentKey
       
