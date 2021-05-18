@@ -36,49 +36,49 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class ResolutionScope(
+class InjectablesScope(
   val name: String,
-  val parent: ResolutionScope?,
+  val parent: InjectablesScope?,
   val context: InjektContext,
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
   val trace: BindingTrace,
-  val initialGivens: List<CallableRef>,
+  val initialInjectables: List<CallableRef>,
   imports: List<ResolvedProviderImport>,
   val typeParameters: List<ClassifierRef>
 ) {
-  val chain: MutableList<Pair<GivenRequest, GivenNode>> = parent?.chain ?: mutableListOf()
+  val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
-  val resultsByCandidate = mutableMapOf<GivenNode, ResolutionResult>()
+  val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
 
-  private data class GivenKey(
+  private data class InjectableKey(
     val type: TypeRef,
     val callable: CallableDescriptor,
     val source: CallableRef?
   )
 
-  private val CallableRef.givenKey: GivenKey
-    get() = GivenKey(type, callable, source)
+  private val CallableRef.injectableKey: InjectableKey
+    get() = InjectableKey(type, callable, source)
 
   /**
-   * There should be only one given for a type + callable combination
+   * There should be only one injectable for a type + callable combination
    * If there are duplicates we choose the best version
    */
-  private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
-    val key = callable.givenKey
-    val existing = givens[key]
+  private fun addInjectableIfAbsentOrBetter(callable: CallableRef) {
+    val key = callable.injectableKey
+    val existing = injectables[key]
     if (compareCallable(callable, existing) < 0)
-      givens[key] = callable
+      injectables[key] = callable
   }
 
   private val imports = imports.toMutableList()
 
-  private val givens = mutableMapOf<GivenKey, CallableRef>()
+  private val injectables = mutableMapOf<InjectableKey, CallableRef>()
 
-  private val spreadingGivens = mutableListOf<SpreadingGivenNode>()
-  private val spreadingGivenCandidates = mutableListOf<SpreadingGivenCandidate>()
+  private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
+  private val spreadingInjectableCandidates = mutableListOf<SpreadingInjectableCandidate>()
 
-  private data class SpreadingGivenNode(
+  private data class SpreadingInjectable(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
       it.isSpread
@@ -86,7 +86,7 @@ class ResolutionScope(
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
     val resultingFrameworkKeys: MutableSet<Int> = mutableSetOf()
   ) {
-    fun copy() = SpreadingGivenNode(
+    fun copy() = SpreadingInjectable(
       callable,
       constraintType,
       processedCandidateTypes.toMutableSet(),
@@ -94,14 +94,14 @@ class ResolutionScope(
     )
   }
 
-  private data class SpreadingGivenCandidate(
+  private data class SpreadingInjectableCandidate(
     val type: TypeRef,
     val rawType: TypeRef,
     val source: CallableRef?
   )
 
-  val allParents: List<ResolutionScope> = parent?.allScopes ?: emptyList()
-  val allScopes: List<ResolutionScope> = allParents + this
+  val allParents: List<InjectablesScope> = parent?.allScopes ?: emptyList()
+  val allScopes: List<InjectablesScope> = allParents + this
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
@@ -110,20 +110,20 @@ class ResolutionScope(
     val staticTypeParameters: List<ClassifierRef>
   )
 
-  private val givensByRequest = mutableMapOf<CallableRequestKey, List<GivenNode>?>()
+  private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<Injectable>?>()
 
   private val setElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>?>()
 
   private data class ProviderRequestKey(val type: TypeRef, val callContext: CallContext)
 
-  private val providerGivensByRequest = mutableMapOf<ProviderRequestKey, ProviderGivenNode>()
-  private val setGivensByType = mutableMapOf<TypeRef, SetGivenNode?>()
+  private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
+  private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
   init {
     measureTimeMillisWithResult {
-      initialGivens
-        .forEach { given ->
-          given.collectInstances(
+      initialInjectables
+        .forEach { injectable ->
+          injectable.collectInjectables(
             context = context,
             scope = this,
             trace = trace,
@@ -134,38 +134,38 @@ class ResolutionScope(
                 packageFqName
               )
             },
-            addGiven = { callable ->
-              addGivenIfAbsentOrBetter(callable.copy(source = given))
+            addInjectable = { callable ->
+              addInjectableIfAbsentOrBetter(callable.copy(source = injectable))
               val typeWithFrameworkKey = callable.type
                 .copy(frameworkKey = generateFrameworkKey())
-              addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = given))
-              spreadingGivenCandidates += SpreadingGivenCandidate(
+              addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = injectable))
+              spreadingInjectableCandidates += SpreadingInjectableCandidate(
                 type = typeWithFrameworkKey,
                 rawType = callable.type,
-                source = given
+                source = injectable
               )
             },
-            addSpreadingGiven = { spreadingGivens += SpreadingGivenNode(it) }
+            addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) }
           )
         }
 
-      val hasSpreadingGivens = spreadingGivens.isNotEmpty()
-      val hasSpreadingGivenCandidates = spreadingGivenCandidates.isNotEmpty()
+      val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
+      val hasSpreadingInjectableCandidates = spreadingInjectableCandidates.isNotEmpty()
       if (parent != null) {
-        spreadingGivens.addAll(
+        spreadingInjectables.addAll(
           0,
-          parent.spreadingGivens
-            .map { if (hasSpreadingGivenCandidates) it.copy() else it }
+          parent.spreadingInjectables
+            .map { if (hasSpreadingInjectableCandidates) it.copy() else it }
         )
-        spreadingGivenCandidates.addAll(0, parent.spreadingGivenCandidates)
+        spreadingInjectableCandidates.addAll(0, parent.spreadingInjectableCandidates)
       }
 
-      if ((hasSpreadingGivens && spreadingGivenCandidates.isNotEmpty()) ||
-        (hasSpreadingGivenCandidates && spreadingGivens.isNotEmpty())
+      if ((hasSpreadingInjectables && spreadingInjectableCandidates.isNotEmpty()) ||
+        (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
       ) {
-        spreadingGivenCandidates
+        spreadingInjectableCandidates
           .toList()
-          .forEach { spreadGivens(it) }
+          .forEach { spreadInjectables(it) }
       }
     }.let {
       println("initializing scope $name took ${it.first} ms")
@@ -191,18 +191,18 @@ class ResolutionScope(
         else -> null
       }?.recordLookup(declaration.name, lookupLocation)
     }
-    givens.forEach {
+    injectables.forEach {
       if (it.value.type.frameworkKey == 0)
         recordLookup(it.value.callable)
     }
-    spreadingGivens.forEach {
+    spreadingInjectables.forEach {
       if (it.callable.type.frameworkKey == 0)
         recordLookup(it.callable.callable)
     }
     imports.forEach { import ->
         context.memberScopeForFqName(import.packageFqName, lookupLocation)
           ?.recordLookup(
-            providersLookupName(
+            injectablesLookupName(
               FqName(import.importPath!!.removeSuffix(".*")),
               import.packageFqName
             ),
@@ -211,20 +211,23 @@ class ResolutionScope(
       }
   }
 
-  fun givensForRequest(request: GivenRequest, requestingScope: ResolutionScope): List<GivenNode>? {
+  fun injectablesForRequest(
+    request: InjectableRequest,
+    requestingScope: InjectablesScope
+  ): List<Injectable>? {
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
       request.type.classifier == context.setClassifier
     ) return null
-    return givensForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
+    return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       ?.filter { it -> it.isValidObjectRequest(request) }
       ?.takeIf { it.isNotEmpty() }
   }
 
-  private fun givensForType(key: CallableRequestKey): List<GivenNode>? {
-    if (givens.isEmpty()) return parent?.givensForType(key)
-    return givensByRequest.getOrPut(key) {
-      val thisGivens = givens
+  private fun injectablesForType(key: CallableRequestKey): List<Injectable>? {
+    if (injectables.isEmpty()) return parent?.injectablesForType(key)
+    return injectablesByRequest.getOrPut(key) {
+      val thisInjectables = injectables
         .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
@@ -233,37 +236,37 @@ class ResolutionScope(
           if (!context.isOk) return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
           val finalCandidate = candidate.substitute(substitutionMap)
-          CallableGivenNode(
+          CallableInjectable(
             key.type,
-            finalCandidate.getGivenRequests(this.context, trace),
+            finalCandidate.getInjectableRequests(this.context, trace),
             this,
             finalCandidate
           )
         }
         .toList()
         .takeIf { it.isNotEmpty() }
-      val parentGivens = parent?.givensForType(key)
-      if (parentGivens != null && thisGivens != null) parentGivens + thisGivens
-      else thisGivens ?: parentGivens
+      val parentInjectables = parent?.injectablesForType(key)
+      if (parentInjectables != null && thisInjectables != null) parentInjectables + thisInjectables
+      else thisInjectables ?: parentInjectables
     }
   }
 
-  fun frameworkGivenForRequest(request: GivenRequest): GivenNode? {
+  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
     if (request.type.frameworkKey != 0) return null
-    if (request.type.isFunctionTypeWithOnlyGivenParameters) {
+    if (request.type.isFunctionType) {
       val finalCallContext = if (request.isInline) callContext
       else request.type.callContext
-      return providerGivensByRequest.getOrPut(
+      return providerInjectablesByRequest.getOrPut(
         ProviderRequestKey(request.type, finalCallContext)
       ) {
-        ProviderGivenNode(
+        ProviderInjectable(
           type = request.type,
           ownerScope = this,
           dependencyCallContext = finalCallContext
         )
       }
     } else if (request.type.classifier == context.setClassifier) {
-      return setGivensByType.getOrPut(request.type) {
+      return setInjectablesByType.getOrPut(request.type) {
         val singleElementType = request.type.arguments[0]
         val collectionElementType = context.collectionClassifier.defaultType
           .withArguments(listOf(singleElementType))
@@ -272,9 +275,7 @@ class ResolutionScope(
           singleElementType, collectionElementType,
           CallableRequestKey(request.type, allStaticTypeParameters)
         )
-        if (elements == null &&
-          singleElementType.isFunctionTypeWithOnlyGivenParameters
-        ) {
+        if (elements == null && singleElementType.isFunctionType) {
           val providerReturnType = singleElementType.arguments.last()
           elements = setElementsForType(
             providerReturnType, context.collectionClassifier
@@ -292,18 +293,18 @@ class ResolutionScope(
         if (elements != null) {
           val elementRequests = elements
             .mapIndexed { index, element ->
-              GivenRequest(
+              InjectableRequest(
                 type = element,
                 defaultStrategy = if (request.type.ignoreElementsWithErrors)
-                  GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                else GivenRequest.DefaultStrategy.NONE,
+                  InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+                else InjectableRequest.DefaultStrategy.NONE,
                 callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].render()}>"),
                 parameterName = "element$index".asNameId(),
                 isInline = false,
                 isLazy = false
               )
             }
-          SetGivenNode(
+          SetInjectable(
             type = request.type,
             ownerScope = this,
             dependencies = elementRequests,
@@ -322,10 +323,10 @@ class ResolutionScope(
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef>? {
-    if (givens.isEmpty())
+    if (injectables.isEmpty())
       return parent?.setElementsForType(singleElementType, collectionElementType, key)
     return setElementsByType.getOrPut(key) {
-      val thisElements: List<TypeRef>? = givens
+      val thisElements: List<TypeRef>? = injectables
         .toList()
         .asSequence()
         .mapNotNull { (_, candidate) ->
@@ -348,7 +349,7 @@ class ResolutionScope(
           val typeWithFrameworkKey = callable.type.copy(
             frameworkKey = generateFrameworkKey()
           )
-          addGivenIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
+          addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
           typeWithFrameworkKey
         }
         .toList()
@@ -359,44 +360,44 @@ class ResolutionScope(
     }
   }
 
-  private fun spreadGivens(candidate: SpreadingGivenCandidate) {
-    for (spreadingGiven in spreadingGivens.toList()) {
+  private fun spreadInjectables(candidate: SpreadingInjectableCandidate) {
+    for (spreadingInjectable in spreadingInjectables.toList()) {
       checkCancelled()
-      spreadGivens(spreadingGiven, candidate)
+      spreadInjectables(spreadingInjectable, candidate)
     }
   }
 
-  private fun spreadGivens(
-    spreadingGiven: SpreadingGivenNode,
-    candidate: SpreadingGivenCandidate
+  private fun spreadInjectables(
+    spreadingInjectable: SpreadingInjectable,
+    candidate: SpreadingInjectableCandidate
   ) {
-    if (candidate.type.frameworkKey in spreadingGiven.resultingFrameworkKeys) return
-    if (candidate.type in spreadingGiven.processedCandidateTypes) return
-    spreadingGiven.processedCandidateTypes += candidate.type
-    val (context, substitutionMap) = buildContextForSpreadingGiven(
+    if (candidate.type.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
+    if (candidate.type in spreadingInjectable.processedCandidateTypes) return
+    spreadingInjectable.processedCandidateTypes += candidate.type
+    val (context, substitutionMap) = buildContextForSpreadingInjectable(
       context,
-      spreadingGiven.constraintType,
+      spreadingInjectable.constraintType,
       candidate.type,
       allStaticTypeParameters
     )
     if (!context.isOk) return
 
-    val newGivenType = spreadingGiven.callable.type
+    val newInjectableType = spreadingInjectable.callable.type
       .substitute(substitutionMap)
       .copy(frameworkKey = 0)
-    val newGiven = spreadingGiven.callable
+    val newInjectable = spreadingInjectable.callable
       .copy(
-        type = newGivenType,
-        originalType = newGivenType,
-        parameterTypes = spreadingGiven.callable.parameterTypes
+        type = newInjectableType,
+        originalType = newInjectableType,
+        parameterTypes = spreadingInjectable.callable.parameterTypes
           .mapValues { it.value.substitute(substitutionMap) },
-        typeArguments = spreadingGiven.callable
+        typeArguments = spreadingInjectable.callable
           .typeArguments
           .mapValues { it.value.substitute(substitutionMap) },
         source = candidate.source
       )
 
-    newGiven.collectInstances(
+    newInjectable.collectInjectables(
       context = this.context,
       scope = this,
       trace = trace,
@@ -407,62 +408,61 @@ class ResolutionScope(
           packageFqName
         )
       },
-      addGiven = { newInnerGiven ->
-        val finalNewInnerGiven = newInnerGiven
+      addInjectable = { newInnerInjectable ->
+        val finalNewInnerInjectable = newInnerInjectable
           .copy(
             source = candidate.source,
-            originalType = newInnerGiven.type
+            originalType = newInnerInjectable.type
           )
-        addGivenIfAbsentOrBetter(finalNewInnerGiven)
-        val newInnerGivenWithFrameworkKey = finalNewInnerGiven.copy(
-          type = finalNewInnerGiven.type.copy(
+        addInjectableIfAbsentOrBetter(finalNewInnerInjectable)
+        val newInnerInjectableWithFrameworkKey = finalNewInnerInjectable.copy(
+          type = finalNewInnerInjectable.type.copy(
             frameworkKey = generateFrameworkKey()
-              .also { spreadingGiven.resultingFrameworkKeys += it }
+              .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
-        addGivenIfAbsentOrBetter(newInnerGivenWithFrameworkKey)
-        val newCandidate = SpreadingGivenCandidate(
-          type = newInnerGivenWithFrameworkKey.type,
-          rawType = finalNewInnerGiven.type,
+        addInjectableIfAbsentOrBetter(newInnerInjectableWithFrameworkKey)
+        val newCandidate = SpreadingInjectableCandidate(
+          type = newInnerInjectableWithFrameworkKey.type,
+          rawType = finalNewInnerInjectable.type,
           source = candidate.source
         )
-        spreadingGivenCandidates += newCandidate
-        spreadGivens(newCandidate)
+        spreadingInjectableCandidates += newCandidate
+        spreadInjectables(newCandidate)
       },
-      addSpreadingGiven = { newInnerSpreadingGiven ->
-        val finalNewInnerSpreadingGiven = newInnerSpreadingGiven
+      addSpreadingInjectable = { newInnerInjectable ->
+        val finalNewInnerInjectable = newInnerInjectable
           .copy(
             source = candidate.source,
-            originalType = newInnerSpreadingGiven.type
+            originalType = newInnerInjectable.type
           )
-        val newSpreadingGivenNode = SpreadingGivenNode(finalNewInnerSpreadingGiven)
-        spreadingGivens += newSpreadingGivenNode
-        spreadingGivenCandidates
+        val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
+        spreadingInjectables += newSpreadingInjectable
+        spreadingInjectableCandidates
           .toList()
           .forEach {
-            spreadGivens(newSpreadingGivenNode, it)
+            spreadInjectables(newSpreadingInjectable, it)
           }
       }
     )
   }
 
   /**
-   * We add implicit providers for objects under some circumstances to allow
-   * object callables to resolve their dispatch receiver parameter
+   * We add implicit injectables for objects under some circumstances to allow
+   * callables in it to resolve their dispatch receiver parameter
    *
-   * Here we ensure that the user cannot resolve such implicit object givens if they are not
+   * Here we ensure that the user cannot resolve such implicit object injectable if they are not
    * provided by the user
    */
-  private fun GivenNode.isValidObjectRequest(request: GivenRequest): Boolean {
+  private fun Injectable.isValidObjectRequest(request: InjectableRequest): Boolean {
     if (!request.type.classifier.isObject) return true
-    return request.parameterName.asString() == DISPATCH_RECEIVER_NAME || (
-        this !is CallableGivenNode ||
+    return request.parameterName.asString() == DISPATCH_RECEIVER_NAME ||
+        (this !is CallableInjectable ||
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide)
-        )
+            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
   }
 
-  override fun toString(): String = "ResolutionScope($name)"
+  override fun toString(): String = "InjectablesScope($name)"
 }

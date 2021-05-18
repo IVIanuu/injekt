@@ -53,12 +53,12 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
     if (descriptor.isProvide(this.context, trace)) {
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
-      checkSpreadingGiven(declaration, descriptor.typeParameters, trace)
+      checkSpreadingInjectable(declaration, descriptor.typeParameters, trace)
       checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
     } else {
       checkOverrides(declaration, descriptor, trace)
       checkExceptActual(declaration, descriptor, trace)
-      checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
+      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, trace)
     }
     checkReceiver(descriptor, declaration, trace)
   }
@@ -137,9 +137,9 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
 
     if (provideConstructors.isNotEmpty()) {
       provideConstructors
-        .forEach { checkSpreadingGiven(declaration, descriptor.declaredTypeParameters, trace) }
+        .forEach { checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, trace) }
     } else {
-      checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, trace)
     }
 
     checkExceptActual(declaration, descriptor, trace)
@@ -163,7 +163,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
     descriptor: PropertyDescriptor,
     trace: BindingTrace
   ) {
-    checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.typeParameters, trace)
+    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, trace)
     checkReceiver(descriptor, declaration, trace)
     if (descriptor.isProvide(this.context, trace)) {
       checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
@@ -177,7 +177,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
     descriptor: TypeAliasDescriptor,
     trace: BindingTrace
   ) {
-    checkSpreadingTypeParametersOnNonGivenDeclaration(descriptor.declaredTypeParameters, trace)
+    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, trace)
   }
 
   private fun checkReceiver(
@@ -208,7 +208,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
     }
   }
 
-  private fun checkSpreadingGiven(
+  private fun checkSpreadingInjectable(
     declaration: KtDeclaration,
     typeParameters: List<TypeParameterDescriptor>,
     trace: BindingTrace
@@ -291,7 +291,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
       }
   }
 
-  private fun checkSpreadingTypeParametersOnNonGivenDeclaration(
+  private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
     typeParameters: List<TypeParameterDescriptor>,
     trace: BindingTrace
   ) {
@@ -301,7 +301,7 @@ class ProvideInjectChecker(private val context: InjektContext) : DeclarationChec
       .filter { it.classifierInfo(context, trace).isSpread }
       .forEach { typeParameter ->
         trace.report(
-          InjektErrors.SPREAD_ON_NON_GIVEN_DECLARATION
+          InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
             .on(typeParameter.findPsi()!!)
         )
       }

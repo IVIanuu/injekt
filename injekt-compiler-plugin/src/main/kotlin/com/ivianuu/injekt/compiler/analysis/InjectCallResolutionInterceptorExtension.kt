@@ -26,12 +26,12 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.calls.context.*
 import org.jetbrains.kotlin.resolve.calls.tower.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
+import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
-class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
+class InjectCallResolutionInterceptorExtension : CallResolutionInterceptorExtension {
   override fun interceptFunctionCandidates(
     candidates: Collection<FunctionDescriptor>,
     scopeTower: ImplicitScopeTower,
@@ -47,8 +47,8 @@ class GivenCallResolutionInterceptorExtension : CallResolutionInterceptorExtensi
     val context = resolutionContext.scope.ownerDescriptor.module.injektContext
     candidates
       .map { candidate ->
-        if (candidate.allParameters.any { it.isProvide(context, resolutionContext.trace) }) {
-          candidate.toGivenFunctionDescriptor(context, resolutionContext.trace)
+        if (candidate.allParameters.any { it.isInject(context, resolutionContext.trace) }) {
+          candidate.toInjectFunctionDescriptor(context, resolutionContext.trace)
         } else {
           candidate
         }

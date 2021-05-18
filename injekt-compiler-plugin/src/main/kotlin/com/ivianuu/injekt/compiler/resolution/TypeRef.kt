@@ -359,8 +359,8 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
       substitution.copy(
         // we copy nullability to support T : Any? -> String
         isMarkedNullable = newNullability,
-        // we copy given kind to support @Provide C -> @Provide String
-        // fallback to substitution given
+        // we copy injectable kind to support @Provide C -> @Provide String
+        // fallback to substitution injectable
         isProvide = newIsProvide,
         isInject = newIsInject,
         variance = newVariance,
@@ -477,17 +477,6 @@ val TypeRef.isFunctionType: Boolean
 val TypeRef.isSuspendFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
-
-val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
-  get() {
-    if (!isFunctionType) return false
-    for (i in arguments.indices) {
-      if (i < arguments.lastIndex && !arguments[i].isProvide)
-        return false
-    }
-
-    return true
-  }
 
 fun effectiveVariance(
   declared: TypeVariance,

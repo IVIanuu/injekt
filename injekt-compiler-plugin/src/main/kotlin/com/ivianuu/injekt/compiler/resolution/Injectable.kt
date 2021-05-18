@@ -27,29 +27,29 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 
-sealed class GivenNode {
+sealed class Injectable {
   abstract val type: TypeRef
   abstract val originalType: TypeRef
-  abstract val dependencies: List<GivenRequest>
-  abstract val dependencyScope: ResolutionScope?
+  abstract val dependencies: List<InjectableRequest>
+  abstract val dependencyScope: InjectablesScope?
   abstract val callableFqName: FqName
   abstract val callContext: CallContext
-  abstract val ownerScope: ResolutionScope
+  abstract val ownerScope: InjectablesScope
   abstract val cacheExpressionResultIfPossible: Boolean
 }
 
-class CallableGivenNode(
+class CallableInjectable(
   override val type: TypeRef,
-  override val dependencies: List<GivenRequest>,
-  override val ownerScope: ResolutionScope,
+  override val dependencies: List<InjectableRequest>,
+  override val ownerScope: InjectablesScope,
   val callable: CallableRef,
-) : GivenNode() {
+) : Injectable() {
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val callContext: CallContext
     get() = callable.callContext
-  override val dependencyScope: ResolutionScope?
+  override val dependencyScope: InjectablesScope?
     get() = null
   override val originalType: TypeRef
     get() = callable.originalType
@@ -57,18 +57,18 @@ class CallableGivenNode(
     get() = false
 }
 
-class SetGivenNode(
+class SetInjectable(
   override val type: TypeRef,
-  override val ownerScope: ResolutionScope,
-  override val dependencies: List<GivenRequest>,
+  override val ownerScope: InjectablesScope,
+  override val dependencies: List<InjectableRequest>,
   val singleElementType: TypeRef,
   val collectionElementType: TypeRef
-) : GivenNode() {
+) : Injectable() {
   override val callableFqName: FqName =
     FqName("com.ivianuu.injekt.injectSetOf<${type.arguments[0].render()}>")
   override val callContext: CallContext
     get() = CallContext.DEFAULT
-  override val dependencyScope: ResolutionScope?
+  override val dependencyScope: InjectablesScope?
     get() = null
   override val originalType: TypeRef
     get() = type.classifier.defaultType
@@ -76,24 +76,24 @@ class SetGivenNode(
     get() = false
 }
 
-class ProviderGivenNode(
+class ProviderInjectable(
   override val type: TypeRef,
-  override val ownerScope: ResolutionScope,
+  override val ownerScope: InjectablesScope,
   dependencyCallContext: CallContext
-) : GivenNode() {
+) : Injectable() {
   override val callableFqName: FqName = when (type.callContext) {
     CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
     CallContext.COMPOSABLE -> FqName("com.ivianuu.injekt.composableProviderOf")
     CallContext.SUSPEND -> FqName("com.ivianuu.injekt.suspendProviderOf")
   }
-  override val dependencies: List<GivenRequest> = listOf(
-    GivenRequest(
+  override val dependencies: List<InjectableRequest> = listOf(
+    InjectableRequest(
       type = type.arguments.last(),
       defaultStrategy = if (type.arguments.last().isNullableType)
         if (type.defaultOnAllErrors)
-          GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-      else GivenRequest.DefaultStrategy.NONE,
+          InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+        else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
+      else InjectableRequest.DefaultStrategy.NONE,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       isInline = false,
@@ -103,14 +103,14 @@ class ProviderGivenNode(
 
   val parameterDescriptors = mutableListOf<ParameterDescriptor>()
 
-  override val dependencyScope = ResolutionScope(
+  override val dependencyScope = InjectablesScope(
     name = "PROVIDER $type",
     parent = ownerScope,
     context = ownerScope.context,
     callContext = dependencyCallContext,
     ownerDescriptor = ownerScope.ownerDescriptor,
     trace = ownerScope.trace,
-    initialGivens = type
+    initialInjectables = type
       .toKotlinType(ownerScope.context)
       .memberScope
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -121,7 +121,7 @@ class ProviderGivenNode(
       .mapIndexed { index, parameter ->
         parameter
           .toCallableRef(ownerScope.context, ownerScope.trace)
-          .copy(isGiven = true, type = type.arguments[index])
+          .copy(isProvide = true, type = type.arguments[index])
       }
       .toList(),
     imports = emptyList(),
@@ -135,10 +135,10 @@ class ProviderGivenNode(
     get() = true
 }
 
-fun CallableRef.getGivenRequests(
+fun CallableRef.getInjectableRequests(
   context: InjektContext,
   trace: BindingTrace
-): List<GivenRequest> = callable.allParameters
+): List<InjectableRequest> = callable.allParameters
   .asSequence()
   .filter {
     callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
@@ -151,12 +151,12 @@ fun CallableRef.getGivenRequests(
   }
   .map { parameter ->
     val name = parameter.injektName()
-    GivenRequest(
+    InjectableRequest(
       type = parameterTypes[name]!!,
-      defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringGiven) {
-        if (name in defaultOnAllErrorParameters) GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-        else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-      } else GivenRequest.DefaultStrategy.NONE,
+      defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringInject) {
+        if (name in defaultOnAllErrorParameters) InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+        else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
+      } else InjectableRequest.DefaultStrategy.NONE,
       callableFqName = parameter.containingDeclaration.fqNameSafe,
       parameterName = name.asNameId(),
       isInline = InlineUtil.isInlineParameter(parameter),
@@ -165,7 +165,7 @@ fun CallableRef.getGivenRequests(
   }
   .toList()
 
-data class GivenRequest(
+data class InjectableRequest(
   val type: TypeRef,
   val defaultStrategy: DefaultStrategy,
   val callableFqName: FqName,
@@ -174,6 +174,6 @@ data class GivenRequest(
   val isLazy: Boolean
 ) {
   enum class DefaultStrategy {
-    NONE, DEFAULT_IF_NOT_GIVEN, DEFAULT_ON_ALL_ERRORS
+    NONE, DEFAULT_IF_NOT_PROVIDED, DEFAULT_ON_ALL_ERRORS
   }
 }

@@ -98,12 +98,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         )
           ?: return false
       try {
-        if (bindingContext[InjektWritableSlices.USED_GIVEN, descriptor] != null) return true
+        if (bindingContext[InjektWritableSlices.USED_INJECTABLE, descriptor] != null) return true
       } catch (e: Throwable) {
       }
     }
 
-    if (diagnostic.factory == InjektErrors.UNUSED_GIVEN_IMPORT)
+    if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT)
       return bindingContext[InjektWritableSlices.USED_IMPORT,
           SourcePosition(
             diagnostic.psiElement.containingFile.cast<KtFile>().virtualFilePath,

@@ -197,7 +197,7 @@ fun ConstraintKind.opposite() = when (this) {
   ConstraintKind.EQUAL -> ConstraintKind.EQUAL
 }
 
-fun buildContextForSpreadingGiven(
+fun buildContextForSpreadingInjectable(
   injektContext: InjektContext,
   constraintType: TypeRef,
   candidateType: TypeRef,

@@ -23,46 +23,46 @@ import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-sealed class GivenGraph {
+sealed class InjectionGraph {
   data class Success(
-    val scope: ResolutionScope,
-    val results: Map<GivenRequest, ResolutionResult.Success>,
-    val usages: Map<UsageKey, List<GivenRequest>>
-  ) : GivenGraph()
+    val scope: InjectablesScope,
+    val results: Map<InjectableRequest, ResolutionResult.Success>,
+    val usages: Map<UsageKey, List<InjectableRequest>>
+  ) : InjectionGraph()
 
   data class Error(
-    val scope: ResolutionScope,
-    val failureRequest: GivenRequest,
+    val scope: InjectablesScope,
+    val failureRequest: InjectableRequest,
     val failure: ResolutionResult.Failure
-  ) : GivenGraph()
+  ) : InjectionGraph()
 }
 
 sealed class ResolutionResult {
   sealed class Success : ResolutionResult() {
     object DefaultValue : Success()
     sealed class WithCandidate : ResolutionResult.Success() {
-      abstract val candidate: GivenNode
-      abstract val scope: ResolutionScope
+      abstract val candidate: Injectable
+      abstract val scope: InjectablesScope
 
       data class CircularDependency(
-        override val candidate: GivenNode,
-        override val scope: ResolutionScope
+        override val candidate: Injectable,
+        override val scope: InjectablesScope
       ) : Success.WithCandidate()
 
       data class Value(
-        override val candidate: GivenNode,
-        override val scope: ResolutionScope,
-        val dependencyResults: Map<GivenRequest, Success>
+        override val candidate: Injectable,
+        override val scope: InjectablesScope,
+        val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
         val usageKey by unsafeLazy { UsageKey(candidate.type, outerMostScope) }
-        val outerMostScope: ResolutionScope by unsafeLazy {
+        val outerMostScope: InjectablesScope by unsafeLazy {
           when {
             dependencyResults.isEmpty() -> scope.allScopes.first {
               it.allParents.size >= candidate.ownerScope.allParents.size &&
                   it.callContext.canCall(candidate.callContext)
             }
             candidate.dependencyScope != null -> {
-              val allOuterMostScopes = mutableListOf<ResolutionScope>()
+              val allOuterMostScopes = mutableListOf<InjectablesScope>()
               fun Value.visit() {
                 allOuterMostScopes += outerMostScope
                 dependencyResults.forEach {
@@ -125,7 +125,7 @@ sealed class ResolutionResult {
 
     data class CallContextMismatch(
       val actualCallContext: CallContext,
-      val candidate: GivenNode,
+      val candidate: Injectable,
     ) : Failure() {
       override val failureOrdering: Int
         get() = 1
@@ -135,7 +135,7 @@ sealed class ResolutionResult {
       val kind: TypeArgumentKind,
       val parameter: ClassifierRef,
       val argument: ClassifierRef,
-      val candidate: GivenNode
+      val candidate: Injectable
     ) : Failure() {
       override val failureOrdering: Int
         get() = 1
@@ -145,13 +145,13 @@ sealed class ResolutionResult {
       }
     }
 
-    data class DivergentGiven(val candidate: GivenNode) : Failure() {
+    data class DivergentInjectable(val candidate: Injectable) : Failure() {
       override val failureOrdering: Int
         get() = 1
     }
 
     data class DependencyFailure(
-      val dependencyRequest: GivenRequest,
+      val dependencyRequest: InjectableRequest,
       val dependencyFailure: Failure,
     ) : Failure() {
       override val failureOrdering: Int
@@ -165,22 +165,22 @@ sealed class ResolutionResult {
   }
 }
 
-data class UsageKey(val type: TypeRef, val outerMostScope: ResolutionScope)
+data class UsageKey(val type: TypeRef, val outerMostScope: InjectablesScope)
 
-fun ResolutionScope.resolveRequests(
-  requests: List<GivenRequest>,
+fun InjectablesScope.resolveRequests(
+  requests: List<InjectableRequest>,
   lookupLocation: LookupLocation,
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
-): GivenGraph = measureTimeMillisWithResult {
+): InjectionGraph = measureTimeMillisWithResult {
   recordLookup(lookupLocation)
-  val successes = mutableMapOf<GivenRequest, ResolutionResult.Success>()
-  var failureRequest: GivenRequest? = null
+  val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
+  var failureRequest: InjectableRequest? = null
   var failure: ResolutionResult.Failure? = null
   for (request in requests) {
     when (val result = resolveRequest(request, lookupLocation)) {
       is ResolutionResult.Success -> successes[request] = result
-      is ResolutionResult.Failure -> if ((request.defaultStrategy == GivenRequest.DefaultStrategy.NONE ||
-            (request.defaultStrategy == GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN &&
+      is ResolutionResult.Failure -> if ((request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE ||
+            (request.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
                 result !is ResolutionResult.Failure.NoCandidates)) &&
         compareResult(result, failure) < 0
       ) {
@@ -189,35 +189,35 @@ fun ResolutionScope.resolveRequests(
       }
     }
   }
-  val usages = mutableMapOf<UsageKey, MutableList<GivenRequest>>()
-  return@measureTimeMillisWithResult if (failure == null) GivenGraph.Success(
+  val usages = mutableMapOf<UsageKey, MutableList<InjectableRequest>>()
+  return@measureTimeMillisWithResult if (failure == null) InjectionGraph.Success(
     this,
     successes,
     usages
   )
     .also { it.postProcess(onEachResult, usages) }
-  else GivenGraph.Error(this, failureRequest!!, failure)
+  else InjectionGraph.Error(this, failureRequest!!, failure)
 }.also {
   println("resolving requests $requests in $name took ${it.first} ms")
 }.second
 
-private fun ResolutionScope.resolveRequest(
-  request: GivenRequest,
+private fun InjectablesScope.resolveRequest(
+  request: InjectableRequest,
   lookupLocation: LookupLocation
 ): ResolutionResult {
   checkCancelled()
   resultsByType[request.type]?.let { return it }
-  val userCandidates = givensForRequest(request, this)
-    ?: TypeResolutionScope(context, trace, request.type, lookupLocation)
+  val userCandidates = injectablesForRequest(request, this)
+    ?: TypeInjectablesScope(context, trace, request.type, lookupLocation)
       .also { it.recordLookup(lookupLocation) }
-      .givensForRequest(request, this)
+      .injectablesForRequest(request, this)
   val result = if (userCandidates != null) {
     resolveCandidates(request, userCandidates, lookupLocation)
   } else {
-    val frameworkCandidate = frameworkGivenForRequest(request)
+    val frameworkCandidate = frameworkInjectableForRequest(request)
     when {
       frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
-      request.defaultStrategy == GivenRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+      request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
       else -> ResolutionResult.Success.DefaultValue
     }
   }
@@ -225,9 +225,9 @@ private fun ResolutionScope.resolveRequest(
   return result
 }
 
-private fun ResolutionScope.computeForCandidate(
-  request: GivenRequest,
-  candidate: GivenNode,
+private fun InjectablesScope.computeForCandidate(
+  request: InjectableRequest,
+  candidate: Injectable,
   compute: () -> ResolutionResult,
 ): ResolutionResult {
   checkCancelled()
@@ -245,7 +245,7 @@ private fun ResolutionScope.computeForCandidate(
         (prev.second.type.typeSize < candidate.type.typeSize ||
             (prev.second.type == candidate.type && !isLazy))
       ) {
-        val result = ResolutionResult.Failure.DivergentGiven(candidate)
+        val result = ResolutionResult.Failure.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
         return result
       }
@@ -263,9 +263,9 @@ private fun ResolutionScope.computeForCandidate(
   return result
 }
 
-private fun ResolutionScope.resolveCandidates(
-  request: GivenRequest,
-  candidates: List<GivenNode>,
+private fun InjectablesScope.resolveCandidates(
+  request: InjectableRequest,
+  candidates: List<Injectable>,
   lookupLocation: LookupLocation
 ): ResolutionResult {
   if (candidates.size == 1) {
@@ -314,7 +314,7 @@ private fun ResolutionScope.resolveCandidates(
         .distinctBy {
           it.cast<ResolutionResult.Success.WithCandidate.Value>()
             .candidate
-            .cast<CallableGivenNode>()
+            .cast<CallableInjectable>()
             .callable
             .callable
             .uniqueKey(context)
@@ -324,16 +324,16 @@ private fun ResolutionScope.resolveCandidates(
   } else failure!!
 }
 
-private fun ResolutionScope.resolveCandidate(
-  request: GivenRequest,
-  candidate: GivenNode,
+private fun InjectablesScope.resolveCandidate(
+  request: InjectableRequest,
+  candidate: Injectable,
   lookupLocation: LookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
   if (!callContext.canCall(candidate.callContext)) {
     return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
   }
 
-  if (candidate is CallableGivenNode) {
+  if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
         ?: continue
@@ -366,17 +366,17 @@ private fun ResolutionScope.resolveCandidate(
       emptyMap()
     )
 
-  val successDependencyResults = mutableMapOf<GivenRequest, ResolutionResult.Success>()
+  val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
     val dependencyScope = candidate.dependencyScope ?: this
     when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
-          candidate is ProviderGivenNode && dependencyResult is ResolutionResult.Failure.NoCandidates ->
+          candidate is ProviderInjectable && dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates
-          dependency.defaultStrategy == GivenRequest.DefaultStrategy.NONE ||
-              (dependency.defaultStrategy == GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN &&
+          dependency.defaultStrategy == InjectableRequest.DefaultStrategy.NONE ||
+              (dependency.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
                   dependencyResult !is ResolutionResult.Failure.NoCandidates) ->
             return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
               dependency, dependencyResult
@@ -393,7 +393,7 @@ private fun ResolutionScope.resolveCandidate(
   )
 }
 
-private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
+private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
   if (a === b) return 0
 
   if (a != null && b == null) return -1
@@ -433,7 +433,7 @@ private fun ResolutionScope.compareResult(a: ResolutionResult?, b: ResolutionRes
   }
 }
 
-private inline fun <T> ResolutionScope.compareCandidate(
+private inline fun <T> InjectablesScope.compareCandidate(
   a: T?,
   b: T?,
   requestedType: TypeRef?,
@@ -472,17 +472,17 @@ private inline fun <T> ResolutionScope.compareCandidate(
   return 0
 }
 
-private fun ResolutionScope.compareCandidate(a: GivenNode?, b: GivenNode?): Int = compareCandidate(
+private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int = compareCandidate(
   a = a,
   b = b,
   requestedType = a?.type ?: b?.type,
   type = { it.originalType },
   scopeNesting = { it.ownerScope.allParents.size },
-  owner = { (it as? CallableGivenNode)?.callable?.owner },
-  subClassNesting = { (it as? CallableGivenNode)?.callable?.overriddenDepth ?: 0 }
+  owner = { (it as? CallableInjectable)?.callable?.owner },
+  subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 }
 )
 
-fun ResolutionScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
+fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
@@ -537,7 +537,7 @@ fun ResolutionScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef
   return 0
 }
 
-fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
+fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
   var diff = compareCandidate(
     a = a,
     b = b,
@@ -569,11 +569,11 @@ fun ResolutionScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
   return 0
 }
 
-private fun GivenGraph.Success.postProcess(
+private fun InjectionGraph.Success.postProcess(
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit,
-  usages: MutableMap<UsageKey, MutableList<GivenRequest>>
+  usages: MutableMap<UsageKey, MutableList<InjectableRequest>>
 ) {
-  fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: GivenRequest) {
+  fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: InjectableRequest) {
     usages.getOrPut(usageKey) { mutableListOf() } += request
     onEachResult(this)
     dependencyResults

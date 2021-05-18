@@ -28,15 +28,15 @@ interface InjektErrors {
     val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
     @JvmField
-    val UNRESOLVED_GIVEN =
-      DiagnosticFactory1.create<PsiElement, GivenGraph.Error>(Severity.ERROR)
+    val UNRESOLVED_INJECTION =
+      DiagnosticFactory1.create<PsiElement, InjectionGraph.Error>(Severity.ERROR)
         .also {
           MAP.put(
             it,
             "{0}",
-            object : DiagnosticParameterRenderer<GivenGraph.Error> {
+            object : DiagnosticParameterRenderer<InjectionGraph.Error> {
               override fun render(
-                obj: GivenGraph.Error,
+                obj: InjectionGraph.Error,
                 renderingContext: RenderingContext,
               ): String = obj.render()
             }
@@ -47,7 +47,7 @@ interface InjektErrors {
     val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
-          MAP.put(it, "parameters of a provided declaration are automatically treated as inject parameters")
+          MAP.put(it, "parameters of a provide declaration are automatically treated as inject parameters")
         }
 
     @JvmField
@@ -124,7 +124,7 @@ interface InjektErrors {
         }
 
     @JvmField
-    val SPREAD_ON_NON_GIVEN_DECLARATION =
+    val SPREAD_ON_NON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -154,81 +154,79 @@ interface InjektErrors {
         }
 
     @JvmField
-    val MALFORMED_GIVEN_IMPORT =
+    val MALFORMED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
-                "Cannot read given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                "cannot read injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
             }
           )
         }
 
     @JvmField
-    val UNRESOLVED_GIVEN_IMPORT =
+    val UNRESOLVED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
-                "Unresolved given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                "unresolved injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
             }
           )
         }
 
     @JvmField
-    val DUPLICATED_GIVEN_IMPORT =
+    val DUPLICATED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
-                "Duplicated given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                "duplicated provider import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
             }
           )
         }
 
     @JvmField
-    val UNUSED_GIVEN_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
+    val UNUSED_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "Unused given import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+            "unused provider import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
         })
       }
 
     @JvmField
-    val DECLARATION_PACKAGE_GIVEN_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    val DECLARATION_PACKAGE_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "Givens of the same package are automatically imported: '${
-              diagnostic.psiElement.text.removeSurrounding(
-                "\""
-              )
+            "providers of the same package are automatically imported: '${
+              diagnostic.psiElement.text.removeSurrounding("\"")
             }'"
         })
       }
 
     @JvmField
-    val TYPE_ALIAS_GIVENS_NOT_OBJECT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    val TYPE_ALIAS_MODULE_NOT_OBJECT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "typealias givens must be an object"
+            "typealias module must be an object"
         })
       }
 
     @JvmField
-    val TYPE_ALIAS_GIVENS_NOT_DECLARED_IN_SAME_MODULE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    val TYPE_ALIAS_MODULE_NOT_DECLARED_IN_SAME_COMPILATION_UNIT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "typealias givens must be declared in the same compilation unit"
+            "typealias module must be declared in the same compilation unit"
         })
       }
 
@@ -245,7 +243,7 @@ interface InjektErrors {
   }
 }
 
-private fun GivenGraph.Error.render(): String = buildString {
+private fun InjectionGraph.Error.render(): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++
@@ -258,8 +256,8 @@ private fun GivenGraph.Error.render(): String = buildString {
   }
 
   fun ResolutionResult.Failure.unwrapDependencyFailure(
-    request: GivenRequest
-  ): Pair<GivenRequest, ResolutionResult.Failure> {
+    request: InjectableRequest
+  ): Pair<InjectableRequest, ResolutionResult.Failure> {
     return if (this is ResolutionResult.Failure.DependencyFailure)
       dependencyFailure.unwrapDependencyFailure(dependencyRequest)
     else request to this
@@ -271,7 +269,7 @@ private fun GivenGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.CallContextMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "given argument ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
+          "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is a ${unwrappedFailure.candidate.callContext.name.toLowerCase()} function " +
               "but current call context is ${unwrappedFailure.actualCallContext.name.toLowerCase()}"
@@ -284,7 +282,7 @@ private fun GivenGraph.Error.render(): String = buildString {
       if (failure == unwrappedFailure) {
         appendLine(
           "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
-              "of given argument ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
+              "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is marked with ${unwrappedFailure.kind.readableName()} but type argument " +
               "${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}"
@@ -296,7 +294,7 @@ private fun GivenGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.CandidateAmbiguity -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "ambiguous given arguments:\n${
+          "ambiguous injectables:\n${
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
@@ -305,16 +303,16 @@ private fun GivenGraph.Error.render(): String = buildString {
         )
       } else {
         appendLine(
-          "ambiguous given arguments of type ${unwrappedFailureRequest.type.render()} " +
+          "ambiguous injectables of type ${unwrappedFailureRequest.type.render()} " +
               "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
         )
       }
     }
     is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
     is ResolutionResult.Failure.NoCandidates,
-    is ResolutionResult.Failure.DivergentGiven -> {
+    is ResolutionResult.Failure.DivergentInjectable -> {
       appendLine(
-        "no given argument found of type " +
+        "no injectable found of type " +
             "${unwrappedFailureRequest.type.render()} for parameter " +
             "${unwrappedFailureRequest.parameterName} of function " +
             "${unwrappedFailureRequest.callableFqName}"
@@ -327,7 +325,7 @@ private fun GivenGraph.Error.render(): String = buildString {
     appendLine()
 
     fun printCall(
-      request: GivenRequest,
+      request: InjectableRequest,
       failure: ResolutionResult.Failure,
       callContext: CallContext
     ) {
@@ -373,7 +371,7 @@ private fun GivenGraph.Error.render(): String = buildString {
             }
             is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.NoCandidates,
-            is ResolutionResult.Failure.DivergentGiven -> append("missing:")
+            is ResolutionResult.Failure.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
           if (failure is ResolutionResult.Failure.CallContextMismatch) {
@@ -422,14 +420,14 @@ private fun GivenGraph.Error.render(): String = buildString {
         )
       }
       is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
-      is ResolutionResult.Failure.DivergentGiven -> {
+      is ResolutionResult.Failure.DivergentInjectable -> {
         appendLine(
-          "but provided instance ${unwrappedFailure.candidate.callableFqName} " +
+          "but injectable ${unwrappedFailure.candidate.callableFqName} " +
               "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.render()}"
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no provided instances were found that match type ${unwrappedFailureRequest.type.render()}")
+        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.render()}")
       }
     }.let { }
   }

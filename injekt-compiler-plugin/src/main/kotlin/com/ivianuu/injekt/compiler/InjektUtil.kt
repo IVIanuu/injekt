@@ -105,7 +105,7 @@ fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is GivenFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
+    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)
@@ -256,14 +256,14 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-fun providersLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
+fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
   .removePrefix(packageFqName.asString())
   .replace(".", "_")
   .removePrefix("_")
   .takeIf { it.isNotEmpty() }
-  ?.plus("_providers")
+  ?.plus("_injectables")
   ?.asNameId()
-  ?: "providers".asNameId()
+  ?: "injectables".asNameId()
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND

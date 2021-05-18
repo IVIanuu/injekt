@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 
-class GivenCallChecker(private val context: InjektContext) : CallChecker {
+class InjectionCallChecker(private val context: InjektContext) : CallChecker {
   override fun check(
     resolvedCall: ResolvedCall<*>,
     reportOn: PsiElement,
@@ -50,7 +50,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
     }
 
     if (resultingDescriptor.valueParameters.none {
-        it.isProvide(this.context, context.trace)
+        it.isInject(this.context, context.trace)
       }) return
 
     val substitutionMap = resolvedCall.typeArguments
@@ -61,7 +61,7 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
     val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
       .substitute(substitutionMap)
 
-    val requests = callable.givenParameters
+    val requests = callable.injectParameters
       .asSequence()
       .map { parameterName ->
         callable.callable.valueParameters.single {
@@ -70,15 +70,15 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
       }
       .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
       .map { parameter ->
-        GivenRequest(
+        InjectableRequest(
           type = callable.parameterTypes[parameter.injektName()]!!,
           defaultStrategy = if (parameter is ValueParameterDescriptor &&
-            parameter.hasDefaultValueIgnoringGiven
+            parameter.hasDefaultValueIgnoringInject
           ) {
             if (parameter.injektName() in callable.defaultOnAllErrorParameters)
-              GivenRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-            else GivenRequest.DefaultStrategy.DEFAULT_IF_NOT_GIVEN
-          } else GivenRequest.DefaultStrategy.NONE,
+              InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+            else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
+          } else InjectableRequest.DefaultStrategy.NONE,
           callableFqName = resultingDescriptor.fqNameSafe,
           parameterName = parameter.injektName().asNameId(),
           isInline = InlineUtil.isInlineParameter(parameter),
@@ -89,12 +89,12 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
 
     if (requests.isEmpty()) return
 
-    val scope = HierarchicalResolutionScope(this.context, context.scope, context.trace)
+    val scope = HierarchicalInjectablesScope(this.context, context.scope, context.trace)
 
     when (val graph = scope.resolveRequests(requests, callExpression.lookupLocation) { result ->
-      if (result.candidate is CallableGivenNode) {
+      if (result.candidate is CallableInjectable) {
         context.trace.record(
-          InjektWritableSlices.USED_GIVEN,
+          InjektWritableSlices.USED_INJECTABLE,
           result.candidate.callable.callable,
           Unit
         )
@@ -109,15 +109,15 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
         }
       }
     }) {
-      is GivenGraph.Success -> {
+      is InjectionGraph.Success -> {
         if (filePath != null && !isIde) {
           context.trace.record(
-            InjektWritableSlices.FILE_HAS_GIVEN_CALLS,
+            InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
             filePath,
             Unit
           )
           context.trace.record(
-            InjektWritableSlices.GIVEN_GRAPH,
+            InjektWritableSlices.INJECTION_GRAPH,
             SourcePosition(
               filePath,
               callExpression.startOffset,
@@ -127,9 +127,8 @@ class GivenCallChecker(private val context: InjektContext) : CallChecker {
           )
         }
       }
-      is GivenGraph.Error -> context.trace.report(
-        InjektErrors.UNRESOLVED_GIVEN
-          .on(reportOn, graph)
+      is InjectionGraph.Error -> context.trace.report(
+        InjektErrors.UNRESOLVED_INJECTION.on(reportOn, graph)
       )
     }
   }

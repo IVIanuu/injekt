@@ -25,12 +25,12 @@ import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-interface GivenFunctionDescriptor : FunctionDescriptor {
+interface InjectFunctionDescriptor : FunctionDescriptor {
   val underlyingDescriptor: FunctionDescriptor
 }
 
-class GivenValueParameterDescriptor(
-  parent: GivenFunctionDescriptor,
+class InjectValueParameterDescriptor(
+  parent: InjectFunctionDescriptor,
   val underlyingDescriptor: ValueParameterDescriptor,
   val context: InjektContext,
   trace: BindingTrace
@@ -41,51 +41,50 @@ class GivenValueParameterDescriptor(
   underlyingDescriptor.annotations,
   underlyingDescriptor.injektName().asNameId(),
   underlyingDescriptor.type,
-  underlyingDescriptor.isProvide(context, trace) ||
-      underlyingDescriptor.declaresDefaultValue(),
+  underlyingDescriptor.isInject(context, trace) || underlyingDescriptor.declaresDefaultValue(),
   underlyingDescriptor.isCrossinline,
   underlyingDescriptor.isNoinline,
   underlyingDescriptor.varargElementType,
   underlyingDescriptor.source
 )
 
-val ValueParameterDescriptor.hasDefaultValueIgnoringGiven: Boolean
-  get() = (this as? GivenValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
+val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
+  get() = (this as? InjectValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
     ?: hasDefaultValue()
 
-abstract class AbstractGivenFunctionDescriptor(
+abstract class AbstractInjectFunctionDescriptor(
   final override val underlyingDescriptor: FunctionDescriptor,
   val context: InjektContext,
   trace: BindingTrace
-) : GivenFunctionDescriptor {
+) : InjectFunctionDescriptor {
   private val valueParameters = underlyingDescriptor
     .valueParameters
     .mapTo(mutableListOf()) { valueParameter ->
-      GivenValueParameterDescriptor(this, valueParameter, context, trace)
+      InjectValueParameterDescriptor(this, valueParameter, context, trace)
     }
 
   override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
     valueParameters.cast()
 }
 
-fun FunctionDescriptor.toGivenFunctionDescriptor(
+fun FunctionDescriptor.toInjectFunctionDescriptor(
   context: InjektContext,
   trace: BindingTrace
 ) = when (this) {
-  is GivenFunctionDescriptor -> this
-  is ClassConstructorDescriptor -> GivenConstructorDescriptorImpl(this, context, trace)
-  is SimpleFunctionDescriptor -> GivenSimpleFunctionDescriptorImpl(this, context, trace)
-  else -> GivenFunctionDescriptorImpl(this, context, trace)
+  is InjectFunctionDescriptor -> this
+  is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, context, trace)
+  is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this, context, trace)
+  else -> InjectFunctionDescriptorImpl(this, context, trace)
 }
 
-class GivenConstructorDescriptorImpl(
+class InjectConstructorDescriptorImpl(
   underlyingDescriptor: ClassConstructorDescriptor,
   context: InjektContext,
   private val trace: BindingTrace
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
+) : AbstractInjectFunctionDescriptor(underlyingDescriptor, context, trace),
   ClassConstructorDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
-    GivenConstructorDescriptorImpl(
+    InjectConstructorDescriptorImpl(
       underlyingDescriptor
         .substitute(substitutor) as ClassConstructorDescriptor, context, trace
     )
@@ -94,14 +93,14 @@ class GivenConstructorDescriptorImpl(
     super.getValueParameters()
 }
 
-class GivenFunctionDescriptorImpl(
+class InjectFunctionDescriptorImpl(
   underlyingDescriptor: FunctionDescriptor,
   context: InjektContext,
   private val trace: BindingTrace
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
+) : AbstractInjectFunctionDescriptor(underlyingDescriptor, context, trace),
   FunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-    GivenFunctionDescriptorImpl(
+    InjectFunctionDescriptorImpl(
       underlyingDescriptor.substitute(substitutor) as FunctionDescriptor, context, trace
     )
 
@@ -109,14 +108,14 @@ class GivenFunctionDescriptorImpl(
     super.getValueParameters()
 }
 
-class GivenSimpleFunctionDescriptorImpl(
+class InjectSimpleFunctionDescriptorImpl(
   underlyingDescriptor: SimpleFunctionDescriptor,
   context: InjektContext,
   private val trace: BindingTrace
-) : AbstractGivenFunctionDescriptor(underlyingDescriptor, context, trace),
+) : AbstractInjectFunctionDescriptor(underlyingDescriptor, context, trace),
   SimpleFunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-    GivenSimpleFunctionDescriptorImpl(
+    InjectSimpleFunctionDescriptorImpl(
       underlyingDescriptor
         .substitute(substitutor) as SimpleFunctionDescriptor, context, trace
     )

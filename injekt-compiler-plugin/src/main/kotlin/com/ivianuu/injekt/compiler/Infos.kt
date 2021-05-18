@@ -56,17 +56,17 @@ fun CallableDescriptor.callableInfo(
     .map { it.injektName() to it.type.toTypeRef(context, trace) }
     .toMap()
 
-  val givenParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+  val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
     .filter {
       it.hasAnnotation(InjektFqNames.Inject) ||
           (this is FunctionInvokeDescriptor ||
-              (this is GivenFunctionDescriptor &&
+              (this is InjectFunctionDescriptor &&
                   underlyingDescriptor is FunctionInvokeDescriptor) &&
               it.type.hasAnnotation(InjektFqNames.Inject))
     }
     .mapTo(mutableSetOf()) { it.injektName() }
 
-  val defaultOnAllErrorParameters = valueParameters
+  val defaultOnAllErrorsParameters = valueParameters
     .asSequence()
     .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
     .mapTo(mutableSetOf()) { it.injektName() }
@@ -74,8 +74,8 @@ fun CallableDescriptor.callableInfo(
   val info = CallableInfo(
     type = type,
     parameterTypes = parameterTypes,
-    injectParameters = givenParameters,
-    defaultOnAllErrorsParameters = defaultOnAllErrorParameters
+    injectParameters = injectParameters,
+    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
   )
 
   trace.record(InjektWritableSlices.CALLABLE_INFO, this, info)
@@ -169,7 +169,7 @@ class ClassifierInfo(
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean,
   val isForTypeKey: Boolean,
-  val isSingleton: Boolean = false
+  val isSingletonInjectable: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 }
@@ -230,7 +230,7 @@ fun ClassifierDescriptor.classifierInfo(
   val isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
 
-  val isSingletonGiven = !isDeserializedDeclaration() &&
+  val isSingletonInjectable = !isDeserializedDeclaration() &&
       this is ClassDescriptor &&
       kind == ClassKind.CLASS &&
       constructors
@@ -257,7 +257,7 @@ fun ClassifierDescriptor.classifierInfo(
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
     isForTypeKey = isForTypeKey,
-    isSingleton = isSingletonGiven
+    isSingletonInjectable = isSingletonInjectable
   )
 
   trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
@@ -274,7 +274,7 @@ data class PersistedClassifierInfo(
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
   @SerialName("3") val isSpread: Boolean = false,
   @SerialName("4") val isForTypeKey: Boolean = false,
-  @SerialName("5") val isSingletonGiven: Boolean = false
+  @SerialName("5") val isSingletonInjectable: Boolean = false
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
@@ -286,7 +286,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
   isForTypeKey = isForTypeKey,
-  isSingleton = isSingletonGiven
+  isSingletonInjectable = isSingletonInjectable
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(
@@ -297,7 +297,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
   isForTypeKey = isForTypeKey,
-  isSingletonGiven = isSingleton
+  isSingletonInjectable = isSingletonInjectable
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, context: InjektContext) {
@@ -340,7 +340,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
     if (!visibility.shouldPersistInfo()) return
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
-    if (!info.isSingleton &&
+    if (!info.isSingletonInjectable &&
       info.qualifiers.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       !hasAnnotation(InjektFqNames.Provide) &&
@@ -397,7 +397,7 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
       LazyClassDescriptor::class,
       "annotations"
     ) { newAnnotations }
-    is GivenFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
+    is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
     else -> {
       //throw AssertionError("Cannot add annotation to $this $javaClass")

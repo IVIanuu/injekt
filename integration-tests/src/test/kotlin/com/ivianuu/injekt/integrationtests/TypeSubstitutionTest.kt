@@ -90,7 +90,7 @@ class TypeSubstitutionTest {
       .let {
         it.withArguments(listOf(appGivenScope) + it.arguments.drop(1))
       }
-    val (_, map) = buildContextForSpreadingGiven(
+    val (_, map) = buildContextForSpreadingInjectable(
       injektContext,
       scopedT.defaultType,
       substitutionType,
@@ -128,7 +128,7 @@ class TypeSubstitutionTest {
           .arguments
           .last()
 
-      val (_, map) = buildContextForSpreadingGiven(
+      val (_, map) = buildContextForSpreadingInjectable(
         injektContext,
         installElementModuleT.defaultType,
         givenCoroutineScopeElementReturnType,

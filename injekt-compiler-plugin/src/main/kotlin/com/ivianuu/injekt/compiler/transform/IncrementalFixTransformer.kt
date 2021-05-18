@@ -41,10 +41,10 @@ class IncrementalFixTransformer(
   private val trace: BindingTrace,
   private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-  private val providersByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
+  private val injectablesByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
   override fun visitFile(declaration: IrFile): IrFile {
     super.visitFile(declaration)
-    val providers = providersByFile[declaration] ?: return declaration
+    val injectables = injectablesByFile[declaration] ?: return declaration
 
     val clazz = IrFactoryImpl.buildClass {
       name = "${
@@ -64,7 +64,7 @@ class IncrementalFixTransformer(
       declaration.addChild(this)
     }
 
-    val functions = providers.mapIndexed { index, callable ->
+    val functions = injectables.mapIndexed { index, callable ->
       IrFunctionImpl(
         UNDEFINED_OFFSET,
         UNDEFINED_OFFSET,
@@ -74,7 +74,7 @@ class IncrementalFixTransformer(
             override fun hasStableParameterNames(): Boolean = true
           }
         ),
-        providersLookupName(
+        injectablesLookupName(
           callable.callable.fqNameSafe.parent(),
           declaration.fqName
         ),
@@ -155,7 +155,7 @@ class IncrementalFixTransformer(
               declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
       declaration.descriptor.isProvide(context, trace)
     ) {
-      providersByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
+      injectablesByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
         is IrClass -> declaration.descriptor.provideConstructors(context, trace)
         is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
         is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))

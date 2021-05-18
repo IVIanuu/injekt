@@ -36,7 +36,7 @@ class SingletonTransformer(
 ) : IrElementTransformerVoid() {
   private val ignoredExpressions = mutableListOf<IrExpression>()
   override fun visitClass(declaration: IrClass): IrStatement {
-    if (declaration.descriptor.classifierInfo(context, trace).isSingleton) {
+    if (declaration.descriptor.classifierInfo(context, trace).isSingletonInjectable) {
       instanceFieldForDeclaration(declaration)
     }
     return super.visitClass(declaration)
@@ -45,7 +45,7 @@ class SingletonTransformer(
   override fun visitConstructorCall(expression: IrConstructorCall): IrExpression {
     if (expression in ignoredExpressions) return super.visitConstructorCall(expression)
     if (expression.type.classifierOrNull?.descriptor
-        ?.classifierInfo(context, trace)?.isSingleton == true
+        ?.classifierInfo(context, trace)?.isSingletonInjectable == true
     ) {
       val module = expression.type.classOrNull!!.owner
       val instanceField = instanceFieldForDeclaration(module)

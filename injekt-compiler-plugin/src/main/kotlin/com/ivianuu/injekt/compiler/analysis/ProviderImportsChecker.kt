@@ -117,7 +117,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
       }
       .forEach { (element, _) ->
         trace.report(
-          InjektErrors.DUPLICATED_GIVEN_IMPORT
+          InjektErrors.DUPLICATED_INJECTABLE_IMPORT
             .on(element!!)
         )
       }
@@ -129,7 +129,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
       .forEach { (_, imports) ->
         imports.forEach {
           trace.report(
-            InjektErrors.DUPLICATED_GIVEN_IMPORT
+            InjektErrors.DUPLICATED_INJECTABLE_IMPORT
               .on(it.element!!)
           )
         }
@@ -146,7 +146,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
           }
       ) {
         trace.report(
-          InjektErrors.MALFORMED_GIVEN_IMPORT
+          InjektErrors.MALFORMED_INJECTABLE_IMPORT
             .on(element!!)
         )
         return@forEach
@@ -155,14 +155,14 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
         val packageFqName = FqName(importPath.removeSuffix(".*"))
         if (packageFqName == currentPackage) {
           trace.report(
-            InjektErrors.DECLARATION_PACKAGE_GIVEN_IMPORT
+            InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!)
           )
           return@forEach
         }
         if (context.memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
           trace.report(
-            InjektErrors.UNRESOLVED_GIVEN_IMPORT
+            InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!)
           )
           return@forEach
@@ -172,7 +172,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
         val parentFqName = fqName.parent()
         if (parentFqName == currentPackage) {
           trace.report(
-            InjektErrors.DECLARATION_PACKAGE_GIVEN_IMPORT
+            InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!)
           )
           return@forEach
@@ -189,7 +189,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
           }
         if (importedDeclarations == null || importedDeclarations.isEmpty()) {
           trace.report(
-            InjektErrors.UNRESOLVED_GIVEN_IMPORT
+            InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!)
           )
           return@forEach
@@ -197,7 +197,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
       }
 
       trace.report(
-        InjektErrors.UNUSED_GIVEN_IMPORT
+        InjektErrors.UNUSED_INJECTABLE_IMPORT
           .on(element!!)
       )
     }
