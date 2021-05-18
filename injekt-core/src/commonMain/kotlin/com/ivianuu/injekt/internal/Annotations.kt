@@ -116,8 +116,7 @@ internal annotation class CallableInfo(
   val value96: String = "",
   val value97: String = "",
   val value98: String = "",
-  val value99: String = "",
-  val value100: String = ""
+  val value99: String = ""
 )
 
 internal annotation class ClassifierInfo(
@@ -220,8 +219,7 @@ internal annotation class ClassifierInfo(
   val value96: String = "",
   val value97: String = "",
   val value98: String = "",
-  val value99: String = "",
-  val value100: String = ""
+  val value99: String = ""
 )
 
 internal annotation class TypeParameterInfos(
@@ -324,6 +322,5 @@ internal annotation class TypeParameterInfos(
   val value96: String = "",
   val value97: String = "",
   val value98: String = "",
-  val value99: String = "",
-  val value100: String = ""
+  val value99: String = ""
 )
