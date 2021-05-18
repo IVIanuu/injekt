@@ -9,6 +9,7 @@ class NotGiven<out T> private constructor() {
     @Given fun <T> default(): NotGiven<T> = defaultInstance
   }
 
+  @Suppress("UNUSED_PARAMETER")
   companion object : LowPriorityGivens() {
     @Given fun <T> amb1(value: T): NotGiven<T> = throw AssertionError()
 
