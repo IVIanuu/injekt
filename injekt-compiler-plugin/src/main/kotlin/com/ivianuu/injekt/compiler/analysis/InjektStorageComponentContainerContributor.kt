@@ -29,7 +29,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     moduleDescriptor: ModuleDescriptor,
   ) {
     val context = moduleDescriptor.injektContext
-    container.useInstance(ProvideInjectChecker(context))
+    container.useInstance(InjectableChecker(context))
     container.useInstance(TypeKeyChecker(context))
     container.useInstance(QualifierChecker())
     container.useInstance(ProviderImportsChecker(context))

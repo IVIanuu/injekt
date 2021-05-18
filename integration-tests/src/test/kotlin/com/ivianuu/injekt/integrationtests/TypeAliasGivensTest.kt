@@ -16,13 +16,13 @@ class TypeAliasGivensTest {
               @Provide val foo = Foo()
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.Dep")
+            @Providers("injectables.Dep")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -40,7 +40,7 @@ class TypeAliasGivensTest {
       class MyAliasGivens
     """
   ) {
-    compilationShouldHaveFailed("typealias givens must be an object")
+    compilationShouldHaveFailed("typealias injectables must be an object")
   }
 
   @Test fun typeAliasGivensInDifferentModule() = multiCodegen(
@@ -51,6 +51,6 @@ class TypeAliasGivensTest {
       object MyAliasGivens
     """
   ) {
-    compilationShouldHaveFailed("typealias givens must be declared in the same compilation unit")
+    compilationShouldHaveFailed("typealias injectables must be declared in the same compilation unit")
   }
 }

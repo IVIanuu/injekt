@@ -43,7 +43,7 @@ class ProviderTest {
             }
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testProviderWithGivenArgs() = codegen(
@@ -90,7 +90,7 @@ class ProviderTest {
       ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun createGivenScopeA() = inject<GivenScopeA>()
 
       @InstallElement<GivenScopeC>
@@ -172,7 +172,7 @@ class ProviderTest {
             }
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testProviderWithNullableReturnTypeUsesNullAsDefault() = codegen(

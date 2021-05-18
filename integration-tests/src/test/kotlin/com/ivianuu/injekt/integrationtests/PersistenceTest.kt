@@ -83,8 +83,8 @@ class PersistenceTest {
       } 
     """
   ) {
-    shouldNotContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
-    shouldContainMessage("no given argument found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
+    shouldNotContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
+    shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testNonGivenFunctionWithGivenParameters() = singleAndMultiCodegen(
@@ -94,7 +94,7 @@ class PersistenceTest {
       ): AppGivenScope = TODO()
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = myFunction()
     """
   )
@@ -106,7 +106,7 @@ class PersistenceTest {
       )
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = MyClass()
     """
   )
@@ -120,7 +120,7 @@ class PersistenceTest {
       }
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = MyClass()
     """
   )
@@ -151,7 +151,7 @@ class PersistenceTest {
     """
       typealias TestGivenScope1 = GivenScope
       typealias TestGivenScope2 = GivenScope
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
         @Provide val childScopeModule = MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
         val parentScope = inject<TestGivenScope1>()

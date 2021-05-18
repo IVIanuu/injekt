@@ -21,7 +21,7 @@ import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class GivenResolutionTest {
+class InjectableResolutionTest {
   @Test fun testPrefersInternalGivenOverExternal() = multiCodegen(
     """
       @Provide lateinit var externalFoo: Foo
@@ -301,7 +301,7 @@ class GivenResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous given arguments:\n" +
+      "ambiguous injectables:\n" +
           "com.ivianuu.injekt.integrationtests.a\n" +
           "com.ivianuu.injekt.integrationtests.b\n" +
           "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.inject"
@@ -318,7 +318,7 @@ class GivenResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous given arguments:\n" +
+      "ambiguous injectables:\n" +
           "com.ivianuu.injekt.integrationtests.invoke.givenA\n" +
           "com.ivianuu.injekt.integrationtests.invoke.givenB\n" +
           "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.inject"
@@ -381,7 +381,7 @@ class GivenResolutionTest {
       fun invoke() = inject<() -> Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
   }
 
   @Test fun testUsesDefaultValueIfNoCandidateExists() = codegen(
@@ -405,7 +405,7 @@ class GivenResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
   @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() =

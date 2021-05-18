@@ -156,7 +156,7 @@ class QualifierTest {
       class MyElement(val foo: Foo)
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = inject<AppGivenScope>()
     """
   ) {

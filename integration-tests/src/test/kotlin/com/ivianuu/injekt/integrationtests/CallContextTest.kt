@@ -29,7 +29,7 @@ class CallContextTest {
       @Composable fun invoke() = inject<Bar>()
     """
   ) {
-    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a suspend function but current call context is composable")
+    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a suspend function but current call context is composable")
   }
 
   @Test fun testNonSuspendGivenCanReceiveSuspendGivenInSuspendContext() = singleAndMultiCodegen(
@@ -51,7 +51,7 @@ class CallContextTest {
       suspend fun invoke() = inject<Bar>()
     """
   ) {
-    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a composable function but current call context is suspend")
+    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a composable function but current call context is suspend")
   }
 
   @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() =
@@ -144,7 +144,7 @@ class CallContextTest {
   @Test fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun suspendFoo() = Foo()
-      suspend inline fun initialize(@Provide provider: () -> Foo) {
+      suspend inline fun initialize(@Inject provider: () -> Foo) {
       }
     """,
     """

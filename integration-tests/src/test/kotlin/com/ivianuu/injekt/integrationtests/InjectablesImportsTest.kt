@@ -22,77 +22,77 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
-class GivenImportsTest {
+class InjectablesImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
-      @ProvideImports("a")
+      @Providers("a")
       fun invoke() {
       }
     """
   ) {
-    compilationShouldHaveFailed("Unresolved given import")
+    compilationShouldHaveFailed("Unresolved injectable import")
   }
 
   @Test fun testUnresolvedStarImport() = codegen(
     """
-            @ProvideImports("a.*")
+            @Providers("a.*")
       fun invoke() {
             }
     """
   ) {
-    compilationShouldHaveFailed("Unresolved given import")
+    compilationShouldHaveFailed("Unresolved injectable import")
   }
 
   @Test fun testImportsJustAPackage() = codegen(
     """
-      @ProvideImports("kotlin.collections")
+      @Providers("kotlin.collections")
       fun invoke() {
       }
     """
   ) {
-    compilationShouldHaveFailed("Unresolved given import")
+    compilationShouldHaveFailed("Unresolved injectable import")
   }
 
   @Test fun testMalformedImport() = codegen(
     """
-      @ProvideImports("-_;-")
+      @Providers("-_;-")
       fun invoke() {
       }
     """
   ) {
-    compilationShouldHaveFailed("Cannot read given import")
+    compilationShouldHaveFailed("Cannot read injectable import")
   }
 
   @Test fun testDuplicatedImports() = codegen(
     """
-      @ProvideImports("kotlin.collections.*", "kotlin.collections.*")
+      @Providers("kotlin.collections.*", "kotlin.collections.*")
       fun invoke() {
       }
     """
   ) {
-    compilationShouldHaveFailed("Duplicated given import")
+    compilationShouldHaveFailed("Duplicated injectable import")
   }
 
   @Test fun testNestedDuplicatedImports() = codegen(
     """
-      @ProvideImports("kotlin.collections.*")
+      @Providers("kotlin.collections.*")
       fun invoke() {
         withGivenImports("kotlin.collections.*") {
         }
       }
     """
   ) {
-    compilationShouldHaveFailed("Duplicated given import")
+    compilationShouldHaveFailed("Duplicated injectable import")
   }
 
   @Test fun testUnusedImport() = codegen(
     """
-      @ProvideImports("kotlin.collections.*")
+      @Providers("kotlin.collections.*")
       fun invoke() {
       }
     """
   ) {
-    shouldContainMessage("Unused given import")
+    shouldContainMessage("Unused injectable import")
   }
 
   @Test fun testUsedImport() = singleAndMultiCodegen(
@@ -102,13 +102,13 @@ class GivenImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.foo")
+            @Providers("injectables.foo")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -116,7 +116,7 @@ class GivenImportsTest {
       )
     )
   ) {
-    shouldNotContainMessage("Unused given import")
+    shouldNotContainMessage("Unused injectable import")
   }
 
   @Test fun testUsedStarImport() = singleAndMultiCodegen(
@@ -126,13 +126,13 @@ class GivenImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.*")
+            @Providers("injectables.*")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -140,44 +140,44 @@ class GivenImportsTest {
       )
     )
   ) {
-    shouldNotContainMessage("Unused given import")
+    shouldNotContainMessage("Unused injectable import")
   }
 
   @Test fun testStarImportSamePackage() = codegen(
     """
-      @ProvideImports("com.ivianuu.injekt.integrationtests.*")
+      @Providers("com.ivianuu.injekt.integrationtests.*")
       fun invoke() {
       }
     """
   ) {
-    compilationShouldHaveFailed("Givens of the same package are automatically imported")
+    compilationShouldHaveFailed("injectables of the same package are automatically imported")
   }
 
   @Test fun testImportGivenSamePackage() = codegen(
     """
       @Provide val foo = Foo()
-      @ProvideImports("com.ivianuu.injekt.integrationtests.foo")
+      @Providers("com.ivianuu.injekt.integrationtests.foo")
       fun invoke() {
       }
     """
   ) {
-    compilationShouldHaveFailed("Givens of the same package are automatically imported")
+    compilationShouldHaveFailed("injectables of the same package are automatically imported")
   }
 
-  @Test fun testClassWithGivenImports() = singleAndMultiCodegen(
+  @Test fun testClassWithImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.*")
+            @Providers("injectables.*")
             class MyClass {
               fun invoke() = inject<Foo>()
             }
@@ -198,13 +198,13 @@ class GivenImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.*")
+            @Providers("injectables.*")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -222,13 +222,13 @@ class GivenImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.*")
+            @Providers("injectables.*")
             val givenFoo = inject<Foo>()
             fun invoke() = givenFoo
           """,

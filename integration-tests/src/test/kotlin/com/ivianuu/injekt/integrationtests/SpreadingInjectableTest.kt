@@ -22,7 +22,7 @@ import io.kotest.matchers.collections.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class SpreadingGivenTest {
+class SpreadingInjectableTest {
   @Test fun testSpreadingGivenFunction() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
@@ -141,7 +141,7 @@ class SpreadingGivenTest {
     """,
     """
       @Provide fun foo(): @Scoped<AppGivenScope> Foo = Foo()
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = inject<Foo>()
     """
   ) {
@@ -254,7 +254,7 @@ class SpreadingGivenTest {
       fun myInitializer(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
           inject<(@Provide @InstallElement<AppGivenScope> App) -> AppGivenScope>()
       }
@@ -304,7 +304,7 @@ class SpreadingGivenTest {
       @Provide val foo: @Qualifier1 Foo = Foo()
     """,
     """
-      @ProvideImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = inject<Set<Foo>>()
     """
   ) {
@@ -325,7 +325,7 @@ class SpreadingGivenTest {
       fun invoke() = inject<Unit>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testSpreadingGivenWithInvariantTypeParameter() = singleAndMultiCodegen(

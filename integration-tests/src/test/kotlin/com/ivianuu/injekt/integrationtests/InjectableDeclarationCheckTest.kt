@@ -20,98 +20,98 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class GivenDeclarationCheckTest {
-  @Test fun testGivenAnnotationClass() = codegen(
+class InjectableDeclarationCheckTest {
+  @Test fun testProvideAnnotationClass() = codegen(
     """
       @Provide annotation class MyAnnotation
     """
   ) {
-    compilationShouldHaveFailed("annotation class cannot be @Provide")
+    compilationShouldHaveFailed("annotation class cannot be provided")
   }
 
-  @Test fun testGivenConstructorOnAnnotationClass() = codegen(
+  @Test fun testProvideConstructorOnAnnotationClass() = codegen(
     """
       annotation class MyAnnotation @Provide constructor()
     """
   ) {
-    compilationShouldHaveFailed("annotation class cannot be @Provide")
+    compilationShouldHaveFailed("annotation class cannot be provided")
   }
 
-  @Test fun testGivenEnumClass() = codegen(
+  @Test fun testProvideEnumClass() = codegen(
     """
       @Provide enum class MyEnum
     """
   ) {
-    compilationShouldHaveFailed("enum class cannot be @Provide")
+    compilationShouldHaveFailed("enum class cannot be provided")
   }
 
-  @Test fun testGivenInnerClass() = codegen(
+  @Test fun testProvideInnerClass() = codegen(
     """
       class MyOuterClass {
         @Provide inner class MyInnerClass
       }
     """
   ) {
-    compilationShouldHaveFailed("@Provide class cannot be inner")
+    compilationShouldHaveFailed("inner class cannot be provided")
   }
 
-  @Test fun testGivenAbstractClass() = codegen(
+  @Test fun testProvideAbstractClass() = codegen(
     """
       @Provide abstract class MyClass
     """
   ) {
-    compilationShouldHaveFailed("@Provide class cannot be abstract")
+    compilationShouldHaveFailed("abstract class cannot be provided")
   }
 
-  @Test fun testGivenConstructorAbstractClass() = codegen(
+  @Test fun testProvideConstructorAbstractClass() = codegen(
     """
       abstract class MyClass @Provide constructor()
     """
   ) {
-    compilationShouldHaveFailed("@Provide class cannot be abstract")
+    compilationShouldHaveFailed("abstract class cannot be provided")
   }
 
-  @Test fun testGivenInterface() = codegen(
+  @Test fun testProvideInterface() = codegen(
     """
       @Provide interface MyInterface
     """
   ) {
-    compilationShouldHaveFailed("interface cannot be @Provide")
+    compilationShouldHaveFailed("interface cannot be provided")
   }
 
-  @Test fun testNonGivenValueParameterOnGivenFunction() = codegen(
+  @Test fun testInjectValueParameterOnProvideFunction() = codegen(
     """
-      @Provide fun bar(@Provide foo: Foo) = Bar(foo)
+      @Provide fun bar(@Inject foo: Foo) = Bar(foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a @Provide declaration are automatically treated as @Provide")
+    compilationShouldHaveFailed("parameters of a provide declaration are automatically treated as inject parameters")
   }
 
-  @Test fun testGivenValueParameterOnGivenClass() = codegen(
+  @Test fun testInjectValueParameterOnProvideClass() = codegen(
     """
-      @Provide class MyBar(@Provide foo: Foo)
+      @Provide class MyBar(@Inject foo: Foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a @Provide declaration are automatically treated as @Provide")
+    compilationShouldHaveFailed("parameters of a provide declaration are automatically treated as inject parameters")
   }
 
-  @Test fun testGivenReceiverOnFunction() = codegen(
+  @Test fun testInjectReceiverOnFunction() = codegen(
     """
-      fun @receiver:Given Foo.bar() = Bar(this)
-    """
-  ) {
-    compilationShouldHaveFailed("receiver cannot be marked as @Provide because it is implicitly @Provide")
-  }
-
-  @Test fun testGivenReceiverOnNonGivenFunction() = codegen(
-    """
-      val @receiver:Given Foo.bar get() = Bar(this)
+      fun @receiver:Inject Foo.bar() = Bar(this)
     """
   ) {
     compilationShouldHaveFailed("receiver cannot be marked as @Provide because it is implicitly @Provide")
   }
 
-  @Test fun testGivenFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
+  @Test fun testInjectReceiverOnProperty() = codegen(
+    """
+      val @receiver:Provide Foo.bar get() = Bar(this)
+    """
+  ) {
+    compilationShouldHaveFailed("receiver cannot be marked as @Provide because it is implicitly @Provide")
+  }
+
+  @Test fun testProvideFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
         @Provide abstract fun foo(): Foo
@@ -129,7 +129,7 @@ class GivenDeclarationCheckTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testFunctionOverrideWithGivenAnnotation() = singleAndMultiCodegen(
+  @Test fun testFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
           abstract fun foo(): Foo
@@ -147,7 +147,7 @@ class GivenDeclarationCheckTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testGivenFunctionOverrideWithoutGivenAnnotation() = codegen(
+  @Test fun testProvideFunctionOverrideWithoutProvideAnnotation() = codegen(
     """
       abstract class MySuperClass {
           @Provide abstract fun foo(): Foo
@@ -177,7 +177,7 @@ class GivenDeclarationCheckTest {
     compilationShouldHaveFailed("Conflicting overloads")
   }
 
-  @Test fun testGivenPropertyOverrideWithoutGivenAnnotation() = singleAndMultiCodegen(
+  @Test fun testProvidePropertyOverrideWithoutProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
           @Provide abstract val foo: Foo
@@ -192,7 +192,7 @@ class GivenDeclarationCheckTest {
     compilationShouldHaveFailed("'foo' overrides nothing")
   }
 
-  @Test fun testActualGivenFunctionWithoutGivenAnnotation() = multiPlatformCodegen(
+  @Test fun testActualProvideFunctionWithoutProvideAnnotation() = multiPlatformCodegen(
     """
       @Provide expect fun foo(): Foo 
     """,
@@ -203,7 +203,7 @@ class GivenDeclarationCheckTest {
     compilationShouldHaveFailed("Actual function 'foo' has no corresponding expected declaration")
   }
 
-  @Test fun testActualGivenPropertyWithoutGivenAnnotation() = multiPlatformCodegen(
+  @Test fun testActualProvidePropertyWithoutProvideAnnotation() = multiPlatformCodegen(
     """
       @Provide expect val foo: Foo 
     """,
@@ -214,7 +214,7 @@ class GivenDeclarationCheckTest {
     compilationShouldHaveFailed("Actual property 'foo' has no corresponding expected declaration")
   }
 
-  @Test fun testActualGivenClassWithoutGivenAnnotation() = multiPlatformCodegen(
+  @Test fun testActualProvideClassWithoutProvideAnnotation() = multiPlatformCodegen(
     """
       @Provide expect class Dep 
     """,
@@ -225,7 +225,7 @@ class GivenDeclarationCheckTest {
     compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
   }
 
-  @Test fun testActualGivenConstructorWithoutGivenAnnotation() = multiPlatformCodegen(
+  @Test fun testActualProvideConstructorWithoutProvideAnnotation() = multiPlatformCodegen(
     """
       expect class Dep {
         @Provide constructor()

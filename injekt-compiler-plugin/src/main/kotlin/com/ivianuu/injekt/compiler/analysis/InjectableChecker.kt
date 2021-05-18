@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.multiplatform.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class ProvideInjectChecker(private val context: InjektContext) : DeclarationChecker {
+class InjectableChecker(private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,

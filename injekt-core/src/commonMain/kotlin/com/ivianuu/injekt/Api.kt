@@ -50,7 +50,7 @@ annotation class Provide
 annotation class Inject
 
 /**
- * Imports givens from the specified [importPaths] and use them when resolving given arguments inside the declaration
+ * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
  */
 @Target(
   AnnotationTarget.CLASS,
@@ -62,7 +62,7 @@ annotation class Inject
 annotation class Providers(vararg val importPaths: String)
 
 /**
- * Runs the [block] and imports givens from [importPaths] and use them when resolving given arguments inside [block]
+ * Runs the [block] and imports injectables from [importPaths] and use them when resolving injectables inside [block]
  */
 inline fun <R> withProviders(
   @Suppress("UNUSED_PARAMETER") vararg importPaths: String,

@@ -22,7 +22,7 @@ import io.kotest.matchers.collections.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class GivenSetTest {
+class InjectableSetTest {
   @Test fun testSet() = singleAndMultiCodegen(
     """
             @Provide fun commandA() = CommandA()
@@ -98,7 +98,7 @@ class GivenSetTest {
          fun invoke() = inject<Set<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testImplicitProviderSet() = singleAndMultiCodegen(

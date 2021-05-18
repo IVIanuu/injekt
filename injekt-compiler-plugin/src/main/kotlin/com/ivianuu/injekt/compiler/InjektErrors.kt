@@ -187,7 +187,7 @@ interface InjektErrors {
             it,
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
-                "duplicated provider import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+                "duplicated injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
             }
           )
         }
@@ -197,7 +197,7 @@ interface InjektErrors {
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "unused provider import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+            "unused injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
         })
       }
 
@@ -206,7 +206,7 @@ interface InjektErrors {
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
-            "providers of the same package are automatically imported: '${
+            "injectables of the same package are automatically imported: '${
               diagnostic.psiElement.text.removeSurrounding("\"")
             }'"
         })

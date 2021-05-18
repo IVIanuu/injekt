@@ -21,7 +21,7 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
-class GivenResolveTest {
+class InjectableResolveTest {
   @Test fun testResolvesExternalGivenInSamePackage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
@@ -40,13 +40,13 @@ class GivenResolveTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @ProvideImports("givens.*")
+            @Providers("injectables.*")
             fun invoke() = inject<Foo>()
           """,
           name = "File.kt"
@@ -63,11 +63,11 @@ class GivenResolveTest {
         """
           @Provide val foo = Foo()
         """,
-        packageFqName = FqName("givens")
+        packageFqName = FqName("injectables")
       ),
       source(
         """
-          @ProvideImports("givens.*")
+          @Providers("injectables.*")
           fun invoke() = inject<Foo>()
         """,
         name = "File.kt"
@@ -193,7 +193,7 @@ class GivenResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type kotlin.String")
+    compilationShouldHaveFailed("no injectable found of type kotlin.String")
   }
 
   @Test fun testNestedUnresolvedGiven() = singleAndMultiCodegen(
@@ -204,7 +204,7 @@ class GivenResolveTest {
       fun invoke() = inject<Bar>() 
     """
   ) {
-    compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed(" no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
   @Test fun testGenericGiven() = singleAndMultiCodegen(
@@ -331,7 +331,7 @@ class GivenResolveTest {
       fun invoke() = inject<MyObject>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveObjectWithGiven() = singleAndMultiCodegen(
@@ -351,7 +351,7 @@ class GivenResolveTest {
      fun invoke() = inject<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
   @Test fun testCannotResolvePrivateGivenFromOuterScope() = singleAndMultiCodegen(
@@ -364,7 +364,7 @@ class GivenResolveTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
   @Test fun testCanResolvePrivateGivenFromInnerScope() = codegen(
@@ -386,7 +386,7 @@ class GivenResolveTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
   @Test fun testCanResolveProtectedGivenFromSameClass() = codegen(
@@ -422,7 +422,7 @@ class GivenResolveTest {
         fun invoke() = inject<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+      compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
 
   @Test fun testCanResolveExplicitMarkedGivenConstructorParameterFromOutsideTheClass() =
@@ -444,7 +444,7 @@ class GivenResolveTest {
         fun invoke() = inject<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+      compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
 
   @Test fun testCanResolveImplicitGivenConstructorParameterFromInsideTheClass() = codegen(
@@ -480,7 +480,7 @@ class GivenResolveTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
+      "type parameter T of injectable com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
     )
   }
 
@@ -498,7 +498,7 @@ class GivenResolveTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of given argument com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
+      "type parameter T of injectable com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
     )
   }
 

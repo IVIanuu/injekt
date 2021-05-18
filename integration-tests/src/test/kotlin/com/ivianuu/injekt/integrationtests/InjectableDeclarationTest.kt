@@ -23,7 +23,7 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
-class ProvideInjectDeclarationTest {
+class InjectableDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
     """
       @Provide fun foo() = Foo()
