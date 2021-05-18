@@ -58,12 +58,12 @@ typealias AppUi = @Composable () -> Unit
   }
 }
 
-@Provide @Scoped<ActivityRetainedGivenScope>
+@Provide @Scoped<ActivityRetainedScope>
 class CounterViewModel(
   private val incCounter: IncCounterUseCase,
   private val decCounter: DecCounterUseCase,
   val state: CounterFlow,
-  private val scope: GivenCoroutineScope<ActivityRetainedGivenScope>
+  private val scope: GivenCoroutineScope<ActivityRetainedScope>
 ) {
   fun inc() {
     scope.launch { incCounter() }

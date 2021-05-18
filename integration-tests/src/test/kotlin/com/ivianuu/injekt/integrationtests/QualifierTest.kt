@@ -145,19 +145,19 @@ class QualifierTest {
 
   @Test fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
     """
-      @Provide fun foo(): @Eager<AppGivenScope> Foo = Foo()
+      @Provide fun foo(): @Eager<AppScope> Foo = Foo()
   
-      typealias ChildGivenScope = GivenScope
+      typealias ChildScope = Scope
   
-      @Provide val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
+      @Provide val childScopeModule = ChildScopeModule0<AppScope, ChildScope>()
   
-      @InstallElement<ChildGivenScope>
+      @InstallElement<ChildScope>
       @Provide
       class MyElement(val foo: Foo)
     """,
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = inject<AppGivenScope>()
+      fun invoke() = inject<AppScope>()
     """
   ) {
     compilationShouldBeOk()

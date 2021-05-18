@@ -29,7 +29,7 @@ import org.junit.*
 )
 class GivenCoroutineScopeTest {
   @Test fun testGivenCoroutineScopeLifecycle() {
-    val scope = inject<TestGivenScope1>()
+    val scope = inject<TestScope1>()
     val coroutineScope = scope.coroutineScope
     coroutineScope.isActive.shouldBeTrue()
     scope.dispose()
@@ -37,20 +37,20 @@ class GivenCoroutineScopeTest {
   }
 
   @Test fun testGivenCoroutineScopeAccessors() {
-    val scope = inject<TestGivenScope1>()
+    val scope = inject<TestScope1>()
     val a = scope.coroutineScope
     val b = scope.element<CoroutineScope>()
-    val c = scope.element<GivenCoroutineScope<TestGivenScope1>>()
+    val c = scope.element<GivenCoroutineScope<TestScope1>>()
     a shouldBeSameInstanceAs b
     b shouldBeSameInstanceAs c
   }
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: GivenCoroutineContext<TestGivenScope1> = Dispatchers.Main
-    val scope = inject<TestGivenScope1>()
+    @Provide val customContext: GivenCoroutineContext<TestScope1> = Dispatchers.Main
+    val scope = inject<TestScope1>()
     scope.coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
 }
 
-typealias TestGivenScope1 = GivenScope
+typealias TestScope1 = Scope

@@ -22,28 +22,28 @@ import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.util.*
 
-val Application.appGivenScope: AppGivenScope
-  get() = attributes.getOrNull(AppGivenScopeKey)
-    ?: error("No app given scope found. Did you forget to call initializeAppGivenScope()?")
+val Application.appScope: AppScope
+  get() = attributes.getOrNull(AppScopeKey)
+    ?: error("No app scope found. Did you forget to call initializeAppScope()?")
 
-val Routing.appGivenScope: AppGivenScope
-  get() = application.appGivenScope
+val Routing.appScope: AppScope
+  get() = application.appScope
 
-val ApplicationCall.appGivenScope: AppGivenScope
-  get() = application.appGivenScope
+val ApplicationCall.appScope: AppScope
+  get() = application.appScope
 
-inline fun Application.initializeAppGivenScope(
-  @Inject scopeFactory: (@Inject @InstallElement<AppGivenScope> Application) -> AppGivenScope
+inline fun Application.initializeAppScope(
+  @Inject scopeFactory: (@Inject @InstallElement<AppScope> Application) -> AppScope
 ) {
   val scope = scopeFactory(this)
-  registerAppGivenScope(scope)
+  registerAppScope(scope)
 }
 
-@PublishedApi internal fun Application.registerAppGivenScope(scope: AppGivenScope) {
-  attributes.put(AppGivenScopeKey, scope)
+@PublishedApi internal fun Application.registerAppScope(scope: AppScope) {
+  attributes.put(AppScopeKey, scope)
   environment.monitor.subscribe(ApplicationStopped) {
     scope.dispose()
   }
 }
 
-private val AppGivenScopeKey = AttributeKey<AppGivenScope>("AppGivenScope")
+private val AppScopeKey = AttributeKey<AppScope>("AppScope")

@@ -97,9 +97,9 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable6() = withTypeCheckerContext {
-    val givenScopeS = typeParameter(stringType)
+    val scopeS = typeParameter(stringType)
     val other = mapType
-    givenScopeS shouldNotBeAssignableTo other
+    scopeS shouldNotBeAssignableTo other
   }
 
   @Test fun testNotMatchingGenericTypeIsNotAssignable() = withTypeCheckerContext {

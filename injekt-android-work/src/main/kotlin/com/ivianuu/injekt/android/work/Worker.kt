@@ -31,8 +31,8 @@ import kotlin.reflect.*
  * @Provide
  * @InstallWorker
  * class MyWorker(
- *   @Provide context: AppContext,
- *   @Provide parameters: WorkerParameters
+ *   context: AppContext,
+ *   parameters: WorkerParameters
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
@@ -65,13 +65,13 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
  */
 object WorkerInitializerModule {
   /**
-   * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
+   * Defines the [ScopeInitializer] for work manager initialization in the [AppScope]
    */
   @Provide fun workerScopeInitializer(
     context: AppContext,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
-  ): GivenScopeInitializer<AppGivenScope> = {
+  ): ScopeInitializer<AppScope> = {
     WorkManager.initialize(context, configuration ?: defaultConfiguration())
   }
 

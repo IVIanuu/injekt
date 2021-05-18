@@ -21,17 +21,17 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 /**
- * Returns the [ActivityRetainedGivenScope] of this [ComponentActivity]
+ * Returns the [ActivityRetainedScope] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
-val ComponentActivity.activityRetainedGivenScope: ActivityRetainedGivenScope
-  get() = viewModelStore.givenScope {
-    application.appGivenScope
-      .element<@ChildScopeFactory () -> ActivityRetainedGivenScope>()
+val ComponentActivity.activityRetainedScope: ActivityRetainedScope
+  get() = viewModelStore.scope {
+    application.appScope
+      .element<@ChildScopeFactory () -> ActivityRetainedScope>()
       .invoke()
   }
 
-typealias ActivityRetainedGivenScope = GivenScope
+typealias ActivityRetainedScope = Scope
 
-@Provide val activityRetainedGivenScopeModule =
-  ChildScopeModule0<AppGivenScope, ActivityRetainedGivenScope>()
+@Provide val activityRetainedScopeModule =
+  ChildScopeModule0<AppScope, ActivityRetainedScope>()

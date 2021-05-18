@@ -5,14 +5,15 @@ Injekt is highly experimental and the api is unstable.
 
 Minimal example:
 ```kotlin
-// provide instances
-@Provide val foo = Foo()
-@Provide fun bar(foo: Foo) = Bar(foo)
+// provide injectables
+@Provide val logger = AndroidLogger()
 
 fun main() {
-  // inject instance
-  val bar = inject<Bar>()
-  println("Got $bar")
+  logMessage("hello injekt")
+}
+
+private fun logMessage(message: String, @Inject logger: Logger) {
+  logger.d(message)
 }
 ```
 

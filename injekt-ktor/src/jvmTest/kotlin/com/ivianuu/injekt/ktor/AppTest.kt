@@ -30,8 +30,8 @@ class AppTest {
   @Test fun testServerLifecycle() {
     lateinit var listener: ScopeDisposeListener
     withTestApplication({
-      initializeAppGivenScope()
-      listener = appGivenScope.element()
+      initializeAppScope()
+      listener = appScope.element()
       listener.disposed.shouldBeFalse()
     }) {
     }
@@ -40,9 +40,9 @@ class AppTest {
 }
 
 @Provide
-@Scoped<AppGivenScope>
-@InstallElement<AppGivenScope>
-class ScopeDisposeListener : GivenScopeDisposable {
+@Scoped<AppScope>
+@InstallElement<AppScope>
+class ScopeDisposeListener : ScopeDisposable {
   var disposed = false
   override fun dispose() {
     disposed = true

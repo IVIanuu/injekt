@@ -23,6 +23,6 @@ import com.ivianuu.injekt.*
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )
-class AndroidTestApplication : Application(), AppGivenScopeOwner {
-  override val appGivenScope by lazy { createAppGivenScope() }
+class AndroidTestApplication : Application(), AppScopeOwner {
+  override val appScope by lazy { createAppScope() }
 }

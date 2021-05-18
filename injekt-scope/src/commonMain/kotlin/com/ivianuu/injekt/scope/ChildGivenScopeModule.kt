@@ -22,25 +22,25 @@ import com.ivianuu.injekt.*
 
 @Qualifier annotation class ChildScopeFactory
 
-abstract class AbstractChildScopeModule<P : GivenScope, T, S : T> {
+abstract class AbstractChildScopeModule<P : Scope, T, S : T> {
   @Provide fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
 }
 
-class ChildScopeModule0<P : GivenScope, C : GivenScope> :
+class ChildScopeModule0<P : Scope, C : Scope> :
   AbstractChildScopeModule<P, () -> C, () -> C>()
 
-class ChildScopeModule1<P : GivenScope, P1, C : GivenScope> : AbstractChildScopeModule<P,
+class ChildScopeModule1<P : Scope, P1, C : Scope> : AbstractChildScopeModule<P,
       (P1) -> C,
       (@Inject @InstallElement<C> P1) -> C>()
 
-class ChildScopeModule2<P : GivenScope, P1, P2, C : GivenScope> : AbstractChildScopeModule<P,
+class ChildScopeModule2<P : Scope, P1, P2, C : Scope> : AbstractChildScopeModule<P,
       (P1, P2) -> C,
       (
   @Inject @InstallElement<C> P1,
   @Inject @InstallElement<C> P2
 ) -> C>()
 
-class ChildScopeModule3<P : GivenScope, P1, P2, P3, C : GivenScope> : AbstractChildScopeModule<P,
+class ChildScopeModule3<P : Scope, P1, P2, P3, C : Scope> : AbstractChildScopeModule<P,
       (P1, P2, P3) -> C,
       (
   @Inject @InstallElement<C> P1,
@@ -48,7 +48,7 @@ class ChildScopeModule3<P : GivenScope, P1, P2, P3, C : GivenScope> : AbstractCh
   @Inject @InstallElement<C> P3
 ) -> C>()
 
-class ChildScopeModule4<P : GivenScope, P1, P2, P3, P4, C : GivenScope> :
+class ChildScopeModule4<P : Scope, P1, P2, P3, P4, C : Scope> :
   AbstractChildScopeModule<P,
         (P1, P2, P3, P4) -> C,
         (
@@ -58,7 +58,7 @@ class ChildScopeModule4<P : GivenScope, P1, P2, P3, P4, C : GivenScope> :
     @Inject @InstallElement<C> P4
   ) -> C>()
 
-class ChildScopeModule5<P : GivenScope, P1, P2, P3, P4, P5, C : GivenScope> :
+class ChildScopeModule5<P : Scope, P1, P2, P3, P4, P5, C : Scope> :
   AbstractChildScopeModule<P,
         (P1, P2, P3, P4, P5) -> C,
         (

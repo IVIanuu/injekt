@@ -35,19 +35,19 @@ class ComposeTest {
   val composeRule = createComposeRule()
 
   @Test fun testRememberElement() {
-    @Provide val element: @InstallElement<TestGivenScope1> String = "value"
-    val scope = inject<TestGivenScope1>()
+    @Provide val element: @InstallElement<TestScope1> String = "value"
+    val scope = inject<TestScope1>()
     composeRule.setContent {
-      CompositionLocalProvider(LocalGivenScope provides scope) {
+      CompositionLocalProvider(LocalScope provides scope) {
         rememberElement<String>() shouldBe "value"
       }
     }
   }
 
   @Test fun testInitialRememberScopedValue() {
-    val scope = inject<TestGivenScope1>()
+    val scope = inject<TestScope1>()
     composeRule.setContent {
-      CompositionLocalProvider(LocalGivenScope provides scope) {
+      CompositionLocalProvider(LocalScope provides scope) {
         val value = rememberScopedValue(key = "key") { "a" }
         value shouldBe "a"
         DisposableEffect(Unit) {
@@ -60,10 +60,10 @@ class ComposeTest {
   }
 
   @Test fun testExistingInitialRememberScopedValue() {
-    val scope = inject<TestGivenScope1>()
+    val scope = inject<TestScope1>()
     scope.setScopedValue("key", "b")
     composeRule.setContent {
-      CompositionLocalProvider(LocalGivenScope provides scope) {
+      CompositionLocalProvider(LocalScope provides scope) {
         val value = rememberScopedValue(key = "key") { "a" }
         value shouldBe "b"
         DisposableEffect(Unit) {
@@ -76,10 +76,10 @@ class ComposeTest {
   }
 
   /*@Test fun testRememberScopedValueAcrossRecompositions() {
-      val scope = inject<TestGivenScope1>()
+      val scope = inject<TestScope1>()
       val composed = MutableStateFlow(0)
       composeRule.setContent {
-          CompositionLocalProvider(LocalGivenScope provides scope) {
+          CompositionLocalProvider(LocalScope provides scope) {
               var firstComposition by remember { mutableStateOf(true) }
               val value = rememberScoped(key = "key") { if (firstComposition) "a" else "b" }
               composed.value++
@@ -95,4 +95,4 @@ class ComposeTest {
   }     */
 }
 
-typealias TestGivenScope1 = GivenScope
+typealias TestScope1 = Scope

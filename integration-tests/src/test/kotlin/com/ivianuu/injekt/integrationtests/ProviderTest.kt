@@ -73,32 +73,32 @@ class ProviderTest {
 
   @Test fun testProviderWithGenericGivenArgs() = singleAndMultiCodegen(
     """ 
-      typealias GivenScopeA = GivenScope
+      typealias ScopeA = Scope
 
-      typealias GivenScopeB = GivenScope
+      typealias ScopeB = Scope
 
-      @Provide fun givenScopeBFactory(
-        parent: GivenScopeA,
-        scopeFactory: () -> GivenScopeB
-      ): @InstallElement<GivenScopeA> () -> GivenScopeB = scopeFactory
+      @Provide fun scopeBFactory(
+        parent: ScopeA,
+        scopeFactory: () -> ScopeB
+      ): @InstallElement<ScopeA> () -> ScopeB = scopeFactory
 
-      typealias GivenScopeC = GivenScope
+      typealias ScopeC = Scope
 
-      @Provide fun givenScopeCFactory(
-        parent: GivenScopeB,
-        scopeFactory: () -> GivenScopeC
-      ): @InstallElement<GivenScopeB> () -> GivenScopeC = scopeFactory
+      @Provide fun scopeCFactory(
+        parent: ScopeB,
+        scopeFactory: () -> ScopeC
+      ): @InstallElement<ScopeB> () -> ScopeC = scopeFactory
     """,
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun createGivenScopeA() = inject<GivenScopeA>()
+      fun createScopeA() = inject<ScopeA>()
 
-      @InstallElement<GivenScopeC>
+      @InstallElement<ScopeC>
       @Provide 
       class MyComponent(
-        val a: GivenScopeA,
-        val b: GivenScopeB,
-        val c: GivenScopeC
+        val a: ScopeA,
+        val b: ScopeB,
+        val c: ScopeC
       )
     """
   )
@@ -139,16 +139,16 @@ class ProviderTest {
   @Test fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() =
     singleAndMultiCodegen(
       """
-        typealias MyGivenScope = GivenScope
-        @Provide val MyGivenScope.key: String get() = ""
+        typealias MyScope = Scope
+        @Provide val MyScope.key: String get() = ""
         @Provide fun foo(key: String) = Foo()
-        @Provide fun fooIntoSet(provider: (@Provide MyGivenScope) -> Foo): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any 
+        @Provide fun fooIntoSet(provider: (@Provide MyScope) -> Foo): (MyScope) -> Any = provider as (MyScope) -> Any 
         @Provide class Dep(key: String)
-        @Provide fun depIntoSet(provider: (@Provide MyGivenScope) -> Dep): (MyGivenScope) -> Any = provider as (MyGivenScope) -> Any
+        @Provide fun depIntoSet(provider: (@Provide MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
     """,
       """
         fun invoke() {
-          inject<Set<(MyGivenScope) -> Any>>()
+          inject<Set<(MyScope) -> Any>>()
         } 
     """
     )

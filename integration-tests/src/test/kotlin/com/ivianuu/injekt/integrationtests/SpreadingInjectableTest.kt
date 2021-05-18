@@ -135,12 +135,12 @@ class SpreadingInjectableTest {
 
   @Test fun testScoped() = singleAndMultiCodegen(
     """
-      typealias ActivityGivenScope = GivenScope
-      @Provide val activityGivenScopeModule = 
-          ChildScopeModule0<AppGivenScope, ActivityGivenScope>()
+      typealias ActivityScope = Scope
+      @Provide val activityScopeModule = 
+          ChildScopeModule0<AppScope, ActivityScope>()
     """,
     """
-      @Provide fun foo(): @Scoped<AppGivenScope> Foo = Foo()
+      @Provide fun foo(): @Scoped<AppScope> Foo = Foo()
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() = inject<Foo>()
     """
@@ -234,29 +234,29 @@ class SpreadingInjectableTest {
     """
       typealias App = Any
   
-      @Scoped<AppGivenScope>
+      @Scoped<AppScope>
       @Provide
       class Dep(app: App)
   
-      @Scoped<AppGivenScope>
+      @Scoped<AppScope>
       @Provide
       class DepWrapper(dep: Dep)
   
-      @Scoped<AppGivenScope>
+      @Scoped<AppScope>
       @Provide
       class DepWrapper2(dep: () -> Dep, wrapper: () -> DepWrapper)
   
-      @InstallElement<AppGivenScope>
+      @InstallElement<AppScope>
       @Provide
       class MyComponent(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2)
   
       @Provide
-      fun myInitializer(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2): GivenScopeInitializer<AppGivenScope> = {}
+      fun myInitializer(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2): ScopeInitializer<AppScope> = {}
     """,
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-          inject<(@Provide @InstallElement<AppGivenScope> App) -> AppGivenScope>()
+          inject<(@Provide @InstallElement<AppScope> App) -> AppScope>()
       }
     """
   )
@@ -291,7 +291,7 @@ class SpreadingInjectableTest {
       
       @Provide inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
         factory: () -> T,
-        scope: AppGivenScope
+        scope: AppScope
       ): U = scope.getOrCreateScopedValue(U::class, factory)
       
       class MyModule<T : S, S> {

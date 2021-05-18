@@ -16,6 +16,6 @@
 
 package com.ivianuu.injekt.scope
 
-typealias TestGivenScope1 = GivenScope
-typealias TestGivenScope2 = GivenScope
-typealias TestGivenScope3 = GivenScope
+typealias TestScope1 = Scope
+typealias TestScope2 = Scope
+typealias TestScope3 = Scope

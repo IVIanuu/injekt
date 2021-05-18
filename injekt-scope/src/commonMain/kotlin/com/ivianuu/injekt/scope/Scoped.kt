@@ -24,20 +24,20 @@ import com.ivianuu.injekt.common.*
  *
  * In the following example each request to Repo resolvers to the same instance
  * ```
- * @Scoped<AppGivenScope>
+ * @Scoped<AppScope>
  * @Provide
  * class MyRepo
  *
- * fun runApp(@Provide appScope: AppGivenScope) {
+ * fun runApp(@Inject appScope: AppScope) {
  *   val repo1 = inject<MyRepo>()
  *   val repo2 = inject<MyRepo>()
  *   // repo === repo2
  * }
  * ```
  */
-@Qualifier annotation class Scoped<S : GivenScope> {
+@Qualifier annotation class Scoped<S : Scope> {
   companion object {
-    @Provide inline fun <@Spread T : @Scoped<S> U, U : Any, S : GivenScope> scopedValue(
+    @Provide inline fun <@Spread T : @Scoped<S> U, U : Any, S : Scope> scopedValue(
       factory: () -> T,
       scope: S,
       key: TypeKey<U>

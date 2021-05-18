@@ -90,8 +90,8 @@ class PersistenceTest {
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
     """
       fun myFunction(
-          @Inject scopeFactory: (@Inject @InstallElement<AppGivenScope> Any) -> AppGivenScope
-      ): AppGivenScope = TODO()
+          @Inject scopeFactory: (@Inject @InstallElement<AppScope> Any) -> AppScope
+      ): AppScope = TODO()
     """,
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
@@ -102,7 +102,7 @@ class PersistenceTest {
   @Test fun testNonGivenPrimaryConstructorWithGivenParameters() = singleAndMultiCodegen(
     """
       class MyClass(
-          @Inject scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
+          @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
       )
     """,
     """
@@ -115,7 +115,7 @@ class PersistenceTest {
     """
       class MyClass {
           constructor(
-            @Inject scopeFactory: (@Provide @InstallElement<AppGivenScope> Any) -> AppGivenScope
+            @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
           )
       }
     """,
@@ -141,21 +141,21 @@ class PersistenceTest {
 
   @Test fun testNonGivenClassWithGivenMembers2() = singleAndMultiCodegen(
     """ 
-      abstract class MyAbstractChildGivenScopeModule<P : GivenScope, T : Any, S : T> {
+      abstract class MyAbstractChildScopeModule<P : Scope, T : Any, S : T> {
         @Provide fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
       }
       
-      class MyChildGivenScopeModule1<P : GivenScope, P1, C : GivenScope> : MyAbstractChildGivenScopeModule<P,
+      class MyChildScopeModule1<P : Scope, P1, C : Scope> : MyAbstractChildScopeModule<P,
         (P1) -> C, (@Provide @InstallElement<C> P1) -> C>()
     """,
     """
-      typealias TestGivenScope1 = GivenScope
-      typealias TestGivenScope2 = GivenScope
+      typealias TestScope1 = Scope
+      typealias TestScope2 = Scope
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-        @Provide val childScopeModule = MyChildGivenScopeModule1<TestGivenScope1, String, TestGivenScope2>()
-        val parentScope = inject<TestGivenScope1>()
-        val childScope = parentScope.element<@ChildScopeFactory (String) -> TestGivenScope2>()("42")
+        @Provide val childScopeModule = MyChildScopeModule1<TestScope1, String, TestScope2>()
+        val parentScope = inject<TestScope1>()
+        val childScope = parentScope.element<@ChildScopeFactory (String) -> TestScope2>()("42")
         childScope.element<String>()
       }
     """

@@ -29,13 +29,13 @@ class EagerTest {
 
     class Foo
 
-    @Provide fun eagerFoo(): @Eager<TestGivenScope1> Foo {
+    @Provide fun eagerFoo(): @Eager<TestScope1> Foo {
       callCount ++
       return Foo()
     }
 
-    @Provide fun fooElement(foo: Foo): @InstallElement<TestGivenScope1> @Element Foo = foo
-    val scope = inject<TestGivenScope1>()
+    @Provide fun fooElement(foo: Foo): @InstallElement<TestScope1> @Element Foo = foo
+    val scope = inject<TestScope1>()
     callCount shouldBe 1
     scope.element<@Element Foo>()
     callCount shouldBe 1

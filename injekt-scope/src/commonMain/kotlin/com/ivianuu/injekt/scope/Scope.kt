@@ -20,25 +20,22 @@ package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.scope.GivenScope.Companion.GivenScope
-
-inline fun <@ForTypeKey R : Any> scoped(@Inject scope: GivenScope, init: () -> R) =
-  scope.getOrCreateScopedValue(init)
+import com.ivianuu.injekt.scope.Scope.Companion.Scope
 
 /**
  * A hierarchical construct with a lifecycle which hosts a map of keys to elements
- * which can be retrieved via [GivenScope.element]
+ * which can be retrieved via [Scope.element]
  */
-interface GivenScope : GivenScopeDisposable {
+interface Scope : ScopeDisposable {
   /**
    * The type key of this scope
    */
-  val typeKey: TypeKey<GivenScope>
+  val typeKey: TypeKey<Scope>
 
   /**
    * The parent scope or null
    */
-  val parent: GivenScope?
+  val parent: Scope?
 
   /**
    * Whether or not this scope is disposed
@@ -73,13 +70,13 @@ interface GivenScope : GivenScopeDisposable {
   companion object {
     @Qualifier private annotation class Parent
 
-    @Provide inline fun <S : GivenScope> GivenScope(
-      parent: @Parent GivenScope? = null,
+    @Provide inline fun <S : Scope> Scope(
+      parent: @Parent Scope? = null,
       typeKey: TypeKey<S>,
-      elements: (@Inject S, @Inject @Parent GivenScope?) -> Set<GivenScopeElement<S>> = { _, _ -> emptySet() },
-      initializers: (@Inject S, @Inject @Parent GivenScope?) -> Set<GivenScopeInitializer<S>> = { _, _ -> emptySet() }
+      elements: (@Inject S, @Inject @Parent Scope?) -> Set<ScopeElement<S>> = { _, _ -> emptySet() },
+      initializers: (@Inject S, @Inject @Parent Scope?) -> Set<ScopeInitializer<S>> = { _, _ -> emptySet() }
     ): S {
-      val scope = GivenScopeImpl(typeKey, parent)
+      val scope = ScopeImpl(typeKey, parent)
       scope as S
       val parentDisposable = parent?.invokeOnDispose { scope.dispose() }
       scope.invokeOnDispose { parentDisposable?.dispose() }
@@ -95,29 +92,29 @@ interface GivenScope : GivenScopeDisposable {
 }
 
 /**
- * Allows scoped values to be notified when the hosting [GivenScope] get's disposed
+ * Allows scoped values to be notified when the hosting [Scope] get's disposed
  */
-fun interface GivenScopeDisposable {
+fun interface ScopeDisposable {
   /**
-   * Get's called while the hosting [GivenScope] get's disposed via [GivenScope.dispose]
+   * Get's called while the hosting [Scope] get's disposed via [Scope.dispose]
    */
   fun dispose()
 }
 
-fun <@ForTypeKey T> GivenScope.elementOrNull(): T? = elementOrNull(typeKeyOf())
+fun <@ForTypeKey T> Scope.elementOrNull(): T? = elementOrNull(typeKeyOf())
 
-fun <@ForTypeKey T> GivenScope.element(): T = element(typeKeyOf())
+fun <@ForTypeKey T> Scope.element(): T = element(typeKeyOf())
 
 /**
  * Returns the element [T] or throws
  */
-fun <T> GivenScope.element(key: TypeKey<T>): T = elementOrNull(key)
+fun <T> Scope.element(key: TypeKey<T>): T = elementOrNull(key)
   ?: error("No element found for $key in $this")
 
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
  */
-inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T): T {
+inline fun <T : Any> Scope.getOrCreateScopedValue(key: Any, init: () -> T): T {
   getScopedValueOrNull<T>(key)?.let { return it }
   withLock {
     getScopedValueOrNull<T>(key)?.let { return it }
@@ -127,19 +124,19 @@ inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: Any, init: () -> T):
   }
 }
 
-inline fun <T : Any> GivenScope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
+inline fun <T : Any> Scope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
   getOrCreateScopedValue(key.value, init)
 
-inline fun <@ForTypeKey T : Any> GivenScope.getOrCreateScopedValue(init: () -> T): T =
+inline fun <@ForTypeKey T : Any> Scope.getOrCreateScopedValue(init: () -> T): T =
   getOrCreateScopedValue(typeKeyOf(), init)
 
 /**
  * Invokes the [action] function once [this] scope get's disposed
  * or invokes it synchronously if [this] is already disposed
  *
- * Returns a [GivenScopeDisposable] to unregister the [action]
+ * Returns a [ScopeDisposable] to unregister the [action]
  */
-fun GivenScope.invokeOnDispose(action: () -> Unit): GivenScopeDisposable {
+fun Scope.invokeOnDispose(action: () -> Unit): ScopeDisposable {
   if (isDisposed) {
     action()
     return NoOpScopeDisposable
@@ -151,45 +148,45 @@ fun GivenScope.invokeOnDispose(action: () -> Unit): GivenScopeDisposable {
     }
     val key = InvokeOnDisposeKey()
     var notifyDisposal = true
-    setScopedValue(key, GivenScopeDisposable {
+    setScopedValue(key, ScopeDisposable {
       if (notifyDisposal) action()
     })
-    return GivenScopeDisposable {
+    return ScopeDisposable {
       notifyDisposal = false
       removeScopedValue(key)
     }
   }
 }
 
-inline fun <R> GivenScope.withLock(block: () -> R): R = synchronized(this, block)
+inline fun <R> Scope.withLock(block: () -> R): R = synchronized(this, block)
 
 private class InvokeOnDisposeKey
 
-private val NoOpScopeDisposable = GivenScopeDisposable { }
+private val NoOpScopeDisposable = ScopeDisposable { }
 
-class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> Any)
+class ScopeElement<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**
- * Registers the declaration a element in the [GivenScope] [S]
+ * Registers the declaration a element in the [Scope] [S]
  *
  * Example:
  * ```
- * @InstallElement<AppGivenScope>
+ * @InstallElement<AppScope>
  * @Provide
- * class MyAppDeps(@Provide api: Api, @Provide database: Database)
+ * class MyAppDeps(val api: Api, val database: Database)
  *
- * fun runApp(@Provide appScope: AppGivenScope) {
+ * fun runApp(@Inject appScope: AppScope) {
  *   val deps = appScope.element<MyAppDeps>()
  * }
  * ```
  */
-@Qualifier annotation class InstallElement<S : GivenScope> {
+@Qualifier annotation class InstallElement<S : Scope> {
   companion object {
-    @Provide class Module<@Spread T : @InstallElement<S> U, U : Any, S : GivenScope> {
-      @Provide inline fun givenScopeElement(
+    @Provide class Module<@Spread T : @InstallElement<S> U, U : Any, S : Scope> {
+      @Provide inline fun scopeElement(
         noinline factory: () -> T,
         key: @Private TypeKey<U>
-      ): GivenScopeElement<S> = GivenScopeElement(key, factory)
+      ): ScopeElement<S> = ScopeElement(key, factory)
 
       @Provide inline fun elementAccessor(scope: S, key: @Private TypeKey<U>): U = scope.element(key)
     }
@@ -201,21 +198,21 @@ class GivenScopeElement<S : GivenScope>(val key: TypeKey<*>, val factory: () -> 
 }
 
 /**
- * Will get invoked once [GivenScope] [S] is initialized
+ * Will get invoked once [Scope] [S] is initialized
  *
  * Example:
  * ```
- * @Provide fun imageLoaderInitializer(@Provide app: App): GivenScopeInitializer<AppGivenScope> = {
+ * @Provide fun imageLoaderInitializer(app: App): ScopeInitializer<AppScope> = {
  *   ImageLoader.init(app)
  * }
  * ```
  */
-typealias GivenScopeInitializer<S> = () -> Unit
+typealias ScopeInitializer<S> = () -> Unit
 
-@PublishedApi internal class GivenScopeImpl(
-  override val typeKey: TypeKey<GivenScope>,
-  override val parent: GivenScope?
-) : GivenScope {
+@PublishedApi internal class ScopeImpl(
+  override val typeKey: TypeKey<Scope>,
+  override val parent: Scope?
+) : Scope {
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() {
@@ -239,7 +236,7 @@ typealias GivenScopeInitializer<S> = () -> Unit
       removeScopedValueImpl(key)
       scopedValues()[key] = value
     } ?: kotlin.run {
-      (value as? GivenScopeDisposable)?.dispose()
+      (value as? ScopeDisposable)?.dispose()
     }
   }
 
@@ -259,7 +256,7 @@ typealias GivenScopeInitializer<S> = () -> Unit
   }
 
   private fun removeScopedValueImpl(key: Any) {
-    (_scopedValues?.remove(key) as? GivenScopeDisposable)?.dispose()
+    (_scopedValues?.remove(key) as? ScopeDisposable)?.dispose()
   }
 
   private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {

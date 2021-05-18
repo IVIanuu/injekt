@@ -25,20 +25,20 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 /**
- * Returns the [ActivityGivenScope] of this [ComponentActivity]
+ * Returns the [ActivityScope] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
-val ComponentActivity.activityGivenScope: ActivityGivenScope
-  get() = lifecycle.givenScope {
-    activityRetainedGivenScope
-      .element<@ChildScopeFactory (ComponentActivity) -> ActivityGivenScope>()
+val ComponentActivity.activityScope: ActivityScope
+  get() = lifecycle.scope {
+    activityRetainedScope
+      .element<@ChildScopeFactory (ComponentActivity) -> ActivityScope>()
       .invoke(this)
   }
 
-typealias ActivityGivenScope = GivenScope
+typealias ActivityScope = Scope
 
-@Provide val activityGivenScopeModule =
-  ChildScopeModule1<ActivityRetainedGivenScope, ComponentActivity, ActivityGivenScope>()
+@Provide val activityScopeModule =
+  ChildScopeModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
 
 typealias ActivityContext = Context
 

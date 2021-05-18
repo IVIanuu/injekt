@@ -25,7 +25,7 @@ import kotlin.reflect.*
  *
  * Example:
  * ```
- * fun Notification.post(@Provide notificationManager: @SystemService NotificationManager) { ... }
+ * fun Notification.post(@Inject notificationManager: @SystemService NotificationManager) { ... }
  * ```
  */
 @Qualifier annotation class SystemService {
