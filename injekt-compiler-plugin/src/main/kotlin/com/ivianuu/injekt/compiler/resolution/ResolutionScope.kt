@@ -65,7 +65,6 @@ class ResolutionScope(
    * If there are duplicates we choose the best version
    */
   private fun addGivenIfAbsentOrBetter(callable: CallableRef) {
-    if (!callable.isNonRecursiveConstructorGivens()) return
     val key = callable.givenKey
     val existing = givens[key]
     if (compareCallable(callable, existing) < 0)
@@ -445,21 +444,6 @@ class ResolutionScope(
           }
       }
     )
-  }
-
-  /**
-   * A callable is not applicable if it is a given constructor parameter property
-   * of a given class but not in the scope.
-   * without removing the property this would result in a divergent request
-   */
-  private fun CallableRef.isNonRecursiveConstructorGivens(): Boolean {
-    if (callable !is PropertyDescriptor || callable.dispatchReceiverParameter == null) return true
-    val containing = callable.containingDeclaration as ClassDescriptor
-    if (containing.kind == ClassKind.OBJECT) return true
-    val containingClassifier = containing.toClassifierRef(context, trace)
-    if (callable.name !in containingClassifier.primaryConstructorPropertyParameters) return true
-    return allScopes.any { it.ownerDescriptor == containing } ||
-        !containingClassifier.descriptor!!.isGiven(context, trace)
   }
 
   /**

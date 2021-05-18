@@ -38,17 +38,17 @@ class GivenResolveTest {
       listOf(
         source(
           """
-                    @Given val foo = Foo()
-            """,
+            @Given val foo = Foo()
+          """,
           packageFqName = FqName("givens")
         )
       ),
       listOf(
         source(
           """
-                    @GivenImports("givens.*")
-              fun invoke() = summon<Foo>()
-                """,
+            @GivenImports("givens.*")
+            fun invoke() = summon<Foo>()
+          """,
           name = "File.kt"
         )
       )
@@ -61,15 +61,15 @@ class GivenResolveTest {
     listOf(
       source(
         """
-                @Given val foo = Foo()
+          @Given val foo = Foo()
         """,
         packageFqName = FqName("givens")
       ),
       source(
         """
-                    @GivenImports("givens.*")
-              fun invoke() = summon<Foo>()
-                """,
+          @GivenImports("givens.*")
+          fun invoke() = summon<Foo>()
+        """,
         name = "File.kt"
       )
     )
@@ -79,7 +79,7 @@ class GivenResolveTest {
 
   @Test fun testResolvesGivenInSamePackageAndSameFile() = codegen(
     """
-            @Given val foo = Foo()
+      @Given val foo = Foo()
       fun invoke() = summon<Foo>()
     """
   ) {
@@ -88,15 +88,15 @@ class GivenResolveTest {
 
   @Test fun testResolvesClassCompanionGivenFromWithinTheClass() = singleAndMultiCodegen(
     """
-            class MyClass {
-                fun resolve() = summon<Foo>()
-                companion object {
-                    @Given val foo = Foo()
-                }
-            }
+      class MyClass {
+        fun resolve() = summon<Foo>()
+        companion object {
+          @Given val foo = Foo()
+        }
+      }
     """,
     """
-        fun invoke() = MyClass().resolve() 
+      fun invoke() = MyClass().resolve() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -104,14 +104,14 @@ class GivenResolveTest {
 
   @Test fun testResolvesClassCompanionGivenFromOuterClass() = singleAndMultiCodegen(
     """
-            class MyClass {
-                companion object {
-                    @Given val foo = Foo()
-                }
-            }
+      class MyClass {
+        companion object {
+          @Given val foo = Foo()
+        }
+      }
     """,
     """
-        fun invoke() = summon<Foo>() 
+      fun invoke() = summon<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -137,7 +137,7 @@ class GivenResolveTest {
   @Test fun testResolvesClassConstructorGiven() = singleAndMultiCodegen(
     """
       class MyClass(@Given val foo: Foo = Foo()) {
-          fun resolve() = summon<Foo>()
+        fun resolve() = summon<Foo>()
       }
     """,
     """
@@ -150,8 +150,8 @@ class GivenResolveTest {
   @Test fun testResolvesClassGiven() = singleAndMultiCodegen(
     """
       class MyClass {
-          @Given val foo = Foo()
-          fun resolve() = summon<Foo>()
+        @Given val foo = Foo()
+        fun resolve() = summon<Foo>()
       }
     """,
     """
@@ -163,11 +163,11 @@ class GivenResolveTest {
 
   @Test fun testDerivedGiven() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
-            @Given val bar: Bar = Bar(summon())
+      @Given val foo = Foo()
+      @Given val bar: Bar = Bar(summon())
     """,
     """
-        fun invoke() = summon<Bar>() 
+      fun invoke() = summon<Bar>() 
     """
   ) {
     invokeSingleFile()
@@ -176,11 +176,11 @@ class GivenResolveTest {
 
   @Test fun testCanResolveSubTypeOfGiven() = singleAndMultiCodegen(
     """
-            interface Repo
-            @Given class RepoImpl : Repo
+      interface Repo
+      @Given class RepoImpl : Repo
     """,
     """
-        fun invoke() = summon<Repo>() 
+      fun invoke() = summon<Repo>() 
     """
   ) {
     invokeSingleFile()
@@ -189,8 +189,8 @@ class GivenResolveTest {
   @Test fun testUnresolvedGiven() = codegen(
     """
       fun invoke() {
-                summon<String>()
-            }
+        summon<String>()
+      }
     """
   ) {
     compilationShouldHaveFailed("no given argument found of type kotlin.String")
@@ -198,10 +198,10 @@ class GivenResolveTest {
 
   @Test fun testNestedUnresolvedGiven() = singleAndMultiCodegen(
     """
-            @Given fun bar(foo: Foo) = Bar(foo)
+      @Given fun bar(foo: Foo) = Bar(foo)
     """,
     """
-        fun invoke() = summon<Bar>() 
+      fun invoke() = summon<Bar>() 
     """
   ) {
     compilationShouldHaveFailed(" no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
@@ -290,10 +290,8 @@ class GivenResolveTest {
 
   @Test fun testCanResolveGivenOfGivenThisFunction() = codegen(
     """
-            class Dep(@Given val foo: Foo)
-            fun invoke(foo: Foo): Foo {
-                return with(Dep(foo)) { summon<Foo>() }
-            }
+      class Dep(@Given val foo: Foo)
+      fun invoke(foo: Foo) = with(Dep(foo)) { summon<Foo>() }
     """
   ) {
     val foo = Foo()
@@ -402,58 +400,56 @@ class GivenResolveTest {
 
   @Test fun testCanResolveProtectedGivenFromSubClass() = singleAndMultiCodegen(
     """
-            abstract class AbstractFooHolder {
-                @Given protected val foo = Foo()
-            }
-        """,
+      abstract class AbstractFooHolder {
+        @Given protected val foo = Foo()
+      }
+    """,
     """
-            class FooHolderImpl : AbstractFooHolder() {
-             fun invoke() = summon<Foo>()
-            } 
+      class FooHolderImpl : AbstractFooHolder() {
+        fun invoke() = summon<Foo>()
+      } 
     """
   )
 
   @Test fun testCannotResolvePropertyWithTheSameNameAsAnGivenPrimaryConstructorParameter() =
     singleAndMultiCodegen(
       """
-            @Given class MyClass(foo: Foo) {
-                val foo = foo
-            }
-    """,
+        @Given class MyClass(foo: Foo) {
+          val foo = foo
+        }
+      """,
       """
         fun invoke() = summon<Foo>() 
-    """
+      """
     ) {
       compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.summon")
     }
 
-  @Test fun testCannotResolveGivenConstructorParameterOfGivenClassFromOutsideTheClass() =
+  @Test fun testCanResolveExplicitMarkedGivenConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
-            @Given class MyClass(@Given val foo: Foo)
-    """,
+        class MyClass(@Given val foo: Foo)
+      """,
       """
-        fun invoke() = summon<Foo>() 
-    """
-    ) {
-      compilationShouldHaveFailed(
-        "no given argument found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.summon"
-      )
-    }
-
-  @Test fun testCanResolveGivenConstructorParameterOfNonGivenClassFromOutsideTheClass() =
-    singleAndMultiCodegen(
+        fun invoke(@Given myClass: MyClass) = summon<Foo>() 
       """
-            class MyClass(@Given val foo: Foo)
-    """,
-      """
-           fun invoke(@Given myClass: MyClass) = summon<Foo>() 
-    """
     )
 
-  @Test fun testCanResolveGivenConstructorParameterFromInsideTheClass() = codegen(
+  @Test fun testCannotResolveImplicitGivenConstructorParameterFromOutsideTheClass() =
+    singleAndMultiCodegen(
+      """
+        @Given class MyClass(val foo: Foo)
+      """,
+      """
+        fun invoke() = summon<Foo>() 
+      """
+    ) {
+      compilationShouldHaveFailed("no given argument found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyClass.<init>")
+    }
+
+  @Test fun testCanResolveImplicitGivenConstructorParameterFromInsideTheClass() = codegen(
     """
-      @Given class MyClass(val foo: Foo) {
+      @Given class MyClass(private val foo: Foo) {
         fun invoke() = summon<Foo>()
       }
     """
@@ -472,15 +468,15 @@ class GivenResolveTest {
 
   @Test fun testCannotUseNonReifiedTypeParameterForReifiedGiven() = singleAndMultiCodegen(
     """
-            @Given inline fun <reified T> list(): List<T> {
-                T::class
-                return emptyList()
-            }
+      @Given inline fun <reified T> list(): List<T> {
+        T::class
+        return emptyList()
+      }
     """,
     """
-            fun <T> invoke() {
-                summon<List<T>>()
-            } 
+      fun <T> invoke() {
+        summon<List<T>>()
+      }
     """
   ) {
     compilationShouldHaveFailed(
