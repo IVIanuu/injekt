@@ -262,7 +262,7 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     trace: BindingTrace
   ): Boolean {
     if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
-      !descriptor.hasAnnotation(InjektFqNames.Provide)) {
+      !descriptor.isProvide(context, trace)) {
       return false
     }
 

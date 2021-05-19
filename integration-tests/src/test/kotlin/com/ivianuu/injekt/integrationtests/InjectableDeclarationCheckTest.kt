@@ -108,6 +108,15 @@ class InjectableDeclarationCheckTest {
     """
   )
 
+  @Test fun testOverrideProvideValueParameterPropertyOnProvideClass() = codegen(
+    """
+      abstract class AbstractDep {
+        @Provide abstract val foo: Foo
+      }
+      @Provide class Dep(@Provide override val foo: Foo) : AbstractDep()
+    """
+  )
+
   @Test fun testProvideValueParameterOnProvideClass() = codegen(
     """
       @Provide class MyBar(@Provide foo: Foo)
