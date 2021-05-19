@@ -102,6 +102,12 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("parameters of a injectable are automatically provided")
   }
 
+  @Test fun testProvideValueParameterPropertyOnProvideClass() = codegen(
+    """
+      @Provide class Dep(@Provide val foo: Foo)
+    """
+  )
+
   @Test fun testProvideValueParameterOnProvideClass() = codegen(
     """
       @Provide class MyBar(@Provide foo: Foo)

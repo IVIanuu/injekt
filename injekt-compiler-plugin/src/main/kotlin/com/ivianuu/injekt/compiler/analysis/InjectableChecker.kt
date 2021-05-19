@@ -326,7 +326,8 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
               .on(parameter.findPsi() ?: declaration)
           )
         }
-        if (parameter.hasAnnotation(InjektFqNames.Provide)) {
+        if (parameter.hasAnnotation(InjektFqNames.Provide) &&
+          parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true) {
           trace.report(
             InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
               .on(parameter.findPsi() ?: declaration)
