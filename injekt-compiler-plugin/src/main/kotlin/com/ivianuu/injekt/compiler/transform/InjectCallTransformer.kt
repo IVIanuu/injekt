@@ -643,6 +643,7 @@ class InjectCallTransformer(
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+    // ignore safe calls
     if (result.origin == IrStatementOrigin.EQEQ)
       return result
 
