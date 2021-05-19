@@ -20,7 +20,7 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class SingletoninjectableTest {
+class SingletonInjectableTest {
   @Test fun testSingleton() = singleAndMultiCodegen(
     """
       @Provide class MyModule {

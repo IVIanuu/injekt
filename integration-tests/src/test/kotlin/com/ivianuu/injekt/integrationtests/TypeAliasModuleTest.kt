@@ -5,7 +5,7 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
-class TypeAliasinjectablesTest {
+class TypeAliasModuleTest {
   @Test fun testImportingTypeAliasAlsoImportsItsModuleObject() = singleAndMultiCodegen(
     listOf(
       listOf(

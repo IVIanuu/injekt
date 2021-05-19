@@ -24,16 +24,16 @@ import kotlin.coroutines.*
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
  *
- * [CoroutineContext] of the scope can be specified with a injectable [InjectableCoroutineContext]<S> and
+ * [CoroutineContext] of the scope can be specified with a injectable [InjectCoroutineContext]<S> and
  * defaults to [DefaultDispatcher]
  */
-typealias InjectableCoroutineScope<S> = CoroutineScope
+typealias InjectCoroutineScope<S> = CoroutineScope
 
 /**
- * Installs a [InjectableCoroutineScope] for scope [S]
+ * Installs a [InjectCoroutineScope] for scope [S]
  */
-@Provide fun <S : Scope> injectableCoroutineScopeElement(context: InjectableCoroutineContext<S>):
-    @Scoped<S> @InstallElement<S> InjectableCoroutineScope<S> =
+@Provide fun <S : Scope> injectCoroutineScopeElement(context: InjectCoroutineContext<S>):
+    @Scoped<S> @InstallElement<S> InjectCoroutineScope<S> =
   object : CoroutineScope, ScopeDisposable {
     override val coroutineContext: CoroutineContext = context + SupervisorJob()
     override fun dispose() {
@@ -49,16 +49,16 @@ val Scope.coroutineScope: CoroutineScope get() = element()
 /**
  * Installs a [CoroutineScope] for scope [S]
  */
-@Provide inline fun <S : Scope> coroutineScopeElement(scope: InjectableCoroutineScope<S>):
+@Provide inline fun <S : Scope> coroutineScopeElement(scope: InjectCoroutineScope<S>):
     @InstallElement<S> CoroutineScope = scope
 
 /**
- * [CoroutineContext] of a [InjectableCoroutineScope]
+ * [CoroutineContext] of a [InjectCoroutineScope]
  */
-typealias InjectableCoroutineContext<S> = CoroutineContext
+typealias InjectCoroutineContext<S> = CoroutineContext
 
 /**
- * The default [InjectableCoroutineContext] for type [S]
+ * The default [InjectCoroutineContext] for type [S]
  */
-@Provide inline fun <S : Scope> defaultInjectableCoroutineContext(dispatcher: DefaultDispatcher):
-    InjectableCoroutineContext<S> = dispatcher
+@Provide inline fun <S : Scope> defaultInjectCoroutineContext(dispatcher: DefaultDispatcher):
+    InjectCoroutineContext<S> = dispatcher

@@ -27,8 +27,8 @@ import org.junit.*
   "com.ivianuu.injekt.common.*",
   "com.ivianuu.injekt.scope.*"
 )
-class InjectableCoroutineScopeTest {
-  @Test fun testInjectableCoroutineScopeLifecycle() {
+class InjectCoroutineScopeTest {
+  @Test fun testInjectCoroutineScopeLifecycle() {
     val scope = inject<TestScope1>()
     val coroutineScope = scope.coroutineScope
     coroutineScope.isActive.shouldBeTrue()
@@ -36,18 +36,18 @@ class InjectableCoroutineScopeTest {
     coroutineScope.isActive.shouldBeFalse()
   }
 
-  @Test fun testInjectableCoroutineScopeAccessors() {
+  @Test fun testInjectCoroutineScopeAccessors() {
     val scope = inject<TestScope1>()
     val a = scope.coroutineScope
     val b = scope.element<CoroutineScope>()
-    val c = scope.element<InjectableCoroutineScope<TestScope1>>()
+    val c = scope.element<InjectCoroutineScope<TestScope1>>()
     a shouldBeSameInstanceAs b
     b shouldBeSameInstanceAs c
   }
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: InjectableCoroutineContext<TestScope1> = Dispatchers.Main
+    @Provide val customContext: InjectCoroutineContext<TestScope1> = Dispatchers.Main
     val scope = inject<TestScope1>()
     scope.coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }

@@ -22,7 +22,7 @@ import io.kotest.matchers.nulls.*
 import org.junit.*
 import kotlin.reflect.*
 
-class CommoninjectablesTest {
+class CommonInjectablesTest {
   @Test fun testCanUseMapForSetOfPairs() {
     @Provide val elementsA = setOf("a" to "a")
     @Provide val elementB = setOf("b" to "b")
