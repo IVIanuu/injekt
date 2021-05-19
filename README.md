@@ -54,10 +54,10 @@ dependencies {
 ```
 It's also required to install the Injekt IDE plugin
 
-# Declare givens
+# Provide injectables
 TODO
 
-# Use givens
+# Inject injectables
 TODO
 
 # Type aliases

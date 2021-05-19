@@ -21,13 +21,18 @@ import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.*
 
+interface CounterDb {
+  val counterState: Flow<Int>
+  suspend fun updateCounter(transform: Int.() -> Int)
+}
+
 @Provide @Scoped<AppScope>
-class CounterDb {
+class CounterDbImpl : CounterDb {
   private val _counterState = MutableStateFlow(0)
-  val counterState: Flow<Int> by this::_counterState
+  override val counterState: Flow<Int> by this::_counterState
   private val counterMutex = Mutex()
 
-  suspend fun updateCounter(transform: Int.() -> Int) = counterMutex.withLock {
+  override suspend fun updateCounter(transform: Int.() -> Int) = counterMutex.withLock {
     _counterState.value = transform(_counterState.value)
   }
 }
