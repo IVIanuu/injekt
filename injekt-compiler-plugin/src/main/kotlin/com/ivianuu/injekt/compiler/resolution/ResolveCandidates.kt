@@ -243,7 +243,7 @@ private fun InjectablesScope.computeForCandidate(
       if (prev.second.callableFqName == candidate.callableFqName &&
         prev.second.type.coveringSet == candidate.type.coveringSet &&
         (prev.second.type.typeSize < candidate.type.typeSize ||
-            (prev.second.type == candidate.type && !isLazy))
+            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))
       ) {
         val result = ResolutionResult.Failure.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result

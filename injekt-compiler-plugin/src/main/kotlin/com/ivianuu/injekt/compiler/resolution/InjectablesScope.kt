@@ -262,7 +262,8 @@ class InjectablesScope(
         ProviderInjectable(
           type = request.type,
           ownerScope = this,
-          dependencyCallContext = finalCallContext
+          dependencyCallContext = finalCallContext,
+          isInline = request.isInline
         )
       }
     } else if (request.type.classifier == context.setClassifier) {

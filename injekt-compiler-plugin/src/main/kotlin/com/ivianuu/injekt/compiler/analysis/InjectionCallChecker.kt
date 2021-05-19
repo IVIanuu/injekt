@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectionCallChecker(private val context: InjektContext) : CallChecker {
   override fun check(
@@ -81,7 +82,8 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
           } else InjectableRequest.DefaultStrategy.NONE,
           callableFqName = resultingDescriptor.fqNameSafe,
           parameterName = parameter.injektName().asNameId(),
-          isInline = InlineUtil.isInlineParameter(parameter),
+          isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
+              InlineUtil.isInlineParameter(parameter),
           isLazy = false
         )
       }

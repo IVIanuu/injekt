@@ -87,6 +87,39 @@ class DivergenceTest {
     compilationShouldHaveFailed("diverging")
   }
 
+  @Test fun testInlineProviderDoesNotBreakCircularDependency() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: B)
+      class B(a: A) {
+        companion object {
+          @Provide inline fun newInstance(a: () -> A) = B(a())
+        }
+      }
+    """,
+    """
+      fun invoke() = inject<B>()
+    """
+  ) {
+    compilationShouldHaveFailed("diverging")
+  }
+
+  @Test fun testNonInlineProviderInsideAChainBreaksCircularDependencyWithInlineProvider() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: C)
+      @Provide class B(a: () -> A)
+      class C(b: B) {
+        companion object {
+          @Provide inline fun newInstance(b: () -> B) = C(b())
+        }
+      }
+    """,
+    """
+      fun invoke() = inject<C>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testLazyRequestInSetBreaksCircularDependency() = singleAndMultiCodegen(
     """
       typealias A = () -> Unit

@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed class Injectable {
   abstract val type: TypeRef
@@ -79,6 +80,7 @@ class SetInjectable(
 class ProviderInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope,
+  val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable() {
   override val callableFqName: FqName = when (type.callContext) {
@@ -96,8 +98,8 @@ class ProviderInjectable(
       else InjectableRequest.DefaultStrategy.NONE,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
-      isInline = false,
-      isLazy = true
+      isInline = isInline,
+      isLazy = !isInline
     )
   )
 
@@ -159,7 +161,8 @@ fun CallableRef.getInjectableRequests(
       } else InjectableRequest.DefaultStrategy.NONE,
       callableFqName = parameter.containingDeclaration.fqNameSafe,
       parameterName = name.asNameId(),
-      isInline = InlineUtil.isInlineParameter(parameter),
+      isInline = callable.safeAs<FunctionDescriptor>()?.isInline == true &&
+          InlineUtil.isInlineParameter(parameter),
       isLazy = false
     )
   }
