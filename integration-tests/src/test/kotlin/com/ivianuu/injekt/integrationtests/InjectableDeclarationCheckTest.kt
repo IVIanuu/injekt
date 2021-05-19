@@ -94,6 +94,22 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
   }
 
+  @Test fun testProvideValueParameterOnProvideFunction() = codegen(
+    """
+      @Provide fun bar(@Provide foo: Foo) = Bar(foo)
+    """
+  ) {
+    compilationShouldHaveFailed("parameters of a injectable are automatically provided")
+  }
+
+  @Test fun testProvideValueParameterOnProvideClass() = codegen(
+    """
+      @Provide class MyBar(@Provide foo: Foo)
+    """
+  ) {
+    compilationShouldHaveFailed("parameters of a injectable are automatically provided")
+  }
+
   @Test fun testInjectReceiverOnFunction() = codegen(
     """
       fun @receiver:Inject Foo.bar() = Bar(this)

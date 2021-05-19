@@ -51,6 +51,13 @@ interface InjektErrors {
         }
 
     @JvmField
+    val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also {
+          MAP.put(it, "parameters of a injectable are automatically provided")
+        }
+
+    @JvmField
     val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, "receiver cannot be injected")

@@ -319,13 +319,19 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
   ) {
     if (isEmpty()) return
     this
-      .asSequence()
-      .filter { it.hasAnnotation(InjektFqNames.Inject) }
-      .forEach {
-        trace.report(
-          InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(it.findPsi() ?: declaration)
-        )
+      .forEach { parameter ->
+        if (parameter.hasAnnotation(InjektFqNames.Inject)) {
+          trace.report(
+            InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
+              .on(parameter.findPsi() ?: declaration)
+          )
+        }
+        if (parameter.hasAnnotation(InjektFqNames.Provide)) {
+          trace.report(
+            InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
+              .on(parameter.findPsi() ?: declaration)
+          )
+        }
       }
   }
 }
