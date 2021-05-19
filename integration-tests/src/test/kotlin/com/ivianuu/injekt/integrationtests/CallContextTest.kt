@@ -32,7 +32,7 @@ class CallContextTest {
     compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a suspend function but current call context is composable")
   }
 
-  @Test fun testNonSuspendinjectableCanReceiveSuspendinjectableInSuspendContext() = singleAndMultiCodegen(
+  @Test fun testNonSuspendInjectableCanReceiveSuspendInjectableInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun foo() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)

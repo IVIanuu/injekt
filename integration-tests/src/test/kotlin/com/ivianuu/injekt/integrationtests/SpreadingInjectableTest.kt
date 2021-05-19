@@ -23,7 +23,7 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class SpreadingInjectableTest {
-  @Test fun testSpreadinginjectableFunction() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableFunction() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
@@ -37,7 +37,7 @@ class SpreadingInjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testSpreadinginjectableClass() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableClass() = singleAndMultiCodegen(
     """
       @Provide class MyModule<@Spread T : @Trigger S, S> {
           @Provide fun intoSet(instance: T): @Final S = instance
@@ -56,7 +56,7 @@ class SpreadingInjectableTest {
     invokeSingleFile<Set<Foo>>().size shouldBe 1
   }
 
-  @Test fun testSpreadingNoninjectableClass() = codegen(
+  @Test fun testSpreadingNonInjectableClass() = codegen(
     """
       class MyModule<@Spread T>
     """
@@ -64,7 +64,7 @@ class SpreadingInjectableTest {
     compilationShouldHaveFailed("a @Spread type parameter is only supported on @Provide functions and @Provide classes")
   }
 
-  @Test fun testSpreadingNoninjectableFunction() = codegen(
+  @Test fun testSpreadingNonInjectableFunction() = codegen(
     """
       fun <@Spread T> triggerImpl() = Unit
     """
@@ -88,7 +88,7 @@ class SpreadingInjectableTest {
     compilationShouldHaveFailed("a declaration may have only one @Spread type parameter")
   }
 
-  @Test fun testSpreadinginjectableTriggeredByClas() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableTriggeredByClass() = singleAndMultiCodegen(
     """
       @Qualifier annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
@@ -102,7 +102,7 @@ class SpreadingInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testSpreadinginjectableChain() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableChain() = singleAndMultiCodegen(
     """
       @Qualifier annotation class A
       
@@ -261,7 +261,7 @@ class SpreadingInjectableTest {
     """
   )
 
-  @Test fun testSpreadinginjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
     """
       @Qualifier annotation class ClassSingleton
       
@@ -285,7 +285,7 @@ class SpreadingInjectableTest {
     irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
   }
 
-  @Test fun testSpreadinginjectableWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
     """
       @Qualifier annotation class ClassSingleton
       
@@ -311,7 +311,7 @@ class SpreadingInjectableTest {
     irShouldContain(1, "setOf")
   }
 
-  @Test fun testNestedSpreadinginjectablesWithGenerics() = singleAndMultiCodegen(
+  @Test fun testNestedSpreadingInjectablesWithGenerics() = singleAndMultiCodegen(
     """
       @Qualifier annotation class A<T>
       
@@ -328,7 +328,7 @@ class SpreadingInjectableTest {
     compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testSpreadinginjectableWithInvariantTypeParameter() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableWithInvariantTypeParameter() = singleAndMultiCodegen(
     """
       interface IntentKey
       

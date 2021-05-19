@@ -105,7 +105,7 @@ class InjectableResolutionTest {
     classFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersClassInjectableOverClassCompanioninjectable() = codegen(
+  @Test fun testPrefersClassInjectableOverClassCompanionInjectable() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
@@ -126,7 +126,7 @@ class InjectableResolutionTest {
     classFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersConstructorParameterinjectableOverClassBodyinjectable() = codegen(
+  @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
     """
       lateinit var classBodyFoo: Foo
       class MyClass(@Provide constructorFoo: Foo) {
@@ -146,7 +146,7 @@ class InjectableResolutionTest {
     result shouldBeSameInstanceAs constructorFoo
   }
 
-  @Test fun testPrefersSubClassinjectableOverSuperClassinjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersSubClassInjectableOverSuperClassInjectable() = singleAndMultiCodegen(
     """
       abstract class MySuperClass(@Provide val superClassFoo: Foo)
       class MySubClass(@Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
@@ -165,7 +165,7 @@ class InjectableResolutionTest {
     result shouldBeSameInstanceAs subClassFoo
   }
 
-  @Test fun testPrefersFunctionParameterinjectableOverInternalinjectable() = codegen(
+  @Test fun testPrefersFunctionParameterInjectableOverInternalInjectable() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       fun invoke(internal: Foo, @Provide functionFoo: Foo): Foo {
@@ -180,7 +180,7 @@ class InjectableResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionParameterinjectableOverClassinjectable() = codegen(
+  @Test fun testPrefersFunctionParameterInjectableOverClassInjectable() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo) {
         fun resolve(@Provide functionFoo: Foo) = inject<Foo>()
@@ -197,7 +197,7 @@ class InjectableResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionReceiverinjectableOverInternalinjectable() = codegen(
+  @Test fun testPrefersFunctionReceiverInjectableOverInternalInjectable() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       fun Foo.invoke(internal: Foo): Foo {
@@ -212,7 +212,7 @@ class InjectableResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionReceiverinjectableOverClassinjectable() = codegen(
+  @Test fun testPrefersFunctionReceiverInjectableOverClassInjectable() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo) {
         fun Foo.resolve() = inject<Foo>()
@@ -251,7 +251,7 @@ class InjectableResolutionTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
-  @Test fun testPrefsInnerBlockinjectable() = codegen(
+  @Test fun testPrefsInnerBlockInjectable() = codegen(
     """
       fun invoke(): Pair<String, String> {
         @Provide val injectableA = "a"
@@ -265,7 +265,7 @@ class InjectableResolutionTest {
     invokeSingleFile() shouldBe ("a" to "b")
   }
 
-  @Test fun testPrefersResolvableinjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersResolvableInjectable() = singleAndMultiCodegen(
     """
       @Provide fun a() = "a"
       @Provide fun b(long: Long) = "b"
@@ -277,7 +277,7 @@ class InjectableResolutionTest {
     "a" shouldBe invokeSingleFile()
   }
 
-  @Test fun testPrefersNearerinjectableOverBetterType() = codegen(
+  @Test fun testPrefersNearerInjectableOverBetterType() = codegen(
     """
       fun invoke(): CharSequence {
         @Provide val a: String = "a"
@@ -291,7 +291,7 @@ class InjectableResolutionTest {
     "b" shouldBe invokeSingleFile()
   }
 
-  @Test fun testAmbiguousinjectables() = codegen(
+  @Test fun testAmbiguousInjectables() = codegen(
     """
       @Provide val a = "a"
       @Provide val b = "b"
@@ -308,7 +308,7 @@ class InjectableResolutionTest {
     )
   }
 
-  @Test fun testCannotDeclareMultipleinjectablesOfTheSameTypeInTheSameCodeBlock() = codegen(
+  @Test fun testCannotDeclareMultipleInjectablesOfTheSameTypeInTheSameCodeBlock() = codegen(
     """
       fun invoke() {
         @Provide val injectableA = "a"
@@ -373,7 +373,7 @@ class InjectableResolutionTest {
     invokeSingleFile() shouldBe "nonnull"
   }
 
-  @Test fun testDoesNotUseFrameworkinjectablesIfThereAreUserinjectables() = singleAndMultiCodegen(
+  @Test fun testDoesNotUseFrameworkInjectablesIfThereAreUserInjectables() = singleAndMultiCodegen(
     """
       @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
     """,
@@ -422,7 +422,7 @@ class InjectableResolutionTest {
       foo shouldBeSameInstanceAs invokeSingleFile(foo)
     }
 
-  @Test fun testSpreadinginjectableWithTheSameOrigin() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableWithTheSameOrigin() = singleAndMultiCodegen(
     """
       @Provide @MyQualifier class FooModule {
         @Provide val foo = Foo()
@@ -437,7 +437,7 @@ class InjectableResolutionTest {
     """
   )
 
-  @Test fun testSpreadinginjectableWithTheSameOrigin2() = singleAndMultiCodegen(
+  @Test fun testSpreadingInjectableWithTheSameOrigin2() = singleAndMultiCodegen(
     """
       abstract class FooModule {
         @Provide val foo = Foo()

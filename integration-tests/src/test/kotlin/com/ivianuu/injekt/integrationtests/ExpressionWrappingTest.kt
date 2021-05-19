@@ -20,7 +20,7 @@ import com.ivianuu.injekt.test.*
 import org.junit.*
 
 class ExpressionWrappingTest {
-  @Test fun testDoesFunctionWrapinjectableWithMultipleUsages() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapInjectableWithMultipleUsages() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -33,7 +33,7 @@ class ExpressionWrappingTest {
     irShouldContain(1, "bar(foo = ")
   }
 
-  @Test fun testDoesFunctionWrapinjectableWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapInjectableWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -46,7 +46,7 @@ class ExpressionWrappingTest {
     irShouldContain(1, "bar(foo = ")
   }
 
-  @Test fun testDoesNotFunctionWrapinjectableWithSingleUsage() = singleAndMultiCodegen(
+  @Test fun testDoesNotFunctionWrapInjectableWithSingleUsage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -58,7 +58,7 @@ class ExpressionWrappingTest {
     irShouldNotContain("local fun <anonymous>(): Bar {")
   }
 
-  @Test fun testDoesNotWrapinjectableWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
+  @Test fun testDoesNotWrapInjectableWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b

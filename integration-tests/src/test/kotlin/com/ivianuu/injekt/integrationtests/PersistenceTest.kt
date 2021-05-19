@@ -90,7 +90,7 @@ class PersistenceTest {
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
     """
       fun myFunction(
-          @Inject scopeFactory: (@Inject @InstallElement<AppScope> Any) -> AppScope
+        @Inject scopeFactory: (@Inject @InstallElement<AppScope> Any) -> AppScope
       ): AppScope = TODO()
     """,
     """
@@ -99,10 +99,10 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNoninjectablePrimaryConstructorWithinjectableParameters() = singleAndMultiCodegen(
+  @Test fun testNonInjectablePrimaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass(
-          @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
+        @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
       )
     """,
     """
@@ -111,12 +111,12 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNoninjectableSecondaryConstructorWithinjectableParameters() = singleAndMultiCodegen(
+  @Test fun testNonInjectableSecondaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass {
-          constructor(
-            @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
-          )
+        constructor(
+          @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
+        )
       }
     """,
     """
@@ -125,7 +125,7 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNoninjectableClassWithinjectableMembers() = singleAndMultiCodegen(
+  @Test fun testNonInjectableClassWithInjectableMembers() = singleAndMultiCodegen(
     """ 
       abstract class MyModule<T : S, S> {
         @Provide fun func(t: T): S = t
@@ -139,7 +139,7 @@ class PersistenceTest {
         """
   )
 
-  @Test fun testNoninjectableClassWithinjectableMembers2() = singleAndMultiCodegen(
+  @Test fun testNonInjectableClassWithInjectableMembers2() = singleAndMultiCodegen(
     """ 
       abstract class MyAbstractChildScopeModule<P : Scope, T : Any, S : T> {
         @Provide fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory

@@ -33,7 +33,7 @@ class TypeAliasModuleTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun nonObjectTypeAliasinjectables() = codegen(
+  @Test fun nonObjectTypeAliasInjectables() = codegen(
     """
       typealias MyAlias = String
 

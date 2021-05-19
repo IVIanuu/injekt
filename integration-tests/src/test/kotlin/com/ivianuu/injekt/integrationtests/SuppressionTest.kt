@@ -51,7 +51,7 @@ class SuppressionTest {
     invokeSingleFile() shouldBe "42"
   }
 
-  @Test fun testDoesNotWarnInlineOninjectableDeclaration() = codegen(
+  @Test fun testDoesNotWarnInlineOnInjectableDeclaration() = codegen(
     """
       @Provide inline fun func() {
       }
@@ -75,7 +75,7 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testCanUseUnderscoreForinjectableParameterWithTypeAlias() = singleAndMultiCodegen(
+  @Test fun testCanUseUnderscoreForInjectableParameterWithTypeAlias() = singleAndMultiCodegen(
     """
       typealias MyAlias = Int
       fun func(@Inject _: String, @Inject _: MyAlias) {
@@ -145,7 +145,7 @@ class SuppressionTest {
     shouldNotContainMessage("Parameter 'foo' is never used")
   }
 
-  @Test fun testUnusedinjectableParameterIsMarkedAsUnused() = codegen(
+  @Test fun testUnusedInjectableParameterIsMarkedAsUnused() = codegen(
     """
       fun func1(foo: Foo) {
       }
@@ -158,7 +158,7 @@ class SuppressionTest {
     shouldContainMessage("Parameter 'foo' is never used")
   }
 
-  @Test fun testUsedinjectableVariableIsNotMarkedAsUnused() = codegen(
+  @Test fun testUsedInjectableVariableIsNotMarkedAsUnused() = codegen(
     """
       fun invoke() {
         @Provide val foo = Foo()
@@ -169,7 +169,7 @@ class SuppressionTest {
     shouldNotContainMessage("Variable 'foo' is never used")
   }
 
-  @Test fun testUnusedinjectableVariableIsMarkedAsUnused() = codegen(
+  @Test fun testUnusedInjectableVariableIsMarkedAsUnused() = codegen(
     """
       fun invoke() {
         @Provide val foo = Foo()

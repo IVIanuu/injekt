@@ -62,7 +62,7 @@ class SingletonInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeinjectableWithConstructorParameters() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeInjectableWithConstructorParameters() = singleAndMultiCodegen(
     """
       @Provide class MyModule(val foo: Foo)
       @Provide val foo = Foo()
@@ -75,7 +75,7 @@ class SingletonInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeinjectableWithForTypeKeyParameters() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeInjectableWithForTypeKeyParameters() = singleAndMultiCodegen(
     """
       @Provide class MyModule<@ForTypeKey T> {
         @Provide val instance = Foo() as T
@@ -89,7 +89,7 @@ class SingletonInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeinjectableWithFields() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeInjectableWithFields() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         @Provide val foo = Foo()
@@ -103,7 +103,7 @@ class SingletonInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeinjectableWithInnerClass() = singleAndMultiCodegen(
+  @Test fun testDoesNotOptimizeInjectableWithInnerClass() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         inner class Inner
@@ -118,7 +118,7 @@ class SingletonInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesOptimizeinjectableWithComputedProperties() = singleAndMultiCodegen(
+  @Test fun testDoesOptimizeInjectableWithComputedProperties() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         @Provide val foo get() = Foo()

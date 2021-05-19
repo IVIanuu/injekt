@@ -22,7 +22,7 @@ import io.kotest.matchers.types.*
 import org.junit.*
 
 class ProviderTest {
-  @Test fun testProviderinjectable() = singleAndMultiCodegen(
+  @Test fun testProviderInjectable() = singleAndMultiCodegen(
     """
             @Provide val foo = Foo()
     """,
@@ -36,7 +36,7 @@ class ProviderTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testCannotRequestProviderForNonExistinginjectable() = codegen(
+  @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
     """ 
          fun invoke(): Foo {
                 return inject<() -> Foo>()()
@@ -46,7 +46,7 @@ class ProviderTest {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testProviderWithinjectableArgs() = codegen(
+  @Test fun testProviderWithInjectableArgs() = codegen(
     """
             @Provide fun bar(foo: Foo) = Bar(foo)
     """,
@@ -58,7 +58,7 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProviderWithQualifiedinjectableArgs() = singleAndMultiCodegen(
+  @Test fun testProviderWithQualifiedInjectableArgs() = singleAndMultiCodegen(
     """
       @Qualifier annotation class MyQualifier
       @Provide fun bar(foo: @MyQualifier Foo) = Bar(foo)
@@ -71,7 +71,7 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProviderWithGenericinjectableArgs() = singleAndMultiCodegen(
+  @Test fun testProviderWithGenericInjectableArgs() = singleAndMultiCodegen(
     """ 
       typealias ScopeA = Scope
 
@@ -113,7 +113,7 @@ class ProviderTest {
     """
   )
 
-  @Test fun testSuspendProviderinjectable() = singleAndMultiCodegen(
+  @Test fun testSuspendProviderInjectable() = singleAndMultiCodegen(
     """
             @Provide suspend fun foo() = Foo()
     """,
@@ -125,7 +125,7 @@ class ProviderTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testComposableProviderinjectable() = singleAndMultiCodegen(
+  @Test fun testComposableProviderInjectable() = singleAndMultiCodegen(
     """
             @Provide val foo: Foo @Composable get() = Foo()
     """,
