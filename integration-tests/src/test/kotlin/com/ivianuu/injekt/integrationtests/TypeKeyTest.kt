@@ -176,12 +176,12 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
-  @Test fun testTypeKeyFromGivenCall() = singleAndMultiCodegen(
+  @Test fun testTypeKeyFromInjectableCall() = singleAndMultiCodegen(
     """
-      @Given fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
+      @Provide fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
     """,
     """
-      fun invoke() = summon<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
+      fun invoke() = inject<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
     """
   ) {
     invokeSingleFile() shouldBe
@@ -217,12 +217,12 @@ class TypeKeyTest {
 
   @Test fun testNonTopLevelInlineForTypeKeyFunction() = singleAndMultiCodegen(
     """
-      @Given object MyClass {
-        @Given inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
+      @Provide object MyClass {
+        @Provide inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
       }
     """,
     """
-       fun invoke() = summon<@Qualifier1 TypeKey<String>>()
+       fun invoke() = inject<@Qualifier1 TypeKey<String>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -238,8 +238,8 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithStar2() = codegen(
     """
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      val scope = summon<(@Given @InstallElement<AppGivenScope> Map<*, *>) -> AppGivenScope>()
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      val scope = inject<(@Provide @InstallElement<AppScope> Map<*, *>) -> AppScope>()
         .invoke(emptyMap<Any?, Any?>())
       fun invoke() = scope.element<Map<*, *>>()
     """

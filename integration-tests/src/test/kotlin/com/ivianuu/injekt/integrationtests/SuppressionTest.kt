@@ -41,65 +41,65 @@ class SuppressionTest {
   @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
     """
       typealias MyBuilder = StringBuilder.() -> Unit
-      @Given fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
-      @Given val myBuilder: MyBuilder = { append("42") }
+      @Provide fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
+      @Provide val myBuilder: MyBuilder = { append("42") }
     """,
     """
-      fun invoke() = summon<String>() 
+      fun invoke() = inject<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "42"
   }
 
-  @Test fun testDoesNotWarnInlineOnGivenDeclaration() = codegen(
+  @Test fun testDoesNotWarnInlineOnInjectableDeclaration() = codegen(
     """
-      @Given inline fun func() {
+      @Provide inline fun func() {
       }
     """
   ) {
     shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
   }
 
-  @Test fun testCanUseUnderscoreForGivenParameter() = singleAndMultiCodegen(
+  @Test fun testCanUseUnderscoreForInjectParameter() = singleAndMultiCodegen(
     """
-      fun func(@Given _: String, @Given _: Int) {
-        summon<String>()
-        summon<Int>()
+      fun func(@Inject _: String, @Inject _: Int) {
+        inject<String>()
+        inject<Int>()
       }
     """,
     """
       fun invoke() {
-        @Given val string = ""
+        @Provide val string = ""
         func(int = 0)
       } 
     """
   )
 
-  @Test fun testCanUseUnderscoreForGivenParameterWithTypeAlias() = singleAndMultiCodegen(
+  @Test fun testCanUseUnderscoreForInjectableParameterWithTypeAlias() = singleAndMultiCodegen(
     """
       typealias MyAlias = Int
-      fun func(@Given _: String, @Given _: MyAlias) {
-        summon<String>()
-        summon<MyAlias>()
+      fun func(@Inject _: String, @Inject _: MyAlias) {
+        inject<String>()
+        inject<MyAlias>()
       }
     """,
     """
       fun invoke() {
-        @Given val string = ""
+        @Provide val string = ""
         func(myAlias = 0)
       } 
     """
   )
 
-  @Test fun testCanUseInfixWithGiven() = singleAndMultiCodegen(
+  @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
         fun plus(a: T, b: T): T
       }
 
-      infix fun <T> T.combine(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+      infix fun <T> T.combine(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
       
-      @Given object StringCombine : Combine<String> {
+      @Provide object StringCombine : Combine<String> {
         override fun plus(a: String, b: String) = a + b
       }
     """,
@@ -110,17 +110,17 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testCanUseOperatorWithGiven() = singleAndMultiCodegen(
+  @Test fun testCanUseOperatorWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
           fun plus(a: T, b: T): T
       }
   
-      operator fun <T> T.plus(other: T, @Given combine: Combine<T>): T = combine.plus(this, other)
+      operator fun <T> T.plus(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
   
       inline class Key(val value: String)
   
-      @Given object KeyCombine : Combine<Key> {
+      @Provide object KeyCombine : Combine<Key> {
           override fun plus(a: Key, b: Key) = Key(a.value + b.value)
       }
     """,
@@ -131,7 +131,7 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testUsedGivenParameterIsNotMarkedAsUnused() = codegen(
+  @Test fun testUsedInjectParameterIsNotMarkedAsUnused() = codegen(
     """
       fun func1(foo: Foo) {
         func2()                
@@ -145,7 +145,7 @@ class SuppressionTest {
     shouldNotContainMessage("Parameter 'foo' is never used")
   }
 
-  @Test fun testUnusedGivenParameterIsMarkedAsUnused() = codegen(
+  @Test fun testUnusedInjectableParameterIsMarkedAsUnused() = codegen(
     """
       fun func1(foo: Foo) {
       }
@@ -158,21 +158,21 @@ class SuppressionTest {
     shouldContainMessage("Parameter 'foo' is never used")
   }
 
-  @Test fun testUsedGivenVariableIsNotMarkedAsUnused() = codegen(
+  @Test fun testUsedInjectableVariableIsNotMarkedAsUnused() = codegen(
     """
       fun invoke() {
-        @Given val foo = Foo()
-        summon<Foo>()
+        @Provide val foo = Foo()
+        inject<Foo>()
       }
     """
   ) {
     shouldNotContainMessage("Variable 'foo' is never used")
   }
 
-  @Test fun testUnusedGivenVariableIsMarkedAsUnused() = codegen(
+  @Test fun testUnusedInjectableVariableIsMarkedAsUnused() = codegen(
     """
       fun invoke() {
-        @Given val foo = Foo()
+        @Provide val foo = Foo()
       }
     """
   ) {

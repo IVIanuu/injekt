@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies from the activity scope
-    val dependencies = activityGivenScope.element<MainActivityDependencies>()
+    val dependencies = activityScope.element<MainActivityDependencies>()
     // display ui
     setContent {
       dependencies.theme {
@@ -39,5 +39,5 @@ class MainActivity : ComponentActivity() {
 }
 
 // Declare dependencies we want to retrieve from the activity scope
-@Given @InstallElement<ActivityGivenScope>
+@Provide @InstallElement<ActivityScope>
 class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)

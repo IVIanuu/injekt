@@ -41,7 +41,7 @@ class AppInitializer : ApplicationInitializedListener {
             )
             CandidateInterceptor.registerExtension(
               project,
-              GivenCallResolutionInterceptorExtension()
+              InjectCallResolutionInterceptorExtension()
             )
             TypeResolutionInterceptor.registerExtension(
               project,

@@ -197,7 +197,7 @@ fun ConstraintKind.opposite() = when (this) {
   ConstraintKind.EQUAL -> ConstraintKind.EQUAL
 }
 
-fun buildContextForSpreadingGiven(
+fun buildContextForSpreadingInjectable(
   injektContext: InjektContext,
   constraintType: TypeRef,
   candidateType: TypeRef,
@@ -699,7 +699,7 @@ private fun findSuperTypeConstructorsAndIntersectResult(
 ): TypeRef = intersectTypes(
   context,
   allCommonSuperTypeClassifiers(types)
-    .map { superTypeWithGivenClassifier(context, types, it, depth) }
+    .map { superTypeWithInjectableClassifier(context, types, it, depth) }
 )
 
 private fun allCommonSuperTypeClassifiers(types: List<TypeRef>): List<ClassifierRef> {
@@ -725,7 +725,7 @@ private fun collectAllSupertypes(type: TypeRef) = mutableSetOf<ClassifierRef>().
   }
 }
 
-private fun superTypeWithGivenClassifier(
+private fun superTypeWithInjectableClassifier(
   context: TypeCheckerContext,
   types: List<TypeRef>,
   classifier: ClassifierRef,

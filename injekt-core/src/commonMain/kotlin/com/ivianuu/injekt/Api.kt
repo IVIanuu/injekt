@@ -18,47 +18,43 @@
 
 package com.ivianuu.injekt
 
-/**
- * Considers the annotated declaration in the current scope when resolving given arguments
- *
- * Example
- * ```
- * @Given val foo = Foo()
- * @Given fun bar(foo: Foo) = Bar(foo)
- *
- * fun main() {
- *   val bar = summon<Bar>()
- *   println("Got $bar")
- * }
- * ```
- */
 @Target(
-  // @Given class MyClass
+  // @Provide class MyClass
   AnnotationTarget.CLASS,
 
-  // class MyClass @Given constructor()
+  // class MyClass @Provide constructor()
   AnnotationTarget.CONSTRUCTOR,
 
-  // @Given myFunction(): Foo = ...
+  // @Provide myFunction(): Foo = ...
   AnnotationTarget.FUNCTION,
 
-  // @Given val myProperty: Foo get() = ...
+  // @Provide val myProperty: Foo get() = ...
   AnnotationTarget.PROPERTY,
 
-  // @Given val myVariable: Foo = ...
+  // @Provide val myVariable: Foo = ...
   AnnotationTarget.LOCAL_VARIABLE,
 
-  // fun func(foo: Foo)
+  // fun func(@Provide foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
 
-  // Providers
-  // val provider = summon<(@Given Foo) -> Bar>()
+  // Lambda
+  // val func: (Foo) -> Bar = { foo: @Provide Foo -> bar() }
   AnnotationTarget.TYPE
 )
-annotation class Given
+annotation class Provide
+
+@Target(
+  // fun func(@Inject foo: Foo)
+  AnnotationTarget.VALUE_PARAMETER,
+
+  // Lambda
+  // val func: (@Inject Foo) -> Bar = { bar() }
+  AnnotationTarget.TYPE
+)
+annotation class Inject
 
 /**
- * Imports givens from the specified [paths] and use them when resolving given arguments inside the declaration
+ * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
  */
 @Target(
   AnnotationTarget.CLASS,
@@ -67,25 +63,25 @@ annotation class Given
   AnnotationTarget.FUNCTION,
   AnnotationTarget.FILE
 )
-annotation class GivenImports(vararg val paths: String)
+annotation class Providers(vararg val importPaths: String)
 
 /**
- * Runs the [block] and imports givens from [paths] and use them when resolving given arguments inside [block]
+ * Runs the [block] and imports injectables from [importPaths] and use them when resolving injectables inside [block]
  */
-inline fun <R> withGivenImports(
-  @Suppress("UNUSED_PARAMETER") vararg paths: String,
+inline fun <R> withProviders(
+  @Suppress("UNUSED_PARAMETER") vararg importPaths: String,
   block: () -> R
 ): R = block()
 
 /**
- * Returns a given instance of [T]
+ * Returns a provided instance of [T]
  */
-inline fun <T> summon(@Given value: T): T = value
+inline fun <T> inject(@Inject value: T): T = value
 
 /**
- * Returns a given instance of [T] or null
+ * Returns a provided instance of [T] or null
  */
-inline fun <T> summonOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = value
+inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
  * Marks an annotation as an qualifier which can then be used
@@ -97,14 +93,14 @@ inline fun <T> summonOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = v
  *
  * @Qualifier annotation class Username
  *
- * @Given val userId: @UserId String = "123"
+ * @Provide val userId: @UserId String = "123"
  *
- * @Given val username: @Username String = "Foo"
+ * @Provide val username: @Username String = "Foo"
  *
  * fun main() {
- *   val userId = summon<@UserId String>()
+ *   val userId = inject<@UserId String>()
  *   // userId = 123
- *   val username = summon<@Username String>()
+ *   val username = inject<@Username String>()
  *   // username = "Foo"
  * }
  * ```
@@ -113,23 +109,23 @@ inline fun <T> summonOrNull(@Given @DefaultOnAllErrors value: T? = null): T? = v
 annotation class Qualifier
 
 /**
- * Creates a version of the annotated given for each other given whose type matches the constraints
+ * Creates a version of the annotated injectable for each other injectable whose type matches the constraints
  * of the the annotated type parameter
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
 
 /**
- * Falls back to the default value if a given exists but has an error.
- * Normally the default value will only be used if no given was found but not if it has errors
+ * Falls back to the default value if a injectable exists but has an error.
+ * Normally the default value will only be used if no injectable was found but not if it has errors
  */
 @Target(
   // value parameters
-  // fun func(@Given @DefaultOnAllErrors p: String = "default")
+  // fun func(@Inject @DefaultOnAllErrors p: String = "default")
   AnnotationTarget.VALUE_PARAMETER,
 
   // nullable providers
-  // val elements = summon<@DefaultOnAllErrors () -> Bar?>()
+  // val elements = inject<@DefaultOnAllErrors () -> Bar?>()
   AnnotationTarget.TYPE
 )
 annotation class DefaultOnAllErrors
@@ -139,7 +135,7 @@ annotation class DefaultOnAllErrors
  *
  * Should be used like so:
  * ```
- * val elements = summon<@IgnoreElementsWithErrors Set<Interceptor>>()
+ * val elements = inject<@IgnoreElementsWithErrors Set<Interceptor>>()
  * ```
  */
 @Target(AnnotationTarget.TYPE)

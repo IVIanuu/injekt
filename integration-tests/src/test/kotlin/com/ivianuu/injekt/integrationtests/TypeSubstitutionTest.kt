@@ -85,12 +85,12 @@ class TypeSubstitutionTest {
       .single()
       .typeParameters
       .map { it.toClassifierRef(injektContext, injektContext.trace) }
-    val appGivenScope = typeFor(FqName("com.ivianuu.injekt.scope.AppGivenScope"))
+    val appScope = typeFor(FqName("com.ivianuu.injekt.scope.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {
-        it.withArguments(listOf(appGivenScope) + it.arguments.drop(1))
+        it.withArguments(listOf(appScope) + it.arguments.drop(1))
       }
-    val (_, map) = buildContextForSpreadingGiven(
+    val (_, map) = buildContextForSpreadingInjectable(
       injektContext,
       scopedT.defaultType,
       substitutionType,
@@ -98,10 +98,10 @@ class TypeSubstitutionTest {
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
-    map[scopedS] shouldBe appGivenScope
+    map[scopedS] shouldBe appScope
   }
 
-  @Test fun testGetSubstitutionMapInInstallElementAndGivenCoroutineScopeLikeScenario() =
+  @Test fun testGetSubstitutionMapInInstallElementAndInjectCoroutineScopeLikeScenario() =
     withTypeCheckerContext {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
         injektContext.classifierDescriptorForFqName(
@@ -113,13 +113,13 @@ class TypeSubstitutionTest {
           .toCallableRef(injektContext, injektContext.trace)
           .typeParameters
 
-      val givenCoroutineScopeElementReturnType =
+      val injectableCoroutineScopeElementReturnType =
         injektContext.memberScopeForFqName(
           FqName("com.ivianuu.injekt.coroutines"),
           NoLookupLocation.FROM_BACKEND
         )!!
           .getContributedFunctions(
-            "givenCoroutineScopeElement".asNameId(),
+            "injectCoroutineScopeElement".asNameId(),
             NoLookupLocation.FROM_BACKEND
           )
           .single()
@@ -128,27 +128,27 @@ class TypeSubstitutionTest {
           .arguments
           .last()
 
-      val (_, map) = buildContextForSpreadingGiven(
+      val (_, map) = buildContextForSpreadingInjectable(
         injektContext,
         installElementModuleT.defaultType,
-        givenCoroutineScopeElementReturnType,
+        injectableCoroutineScopeElementReturnType,
         emptyList()
       )
-      val givenCoroutineScopeElementS = givenCoroutineScopeElementReturnType.arguments
+      val injectableCoroutineScopeElementS = injectableCoroutineScopeElementReturnType.arguments
         .first()
         .classifier
 
-      map[installElementModuleT] shouldBe givenCoroutineScopeElementReturnType
+      map[installElementModuleT] shouldBe injectableCoroutineScopeElementReturnType
         .substitute(
           mapOf(
-            givenCoroutineScopeElementS to installElementModuleS.defaultType
+            injectableCoroutineScopeElementS to installElementModuleS.defaultType
           )
         )
       map[installElementModuleU] shouldBe
-          givenCoroutineScopeElementReturnType.arguments.last()
+          injectableCoroutineScopeElementReturnType.arguments.last()
             .substitute(
               mapOf(
-                givenCoroutineScopeElementS to installElementModuleS.defaultType
+                injectableCoroutineScopeElementS to installElementModuleS.defaultType
               )
             )
       map[installElementModuleS] shouldBe installElementModuleS.defaultType

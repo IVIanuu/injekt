@@ -24,22 +24,22 @@ import com.ivianuu.injekt.scope.*
 import kotlin.reflect.*
 
 /**
- * Installs the given [ListenableWorker] in the [InjektWorkerFactory]
+ * Installs the injectable [ListenableWorker] in the [InjektWorkerFactory]
  *
  * Example:
  * ```
- * @Given
+ * @Provide
  * @InstallWorker
  * class MyWorker(
- *   @Given context: AppContext,
- *   @Given parameters: WorkerParameters
+ *   context: AppContext,
+ *   parameters: WorkerParameters
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
 @Qualifier annotation class InstallWorker {
   companion object {
-    @Given inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
-      noinline factory: (@Given WorkerParameters) -> T,
+    @Provide inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
+      noinline factory: (@Provide WorkerParameters) -> T,
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
@@ -50,7 +50,7 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 /**
  * Factory which is able to create [ListenableWorker]s installed via [InstallWorker]
  */
-@Given class InjektWorkerFactory(
+@Provide class InjektWorkerFactory(
   private val workers: Map<String, SingleWorkerFactory>
 ) : WorkerFactory() {
   override fun createWorker(
@@ -61,24 +61,24 @@ internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
 }
 
 /**
- * Defines givens to initialize the work manager library
+ * Defines providers to initialize the work manager library
  */
-object WorkerInitializerGivens {
+object WorkerInitializerModule {
   /**
-   * Defines the [GivenScopeInitializer] for work manager initialization in the [AppGivenScope]
+   * Defines the [ScopeInitializer] for work manager initialization in the [AppScope]
    */
-  @Given fun workerScopeInitializer(
+  @Provide fun workerScopeInitializer(
     context: AppContext,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
-  ): GivenScopeInitializer<AppGivenScope> = {
+  ): ScopeInitializer<AppScope> = {
     WorkManager.initialize(context, configuration ?: defaultConfiguration())
   }
 
   /**
    * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]
    */
-  @Given fun defaultWorkerConfiguration(
+  @Provide fun defaultWorkerConfiguration(
     workerFactory: WorkerFactory
   ): @Default Configuration = Configuration.Builder()
     .setWorkerFactory(workerFactory)
@@ -87,5 +87,5 @@ object WorkerInitializerGivens {
   @Qualifier private annotation class Default
 }
 
-@Given inline val AppContext.workManager: WorkManager
+@Provide inline val AppContext.workManager: WorkManager
   get() = WorkManager.getInstance(this)

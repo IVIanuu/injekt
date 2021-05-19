@@ -10,15 +10,15 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Given class Dep
+            @Provide class Dep
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -32,17 +32,17 @@ class TypeScopeTest {
           """
             class Dep {
               companion object {
-                @Given val dep = Dep()
+                @Provide val dep = Dep()
               }
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -55,39 +55,39 @@ class TypeScopeTest {
         source(
           """
             object Dep {
-              @Given val defaultDep = this
+              @Provide val defaultDep = this
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
     )
   )
 
-  @Test fun testTypeAliasGivensTypeScope() = singleAndMultiCodegen(
+  @Test fun testTypeAliasModuleTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             typealias Dep = String
-            object DepGivens {
-              @Given val default: Dep = ""
+            object DepModule {
+              @Provide val default: Dep = ""
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -101,17 +101,17 @@ class TypeScopeTest {
           """
             @Qualifier annotation class MyQualifier {
               companion object {
-                @Given val default: @MyQualifier String = ""
+                @Provide val default: @MyQualifier String = ""
               }
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<@givens.MyQualifier String>()
+            fun invoke() = inject<@injectables.MyQualifier String>()
           """
         )
       )
@@ -125,17 +125,17 @@ class TypeScopeTest {
           """
             class Dep {
               companion object {
-                @Given val listOfDeps = listOf(Dep())
+                @Provide val listOfDeps = listOf(Dep())
               }
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<List<givens.Dep>>()
+            fun invoke() = inject<List<injectables.Dep>>()
           """
         )
       )
@@ -149,18 +149,18 @@ class TypeScopeTest {
           """
             abstract class AbstractDep {
               companion object {
-                @Given val dep = Dep()
+                @Provide val dep = Dep()
               }
             }
             class Dep : AbstractDep()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -174,15 +174,15 @@ class TypeScopeTest {
           """
             class Dep
 
-            @Given val dep = Dep()
+            @Provide val dep = Dep()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -196,7 +196,7 @@ class TypeScopeTest {
           """
             @Qualifier annotation class MyQualifier {
               companion object {
-                @Given val dep = givens.Dep()
+                @Provide val dep = injectables.Dep()
               }
             }
           """,
@@ -204,15 +204,15 @@ class TypeScopeTest {
         ),
         source(
           """
-            @Given @qualifiers.MyQualifier class Dep
+            @Provide @qualifiers.MyQualifier class Dep
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -227,16 +227,16 @@ class TypeScopeTest {
             class Dep
 
             object DepImplicits {
-              @Given val dep = Dep() 
+              @Provide val dep = Dep() 
             }
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
@@ -249,19 +249,19 @@ class TypeScopeTest {
         """
           class Dep
         """,
-        packageFqName = FqName("givens")
+        packageFqName = FqName("injectables")
       )
     ),
     listOf(
       source(
         """
-          @Given val dep = Dep()
+          @Provide val dep = Dep()
         """,
-        packageFqName = FqName("givens")
+        packageFqName = FqName("injectables")
       ),
       source(
         """
-          fun invoke() = summon<givens.Dep>()
+          fun invoke() = inject<injectables.Dep>()
         """
       )
     )
@@ -274,24 +274,24 @@ class TypeScopeTest {
           """
             class Dep
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         )
       ),
       listOf(
         source(
           """
-            @Given val dep = Dep()
+            @Provide val dep = Dep()
           """,
-          packageFqName = FqName("givens")
+          packageFqName = FqName("injectables")
         ),
         source(
           """
-            fun invoke() = summon<givens.Dep>()
+            fun invoke() = inject<injectables.Dep>()
           """
         )
       )
     )
   ) {
-    compilationShouldHaveFailed("no given argument found of type givens.Dep for parameter value of function com.ivianuu.injekt.summon")
+    compilationShouldHaveFailed("no injectable found of type injectables.Dep for parameter value of function com.ivianuu.injekt.inject")
   }
 }

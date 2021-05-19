@@ -26,10 +26,10 @@ class DivergenceTest {
         val value: T
       }
   
-      @Given fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
+      @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
     """,
     """
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -41,22 +41,22 @@ class DivergenceTest {
         val value: T
       }
   
-      @Given fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
+      @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
   
-      @Given fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
+      @Provide fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
     """,
     """
-      fun invoke() = summon<Foo>()
+      fun invoke() = inject<Foo>()
     """
   )
 
   @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
     """
-      @Given class A(b: B)
-      @Given class B(a: A)
+      @Provide class A(b: B)
+      @Provide class B(a: A)
     """,
     """
-      fun invoke() = summon<A>() 
+      fun invoke() = inject<A>() 
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -64,11 +64,11 @@ class DivergenceTest {
 
   @Test fun testProviderBreaksCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(b: B)
-      @Given class B(a: () -> A)
+      @Provide class A(b: B)
+      @Provide class B(a: () -> A)
     """,
     """
-      fun invoke() = summon<B>()
+      fun invoke() = inject<B>()
     """
   ) {
     invokeSingleFile()
@@ -76,12 +76,12 @@ class DivergenceTest {
 
   @Test fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(b: () -> B)
-      @Given class B(b: C)
-      @Given class C(b: B)
+      @Provide class A(b: () -> B)
+      @Provide class B(b: C)
+      @Provide class C(b: B)
      """,
      """
-      fun invoke() = summon<C>() 
+      fun invoke() = inject<C>() 
      """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -90,12 +90,12 @@ class DivergenceTest {
   @Test fun testLazyRequestInSetBreaksCircularDependency() = singleAndMultiCodegen(
     """
       typealias A = () -> Unit
-      @Given fun a(b: () -> B): A = {}
+      @Provide fun a(b: () -> B): A = {}
       typealias B = () -> Unit
-      @Given fun b(a: () -> A): B = {}
+      @Provide fun b(a: () -> A): B = {}
      """,
     """
-     fun invoke() = summon<Set<() -> Unit>>() 
+     fun invoke() = inject<Set<() -> Unit>>() 
     """
   ) {
     invokeSingleFile()

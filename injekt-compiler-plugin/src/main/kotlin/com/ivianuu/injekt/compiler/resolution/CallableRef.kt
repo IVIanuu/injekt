@@ -26,16 +26,16 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<String, TypeRef>,
-  val givenParameters: Set<String>,
+  val injectParameters: Set<String>,
   val defaultOnAllErrorParameters: Set<String>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val isGiven: Boolean,
+  val isProvide: Boolean,
   val source: CallableRef?,
   val callContext: CallContext,
   val owner: ClassifierRef?,
   val overriddenDepth: Int,
   val doNotIncludeChildren: Boolean,
-  val import: ResolvedGivenImport?
+  val import: ResolvedProviderImport?
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -62,7 +62,7 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   )
 }
 
-fun CallableRef.makeGiven(): CallableRef = if (isGiven) this else copy(isGiven = true)
+fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isProvide = true)
 
 fun CallableDescriptor.toCallableRef(
   context: InjektContext,
@@ -77,12 +77,12 @@ fun CallableDescriptor.toCallableRef(
     originalType = info.type,
     typeParameters = typeParameters,
     parameterTypes = info.parameterTypes,
-    givenParameters = info.givenParameters,
+    injectParameters = info.injectParameters,
     defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
     typeArguments = typeParameters
       .map { it to it.defaultType }
       .toMap(),
-    isGiven = isGiven(context, trace),
+    isProvide = isProvide(context, trace),
     source = null,
     callContext = callContext(trace.bindingContext),
     owner = null,

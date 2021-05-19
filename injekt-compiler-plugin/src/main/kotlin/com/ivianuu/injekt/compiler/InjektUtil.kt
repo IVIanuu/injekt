@@ -70,7 +70,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   }
   if (annotationEntry != null) return annotationEntry
 
-  // Check if the simple name is used, e.g. `@Given`.
+  // Check if the simple name is used, e.g. `@Provide`.
   val annotationEntryShort = annotationEntries
     .firstOrNull {
       it.shortName == fqName.shortName()
@@ -105,7 +105,7 @@ fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is GivenFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
+    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)
@@ -256,14 +256,14 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-fun givensLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
+fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
   .removePrefix(packageFqName.asString())
   .replace(".", "_")
   .removePrefix("_")
   .takeIf { it.isNotEmpty() }
-  ?.plus("_givens")
+  ?.plus("_injectables")
   ?.asNameId()
-  ?: "givens".asNameId()
+  ?: "injectables".asNameId()
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND

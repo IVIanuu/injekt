@@ -5,13 +5,13 @@ Injekt is highly experimental and the api is unstable.
 
 Minimal example:
 ```kotlin
-// declare givens
-@Given val foo = Foo()
-@Given fun bar(foo: Foo) = Bar(foo)
+// provide injectables
+@Provide val foo = Foo()
+@Provide fun bar(foo: Foo) = Bar(foo)
 
 fun main() {
-  // retrieve instance
-  val bar = summon<Bar>()
+  // inject
+  val bar = inject<Bar>()
   println("Got $bar")
 }
 ```
@@ -54,10 +54,10 @@ dependencies {
 ```
 It's also required to install the Injekt IDE plugin
 
-# Declare givens
+# Provide injectables
 TODO
 
-# Use givens
+# Inject injectables
 TODO
 
 # Type aliases

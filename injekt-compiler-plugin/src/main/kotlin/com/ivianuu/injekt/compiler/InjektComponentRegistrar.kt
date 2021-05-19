@@ -60,7 +60,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
     )
     CandidateInterceptor.registerExtension(
       project,
-      GivenCallResolutionInterceptorExtension()
+      InjectCallResolutionInterceptorExtension()
     )
     TypeResolutionInterceptor.registerExtension(
       project,

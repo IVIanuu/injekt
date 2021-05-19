@@ -23,13 +23,13 @@ import org.junit.*
 class QualifierTest {
   @Test fun testDistinctQualifier() = singleAndMultiCodegen(
     """
-            @Given val foo = Foo()
-            @Given val qualifiedFoo: @Qualifier1 Foo = Foo()
+      @Provide val foo = Foo()
+      @Provide val qualifiedFoo: @Qualifier1 Foo = Foo()
         """,
     """
-        fun invoke(): Pair<Foo, Foo> {
-                return summon<Foo>() to summon<@Qualifier1 Foo>()
-           } 
+      fun invoke(): Pair<Foo, Foo> {
+        return inject<Foo>() to inject<@Qualifier1 Foo>()
+      } 
     """
   ) {
     val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
@@ -38,56 +38,56 @@ class QualifierTest {
 
   @Test fun testTypeParameterWithQualifierUpperBound() = singleAndMultiCodegen(
     """
-      @Given class Dep<T>(val value: @Qualifier1 T)
+      @Provide class Dep<T>(val value: @Qualifier1 T)
             
-      @Given fun qualified(): @Qualifier1 String = ""
+      @Provide fun qualified(): @Qualifier1 String = ""
     """,
     """
-      fun invoke() = summon<Dep<String>>() 
+      fun invoke() = inject<Dep<String>>() 
     """
   )
 
   @Test fun testQualifiedClass() = singleAndMultiCodegen(
     """ 
-      @Given @Qualifier1 class Dep
+      @Provide @Qualifier1 class Dep
     """,
     """
-      fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
   @Test fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
     """ 
-      class Dep @Given @Qualifier1 constructor()
+      class Dep @Provide @Qualifier1 constructor()
     """,
     """
-      fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
   @Test fun testQualifiedSecondaryConstructor() = singleAndMultiCodegen(
     """ 
-                class Dep {
-                    @Given @Qualifier1 constructor()
-                }
+      class Dep {
+        @Provide @Qualifier1 constructor()
+      }
         """,
     """
-         fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
   @Test fun testQualifiedObject() = singleAndMultiCodegen(
     """ 
-            @Given @Qualifier1 object Dep
-        """,
+      @Provide @Qualifier1 object Dep
+    """,
     """
-         fun invoke() = summon<@Qualifier1 Dep>()
+      fun invoke() = inject<@Qualifier1 Dep>()
     """
   )
 
   @Test fun testQualifiedFunction() = codegen(
     """ 
-            @Given @Qualifier1 fun foo() = Foo()
+      @Provide @Qualifier1 fun foo() = Foo()
     """
   ) {
     compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a qualifier")
@@ -95,19 +95,19 @@ class QualifierTest {
 
   @Test fun testQualifierWithArguments() = codegen(
     """ 
-            @Qualifier annotation class MyQualifier(val value: String)
-        """
+      @Qualifier annotation class MyQualifier(val value: String)
+    """
   ) {
     compilationShouldHaveFailed("qualifier cannot have value parameters")
   }
 
   @Test fun testQualifierWithTypeArguments() = singleAndMultiCodegen(
     """
-            @Qualifier annotation class MyQualifier<T>
-            @Given val qualifiedFoo: @MyQualifier<String> Foo = Foo()
-        """,
+      @Qualifier annotation class MyQualifier<T>
+      @Provide val qualifiedFoo: @MyQualifier<String> Foo = Foo()
+    """,
     """
-        fun invoke() = summon<@MyQualifier<String> Foo>() 
+      fun invoke() = inject<@MyQualifier<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -116,11 +116,11 @@ class QualifierTest {
 
   @Test fun testQualifierWithGenericTypeArguments() = singleAndMultiCodegen(
     """
-            @Qualifier annotation class MyQualifier<T>
-            @Given fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
-        """,
+      @Qualifier annotation class MyQualifier<T>
+      @Provide fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+    """,
     """
-        fun invoke() = summon<@MyQualifier<String> Foo>() 
+      fun invoke() = inject<@MyQualifier<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -129,14 +129,14 @@ class QualifierTest {
 
   @Test fun testUiState() = singleAndMultiCodegen(
     """
-            @Qualifier annotation class UiState
+      @Qualifier annotation class UiState
 
-            @Given fun <T> uiState(instance: @UiState T): T = instance
+      @Provide fun <T> uiState(instance: @UiState T): T = instance
 
-            @Given val foo: @UiState Foo = Foo()
-        """,
+      @Provide val foo: @UiState Foo = Foo()
+    """,
     """
-         fun invoke() = summon<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -145,19 +145,19 @@ class QualifierTest {
 
   @Test fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
     """
-      @Given fun foo(): @Eager<AppGivenScope> Foo = Foo()
+      @Provide fun foo(): @Eager<AppScope> Foo = Foo()
   
-      typealias ChildGivenScope = GivenScope
+      typealias ChildScope = Scope
   
-      @Given val childGivenScopeModule = ChildScopeModule0<AppGivenScope, ChildGivenScope>()
+      @Provide val childScopeModule = ChildScopeModule0<AppScope, ChildScope>()
   
-      @InstallElement<ChildGivenScope>
-      @Given
+      @InstallElement<ChildScope>
+      @Provide
       class MyElement(val foo: Foo)
     """,
     """
-      @GivenImports("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = summon<AppGivenScope>()
+      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
+      fun invoke() = inject<AppScope>()
     """
   ) {
     compilationShouldBeOk()

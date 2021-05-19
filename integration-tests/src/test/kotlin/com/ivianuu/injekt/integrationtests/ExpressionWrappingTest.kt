@@ -20,51 +20,51 @@ import com.ivianuu.injekt.test.*
 import org.junit.*
 
 class ExpressionWrappingTest {
-  @Test fun testDoesFunctionWrapGivenWithMultipleUsages() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapInjectableWithMultipleUsages() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Bar, Bar>>()
+      fun invoke() = inject<Pair<Bar, Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
   }
 
-  @Test fun testDoesFunctionWrapGivenWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapInjectableWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
-      @Given fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Bar, () -> Bar>>()
+      fun invoke() = inject<Pair<Bar, () -> Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
   }
 
-  @Test fun testDoesNotFunctionWrapGivenWithSingleUsage() = singleAndMultiCodegen(
+  @Test fun testDoesNotFunctionWrapInjectableWithSingleUsage() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = summon<Bar>()
+      fun invoke() = inject<Bar>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Bar {")
   }
 
-  @Test fun testDoesNotWrapGivenWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
+  @Test fun testDoesNotWrapInjectableWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Foo, Foo>>()
+      fun invoke() = inject<Pair<Foo, Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Foo {")
@@ -72,11 +72,11 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesCacheProviderWithMultipleUsages() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<() -> Foo, () -> Foo>>()
+      fun invoke() = inject<Pair<() -> Foo, () -> Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
@@ -85,10 +85,10 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheProviderWithSingleUsage() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
+      @Provide val foo = Foo()
     """,
     """
-      fun invoke() = summon<() -> Foo>()
+      fun invoke() = inject<() -> Foo>()
     """
   ) {
     irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
@@ -96,12 +96,12 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheInlineProvider() = singleAndMultiCodegen(
     """
-      @Given val foo = Foo()
-      @Given inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
-      @Given fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      @Provide val foo = Foo()
+      @Provide inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = summon<Pair<Bar, Bar>>()
+      fun invoke() = inject<Pair<Bar, Bar>>()
     """
   ) {
     irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
@@ -109,11 +109,11 @@ class ExpressionWrappingTest {
 
   @Test fun testDoesNotCacheCircularDependency() = singleAndMultiCodegen(
     """
-      @Given class A(b: B)
-      @Given class B(a: () -> A, a2: () -> A)
+      @Provide class A(b: B)
+      @Provide class B(a: () -> A, a2: () -> A)
      """,
     """
-      fun invoke() = summon<B>() 
+      fun invoke() = inject<B>() 
     """
   ) {
     invokeSingleFile()

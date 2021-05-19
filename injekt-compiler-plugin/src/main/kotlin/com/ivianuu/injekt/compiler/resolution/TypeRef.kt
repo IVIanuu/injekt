@@ -178,7 +178,8 @@ fun KotlinType.toTypeRef(
             it += context.nullableAnyType
         },
       isMarkedComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
-      isGiven = kotlinType.isGiven(context, trace),
+      isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
+      isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
       isStarProjection = false,
       frameworkKey = 0,
       defaultOnAllErrors = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors),
@@ -194,7 +195,7 @@ fun KotlinType.toTypeRef(
           it.copy(
             arguments = it.arguments,
             isMarkedNullable = rawType.isMarkedNullable,
-            isGiven = rawType.isGiven,
+            isProvide = rawType.isProvide,
             defaultOnAllErrors = rawType.defaultOnAllErrors,
             ignoreElementsWithErrors = rawType.ignoreElementsWithErrors,
             variance = rawType.variance
@@ -210,7 +211,8 @@ class TypeRef(
   val isMarkedNullable: Boolean = false,
   val arguments: List<TypeRef> = emptyList(),
   val isMarkedComposable: Boolean = false,
-  val isGiven: Boolean = false,
+  val isProvide: Boolean = false,
+  val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val defaultOnAllErrors: Boolean = false,
@@ -238,7 +240,8 @@ class TypeRef(
       result = 31 * result + isMarkedNullable.hashCode()
       result = 31 * result + arguments.hashCode()
       result = 31 * result + isMarkedComposable.hashCode()
-      result = 31 * result + isGiven.hashCode()
+      result = 31 * result + isProvide.hashCode()
+      result = 31 * result + isInject.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + defaultOnAllErrors.hashCode()
@@ -267,7 +270,8 @@ fun TypeRef.copy(
   isMarkedNullable: Boolean = this.isMarkedNullable,
   arguments: List<TypeRef> = this.arguments,
   isMarkedComposable: Boolean = this.isMarkedComposable,
-  isGiven: Boolean = this.isGiven,
+  isProvide: Boolean = this.isProvide,
+  isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
@@ -278,7 +282,8 @@ fun TypeRef.copy(
   isMarkedNullable,
   arguments,
   isMarkedComposable,
-  isGiven,
+  isProvide,
+  isInject,
   isStarProjection,
   frameworkKey,
   defaultOnAllErrors,
@@ -338,14 +343,16 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
   map[classifier]?.let { substitution ->
     val newNullability = if (isStarProjection) substitution.isMarkedNullable
     else isMarkedNullable || substitution.isMarkedNullable
-    val newGiven = isGiven || substitution.isGiven
+    val newIsProvide = isProvide || substitution.isProvide
+    val newIsInject = isInject || substitution.isInject
     val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
     else variance
     val newDefaultOnAllErrors = substitution.defaultOnAllErrors || defaultOnAllErrors
     val newIgnoreElementsWithErrors = substitution.ignoreElementsWithErrors ||
         ignoreElementsWithErrors
     return if (newNullability != substitution.isMarkedNullable ||
-      newGiven != substitution.isGiven ||
+      newIsProvide != substitution.isProvide ||
+      newIsInject != substitution.isInject ||
       newVariance != substitution.variance ||
       newDefaultOnAllErrors != substitution.defaultOnAllErrors ||
       newIgnoreElementsWithErrors != substitution.ignoreElementsWithErrors
@@ -353,9 +360,10 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
       substitution.copy(
         // we copy nullability to support T : Any? -> String
         isMarkedNullable = newNullability,
-        // we copy given kind to support @Given C -> @Given String
-        // fallback to substitution given
-        isGiven = newGiven,
+        // we copy injectable kind to support @Provide C -> @Provide String
+        // fallback to substitution injectable
+        isProvide = newIsProvide,
+        isInject = newIsInject,
         variance = newVariance,
         defaultOnAllErrors = newDefaultOnAllErrors,
         ignoreElementsWithErrors = newIgnoreElementsWithErrors
@@ -377,7 +385,8 @@ fun TypeRef.render(depth: Int = 0): String {
   return buildString {
     fun TypeRef.inner() {
       val annotations = listOfNotNull(
-        if (isGiven) "@Given" else null,
+        if (isProvide) "@Provide" else null,
+        if (isInject) "@Inject" else null,
         if (isMarkedComposable) "@Composable" else null,
       )
 
@@ -461,6 +470,31 @@ val TypeRef.superTypes: List<TypeRef>
       .map { it.substitute(substitutionMap) }
   }
 
+val TypeRef.isProviderFunctionType: Boolean
+  get() {
+    if (!isFunctionType) return false
+    for (i in arguments.indices) {
+      val argument = arguments[i]
+      if (i < arguments.lastIndex && !argument.isProvide)
+        return false
+    }
+
+    return true
+  }
+
+val TypeRef.isProvideFunctionType: Boolean
+  get() {
+    if (!isFunctionType) return false
+    if (!isProvide)
+    for (i in arguments.indices) {
+      val argument = arguments[i]
+      if (i < arguments.lastIndex && argument.isInject)
+        return false
+    }
+
+    return true
+  }
+
 val TypeRef.isFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
@@ -469,17 +503,6 @@ val TypeRef.isFunctionType: Boolean
 val TypeRef.isSuspendFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
-
-val TypeRef.isFunctionTypeWithOnlyGivenParameters: Boolean
-  get() {
-    if (!isFunctionType) return false
-    for (i in arguments.indices) {
-      if (i < arguments.lastIndex && !arguments[i].isGiven)
-        return false
-    }
-
-    return true
-  }
 
 fun effectiveVariance(
   declared: TypeVariance,

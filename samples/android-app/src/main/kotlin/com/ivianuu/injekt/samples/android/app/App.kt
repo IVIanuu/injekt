@@ -21,10 +21,10 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
 import com.ivianuu.injekt.scope.*
 
-class App : Application(), AppGivenScopeOwner {
-  override lateinit var appGivenScope: AppGivenScope
+class App : Application(), AppScopeOwner {
+  override lateinit var appScope: AppScope
   override fun onCreate() {
-    withGivenImports(
+    withProviders(
       "com.ivianuu.injekt.android.*",
       "com.ivianuu.injekt.common.*",
       "com.ivianuu.injekt.coroutines.*",
@@ -33,7 +33,7 @@ class App : Application(), AppGivenScopeOwner {
       "com.ivianuu.injekt.samples.android.domain.*",
       "com.ivianuu.injekt.samples.android.ui.*",
     ) {
-      appGivenScope = createAppGivenScope()
+      appScope = createAppScope()
     }
     super.onCreate()
   }

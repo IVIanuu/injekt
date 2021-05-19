@@ -26,12 +26,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     val context = pluginContext.moduleDescriptor.injektContext
     val trace = DelegatingBindingTrace(
-      pluginContext.bindingContext, "injekt trace"
+      pluginContext.bindingContext, "IR trace"
     )
-    moduleFragment.transform(GivenCallTransformer(context, pluginContext), null)
+    moduleFragment.transform(InjectCallTransformer(context, pluginContext), null)
     moduleFragment.transform(TypeKeyTransformer(context, trace, pluginContext), null)
-    moduleFragment.transform(SingletonGivenTransformer(context, trace, pluginContext), null)
-    moduleFragment.transform(WithGivenImportsTransformer(), null)
+    moduleFragment.transform(SingletonTransformer(context, trace, pluginContext), null)
+    moduleFragment.transform(WithProvidersTransformer(), null)
     moduleFragment.transform(IncrementalFixTransformer(context, trace, pluginContext), null)
     moduleFragment.patchDeclarationParents()
   }

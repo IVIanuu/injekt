@@ -22,81 +22,81 @@ import org.junit.*
 class CallContextTest {
   @Test fun testSuspendCannotBeRequestedFromNonSuspend() = singleAndMultiCodegen(
     """
-      @Given suspend fun foo() = Foo()
-      @Given suspend fun bar(foo: Foo) = Bar(foo)
+      @Provide suspend fun foo() = Foo()
+      @Provide suspend fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      @Composable fun invoke() = summon<Bar>()
+      @Composable fun invoke() = inject<Bar>()
     """
   ) {
-    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.summon is a suspend function but current call context is composable")
+    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a suspend function but current call context is composable")
   }
 
-  @Test fun testNonSuspendGivenCanReceiveSuspendGivenInSuspendContext() = singleAndMultiCodegen(
+  @Test fun testNonSuspendInjectableCanReceiveSuspendInjectableInSuspendContext() = singleAndMultiCodegen(
     """
-      @Given suspend fun foo() = Foo()
-      @Given fun bar(foo: Foo) = Bar(foo)
+      @Provide suspend fun foo() = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = runBlocking { summon<Bar>() } 
+      fun invoke() = runBlocking { inject<Bar>() } 
     """
   )
 
   @Test fun testComposableDependencyCannotBeRequestedFromNonComposable() = singleAndMultiCodegen(
     """
-      @Given @Composable fun foo() = Foo()
-      @Given @Composable fun bar(foo: Foo) = Bar(foo)
+      @Provide @Composable fun foo() = Foo()
+      @Provide @Composable fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      suspend fun invoke() = summon<Bar>()
+      suspend fun invoke() = inject<Bar>()
     """
   ) {
-    compilationShouldHaveFailed("given argument com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.summon is a composable function but current call context is suspend")
+    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter value of function com.ivianuu.injekt.inject is a composable function but current call context is suspend")
   }
 
   @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() =
     singleAndMultiCodegen(
       """
-      @Given suspend fun foo() = Foo()
-      @Given fun lazyBar(): suspend () -> Bar = { Bar(summon()) }
-    """,
+        @Provide suspend fun foo() = Foo()
+        @Provide fun lazyBar(): suspend () -> Bar = { Bar(inject()) }
+      """,
       """
-      fun invoke() = summon<suspend () -> Bar>()
-    """
+        fun invoke() = inject<suspend () -> Bar>()
+      """
     )
 
   @Test fun testSuspendProviderCanRequestSuspendDependencyInDefaultContext() =
     singleAndMultiCodegen(
       """
-        @Given suspend fun foo() = Foo()
-        @Given fun bar(foo: Foo) = Bar(foo)
-    """,
+        @Provide suspend fun foo() = Foo()
+        @Provide fun bar(foo: Foo) = Bar(foo)
+      """,
       """
-        fun invoke() = summon<suspend () -> Bar>() 
-    """
+        fun invoke() = inject<suspend () -> Bar>() 
+      """
     )
 
   @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambdaWithAlias() =
     singleAndMultiCodegen(
       """
         typealias SuspendFactory<T> = suspend () -> T
-        @Given suspend fun foo() = Foo()
-        @Given fun lazyBar(): SuspendFactory<Bar> = { Bar(summon()) }
-    """,
+        @Provide suspend fun foo() = Foo()
+        @Provide fun lazyBar(): SuspendFactory<Bar> = { Bar(inject()) }
+      """,
       """
-        fun invoke() = summon<SuspendFactory<Bar>>()
-    """
+        fun invoke() = inject<SuspendFactory<Bar>>()
+      """
     )
 
   @Test fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambda() =
     singleAndMultiCodegen(
       """
-        @Given @Composable fun foo() = Foo()
-        @Given fun lazyBar(): @Composable () -> Bar = { Bar(summon()) }
-    """,
+        @Provide @Composable fun foo() = Foo()
+        @Provide fun lazyBar(): @Composable () -> Bar = { Bar(inject()) }
+      """,
       """
-        fun invoke() = summon<@Composable () -> Bar>()
-    """
+        fun invoke() = inject<@Composable () -> Bar>()
+      """
     )
 
   @Test
@@ -104,23 +104,23 @@ class CallContextTest {
     singleAndMultiCodegen(
       """
         typealias ComposableFactory<T> = @Composable () -> T
-        @Given @Composable fun foo() = Foo()
-        @Given fun lazyBar(): ComposableFactory<Bar> = { Bar(summon()) }
-    """,
+        @Provide @Composable fun foo() = Foo()
+        @Provide fun lazyBar(): ComposableFactory<Bar> = { Bar(inject()) }
+      """,
       """
-        fun invoke() = summon<ComposableFactory<Bar>>()
-    """
+        fun invoke() = inject<ComposableFactory<Bar>>()
+      """
     )
 
   @Test fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = singleAndMultiCodegen(
     """
-      @Given suspend fun suspendFoo() = Foo()
+      @Provide suspend fun suspendFoo() = Foo()
     """,
     """
       fun invoke() = runBlocking {
         run {
           run {
-            summon<Foo>()
+            inject<Foo>()
           }
         }
       } 
@@ -130,21 +130,21 @@ class CallContextTest {
   @Test fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() =
     singleAndMultiCodegen(
       """
-      @Given @Composable fun composableFoo() = Foo()
-    """,
+        @Provide @Composable fun composableFoo() = Foo()
+      """,
       """
-      @Composable fun invoke() = run {
-        run {
-          summon<Foo>()
+        @Composable fun invoke() = run {
+          run {
+            inject<Foo>()
+          }
         }
-      }
-    """
+      """
     )
 
   @Test fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
     """
-      @Given suspend fun suspendFoo() = Foo()
-      suspend inline fun initialize(@Given provider: () -> Foo) {
+      @Provide suspend fun suspendFoo() = Foo()
+      suspend inline fun initialize(@Inject provider: () -> Foo) {
       }
     """,
     """
@@ -155,11 +155,11 @@ class CallContextTest {
   @Test fun testCanRequestComposableDependencyInGetterOfComposableProperty() =
     singleAndMultiCodegen(
       """
-      @Given @Composable fun composableFoo() = Foo()
-    """,
+        @Provide @Composable fun composableFoo() = Foo()
+      """,
       """
-      val fooGetter: Foo
-        @Composable get() = summon()
-    """
+        val fooGetter: Foo
+          @Composable get() = inject()
+      """
     )
 }

@@ -20,19 +20,19 @@ import androidx.compose.runtime.*
 import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 
-val LocalGivenScope = staticCompositionLocalOf<GivenScope> { error("No GivenScope provided") }
+val LocalScope = staticCompositionLocalOf<Scope> { error("No scope provided") }
 
 /**
- * Returns the element [T] of the [LocalGivenScope]
+ * Returns the element [T] of the [LocalScope]
  */
 @Composable fun <@ForTypeKey T : Any> rememberElement(): T {
-  val scope = LocalGivenScope.current
+  val scope = LocalScope.current
   return remember(scope) { scope.element() }
 }
 
 /**
  * Remember the value produced by [init]. It behaves similarly to [remember],
- * but the stored value will be stored in the [LocalGivenScope] with the [key]
+ * but the stored value will be stored in the [LocalScope] with the [key]
  * or the [currentCompositeKeyHash] if no key was provided
  */
 @Composable fun <T : Any> rememberScopedValue(
@@ -42,7 +42,7 @@ val LocalGivenScope = staticCompositionLocalOf<GivenScope> { error("No GivenScop
 ): T {
   val finalKey = key ?: currentCompositeKeyHash
 
-  val scope = LocalGivenScope.current
+  val scope = LocalScope.current
   val value = remember(*inputs) { scope.getScopedValueOrNull(finalKey) ?: init() }
 
   DisposableEffect(scope, finalKey, value) {

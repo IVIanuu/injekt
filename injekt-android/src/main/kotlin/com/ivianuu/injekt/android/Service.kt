@@ -23,24 +23,24 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 /**
- * Returns a new [ServiceGivenScope] which must be manually stored and disposed
+ * Returns a new [ServiceScope] which must be manually stored and disposed
  */
-fun Service.createServiceGivenScope(): ServiceGivenScope =
-  application.appGivenScope
-    .element<@ChildScopeFactory (Service) -> ServiceGivenScope>()
+fun Service.createServiceScope(): ServiceScope =
+  application.appScope
+    .element<@ChildScopeFactory (Service) -> ServiceScope>()
     .invoke(this)
 
-typealias ServiceGivenScope = GivenScope
+typealias ServiceScope = Scope
 
-@Given val serviceGivenScopeModule =
-  ChildScopeModule1<AppGivenScope, Service, ServiceGivenScope>()
+@Provide val serviceScopeModule =
+  ChildScopeModule1<AppScope, Service, ServiceScope>()
 
 typealias ServiceContext = Context
 
-@Given inline val Service.serviceContext: ServiceContext
+@Provide inline val Service.serviceContext: ServiceContext
   get() = this
 
 typealias ServiceResources = Resources
 
-@Given inline val Service.serviceResources: ServiceResources
+@Provide inline val Service.serviceResources: ServiceResources
   get() = resources

@@ -41,10 +41,10 @@ class IncrementalFixTransformer(
   private val trace: BindingTrace,
   private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoid() {
-  private val givensByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
+  private val injectablesByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
   override fun visitFile(declaration: IrFile): IrFile {
     super.visitFile(declaration)
-    val givens = givensByFile[declaration] ?: return declaration
+    val injectables = injectablesByFile[declaration] ?: return declaration
 
     val clazz = IrFactoryImpl.buildClass {
       name = "${
@@ -56,7 +56,7 @@ class IncrementalFixTransformer(
         declaration.fileEntry.name.removeSuffix(".kt")
           .substringAfterLast(".")
           .substringAfterLast("/")
-      }_GivensMarker".asNameId()
+      }_ProvidersMarker".asNameId()
       visibility = DescriptorVisibilities.PRIVATE
     }.apply {
       createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -64,7 +64,7 @@ class IncrementalFixTransformer(
       declaration.addChild(this)
     }
 
-    val functions = givens.mapIndexed { index, callable ->
+    val functions = injectables.mapIndexed { index, callable ->
       IrFunctionImpl(
         UNDEFINED_OFFSET,
         UNDEFINED_OFFSET,
@@ -74,7 +74,7 @@ class IncrementalFixTransformer(
             override fun hasStableParameterNames(): Boolean = true
           }
         ),
-        givensLookupName(
+        injectablesLookupName(
           callable.callable.fqNameSafe.parent(),
           declaration.fqName
         ),
@@ -153,10 +153,10 @@ class IncrementalFixTransformer(
           (declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC ||
               declaration.constructedClass.visibility == DescriptorVisibilities.INTERNAL ||
               declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
-      declaration.descriptor.isGiven(context, trace)
+      declaration.descriptor.isProvide(context, trace)
     ) {
-      givensByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
-        is IrClass -> declaration.descriptor.givenConstructors(context, trace)
+      injectablesByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
+        is IrClass -> declaration.descriptor.provideConstructors(context, trace)
         is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
         is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))
         else -> return super.visitDeclaration(declaration)

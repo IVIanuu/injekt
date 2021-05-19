@@ -22,7 +22,7 @@ import com.ivianuu.injekt.*
 
 typealias AppTheme = @Composable (@Composable () -> Unit) -> Unit
 
-@Given val appTheme: AppTheme = { content ->
+@Provide val appTheme: AppTheme = { content ->
   MaterialTheme(colors = darkColors()) {
     Surface(content = content)
   }

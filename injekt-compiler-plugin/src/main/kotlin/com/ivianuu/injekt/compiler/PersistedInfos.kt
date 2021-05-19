@@ -27,9 +27,10 @@ data class PersistedTypeRef(
   @SerialName("2") val isStarProjection: Boolean,
   @SerialName("3") val isMarkedNullable: Boolean,
   @SerialName("4") val isMarkedComposable: Boolean,
-  @SerialName("5") val isGiven: Boolean,
-  @SerialName("6") val defaultOnAllErrors: Boolean,
-  @SerialName("7") val ignoreElementsWithErrors: Boolean
+  @SerialName("5") val isProvide: Boolean,
+  @SerialName("6") val isInject: Boolean,
+  @SerialName("7") val defaultOnAllErrors: Boolean,
+  @SerialName("8") val ignoreElementsWithErrors: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
@@ -38,7 +39,8 @@ fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = Persi
   isStarProjection = isStarProjection,
   isMarkedNullable = isMarkedNullable,
   isMarkedComposable = isMarkedComposable,
-  isGiven = isGiven,
+  isProvide = isProvide,
+  isInject = isInject,
   defaultOnAllErrors = defaultOnAllErrors,
   ignoreElementsWithErrors = ignoreElementsWithErrors
 )
@@ -61,7 +63,8 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace): Typ
       arguments = arguments,
       isMarkedNullable = isMarkedNullable,
       isMarkedComposable = isMarkedComposable,
-      isGiven = isGiven,
+      isProvide = isProvide,
+      isInject = isInject,
       defaultOnAllErrors = defaultOnAllErrors,
       ignoreElementsWithErrors = ignoreElementsWithErrors
     )
