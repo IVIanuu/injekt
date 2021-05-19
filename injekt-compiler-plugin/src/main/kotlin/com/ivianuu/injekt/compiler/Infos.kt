@@ -109,7 +109,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
             ?.isProvide(context, trace) == true) ||
       safeAs<FunctionDescriptor>()
         ?.valueParameters
-        ?.any { it.hasAnnotation(InjektFqNames.Provide) } == true ||
+P        ?.any { it.hasAnnotation(InjektFqNames.Inject) } == true ||
       info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
