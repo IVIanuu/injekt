@@ -528,4 +528,16 @@ class InjectableResolveTest {
       fun invoke() = inject<@TypedQualifier<Foo> String>() 
     """
     )
+
+  @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
+      """
+        @Provide val foo = Foo()
+
+        fun String.myFunc(@Inject foo: Foo) {
+        }
+      """,
+      """
+      fun invoke() = (null as? String)?.myFunc()
+    """
+    )
 }

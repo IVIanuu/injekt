@@ -643,13 +643,17 @@ class InjectCallTransformer(
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+    if (result.origin == IrStatementOrigin.EQEQ)
+      return result
+
     val graph = pluginContext.bindingContext[
         InjektWritableSlices.INJECTION_GRAPH,
         SourcePosition(fileStack.last().fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
-    val graphContext = GraphContext(graph)
+
     return DeclarationIrBuilder(pluginContext, result.symbol)
       .irBlock {
+        val graphContext = GraphContext(graph)
         try {
           ScopeContext(
             parent = null,
