@@ -73,8 +73,8 @@ interface Scope : ScopeDisposable {
     @Provide inline fun <S : Scope> Scope(
       parent: @Parent Scope? = null,
       typeKey: TypeKey<S>,
-      elements: (@Inject S, @Inject @Parent Scope?) -> Set<ScopeElement<S>> = { _, _ -> emptySet() },
-      initializers: (@Inject S, @Inject @Parent Scope?) -> Set<ScopeInitializer<S>> = { _, _ -> emptySet() }
+      elements: (@Provide S, @Provide @Parent Scope?) -> Set<ScopeElement<S>> = { _, _ -> emptySet() },
+      initializers: (@Provide S, @Provide @Parent Scope?) -> Set<ScopeInitializer<S>> = { _, _ -> emptySet() }
     ): S {
       val scope = ScopeImpl(typeKey, parent)
       scope as S

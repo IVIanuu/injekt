@@ -31,40 +31,40 @@ class ChildScopeModule0<P : Scope, C : Scope> :
 
 class ChildScopeModule1<P : Scope, P1, C : Scope> : AbstractChildScopeModule<P,
       (P1) -> C,
-      (@Inject @InstallElement<C> P1) -> C>()
+      (@Provide @InstallElement<C> P1) -> C>()
 
 class ChildScopeModule2<P : Scope, P1, P2, C : Scope> : AbstractChildScopeModule<P,
       (P1, P2) -> C,
       (
-  @Inject @InstallElement<C> P1,
-  @Inject @InstallElement<C> P2
+  @Provide @InstallElement<C> P1,
+  @Provide @InstallElement<C> P2
 ) -> C>()
 
 class ChildScopeModule3<P : Scope, P1, P2, P3, C : Scope> : AbstractChildScopeModule<P,
       (P1, P2, P3) -> C,
       (
-  @Inject @InstallElement<C> P1,
-  @Inject @InstallElement<C> P2,
-  @Inject @InstallElement<C> P3
+  @Provide @InstallElement<C> P1,
+  @Provide @InstallElement<C> P2,
+  @Provide @InstallElement<C> P3
 ) -> C>()
 
 class ChildScopeModule4<P : Scope, P1, P2, P3, P4, C : Scope> :
   AbstractChildScopeModule<P,
         (P1, P2, P3, P4) -> C,
         (
-    @Inject @InstallElement<C> P1,
-    @Inject @InstallElement<C> P2,
-    @Inject @InstallElement<C> P3,
-    @Inject @InstallElement<C> P4
+    @Provide @InstallElement<C> P1,
+    @Provide @InstallElement<C> P2,
+    @Provide @InstallElement<C> P3,
+    @Provide @InstallElement<C> P4
   ) -> C>()
 
 class ChildScopeModule5<P : Scope, P1, P2, P3, P4, P5, C : Scope> :
   AbstractChildScopeModule<P,
         (P1, P2, P3, P4, P5) -> C,
         (
-    @Inject @InstallElement<C> P1,
-    @Inject @InstallElement<C> P2,
-    @Inject @InstallElement<C> P3,
-    @Inject @InstallElement<C> P4,
-    @Inject @InstallElement<C> P5
+    @Provide @InstallElement<C> P1,
+    @Provide @InstallElement<C> P2,
+    @Provide @InstallElement<C> P3,
+    @Provide @InstallElement<C> P4,
+    @Provide @InstallElement<C> P5
   ) -> C>()

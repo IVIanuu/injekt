@@ -90,7 +90,7 @@ class PersistenceTest {
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
     """
       fun myFunction(
-        @Inject scopeFactory: (@Inject @InstallElement<AppScope> Any) -> AppScope
+        @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
       ): AppScope = TODO()
     """,
     """
