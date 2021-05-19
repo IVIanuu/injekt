@@ -139,7 +139,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
       val (element, importPath) = import
       if (importPath == null || importPath
           .any {
-            !it.isLetter() &&
+            !it.isLetterOrDigit() &&
                 it != '.' &&
                 it != '_' &&
                 it != '*'
