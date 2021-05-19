@@ -59,9 +59,9 @@ fun CallableDescriptor.callableInfo(
   val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
     .filter {
       it.hasAnnotation(InjektFqNames.Inject) ||
-          (this is FunctionInvokeDescriptor ||
+          ((this is FunctionInvokeDescriptor ||
               (this is InjectFunctionDescriptor &&
-                  underlyingDescriptor is FunctionInvokeDescriptor) &&
+                  underlyingDescriptor is FunctionInvokeDescriptor)) &&
               it.type.hasAnnotation(InjektFqNames.Inject))
     }
     .mapTo(mutableSetOf()) { it.injektName() }

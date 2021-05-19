@@ -357,6 +357,30 @@ class InjectableDeclarationTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
+  @Test fun testCanLeaveOutInjectExtensionLambdaParameters() = singleAndMultiCodegen(
+    """
+      val lambda: Unit.(@Inject Foo) -> Foo = { inject<Foo>() }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = lambda(Unit)
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
+  @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
+    """
+      val lambda: suspend (@Inject Foo) -> Foo = { inject<Foo>() }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = runBlocking { lambda() }
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
