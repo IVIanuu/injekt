@@ -54,12 +54,11 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
       checkSpreadingInjectable(declaration, descriptor.typeParameters, trace)
-      checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
     } else {
-      checkOverrides(declaration, descriptor, trace)
-      checkExceptActual(declaration, descriptor, trace)
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, trace)
     }
+    checkOverrides(declaration, descriptor, trace)
+    checkExceptActual(declaration, descriptor, trace)
     checkReceiver(descriptor, declaration, trace)
   }
 
@@ -69,7 +68,8 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     trace: BindingTrace
   ) {
     val provideConstructors = descriptor.provideConstructors(context, trace)
-    val isProvider = provideConstructors.isNotEmpty()
+    val isProvider = provideConstructors.isNotEmpty() ||
+        descriptor.hasAnnotation(InjektFqNames.Provide)
 
     if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
       trace.report(
@@ -135,9 +135,8 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
       )
     }
 
-    if (provideConstructors.isNotEmpty()) {
-      provideConstructors
-        .forEach { checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, trace) }
+    if (isProvider) {
+      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, trace)
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, trace)
     }
@@ -165,12 +164,8 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
   ) {
     checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, trace)
     checkReceiver(descriptor, declaration, trace)
-    if (descriptor.isProvide(this.context, trace)) {
-      checkSpreadTypeParametersMismatch(descriptor, declaration, trace)
-    } else {
-      checkOverrides(declaration, descriptor, trace)
-      checkExceptActual(declaration, descriptor, trace)
-    }
+    checkOverrides(declaration, descriptor, trace)
+    checkExceptActual(declaration, descriptor, trace)
   }
 
   private fun checkTypeAlias(
@@ -234,17 +229,15 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     descriptor: CallableMemberDescriptor,
     trace: BindingTrace
   ) {
-    val isProvide = descriptor.hasAnnotation(InjektFqNames.Provide)
-    if (isProvide) return
-    if (descriptor.overriddenTreeUniqueAsSequence(false)
-        .drop(1)
-        .any { it.hasAnnotation(InjektFqNames.Provide) }
-    ) {
-      trace.report(
-        Errors.NOTHING_TO_OVERRIDE
-          .on(declaration, descriptor)
-      )
-    }
+    descriptor.overriddenTreeAsSequence(false)
+      .drop(1)
+      .filterNot { isValidOverride(descriptor, it, trace) }
+      .forEach {
+        trace.report(
+          Errors.NOTHING_TO_OVERRIDE
+            .on(declaration, descriptor)
+        )
+      }
   }
 
   private fun checkExceptActual(
@@ -253,42 +246,55 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     trace: BindingTrace
   ) {
     if (!descriptor.isActual) return
-    val isProvide = descriptor.hasAnnotation(InjektFqNames.Provide)
-    if (isProvide) return
-    if (descriptor.findExpects().any { it.hasAnnotation(InjektFqNames.Provide) }) {
-      trace.report(
-        Errors.ACTUAL_WITHOUT_EXPECT
-          .on(declaration.cast(), descriptor, emptyMap())
-      )
-    }
-  }
-
-  private fun checkSpreadTypeParametersMismatch(
-    descriptor: CallableDescriptor,
-    declaration: KtDeclaration,
-    trace: BindingTrace
-  ) {
-    if (descriptor.typeParameters.isEmpty()) return
-    if (descriptor.overriddenDescriptors.isEmpty()) return
-
-    descriptor.overriddenDescriptors
-      .filter { overriddenDescriptor ->
-        var hasDifferentTypeParameters = false
-        descriptor.typeParameters.forEachWith(overriddenDescriptor.typeParameters) { a, b ->
-          hasDifferentTypeParameters = hasDifferentTypeParameters ||
-              a.classifierInfo(context, trace).isSpread !=
-              b.classifierInfo(context, trace).isSpread
-        }
-        hasDifferentTypeParameters
-      }
-      .toList()
-      .takeIf { it.isNotEmpty() }
-      ?.let {
+    descriptor.findExpects()
+      .filterNot { isValidOverride(descriptor, it, trace) }
+      .forEach {
         trace.report(
-          Errors.CONFLICTING_OVERLOADS
-            .on(declaration, it)
+          Errors.ACTUAL_WITHOUT_EXPECT
+            .on(declaration.cast(), descriptor, emptyMap())
         )
       }
+  }
+
+  private fun isValidOverride(
+    descriptor: MemberDescriptor,
+    overriddenDescriptor: MemberDescriptor,
+    trace: BindingTrace
+  ): Boolean {
+    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
+      !descriptor.hasAnnotation(InjektFqNames.Provide)) {
+      return false
+    }
+
+    if (descriptor is CallableMemberDescriptor) {
+      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters
+        .forEachWith(descriptor.valueParameters) { overriddenValueParameter, valueParameter ->
+          if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
+            valueParameter.hasAnnotation(InjektFqNames.Inject)) {
+            return false
+          }
+        }
+    }
+
+    val (typeParameters, overriddenTypeParameters) = when (descriptor) {
+      is CallableMemberDescriptor ->
+        descriptor.typeParameters to overriddenDescriptor.cast<CallableMemberDescriptor>()
+          .typeParameters
+      is ClassifierDescriptorWithTypeParameters ->
+        descriptor.declaredTypeParameters to overriddenDescriptor.cast<ClassifierDescriptorWithTypeParameters>()
+          .declaredTypeParameters
+      else -> emptyList<TypeParameterDescriptor>() to emptyList()
+    }
+
+    overriddenTypeParameters
+      .forEachWith(typeParameters) { overriddenTypeParameter, typeParameter ->
+        if (typeParameter.classifierInfo(context, trace).isSpread !=
+          overriddenTypeParameter.classifierInfo(context, trace).isSpread) {
+          return false
+        }
+      }
+
+    return true
   }
 
   private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
