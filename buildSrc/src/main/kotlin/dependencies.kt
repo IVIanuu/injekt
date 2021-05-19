@@ -31,7 +31,7 @@ object Deps {
 
   object AndroidX {
     object Activity {
-      private const val version = "1.3.0-alpha07"
+      private const val version = "1.3.0-alpha08"
       const val activity = "androidx.activity:activity:$version"
       const val compose = "androidx.activity:activity-compose:$version"
     }
