@@ -21,7 +21,7 @@ import com.ivianuu.injekt.*
 import kotlin.reflect.*
 
 /**
- * Allows to use any android system service
+ * Qualifier for android system services
  *
  * Example:
  * ```

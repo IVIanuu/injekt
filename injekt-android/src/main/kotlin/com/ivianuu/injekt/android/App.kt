@@ -30,7 +30,13 @@ val Application.appScope: AppScope
   get() = (this as? AppScopeOwner)?.appScope
     ?: error("application does not implement AppScopeOwner")
 
+/**
+ * Host of an [AppScope]
+ */
 interface AppScopeOwner {
+  /**
+   * The app scope which is typically created via [createAppScope]
+   */
   val appScope: AppScope
 }
 

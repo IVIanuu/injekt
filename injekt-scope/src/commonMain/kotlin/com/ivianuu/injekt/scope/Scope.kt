@@ -167,12 +167,12 @@ private val NoOpScopeDisposable = ScopeDisposable { }
 class ScopeElement<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**
- * Registers the declaration a element in the [Scope] [S]
+ * Registers the declaration in the [Scope] [S]
  *
  * Example:
  * ```
- * @InstallElement<AppScope>
  * @Provide
+ * @InstallElement<AppScope>
  * class MyAppDeps(val api: Api, val database: Database)
  *
  * fun runApp(@Inject appScope: AppScope) {
