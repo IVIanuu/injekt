@@ -38,7 +38,7 @@ fun HierarchicalInjectablesScope(
   trace: BindingTrace
 ): InjectablesScope {
   val finalScope = scope.takeSnapshot()
-  trace[InjektWritableSlices.HIERARCHICAL_RESOLUTION_SCOPE, finalScope]?.let { return it }
+  trace[InjektWritableSlices.HIERARCHICAL_INJECTABLES_SCOPE, finalScope]?.let { return it }
 
   val allScopes = finalScope.parentsWithSelf.toList()
 
@@ -86,7 +86,7 @@ fun HierarchicalInjectablesScope(
         else -> CodeBlockInjectablesScope(next, context, trace, parent)
       }
     }
-    .also { trace.record(InjektWritableSlices.HIERARCHICAL_RESOLUTION_SCOPE, finalScope, it) }
+    .also { trace.record(InjektWritableSlices.HIERARCHICAL_INJECTABLES_SCOPE, finalScope, it) }
 }
 
 private fun HierarchicalScope.isApplicableScope() = this is LexicalScope && (
@@ -107,6 +107,11 @@ private fun ImportInjectablesScope(
   context: InjektContext,
   trace: BindingTrace
 ): InjectablesScope {
+  if (parent == null) {
+    trace[InjektWritableSlices.IMPORT_INJECTABLES_SCOPE, imports]
+      ?.let { return it }
+  }
+
   val resolvedImports = imports.collectImportedInjectables(context, trace)
   return InjectablesScope(
     name = "$namePrefix INTERNAL IMPORTS",
@@ -130,7 +135,11 @@ private fun ImportInjectablesScope(
         .filterNot { it.callable.isExternalDeclaration(context) },
     imports = imports.map { it.resolve(context) },
     typeParameters = emptyList()
-  )
+  ).also {
+    if (parent == null) {
+      trace.record(InjektWritableSlices.IMPORT_INJECTABLES_SCOPE, imports, it)
+    }
+  }
 }
 
 private fun ClassInjectablesScope(
@@ -139,7 +148,7 @@ private fun ClassInjectablesScope(
   trace: BindingTrace,
   parent: InjectablesScope?
 ): InjectablesScope {
-  trace.get(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz)
+  trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, clazz)
     ?.let { return it }
   val companionObjectScope = clazz.companionObjectDescriptor
     ?.let { ClassInjectablesScope(it, context, trace, parent) }
@@ -171,7 +180,7 @@ private fun ClassInjectablesScope(
     initialInjectables = listOf(clazz.injectableReceiver(context, trace, false)),
     imports = emptyList(),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(context, trace) }
-  ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, clazz, it) }
+  ).also { trace.record(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, clazz, it) }
 }
 
 private fun FunctionInjectablesScope(
@@ -180,7 +189,7 @@ private fun FunctionInjectablesScope(
   trace: BindingTrace,
   parent: InjectablesScope?
 ): InjectablesScope {
-  trace.get(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, function)
+  trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, function)
     ?.let { return it }
   val finalParent = function
     .findPsi()
@@ -203,7 +212,7 @@ private fun FunctionInjectablesScope(
         .toList(),
     imports = emptyList(),
     typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
-  ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, function, it) }
+  ).also { trace.record(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, function, it) }
 }
 
 private fun PropertyInjectablesScope(
@@ -212,7 +221,7 @@ private fun PropertyInjectablesScope(
   trace: BindingTrace,
   parent: InjectablesScope?
 ): InjectablesScope {
-  trace.get(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, property)
+  trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, property)
     ?.let { return it }
   val finalParent = property
     .findPsi()
@@ -235,7 +244,7 @@ private fun PropertyInjectablesScope(
       ),
     imports = emptyList(),
     typeParameters = property.typeParameters.map { it.toClassifierRef(context, trace) }
-  ).also { trace.record(InjektWritableSlices.DECLARATION_RESOLUTION_SCOPE, property, it) }
+  ).also { trace.record(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, property, it) }
 }
 
 private fun CodeBlockInjectablesScope(
@@ -282,7 +291,7 @@ fun TypeInjectablesScope(
   lookupLocation: LookupLocation
 ): InjectablesScope {
   val finalType = type.withNullability(false)
-  trace[InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType]?.let { return it }
+  trace[InjektWritableSlices.TYPE_INJECTABLES_SCOPE, finalType]?.let { return it }
 
   val initialInjectables = finalType.collectTypeScopeInjectables(context, trace, lookupLocation)
 
@@ -297,6 +306,6 @@ fun TypeInjectablesScope(
     imports = emptyList(),
     typeParameters = emptyList()
   ).also {
-    trace.record(InjektWritableSlices.TYPE_RESOLUTION_SCOPE, finalType, it)
+    trace.record(InjektWritableSlices.TYPE_INJECTABLES_SCOPE, finalType, it)
   }
 }

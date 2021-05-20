@@ -27,11 +27,13 @@ object InjektWritableSlices {
   val USED_INJECTABLE = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
   val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
-  val DECLARATION_RESOLUTION_SCOPE =
+  val DECLARATION_INJECTABLES_SCOPE =
     BasicWritableSlice<DeclarationDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val HIERARCHICAL_RESOLUTION_SCOPE =
+  val IMPORT_INJECTABLES_SCOPE =
+    BasicWritableSlice<List<ProviderImport>, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val HIERARCHICAL_INJECTABLES_SCOPE =
     BasicWritableSlice<HierarchicalScope, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val TYPE_RESOLUTION_SCOPE =
+  val TYPE_INJECTABLES_SCOPE =
     BasicWritableSlice<TypeRef, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val CALLABLE_REF_FOR_DESCRIPTOR =
     BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
