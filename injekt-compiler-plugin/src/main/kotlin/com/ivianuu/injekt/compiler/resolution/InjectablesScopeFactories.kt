@@ -252,6 +252,7 @@ private fun CodeBlockInjectablesScope(
     ?.findPsi()
     ?.getParentOfType<KtCallExpression>(false)
     ?.getResolvedCall(trace.bindingContext)
+    ?.takeIf { it.resultingDescriptor.fqNameSafe == InjektFqNames.withProviders }
     ?.valueArguments
     ?.values
     ?.firstOrNull()
