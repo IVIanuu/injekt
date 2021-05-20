@@ -151,21 +151,7 @@ fun CallableRef.getInjectableRequests(
         it.isProvide(context, trace) ||
         parameterTypes[it.injektName()]!!.isProvide
   }
-  .map { parameter ->
-    val name = parameter.injektName()
-    InjectableRequest(
-      type = parameterTypes[name]!!,
-      defaultStrategy = if (parameter is ValueParameterDescriptor && parameter.hasDefaultValueIgnoringInject) {
-        if (name in defaultOnAllErrorParameters) InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-        else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
-      } else InjectableRequest.DefaultStrategy.NONE,
-      callableFqName = parameter.containingDeclaration.fqNameSafe,
-      parameterName = name.asNameId(),
-      isInline = callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-          InlineUtil.isInlineParameter(parameter),
-      isLazy = false
-    )
-  }
+  .map { it.toInjectableRequest(this) }
   .toList()
 
 data class InjectableRequest(
@@ -179,4 +165,21 @@ data class InjectableRequest(
   enum class DefaultStrategy {
     NONE, DEFAULT_IF_NOT_PROVIDED, DEFAULT_ON_ALL_ERRORS
   }
+}
+
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
+  val name = injektName()
+  return InjectableRequest(
+    type = callable.parameterTypes[name]!!,
+    defaultStrategy = if (this is ValueParameterDescriptor && hasDefaultValueIgnoringInject) {
+      if (name in callable.defaultOnAllErrorParameters)
+        InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
+      else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
+    } else InjectableRequest.DefaultStrategy.NONE,
+    callableFqName = containingDeclaration.fqNameSafe,
+    parameterName = name.asNameId(),
+    isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
+        InlineUtil.isInlineParameter(this),
+    isLazy = false
+  )
 }

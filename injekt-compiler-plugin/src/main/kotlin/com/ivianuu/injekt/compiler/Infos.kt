@@ -26,7 +26,11 @@ data class CallableInfo(
   val parameterTypes: Map<String, TypeRef> = emptyMap(),
   val injectParameters: Set<String> = emptySet(),
   val defaultOnAllErrorsParameters: Set<String> = emptySet()
-)
+) {
+  companion object {
+    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
+  }
+}
 
 fun CallableDescriptor.callableInfo(
   context: InjektContext,
@@ -43,6 +47,10 @@ fun CallableDescriptor.callableInfo(
       trace.record(InjektWritableSlices.CALLABLE_INFO, this, it)
       return it
     }
+
+  // if this is a deserialized declaration and no info was persisted
+  // we can return a dummy object because this callable is not relevant for injekt
+  if (isDeserializedDeclaration()) return CallableInfo.Empty
 
   val type = run {
     val qualifiers = if (this is ConstructorDescriptor)
@@ -215,7 +223,13 @@ fun ClassifierDescriptor.classifierInfo(
     }
   }
 
-  val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+  val isDeserialized = isDeserializedDeclaration()
+
+  val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+    .map { it.type.toTypeRef(context, trace) }
+
+  val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
+  else safeAs<ClassDescriptor>()
     ?.unsubstitutedPrimaryConstructor
     ?.valueParameters
     ?.asSequence()
@@ -224,13 +238,15 @@ fun ClassifierDescriptor.classifierInfo(
     ?.toList()
     ?: emptyList()
 
-  val isSpread = hasAnnotation(InjektFqNames.Spread) ||
+  val isSpread = if (isDeserialized) false
+  else hasAnnotation(InjektFqNames.Spread) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
 
-  val isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
+  val isForTypeKey = if (isDeserialized) false
+  else hasAnnotation(InjektFqNames.ForTypeKey) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
 
-  val isSingletonInjectable = !isDeserializedDeclaration() &&
+  val isSingletonInjectable = !isDeserialized &&
       this is ClassDescriptor &&
       kind == ClassKind.CLASS &&
       constructors
@@ -251,8 +267,7 @@ fun ClassifierDescriptor.classifierInfo(
     }
 
   val info = ClassifierInfo(
-    qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-      .map { it.type.toTypeRef(context, trace) },
+    qualifiers = qualifiers,
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
