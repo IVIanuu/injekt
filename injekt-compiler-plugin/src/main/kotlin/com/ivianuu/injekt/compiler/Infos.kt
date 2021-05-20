@@ -38,15 +38,21 @@ fun CallableDescriptor.callableInfo(
 ): CallableInfo {
   trace[InjektWritableSlices.CALLABLE_INFO, this]?.let { return it }
 
-  annotations
-    .findAnnotation(InjektFqNames.CallableInfo)
-    ?.readChunkedValue()
-    ?.decode<PersistedCallableInfo>()
-    ?.toCallableInfo(context, trace)
-    ?.let {
-      trace.record(InjektWritableSlices.CALLABLE_INFO, this, it)
-      return it
-    }
+  if (isDeserializedDeclaration()) {
+    annotations
+      .findAnnotation(InjektFqNames.CallableInfo)
+      ?.readChunkedValue()
+      ?.decode<PersistedCallableInfo>()
+      ?.toCallableInfo(context, trace)
+      ?.let {
+        trace.record(InjektWritableSlices.CALLABLE_INFO, this, it)
+        return it
+      }
+
+    // if this is a deserialized declaration and no info was persisted
+    // we can return a dummy object because this callable is not relevant for injekt
+    return CallableInfo.Empty
+  }
 
   // if this is a deserialized declaration and no info was persisted
   // we can return a dummy object because this callable is not relevant for injekt
@@ -188,26 +194,28 @@ fun ClassifierDescriptor.classifierInfo(
 ): ClassifierInfo {
   trace[InjektWritableSlices.CLASSIFIER_INFO, this]?.let { return it }
 
-  (if (this is TypeParameterDescriptor) {
-    containingDeclaration
-      .annotations
-      .findAnnotation(InjektFqNames.TypeParameterInfos)
-      ?.readChunkedValue()
-      ?.split("=:=")
-      ?.get(cast<TypeParameterDescriptor>().index)
-      ?.takeIf { it.isNotEmpty() }
-      ?.decode<PersistedClassifierInfo>()
-      ?.toClassifierInfo(context, trace)
-  } else {
-    annotations
-      .findAnnotation(InjektFqNames.ClassifierInfo)
-      ?.readChunkedValue()
-      ?.cast<String>()
-      ?.decode<PersistedClassifierInfo>()
-      ?.toClassifierInfo(context, trace)
-  })?.let {
-    trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, it)
-    return it
+  if (isDeserializedDeclaration()) {
+    (if (this is TypeParameterDescriptor) {
+      containingDeclaration
+        .annotations
+        .findAnnotation(InjektFqNames.TypeParameterInfos)
+        ?.readChunkedValue()
+        ?.split("=:=")
+        ?.get(cast<TypeParameterDescriptor>().index)
+        ?.takeIf { it.isNotEmpty() }
+        ?.decode<PersistedClassifierInfo>()
+        ?.toClassifierInfo(context, trace)
+    } else {
+      annotations
+        .findAnnotation(InjektFqNames.ClassifierInfo)
+        ?.readChunkedValue()
+        ?.cast<String>()
+        ?.decode<PersistedClassifierInfo>()
+        ?.toClassifierInfo(context, trace)
+    })?.let {
+      trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, it)
+      return it
+    }
   }
 
   val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
@@ -327,7 +335,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
       info.superTypes.none { it.shouldBePersisted() }
     ) return
 
-    val typeParameterInfos = (container.annotations
+    fun loadTypeParameterInfos() = (container.annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)
       ?.readChunkedValue()
       ?.split("=:=")
@@ -335,18 +343,27 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
         when (container) {
           is CallableDescriptor -> container.typeParameters
           is ClassifierDescriptorWithTypeParameters -> container.declaredTypeParameters
-          else -> return
+          else -> throw AssertionError()
         }.map { "" }
       }).toMutableList()
-    if (typeParameterInfos[index].isEmpty()) {
+
+    val initialInfosAnnotation = container.annotations
+      .findAnnotation(InjektFqNames.TypeParameterInfos)
+    val initialTypeParameterInfos = loadTypeParameterInfos()
+    if (initialTypeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo(context).encode()
-      typeParameterInfos[index] = serializedInfo
+      // load again if the annotation has changed
+      val finalTypeParameterInfos =
+        if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfos) !=
+          initialInfosAnnotation) loadTypeParameterInfos()
+      else initialTypeParameterInfos
+      finalTypeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           context.module.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektFqNames.TypeParameterInfos)
           )?.defaultType ?: return,
-          typeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
+          finalTypeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
           SourceElement.NO_SOURCE
         )
       )
