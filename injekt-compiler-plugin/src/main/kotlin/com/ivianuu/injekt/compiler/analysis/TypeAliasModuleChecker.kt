@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class TypeAliasModuleChecker(
   private val context: InjektContext
@@ -27,7 +28,7 @@ class TypeAliasModuleChecker(
     )?.getContributedClassifier(
       descriptor.name.asString().removeSuffix("Module").asNameId(),
       lookupLocation
-    ) ?: return
+    )?.safeAs<TypeAliasDescriptor>() ?: return
 
     if (descriptor.kind != ClassKind.OBJECT) {
       context.trace.report(
