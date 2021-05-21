@@ -8,9 +8,7 @@ import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class TypeAliasModuleChecker(
-  private val context: InjektContext
-) : DeclarationChecker {
+class TypeAliasModuleChecker(private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
