@@ -23,9 +23,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
  */
 data class CallableInfo(
   val type: TypeRef,
-  val parameterTypes: Map<String, TypeRef> = emptyMap(),
-  val injectParameters: Set<String> = emptySet(),
-  val defaultOnAllErrorsParameters: Set<String> = emptySet()
+  val parameterTypes: Map<Int, TypeRef> = emptyMap(),
+  val injectParameters: Set<Int> = emptySet(),
+  val defaultOnAllErrorsParameters: Set<Int> = emptySet()
 ) {
   companion object {
     val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
@@ -67,7 +67,7 @@ fun CallableDescriptor.callableInfo(
   }
 
   val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-    .map { it.injektName() to it.type.toTypeRef(context, trace) }
+    .map { it.injektIndex() to it.type.toTypeRef(context, trace) }
     .toMap()
 
   val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
@@ -78,12 +78,12 @@ fun CallableDescriptor.callableInfo(
                   underlyingDescriptor is FunctionInvokeDescriptor)) &&
               it.type.hasAnnotation(InjektFqNames.Inject))
     }
-    .mapTo(mutableSetOf()) { it.injektName() }
+    .mapTo(mutableSetOf()) { it.injektIndex() }
 
   val defaultOnAllErrorsParameters = valueParameters
     .asSequence()
     .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
-    .mapTo(mutableSetOf()) { it.injektName() }
+    .mapTo(mutableSetOf()) { it.injektIndex() }
 
   val info = CallableInfo(
     type = type,
@@ -149,9 +149,9 @@ private fun CallableDescriptor.persistInfoIfNeeded(
 @Serializable
 data class PersistedCallableInfo(
   @SerialName("0") val type: PersistedTypeRef,
-  @SerialName("1") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
-  @SerialName("2") val injectParameters: Set<String> = emptySet(),
-  @SerialName("3") val defaultOnAllErrorsParameters: Set<String> = emptySet()
+  @SerialName("1") val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
+  @SerialName("2") val injectParameters: Set<Int> = emptySet(),
+  @SerialName("3") val defaultOnAllErrorsParameters: Set<Int> = emptySet()
 )
 
 fun CallableInfo.toPersistedCallableInfo(context: InjektContext) = PersistedCallableInfo(

@@ -206,20 +206,42 @@ fun checkCancelled() {
   }
 }
 
-const val DISPATCH_RECEIVER_NAME = "\$dispatchReceiver"
-const val EXTENSION_RECEIVER_NAME = "\$extensionReceiver"
+val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
+val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(): String {
-  val callable = containingDeclaration as? CallableDescriptor
-  return when {
-    original == callable?.dispatchReceiverParameter?.original ||
-        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
-    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
-    else -> if (name.isSpecial)
+fun ParameterDescriptor.injektName(): Name {
+  return if (this is ValueParameterDescriptor) {
+    if (name.isSpecial)
       (type.getAbbreviation() ?: type)
         .constructor.declarationDescriptor!!.name
         .asString().decapitalize()
-    else name.asString()
+        .asNameId()
+    else name
+  } else {
+    val callable = containingDeclaration as? CallableDescriptor
+    when {
+      original == callable?.dispatchReceiverParameter?.original ||
+          (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
+      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
+      else -> throw AssertionError()
+    }
+  }
+}
+
+const val DISPATCH_RECEIVER_INDEX = -2
+const val EXTENSION_RECEIVER_INDEX = -1
+
+fun ParameterDescriptor.injektIndex(): Int {
+  return if (this is ValueParameterDescriptor) {
+    index
+  } else {
+    val callable = containingDeclaration as? CallableDescriptor
+    when {
+      original == callable?.dispatchReceiverParameter?.original ||
+          (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
+      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
+      else -> throw AssertionError()
+    }
   }
 }
 

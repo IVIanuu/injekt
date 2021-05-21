@@ -98,6 +98,7 @@ class ProviderInjectable(
       else InjectableRequest.DefaultStrategy.NONE,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
+      parameterIndex = 0,
       isInline = isInline,
       isLazy = !isInline
     )
@@ -149,7 +150,7 @@ fun CallableRef.getInjectableRequests(
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
         it.isProvide(context, trace) ||
-        parameterTypes[it.injektName()]!!.isProvide
+        parameterTypes[it.injektIndex()]!!.isProvide
   }
   .map { it.toInjectableRequest(this) }
   .toList()
@@ -159,6 +160,7 @@ data class InjectableRequest(
   val defaultStrategy: DefaultStrategy,
   val callableFqName: FqName,
   val parameterName: Name,
+  val parameterIndex: Int,
   val isInline: Boolean,
   val isLazy: Boolean
 ) {
@@ -168,16 +170,17 @@ data class InjectableRequest(
 }
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
-  val name = injektName()
+  val index = injektIndex()
   return InjectableRequest(
-    type = callable.parameterTypes[name]!!,
+    type = callable.parameterTypes[index]!!,
     defaultStrategy = if (this is ValueParameterDescriptor && hasDefaultValueIgnoringInject) {
-      if (name in callable.defaultOnAllErrorParameters)
+      if (index in callable.defaultOnAllErrorParameters)
         InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
       else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
     } else InjectableRequest.DefaultStrategy.NONE,
     callableFqName = containingDeclaration.fqNameSafe,
-    parameterName = name.asNameId(),
+    parameterName = injektName(),
+    parameterIndex = injektIndex(),
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this),
     isLazy = false
