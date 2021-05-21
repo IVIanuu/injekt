@@ -58,7 +58,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
     fqName: FqName,
     lookupLocation: LookupLocation
   ): ClassifierDescriptor? = memberScopeForFqName(fqName.parent(), lookupLocation)
-  ?   .getContributedClassifier(fqName.shortName(), lookupLocation)
+    ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
   fun classifierDescriptorForKey(key: String, trace: BindingTrace): ClassifierDescriptor {
     trace.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
