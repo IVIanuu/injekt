@@ -181,8 +181,8 @@ class ClassifierInfo(
   val qualifiers: List<TypeRef> = emptyList(),
   val lazySuperTypes: Lazy<List<TypeRef>> = unsafeLazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  val isSpread: Boolean,
-  val isForTypeKey: Boolean,
+  val isSpread: Boolean = false,
+  val isForTypeKey: Boolean = false,
   val isSingletonInjectable: Boolean = false
 ) {
   val superTypes by lazySuperTypes
