@@ -39,7 +39,7 @@ class InjectValueParameterDescriptor(
   underlyingDescriptor,
   underlyingDescriptor.index,
   underlyingDescriptor.annotations,
-  underlyingDescriptor.injektName().asNameId(),
+  underlyingDescriptor.injektName(),
   underlyingDescriptor.type,
   underlyingDescriptor.isInject(context, trace) || underlyingDescriptor.declaresDefaultValue(),
   underlyingDescriptor.isCrossinline,

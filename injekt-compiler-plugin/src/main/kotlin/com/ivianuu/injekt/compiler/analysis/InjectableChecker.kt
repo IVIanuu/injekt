@@ -209,8 +209,7 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     trace: BindingTrace
   ) {
     val spreadParameters = typeParameters.filter {
-      it.classifierInfo(context, trace)
-        .isSpread
+      it.classifierInfo(context, trace).isSpread
     }
     if (spreadParameters.size > 1) {
       spreadParameters

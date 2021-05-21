@@ -151,14 +151,14 @@ class InjectCallTransformer(
       .forEach { (request, result) ->
         if (result !is ResolutionResult.Success.WithCandidate) return@forEach
         val expression = context.expressionFor(result)
-        when (request.parameterName.asString()) {
-          DISPATCH_RECEIVER_NAME -> dispatchReceiver = expression
-          EXTENSION_RECEIVER_NAME -> extensionReceiver = expression
+        when (request.parameterIndex) {
+          DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
+          EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
           else -> {
             putValueArgument(
               symbol.owner
                 .valueParameters
-                .first { it.descriptor.injektName() == request.parameterName.asString() }
+                .first { it.descriptor.injektIndex() == request.parameterIndex }
                 .index,
               expression
             )

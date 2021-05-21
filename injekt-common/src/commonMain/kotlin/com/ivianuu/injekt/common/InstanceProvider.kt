@@ -18,7 +18,7 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
 
-// todo make tuples value classes
+// todo use value classes
 
 class InstanceProvider1<A>(@Provide val a: A)
 

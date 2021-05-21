@@ -301,6 +301,7 @@ class InjectablesScope(
                 else InjectableRequest.DefaultStrategy.NONE,
                 callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].render()}>"),
                 parameterName = "element$index".asNameId(),
+                parameterIndex = index,
                 isInline = false,
                 isLazy = false
               )
@@ -457,7 +458,7 @@ class InjectablesScope(
    */
   private fun Injectable.isValidObjectRequest(request: InjectableRequest): Boolean {
     if (!request.type.classifier.isObject) return true
-    return request.parameterName.asString() == DISPATCH_RECEIVER_NAME ||
+    return request.parameterName == DISPATCH_RECEIVER_NAME ||
         (this !is CallableInjectable ||
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()

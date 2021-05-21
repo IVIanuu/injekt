@@ -209,7 +209,7 @@ class SpreadingInjectableTest {
     """
   )
 
-  @Test fun testUiDecorator() = singleAndMultiCodegen(
+  @Test fun testUiDecorator() = multiCodegen(
     """
       typealias UiDecorator = @Composable (@Composable () -> Unit) -> Unit
   

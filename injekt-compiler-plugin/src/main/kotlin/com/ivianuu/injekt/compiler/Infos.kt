@@ -23,10 +23,14 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
  */
 data class CallableInfo(
   val type: TypeRef,
-  val parameterTypes: Map<String, TypeRef> = emptyMap(),
-  val injectParameters: Set<String> = emptySet(),
-  val defaultOnAllErrorsParameters: Set<String> = emptySet()
-)
+  val parameterTypes: Map<Int, TypeRef> = emptyMap(),
+  val injectParameters: Set<Int> = emptySet(),
+  val defaultOnAllErrorsParameters: Set<Int> = emptySet()
+) {
+  companion object {
+    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
+  }
+}
 
 fun CallableDescriptor.callableInfo(
   context: InjektContext,
@@ -34,15 +38,25 @@ fun CallableDescriptor.callableInfo(
 ): CallableInfo {
   trace[InjektWritableSlices.CALLABLE_INFO, this]?.let { return it }
 
-  annotations
-    .findAnnotation(InjektFqNames.CallableInfo)
-    ?.readChunkedValue()
-    ?.decode<PersistedCallableInfo>()
-    ?.toCallableInfo(context, trace)
-    ?.let {
-      trace.record(InjektWritableSlices.CALLABLE_INFO, this, it)
-      return it
-    }
+  if (isDeserializedDeclaration()) {
+    annotations
+      .findAnnotation(InjektFqNames.CallableInfo)
+      ?.readChunkedValue()
+      ?.decode<PersistedCallableInfo>()
+      ?.toCallableInfo(context, trace)
+      ?.let {
+        trace.record(InjektWritableSlices.CALLABLE_INFO, this, it)
+        return it
+      }
+
+    // if this is a deserialized declaration and no info was persisted
+    // we can return a dummy object because this callable is not relevant for injekt
+    return CallableInfo.Empty
+  }
+
+  // if this is a deserialized declaration and no info was persisted
+  // we can return a dummy object because this callable is not relevant for injekt
+  if (isDeserializedDeclaration()) return CallableInfo.Empty
 
   val type = run {
     val qualifiers = if (this is ConstructorDescriptor)
@@ -53,7 +67,7 @@ fun CallableDescriptor.callableInfo(
   }
 
   val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-    .map { it.injektName() to it.type.toTypeRef(context, trace) }
+    .map { it.injektIndex() to it.type.toTypeRef(context, trace) }
     .toMap()
 
   val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
@@ -64,12 +78,12 @@ fun CallableDescriptor.callableInfo(
                   underlyingDescriptor is FunctionInvokeDescriptor)) &&
               it.type.hasAnnotation(InjektFqNames.Inject))
     }
-    .mapTo(mutableSetOf()) { it.injektName() }
+    .mapTo(mutableSetOf()) { it.injektIndex() }
 
   val defaultOnAllErrorsParameters = valueParameters
     .asSequence()
     .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
-    .mapTo(mutableSetOf()) { it.injektName() }
+    .mapTo(mutableSetOf()) { it.injektIndex() }
 
   val info = CallableInfo(
     type = type,
@@ -135,9 +149,9 @@ private fun CallableDescriptor.persistInfoIfNeeded(
 @Serializable
 data class PersistedCallableInfo(
   @SerialName("0") val type: PersistedTypeRef,
-  @SerialName("1") val parameterTypes: Map<String, PersistedTypeRef> = emptyMap(),
-  @SerialName("2") val injectParameters: Set<String> = emptySet(),
-  @SerialName("3") val defaultOnAllErrorsParameters: Set<String> = emptySet()
+  @SerialName("1") val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
+  @SerialName("2") val injectParameters: Set<Int> = emptySet(),
+  @SerialName("3") val defaultOnAllErrorsParameters: Set<Int> = emptySet()
 )
 
 fun CallableInfo.toPersistedCallableInfo(context: InjektContext) = PersistedCallableInfo(
@@ -167,8 +181,8 @@ class ClassifierInfo(
   val qualifiers: List<TypeRef> = emptyList(),
   val lazySuperTypes: Lazy<List<TypeRef>> = unsafeLazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  val isSpread: Boolean,
-  val isForTypeKey: Boolean,
+  val isSpread: Boolean = false,
+  val isForTypeKey: Boolean = false,
   val isSingletonInjectable: Boolean = false
 ) {
   val superTypes by lazySuperTypes
@@ -180,26 +194,28 @@ fun ClassifierDescriptor.classifierInfo(
 ): ClassifierInfo {
   trace[InjektWritableSlices.CLASSIFIER_INFO, this]?.let { return it }
 
-  (if (this is TypeParameterDescriptor) {
-    containingDeclaration
-      .annotations
-      .findAnnotation(InjektFqNames.TypeParameterInfos)
-      ?.readChunkedValue()
-      ?.split("=:=")
-      ?.get(cast<TypeParameterDescriptor>().index)
-      ?.takeIf { it.isNotEmpty() }
-      ?.decode<PersistedClassifierInfo>()
-      ?.toClassifierInfo(context, trace)
-  } else {
-    annotations
-      .findAnnotation(InjektFqNames.ClassifierInfo)
-      ?.readChunkedValue()
-      ?.cast<String>()
-      ?.decode<PersistedClassifierInfo>()
-      ?.toClassifierInfo(context, trace)
-  })?.let {
-    trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, it)
-    return it
+  if (isDeserializedDeclaration()) {
+    (if (this is TypeParameterDescriptor) {
+      containingDeclaration
+        .annotations
+        .findAnnotation(InjektFqNames.TypeParameterInfos)
+        ?.readChunkedValue()
+        ?.split("=:=")
+        ?.get(cast<TypeParameterDescriptor>().index)
+        ?.takeIf { it.isNotEmpty() }
+        ?.decode<PersistedClassifierInfo>()
+        ?.toClassifierInfo(context, trace)
+    } else {
+      annotations
+        .findAnnotation(InjektFqNames.ClassifierInfo)
+        ?.readChunkedValue()
+        ?.cast<String>()
+        ?.decode<PersistedClassifierInfo>()
+        ?.toClassifierInfo(context, trace)
+    })?.let {
+      trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, it)
+      return it
+    }
   }
 
   val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
@@ -215,7 +231,13 @@ fun ClassifierDescriptor.classifierInfo(
     }
   }
 
-  val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+  val isDeserialized = isDeserializedDeclaration()
+
+  val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+    .map { it.type.toTypeRef(context, trace) }
+
+  val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
+  else safeAs<ClassDescriptor>()
     ?.unsubstitutedPrimaryConstructor
     ?.valueParameters
     ?.asSequence()
@@ -224,13 +246,15 @@ fun ClassifierDescriptor.classifierInfo(
     ?.toList()
     ?: emptyList()
 
-  val isSpread = hasAnnotation(InjektFqNames.Spread) ||
+  val isSpread = if (isDeserialized) false
+  else hasAnnotation(InjektFqNames.Spread) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
 
-  val isForTypeKey = hasAnnotation(InjektFqNames.ForTypeKey) ||
+  val isForTypeKey = if (isDeserialized) false
+  else hasAnnotation(InjektFqNames.ForTypeKey) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
 
-  val isSingletonInjectable = !isDeserializedDeclaration() &&
+  val isSingletonInjectable = !isDeserialized &&
       this is ClassDescriptor &&
       kind == ClassKind.CLASS &&
       constructors
@@ -251,8 +275,7 @@ fun ClassifierDescriptor.classifierInfo(
     }
 
   val info = ClassifierInfo(
-    qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-      .map { it.type.toTypeRef(context, trace) },
+    qualifiers = qualifiers,
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
@@ -312,7 +335,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
       info.superTypes.none { it.shouldBePersisted() }
     ) return
 
-    val typeParameterInfos = (container.annotations
+    fun loadTypeParameterInfos() = (container.annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)
       ?.readChunkedValue()
       ?.split("=:=")
@@ -320,18 +343,27 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
         when (container) {
           is CallableDescriptor -> container.typeParameters
           is ClassifierDescriptorWithTypeParameters -> container.declaredTypeParameters
-          else -> return
+          else -> throw AssertionError()
         }.map { "" }
       }).toMutableList()
-    if (typeParameterInfos[index].isEmpty()) {
+
+    val initialInfosAnnotation = container.annotations
+      .findAnnotation(InjektFqNames.TypeParameterInfos)
+    val initialTypeParameterInfos = loadTypeParameterInfos()
+    if (initialTypeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo(context).encode()
-      typeParameterInfos[index] = serializedInfo
+      // load again if the annotation has changed
+      val finalTypeParameterInfos =
+        if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfos) !=
+          initialInfosAnnotation) loadTypeParameterInfos()
+      else initialTypeParameterInfos
+      finalTypeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           context.module.findClassAcrossModuleDependencies(
             ClassId.topLevel(InjektFqNames.TypeParameterInfos)
           )?.defaultType ?: return,
-          typeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
+          finalTypeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
           SourceElement.NO_SOURCE
         )
       )

@@ -48,7 +48,7 @@ fun TypeRef.collectInjectables(
             type = arguments.last(),
             isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
-              .also { it[callable.callable.dispatchReceiverParameter!!.injektName()] = this }
+              .also { it[DISPATCH_RECEIVER_INDEX] = this }
           ).substitute(classifier.typeParameters.toMap(arguments))
         }
     )
@@ -77,9 +77,7 @@ fun TypeRef.collectInjectables(
           isProvide = true,
           parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
             callable.parameterTypes.toMutableMap()
-              .also {
-                it[callable.callable.dispatchReceiverParameter!!.injektName()] = this
-              }
+              .also { it[DISPATCH_RECEIVER_INDEX] = this }
           } else callable.parameterTypes
         )
       }

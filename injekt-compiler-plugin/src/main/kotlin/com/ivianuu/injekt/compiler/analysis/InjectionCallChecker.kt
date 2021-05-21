@@ -19,13 +19,9 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.inline.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectionCallChecker(private val context: InjektContext) : CallChecker {
   override fun check(
@@ -34,7 +30,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     context: CallCheckerContext
   ) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is FunctionDescriptor) return
+    if (resultingDescriptor !is InjectFunctionDescriptor) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -50,43 +46,24 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
       null
     }
 
-    if (resultingDescriptor.valueParameters.none {
-        it.isInject(this.context, context.trace)
-      }) return
-
     val substitutionMap = resolvedCall.typeArguments
       .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
       .mapValues { it.value.toTypeRef(this.context, context.trace) }
       .filter { it.key != it.value.classifier }
 
-    val callable = resultingDescriptor.toCallableRef(this.context, context.trace)
+    val callable = resultingDescriptor
+      .toCallableRef(this.context, context.trace)
       .substitute(substitutionMap)
 
-    val requests = callable.injectParameters
-      .asSequence()
-      .map { parameterName ->
-        callable.callable.valueParameters.single {
-          it.injektName() == parameterName
-        }
+    val valueArgumentsByIndex = resolvedCall.valueArguments
+      .mapKeys { it.key.index }
+
+    val requests = callable.callable.valueParameters
+      .filter {
+        valueArgumentsByIndex[it.index] is DefaultValueArgument &&
+            it.isInject(this.context, context.trace)
       }
-      .filter { resolvedCall.valueArguments[it] is DefaultValueArgument }
-      .map { parameter ->
-        InjectableRequest(
-          type = callable.parameterTypes[parameter.injektName()]!!,
-          defaultStrategy = if (parameter is ValueParameterDescriptor &&
-            parameter.hasDefaultValueIgnoringInject
-          ) {
-            if (parameter.injektName() in callable.defaultOnAllErrorParameters)
-              InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-            else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
-          } else InjectableRequest.DefaultStrategy.NONE,
-          callableFqName = resultingDescriptor.fqNameSafe,
-          parameterName = parameter.injektName().asNameId(),
-          isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-              InlineUtil.isInlineParameter(parameter),
-          isLazy = false
-        )
-      }
+      .map { it.toInjectableRequest(callable) }
       .toList()
 
     if (requests.isEmpty()) return
