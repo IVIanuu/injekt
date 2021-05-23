@@ -201,6 +201,18 @@ class InjectableDeclarationTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
+  @Test fun testProvideDelegatedLocalVariable() = codegen(
+    """
+      fun invoke(foo: Foo): Foo {
+        @Provide val providedFoo by lazy { foo }
+        return inject()
+      }
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
   @Test fun testInjectConstructorParameterInFieldInitializer() = singleAndMultiCodegen(
     """
       class MyClass(@Inject foo: Foo) {
@@ -399,7 +411,8 @@ class InjectableDeclarationTest {
         @Provide val providedA = a
         inject<Foo>() to run {
           @Provide val providedB = b
-          inject<Foo>()
+          inject<Foo>()DeclarationIrBuilder(pluginContext, symbol)
+      .irGet(localVariables.single { it.descriptor == descriptor })
         }
       }
     """

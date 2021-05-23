@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.cfg.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.builders.declarations.*
@@ -40,6 +41,7 @@ import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
+import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.*
@@ -558,9 +560,19 @@ class InjectCallTransformer(
       }
   }
 
-  private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression =
-    DeclarationIrBuilder(pluginContext, symbol)
-      .irGet(localVariables.single { it.descriptor == descriptor })
+  private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression {
+    return if (descriptor is LocalVariableDescriptor && descriptor.isDelegated) {
+      val localFunction = localFunctions.single { candidateFunction ->
+        candidateFunction.descriptor
+          .safeAs<LocalVariableAccessorDescriptor.Getter>()
+          ?.correspondingVariable == descriptor
+      }
+      DeclarationIrBuilder(pluginContext, symbol).irCall(localFunction)
+    } else {
+      DeclarationIrBuilder(pluginContext, symbol)
+        .irGet(localVariables.single { it.descriptor == descriptor })
+    }
+  }
 
   private fun ClassConstructorDescriptor.irConstructor(): IrConstructor {
     if (constructedClass.visibility == DescriptorVisibilities.LOCAL) {
