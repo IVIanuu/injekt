@@ -84,8 +84,7 @@ inline fun <T> inject(@Inject value: T): T = value
 inline fun <T> injectOrElse(
   @Inject @DefaultOnAllErrors value: T? = null,
   defaultValue: () -> T
-): T =
-  value ?: defaultValue()
+): T = value ?: defaultValue()
 
 /**
  * Returns a provided instance of [T] or null
