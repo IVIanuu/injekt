@@ -312,7 +312,7 @@ private fun InjectablesScope.resolveCandidates(
     successes.singleOrNull()
       ?: successes
         .distinctBy {
-          it.cast<ResolutionResult.Success.WithCandidate.Value>()
+          it.cast<ResolutionResult.Success.WithCandidate>()
             .candidate
             .cast<CallableInjectable>()
             .callable
