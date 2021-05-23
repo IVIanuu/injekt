@@ -31,9 +31,12 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
@@ -211,12 +214,19 @@ val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
 fun ParameterDescriptor.injektName(): Name {
   return if (this is ValueParameterDescriptor) {
-    if (name.isSpecial)
-      (type.getAbbreviation() ?: type)
-        .constructor.declarationDescriptor!!.name
-        .asString().decapitalize()
+    if (name.isSpecial) {
+      val finalType = type.getAbbreviation() ?: type
+      val constructor = finalType.constructor
+      if (constructor is TypeVariableTypeConstructor)
+        constructor.debugName
+          .decapitalize()
+          .asNameId()
+      else constructor.declarationDescriptor!!
+        .name
+        .asString()
+        .decapitalize()
         .asNameId()
-    else name
+    } else name
   } else {
     val callable = containingDeclaration as? CallableDescriptor
     when {
