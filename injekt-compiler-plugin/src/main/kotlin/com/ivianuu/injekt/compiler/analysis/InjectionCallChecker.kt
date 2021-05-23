@@ -68,7 +68,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
 
     if (requests.isEmpty()) return
 
-    val scope = HierarchicalInjectablesScope(this.context, context.scope, context.trace)
+    val scope = HierarchicalInjectablesScope(this.context, context.trace, context.scope, callExpression)
 
     when (val graph = scope.resolveRequests(requests, callExpression.lookupLocation) { result ->
       if (result.candidate is CallableInjectable) {

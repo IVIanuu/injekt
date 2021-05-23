@@ -540,4 +540,27 @@ class InjectableResolveTest {
       fun invoke() = (null as? String)?.myFunc()
     """
     )
+
+  @Test fun testCanResolveProvideParameterInDefaultValueOfFollowingParameter() = codegen(
+    """
+      fun invoke(@Provide foo: Foo, bar: Bar = Bar(inject())) {
+      }
+    """
+  )
+
+  @Test fun testCannotResolveProvideParameterInDefaultValueOfPreviousParameter() = codegen(
+    """
+      fun invoke(bar: Bar = Bar(inject()), @Provide foo: Foo) {
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCanResolveReceiverInDefaultValueOfParameter() = codegen(
+    """
+      fun Foo.invoke(bar: Bar = Bar(inject())) {
+      }
+    """
+  )
 }

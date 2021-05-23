@@ -29,6 +29,14 @@ object InjektWritableSlices {
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val DECLARATION_INJECTABLES_SCOPE =
     BasicWritableSlice<DeclarationDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val FUNCTION_IMPORTS_SCOPE =
+    BasicWritableSlice<DeclarationDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val FUNCTION_INJECTABLES_SCOPE =
+    BasicWritableSlice<FunctionDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val FUNCTION_PARAMETER_INJECTABLES_SCOPE =
+    BasicWritableSlice<ParameterDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val FUNCTION_PARAMETER_DEFAULT_VALUE_INJECTABLES_SCOPE =
+    BasicWritableSlice<ParameterDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val IMPORT_INJECTABLES_SCOPE =
     BasicWritableSlice<List<ProviderImport>, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val HIERARCHICAL_INJECTABLES_SCOPE =

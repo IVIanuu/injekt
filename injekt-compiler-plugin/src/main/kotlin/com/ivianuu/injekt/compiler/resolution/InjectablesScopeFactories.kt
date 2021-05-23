@@ -34,8 +34,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun HierarchicalInjectablesScope(
   context: InjektContext,
+  trace: BindingTrace,
   scope: HierarchicalScope,
-  trace: BindingTrace
+  element: KtElement
 ): InjectablesScope {
   val finalScope = scope.takeSnapshot()
   trace[InjektWritableSlices.HIERARCHICAL_INJECTABLES_SCOPE, finalScope]?.let { return it }
@@ -61,13 +62,14 @@ fun HierarchicalInjectablesScope(
     trace
   )
 
-  return allScopes
+  val scopesToProcess = allScopes
     .filter { it !is ImportingScope }
     .reversed()
-    .asSequence()
-    .filter { it.isApplicableScope() }
+
+  return scopesToProcess
     .fold(importsInjectablesScope) { parent, next ->
       checkCancelled()
+      if (!next.isApplicableScope(scopesToProcess)) return@fold parent
       when {
         next is LexicalScope && next.ownerDescriptor is ClassDescriptor ->
           ClassInjectablesScope(next.ownerDescriptor.cast(), context, trace, parent)
@@ -81,6 +83,11 @@ fun HierarchicalInjectablesScope(
                 .correspondingProperty, context, trace, parent
             )
           else FunctionInjectablesScope(next.ownerDescriptor.cast(), context, trace, parent)
+        next is LexicalScope && next.ownerDescriptor is FunctionDescriptor &&
+            // important to check this here to avoid bugs
+            // related to local injectables
+            next.kind == LexicalScopeKind.DEFAULT_VALUE ->
+          DefaultValueFunctionInjectablesScope(next.ownerDescriptor.cast(), context, trace, parent, element)
         next is LexicalScope && next.ownerDescriptor is PropertyDescriptor ->
           PropertyInjectablesScope(next.ownerDescriptor.cast(), context, trace, parent)
         else -> CodeBlockInjectablesScope(next, context, trace, parent)
@@ -89,16 +96,20 @@ fun HierarchicalInjectablesScope(
     .also { trace.record(InjektWritableSlices.HIERARCHICAL_INJECTABLES_SCOPE, finalScope, it) }
 }
 
-private fun HierarchicalScope.isApplicableScope() = this is LexicalScope && (
-    (ownerDescriptor is ClassDescriptor &&
-        kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
-        (ownerDescriptor is FunctionDescriptor &&
-            kind == LexicalScopeKind.FUNCTION_INNER_SCOPE) ||
-        (ownerDescriptor is PropertyDescriptor &&
-            kind == LexicalScopeKind.PROPERTY_INITIALIZER_OR_DELEGATE) ||
-        kind == LexicalScopeKind.CODE_BLOCK ||
-        kind == LexicalScopeKind.CLASS_INITIALIZER
-    )
+private fun HierarchicalScope.isApplicableScope(allScopes: List<HierarchicalScope>): Boolean =
+  this is LexicalScope && (
+        (ownerDescriptor is ClassDescriptor &&
+            kind == LexicalScopeKind.CLASS_MEMBER_SCOPE) ||
+            (ownerDescriptor is FunctionDescriptor &&
+                (kind == LexicalScopeKind.DEFAULT_VALUE ||
+                    (kind == LexicalScopeKind.FUNCTION_INNER_SCOPE &&
+                        allScopes.getOrNull(allScopes.indexOf(this) + 1)
+                          ?.safeAs<LexicalScope>()?.kind != LexicalScopeKind.DEFAULT_VALUE))) ||
+            (ownerDescriptor is PropertyDescriptor &&
+                kind == LexicalScopeKind.PROPERTY_INITIALIZER_OR_DELEGATE) ||
+            kind == LexicalScopeKind.CODE_BLOCK ||
+            kind == LexicalScopeKind.CLASS_INITIALIZER
+        )
 
 private fun ImportInjectablesScope(
   imports: List<ProviderImport>,
@@ -146,7 +157,7 @@ private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   context: InjektContext,
   trace: BindingTrace,
-  parent: InjectablesScope?
+  parent: InjectablesScope
 ): InjectablesScope {
   trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, clazz)
     ?.let { return it }
@@ -183,43 +194,133 @@ private fun ClassInjectablesScope(
   ).also { trace.record(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, clazz, it) }
 }
 
-private fun FunctionInjectablesScope(
+private fun FunctionImportsInjectablesScope(
   function: FunctionDescriptor,
   context: InjektContext,
   trace: BindingTrace,
-  parent: InjectablesScope?
+  parent: InjectablesScope
 ): InjectablesScope {
-  trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, function)
-    ?.let { return it }
-  val finalParent = function
+  trace[InjektWritableSlices.FUNCTION_IMPORTS_SCOPE, function]?.let { return it }
+  return (function
     .findPsi()
     .safeAs<KtFunction>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportInjectablesScope(it, "FUNCTION ${function.fqNameSafe}", parent, context, trace) }
-    ?: parent
+    ?: parent)
+    .also { trace.record(InjektWritableSlices.FUNCTION_IMPORTS_SCOPE, function, it) }
+}
+
+private fun DefaultValueFunctionInjectablesScope(
+  function: FunctionDescriptor,
+  context: InjektContext,
+  trace: BindingTrace,
+  parent: InjectablesScope,
+  element: KtElement
+): InjectablesScope {
+  val valueParameter = function.valueParameters
+    .firstOrNull { valueParameter ->
+      val valueParameterPsi = valueParameter.findPsi() ?: return@firstOrNull false
+      element.parents.any { it === valueParameterPsi }
+    } ?: return parent
+  trace.get(InjektWritableSlices.FUNCTION_PARAMETER_DEFAULT_VALUE_INJECTABLES_SCOPE,
+    valueParameter)?.let { return it }
+  val finalParent = FunctionImportsInjectablesScope(function, context, trace, parent)
+  val parameterScopes = functionParameterScopes(context, trace, finalParent, function, valueParameter)
   return InjectablesScope(
-    name = "FUNCTION ${function.fqNameSafe}",
+    name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
+    parent = parameterScopes,
     context = context,
-    callContext = function.callContext(trace.bindingContext),
-    parent = finalParent,
-    ownerDescriptor = function,
     trace = trace,
-    initialInjectables = function.allParameters
-        .asSequence()
-        .filter { it.isProvide(context, trace) || it === function.extensionReceiverParameter }
-        .map { it.toCallableRef(context, trace).makeProvide() }
-        .toList(),
+    callContext = function.callContext(trace.bindingContext)
+      // suspend functions cannot be called from a default value context
+      .takeIf { it != CallContext.SUSPEND } ?: CallContext.DEFAULT,
+    ownerDescriptor = function,
+    initialInjectables = emptyList(),
     imports = emptyList(),
     typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
-  ).also { trace.record(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, function, it) }
+  ).also {
+    trace.record(InjektWritableSlices.FUNCTION_PARAMETER_DEFAULT_VALUE_INJECTABLES_SCOPE,
+      valueParameter, it)
+  }
+}
+
+private fun FunctionInjectablesScope(
+  function: FunctionDescriptor,
+  context: InjektContext,
+  trace: BindingTrace,
+  parent: InjectablesScope
+): InjectablesScope {
+  trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, function)?.let { return it }
+  val finalParent = FunctionImportsInjectablesScope(function, context, trace, parent)
+  val parameterScopes = functionParameterScopes(context, trace, finalParent, function, null)
+  return InjectablesScope(
+    name = "FUNCTION ${function.fqNameSafe}",
+    parent = parameterScopes,
+    context = context,
+    trace = trace,
+    callContext = function.callContext(trace.bindingContext),
+    ownerDescriptor = function,
+    initialInjectables = emptyList(),
+    imports = emptyList(),
+    typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) }
+  ).also { trace.record(InjektWritableSlices.FUNCTION_INJECTABLES_SCOPE, function, it) }
+}
+
+private fun functionParameterScopes(
+  context: InjektContext,
+  trace: BindingTrace,
+  parent: InjectablesScope,
+  function: FunctionDescriptor,
+  until: ValueParameterDescriptor? = null
+): InjectablesScope {
+  val maxIndex = until?.injektIndex()
+  return function.allParameters
+    .asSequence()
+    .filter {
+      (maxIndex == null || it.injektIndex() < maxIndex) &&
+          (it.isProvide(context, trace) || it === function.extensionReceiverParameter)
+    }
+    .map { it.toCallableRef(context, trace).makeProvide() }
+    .fold(parent) { acc, nextParameter ->
+      FunctionParameterInjectablesScope(
+        context = context,
+        trace = trace,
+        parent = acc,
+        function = function,
+        parameter = nextParameter
+      )
+    }
+}
+
+private fun FunctionParameterInjectablesScope(
+  context: InjektContext,
+  trace: BindingTrace,
+  parent: InjectablesScope,
+  function: FunctionDescriptor,
+  parameter: CallableRef
+): InjectablesScope {
+  parameter.callable as ParameterDescriptor
+  trace.get(InjektWritableSlices.FUNCTION_PARAMETER_INJECTABLES_SCOPE, parameter.callable)
+    ?.let { return it }
+  return InjectablesScope(
+    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
+    context = context,
+    callContext = CallContext.DEFAULT,
+    parent = parent,
+    ownerDescriptor = function,
+    trace = trace,
+    initialInjectables = listOf(parameter),
+    imports = emptyList(),
+    typeParameters = emptyList()
+  ).also { trace.record(InjektWritableSlices.FUNCTION_PARAMETER_INJECTABLES_SCOPE, parameter.callable, it) }
 }
 
 private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   context: InjektContext,
   trace: BindingTrace,
-  parent: InjectablesScope?
+  parent: InjectablesScope
 ): InjectablesScope {
   trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, property)
     ?.let { return it }
@@ -251,7 +352,7 @@ private fun CodeBlockInjectablesScope(
   scope: HierarchicalScope,
   context: InjektContext,
   trace: BindingTrace,
-  parent: InjectablesScope?
+  parent: InjectablesScope
 ): InjectablesScope {
   val ownerDescriptor = scope.parentsWithSelf
     .firstIsInstance<LexicalScope>()
