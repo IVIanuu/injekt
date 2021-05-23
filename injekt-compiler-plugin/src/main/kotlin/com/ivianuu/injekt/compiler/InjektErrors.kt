@@ -105,6 +105,15 @@ interface InjektErrors {
         .also { MAP.put(it, "interface cannot be injectable") }
 
     @JvmField
+    val PROVIDE_VARIABLE_MUST_BE_INITIALIZED = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+      .also {
+        MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
+          override fun render(diagnostic: Diagnostic): String =
+            "injectable variable must be initialized, delegated or marked with lateinit"
+        })
+      }
+
+    @JvmField
     val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
       DiagnosticFactory1.create<PsiElement, TypeParameterDescriptor>(Severity.ERROR)
         .also {

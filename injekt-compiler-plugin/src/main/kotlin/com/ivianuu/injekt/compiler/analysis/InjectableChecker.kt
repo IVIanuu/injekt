@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.lexer.*
@@ -40,6 +41,7 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
       is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor, context.trace)
       is ConstructorDescriptor -> checkConstructor(declaration, descriptor, context.trace)
       is ClassDescriptor -> checkClass(declaration, descriptor, context.trace)
+      is LocalVariableDescriptor -> checkLocalVariable(declaration, descriptor, context.trace)
       is PropertyDescriptor -> checkProperty(declaration, descriptor, context.trace)
       is TypeAliasDescriptor -> checkTypeAlias(descriptor, context.trace)
     }
@@ -166,6 +168,19 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     checkReceiver(descriptor, declaration, trace)
     checkOverrides(declaration, descriptor, trace)
     checkExceptActual(declaration, descriptor, trace)
+  }
+
+  private fun checkLocalVariable(
+    declaration: KtDeclaration,
+    descriptor: LocalVariableDescriptor,
+    trace: BindingTrace
+  ) {
+    if (!descriptor.isDelegated &&
+        !descriptor.isLateInit &&
+        descriptor.findPsi().cast<KtProperty>().initializer == null) {
+      trace.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED
+        .on(declaration))
+    }
   }
 
   private fun checkTypeAlias(

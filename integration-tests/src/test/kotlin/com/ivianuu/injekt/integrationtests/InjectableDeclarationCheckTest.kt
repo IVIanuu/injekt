@@ -140,4 +140,16 @@ class InjectableDeclarationCheckTest {
   ) {
     compilationShouldHaveFailed("receiver is automatically provided")
   }
+
+  @Test fun testProvideLocalVariableWithoutInitializer() = codegen(
+    """
+      fun invoke() {
+        @Provide val a: String
+        inject<String>()
+        a = ""
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("injectable variable must be initialized, delegated or marked with lateinit")
+  }
 }
