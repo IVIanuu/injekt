@@ -411,8 +411,7 @@ class InjectableDeclarationTest {
         @Provide val providedA = a
         inject<Foo>() to run {
           @Provide val providedB = b
-          inject<Foo>()DeclarationIrBuilder(pluginContext, symbol)
-      .irGet(localVariables.single { it.descriptor == descriptor })
+          inject<Foo>()
         }
       }
     """
