@@ -162,4 +162,26 @@ class CallContextTest {
           @Composable get() = inject()
       """
     )
+
+  @Test fun testCannotRequestSuspendDependencyInDefaultValueOfFunction() = singleAndMultiCodegen(
+    """
+      @Provide suspend fun foo() = Foo()
+    """,
+    """
+      suspend fun invoke(foo: Foo = inject()) {
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.foo() of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject is a suspend function but current call context is default")
+  }
+
+  @Test fun testCanRequestComposableDependencyInDefaultValueOfFunction() = singleAndMultiCodegen(
+    """
+      @Provide @Composable fun foo() = Foo()
+    """,
+    """
+      @Composable fun invoke(foo: Foo = inject()) {
+      }
+    """
+  )
 }
