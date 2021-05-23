@@ -26,6 +26,15 @@ class InjectTest {
     inject<String>() shouldBe "42"
   }
 
+  @Test fun testInjectOrElseReturnsProvidedInstance() {
+    @Provide val value = "42"
+    injectOrElse { "44" } shouldBe "42"
+  }
+
+  @Test fun testInjectOrElseReturnsDefaultValueForNotProvidedInstance() {
+    injectOrElse { "42" } shouldBe "42"
+  }
+
   @Test fun testInjectOrNullReturnsProvidedInstance() {
     @Provide val value = "42"
     injectOrNull<String>() shouldBe "42"
