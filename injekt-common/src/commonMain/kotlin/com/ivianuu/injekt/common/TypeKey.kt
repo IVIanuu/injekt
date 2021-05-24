@@ -16,28 +16,8 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
-
 /**
  * A key for a injekt type which can be used as a map key or similar
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class TypeKey<out T>(val value: String) {
-  companion object {
-    /**
-     * Provides a [TypeKey] of [T]
-     */
-    @Provide inline fun <@ForTypeKey T> typeKey(): TypeKey<T> = typeKeyOf()
-  }
-}
-
-/**
- * Returns a [TypeKey] of [T]
- */
-fun <@ForTypeKey T> typeKeyOf(): TypeKey<T> = throw NotImplementedError("Implemented as intrinsic")
-
-/**
- * Allows to retrieve a [TypeKey] for this type parameter
- */
-@Target(AnnotationTarget.TYPE_PARAMETER)
-annotation class ForTypeKey
+inline class TypeKey<out T>(val value: String)

@@ -397,7 +397,7 @@ fun TypeInjectablesScope(
   val initialInjectables = finalType.collectTypeScopeInjectables(context, trace, lookupLocation)
 
   return InjectablesScope(
-    name = "TYPE ${finalType.render()}",
+    name = "TYPE ${finalType.renderToString()}",
     parent = null,
     context = context,
     callContext = CallContext.DEFAULT,

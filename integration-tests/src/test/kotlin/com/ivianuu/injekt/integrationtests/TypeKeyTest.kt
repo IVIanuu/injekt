@@ -22,215 +22,106 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class TypeKeyTest {
-  @Test fun testTypeKeyOf() = codegen(
+  @Test fun testTypeKey() = codegen(
     """
-      fun invoke() = typeKeyOf<String>() 
+      fun invoke() = inject<TypeKey<String>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
   }
 
-  @Test fun testNullableTypeKeyOf() = codegen(
+  @Test fun testNullableTypeKey() = codegen(
     """
-      fun invoke() = typeKeyOf<String?>() 
+      fun invoke() = inject<TypeKey<String?>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String?"
   }
 
-  @Test fun testForTypeKeyTypeParameter() = singleAndMultiCodegen(
+  @Test fun testTypeKeyWithTypeParameters() = singleAndMultiCodegen(
     """
-      inline fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
+      inline fun <T> listTypeKeyOf(@Inject _: TypeKey<T>) = inject<TypeKey<List<T>>>()
     """,
     """
-      fun invoke() = listTypeKeyOf<String>()  
+      fun invoke() = listTypeKeyOf<String>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
   }
 
-  @Test fun testTypeKeyOfWithTypeAliasWithNullableExpandedType() = codegen(
+  @Test fun testTypeKeyWithTypeAliasWithNullableExpandedType() = codegen(
     """
       typealias MyAlias = String?
-      fun invoke() = typeKeyOf<MyAlias>() 
+      fun invoke() = inject<TypeKey<MyAlias>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyOfWithTypeAlias() = codegen(
+  @Test fun testTypeKeyWithTypeAlias() = codegen(
     """
       typealias MyAlias = String
-      fun invoke() = typeKeyOf<MyAlias>() 
+      fun invoke() = inject<TypeKey<MyAlias>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyOfWithNullableTypeAlias() = codegen(
+  @Test fun testTypeKeyWithNullableTypeAlias() = codegen(
     """
       typealias MyAlias = String
-      fun invoke() = typeKeyOf<MyAlias?>()
+      fun invoke() = inject<TypeKey<MyAlias?>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
   }
 
-  @Test fun testTypeKeyOfWithComposableType() = codegen(
+  @Test fun testTypeKeyWithComposableType() = codegen(
     """
-      fun invoke() = typeKeyOf<@Composable () -> Unit>() 
+      fun invoke() = inject<TypeKey<@Composable () -> Unit>>()
     """
   ) {
-    invokeSingleFile() shouldBe "[@androidx.compose.runtime.Composable]kotlin.Function0<kotlin.Unit>"
+    invokeSingleFile() shouldBe "@Composable kotlin.Function0<kotlin.Unit>"
   }
 
-  @Test fun testTypeKeyOfWithTypeAliasWithComposableExpandedType() = codegen(
+  @Test fun testTypeKeyWithTypeAliasWithComposableExpandedType() = codegen(
     """
       typealias MyAlias = @Composable () -> Unit
-      fun invoke() = typeKeyOf<MyAlias>() 
+      fun invoke() = inject<TypeKey<MyAlias>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyOfWithQualifiers() = codegen(
+  @Test fun testTypeKeyWithQualifiers() = codegen(
     """
-      fun invoke() = typeKeyOf<@Qualifier2 String>() 
+      fun invoke() = inject<TypeKey<@Qualifier2 String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "[@com.ivianuu.injekt.test.Qualifier2]kotlin.String"
+    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Qualifier2<kotlin.String>"
   }
 
-  @Test fun testTypeKeyOfWithTypeAliasWithQualifiedExpandedType() = codegen(
+  @Test fun testTypeKeyWithTypeAliasWithQualifiedExpandedType() = codegen(
     """
       typealias MyAlias = @Qualifier2 String
-      fun invoke() = typeKeyOf<MyAlias>() 
+      fun invoke() = inject<TypeKey<MyAlias>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyOfWithParameterizedQualifiers() = codegen(
+  @Test fun testTypeKeyWithParameterizedQualifiers() = codegen(
     """
-      @Qualifier 
-      annotation class MyQualifier<T>
-      fun invoke() = typeKeyOf<@MyQualifier<String> String>() 
-    """
-  ) {
-    invokeSingleFile() shouldBe "[@com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String>]kotlin.String"
-  }
-
-  @Test fun testForTypeKeyTypeParameterInInterface() = singleAndMultiCodegen(
-    """
-      interface KeyFactory {
-        fun <@ForTypeKey T> listTypeKeyOf(): TypeKey<List<T>>
-        companion object : KeyFactory {
-          override fun <@ForTypeKey T> listTypeKeyOf() = typeKeyOf<List<T>>()
-        }
-      }
-    """,
-    """
-        fun invoke() = KeyFactory.listTypeKeyOf<String>()  
+      @Qualifier annotation class MyQualifier<T>
+      fun invoke() = inject<TypeKey<@MyQualifier<String> String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
-  }
-
-  @Test fun testClassWithForTypeKeyParameterInInitializer() = singleAndMultiCodegen(
-    """
-      class MyClass<@ForTypeKey T> {
-        val typeKey = typeKeyOf<T>()
-      }
-    """,
-    """
-      fun invoke() = MyClass<String>().typeKey 
-    """
-  ) {
-    invokeSingleFile() shouldBe "kotlin.String"
-  }
-
-  @Test fun testClassWithForTypeKeyParameterInFunction() = singleAndMultiCodegen(
-    """
-      class MyClass<@ForTypeKey T> {
-        fun typeKey() = typeKeyOf<T>()
-      }
-    """,
-    """
-      fun invoke() = MyClass<String>().typeKey() 
-    """
-  ) {
-    invokeSingleFile() shouldBe "kotlin.String"
-  }
-
-  @Test fun testClassWithForTypeKeyParameterSubClass() = singleAndMultiCodegen(
-    """
-      abstract class MySuperClass<@ForTypeKey T> {
-        val typeKey = typeKeyOf<T>()
-      }
-    """,
-    """
-      class MyClass<@ForTypeKey T> : MySuperClass<T>()
-      fun invoke() = MyClass<String>().typeKey 
-    """
-  ) {
-    invokeSingleFile() shouldBe "kotlin.String"
-  }
-
-  @Test fun testTypeKeyFromInjectableCall() = singleAndMultiCodegen(
-    """
-      @Provide fun <@ForTypeKey T> listKey(): TypeKey<List<T>> = typeKeyOf<List<T>>()
-    """,
-    """
-      fun invoke() = inject<TypeKey<List<@Qualifier1 @Qualifier2 Foo>>>() 
-    """
-  ) {
-    invokeSingleFile() shouldBe
-        "kotlin.collections.List<[@com.ivianuu.injekt.test.Qualifier1, @com.ivianuu.injekt.test.Qualifier2]com.ivianuu.injekt.test.Foo>"
-  }
-
-  @Test fun testNonForTypeKeyTypeParameterOverride() = singleAndMultiCodegen(
-    """
-      abstract class MySuperClass {
-        abstract fun <@ForTypeKey T> func()
-      }
-    """,
-    """
-      class MySubClass : MySuperClass() {
-        override fun <T> func() {
-        }
-      } 
-    """
-  ) {
-    compilationShouldHaveFailed("Conflicting overloads")
-  }
-
-  @Test fun testPropertyWithForTypeKeyParameter() = singleAndMultiCodegen(
-    """
-      val <@ForTypeKey T> T.typeKey: TypeKey<T> get() = typeKeyOf<T>()
-    """,
-    """
-      fun invoke() = "".typeKey 
-    """
-  ) {
-    invokeSingleFile() shouldBe "kotlin.String"
-  }
-
-  @Test fun testNonTopLevelInlineForTypeKeyFunction() = singleAndMultiCodegen(
-    """
-      @Provide object MyClass {
-        @Provide inline fun <@ForTypeKey T> myKey(): @Qualifier1 TypeKey<T> = typeKeyOf()
-      }
-    """,
-    """
-       fun invoke() = inject<@Qualifier1 TypeKey<String>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "kotlin.String"
+    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String, kotlin.String>"
   }
 
   @Test fun testTypeKeyWithStar() = codegen(
     """
-      fun invoke() = typeKeyOf<List<*>>() 
+      fun invoke() = inject<TypeKey<List<*>>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"

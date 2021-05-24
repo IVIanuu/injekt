@@ -66,7 +66,7 @@ class SetInjectable(
   val collectionElementType: TypeRef
 ) : Injectable() {
   override val callableFqName: FqName =
-    FqName("com.ivianuu.injekt.injectSetOf<${type.arguments[0].render()}>")
+    FqName("com.ivianuu.injekt.injectSetOf<${type.arguments[0].renderToString()}>")
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val dependencyScope: InjectablesScope?
@@ -134,6 +134,41 @@ class ProviderInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type.classifier.defaultType
+  override val cacheExpressionResultIfPossible: Boolean
+    get() = true
+}
+
+class TypeKeyInjectable(
+  override val type: TypeRef,
+  override val ownerScope: InjectablesScope
+) : Injectable() {
+  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
+  override val dependencies: List<InjectableRequest> = run {
+    val typeParameterDependencies = mutableSetOf<ClassifierRef>()
+    type.visitRecursive {
+      if (it.classifier.isTypeParameter)
+        typeParameterDependencies += it.classifier
+    }
+    typeParameterDependencies
+      .mapIndexed { index, typeParameter ->
+        InjectableRequest(
+          type = ownerScope.context.typeKeyType.defaultType
+            .withArguments(listOf(typeParameter.defaultType)),
+          defaultStrategy = InjectableRequest.DefaultStrategy.NONE,
+          callableFqName = callableFqName,
+          parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
+          parameterIndex = index,
+          isInline = false,
+          isLazy = false
+        )
+      }
+  }
+  override val dependencyScope: InjectablesScope
+    get() = ownerScope
+  override val callContext: CallContext
+    get() = CallContext.DEFAULT
+  override val originalType: TypeRef
+    get() = type
   override val cacheExpressionResultIfPossible: Boolean
     get() = true
 }

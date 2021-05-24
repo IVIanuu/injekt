@@ -27,18 +27,8 @@ import org.jetbrains.kotlin.cfg.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.ir.*
-import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
-import org.jetbrains.kotlin.ir.builders.irBlock
-import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irCallConstructor
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
-import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irSet
-import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.descriptors.*
@@ -207,6 +197,7 @@ class InjectCallTransformer(
             is CallableInjectable -> callableExpression(result, result.candidate.cast())
             is ProviderInjectable -> providerExpression(result, result.candidate.cast())
             is SetInjectable -> setExpression(result, result.candidate.cast())
+            is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
           }
         }
       }
@@ -446,6 +437,77 @@ class InjectCallTransformer(
 
         +irGet(tmpSet)
       }
+    }
+  }
+
+  private val typeKey = pluginContext.referenceClass(InjektFqNames.TypeKey)
+  private val typeKeyValue = typeKey?.owner?.properties
+    ?.single { it.name.asString() == "value" }
+  private val typeKeyConstructor = typeKey?.constructors?.single()
+
+  private fun ScopeContext.typeKeyExpression(
+    result: ResolutionResult.Success.WithCandidate.Value,
+    injectable: TypeKeyInjectable
+  ): IrExpression = DeclarationIrBuilder(pluginContext, symbol).run {
+    val expressions = mutableListOf<IrExpression>()
+    var currentString = ""
+    fun commitCurrentString() {
+      if (currentString.isNotEmpty()) {
+        expressions += irString(currentString)
+        currentString = ""
+      }
+    }
+
+    fun appendToCurrentString(value: String) {
+      currentString += value
+    }
+
+    fun appendTypeParameterExpression(expression: IrExpression) {
+      commitCurrentString()
+      expressions += expression
+    }
+
+    injectable.type.arguments.single().render(
+      renderType = { typeToRender ->
+        if (!typeToRender.classifier.isTypeParameter) true else {
+          appendTypeParameterExpression(
+            irCall(typeKeyValue!!.getter!!).apply {
+              dispatchReceiver = expressionFor(
+                result.dependencyResults.values.single {
+                  it is ResolutionResult.Success.WithCandidate &&
+                      it.candidate.type.arguments.single().classifier == typeToRender.classifier
+                }.cast()
+              )
+            }
+          )
+          false
+        }
+      },
+      append = { appendToCurrentString(it) }
+    )
+
+    commitCurrentString()
+
+    val stringExpression = if (expressions.size == 1) {
+      expressions.single()
+    } else {
+      val stringPlus = pluginContext.irBuiltIns.stringClass
+        .functions
+        .map { it.owner }
+        .first { it.name.asString() == "plus" }
+      expressions.reduce { acc, expression ->
+        irCall(stringPlus).apply {
+          dispatchReceiver = acc
+          putValueArgument(0, expression)
+        }
+      }
+    }
+
+    irCall(typeKeyConstructor!!).apply {
+      putTypeArgument(0,
+        injectable.type.arguments.single()
+          .toIrType(pluginContext, localClasses, this@InjectCallTransformer.context).cast())
+      putValueArgument(0, stringExpression)
     }
   }
 

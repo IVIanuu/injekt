@@ -182,7 +182,6 @@ class ClassifierInfo(
   val lazySuperTypes: Lazy<List<TypeRef>> = unsafeLazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false,
-  val isForTypeKey: Boolean = false,
   val isSingletonInjectable: Boolean = false
 ) {
   val superTypes by lazySuperTypes
@@ -250,10 +249,6 @@ fun ClassifierDescriptor.classifierInfo(
   else hasAnnotation(InjektFqNames.Spread) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
 
-  val isForTypeKey = if (isDeserialized) false
-  else hasAnnotation(InjektFqNames.ForTypeKey) ||
-      findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.ForTypeKey) == true
-
   val isSingletonInjectable = !isDeserialized &&
       this is ClassDescriptor &&
       kind == ClassKind.CLASS &&
@@ -263,10 +258,7 @@ fun ClassifierDescriptor.classifierInfo(
               (it.isPrimary && hasAnnotation(InjektFqNames.Provide))
         }
         .any { it.valueParameters.isEmpty() } &&
-      declaredTypeParameters.none {
-        it.classifierInfo(context, trace)
-          .isForTypeKey
-      } && unsubstitutedMemberScope.getContributedDescriptors()
+      unsubstitutedMemberScope.getContributedDescriptors()
     .none {
       (it is ClassDescriptor &&
           it.isInner) ||
@@ -279,7 +271,6 @@ fun ClassifierDescriptor.classifierInfo(
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
-    isForTypeKey = isForTypeKey,
     isSingletonInjectable = isSingletonInjectable
   )
 
@@ -296,7 +287,6 @@ data class PersistedClassifierInfo(
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
   @SerialName("3") val isSpread: Boolean = false,
-  @SerialName("4") val isForTypeKey: Boolean = false,
   @SerialName("5") val isSingletonInjectable: Boolean = false
 )
 
@@ -308,7 +298,6 @@ fun PersistedClassifierInfo.toClassifierInfo(
   lazySuperTypes = unsafeLazy { superTypes.map { it.toTypeRef(context, trace) } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  isForTypeKey = isForTypeKey,
   isSingletonInjectable = isSingletonInjectable
 )
 
@@ -319,7 +308,6 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   superTypes = superTypes.map { it.toPersistedTypeRef(context) },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  isForTypeKey = isForTypeKey,
   isSingletonInjectable = isSingletonInjectable
 )
 
@@ -330,10 +318,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, conte
     val container = containingDeclaration
     if (container is TypeAliasDescriptor) return
 
-    if (!info.isSpread &&
-      !info.isForTypeKey &&
-      info.superTypes.none { it.shouldBePersisted() }
-    ) return
+    if (!info.isSpread && info.superTypes.none { it.shouldBePersisted() }) return
 
     fun loadTypeParameterInfos() = (container.annotations
       .findAnnotation(InjektFqNames.TypeParameterInfos)

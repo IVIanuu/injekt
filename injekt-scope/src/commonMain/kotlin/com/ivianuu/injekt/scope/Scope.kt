@@ -45,7 +45,7 @@ interface Scope : ScopeDisposable {
   /**
    * Returns the element [T] or null
    */
-  fun <T> elementOrNull(key: TypeKey<T>): T?
+  fun <T> elementOrNull(@Inject key: TypeKey<T>): T?
 
   /**
    * Returns the scoped value [T] for [key] or null
@@ -101,14 +101,10 @@ fun interface ScopeDisposable {
   fun dispose()
 }
 
-fun <@ForTypeKey T> Scope.elementOrNull(): T? = elementOrNull(typeKeyOf())
-
-fun <@ForTypeKey T> Scope.element(): T = element(typeKeyOf())
-
 /**
  * Returns the element [T] or throws
  */
-fun <T> Scope.element(key: TypeKey<T>): T = elementOrNull(key)
+fun <T> Scope.element(@Inject key: TypeKey<T>): T = elementOrNull(key)
   ?: error("No element found for $key in $this")
 
 /**
@@ -124,11 +120,8 @@ inline fun <T : Any> Scope.getOrCreateScopedValue(key: Any, init: () -> T): T {
   }
 }
 
-inline fun <T : Any> Scope.getOrCreateScopedValue(key: TypeKey<T>, init: () -> T): T =
+inline fun <T : Any> Scope.getOrCreateScopedValue(@Inject key: TypeKey<T>, init: () -> T): T =
   getOrCreateScopedValue(key.value, init)
-
-inline fun <@ForTypeKey T : Any> Scope.getOrCreateScopedValue(init: () -> T): T =
-  getOrCreateScopedValue(typeKeyOf(), init)
 
 /**
  * Invokes the [action] function once [this] scope get's disposed
@@ -185,15 +178,11 @@ class ScopeElement<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
     @Provide class Module<@Spread T : @InstallElement<S> U, U : Any, S : Scope> {
       @Provide inline fun scopeElement(
         noinline factory: () -> T,
-        key: @Private TypeKey<U>
+        key: TypeKey<U>
       ): ScopeElement<S> = ScopeElement(key, factory)
 
-      @Provide inline fun elementAccessor(scope: S, key: @Private TypeKey<U>): U = scope.element(key)
+      @Provide inline fun elementAccessor(scope: S, key: TypeKey<U>): U = scope.element(key)
     }
-
-    @Qualifier private annotation class Private
-
-    @Provide inline fun <@ForTypeKey T> elementTypeKey(): @Private TypeKey<T> = typeKeyOf()
   }
 }
 
@@ -225,7 +214,7 @@ typealias ScopeInitializer<S> = () -> Unit
   private fun scopedValues(): MutableMap<Any, Any> =
     (_scopedValues ?: hashMapOf<Any, Any>().also { _scopedValues = it })
 
-  override fun <T> elementOrNull(key: TypeKey<T>): T? =
+  override fun <T> elementOrNull(@Inject key: TypeKey<T>): T? =
     elements[key.value]?.invoke() as? T ?: parent?.elementOrNull(key)
 
   @Suppress("UNCHECKED_CAST")

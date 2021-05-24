@@ -131,18 +131,13 @@ sealed class ResolutionResult {
         get() = 1
     }
 
-    data class TypeArgumentKindMismatch(
-      val kind: TypeArgumentKind,
+    data class ReifiedTypeArgumentMismatch(
       val parameter: ClassifierRef,
       val argument: ClassifierRef,
       val candidate: Injectable
     ) : Failure() {
       override val failureOrdering: Int
         get() = 1
-
-      enum class TypeArgumentKind {
-        REIFIED, FOR_TYPE_KEY
-      }
     }
 
     data class DivergentInjectable(val candidate: Injectable) : Failure() {
@@ -339,18 +334,7 @@ private fun InjectablesScope.resolveCandidate(
         ?: continue
       val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
       if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
-        return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
-          ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.REIFIED,
-          typeParameter,
-          typeArgument.classifier,
-          candidate
-        )
-      }
-      if (parameterDescriptor.classifierInfo(context, trace).isForTypeKey &&
-        !argumentDescriptor.classifierInfo(context, trace).isForTypeKey
-      ) {
-        return@computeForCandidate ResolutionResult.Failure.TypeArgumentKindMismatch(
-          ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY,
+        return@computeForCandidate ResolutionResult.Failure.ReifiedTypeArgumentMismatch(
           typeParameter,
           typeArgument.classifier,
           candidate
