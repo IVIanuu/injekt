@@ -24,10 +24,6 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.expressions.*
-import org.jetbrains.kotlin.ir.interpreter.*
-import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
@@ -35,8 +31,6 @@ import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.checker.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
@@ -121,12 +115,6 @@ fun Annotated.hasAnnotation(fqName: FqName): Boolean =
 fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
   annotations.filter {
     val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(annotation)
-  }
-
-fun IrAnnotationContainer.getAnnotatedAnnotations(annotation: FqName): List<IrConstructorCall> =
-  annotations.filter {
-    val inner = it.type.classOrNull!!.owner
     inner.hasAnnotation(annotation)
   }
 

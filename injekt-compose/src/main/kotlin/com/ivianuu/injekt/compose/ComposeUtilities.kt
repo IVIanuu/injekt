@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compose
 
 import androidx.compose.runtime.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 
@@ -25,7 +26,7 @@ val LocalScope = staticCompositionLocalOf<Scope> { error("No scope provided") }
 /**
  * Returns the element [T] of the [LocalScope]
  */
-@Composable fun <@ForTypeKey T : Any> rememberElement(): T {
+@Composable fun <T : Any> rememberElement(@Inject key: TypeKey<T>): T {
   val scope = LocalScope.current
   return remember(scope) { scope.element() }
 }

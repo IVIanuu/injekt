@@ -75,20 +75,6 @@ class SingletonInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoesNotOptimizeInjectableWithForTypeKeyParameters() = singleAndMultiCodegen(
-    """
-      @Provide class MyModule<@ForTypeKey T> {
-        @Provide val instance = Foo() as T
-      }
-    """,
-    """
-      fun invoke() = inject<Foo>() 
-    """
-  ) {
-    irShouldNotContain("INSTANCE")
-    invokeSingleFile()
-  }
-
   @Test fun testDoesNotOptimizeInjectableWithFields() = singleAndMultiCodegen(
     """
       @Provide class MyModule {

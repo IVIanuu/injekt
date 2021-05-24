@@ -215,8 +215,9 @@ class SpreadingInjectableTest {
   
       @Qualifier annotation class UiDecoratorBinding
   
-      @Provide fun <@Spread T : @UiDecoratorBinding S, @ForTypeKey S : UiDecorator> uiDecoratorBindingImpl(
-          instance: T
+      @Provide fun <@Spread T : @UiDecoratorBinding S, S : UiDecorator> uiDecoratorBindingImpl(
+        instance: T,
+        key: TypeKey<S>
       ): UiDecorator = instance as UiDecorator
   
       typealias RootSystemBarsProvider = UiDecorator

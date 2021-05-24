@@ -20,8 +20,7 @@ import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import org.jetbrains.kotlin.resolve.*
 
-@Serializable
-data class PersistedTypeRef(
+@Serializable data class PersistedTypeRef(
   @SerialName("0") val classifierKey: String,
   @SerialName("1") val arguments: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val isStarProjection: Boolean,

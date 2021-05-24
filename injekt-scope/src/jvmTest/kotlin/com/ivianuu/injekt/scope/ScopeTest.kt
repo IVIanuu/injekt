@@ -138,7 +138,7 @@ class ScopeTest {
 
   @Test fun testTypeKey() {
     val scope = inject<TestScope1>()
-    scope.typeKey shouldBe typeKeyOf<TestScope1>()
+    scope.typeKey shouldBe inject<TypeKey<TestScope1>>()
   }
 
   @Test fun testParentScope() {

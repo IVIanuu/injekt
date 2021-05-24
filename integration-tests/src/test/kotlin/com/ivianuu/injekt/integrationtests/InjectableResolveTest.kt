@@ -480,25 +480,7 @@ class InjectableResolveTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of injectable com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with reified"
-    )
-  }
-
-  @Test fun testCannotUseNonForTypeKeyTypeParameterForForTypeKeyInjectable() = singleAndMultiCodegen(
-    """
-      @Provide fun <@ForTypeKey T> list(): List<T> {
-        typeKeyOf<T>()
-        return emptyList()
-      }
-    """,
-    """
-      fun <T> invoke() {
-        inject<List<T>>()
-      } 
-    """
-  ) {
-    compilationShouldHaveFailed(
-      "type parameter T of injectable com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is marked with @ForTypeKey but type argument com.ivianuu.injekt.integrationtests.invoke.T is not marked with @ForTypeKey"
+      "type parameter T of injectable com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
     )
   }
 

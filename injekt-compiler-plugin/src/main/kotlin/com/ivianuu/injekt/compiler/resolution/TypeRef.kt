@@ -38,7 +38,6 @@ class ClassifierRef(
   val descriptor: ClassifierDescriptor? = null,
   val qualifiers: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
-  val isForTypeKey: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV
 ) {
@@ -62,12 +61,11 @@ class ClassifierRef(
     descriptor: ClassifierDescriptor? = this.descriptor,
     qualifiers: List<TypeRef> = this.qualifiers,
     isSpread: Boolean = this.isSpread,
-    isForTypeKey: Boolean = this.isForTypeKey,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isQualifier, descriptor, qualifiers, isSpread, isForTypeKey,
+    isTypeAlias, isQualifier, descriptor, qualifiers, isSpread,
     primaryConstructorPropertyParameters, variance
   )
 
@@ -127,7 +125,6 @@ fun ClassifierDescriptor.toClassifierRef(
     descriptor = this,
     qualifiers = info.qualifiers,
     isSpread = info.isSpread,
-    isForTypeKey = info.isForTypeKey,
     primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
       .map { it.asNameId() },
     variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
@@ -219,7 +216,7 @@ class TypeRef(
   val ignoreElementsWithErrors: Boolean = false,
   val variance: TypeVariance = TypeVariance.INV
 ) {
-  override fun toString(): String = render()
+  override fun toString(): String = renderToString()
 
   override fun equals(other: Any?) =
     other is TypeRef && other.hashCode() == hashCode()
@@ -230,7 +227,7 @@ class TypeRef(
     check(arguments.size == classifier.typeParameters.size) {
       "Argument size mismatch ${classifier.fqName} " +
           "params: ${classifier.typeParameters.map { it.fqName }} " +
-          "args: ${arguments.map { it.render() }}"
+          "args: ${arguments.map { it.renderToString() }}"
     }
   }
 
@@ -380,39 +377,37 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
   return this
 }
 
-fun TypeRef.render(depth: Int = 0): String {
-  if (depth > 15) return ""
-  return buildString {
-    fun TypeRef.inner() {
-      val annotations = listOfNotNull(
-        if (isProvide) "@Provide" else null,
-        if (isInject) "@Inject" else null,
-        if (isMarkedComposable) "@Composable" else null,
-      )
+fun TypeRef.renderToString() = buildString {
+  render { append(it) }
+}
 
-      if (annotations.isNotEmpty()) {
-        annotations.forEach { annotation ->
-          append(annotation)
-          append(" ")
-        }
-      }
-      when {
-        isStarProjection -> append("*")
-        else -> append(classifier.fqName)
-      }
-      if (arguments.isNotEmpty()) {
-        append("<")
-        arguments.forEachIndexed { index, typeArgument ->
-          append(typeArgument.render(depth = depth + 1))
-          if (index != arguments.lastIndex) append(", ")
-        }
-        append(">")
-      }
-      if (isMarkedNullable && !isStarProjection) append("?")
-      if (frameworkKey != 0) append("[$frameworkKey]")
+fun TypeRef.render(
+  depth: Int = 0,
+  renderType: (TypeRef) -> Boolean = { true },
+  append: (String) -> Unit
+) {
+  if (depth > 15) return
+  fun TypeRef.inner() {
+    if (!renderType(this)) return
+
+    if (isMarkedComposable) {
+      append("@Composable ")
     }
-    inner()
+    when {
+      isStarProjection -> append("*")
+      else -> append(classifier.fqName.asString())
+    }
+    if (arguments.isNotEmpty()) {
+      append("<")
+      arguments.forEachIndexed { index, typeArgument ->
+        typeArgument.render(depth = depth + 1, renderType, append)
+        if (index != arguments.lastIndex) append(", ")
+      }
+      append(">")
+    }
+    if (isMarkedNullable && !isStarProjection) append("?")
   }
+  inner()
 }
 
 val TypeRef.typeSize: Int
@@ -486,11 +481,11 @@ val TypeRef.isProvideFunctionType: Boolean
   get() {
     if (!isFunctionType) return false
     if (!isProvide)
-    for (i in arguments.indices) {
-      val argument = arguments[i]
-      if (i < arguments.lastIndex && argument.isInject)
-        return false
-    }
+      for (i in arguments.indices) {
+        val argument = arguments[i]
+        if (i < arguments.lastIndex && argument.isInject)
+          return false
+      }
 
     return true
   }

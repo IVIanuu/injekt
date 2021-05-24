@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
 
@@ -112,22 +111,6 @@ interface InjektErrors {
             "injectable variable must be initialized, delegated or marked with lateinit"
         })
       }
-
-    @JvmField
-    val NON_FOR_TYPE_KEY_TYPE_PARAMETER_AS_FOR_TYPE_KEY =
-      DiagnosticFactory1.create<PsiElement, TypeParameterDescriptor>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "cannot use {0} as @ForTypeKey type argument",
-            object : DiagnosticParameterRenderer<TypeParameterDescriptor> {
-              override fun render(
-                obj: TypeParameterDescriptor,
-                renderingContext: RenderingContext
-              ): String = obj.name.asString()
-            }
-          )
-        }
 
     @JvmField
     val MULTIPLE_SPREADS =
@@ -285,7 +268,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.CallContextMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
+          "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is a ${unwrappedFailure.candidate.callContext.name.toLowerCase()} function " +
               "but current call context is ${unwrappedFailure.actualCallContext.name.toLowerCase()}"
@@ -294,14 +277,14 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine("call context mismatch")
       }
     }
-    is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
+    is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
           "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
-              "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
+              "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
-              "is marked with ${unwrappedFailure.kind.readableName()} but type argument " +
-              "${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}"
+              "is reified but type argument " +
+              "${unwrappedFailure.argument.fqName} is not reified"
         )
       } else {
         appendLine("type argument kind mismatch")
@@ -314,12 +297,12 @@ private fun InjectionGraph.Error.render(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\ndo all match type ${unwrappedFailureRequest.type.render()} for parameter " +
+          }\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
               "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
         )
       } else {
         appendLine(
-          "ambiguous injectables of type ${unwrappedFailureRequest.type.render()} " +
+          "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
               "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
         )
       }
@@ -329,7 +312,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.DivergentInjectable -> {
       appendLine(
         "no injectable found of type " +
-            "${unwrappedFailureRequest.type.render()} for parameter " +
+            "${unwrappedFailureRequest.type.renderToString()} for parameter " +
             "${unwrappedFailureRequest.parameterName} of function " +
             "${unwrappedFailureRequest.callableFqName}"
       )
@@ -373,8 +356,8 @@ private fun InjectionGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.CallContextMismatch -> {
               append("${failure.candidate.callContext.name.toLowerCase()} call:")
             }
-            is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
-              append("${failure.parameter.fqName.shortName()} is marked with ${failure.kind.readableName()}: ")
+            is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
+              append("${failure.parameter.fqName.shortName()} is reified: ")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
@@ -382,7 +365,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
                   failure.candidateResults.joinToString(", ") {
                     it.candidate.callableFqName.asString()
                   }
-                } do match type ${request.type.render()}"
+                } do match type ${request.type.renderToString()}"
               )
             }
             is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
@@ -393,7 +376,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           if (failure is ResolutionResult.Failure.CallContextMismatch) {
             appendLine("${failure.candidate.callableFqName}()")
           } else {
-            appendLine("inject<${request.type.render()}>()")
+            appendLine("inject<${request.type.renderToString()}>()")
           }
         }
       }
@@ -423,8 +406,8 @@ private fun InjectionGraph.Error.render(): String = buildString {
       is ResolutionResult.Failure.CallContextMismatch -> {
         appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
       }
-      is ResolutionResult.Failure.TypeArgumentKindMismatch -> {
-        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not marked with ${unwrappedFailure.kind.readableName()}")
+      is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
+        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(
@@ -432,25 +415,19 @@ private fun InjectionGraph.Error.render(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\ndo all match type ${unwrappedFailureRequest.type.render()}"
+          }\ndo all match type ${unwrappedFailureRequest.type.renderToString()}"
         )
       }
       is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
       is ResolutionResult.Failure.DivergentInjectable -> {
         appendLine(
           "but injectable ${unwrappedFailure.candidate.callableFqName} " +
-              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.render()}"
+              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}"
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.render()}")
+        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderToString()}")
       }
     }.let { }
   }
 }
-
-private fun ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.readableName() =
-  when (this) {
-    ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.REIFIED -> "reified"
-    ResolutionResult.Failure.TypeArgumentKindMismatch.TypeArgumentKind.FOR_TYPE_KEY -> "@ForTypeKey"
-  }
