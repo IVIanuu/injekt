@@ -35,9 +35,9 @@ class InjectablesImportsTest {
 
   @Test fun testUnresolvedStarImport() = codegen(
     """
-            @Providers("a.*")
+      @Providers("a.*")
       fun invoke() {
-            }
+      }
     """
   ) {
     compilationShouldHaveFailed("unresolved injectable import")
