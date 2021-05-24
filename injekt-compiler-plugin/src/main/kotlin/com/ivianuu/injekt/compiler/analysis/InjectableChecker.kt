@@ -177,7 +177,7 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
   ) {
     if (!descriptor.isDelegated &&
         !descriptor.isLateInit &&
-        descriptor.findPsi().cast<KtProperty>().initializer == null) {
+        descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
       trace.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED
         .on(declaration))
     }
