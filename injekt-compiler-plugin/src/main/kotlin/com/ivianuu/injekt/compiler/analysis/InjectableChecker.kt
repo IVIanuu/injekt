@@ -175,9 +175,10 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     descriptor: LocalVariableDescriptor,
     trace: BindingTrace
   ) {
-    if (!descriptor.isDelegated &&
-        !descriptor.isLateInit &&
-        descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
+    if (descriptor.isProvide(this.context, trace) &&
+      !descriptor.isDelegated &&
+      !descriptor.isLateInit &&
+      descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
       trace.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED
         .on(declaration))
     }
