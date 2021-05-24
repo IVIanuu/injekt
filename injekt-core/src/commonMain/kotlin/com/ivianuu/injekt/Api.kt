@@ -79,18 +79,9 @@ inline fun <R> withProviders(
 inline fun <T> inject(@Inject value: T): T = value
 
 /**
- * Returns a provided instance of [T] or the result of [defaultValue]
- */
-inline fun <T> injectOrElse(
-  @Inject @DefaultOnAllErrors value: T? = null,
-  defaultValue: () -> T
-): T = value ?: defaultValue()
-
-/**
  * Returns a provided instance of [T] or null
  */
-inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors _: T? = null): T? =
-  injectOrElse<T?> { null }
+inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
  * Marks an annotation as an qualifier which can then be used
