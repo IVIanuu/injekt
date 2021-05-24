@@ -34,7 +34,7 @@ inline class TypeKey<out T>(val value: String) {
 /**
  * Returns a [TypeKey] for [T]
  */
-fun <@ForTypeKey T> typeKeyOf(): TypeKey<T> = error("Intrinsic")
+fun <@ForTypeKey T> typeKeyOf(): TypeKey<T> = throw NotImplementedError("Implemented as intrinsic")
 
 /**
  * Allows to retrieve a [TypeKey] for this type parameter
