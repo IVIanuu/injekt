@@ -134,6 +134,21 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testResolvesClassCompanionInjectableFromClassConstructor() = singleAndMultiCodegen(
+    """
+      class MyClass(val foo: Foo = inject()) {
+        companion object {
+          @Provide val foo = Foo()
+        }
+      }
+    """,
+    """
+      fun invoke() = MyClass().foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testResolvesClassConstructorInjectable() = singleAndMultiCodegen(
     """
       class MyClass(@Provide val foo: Foo = Foo()) {
@@ -545,4 +560,43 @@ class InjectableResolveTest {
       }
     """
   )
+
+  @Test fun testCannotResolveClassProvideDeclarationInClassConstructor() = codegen(
+    """
+      class MyClass {
+        @Provide val foo = Foo()
+        constructor(foo: Foo = inject())
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCanResolvePrimaryConstructorGivenInSuperTypeDelegateExpression() = codegen(
+    """
+      interface FooHolder {
+        val foo: Foo
+      }
+      fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+        override val foo = foo
+      }
+      class MyClass(@Provide foo: Foo) : FooHolder by FooHolder()
+    """
+  )
+
+  @Test fun testCannotResolveSecondaryConstructorGivenInSuperTypeDelegateExpression() = codegen(
+    """
+      interface FooHolder {
+        val foo: Foo
+      }
+      fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+        override val foo = foo
+      }
+      class MyClass() : FooHolder by FooHolder() {
+        constructor(@Provide foo: Foo) : this()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.FooHolder")
+  }
 }

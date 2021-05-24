@@ -153,6 +153,32 @@ private fun ImportInjectablesScope(
   }
 }
 
+private fun ClassCompanionInjectablesScope(
+  clazz: ClassDescriptor,
+  context: InjektContext,
+  trace: BindingTrace,
+  parent: InjectablesScope
+): InjectablesScope = clazz.companionObjectDescriptor
+  ?.let { ClassInjectablesScope(it, context, trace, parent) } ?: parent
+
+private fun ClassImportsInjectablesScope(
+  clazz: ClassDescriptor,
+  context: InjektContext,
+  trace: BindingTrace,
+  parent: InjectablesScope
+): InjectablesScope {
+  trace[InjektWritableSlices.DECLARATION_IMPORTS_INJECTABLES_SCOPE, clazz]?.let { return it }
+  val finalParent = ClassCompanionInjectablesScope(clazz, context, trace, parent)
+  return (clazz
+    .findPsi()
+    .safeAs<KtClassOrObject>()
+    ?.getProviderImports()
+    ?.takeIf { it.isNotEmpty() }
+    ?.let { ImportInjectablesScope(it, "CLASS ${clazz.fqNameSafe}", finalParent, context, trace) }
+    ?: finalParent)
+    .also { trace.record(InjektWritableSlices.DECLARATION_IMPORTS_INJECTABLES_SCOPE, clazz, it) }
+}
+
 private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   context: InjektContext,
@@ -161,26 +187,10 @@ private fun ClassInjectablesScope(
 ): InjectablesScope {
   trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, clazz)
     ?.let { return it }
-  val companionObjectScope = clazz.companionObjectDescriptor
-    ?.let { ClassInjectablesScope(it, context, trace, parent) }
+  val finalParent = ClassImportsInjectablesScope(clazz, context, trace, parent)
   val name = if (clazz.isCompanionObject)
     "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
   else "CLASS ${clazz.fqNameSafe}"
-  val finalParent = clazz
-    .findPsi()
-    .safeAs<KtClassOrObject>()
-    ?.getProviderImports()
-    ?.takeIf { it.isNotEmpty() }
-    ?.let {
-      ImportInjectablesScope(
-        it,
-        name,
-        parent,
-        context,
-        trace
-      )
-    } ?: companionObjectScope ?: parent
-
   return InjectablesScope(
     name = name,
     context = context,
@@ -200,15 +210,19 @@ private fun FunctionImportsInjectablesScope(
   trace: BindingTrace,
   parent: InjectablesScope
 ): InjectablesScope {
-  trace[InjektWritableSlices.FUNCTION_IMPORTS_SCOPE, function]?.let { return it }
+  trace[InjektWritableSlices.DECLARATION_IMPORTS_INJECTABLES_SCOPE, function]?.let { return it }
+  val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
+  val finalParent = if (function is ConstructorDescriptor)
+    ClassImportsInjectablesScope(function.constructedClass, context, trace, parent)
+  else parent
   return (function
     .findPsi()
     .safeAs<KtFunction>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(it, "FUNCTION ${function.fqNameSafe}", parent, context, trace) }
-    ?: parent)
-    .also { trace.record(InjektWritableSlices.FUNCTION_IMPORTS_SCOPE, function, it) }
+    ?.let { ImportInjectablesScope(it, "$baseName ${function.fqNameSafe}", finalParent, context, trace) }
+    ?: finalParent)
+    .also { trace.record(InjektWritableSlices.DECLARATION_IMPORTS_INJECTABLES_SCOPE, function, it) }
 }
 
 private fun DefaultValueFunctionInjectablesScope(
@@ -226,7 +240,7 @@ private fun DefaultValueFunctionInjectablesScope(
   trace.get(InjektWritableSlices.FUNCTION_PARAMETER_DEFAULT_VALUE_INJECTABLES_SCOPE,
     valueParameter)?.let { return it }
   val finalParent = FunctionImportsInjectablesScope(function, context, trace, parent)
-  val parameterScopes = functionParameterScopes(context, trace, finalParent, function, valueParameter)
+  val parameterScopes = FunctionParameterInjectablesScopes(context, trace, finalParent, function, valueParameter)
   return InjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
@@ -253,9 +267,10 @@ private fun FunctionInjectablesScope(
 ): InjectablesScope {
   trace.get(InjektWritableSlices.DECLARATION_INJECTABLES_SCOPE, function)?.let { return it }
   val finalParent = FunctionImportsInjectablesScope(function, context, trace, parent)
-  val parameterScopes = functionParameterScopes(context, trace, finalParent, function, null)
+  val parameterScopes = FunctionParameterInjectablesScopes(context, trace, finalParent, function, null)
+  val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
   return InjectablesScope(
-    name = "FUNCTION ${function.fqNameSafe}",
+    name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
     context = context,
     trace = trace,
@@ -267,7 +282,7 @@ private fun FunctionInjectablesScope(
   ).also { trace.record(InjektWritableSlices.FUNCTION_INJECTABLES_SCOPE, function, it) }
 }
 
-private fun functionParameterScopes(
+private fun FunctionParameterInjectablesScopes(
   context: InjektContext,
   trace: BindingTrace,
   parent: InjectablesScope,

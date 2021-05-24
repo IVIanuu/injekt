@@ -191,6 +191,125 @@ class InjectablesImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testUseClassImportsInConstructor() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.*")
+            class MyClass {
+              val foo: Foo
+              constructor() {
+                foo = inject()
+              }
+            }
+
+            fun invoke() = MyClass().foo
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testUseClassImportsInInitializer() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.*")
+            class MyClass {
+              val foo: Foo = inject()
+            }
+            fun invoke() = MyClass().foo
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testClassImportsInSuperTypeDelegateExpression() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+            interface FooHolder {
+              val foo: Foo
+            }
+            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+              override val foo: Foo = foo
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.*")
+            class MyClass : injectables.FooHolder by injectables.FooHolder()
+            fun invoke() = MyClass().foo
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testPrimaryConstructorImportsInSuperTypeDelegateExpression() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+            interface FooHolder {
+              val foo: Foo
+            }
+            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+              override val foo: Foo = foo
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            class MyClass @Providers("injectables.*") constructor() : injectables.FooHolder by injectables.FooHolder()
+            fun invoke() = MyClass().foo
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testFunctionWithInjectableImports() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -206,6 +325,31 @@ class InjectablesImportsTest {
           """
             @Providers("injectables.*")
             fun invoke() = inject<Foo>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testFunctionImportsInDefaultValueExpression() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.*")
+            @JvmOverloads
+            fun invoke(foo: Foo = inject()) = foo
           """,
           name = "File.kt"
         )
