@@ -25,14 +25,14 @@ import com.ivianuu.injekt.*
 inline class TypeKey<out T>(val value: String) {
   companion object {
     /**
-     * Allows to use a [TypeKey] for [T]
+     * Provides a [TypeKey] of [T]
      */
     @Provide inline fun <@ForTypeKey T> typeKey(): TypeKey<T> = typeKeyOf()
   }
 }
 
 /**
- * Returns a [TypeKey] for [T]
+ * Returns a [TypeKey] of [T]
  */
 fun <@ForTypeKey T> typeKeyOf(): TypeKey<T> = throw NotImplementedError("Implemented as intrinsic")
 

@@ -20,16 +20,16 @@ import com.ivianuu.injekt.*
 import kotlin.reflect.*
 
 /**
- * Allows to use a Map<K, V> for each Set<Pair<K, V>>
+ * Provides a Map<K, V> for each Set<Pair<K, V>>
  */
 @Provide inline fun <K, V> mapOfPairs(pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
 
 /**
- * Allows to use a [KClass] for [T]
+ * Provides a [KClass] of [T]
  */
 @Provide inline fun <reified T : Any> kClass(): KClass<T> = T::class
 
 /**
- * Allows to use a [Lazy] for [T]
+ * Provides a [Lazy] of [T]
  */
 @Provide inline fun <T> lazy(noinline init: () -> T): Lazy<T> = kotlin.lazy(init)
