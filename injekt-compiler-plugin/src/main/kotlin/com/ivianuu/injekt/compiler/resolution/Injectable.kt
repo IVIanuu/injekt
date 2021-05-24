@@ -170,7 +170,7 @@ class TypeKeyInjectable(
   override val originalType: TypeRef
     get() = type
   override val cacheExpressionResultIfPossible: Boolean
-    get() = true
+    get() = false
 }
 
 fun CallableRef.getInjectableRequests(
