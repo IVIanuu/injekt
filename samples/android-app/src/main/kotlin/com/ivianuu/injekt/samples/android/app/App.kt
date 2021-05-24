@@ -26,7 +26,6 @@ class App : Application(), AppScopeOwner {
   override fun onCreate() {
     withProviders(
       "com.ivianuu.injekt.android.*",
-      "com.ivianuu.injekt.common.*",
       "com.ivianuu.injekt.coroutines.*",
       "com.ivianuu.injekt.scope.*",
       "com.ivianuu.injekt.samples.android.data.*",
