@@ -383,8 +383,7 @@ private fun TypeRef.collectInjectablesForSingleType(
             clazz.companionObjectDescriptor
               ?.let { injectables += it.injectableReceiver(context, trace, false) }
           }
-          clazz.classifierInfo(context, trace)
-            .qualifiers.forEach {
+          clazz.classifierInfo(context, trace).qualifiers.forEach {
               injectables += it.collectTypeScopeInjectables(context, trace, lookupLocation)
             }
         }
