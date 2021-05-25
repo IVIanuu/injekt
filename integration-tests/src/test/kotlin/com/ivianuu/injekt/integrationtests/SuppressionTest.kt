@@ -133,11 +133,11 @@ class SuppressionTest {
 
   @Test fun testUsedInjectParameterIsNotMarkedAsUnused() = codegen(
     """
-      fun func1(foo: Foo) {
+      fun func1(@Inject foo: Foo) {
         func2()                
       }
   
-      fun func2(foo: Foo) {
+      fun func2(@Inject foo: Foo) {
         foo
       }
     """
@@ -147,10 +147,10 @@ class SuppressionTest {
 
   @Test fun testUnusedInjectableParameterIsMarkedAsUnused() = codegen(
     """
-      fun func1(foo: Foo) {
+      fun func1(@Inject foo: Foo) {
       }
   
-      fun func2(foo: Foo) {
+      fun func2(@Inject foo: Foo) {
         foo
       } 
     """
