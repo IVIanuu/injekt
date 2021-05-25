@@ -25,11 +25,11 @@ import org.junit.*
 class InjectableSetTest {
   @Test fun testSet() = singleAndMultiCodegen(
     """
-            @Provide fun commandA() = CommandA()
-            @Provide fun commandsB() = setOf(CommandB())
+      @Provide fun commandA() = CommandA()
+      @Provide fun commandsB() = setOf(CommandB())
     """,
     """
-        fun invoke() = inject<Set<Command>>() 
+      fun invoke() = inject<Set<Command>>() 
     """
   ) {
     val set = invokeSingleFile<Set<Command>>().toList()
@@ -40,12 +40,12 @@ class InjectableSetTest {
 
   @Test fun testNestedSet() = singleAndMultiCodegen(
     """
-            @Provide fun commandA() = CommandA()
+      @Provide fun commandA() = CommandA()
 
-            class InnerObject {
-                @Provide fun commandsB() = listOf(CommandB())
-                val set = inject<Set<Command>>()
-            }
+      class InnerObject {
+        @Provide fun commandsB() = listOf(CommandB())
+        val set = inject<Set<Command>>()
+      }
     """,
     """
         fun invoke() = inject<Set<Command>>() to InnerObject().set 
@@ -62,10 +62,10 @@ class InjectableSetTest {
 
   @Test fun testSetWithSingleElement() = singleAndMultiCodegen(
     """
-            @Provide fun commandA() = CommandA()
+      @Provide fun commandA() = CommandA()
     """,
     """
-         fun invoke() = inject<Set<Command>>() 
+      fun invoke() = inject<Set<Command>>() 
     """
   ) {
     irShouldContain(1, "setOf")
@@ -73,10 +73,10 @@ class InjectableSetTest {
 
   @Test fun testSetWithSingleCollectionElement() = singleAndMultiCodegen(
     """
-            @Provide fun commandA() = listOf(CommandA())
+      @Provide fun commandA() = listOf(CommandA())
     """,
     """
-        fun invoke() = inject<Set<Command>>() 
+      fun invoke() = inject<Set<Command>>() 
     """
   ) {
     irShouldContain(1, "toSet")
@@ -84,10 +84,10 @@ class InjectableSetTest {
 
   @Test fun testSetWithSingleSetCollectionElement() = singleAndMultiCodegen(
     """
-            @Provide fun commandA() = setOf(CommandA())
+      @Provide fun commandA() = setOf(CommandA())
     """,
     """
-        fun invoke() = inject<Set<Command>>() 
+      fun invoke() = inject<Set<Command>>() 
     """
   ) {
     irShouldContain(1, "inject<Set<Command>>(value = commandA())")
@@ -95,7 +95,7 @@ class InjectableSetTest {
 
   @Test fun testSetWithoutElements() = codegen(
     """
-         fun invoke() = inject<Set<Command>>()
+      fun invoke() = inject<Set<Command>>()
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.collections.Set<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.inject")
@@ -103,10 +103,10 @@ class InjectableSetTest {
 
   @Test fun testImplicitProviderSet() = singleAndMultiCodegen(
     """
-            @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-        fun invoke() = inject<Set<(@Provide Foo) -> Bar>>() 
+      fun invoke() = inject<Set<(@Provide Foo) -> Bar>>() 
     """
   ) {
     val set = invokeSingleFile<Set<(Foo) -> Bar>>().toList()
@@ -119,17 +119,17 @@ class InjectableSetTest {
 
   @Test fun testNestedImplicitProviderSet() = singleAndMultiCodegen(
     """
-            @Provide fun bar(foo: Foo): Any = Bar(foo)
+      @Provide fun bar(foo: Foo): Any = Bar(foo)
 
-            @Provide fun commandA(): Command = CommandA()
+      @Provide fun commandA(): Command = CommandA()
 
-            class InnerObject {
-                @Provide fun commandB(): Command = CommandB()
-                val set = inject<Set<() -> Command>>()
-            }
+      class InnerObject {
+        @Provide fun commandB(): Command = CommandB()
+        val set = inject<Set<() -> Command>>()
+      }
     """,
     """
-        fun invoke() = inject<Set<() -> Command>>() to InnerObject().set 
+      fun invoke() = inject<Set<() -> Command>>() to InnerObject().set 
     """
   ) {
     val (parentSet, childSet) = invokeSingleFile<Pair<Set<() -> Command>, Set<() -> Command>>>()
@@ -143,9 +143,8 @@ class InjectableSetTest {
 
   @Test fun testUsesAllProviderArgumentsForInjectableRequest() = codegen(
     """
-         fun invoke(): Set<Any> {
-                return inject<(@Provide String, @Provide String) -> Set<String>>()("a", "b")
-            }
+      fun invoke(): Set<Any> = 
+          inject<(@Provide String, @Provide String) -> Set<String>>()("a", "b")
     """
   ) {
     val set = invokeSingleFile<Set<Any>>().toList()
@@ -156,11 +155,11 @@ class InjectableSetTest {
 
   @Test fun testSetWithIgnoreElementsWithErrors() = singleAndMultiCodegen(
     """
-            @Provide val a = "a"
-            @Provide fun b(foo: Foo) = "b"
+      @Provide val a = "a"
+      @Provide fun b(foo: Foo) = "b"
     """,
     """
-        fun invoke(): @IgnoreElementsWithErrors Set<String> = inject() 
+      fun invoke(): @IgnoreElementsWithErrors Set<String> = inject() 
     """
   ) {
     val set = invokeSingleFile<Set<Any>>().toList()

@@ -110,7 +110,7 @@ class InjectableResolutionTest {
       class MyClass(@Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
         companion object {
-            @Provide lateinit var companionFoo: Foo
+          @Provide lateinit var companionFoo: Foo
         }
       }
 
@@ -256,8 +256,8 @@ class InjectableResolutionTest {
       fun invoke(): Pair<String, String> {
         @Provide val injectableA = "a"
         return inject<String>() to run {
-            @Provide val injectableB = "b"
-            inject<String>()
+          @Provide val injectableB = "b"
+          inject<String>()
         }
       }
     """

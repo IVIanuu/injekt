@@ -24,12 +24,10 @@ import org.junit.*
 class ProviderTest {
   @Test fun testProviderInjectable() = singleAndMultiCodegen(
     """
-            @Provide val foo = Foo()
+      @Provide val foo = Foo()
     """,
     """
-         fun invoke(): Foo {
-                return inject<() -> Foo>()()
-            } 
+      fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
     invokeSingleFile()
@@ -38,9 +36,7 @@ class ProviderTest {
 
   @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
     """ 
-         fun invoke(): Foo {
-                return inject<() -> Foo>()()
-            }
+      fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
@@ -48,10 +44,10 @@ class ProviderTest {
 
   @Test fun testProviderWithInjectableArgs() = codegen(
     """
-            @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-        fun invoke() = inject<(@Provide Foo) -> Bar>()(Foo()) 
+      fun invoke() = inject<(@Provide Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -115,10 +111,10 @@ class ProviderTest {
 
   @Test fun testSuspendProviderInjectable() = singleAndMultiCodegen(
     """
-            @Provide suspend fun foo() = Foo()
+      @Provide suspend fun foo() = Foo()
     """,
     """
-        fun invoke(): Foo = runBlocking { inject<suspend () -> Foo>()() } 
+      fun invoke(): Foo = runBlocking { inject<suspend () -> Foo>()() } 
     """
   ) {
     invokeSingleFile()
@@ -127,10 +123,10 @@ class ProviderTest {
 
   @Test fun testComposableProviderInjectable() = singleAndMultiCodegen(
     """
-            @Provide val foo: Foo @Composable get() = Foo()
+      @Provide val foo: Foo @Composable get() = Foo()
     """,
     """
-        fun invoke() = inject<@Composable () -> Foo>() 
+      fun invoke() = inject<@Composable () -> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -146,10 +142,10 @@ class ProviderTest {
         @Provide class Dep(key: String)
         @Provide fun depIntoSet(provider: (@Provide MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
     """,
-      """
-        fun invoke() {
-          inject<Set<(MyScope) -> Any>>()
-        } 
+    """
+      fun invoke() {
+        inject<Set<(MyScope) -> Any>>()
+      } 
     """
     )
 
@@ -167,9 +163,9 @@ class ProviderTest {
 
   @Test fun testProviderWithoutCandidatesError() = codegen(
     """
-         fun invoke() {
-                inject<() -> Foo>()
-            }
+      fun invoke() {
+        inject<() -> Foo>()
+      }
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
@@ -177,7 +173,7 @@ class ProviderTest {
 
   @Test fun testProviderWithNullableReturnTypeUsesNullAsDefault() = codegen(
     """
-         fun invoke() = inject<() -> Foo?>()()
+      fun invoke() = inject<() -> Foo?>()()
     """
   ) {
     invokeSingleFile().shouldBeNull()
@@ -185,8 +181,8 @@ class ProviderTest {
 
   @Test fun testProviderWithNullableReturnTypeAndDefaultOnAllErrors() = codegen(
     """
-            @Provide fun bar(foo: Foo) = Bar(foo)
-         fun invoke() = inject<@DefaultOnAllErrors () -> Bar?>()()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+      fun invoke() = inject<@DefaultOnAllErrors () -> Bar?>()()
     """
   ) {
     invokeSingleFile().shouldBeNull()

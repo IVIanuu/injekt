@@ -25,7 +25,7 @@ class QualifierTest {
     """
       @Provide val foo = Foo()
       @Provide val qualifiedFoo: @Qualifier1 Foo = Foo()
-        """,
+    """,
     """
       fun invoke(): Pair<Foo, Foo> {
         return inject<Foo>() to inject<@Qualifier1 Foo>()
@@ -70,7 +70,7 @@ class QualifierTest {
       class Dep {
         @Provide @Qualifier1 constructor()
       }
-        """,
+    """,
     """
       fun invoke() = inject<@Qualifier1 Dep>()
     """

@@ -24,7 +24,7 @@ class ModuleTest {
     """
       @Provide val foo = Foo()
       @Provide class BarModule(private val foo: Foo) {
-          @Provide val bar get() = Bar(foo)
+        @Provide val bar get() = Bar(foo)
       }
     """,
     """
@@ -36,7 +36,7 @@ class ModuleTest {
     """
       @Provide val foo = Foo()
       @Provide object BarModule {
-          @Provide fun bar(foo: Foo) = Bar(foo)
+        @Provide fun bar(foo: Foo) = Bar(foo)
       }
     """,
     """
@@ -47,14 +47,14 @@ class ModuleTest {
   @Test fun testModuleLambdaParameter() = singleAndMultiCodegen(
     """
       class MyModule {
-          @Provide val foo = Foo()
+        @Provide val foo = Foo()
       }
 
       @Provide fun foo() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
 
       inline fun <R> withModule(
-          block: (@Provide MyModule) -> R
+        block: (@Provide MyModule) -> R
       ): R = block(MyModule())
     """,
     """
@@ -66,11 +66,11 @@ class ModuleTest {
 
   @Test fun testGenericModule() = singleAndMultiCodegen(
     """
-            class MyModule<T>(private val instance: T) {
-                @Provide fun provide() = instance to instance
-            }
-            @Provide val fooModule = MyModule(Foo())
-            @Provide val stringModule = MyModule("__")
+      class MyModule<T>(private val instance: T) {
+        @Provide fun provide() = instance to instance
+      }
+      @Provide val fooModule = MyModule(Foo())
+      @Provide val stringModule = MyModule("__")
     """,
     """
         fun invoke() = inject<Pair<Foo, Foo>>() 
@@ -79,40 +79,40 @@ class ModuleTest {
 
   @Test fun testGenericModuleQualified() = singleAndMultiCodegen(
     """
-            @Qualifier annotation class MyQualifier<T>
-            class MyModule<T>(private val instance: T) {
-                @Provide fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
-            }
-
-            @Provide val fooModule = MyModule(Foo())
-            @Provide val stringModule = MyModule("__")
-            """,
+      @Qualifier annotation class MyQualifier<T>
+      class MyModule<T>(private val instance: T) {
+          @Provide fun provide(): @MyQualifier<Int> Pair<T, T> = instance to instance
+      }
+  
+      @Provide val fooModule = MyModule(Foo())
+      @Provide val stringModule = MyModule("__")
+    """,
     """
-         fun invoke() = inject<@MyQualifier<Int> Pair<Foo, Foo>>() 
-            """
+      fun invoke() = inject<@MyQualifier<Int> Pair<Foo, Foo>>() 
+    """
   )
 
   @Test fun testGenericModuleClass() = singleAndMultiCodegen(
     """
-            @Provide class MyModule<T> {
-                @Provide fun provide(instance: T) = instance to instance
-            }
-
-            @Provide val foo = Foo()
-            @Provide fun bar(foo: Foo) = Bar(foo)
+      @Provide class MyModule<T> {
+        @Provide fun provide(instance: T) = instance to instance
+      }
+  
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-         fun invoke() {
-                inject<Pair<Foo, Foo>>()
-                inject<Pair<Bar, Bar>>()
-            } 
+      fun invoke() {
+        inject<Pair<Foo, Foo>>()
+        inject<Pair<Bar, Bar>>()
+      } 
     """
   )
 
   @Test fun testGenericModuleFunction() = singleAndMultiCodegen(
     """
       class MyModule<T> {
-          @Provide fun provide(instance: T) = instance to instance
+        @Provide fun provide(instance: T) = instance to instance
       }
 
       @Provide fun <T> myModule() = MyModule<T>()

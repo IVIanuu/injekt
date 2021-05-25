@@ -76,7 +76,7 @@ class InjectableDeclarationTest {
     """
       @Provide val foo = Foo()
       class Dep {
-          @Provide constructor(foo: Foo)
+        @Provide constructor(foo: Foo)
       }
     """,
     """
@@ -131,17 +131,17 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideCompanionObject() = singleAndMultiCodegen(
     """
-            @Provide val foo = Foo()
-            class Dep {
-                @Provide companion object {
-                    init {
-                        inject<Foo>()
-                    }
-                }
-            }
+      @Provide val foo = Foo()
+      class Dep {
+        @Provide companion object {
+          init {
+            inject<Foo>()
+          }
+        }
+      }
     """,
     """
-        fun invoke() = inject<Dep.Companion>() 
+      fun invoke() = inject<Dep.Companion>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"

@@ -81,7 +81,7 @@ class DivergenceTest {
       @Provide class C(b: B)
      """,
      """
-      fun invoke() = inject<C>() 
+       fun invoke() = inject<C>() 
      """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -128,7 +128,7 @@ class DivergenceTest {
       @Provide fun b(a: () -> A): B = {}
      """,
     """
-     fun invoke() = inject<Set<() -> Unit>>() 
+      fun invoke() = inject<Set<() -> Unit>>() 
     """
   ) {
     invokeSingleFile()

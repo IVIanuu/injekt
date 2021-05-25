@@ -33,9 +33,7 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.jvm.extensions.*
 import org.jetbrains.kotlin.types.model.*
 
-fun withTypeCheckerContext(
-  block: TypeCheckerTestContext.() -> Unit,
-) {
+fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
   codegen(
     """
     """,

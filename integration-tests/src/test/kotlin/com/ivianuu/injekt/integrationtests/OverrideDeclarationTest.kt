@@ -13,7 +13,7 @@ class OverrideDeclarationTest {
     """,
     """
       @Provide class MySubClass : MySuperClass() {
-          @Provide override fun foo() = Foo()
+        @Provide override fun foo() = Foo()
       }
 
       fun invoke() = inject<Foo>() 
@@ -26,11 +26,11 @@ class OverrideDeclarationTest {
   @Test fun testFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-          abstract fun foo(): Foo
+        abstract fun foo(): Foo
       }
   
       @Provide class MySubClass : MySuperClass() {
-          @Provide override fun foo() = Foo()
+        @Provide override fun foo() = Foo()
       }
     """,
     """

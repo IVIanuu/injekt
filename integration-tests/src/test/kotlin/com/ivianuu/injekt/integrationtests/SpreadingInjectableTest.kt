@@ -31,7 +31,7 @@ class SpreadingInjectableTest {
       @Provide fun foo(): @Trigger Foo = Foo()
     """,
     """
-        fun invoke() = inject<Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -109,16 +109,16 @@ class SpreadingInjectableTest {
       @Provide fun <@Spread T : @A S, S> aImpl() = AModule_<S>()
       
       class AModule_<T> {
-          @Provide
-          fun my(instance: T): @B T = instance
+        @Provide
+        fun my(instance: T): @B T = instance
       }
       
       @Qualifier annotation class B
       @Provide fun <@Spread T : @B S, S> bImpl() = BModule_<T>()
       
       class BModule_<T> {
-          @Provide
-          fun my(instance: T): @C Any? = instance
+        @Provide
+        fun my(instance: T): @C Any? = instance
       }
       
       @Qualifier annotation class C
@@ -136,8 +136,7 @@ class SpreadingInjectableTest {
   @Test fun testScoped() = singleAndMultiCodegen(
     """
       typealias ActivityScope = Scope
-      @Provide val activityScopeModule = 
-          ChildScopeModule0<AppScope, ActivityScope>()
+      @Provide val activityScopeModule = ChildScopeModule0<AppScope, ActivityScope>()
     """,
     """
       @Provide fun foo(): @Scoped<AppScope> Foo = Foo()
@@ -257,7 +256,7 @@ class SpreadingInjectableTest {
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-          inject<(@Provide @InstallElement<AppScope> App) -> AppScope>()
+        inject<(@Provide @InstallElement<AppScope> App) -> AppScope>()
       }
     """
   )
@@ -271,7 +270,7 @@ class SpreadingInjectableTest {
       ): U = factory()
   
       class MyModule<T : S, S> {
-          @Provide fun value(v: T): S = v
+        @Provide fun value(v: T): S = v
       }
   
       @Provide fun <@Spread T : @Qualifier1 S, S> myModule():

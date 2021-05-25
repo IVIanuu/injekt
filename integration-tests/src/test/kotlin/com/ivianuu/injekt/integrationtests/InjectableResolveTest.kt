@@ -285,7 +285,7 @@ class InjectableResolveTest {
       fun invoke(foo: Foo) = with(UsesFoo(foo)) {
         inject<Foo>()
       }
-    """.trimIndent()
+    """
   ) {
     val foo = Foo()
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
@@ -520,10 +520,10 @@ class InjectableResolveTest {
         @Provide val foo = Foo()
 
         @Provide fun <T : Foo> typedString(value: T): @TypedQualifier<T> TypedString<T> = ""
-    """,
-    """
-      fun invoke() = inject<@TypedQualifier<Foo> String>() 
-    """
+      """,
+      """
+        fun invoke() = inject<@TypedQualifier<Foo> String>() 
+      """
     )
 
   @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
@@ -534,8 +534,8 @@ class InjectableResolveTest {
         }
       """,
       """
-      fun invoke() = (null as? String)?.myFunc()
-    """
+        fun invoke() = (null as? String)?.myFunc()
+      """
     )
 
   @Test fun testCanResolveProvideParameterInDefaultValueOfFollowingParameter() = codegen(

@@ -113,7 +113,7 @@ class SuppressionTest {
   @Test fun testCanUseOperatorWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
-          fun plus(a: T, b: T): T
+        fun plus(a: T, b: T): T
       }
   
       operator fun <T> T.plus(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
