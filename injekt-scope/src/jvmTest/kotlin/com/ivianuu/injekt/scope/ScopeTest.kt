@@ -23,7 +23,6 @@ import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-@Providers("com.ivianuu.injekt.common.*")
 class ScopeTest {
   @Test fun testGetElement() {
     @Provide val element: @InstallElement<TestScope1> String = "value"

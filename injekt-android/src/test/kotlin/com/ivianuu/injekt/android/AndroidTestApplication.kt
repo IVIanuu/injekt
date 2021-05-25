@@ -19,10 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.*
 import com.ivianuu.injekt.*
 
-@Providers(
-  "com.ivianuu.injekt.common.*",
-  "com.ivianuu.injekt.scope.*"
-)
+@Providers("com.ivianuu.injekt.scope.*")
 class AndroidTestApplication : Application(), AppScopeOwner {
   override val appScope by lazy { createAppScope() }
 }

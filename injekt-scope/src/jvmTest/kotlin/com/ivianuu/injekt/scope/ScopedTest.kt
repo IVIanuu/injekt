@@ -20,7 +20,6 @@ import com.ivianuu.injekt.*
 import io.kotest.matchers.*
 import org.junit.*
 
-@Providers("com.ivianuu.injekt.common.*")
 class ScopedTest {
   @Qualifier private annotation class Element
 
