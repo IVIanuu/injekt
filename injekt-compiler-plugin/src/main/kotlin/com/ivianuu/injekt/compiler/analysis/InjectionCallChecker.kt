@@ -19,9 +19,11 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.resolve.calls.tower.*
 
 class InjectionCallChecker(private val context: InjektContext) : CallChecker {
   override fun check(
@@ -30,7 +32,9 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     context: CallCheckerContext
   ) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+
+    if (resultingDescriptor.valueParameters.isEmpty() ||
+        resultingDescriptor is PropertyAccessorDescriptor) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -54,6 +58,40 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     val callable = resultingDescriptor
       .toCallableRef(this.context, context.trace)
       .substitute(substitutionMap)
+
+    val injectableParameters = callable.callable.valueParameters
+      .filter { it.isInject(this.context, context.trace) }
+
+    val callToChange = when (resolvedCall) {
+      is NewResolvedCallImpl<*> -> resolvedCall
+      is NewVariableAsFunctionResolvedCallImpl -> resolvedCall.functionCall
+      else -> throw AssertionError("Unexpected resolved call $resolvedCall")
+    }
+
+    val callDiagnostics = callToChange.readPrivateField<ArrayList<KotlinCallDiagnostic>>(
+      NewResolvedCallImpl::class,
+      "diagnostics"
+    )
+
+    val callValueArguments = callToChange.valueArguments
+      as MutableMap<ValueParameterDescriptor, ResolvedValueArgument>
+
+    val callArgumentMappingByOriginal = callToChange.argumentMappingByOriginal
+      as MutableMap<ValueParameterDescriptor, ResolvedCallArgument>
+
+    injectableParameters.forEach { injectableParameter ->
+      val callParameter =
+        callToChange.candidateDescriptor.valueParameters[injectableParameter.index]
+      if (callValueArguments[callParameter] == null &&
+          callValueArguments[injectableParameter] == null) {
+        callValueArguments[callParameter] = DefaultValueArgument.DEFAULT
+        callArgumentMappingByOriginal[callParameter] = ResolvedCallArgument.DefaultArgument
+        callDiagnostics.removeAll {
+          it is NoValueForParameter &&
+              it.parameterDescriptor == callParameter
+        }
+      }
+    }
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.index }

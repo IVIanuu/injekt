@@ -39,6 +39,7 @@ kotlin {
     compilations.forEach {
       it.kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs += "-XXLanguage:+NewInference"
       }
     }
   }

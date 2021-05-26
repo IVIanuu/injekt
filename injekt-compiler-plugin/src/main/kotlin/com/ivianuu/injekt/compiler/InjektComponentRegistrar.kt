@@ -58,10 +58,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
       LoadingOrder.LAST,
       InjektIrDumper(dumpDir(configuration))
     )
-    CandidateInterceptor.registerExtension(
-      project,
-      InjectCallResolutionInterceptorExtension()
-    )
     TypeResolutionInterceptor.registerExtension(
       project,
       InjektTypeResolutionInterceptorExtension()

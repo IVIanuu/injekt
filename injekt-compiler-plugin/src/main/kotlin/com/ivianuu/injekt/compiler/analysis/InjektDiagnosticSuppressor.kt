@@ -17,11 +17,13 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -32,6 +34,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
     if (bindingContext == null)
       return false
+
+    if (diagnostic is DiagnosticWithParameters1<*, *> &&
+        diagnostic.factory == Errors.NO_VALUE_FOR_PARAMETER) {
+      val valueParameter = diagnostic.a as? ValueParameterDescriptor
+      if (valueParameter?.isInject(valueParameter.module.injektContext,
+          valueParameter.module.injektContext.trace) == true)
+        return true
+    }
 
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
@@ -51,16 +61,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
       return true
-
-    if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED) {
-      val parameter = diagnostic.psiElement.getParentOfType<KtParameter>(false)
-        ?.descriptor<ParameterDescriptor>(bindingContext)
-      return parameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-          parameter?.containingDeclaration?.hasAnnotation(InjektFqNames.Provide) == true ||
-          parameter?.containingDeclaration?.safeAs<ConstructorDescriptor>()
-            ?.takeIf { it.isPrimary }
-            ?.constructedClass?.hasAnnotation(InjektFqNames.Provide) == true
-    }
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
       val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)

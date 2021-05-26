@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
@@ -73,9 +72,7 @@ fun CallableDescriptor.callableInfo(
   val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
     .filter {
       it.hasAnnotation(InjektFqNames.Inject) ||
-          ((this is FunctionInvokeDescriptor ||
-              (this is InjectFunctionDescriptor &&
-                  underlyingDescriptor is FunctionInvokeDescriptor)) &&
+          ((this is FunctionInvokeDescriptor) &&
               it.type.hasAnnotation(InjektFqNames.Inject))
     }
     .mapTo(mutableSetOf()) { it.injektIndex() }
@@ -414,7 +411,6 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
       LazyClassDescriptor::class,
       "annotations"
     ) { newAnnotations }
-    is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
     else -> {
       //throw AssertionError("Cannot add annotation to $this $javaClass")

@@ -39,15 +39,10 @@ class AppInitializer : ApplicationInitializedListener {
               project,
               InjektStorageComponentContainerContributor()
             )
-            CandidateInterceptor.registerExtension(
-              project,
-              InjectCallResolutionInterceptorExtension()
-            )
             TypeResolutionInterceptor.registerExtension(
               project,
               InjektTypeResolutionInterceptorExtension()
             )
-
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
               .registerExtension(InjektDiagnosticSuppressor())

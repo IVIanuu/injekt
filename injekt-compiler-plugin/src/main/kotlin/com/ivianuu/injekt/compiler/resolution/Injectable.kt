@@ -17,13 +17,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.transform.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -208,7 +208,7 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRe
   val index = injektIndex()
   return InjectableRequest(
     type = callable.parameterTypes[index]!!,
-    defaultStrategy = if (this is ValueParameterDescriptor && hasDefaultValueIgnoringInject) {
+    defaultStrategy = if (this is ValueParameterDescriptor && hasDefaultValue()) {
       if (index in callable.defaultOnAllErrorParameters)
         InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
       else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED

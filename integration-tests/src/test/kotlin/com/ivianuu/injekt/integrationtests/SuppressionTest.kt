@@ -60,37 +60,6 @@ class SuppressionTest {
     shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
   }
 
-  @Test fun testCanUseUnderscoreForInjectParameter() = singleAndMultiCodegen(
-    """
-      fun func(@Inject _: String, @Inject _: Int) {
-        inject<String>()
-        inject<Int>()
-      }
-    """,
-    """
-      fun invoke() {
-        @Provide val string = ""
-        func(int = 0)
-      } 
-    """
-  )
-
-  @Test fun testCanUseUnderscoreForInjectableParameterWithTypeAlias() = singleAndMultiCodegen(
-    """
-      typealias MyAlias = Int
-      fun func(@Inject _: String, @Inject _: MyAlias) {
-        inject<String>()
-        inject<MyAlias>()
-      }
-    """,
-    """
-      fun invoke() {
-        @Provide val string = ""
-        func(myAlias = 0)
-      } 
-    """
-  )
-
   @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {

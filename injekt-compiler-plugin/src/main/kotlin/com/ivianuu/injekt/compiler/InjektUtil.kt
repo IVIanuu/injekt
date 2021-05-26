@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
@@ -27,7 +26,6 @@ import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
@@ -102,7 +100,6 @@ fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)
@@ -201,21 +198,7 @@ val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
 fun ParameterDescriptor.injektName(): Name {
-  return if (this is ValueParameterDescriptor) {
-    if (name.isSpecial) {
-      val finalType = type.getAbbreviation() ?: type
-      val constructor = finalType.constructor
-      if (constructor is TypeVariableTypeConstructor)
-        constructor.debugName
-          .decapitalize()
-          .asNameId()
-      else constructor.declarationDescriptor!!
-        .name
-        .asString()
-        .decapitalize()
-        .asNameId()
-    } else name
-  } else {
+  return if (this is ValueParameterDescriptor) name else {
     val callable = containingDeclaration as? CallableDescriptor
     when {
       original == callable?.dispatchReceiverParameter?.original ||
@@ -275,6 +258,14 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   field.set(this, newValue)
   return newValue
 }
+
+fun <T> Any.readPrivateField(clazz: KClass<*>, fieldName: String): T {
+  val field = clazz.java.declaredFields
+    .single { it.name == fieldName }
+  field.isAccessible = true
+  return field.get(this) as T
+}
+
 
 fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
   .removePrefix(packageFqName.asString())
