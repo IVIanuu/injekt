@@ -25,7 +25,7 @@ fun QuickFixes.addMissingInjectableAsParameter() = register(
         graph.failure.unwrapDependencyFailure(graph.failureRequest)
       if (unwrappedFailure !is ResolutionResult.Failure.NoCandidates) return emptyList()
 
-      val parentFunction = diagnostic.psiElement.getParentOfType<KtFunction>(false)
+      val parentFunction = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
       if (parentFunction != null) {
         if (parentFunction.hasModifier(KtTokens.OVERRIDE_KEYWORD))
           return emptyList()
@@ -57,10 +57,12 @@ private fun addInjectableConstructorParameterQuickFix(
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
     (file as KtFile).addImportIfNeeded(InjektFqNames.Inject)
     val primaryConstructor = clazz.createPrimaryConstructorIfAbsent()
-    val makeVal = call.getParentOfType<KtNamedFunction>(false) == null
+    val injectText = if (primaryConstructor.hasAnnotation(InjektFqNames.Provide) ||
+        clazz.hasAnnotation(InjektFqNames.Provide)) "" else "@Inject "
+    val valText = if (call.getParentOfType<KtNamedFunction>(false) == null) "" else "val "
     primaryConstructor.valueParameterList!!.addParameter(
       KtPsiFactory(project)
-        .createParameter("@Inject ${if (makeVal) "val " else ""}_: ${type.renderKotlinLikeToString()}")
+        .createParameter("${injectText}${valText}_: ${type.renderKotlinLikeToString()}")
     )
   }
 
@@ -68,7 +70,7 @@ private fun addInjectableConstructorParameterQuickFix(
 }
 
 private fun addInjectableParameterQuickFix(
-  function: KtFunction,
+  function: KtNamedFunction,
   type: TypeRef
 ) = object : BaseIntentionAction() {
   override fun getFamilyName(): String =
@@ -79,11 +81,13 @@ private fun addInjectableParameterQuickFix(
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
     (file as KtFile).addImportIfNeeded(InjektFqNames.Inject)
+    val injectText = if (function.hasAnnotation(InjektFqNames.Provide)) "" else "@Inject "
     function.valueParameterList!!.addParameter(
       KtPsiFactory(project)
-        .createParameter("@Inject _: ${type.renderKotlinLikeToString()}")
+        .createParameter("${injectText}_: ${type.renderKotlinLikeToString()}")
     )
   }
 
   override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
 }
+F
