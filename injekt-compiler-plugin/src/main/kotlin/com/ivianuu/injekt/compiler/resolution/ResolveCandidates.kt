@@ -203,9 +203,16 @@ private fun InjectablesScope.resolveRequest(
   checkCancelled()
   resultsByType[request.type]?.let { return it }
   val userCandidates = injectablesForRequest(request, this)
-    ?: TypeInjectablesScope(context, trace, request.type, lookupLocation)
-      .also { it.recordLookup(lookupLocation) }
-      .injectablesForRequest(request, this)
+    ?: run {
+      // try the type scope if the requested type is not a framework type
+      if (!request.type.isProviderFunctionType &&
+        request.type.classifier != context.setClassifier &&
+        request.type.classifier.fqName != InjektFqNames.TypeKey)
+          TypeInjectablesScope(context, trace, request.type, lookupLocation)
+            .also { it.recordLookup(lookupLocation) }
+            .injectablesForRequest(request, this)
+      else null
+    }
   val result = if (userCandidates != null) {
     resolveCandidates(request, userCandidates, lookupLocation)
   } else {

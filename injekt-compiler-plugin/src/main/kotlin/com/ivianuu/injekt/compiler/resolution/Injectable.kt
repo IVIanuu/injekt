@@ -145,7 +145,7 @@ class TypeKeyInjectable(
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
   override val dependencies: List<InjectableRequest> = run {
     val typeParameterDependencies = mutableSetOf<ClassifierRef>()
-    type.visitRecursive {
+    type.allTypes.forEach {
       if (it.classifier.isTypeParameter)
         typeParameterDependencies += it.classifier
     }

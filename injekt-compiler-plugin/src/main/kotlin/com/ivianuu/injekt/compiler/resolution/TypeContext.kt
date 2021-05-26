@@ -204,7 +204,7 @@ fun buildContextForSpreadingInjectable(
   staticTypeParameters: List<ClassifierRef>
 ): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
   val candidateTypeParameters = mutableListOf<ClassifierRef>()
-  candidateType.visitRecursive {
+  candidateType.allTypes.forEach {
     if (it.classifier.isTypeParameter)
       candidateTypeParameters += it.classifier
   }
@@ -235,11 +235,11 @@ fun TypeRef.buildContext(
 ): TypeContext {
   val context = TypeContext(injektContext)
   staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
-  visitRecursive {
+  allTypes.forEach {
     if (it.classifier.isTypeParameter)
       context.addTypeVariable(it.classifier)
   }
-  superType.visitRecursive {
+  superType.allTypes.forEach {
     if (it.classifier.isTypeParameter)
       context.addTypeVariable(it.classifier)
   }
@@ -468,7 +468,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
   private fun VariableWithConstraints.getNestedTypeVariables(): List<TypeRef> {
     val nestedTypeVariables = mutableListOf<TypeRef>()
     constraints.forEach { constraint ->
-      constraint.type.visitRecursive {
+      constraint.type.allTypes.forEach {
         if (it.classifier in typeVariables)
           nestedTypeVariables += it
       }
@@ -618,8 +618,7 @@ private fun commonSuperType(
   depth: Int = -(types.maxOfOrNull { it.typeDepth } ?: 0)
 ): TypeRef {
   types.singleOrNull()?.let { return it }
-  val notAllNotNull =
-    types.any { it.isNullableType }
+  val notAllNotNull = types.any { it.isNullableType }
   val notNullTypes = if (notAllNotNull) types.map { it.withNullability(false) } else types
 
   val commonSuperType = commonSuperTypeForNotNullTypes(context, notNullTypes, depth)

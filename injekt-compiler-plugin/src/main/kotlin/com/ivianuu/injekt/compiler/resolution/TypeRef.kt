@@ -231,6 +231,47 @@ class TypeRef(
     }
   }
 
+  private var _superTypes: List<TypeRef>? = null
+  val superTypes: List<TypeRef> get() {
+    if (_superTypes == null) {
+      val substitutionMap = classifier.typeParameters
+        .toMap(arguments)
+      _superTypes = if (substitutionMap.isEmpty()) classifier.superTypes
+      else classifier.superTypes.map { it.substitute(substitutionMap) }
+    }
+    return _superTypes!!
+  }
+
+  private var _allTypes: Set<TypeRef>? = null
+  val allTypes: Set<TypeRef> get() {
+    if (_allTypes == null) {
+      val allTypes = mutableSetOf<TypeRef>()
+      fun collect(inner: TypeRef) {
+        if (inner in allTypes) return
+        allTypes += inner
+        inner.arguments.forEach { collect(it) }
+        inner.superTypes.forEach { collect(it) }
+      }
+      collect(this)
+      _allTypes = allTypes
+    }
+    return _allTypes!!
+  }
+
+  private var _isNullableType: Boolean? = null
+  val isNullableType: Boolean get() {
+    if (_isNullableType == null) {
+      fun inner(): Boolean {
+        if (isMarkedNullable) return true
+        for (superType in superTypes)
+          if (superType.isNullableType) return true
+        return false
+      }
+      _isNullableType = inner()
+    }
+    return _isNullableType!!
+  }
+
   override fun hashCode(): Int {
     if (_hashCode == 0) {
       var result = classifier.hashCode()
@@ -298,17 +339,6 @@ fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
 
 fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
   action(this) || superTypes.any { it.anySuperType(action) }
-
-fun TypeRef.visitRecursive(
-  seen: MutableSet<TypeRef> = mutableSetOf(),
-  action: (TypeRef) -> Unit
-) {
-  if (this in seen) return
-  seen += this
-  action(this)
-  arguments.forEach { it.visitRecursive(seen, action) }
-  superTypes.forEach { it.visitRecursive(seen, action) }
-}
 
 fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
   if (map.isEmpty()) return this
@@ -440,29 +470,12 @@ val TypeRef.coveringSet: Set<ClassifierRef>
 
 val TypeRef.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
-val TypeRef.isNullableType: Boolean
-  get() {
-    if (isMarkedNullable) return true
-    for (superType in superTypes)
-      if (superType.isNullableType) return true
-    return false
-  }
-
 val TypeRef.isComposableType: Boolean
   get() {
     if (isMarkedComposable) return true
     for (superType in superTypes)
       if (superType.isComposableType) return true
     return false
-  }
-
-val TypeRef.superTypes: List<TypeRef>
-  get() {
-    val substitutionMap = classifier.typeParameters
-      .toMap(arguments)
-    return if (substitutionMap.isEmpty()) classifier.superTypes
-    else classifier.superTypes
-      .map { it.substitute(substitutionMap) }
   }
 
 val TypeRef.isProviderFunctionType: Boolean

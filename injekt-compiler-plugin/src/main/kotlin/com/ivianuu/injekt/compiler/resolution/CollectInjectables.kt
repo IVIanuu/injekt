@@ -341,8 +341,8 @@ fun TypeRef.collectTypeScopeInjectables(
   lookupLocation: LookupLocation
 ): List<CallableRef> {
   val injectables = mutableListOf<CallableRef>()
-  visitRecursive { currentType ->
-    if (currentType.isStarProjection) return@visitRecursive
+  allTypes.forEach { currentType ->
+    if (currentType.isStarProjection) return@forEach
     injectables += currentType.collectInjectablesForSingleType(context, trace, lookupLocation)
   }
   return injectables.filter {
