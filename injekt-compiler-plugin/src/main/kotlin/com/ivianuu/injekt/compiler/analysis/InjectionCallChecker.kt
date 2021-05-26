@@ -107,7 +107,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
         }
       }
       is InjectionGraph.Error -> context.trace.report(
-        InjektErrors.UNRESOLVED_INJECTION.on(reportOn, graph)
+        InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
       )
     }
   }

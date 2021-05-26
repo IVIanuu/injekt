@@ -34,7 +34,8 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   element, importPath, packageFqName
 )
 
-fun ProviderImport.resolve(context: InjektContext): ResolvedProviderImport {
+fun ProviderImport.resolve(context: InjektContext): ResolvedProviderImport? {
+  if (!isValidImport()) return null
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
     val objectForFqName = context.classifierDescriptorForFqName(packageFqName,
@@ -58,3 +59,11 @@ fun KtAnnotated.getProviderImports(): List<ProviderImport> = findAnnotation(Inje
 fun ValueArgument.toProviderImport() = ProviderImport(
   getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")
 )
+
+fun ProviderImport.isValidImport() = importPath != null && importPath.isNotEmpty() && importPath
+  .none {
+    !it.isLetterOrDigit() &&
+        it != '.' &&
+        it != '_' &&
+        it != '*'
+  }

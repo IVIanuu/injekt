@@ -137,20 +137,14 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
 
     imports.forEach { import ->
       val (element, importPath) = import
-      if (importPath == null || importPath
-          .any {
-            !it.isLetterOrDigit() &&
-                it != '.' &&
-                it != '_' &&
-                it != '*'
-          }
-      ) {
+      if (!import.isValidImport()) {
         trace.report(
           InjektErrors.MALFORMED_INJECTABLE_IMPORT
             .on(element!!)
         )
         return@forEach
       }
+      importPath!!
       if (importPath.endsWith(".*")) {
         val packageFqName = FqName(importPath.removeSuffix(".*"))
         if (packageFqName == currentPackage) {

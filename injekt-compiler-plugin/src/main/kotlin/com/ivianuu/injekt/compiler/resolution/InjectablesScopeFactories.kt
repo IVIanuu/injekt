@@ -144,7 +144,7 @@ private fun ImportInjectablesScope(
     trace = trace,
     initialInjectables = resolvedImports
         .filterNot { it.callable.isExternalDeclaration(context) },
-    imports = imports.map { it.resolve(context) },
+    imports = imports.mapNotNull { it.resolve(context) },
     typeParameters = emptyList()
   ).also {
     if (parent == null) {

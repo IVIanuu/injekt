@@ -268,6 +268,7 @@ fun List<ProviderImport>.collectImportedInjectables(
   trace: BindingTrace
 ): List<CallableRef> = flatMap { import ->
   buildList<CallableRef> {
+    if (!import.isValidImport()) return@buildList
     checkCancelled()
     fun importObjectIfExists(
       fqName: FqName,
