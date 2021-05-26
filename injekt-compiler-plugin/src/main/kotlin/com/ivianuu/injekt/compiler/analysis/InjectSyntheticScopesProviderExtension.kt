@@ -39,38 +39,27 @@ private class InjectSyntheticScope(private val context: InjektContext) : Synthet
   override fun getSyntheticConstructors(
     contributedClassifier: ClassifierDescriptor,
     location: LookupLocation
-  ): Collection<FunctionDescriptor> {
-    println("get synth constructors $contributedClassifier $location")
-    return contributedClassifier.safeAs<ClassDescriptor>()
-      ?.constructors
-      ?.mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) } ?: emptyList()
-  }
+  ): Collection<FunctionDescriptor> = contributedClassifier.safeAs<ClassDescriptor>()
+    ?.constructors
+    ?.mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) } ?: emptyList()
 
-  override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> {
-    println("get synth member $receiverTypes")
-    return receiverTypes
+  override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
+    receiverTypes
       .flatMap { it.memberScope.getContributedDescriptors() }
       .filterIsInstance<FunctionDescriptor>()
       .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
-  }
 
   override fun getSyntheticMemberFunctions(
     receiverTypes: Collection<KotlinType>,
     name: Name,
     location: LookupLocation
-  ): Collection<FunctionDescriptor> {
-    println("get synth member $receiverTypes $name $location")
-    return receiverTypes
-      .flatMap { it.memberScope.getContributedFunctions(name, location) }
-      .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
-  }
+  ): Collection<FunctionDescriptor> = receiverTypes
+    .flatMap { it.memberScope.getContributedFunctions(name, location) }
+    .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
 
   override fun getSyntheticStaticFunctions(
     contributedFunctions: Collection<FunctionDescriptor>,
     location: LookupLocation
-  ): Collection<FunctionDescriptor> {
-    println("get synth static $contributedFunctions $location")
-    return contributedFunctions
-      .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
-  }
+  ): Collection<FunctionDescriptor> = contributedFunctions
+    .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
 }
