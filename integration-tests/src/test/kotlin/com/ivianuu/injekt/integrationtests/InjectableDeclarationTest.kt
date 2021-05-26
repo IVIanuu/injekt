@@ -344,6 +344,41 @@ class InjectableDeclarationTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
+  @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(
+    """
+      fun usesFoo(@Inject foo: Foo) {
+      }
+    """,
+    """
+      @Provide val foo = Foo()
+      fun invoke() {
+        usesFoo()
+      }
+    """
+  )
+
+  @Test fun testCanLeaveOutConstructorInjectParameters() = singleAndMultiCodegen(
+    """
+      class FooHolder(@Inject foo: Foo)
+    """,
+    """
+      @Provide val foo = Foo()
+      fun invoke() {
+        FooHolder()
+      }
+    """
+  )
+
+  @Test fun testCanLeaveOutSuperConstructorInjectParameters() = singleAndMultiCodegen(
+    """
+      abstract class AbstractFooHolder(@Inject foo: Foo)
+    """,
+    """
+      @Provide val foo = Foo()
+      class FooHolderImpl : AbstractFooHolder()
+    """
+  )
+
   @Test fun testCanLeaveOutInjectLambdaParameters() = singleAndMultiCodegen(
     """
       val lambda: (@Inject Foo) -> Foo = { inject<Foo>() }
