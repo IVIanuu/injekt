@@ -44,9 +44,9 @@ private fun importInjectableQuickFix(
   type: TypeRef,
   scope: InjectablesScope
 ) = object : BaseIntentionAction() {
-  override fun getFamilyName(): String = "Import injectable for $type"
+  override fun getFamilyName(): String = "Import injectable for ${type.renderKotlinLikeToString()}"
 
-  override fun getText(): String = "Import injectable for $type"
+  override fun getText(): String = "Import injectable for ${type.renderKotlinLikeToString()}"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
     val candidates = scope.context.injectablesForType(type, scope.allStaticTypeParameters)
@@ -55,7 +55,8 @@ private fun importInjectableQuickFix(
       return
     }
     object : ListPopupImpl(
-      object : BaseListPopupStep<CallableRef>("Pick injectable to import for $type", candidates) {
+      object : BaseListPopupStep<CallableRef>(
+        "Pick injectable to import for ${type.renderKotlinLikeToString()}", candidates) {
         override fun isAutoSelectionEnabled() = false
 
         override fun isSpeedSearchEnabled() = true

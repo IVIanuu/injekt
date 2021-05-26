@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.idea.quickfix.QuickFixes
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun QuickFixes.addMissingInjectableAsParameter() = register(
   InjektErrors.UNRESOLVED_INJECTION,
@@ -23,28 +24,64 @@ fun QuickFixes.addMissingInjectableAsParameter() = register(
       val (unwrappedFailureRequest, unwrappedFailure) =
         graph.failure.unwrapDependencyFailure(graph.failureRequest)
       if (unwrappedFailure !is ResolutionResult.Failure.NoCandidates) return emptyList()
+
       val parentFunction = diagnostic.psiElement.getParentOfType<KtFunction>(false)
-        ?: return emptyList()
-      if (parentFunction.hasModifier(KtTokens.OVERRIDE_KEYWORD))
-        return emptyList()
-      return listOf(addInjectableParameterQuickFix(parentFunction, unwrappedFailureRequest.type))
+      if (parentFunction != null) {
+        if (parentFunction.hasModifier(KtTokens.OVERRIDE_KEYWORD))
+          return emptyList()
+        return listOf(addInjectableParameterQuickFix(parentFunction, unwrappedFailureRequest.type))
+      }
+
+      val parentClass = diagnostic.psiElement.getParentOfType<KtClass>(false)
+      if (parentClass != null) {
+        return listOf(addInjectableConstructorParameterQuickFix(
+          parentClass, unwrappedFailureRequest.type, diagnostic.psiElement.cast()))
+      }
+
+      return emptyList()
     }
   }
 )
+
+private fun addInjectableConstructorParameterQuickFix(
+  clazz: KtClass,
+  type: TypeRef,
+  call: KtElement
+) = object : BaseIntentionAction() {
+  override fun getFamilyName(): String =
+    "Add injectable constructor parameter for ${type.renderKotlinLikeToString()}"
+
+  override fun getText(): String =
+    "Add injectable constructor parameter for ${type.renderKotlinLikeToString()}"
+
+  override fun invoke(project: Project, editor: Editor, file: PsiFile) {
+    (file as KtFile).addImportIfNeeded(InjektFqNames.Inject)
+    val primaryConstructor = clazz.createPrimaryConstructorIfAbsent()
+    val makeVal = call.getParentOfType<KtNamedFunction>(false) == null
+    primaryConstructor.valueParameterList!!.addParameter(
+      KtPsiFactory(project)
+        .createParameter("@Inject ${if (makeVal) "val " else ""}_: ${type.renderKotlinLikeToString()}")
+    )
+  }
+
+  override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
+}
 
 private fun addInjectableParameterQuickFix(
   function: KtFunction,
   type: TypeRef
 ) = object : BaseIntentionAction() {
-  override fun getFamilyName(): String = "Add injectable parameter for $type"
+  override fun getFamilyName(): String =
+    "Add injectable parameter for ${type.renderKotlinLikeToString()}"
 
-  override fun getText(): String = "Add injectable parameter for $type"
+  override fun getText(): String =
+    "Add injectable parameter for ${type.renderKotlinLikeToString()}"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
     (file as KtFile).addImportIfNeeded(InjektFqNames.Inject)
     function.valueParameterList!!.addParameter(
       KtPsiFactory(project)
-        .createParameter("@Inject _: ${type.renderToString()}")
+        .createParameter("@Inject _: ${type.renderKotlinLikeToString()}")
     )
   }
 

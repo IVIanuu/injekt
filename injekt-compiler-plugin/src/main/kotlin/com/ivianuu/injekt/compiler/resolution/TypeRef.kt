@@ -420,9 +420,8 @@ fun TypeRef.render(
   fun TypeRef.inner() {
     if (!renderType(this)) return
 
-    if (isMarkedComposable) {
-      append("@Composable ")
-    }
+    if (isMarkedComposable) append("@Composable ")
+
     when {
       isStarProjection -> append("*")
       else -> append(classifier.fqName.asString())
@@ -435,6 +434,42 @@ fun TypeRef.render(
       }
       append(">")
     }
+    if (isMarkedNullable && !isStarProjection) append("?")
+  }
+  inner()
+}
+
+fun TypeRef.renderKotlinLikeToString() = buildString {
+  renderKotlinLike { append(it) }
+}
+
+fun TypeRef.renderKotlinLike(depth: Int = 0, append: (String) -> Unit) {
+  if (depth > 15) return
+  fun TypeRef.inner() {
+    if (isMarkedComposable) append("@Composable ")
+
+    if (classifier.isQualifier) append("@")
+
+    when {
+      isStarProjection -> append("*")
+      else -> append(classifier.fqName.shortName().asString())
+    }
+
+    val argumentsToRender = if (classifier.isQualifier) arguments.dropLast(1) else arguments
+    if (argumentsToRender.isNotEmpty()) {
+      append("<")
+      argumentsToRender.forEachIndexed { index, typeArgument ->
+        typeArgument.renderKotlinLike(depth = depth + 1, append)
+        if (index != argumentsToRender.lastIndex) append(", ")
+      }
+      append(">")
+    }
+
+    if (classifier.isQualifier) {
+      append(" ")
+      arguments.last().renderKotlinLike(depth = depth + 1, append)
+    }
+
     if (isMarkedNullable && !isStarProjection) append("?")
   }
   inner()
