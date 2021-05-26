@@ -105,7 +105,8 @@ private fun addInjectableImport(
   val importTarget = call.parents
     .firstOrNull { parent ->
       parent is KtClassOrObject ||
-          parent is KtFunction ||
+          parent is KtNamedFunction ||
+          parent is KtConstructor<*>
           parent is KtProperty
     }.safeAs<KtModifierListOwner>() ?: return
 
