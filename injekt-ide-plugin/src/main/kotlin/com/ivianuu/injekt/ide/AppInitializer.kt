@@ -21,7 +21,9 @@ import com.intellij.openapi.application.*
 import com.intellij.openapi.extensions.*
 import com.intellij.openapi.project.*
 import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.ide.quickfixes.*
 import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.idea.quickfix.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.synthetic.*
 
@@ -43,6 +45,9 @@ class AppInitializer : ApplicationInitializedListener {
               project,
               InjectSyntheticScopeProviderExtension()
             )
+            @Suppress("DEPRECATION")
+            Extensions.getRootArea().getExtensionPoint(QuickFixContributor.EP_NAME)
+              .registerExtension(InjektQuickFixContributor())
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
               .registerExtension(InjektDiagnosticSuppressor())
