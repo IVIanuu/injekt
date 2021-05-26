@@ -101,13 +101,17 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       }
     }
 
-    if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT)
-      return bindingContext[InjektWritableSlices.USED_IMPORT,
-          SourcePosition(
-            diagnostic.psiElement.containingFile.cast<KtFile>().virtualFilePath,
-            diagnostic.psiElement.startOffset,
-            diagnostic.psiElement.endOffset
-          )] != null
+    if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
+      val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath
+      if (filePath != null) {
+        return bindingContext[InjektWritableSlices.USED_IMPORT,
+            SourcePosition(
+              filePath,
+              diagnostic.psiElement.startOffset,
+              diagnostic.psiElement.endOffset
+            )] != null
+      }
+    }
 
     return false
   }
