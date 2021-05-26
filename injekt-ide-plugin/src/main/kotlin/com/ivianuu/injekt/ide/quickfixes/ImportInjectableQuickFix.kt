@@ -33,25 +33,23 @@ fun QuickFixes.importInjectable() = register(
       val (unwrappedFailureRequest, unwrappedFailure) =
         graph.failure.unwrapDependencyFailure(graph.failureRequest)
       if (unwrappedFailure !is ResolutionResult.Failure.NoCandidates) return emptyList()
-      val candidates = graph.scope.context
-        .injectablesForType(unwrappedFailureRequest.type, graph.scope.allStaticTypeParameters)
-      if (candidates.isEmpty()) return emptyList()
       return listOf(importInjectableQuickFix(
-        diagnostic.psiElement as KtCallExpression, unwrappedFailureRequest.type, candidates))
+        diagnostic.psiElement as KtElement, unwrappedFailureRequest.type, graph.scope))
     }
   }
 )
 
 private fun importInjectableQuickFix(
-  call: KtCallExpression,
+  call: KtElement,
   type: TypeRef,
-  candidates: List<CallableRef>
+  scope: InjectablesScope
 ) = object : BaseIntentionAction() {
   override fun getFamilyName(): String = "Import injectable for $type"
 
   override fun getText(): String = "Import injectable for $type"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
+    val candidates = scope.context.injectablesForType(type, scope.allStaticTypeParameters)
     if (candidates.size == 1) {
       addInjectableImport(call, project, candidates.single())
       return
@@ -99,7 +97,7 @@ private fun importInjectableQuickFix(
 }
 
 private fun addInjectableImport(
-  call: KtCallExpression,
+  call: KtElement,
   project: Project,
   injectable: CallableRef
 ) {
