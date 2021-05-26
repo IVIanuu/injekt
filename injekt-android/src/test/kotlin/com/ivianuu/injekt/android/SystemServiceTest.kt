@@ -32,7 +32,7 @@ class SystemServiceTest {
   @Test fun testCanRequestSystemService() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     scenario.onActivity {
-      withProvidedInstances(it.application as AppContext) {
+      withInstances(it.application as AppContext) {
         inject<@SystemService PowerManager>()
           .isPowerSaveMode
       }

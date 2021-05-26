@@ -20,33 +20,44 @@ import com.ivianuu.injekt.*
 
 // todo use value classes
 
-class InstanceProvider1<A>(@Provide val a: A)
-
 /**
  * Calls the specified function [block] with [a] as injectable and returns it's result
  */
-inline fun <A, R> withProvidedInstances(a: A, block: InstanceProvider1<A>.() -> R): R =
+inline fun <A, R> withInstances(a: A, block: InstanceProvider1<A>.() -> R): R =
   block(InstanceProvider1(a))
 
-class InstanceProvider2<A, B>(@Provide val a: A, @Provide val b: B)
+class InstanceProvider1<A>(@Provide val a: A)
 
 /**
  * Calls the specified function [block] with [a] and [b] as injectable and returns it's result
  */
-inline fun <A, B, R> withProvidedInstances(a: A, b: B, block: InstanceProvider2<A, B>.() -> R) =
+inline fun <A, B, R> withInstances(a: A, b: B, block: InstanceProvider2<A, B>.() -> R) =
   block(InstanceProvider2(a, b))
 
-class InstanceProvider3<A, B, C>(@Provide val a: A, @Provide val b: B, @Provide val c: C)
+class InstanceProvider2<A, B>(@Provide val a: A, @Provide val b: B)
 
 /**
  * Calls the specified function [block] with [a], [b] and [c] as injectable and returns it's result
  */
-inline fun <A, B, C, R> withProvidedInstances(
+inline fun <A, B, C, R> withInstances(
   a: A,
   b: B,
   c: C,
   block: InstanceProvider3<A, B, C>.() -> R
 ) = block(InstanceProvider3(a, b, c))
+
+class InstanceProvider3<A, B, C>(@Provide val a: A, @Provide val b: B, @Provide val c: C)
+
+/**
+ * Calls the specified function [block] with [a], [b], [c] and [d] as injectable and returns it's result
+ */
+inline fun <A, B, C, D, R> withInstances(
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  block: InstanceProvider4<A, B, C, D>.() -> R,
+) = block(InstanceProvider4(a, b, c, d))
 
 class InstanceProvider4<A, B, C, D>(
   @Provide val a: A,
@@ -56,15 +67,16 @@ class InstanceProvider4<A, B, C, D>(
 )
 
 /**
- * Calls the specified function [block] with [a], [b], [c] and [d] as injectable and returns it's result
+ * Calls the specified function [block] with [a], [b], [c], [d] and [e] as injectable and returns it's result
  */
-inline fun <A, B, C, D, R> withProvidedInstances(
+inline fun <A, B, C, D, E, R> withInstances(
   a: A,
   b: B,
   c: C,
   d: D,
-  block: InstanceProvider4<A, B, C, D>.() -> R,
-) = block(InstanceProvider4(a, b, c, d))
+  e: E,
+  block: InstanceProvider5<A, B, C, D, E>.() -> R,
+) = block(InstanceProvider5(a, b, c, d, e))
 
 class InstanceProvider5<A, B, C, D, E>(
   @Provide val a: A,
@@ -73,15 +85,3 @@ class InstanceProvider5<A, B, C, D, E>(
   @Provide val d: D,
   @Provide val e: E,
 )
-
-/**
- * Calls the specified function [block] with [a], [b], [c], [d] and [e] as injectable and returns it's result
- */
-inline fun <A, B, C, D, E, R> withProvidedInstances(
-  a: A,
-  b: B,
-  c: C,
-  d: D,
-  e: E,
-  block: InstanceProvider5<A, B, C, D, E>.() -> R,
-) = block(InstanceProvider5(a, b, c, d, e))
