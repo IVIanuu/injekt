@@ -25,20 +25,18 @@ fun QuickFixes.addMissingInjectableAsParameter() = register(
         graph.failure.unwrapDependencyFailure(graph.failureRequest)
       if (unwrappedFailure !is ResolutionResult.Failure.NoCandidates) return emptyList()
 
-      val parentFunction = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-      if (parentFunction != null) {
-        if (parentFunction.hasModifier(KtTokens.OVERRIDE_KEYWORD))
-          return emptyList()
-        return listOf(addInjectableParameterQuickFix(parentFunction, unwrappedFailureRequest.type))
-      }
+      val target = diagnostic.psiElement.parents
+        .firstOrNull {
+          (it is KtNamedFunction && !it.hasModifier(KtTokens.OVERRIDE_KEYWORD)) ||
+              it is KtClass
+        }
 
-      val parentClass = diagnostic.psiElement.getParentOfType<KtClass>(false)
-      if (parentClass != null) {
-        return listOf(addInjectableConstructorParameterQuickFix(
-          parentClass, unwrappedFailureRequest.type, diagnostic.psiElement.cast()))
+      return when (target) {
+        is KtNamedFunction -> listOf(addInjectableParameterQuickFix(target, unwrappedFailureRequest.type))
+        is KtClass -> listOf(addInjectableConstructorParameterQuickFix(
+          target, unwrappedFailureRequest.type, diagnostic.psiElement.cast()))
+        else -> emptyList()
       }
-
-      return emptyList()
     }
   }
 )
@@ -90,4 +88,3 @@ private fun addInjectableParameterQuickFix(
 
   override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
 }
-F
