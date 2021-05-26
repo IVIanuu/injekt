@@ -173,7 +173,7 @@ class PersistenceTest {
     """,
     """
       fun invoke() {
-        withProvidedInstances("" as MyAlias<String>) { largeFunc<String>() }
+        withInstances("" as MyAlias<String>) { largeFunc<String>() }
       }
     """
   ) {

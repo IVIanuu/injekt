@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.synthetic.*
 
 @Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {
@@ -39,9 +40,9 @@ class AppInitializer : ApplicationInitializedListener {
               project,
               InjektStorageComponentContainerContributor()
             )
-            CandidateInterceptor.registerExtension(
+            SyntheticScopeProviderExtension.registerExtension(
               project,
-              InjectCallResolutionInterceptorExtension()
+              InjectSyntheticScopeProviderExtension()
             )
             TypeResolutionInterceptor.registerExtension(
               project,

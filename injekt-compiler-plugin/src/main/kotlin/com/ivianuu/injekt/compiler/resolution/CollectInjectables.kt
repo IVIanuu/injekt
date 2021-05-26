@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.serialization.*
+import org.jetbrains.kotlin.cfg.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -168,7 +169,7 @@ fun Annotated.isInject(context: InjektContext, trace: BindingTrace): Boolean {
           ?.let { containingFunction ->
             containingFunction.isProvide(context, trace) ||
                 containingFunction.isDeserializedDeclaration() &&
-                name.asString() in containingFunction.callableInfo(context, trace).injectParameters
+                injektIndex() in containingFunction.callableInfo(context, trace).injectParameters
           } == true
   }
   if (!isInject && this is ClassConstructorDescriptor && isPrimary) {

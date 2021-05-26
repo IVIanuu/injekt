@@ -18,8 +18,10 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.load.java.descriptors.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.types.*
@@ -70,11 +72,15 @@ abstract class AbstractInjectFunctionDescriptor(
 fun FunctionDescriptor.toInjectFunctionDescriptor(
   context: InjektContext,
   trace: BindingTrace
-) = when (this) {
-  is InjectFunctionDescriptor -> this
-  is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, context, trace)
-  is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this, context, trace)
-  else -> InjectFunctionDescriptorImpl(this, context, trace)
+): InjectFunctionDescriptor? {
+  if (this is JavaMethodDescriptor) return null
+  if (allParameters.none { it.isInject(context, context.trace) }) return null
+  return when (this) {
+    is InjectFunctionDescriptor -> this
+    is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, context, trace)
+    is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this, context, trace)
+    else -> InjectFunctionDescriptorImpl(this, context, trace)
+  }
 }
 
 class InjectConstructorDescriptorImpl(

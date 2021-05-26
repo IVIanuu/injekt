@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.synthetic.*
 import java.io.*
 
 @AutoService(ComponentRegistrar::class)
@@ -58,9 +59,12 @@ class InjektComponentRegistrar : ComponentRegistrar {
       LoadingOrder.LAST,
       InjektIrDumper(dumpDir(configuration))
     )
-    CandidateInterceptor.registerExtension(
+    // extension point does not exist CLI for some reason
+    // but it's still queried later
+    SyntheticScopeProviderExtension.registerExtensionPoint(project)
+    SyntheticScopeProviderExtension.registerExtension(
       project,
-      InjectCallResolutionInterceptorExtension()
+      InjectSyntheticScopeProviderExtension()
     )
     TypeResolutionInterceptor.registerExtension(
       project,
