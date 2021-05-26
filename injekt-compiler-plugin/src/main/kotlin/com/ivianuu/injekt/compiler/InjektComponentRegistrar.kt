@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
-import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.synthetic.*
 import java.io.*
@@ -65,10 +64,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
     SyntheticScopeProviderExtension.registerExtension(
       project,
       InjectSyntheticScopeProviderExtension()
-    )
-    TypeResolutionInterceptor.registerExtension(
-      project,
-      InjektTypeResolutionInterceptorExtension()
     )
     @Suppress("DEPRECATION")
     Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

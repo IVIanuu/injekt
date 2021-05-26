@@ -22,7 +22,6 @@ import com.intellij.openapi.extensions.*
 import com.intellij.openapi.project.*
 import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.extensions.*
-import org.jetbrains.kotlin.extensions.internal.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.synthetic.*
 
@@ -44,11 +43,6 @@ class AppInitializer : ApplicationInitializedListener {
               project,
               InjectSyntheticScopeProviderExtension()
             )
-            TypeResolutionInterceptor.registerExtension(
-              project,
-              InjektTypeResolutionInterceptorExtension()
-            )
-
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
               .registerExtension(InjektDiagnosticSuppressor())

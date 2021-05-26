@@ -167,7 +167,6 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
   }
 }
 
-
 private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
   return buildString {
