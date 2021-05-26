@@ -254,14 +254,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
     repeat(indent) { append("    ") }
   }
 
-  fun ResolutionResult.Failure.unwrapDependencyFailure(
-    request: InjectableRequest
-  ): Pair<InjectableRequest, ResolutionResult.Failure> {
-    return if (this is ResolutionResult.Failure.DependencyFailure)
-      dependencyFailure.unwrapDependencyFailure(dependencyRequest)
-    else request to this
-  }
-
   val (unwrappedFailureRequest, unwrappedFailure) = failure.unwrapDependencyFailure(failureRequest)
 
   when (unwrappedFailure) {
@@ -431,3 +423,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
     }.let { }
   }
 }
+
+fun ResolutionResult.Failure.unwrapDependencyFailure(
+  request: InjectableRequest
+): Pair<InjectableRequest, ResolutionResult.Failure> =
+  if (this is ResolutionResult.Failure.DependencyFailure)
+    dependencyFailure.unwrapDependencyFailure(dependencyRequest)
+  else request to this

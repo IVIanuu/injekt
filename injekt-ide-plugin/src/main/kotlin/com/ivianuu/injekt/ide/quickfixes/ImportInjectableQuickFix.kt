@@ -83,7 +83,7 @@ private fun importInjectableQuickFix(
             add(
               psiRenderer.getListCellRendererComponent(
                 list,
-                value.toString(),
+                value.callable.fqNameSafe.asString(),
                 index,
                 isSelected,
                 cellHasFocus
