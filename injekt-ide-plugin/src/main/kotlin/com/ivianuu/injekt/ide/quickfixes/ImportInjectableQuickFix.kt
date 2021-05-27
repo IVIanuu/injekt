@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.findUsages.*
 import org.jetbrains.kotlin.idea.quickfix.*
 import org.jetbrains.kotlin.idea.search.ideaExtensions.*
+import org.jetbrains.kotlin.idea.stubindex.*
 import org.jetbrains.kotlin.idea.util.application.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
@@ -160,36 +161,33 @@ private fun InjektContext.injectablesForType(
     context.isOk
   }
 
-fun InjektContext.getAllInjectables(project: Project, scope: GlobalSearchScope): List<CallableRef> {
+fun InjektContext.getAllInjectables(project: Project, useScope: GlobalSearchScope): List<CallableRef> {
   val clazz = JavaPsiFacade.getInstance(project)
-    .findClass(InjektFqNames.Provide.asString(), scope) as KtLightClass
+    .findClass(InjektFqNames.Provide.asString(), useScope) as KtLightClass
 
   val injectables = mutableListOf<CallableRef>()
-  clazz.kotlinOrigin!!.processAllUsages(
-    KotlinClassFindUsagesOptions(project).apply {
-      searchConstructorUsages = true
-    }
-  ) { usageInfo ->
-    val annotatedDeclaration = usageInfo.element?.getParentOfType<KtNamedDeclaration>(false)
-      ?: return@processAllUsages
-    if (annotatedDeclaration !is KtClassOrObject &&
+  val scope = KotlinSourceFilterScope.sourcesAndLibraries(useScope, project)
+  KotlinAnnotationsIndex.getInstance().get(clazz.name!!, project, scope)
+    .forEach { annotation ->
+      val annotatedDeclaration = annotation.getParentOfType<KtNamedDeclaration>(false)
+      if (annotatedDeclaration !is KtClassOrObject &&
         annotatedDeclaration !is KtNamedFunction &&
-        annotatedDeclaration !is KtProperty) return@processAllUsages
-    if (annotatedDeclaration is KtNamedFunction ||
+        annotatedDeclaration !is KtProperty) return@forEach
+      if (annotatedDeclaration is KtNamedFunction ||
         annotatedDeclaration is KtProperty) {
-      val parentClass = annotatedDeclaration.getParentOfType<KtClassOrObject>(false)
-      if (parentClass != null && parentClass !is KtObjectDeclaration)
-        return@processAllUsages
-    }
-    annotatedDeclaration.resolveToDescriptorIfAny()
-      ?.let { descriptor ->
-        when (descriptor) {
-          is ClassDescriptor -> injectables += descriptor.provideConstructors(this, trace)
-          is FunctionDescriptor -> injectables += descriptor.toCallableRef(this, trace)
-          is PropertyDescriptor -> injectables += descriptor.toCallableRef(this, trace)
-        }
+        val parentClass = annotatedDeclaration.getParentOfType<KtClassOrObject>(false)
+        if (parentClass != null && parentClass !is KtObjectDeclaration)
+          return@forEach
       }
-  }
+      annotatedDeclaration.resolveToDescriptorIfAny()
+        ?.let { descriptor ->
+          when (descriptor) {
+            is ClassDescriptor -> injectables += descriptor.provideConstructors(this, trace)
+            is FunctionDescriptor -> injectables += descriptor.toCallableRef(this, trace)
+            is PropertyDescriptor -> injectables += descriptor.toCallableRef(this, trace)
+          }
+        }
+    }
 
   return injectables
     .filter {
@@ -197,4 +195,5 @@ fun InjektContext.getAllInjectables(project: Project, scope: GlobalSearchScope):
           it.callable.containingDeclaration.cast<ClassDescriptor>().kind == ClassKind.OBJECT
     }
     .filterNot { it.typeParameters.any { it.isSpread } }
+    .distinctBy { it.callable.fqNameSafe }
 }
