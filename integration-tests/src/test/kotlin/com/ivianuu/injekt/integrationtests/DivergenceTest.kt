@@ -74,6 +74,19 @@ class DivergenceTest {
     invokeSingleFile()
   }
 
+  @Test fun testDoubleProviderBreaksCircularDependency() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: () -> B)
+      @Provide class B(a: () -> A)
+      @Provide fun pair(a: A, b: B) = a to b
+    """,
+    """
+      fun invoke() = inject<Pair<A, B>>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = singleAndMultiCodegen(
     """
       @Provide class A(b: () -> B)
@@ -115,20 +128,6 @@ class DivergenceTest {
     """,
     """
       fun invoke() = inject<C>()
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testLazyRequestInSetBreaksCircularDependency() = singleAndMultiCodegen(
-    """
-      typealias A = () -> Unit
-      @Provide fun a(b: () -> B): A = {}
-      typealias B = () -> Unit
-      @Provide fun b(a: () -> A): B = {}
-     """,
-    """
-      fun invoke() = inject<Set<() -> Unit>>() 
     """
   ) {
     invokeSingleFile()
