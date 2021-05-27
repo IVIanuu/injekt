@@ -28,9 +28,13 @@ import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
-@Providers("com.ivianuu.injekt.common.*")
 class InstallWorkerTest {
-  @Test fun testWorkerBinding() {
+  @Providers(
+    "com.ivianuu.injekt.common.kClass",
+    "com.ivianuu.injekt.common.mapOfPairs"
+  )
+  @Test
+  fun testWorkerBinding() {
     val workerFactory = inject<(@Provide Context) -> WorkerFactory>()(mockk())
     workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
       .shouldNotBeNull()

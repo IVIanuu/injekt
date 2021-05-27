@@ -22,9 +22,10 @@ import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
 import org.junit.*
 
-@Providers("com.ivianuu.injekt.scope.*")
 class AppTest {
-  @Test fun testServerLifecycle() {
+  @Providers("com.ivianuu.injekt.scope.*")
+  @Test
+  fun testServerLifecycle() {
     lateinit var listener: ScopeDisposeListener
     withTestApplication({
       initializeAppScope()

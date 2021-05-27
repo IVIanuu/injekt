@@ -61,7 +61,7 @@ annotation class Inject
   AnnotationTarget.PROPERTY,
   AnnotationTarget.CONSTRUCTOR,
   AnnotationTarget.FUNCTION,
-  AnnotationTarget.FILE
+  AnnotationTarget.FILE, AnnotationTarget.LOCAL_VARIABLE
 )
 annotation class Providers(vararg val importPaths: String)
 
