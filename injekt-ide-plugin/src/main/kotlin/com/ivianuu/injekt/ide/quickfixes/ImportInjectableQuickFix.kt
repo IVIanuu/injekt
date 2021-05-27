@@ -35,7 +35,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.awt.*
 import javax.swing.*
 
-fun QuickFixes.importInjectable() = register(
+fun org.jetbrains.kotlin.idea.quickfix.QuickFixes.importInjectable() = register(
   UNRESOLVED_INJECTION,
   object : KotlinIntentionActionsFactory() {
     override fun doCreateActions(diagnostic: Diagnostic): List<IntentionAction> {
