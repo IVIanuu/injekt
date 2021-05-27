@@ -128,7 +128,8 @@ class ProviderInjectable(
       }
       .toList(),
     imports = emptyList(),
-    typeParameters = emptyList()
+    typeParameters = emptyList(),
+    nesting = ownerScope.nesting + 1
   )
   override val callContext: CallContext
     get() = CallContext.DEFAULT

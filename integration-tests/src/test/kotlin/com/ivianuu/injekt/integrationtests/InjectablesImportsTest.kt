@@ -280,6 +280,37 @@ class InjectablesImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testObjectImportsInSuperTypeDelegateExpression() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+            interface FooHolder {
+              val foo: Foo
+            }
+            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+              override val foo: Foo = foo
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.*")
+            object MyObject : injectables.FooHolder by injectables.FooHolder()
+            fun invoke() = MyObject.foo
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testPrimaryConstructorImportsInSuperTypeDelegateExpression() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -375,6 +406,59 @@ class InjectablesImportsTest {
             @Providers("injectables.*")
             val injectableFoo = inject<Foo>()
             fun invoke() = injectableFoo
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testLocalVariableWithInjectableImports() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke(): Foo {
+              @Providers("injectables.*")
+              val injectableFoo = inject<Foo>()
+              return injectableFoo
+            }
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testExpressionWithInjectableImports() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke(): Foo {
+              @Providers("injectables.*")
+              return inject<Foo>()
+            }
           """,
           name = "File.kt"
         )

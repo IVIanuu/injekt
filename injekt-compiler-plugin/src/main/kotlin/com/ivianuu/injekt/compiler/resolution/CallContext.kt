@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
@@ -36,10 +37,10 @@ enum class CallContext {
 fun CallContext.canCall(other: CallContext) =
   this == other || other == CallContext.DEFAULT
 
-fun CallableDescriptor.callContext(
-  bindingContext: BindingContext
-): CallContext {
+fun CallableDescriptor.callContext(bindingContext: BindingContext): CallContext {
   if (this is ConstructorDescriptor) return CallContext.DEFAULT
+  if (composeCompilerInClasspath && isComposableCallable(bindingContext))
+    return CallContext.COMPOSABLE
   var node: PsiElement? = findPsi()
   if (node == null) return callContextOfThis
   try {
@@ -106,7 +107,7 @@ val TypeRef.callContext: CallContext
     else -> CallContext.DEFAULT
   }
 
-private val composeCompilerInClasspath = try {
+val composeCompilerInClasspath = try {
   Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
   true
 } catch (e: ClassNotFoundException) {

@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
 object InjektWritableSlices {
@@ -27,20 +27,21 @@ object InjektWritableSlices {
   val USED_INJECTABLE = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
   val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
+  val ELEMENT_INJECTABLES_SCOPE =
+    BasicWritableSlice<KtElement, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val BLOCK_INJECTABLES_SCOPE =
+    BasicWritableSlice<Pair<KtBlockExpression, DeclarationDescriptor>, InjectablesScope>(
+      RewritePolicy.DO_NOTHING)
   val DECLARATION_INJECTABLES_SCOPE =
     BasicWritableSlice<DeclarationDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val CONSTRUCTOR_PRE_INIT_INJECTABLES_SCOPE =
+    BasicWritableSlice<ConstructorDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val DECLARATION_IMPORTS_INJECTABLES_SCOPE =
     BasicWritableSlice<DeclarationDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val FUNCTION_INJECTABLES_SCOPE =
-    BasicWritableSlice<FunctionDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val FUNCTION_PARAMETER_INJECTABLES_SCOPE =
     BasicWritableSlice<ParameterDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val FUNCTION_PARAMETER_DEFAULT_VALUE_INJECTABLES_SCOPE =
+  val VALUE_PARAMETER_DEFAULT_VALUE_INJECTABLES_SCOPE =
     BasicWritableSlice<ParameterDescriptor, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val IMPORT_INJECTABLES_SCOPE =
-    BasicWritableSlice<List<ProviderImport>, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val HIERARCHICAL_INJECTABLES_SCOPE =
-    BasicWritableSlice<HierarchicalScope, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val TYPE_INJECTABLES_SCOPE =
     BasicWritableSlice<TypeRef, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val CALLABLE_REF_FOR_DESCRIPTOR =

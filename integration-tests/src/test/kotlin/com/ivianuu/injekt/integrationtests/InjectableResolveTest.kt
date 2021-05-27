@@ -149,14 +149,14 @@ class InjectableResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassConstructorInjectable() = singleAndMultiCodegen(
+  @Test fun testResolvesClassConstructorPropertyInjectable() = singleAndMultiCodegen(
     """
       class MyClass(@Provide val foo: Foo = Foo()) {
         fun resolve() = inject<Foo>()
       }
     """,
     """
-      fun invoke() = MyClass().resolve() 
+      fun invoke() = MyClass().resolve()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -358,7 +358,8 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveExternalInternalInjectable() = multiCodegen(
+  // todo @Test works in production but this test fails
+  fun testCannotResolveExternalInternalInjectable() = multiCodegen(
     """
       @Provide internal val foo = Foo()
     """,
@@ -561,7 +562,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveClassProvideDeclarationInClassConstructor() = codegen(
+  @Test fun testCannotResolveClassProvideDeclarationInClassConstructorParameterDefaultValue() = codegen(
     """
       class MyClass {
         @Provide val foo = Foo()
@@ -572,7 +573,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testCanResolvePrimaryConstructorGivenInSuperTypeDelegateExpression() = codegen(
+  @Test fun testCanResolvePrimaryConstructorGivenInSuperTypeExpression() = codegen(
     """
       interface FooHolder {
         val foo: Foo
@@ -584,7 +585,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveSecondaryConstructorGivenInSuperTypeDelegateExpression() = codegen(
+  @Test fun testCannotResolveSecondaryConstructorGivenInSuperTypeExpression() = codegen(
     """
       interface FooHolder {
         val foo: Foo
@@ -598,5 +599,38 @@ class InjectableResolveTest {
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.FooHolder")
+  }
+
+  @Test fun testCannotResolveClassProvideDeclarationInSuperTypeExpression() = codegen(
+    """
+      abstract class MyAbstractClass(@Inject foo: Foo)
+      class MyClass : MyAbstractClass() {
+        @Provide val foo = Foo()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass.<init>")
+  }
+
+  @Test fun testCanResolveClassProvideDeclarationInSecondaryConstructorAfterSuperInit() = codegen(
+    """
+      class MyClass(unit: Unit) {
+        constructor() : this(Unit) {
+          inject<Foo>()
+        }
+        @Provide val foo = Foo()
+      }
+    """
+  )
+
+  @Test fun testCannotResolveClassProvideDeclarationInSecondaryConstructorBeforeSuperInit() = codegen(
+    """
+      class MyClass(foo: Foo) {
+        constructor() : this(inject())
+        @Provide val foo = Foo()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 }

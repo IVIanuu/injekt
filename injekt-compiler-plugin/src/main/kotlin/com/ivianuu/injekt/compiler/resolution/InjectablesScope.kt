@@ -45,7 +45,8 @@ class InjectablesScope(
   val trace: BindingTrace,
   val initialInjectables: List<CallableRef>,
   imports: List<ResolvedProviderImport>,
-  val typeParameters: List<ClassifierRef>
+  val typeParameters: List<ClassifierRef>,
+  val nesting: Int
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()

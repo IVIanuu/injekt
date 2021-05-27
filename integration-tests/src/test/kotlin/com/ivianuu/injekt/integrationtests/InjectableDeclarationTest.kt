@@ -213,21 +213,7 @@ class InjectableDeclarationTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
-  @Test fun testInjectConstructorParameterInFieldInitializer() = singleAndMultiCodegen(
-    """
-      class MyClass(@Inject foo: Foo) {
-        val foo = inject<Foo>()
-      }
-    """,
-    """
-       fun invoke(@Inject foo: Foo) = MyClass().foo 
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testInjectConstructorParameterInClassInitializer() = singleAndMultiCodegen(
+  @Test fun testInjectPrimaryConstructorParameterInClassInitializer() = singleAndMultiCodegen(
     """
       class MyClass(@Inject foo: Foo) {
         val foo: Foo
@@ -238,6 +224,35 @@ class InjectableDeclarationTest {
     """,
     """
       fun invoke(@Inject foo: Foo) = MyClass().foo 
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
+  @Test fun testInjectPrimaryConstructorParameterInClassBody() = singleAndMultiCodegen(
+    """
+      class MyClass(@Inject foo: Foo) {
+        val foo: Foo = inject()
+      }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = MyClass().foo 
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
+  @Test fun testClassDeclarationInClassBody() = singleAndMultiCodegen(
+    """
+      class MyClass(private val _foo: Foo) {
+        val foo: Foo = inject()
+        @Provide fun foo() = _foo
+      }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = MyClass(foo).foo 
     """
   ) {
     val foo = Foo()

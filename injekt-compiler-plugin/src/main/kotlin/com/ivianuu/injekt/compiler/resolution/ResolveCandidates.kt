@@ -58,7 +58,7 @@ sealed class ResolutionResult {
         val outerMostScope: InjectablesScope by unsafeLazy {
           when {
             dependencyResults.isEmpty() -> scope.allScopes.first {
-              it.allParents.size >= candidate.ownerScope.allParents.size &&
+              it.nesting >= candidate.ownerScope.nesting &&
                   it.callContext.canCall(candidate.callContext)
             }
             candidate.dependencyScope != null -> {
@@ -72,10 +72,10 @@ sealed class ResolutionResult {
               dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
               allOuterMostScopes
                 .asSequence()
-                .sortedBy { it.allParents.size }
+                .sortedBy { it.nesting }
                 .filter { outerMostScope ->
-                  outerMostScope.allParents.size <
-                      candidate.dependencyScope!!.allParents.size
+                  outerMostScope.nesting <
+                      candidate.dependencyScope!!.nesting
                 }
                 .lastOrNull {
                   it.callContext.canCall(candidate.callContext)
@@ -86,24 +86,24 @@ sealed class ResolutionResult {
                 .filterValues { it is Value }
                 .mapValues { it.value as Value }
                 .maxByOrNull {
-                  it.value.outerMostScope.allParents.size
+                  it.value.outerMostScope.nesting
                 }?.value?.outerMostScope
               if (dependencyScope != null) {
                 when {
-                  dependencyScope.allParents.size <
-                      candidate.ownerScope.allParents.size -> scope.allScopes.first {
-                    it.allParents.size >= candidate.ownerScope.allParents.size &&
+                  dependencyScope.nesting <
+                      candidate.ownerScope.nesting -> scope.allScopes.first {
+                    it.nesting >= candidate.ownerScope.nesting &&
                         it.callContext.canCall(scope.callContext)
                   }
                   dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
                   else -> scope.allScopes.first {
-                    it.allParents.size >= candidate.ownerScope.allParents.size &&
+                    it.nesting >= candidate.ownerScope.nesting &&
                         it.callContext.canCall(scope.callContext)
                   }
                 }
               } else {
                 scope.allScopes.first {
-                  it.allParents.size >= candidate.ownerScope.allParents.size &&
+                  it.nesting >= candidate.ownerScope.nesting &&
                       it.callContext.canCall(scope.callContext)
                 }
               }
@@ -468,7 +468,7 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   b = b,
   requestedType = a?.type ?: b?.type,
   type = { it.originalType },
-  scopeNesting = { it.ownerScope.allParents.size },
+  scopeNesting = { it.ownerScope.nesting },
   owner = { (it as? CallableInjectable)?.callable?.owner },
   subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 }
 )

@@ -61,8 +61,11 @@ annotation class Inject
   AnnotationTarget.PROPERTY,
   AnnotationTarget.CONSTRUCTOR,
   AnnotationTarget.FUNCTION,
-  AnnotationTarget.FILE, AnnotationTarget.LOCAL_VARIABLE
+  AnnotationTarget.FILE,
+  AnnotationTarget.LOCAL_VARIABLE,
+  AnnotationTarget.EXPRESSION
 )
+@Retention(AnnotationRetention.SOURCE)
 annotation class Providers(vararg val importPaths: String)
 
 /**
