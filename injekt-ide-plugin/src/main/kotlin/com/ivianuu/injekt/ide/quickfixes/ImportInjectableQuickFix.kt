@@ -135,14 +135,7 @@ private fun addInjectableImport(
         .addArgument(psiFactory.createArgument(newImportPath))
     } else {
       val file = call.containingKtFile
-      ImportInsertHelper.getInstance(project)
-        .importDescriptor(
-          file.cast(),
-          context.classifierDescriptorForFqName(
-            InjektFqNames.Providers,
-            NoLookupLocation.FROM_BACKEND
-          )!!
-        )
+      file.addImport(InjektFqNames.Provide, context)
 
       val annotationText = "Providers($newImportPath)"
 

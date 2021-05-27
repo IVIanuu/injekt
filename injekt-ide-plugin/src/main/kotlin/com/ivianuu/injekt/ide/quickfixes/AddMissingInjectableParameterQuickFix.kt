@@ -10,8 +10,6 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.idea.quickfix.*
 import org.jetbrains.kotlin.idea.quickfix.QuickFixes
-import org.jetbrains.kotlin.idea.util.*
-import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
@@ -55,17 +53,12 @@ private fun addInjectableConstructorParameterQuickFix(
     "Add injectable constructor parameter for ${type.renderKotlinLikeToString()}"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
-    ImportInsertHelper.getInstance(project)
-      .importDescriptor(
-        file.cast(),
-        context.classifierDescriptorForFqName(
-          InjektFqNames.Inject,
-          NoLookupLocation.FROM_BACKEND
-        )!!
-      )
     val primaryConstructor = clazz.createPrimaryConstructorIfAbsent()
     val injectText = if (primaryConstructor.hasAnnotation(InjektFqNames.Provide) ||
         clazz.hasAnnotation(InjektFqNames.Provide)) "" else "@Inject "
+    if (injectText.isNotEmpty()) {
+      file.cast<KtFile>().addImport(InjektFqNames.Inject, context)
+    }
     val valText = if (call.getParentOfType<KtNamedFunction>(false) == null) "" else "val "
     primaryConstructor.valueParameterList!!.addParameter(
       KtPsiFactory(project)
@@ -86,15 +79,10 @@ private fun addInjectableParameterQuickFix(
     "Add injectable parameter for ${type.renderKotlinLikeToString()}"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
-    ImportInsertHelper.getInstance(project)
-      .importDescriptor(
-        file.cast(),
-        context.classifierDescriptorForFqName(
-          InjektFqNames.Inject,
-          NoLookupLocation.FROM_BACKEND
-        )!!
-      )
     val injectText = if (function.hasAnnotation(InjektFqNames.Provide)) "" else "@Inject "
+    if (injectText.isNotEmpty()) {
+      file.cast<KtFile>().addImport(InjektFqNames.Inject, context)
+    }
     function.valueParameterList!!.addParameter(
       KtPsiFactory(project)
         .createParameter("${injectText}_: ${type.renderKotlinLikeToString()}")
