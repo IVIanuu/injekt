@@ -10,6 +10,8 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.idea.quickfix.*
 import org.jetbrains.kotlin.idea.quickfix.QuickFixes
+import org.jetbrains.kotlin.idea.util.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
@@ -32,9 +34,9 @@ fun QuickFixes.addMissingInjectableAsParameter() = register(
         }
 
       return when (target) {
-        is KtNamedFunction -> listOf(addInjectableParameterQuickFix(target, unwrappedFailureRequest.type))
+        is KtNamedFunction -> listOf(addInjectableParameterQuickFix(target, unwrappedFailureRequest.type, graph.scope.context))
         is KtClass -> listOf(addInjectableConstructorParameterQuickFix(
-          target, unwrappedFailureRequest.type, diagnostic.psiElement.cast()))
+          target, unwrappedFailureRequest.type, diagnostic.psiElement.cast(), graph.scope.context))
         else -> emptyList()
       }
     }
@@ -44,7 +46,8 @@ fun QuickFixes.addMissingInjectableAsParameter() = register(
 private fun addInjectableConstructorParameterQuickFix(
   clazz: KtClass,
   type: TypeRef,
-  call: KtElement
+  call: KtElement,
+  context: InjektContext
 ) = object : BaseIntentionAction() {
   override fun getFamilyName(): String = ""
 
@@ -52,7 +55,14 @@ private fun addInjectableConstructorParameterQuickFix(
     "Add injectable constructor parameter for ${type.renderKotlinLikeToString()}"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
-    (file as KtFile).addImportIfNeeded(InjektFqNames.Inject)
+    ImportInsertHelper.getInstance(project)
+      .importDescriptor(
+        file.cast(),
+        context.classifierDescriptorForFqName(
+          InjektFqNames.Inject,
+          NoLookupLocation.FROM_BACKEND
+        )!!
+      )
     val primaryConstructor = clazz.createPrimaryConstructorIfAbsent()
     val injectText = if (primaryConstructor.hasAnnotation(InjektFqNames.Provide) ||
         clazz.hasAnnotation(InjektFqNames.Provide)) "" else "@Inject "
@@ -68,14 +78,22 @@ private fun addInjectableConstructorParameterQuickFix(
 
 private fun addInjectableParameterQuickFix(
   function: KtNamedFunction,
-  type: TypeRef
+  type: TypeRef,
+  context: InjektContext
 ) = object : BaseIntentionAction() {
   override fun getFamilyName(): String = ""
   override fun getText(): String =
     "Add injectable parameter for ${type.renderKotlinLikeToString()}"
 
   override fun invoke(project: Project, editor: Editor, file: PsiFile) {
-    (file as KtFile).addImportIfNeeded(InjektFqNames.Inject)
+    ImportInsertHelper.getInstance(project)
+      .importDescriptor(
+        file.cast(),
+        context.classifierDescriptorForFqName(
+          InjektFqNames.Inject,
+          NoLookupLocation.FROM_BACKEND
+        )!!
+      )
     val injectText = if (function.hasAnnotation(InjektFqNames.Provide)) "" else "@Inject "
     function.valueParameterList!!.addParameter(
       KtPsiFactory(project)

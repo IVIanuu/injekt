@@ -16,6 +16,7 @@ import com.intellij.psi.util.parents
 import com.intellij.ui.popup.list.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.InjektErrors.Companion.UNRESOLVED_INJECTION
+import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.asJava.classes.*
 import org.jetbrains.kotlin.descriptors.*
@@ -26,9 +27,12 @@ import org.jetbrains.kotlin.idea.findUsages.*
 import org.jetbrains.kotlin.idea.quickfix.*
 import org.jetbrains.kotlin.idea.search.ideaExtensions.*
 import org.jetbrains.kotlin.idea.stubindex.*
+import org.jetbrains.kotlin.idea.util.*
 import org.jetbrains.kotlin.idea.util.application.*
+import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.addRemoveModifier.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -63,7 +67,7 @@ private fun importInjectableQuickFix(
     val candidates = scope.context.injectablesForType(type,
       scope.allStaticTypeParameters, project, file.resolveScope)
     if (candidates.size == 1) {
-      addInjectableImport(call, project, candidates.single())
+      addInjectableImport(call, project, candidates.single(), scope.context)
       return
     }
     object : ListPopupImpl(
@@ -75,7 +79,7 @@ private fun importInjectableQuickFix(
 
         override fun onChosen(selectedValue: CallableRef?, finalChoice: Boolean): PopupStep<String>? {
           if (selectedValue == null || !finalChoice) return null
-          addInjectableImport(call, project, selectedValue)
+          addInjectableImport(call, project, selectedValue, scope.context)
           return null
         }
 
@@ -112,41 +116,45 @@ private fun importInjectableQuickFix(
 private fun addInjectableImport(
   call: KtElement,
   project: Project,
-  injectable: CallableRef
+  injectable: CallableRef,
+  context: InjektContext
 ) {
-  val importTarget = call.parents
-    .firstOrNull { parent ->
-      parent is KtClassOrObject ||
-          parent is KtNamedFunction ||
-          parent is KtConstructor<*> ||
-          parent is KtProperty
-    }.safeAs<KtModifierListOwner>() ?: return
-
-  val existingImports = call.parents
+  val existingProvidersAnnotation = call.parents
     .toList()
     .firstNotNullResult {
       it.safeAs<KtAnnotated>()?.findAnnotation(InjektFqNames.Providers)
     }
-    ?.safeAs<KtAnnotationEntry>()
 
-  val newImportPaths = (listOf(
-    "\"${injectable.callable.fqNameSafe}\""
-  ) + (existingImports
-    ?.valueArgumentList
-    ?.arguments
-    ?.mapNotNull { it.getArgumentExpression() }
-    ?.map { it.text!! } ?: emptyList()))
-    .sorted()
-
-  val lineSpacing = if (newImportPaths.size == 1) "" else "\n"
+  val newImportPath = "\"${injectable.callable.fqNameSafe}\""
 
   project.executeWriteCommand("Add injectable import") {
-    call.containingKtFile.addImportIfNeeded(InjektFqNames.Providers)
-    existingImports?.delete()
-    importTarget.addAnnotationEntry(
-      KtPsiFactory(project)
-        .createAnnotationEntry("@Providers($lineSpacing${newImportPaths.joinToString(",\n")}$lineSpacing)")
-    )
+    val psiFactory = KtPsiFactory(project)
+
+    if (existingProvidersAnnotation != null) {
+      existingProvidersAnnotation.valueArgumentList!!
+        .addArgument(psiFactory.createArgument(newImportPath))
+    } else {
+      val file = call.containingKtFile
+      ImportInsertHelper.getInstance(project)
+        .importDescriptor(
+          file.cast(),
+          context.classifierDescriptorForFqName(
+            InjektFqNames.Providers,
+            NoLookupLocation.FROM_BACKEND
+          )!!
+        )
+
+      val annotationText = "Providers($newImportPath)"
+
+      val fileAnnotationList: KtFileAnnotationList? = file.fileAnnotationList
+      if (fileAnnotationList == null) {
+        val newAnnotationList = psiFactory.createFileAnnotationListWithAnnotation(annotationText)
+        val createdAnnotationList = replaceFileAnnotationList(file, newAnnotationList)
+        file.addAfter(psiFactory.createWhiteSpace(), createdAnnotationList)
+      } else {
+        fileAnnotationList.add(psiFactory.createFileAnnotation(annotationText))
+      }
+    }
   }
 }
 
