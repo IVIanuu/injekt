@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
@@ -77,7 +76,8 @@ class InjectablesImportsTest {
     """
       @Providers("kotlin.collections.*")
       fun invoke() {
-        withProviders("kotlin.collections.*") {
+        @Providers("kotlin.collections.*")
+        fun inner() {
         }
       }
     """
@@ -466,20 +466,5 @@ class InjectablesImportsTest {
     )
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testWithInjectableImports() = codegen(
-    listOf(
-      source(
-        """
-          fun invoke() = withProviders("com.ivianuu.injekt.common.*") {
-            inject<TypeKey<Foo>>().value
-          }
-        """,
-        name = "File.kt"
-      )
-    )
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Foo"
   }
 }

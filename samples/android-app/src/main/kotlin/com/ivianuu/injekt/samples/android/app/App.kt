@@ -23,17 +23,17 @@ import com.ivianuu.injekt.scope.*
 
 class App : Application(), AppScopeOwner {
   override lateinit var appScope: AppScope
+
+  @Providers(
+    "com.ivianuu.injekt.android.*",
+    "com.ivianuu.injekt.coroutines.*",
+    "com.ivianuu.injekt.scope.*",
+    "com.ivianuu.injekt.samples.android.data.*",
+    "com.ivianuu.injekt.samples.android.domain.*",
+    "com.ivianuu.injekt.samples.android.ui.*"
+  )
   override fun onCreate() {
-    withProviders(
-      "com.ivianuu.injekt.android.*",
-      "com.ivianuu.injekt.coroutines.*",
-      "com.ivianuu.injekt.scope.*",
-      "com.ivianuu.injekt.samples.android.data.*",
-      "com.ivianuu.injekt.samples.android.domain.*",
-      "com.ivianuu.injekt.samples.android.ui.*",
-    ) {
-      appScope = createAppScope()
-    }
+    appScope = createAppScope()
     super.onCreate()
   }
 }

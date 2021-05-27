@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class ProviderImportsChecker(private val context: InjektContext) : DeclarationChecker, CallChecker {
+class ProviderImportsChecker(private val context: InjektContext) : DeclarationChecker {
   private val checkedFiles = mutableSetOf<KtFile>()
   override fun check(
     declaration: KtDeclaration,
@@ -59,39 +59,6 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
       file.packageFqName, outerImports,
       declaration.getProviderImports(), context.trace
     )
-  }
-
-  override fun check(
-    resolvedCall: ResolvedCall<*>,
-    reportOn: PsiElement,
-    context: CallCheckerContext
-  ) {
-    if (resolvedCall.resultingDescriptor.fqNameSafe != InjektFqNames.withProviders) return
-
-    val file = context.scope
-      .ownerDescriptor
-      .findPsi()!!
-      .cast<KtElement>()
-      .containingKtFile
-
-    val outerImports = file.getProviderImports() + context.scope.parentsWithSelf
-      .filterIsInstance<LexicalScope>()
-      .distinctBy { it.ownerDescriptor }
-      .flatMap { scope ->
-        scope.ownerDescriptor.findPsi()
-          .safeAs<KtAnnotated>()
-          ?.getProviderImports() ?: emptyList()
-      }
-      .toList()
-
-    resolvedCall.valueArguments
-      .values
-      .firstOrNull()
-      ?.arguments
-      ?.map { it.toProviderImport() }
-      ?.let {
-        checkImports(file.packageFqName, outerImports, it, context.trace)
-      }
   }
 
   private fun checkFile(file: KtFile, trace: BindingTrace) {

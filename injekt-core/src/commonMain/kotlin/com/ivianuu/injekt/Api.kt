@@ -69,14 +69,6 @@ annotation class Inject
 annotation class Providers(vararg val importPaths: String)
 
 /**
- * Runs the [block] and imports injectables from [importPaths] and use them when resolving injectables inside [block]
- */
-inline fun <R> withProviders(
-  @Suppress("UNUSED_PARAMETER") vararg importPaths: String,
-  block: () -> R
-): R = block()
-
-/**
  * Returns a provided instance of [T]
  */
 inline fun <T> inject(@Inject value: T): T = value

@@ -29,7 +29,6 @@ object InjektFqNames {
   val Providers = InjektPackage.child("Providers".asNameId())
   val Qualifier = InjektPackage.child("Qualifier".asNameId())
   val Spread = InjektPackage.child("Spread".asNameId())
-  val withProviders = InjektPackage.child("withProviders".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
