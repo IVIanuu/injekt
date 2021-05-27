@@ -144,7 +144,7 @@ fun Annotated.isProvide(context: InjektContext, trace: BindingTrace): Boolean {
           ?.let { containingFunction ->
             containingFunction.isProvide(context, trace) ||
                 containingFunction.isDeserializedDeclaration() &&
-                name.asString() in containingFunction.callableInfo(context, trace).injectParameters
+                injektIndex() in containingFunction.callableInfo(context, trace).injectParameters
           } == true
   }
   if (!isProvided && this is ClassConstructorDescriptor && isPrimary) {
