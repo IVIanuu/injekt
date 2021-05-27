@@ -44,7 +44,7 @@ private fun importInjectableQuickFix(
   type: TypeRef,
   scope: InjectablesScope
 ) = object : BaseIntentionAction() {
-  override fun getFamilyName(): String = "Import injectable for ${type.renderKotlinLikeToString()}"
+  override fun getFamilyName(): String = ""
 
   override fun getText(): String = "Import injectable for ${type.renderKotlinLikeToString()}"
 

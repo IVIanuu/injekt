@@ -46,8 +46,7 @@ private fun addInjectableConstructorParameterQuickFix(
   type: TypeRef,
   call: KtElement
 ) = object : BaseIntentionAction() {
-  override fun getFamilyName(): String =
-    "Add injectable constructor parameter for ${type.renderKotlinLikeToString()}"
+  override fun getFamilyName(): String = ""
 
   override fun getText(): String =
     "Add injectable constructor parameter for ${type.renderKotlinLikeToString()}"
@@ -71,9 +70,7 @@ private fun addInjectableParameterQuickFix(
   function: KtNamedFunction,
   type: TypeRef
 ) = object : BaseIntentionAction() {
-  override fun getFamilyName(): String =
-    "Add injectable parameter for ${type.renderKotlinLikeToString()}"
-
+  override fun getFamilyName(): String = ""
   override fun getText(): String =
     "Add injectable parameter for ${type.renderKotlinLikeToString()}"
 
