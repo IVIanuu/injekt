@@ -36,6 +36,7 @@
             implementationClass="com.ivianuu.injekt.ide.InjektLineMarkerProvider"
         />
         <customUsageSearcher implementation="com.ivianuu.injekt.ide.usages.InjektUsageSearcher"/>
+        <usageTypeProvider implementation="com.ivianuu.injekt.ide.usages.InjektUsageTypeProvider"/>
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
         <lang.inspectionSuppressor language="kotlin"
             implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />

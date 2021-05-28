@@ -5,8 +5,10 @@ import com.intellij.psi.*
 import com.intellij.psi.search.searches.*
 import com.intellij.usageView.*
 import com.intellij.usages.*
+import com.intellij.usages.impl.rules.*
 import com.intellij.usages.rules.*
 import com.intellij.util.*
+import com.intellij.util.containers.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.asJava.classes.*
@@ -19,6 +21,20 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
+
+class InjektUsageTypeProvider : UsageTypeProviderEx {
+  override fun getUsageType(element: PsiElement?, targets: Array<out UsageTarget>): UsageType? {
+    if (element !is KtCallExpression) return null
+    val target = (targets.firstOrNull() as? PsiElementUsageTarget)?.element ?: return null
+    val key = target to element
+    return if (key in usagePairs) InjectionUsageType else null
+  }
+  override fun getUsageType(element: PsiElement?): UsageType? = null
+}
+
+private val usagePairs = WeakList<Pair<KtElement, KtCallExpression>>()
+
+private val InjectionUsageType = UsageType { "Injection" }
 
 class InjektUsageSearcher : CustomUsageSearcher() {
   override fun processElementUsages(
@@ -64,15 +80,13 @@ class InjektUsageSearcher : CustomUsageSearcher() {
               val bindingContext = call.getResolutionFacade().analyze(call)
               val graph = bindingContext[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
                 ?: return@processAllUsages
-              graph.safeAs<InjectionGraph.Success>()?.forEachResultRecursive { request, result ->
+              graph.safeAs<InjectionGraph.Success>()?.forEachResultRecursive { _, result ->
                 val resultUniqueKey =
                   result.candidate.safeAs<CallableInjectable>()
                     ?.callable?.callable?.uniqueKey(result.scope.context)
                 if (resultUniqueKey != null && resultUniqueKey in uniqueKeys) {
-                  processor.process(
-                    object : UsageInfo2UsageAdapter(UsageInfo(call)) {
-                    }
-                  )
+                  usagePairs += element to call
+                  processor.process(UsageInfo2UsageAdapter(UsageInfo(call)))
                 }
               }
             }
