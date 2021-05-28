@@ -74,10 +74,14 @@ private fun addInjectableParameterQuickFix(
       } || call.getParentOfType<KtPropertyAccessor>(false)?.property.let {
         it != null && it.getParentOfType<KtClassOrObject>(false) == target
       })
-    ) "val " else ""
+    ) "private val " else ""
     function.valueParameterList!!.addParameter(
       KtPsiFactory(project)
-        .createParameter("${injectText}${valText}_: ${type.renderKotlinLikeToString()}")
+        .createParameter(
+          "${injectText}${valText}" +
+              "${type.classifier.fqName.shortName().asString().decapitalize()}" +
+              ": ${type.renderKotlinLikeToString()}"
+        )
     )
   }
 
