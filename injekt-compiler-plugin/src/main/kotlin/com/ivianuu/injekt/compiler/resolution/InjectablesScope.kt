@@ -104,8 +104,7 @@ class InjectablesScope(
       mutableMapOf<List<ClassifierRef>, SpreadingInjectableBaseContext>()
   }
 
-  val allParents: List<InjectablesScope> = parent?.allScopes ?: emptyList()
-  val allScopes: List<InjectablesScope> = allParents + this
+  val allScopes: List<InjectablesScope> = (parent?.allScopes ?: emptyList()) + this
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
@@ -122,6 +121,8 @@ class InjectablesScope(
 
   private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
+
+  private var shouldDelegateToParent = false
 
   init {
     initialInjectables
@@ -170,6 +171,12 @@ class InjectablesScope(
         .toList()
         .forEach { spreadInjectables(it) }
     }
+
+    shouldDelegateToParent = parent != null &&
+        !hasSpreadingInjectableCandidates &&
+        !hasSpreadingInjectables &&
+        callContext == parent.callContext &&
+        typeParameters.isEmpty()
   }
 
   fun recordLookup(lookupLocation: LookupLocation) {
@@ -215,6 +222,7 @@ class InjectablesScope(
     request: InjectableRequest,
     requestingScope: InjectablesScope
   ): List<Injectable>? {
+    if (shouldDelegateToParent) return parent?.injectablesForRequest(request, requestingScope)
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
       request.type.classifier == context.setClassifier
@@ -225,9 +233,10 @@ class InjectablesScope(
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<Injectable>? {
-    if (injectables.isEmpty()) return parent?.injectablesForType(key)
+    if (shouldDelegateToParent || injectables.isEmpty()) return parent?.injectablesForType(key)
     return injectablesByRequest.getOrPut(key) {
       val thisInjectables = injectables
+        .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
@@ -252,6 +261,7 @@ class InjectablesScope(
   }
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
+    if (shouldDelegateToParent) return parent?.frameworkInjectableForRequest(request)
     if (request.type.frameworkKey != 0) return null
     when {
       request.type.isProviderFunctionType -> {
@@ -331,7 +341,7 @@ class InjectablesScope(
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef>? {
-    if (injectables.isEmpty())
+    if (shouldDelegateToParent || injectables.isEmpty())
       return parent?.setElementsForType(singleElementType, collectionElementType, key)
     return setElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef>? = injectables

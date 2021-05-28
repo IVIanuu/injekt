@@ -167,6 +167,7 @@ fun InjectablesScope.resolveRequests(
   lookupLocation: LookupLocation,
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
 ): InjectionGraph = measureTimeMillisWithResult {
+  println("resolve requests $requests in $name")
   recordLookup(lookupLocation)
   val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   var failureRequest: InjectableRequest? = null
