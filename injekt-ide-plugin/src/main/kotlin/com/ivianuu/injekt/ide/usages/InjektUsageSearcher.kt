@@ -27,14 +27,14 @@ class InjektUsageTypeProvider : UsageTypeProviderEx {
     if (element !is KtCallExpression) return null
     val target = (targets.firstOrNull() as? PsiElementUsageTarget)?.element ?: return null
     val key = target to element
-    return if (key in usagePairs) InjectedUsageType else null
+    return if (key in usagePairs) InjectionUsageType else null
   }
   override fun getUsageType(element: PsiElement?): UsageType? = null
 }
 
 private val usagePairs = WeakList<Pair<KtElement, KtCallExpression>>()
 
-private val InjectedUsageType = UsageType { "Injected" }
+private val InjectionUsageType = UsageType { "Injection" }
 
 class InjektUsageSearcher : CustomUsageSearcher() {
   override fun processElementUsages(
