@@ -10,6 +10,7 @@ import com.intellij.util.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.asJava.classes.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.findUsages.*
 import org.jetbrains.kotlin.idea.stubindex.*
@@ -38,7 +39,14 @@ class InjektUsageSearcher : CustomUsageSearcher() {
 
       val descriptor = element.resolveToDescriptorIfAny() ?: return@runReadActionInSmartMode
 
-      val uniqueKey = descriptor.uniqueKey(InjektContext(descriptor.module))
+      val context = InjektContext(descriptor.module)
+
+      val uniqueKeys = when (descriptor) {
+        is ClassDescriptor -> descriptor.provideConstructors(context, context.trace)
+          .map { it.callable.uniqueKey(context) }
+        is CallableDescriptor -> listOf(descriptor.uniqueKey(context))
+        else -> return@runReadActionInSmartMode
+      }
 
       val useScope = element.resolveScope
 
@@ -57,8 +65,10 @@ class InjektUsageSearcher : CustomUsageSearcher() {
               val graph = bindingContext[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
                 ?: return@processAllUsages
               graph.safeAs<InjectionGraph.Success>()?.forEachResultRecursive { request, result ->
-                if (uniqueKey == result.candidate.safeAs<CallableInjectable>()
-                    ?.callable?.callable?.uniqueKey(result.scope.context)) {
+                val resultUniqueKey =
+                  result.candidate.safeAs<CallableInjectable>()
+                    ?.callable?.callable?.uniqueKey(result.scope.context)
+                if (resultUniqueKey != null && resultUniqueKey in uniqueKeys) {
                   processor.process(
                     object : UsageInfo2UsageAdapter(UsageInfo(call)) {
                     }
