@@ -116,7 +116,10 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean =
       this is KtBlockExpression ||
       (this is KtClassBody && position.parents
         .takeWhile { it != this }
-        .none { it is KtFunction && it.parent == this }) ||
+        .none {
+          (it is KtFunction && it.parent == this) ||
+              (it is KtPropertyAccessor && it.property.parent == this)
+        }) ||
       (this is KtAnnotatedExpression && hasAnnotation(InjektFqNames.Providers))
 
 private fun FileInjectablesScope(

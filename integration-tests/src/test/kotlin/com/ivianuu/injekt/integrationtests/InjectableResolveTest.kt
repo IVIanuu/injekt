@@ -573,7 +573,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testCanResolvePrimaryConstructorGivenInSuperTypeExpression() = codegen(
+  @Test fun testCanResolvePrimaryConstructorInjectableInSuperTypeExpression() = codegen(
     """
       interface FooHolder {
         val foo: Foo
@@ -585,7 +585,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveSecondaryConstructorGivenInSuperTypeExpression() = codegen(
+  @Test fun testCannotResolveSecondaryConstructorInjectableInSuperTypeExpression() = codegen(
     """
       interface FooHolder {
         val foo: Foo
@@ -628,6 +628,16 @@ class InjectableResolveTest {
       class MyClass(foo: Foo) {
         constructor() : this(inject())
         @Provide val foo = Foo()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCannotResolvePrimaryConstructorInjectableInPropertyGetter() = codegen(
+    """
+      class MyClass(@Provide _foo: Foo) {
+        val foo: Foo get() = inject()
       }
     """
   ) {
