@@ -272,6 +272,19 @@ class TypeRef(
     return _isNullableType!!
   }
 
+  private val subtypeViews = mutableMapOf<ClassifierRef, TypeRef>()
+  fun subtypeView(classifier: ClassifierRef): TypeRef? {
+    return subtypeViews.getOrPut(classifier) {
+      fun TypeRef.inner(): TypeRef? {
+        if (this.classifier == classifier) return this
+        return superTypes
+          .firstNotNullResult { it.subtypeView(classifier) }
+          ?.let { return it }
+      }
+      inner() ?: STAR_PROJECTION_TYPE
+    }.takeIf { it !== STAR_PROJECTION_TYPE }
+  }
+
   override fun hashCode(): Int {
     if (_hashCode == 0) {
       var result = classifier.hashCode()

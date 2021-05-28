@@ -422,7 +422,7 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
             callable.callable.containingDeclaration
               .safeAs<ClassDescriptor>()
               ?.let { it.kind == ClassKind.OBJECT } != false &&
-            callable.type.buildContext(context, emptyList(), this).isOk
+            callable.buildContext(context, emptyList(), this).isOk
       }
   }
   collectInjectables(packageDescriptor.getMemberScope())

@@ -112,13 +112,6 @@ private fun TypeRef.isSubTypeOfSameClassifier(
   return true
 }
 
-fun TypeRef.subtypeView(classifier: ClassifierRef): TypeRef? {
-  if (this.classifier == classifier) return this
-  return superTypes
-    .firstNotNullResult { it.subtypeView(classifier) }
-    ?.let { return it }
-}
-
 sealed class TypeContextError {
   data class ConstraintError(
     val subType: TypeRef,
@@ -165,6 +158,10 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
     return true
   }
 
+  fun copy() = VariableWithConstraints(typeVariable).apply {
+    this.constraints += this@VariableWithConstraints.constraints
+  }
+
   private fun newConstraintIsUseless(old: Constraint, new: Constraint): Boolean =
     old.kind == new.kind || when (old.kind) {
       ConstraintKind.EQUAL -> true
@@ -197,41 +194,69 @@ fun ConstraintKind.opposite() = when (this) {
   ConstraintKind.EQUAL -> ConstraintKind.EQUAL
 }
 
-fun buildContextForSpreadingInjectable(
+data class SpreadingInjectableBaseContext(
+  val baseContext: TypeContext,
+  val candidateTypeParameters: List<ClassifierRef>
+)
+
+fun buildBaseContextForSpreadingInjectable(
   injektContext: InjektContext,
-  constraintType: TypeRef,
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>
-): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
+): SpreadingInjectableBaseContext {
   val candidateTypeParameters = mutableListOf<ClassifierRef>()
   candidateType.allTypes.forEach {
     if (it.classifier.isTypeParameter)
       candidateTypeParameters += it.classifier
   }
-  val context = candidateType.buildContext(
+  val context = candidateType.buildBaseContext(
     injektContext,
-    candidateTypeParameters + staticTypeParameters,
-    constraintType
+    candidateTypeParameters + staticTypeParameters
+  )
+  return SpreadingInjectableBaseContext(context, candidateTypeParameters)
+}
+
+fun buildContextForSpreadingInjectable(
+  baseContext: SpreadingInjectableBaseContext,
+  constraintType: TypeRef,
+  candidateType: TypeRef
+): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
+  val context = candidateType.buildContext(
+    baseContext.baseContext,
+    constraintType,
+    true
   )
   val map = if (context.isOk) {
     val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
     val rawMap = context.fixedTypeVariables
     rawMap.forEach { (key, value) ->
-      if (value.classifier in candidateTypeParameters) {
+      if (value.classifier in baseContext.candidateTypeParameters) {
         swapMap[value.classifier] = key.defaultType
       }
     }
     rawMap
-      .filterKeys { it !in candidateTypeParameters }
+      .filterKeys { it !in baseContext.candidateTypeParameters }
       .mapValues { it.value.substitute(swapMap) }
   } else emptyMap()
   return context to map
 }
 
-fun TypeRef.buildContext(
+fun CallableRef.buildContext(
   injektContext: InjektContext,
   staticTypeParameters: List<ClassifierRef>,
-  superType: TypeRef
+  superType: TypeRef,
+  collectSuperTypeVariables: Boolean = false
+): TypeContext = type.buildContext(
+  contextsByStaticTypeParameters.getOrPut(staticTypeParameters) {
+    type.buildBaseContext(injektContext, staticTypeParameters)
+  },
+  superType,
+  collectSuperTypeVariables
+)
+
+fun TypeRef.buildBaseContext(
+  injektContext: InjektContext,
+  staticTypeParameters: List<ClassifierRef>
 ): TypeContext {
   val context = TypeContext(injektContext)
   staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
@@ -239,13 +264,24 @@ fun TypeRef.buildContext(
     if (it.classifier.isTypeParameter)
       context.addTypeVariable(it.classifier)
   }
-  superType.allTypes.forEach {
-    if (it.classifier.isTypeParameter)
-      context.addTypeVariable(it.classifier)
-  }
-  context.addInitialSubTypeConstraint(this, superType)
-  context.fixTypeVariables()
   return context
+}
+
+fun TypeRef.buildContext(
+  baseContext: TypeContext,
+  superType: TypeRef,
+  collectSuperTypeVariables: Boolean = false
+): TypeContext {
+  val copied = baseContext.copy()
+  if (collectSuperTypeVariables) {
+    superType.allTypes.forEach {
+      if (it.classifier.isTypeParameter)
+        copied.addTypeVariable(it.classifier)
+    }
+  }
+  copied.addInitialSubTypeConstraint(this, superType)
+  copied.fixTypeVariables()
+  return copied
 }
 
 class TypeContext(override val injektContext: InjektContext) : TypeCheckerContext {
@@ -258,6 +294,12 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
   val isOk: Boolean get() = errors.isEmpty()
 
   private var possibleNewConstraints: MutableList<Constraint>? = null
+
+  fun copy() = TypeContext(injektContext).apply {
+    this.staticTypeParameters += this@TypeContext.staticTypeParameters
+    this.typeVariables += this@TypeContext.typeVariables
+      .mapValues { it.value.copy() }
+  }
 
   private fun addPossibleNewConstraint(constraint: Constraint) {
     (possibleNewConstraints ?: mutableListOf<Constraint>()

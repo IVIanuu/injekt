@@ -166,7 +166,11 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     other: TypeRef,
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
-    val context = buildContext(injektContext, staticTypeParameters, other)
+    val context = buildContext(
+      buildBaseContext(injektContext, staticTypeParameters),
+      other,
+      true
+    )
     if (!context.isOk) {
       throw AssertionError("'$this' is not assignable to '$other'")
     }
@@ -180,7 +184,11 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     other: TypeRef,
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
-    val context = buildContext(injektContext, staticTypeParameters, other)
+    val context = buildContext(
+      buildBaseContext(injektContext, staticTypeParameters),
+      other,
+      true
+    )
     if (context.isOk) {
       throw AssertionError("'$this' is assignable to '$other'")
     }

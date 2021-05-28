@@ -158,7 +158,7 @@ private fun InjektContext.injectablesForType(
   scope: GlobalSearchScope
 ): List<CallableRef> = getAllInjectables(project, scope)
   .filter { candidate ->
-    val context = candidate.type.buildContext(this, staticTypeParameters, type)
+    val context = candidate.buildContext(this, staticTypeParameters, type)
     context.isOk
   }
 

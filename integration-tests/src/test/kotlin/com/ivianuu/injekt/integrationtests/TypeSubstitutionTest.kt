@@ -91,10 +91,9 @@ class TypeSubstitutionTest {
         it.withArguments(listOf(appScope) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
-      injektContext,
+      buildBaseContextForSpreadingInjectable(injektContext, substitutionType, emptyList()),
       scopedT.defaultType,
-      substitutionType,
-      emptyList()
+      substitutionType
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
@@ -129,10 +128,9 @@ class TypeSubstitutionTest {
           .last()
 
       val (_, map) = buildContextForSpreadingInjectable(
-        injektContext,
+        buildBaseContextForSpreadingInjectable(injektContext, injectableCoroutineScopeElementReturnType, emptyList()),
         installElementModuleT.defaultType,
-        injectableCoroutineScopeElementReturnType,
-        emptyList()
+        injectableCoroutineScopeElementReturnType
       )
       val injectableCoroutineScopeElementS = injectableCoroutineScopeElementReturnType.arguments
         .first()
@@ -159,7 +157,11 @@ class TypeSubstitutionTest {
     superType: TypeRef,
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ): Map<ClassifierRef, TypeRef> {
-    val context = subType.buildContext(injektContext, staticTypeParameters, superType)
+    val context = subType.buildContext(
+      subType.buildBaseContext(injektContext, staticTypeParameters),
+      superType,
+      true
+    )
     return context.fixedTypeVariables
   }
 }

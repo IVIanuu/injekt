@@ -99,7 +99,10 @@ class InjectablesScope(
     val type: TypeRef,
     val rawType: TypeRef,
     val source: CallableRef?
-  )
+  ) {
+    val contextsByStaticTypeParameters =
+      mutableMapOf<List<ClassifierRef>, SpreadingInjectableBaseContext>()
+  }
 
   val allParents: List<InjectablesScope> = parent?.allScopes ?: emptyList()
   val allScopes: List<InjectablesScope> = allParents + this
@@ -121,55 +124,51 @@ class InjectablesScope(
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
   init {
-    measureTimeMillisWithResult {
-      initialInjectables
-        .forEach { injectable ->
-          injectable.collectInjectables(
-            context = context,
-            scope = this,
-            trace = trace,
-            addImport = { importFqName, packageFqName ->
-              this.imports += ResolvedProviderImport(
-                null,
-                "${importFqName}.*",
-                packageFqName
-              )
-            },
-            addInjectable = { callable ->
-              addInjectableIfAbsentOrBetter(callable.copy(source = injectable))
-              val typeWithFrameworkKey = callable.type
-                .copy(frameworkKey = generateFrameworkKey())
-              addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = injectable))
-              spreadingInjectableCandidates += SpreadingInjectableCandidate(
-                type = typeWithFrameworkKey,
-                rawType = callable.type,
-                source = injectable
-              )
-            },
-            addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) }
-          )
-        }
-
-      val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
-      val hasSpreadingInjectableCandidates = spreadingInjectableCandidates.isNotEmpty()
-      if (parent != null) {
-        spreadingInjectables.addAll(
-          0,
-          parent.spreadingInjectables
-            .map { if (hasSpreadingInjectableCandidates) it.copy() else it }
+    initialInjectables
+      .forEach { injectable ->
+        injectable.collectInjectables(
+          context = context,
+          scope = this,
+          trace = trace,
+          addImport = { importFqName, packageFqName ->
+            this.imports += ResolvedProviderImport(
+              null,
+              "${importFqName}.*",
+              packageFqName
+            )
+          },
+          addInjectable = { callable ->
+            addInjectableIfAbsentOrBetter(callable.copy(source = injectable))
+            val typeWithFrameworkKey = callable.type
+              .copy(frameworkKey = generateFrameworkKey())
+            addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = injectable))
+            spreadingInjectableCandidates += SpreadingInjectableCandidate(
+              type = typeWithFrameworkKey,
+              rawType = callable.type,
+              source = injectable
+            )
+          },
+          addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) }
         )
-        spreadingInjectableCandidates.addAll(0, parent.spreadingInjectableCandidates)
       }
 
-      if ((hasSpreadingInjectables && spreadingInjectableCandidates.isNotEmpty()) ||
-        (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
-      ) {
-        spreadingInjectableCandidates
-          .toList()
-          .forEach { spreadInjectables(it) }
-      }
-    }.let {
-      println("initializing scope $name took ${it.first} ms")
+    val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
+    val hasSpreadingInjectableCandidates = spreadingInjectableCandidates.isNotEmpty()
+    if (parent != null) {
+      spreadingInjectables.addAll(
+        0,
+        parent.spreadingInjectables
+          .map { if (hasSpreadingInjectableCandidates) it.copy() else it }
+      )
+      spreadingInjectableCandidates.addAll(0, parent.spreadingInjectableCandidates)
+    }
+
+    if ((hasSpreadingInjectables && spreadingInjectableCandidates.isNotEmpty()) ||
+      (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
+    ) {
+      spreadingInjectableCandidates
+        .toList()
+        .forEach { spreadInjectables(it) }
     }
   }
 
@@ -229,12 +228,12 @@ class InjectablesScope(
     if (injectables.isEmpty()) return parent?.injectablesForType(key)
     return injectablesByRequest.getOrPut(key) {
       val thisInjectables = injectables
-        .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
-          val context = candidate.type.buildContext(context, key.staticTypeParameters, key.type)
-          if (!context.isOk) return@mapNotNull null
+          val context = candidate.buildContext(context, key.staticTypeParameters, key.type)
+          if (!context.isOk)
+            return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
           val finalCandidate = candidate.substitute(substitutionMap)
           CallableInjectable(
@@ -342,13 +341,9 @@ class InjectablesScope(
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           var context =
-            candidate.type.buildContext(context, key.staticTypeParameters, singleElementType)
+            candidate.buildContext(this.context, key.staticTypeParameters, singleElementType)
           if (!context.isOk) {
-            context = candidate.type.buildContext(
-              this.context,
-              key.staticTypeParameters,
-              collectionElementType
-            )
+            context = candidate.buildContext(this.context, key.staticTypeParameters, collectionElementType)
           }
           if (!context.isOk) return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
@@ -383,11 +378,17 @@ class InjectablesScope(
     if (candidate.type.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
     if (candidate.type in spreadingInjectable.processedCandidateTypes) return
     spreadingInjectable.processedCandidateTypes += candidate.type
+    val baseContext = candidate.contextsByStaticTypeParameters.getOrPut(allStaticTypeParameters) {
+      buildBaseContextForSpreadingInjectable(
+        this.context,
+        candidate.type,
+        allStaticTypeParameters
+      )
+    }
     val (context, substitutionMap) = buildContextForSpreadingInjectable(
-      context,
+      baseContext,
       spreadingInjectable.constraintType,
-      candidate.type,
-      allStaticTypeParameters
+      candidate.type
     )
     if (!context.isOk) return
 
