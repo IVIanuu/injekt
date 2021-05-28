@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -32,7 +33,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
-    val callExpression = resolvedCall.call.callElement
+    val callExpression = resolvedCall.call.callElement as KtCallExpression
 
     val file = try {
       callExpression.containingKtFile
@@ -70,7 +71,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
 
     val scope = ElementInjectablesScope(this.context, context.trace, callExpression)
 
-    when (val graph = scope.resolveRequests(requests, callExpression.lookupLocation) { result ->
+    val graph = scope.resolveRequests(requests, callExpression.lookupLocation) { result ->
       if (result.candidate is CallableInjectable) {
         context.trace.record(
           InjektWritableSlices.USED_INJECTABLE,
@@ -87,7 +88,9 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
           }
         }
       }
-    }) {
+    }
+
+    when (graph) {
       is InjectionGraph.Success -> {
         if (filePath != null && !isIde) {
           context.trace.record(
@@ -96,7 +99,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
             Unit
           )
           context.trace.record(
-            InjektWritableSlices.INJECTION_GRAPH,
+            InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
             SourcePosition(
               filePath,
               callExpression.startOffset,
@@ -108,6 +111,13 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
       }
       is InjectionGraph.Error -> context.trace.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
+      )
+    }
+    if (isIde) {
+      context.trace.record(
+        InjektWritableSlices.INJECTION_GRAPH_FOR_CALL,
+        callExpression,
+        graph
       )
     }
   }

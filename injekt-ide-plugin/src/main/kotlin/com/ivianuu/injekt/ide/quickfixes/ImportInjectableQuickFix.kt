@@ -163,12 +163,12 @@ private fun InjektContext.injectablesForType(
   }
 
 fun InjektContext.getAllInjectables(project: Project, useScope: GlobalSearchScope): List<CallableRef> {
-  val clazz = JavaPsiFacade.getInstance(project)
+  val provideAnnotation = JavaPsiFacade.getInstance(project)
     .findClass(InjektFqNames.Provide.asString(), useScope) as KtLightClass
 
   val injectables = mutableListOf<CallableRef>()
   val scope = KotlinSourceFilterScope.sourcesAndLibraries(useScope, project)
-  KotlinAnnotationsIndex.getInstance().get(clazz.name!!, project, scope)
+  KotlinAnnotationsIndex.getInstance().get(provideAnnotation.name!!, project, scope)
     .forEach { annotation ->
       val annotatedDeclaration = annotation.getParentOfType<KtNamedDeclaration>(false)
       if (annotatedDeclaration !is KtClassOrObject &&

@@ -565,9 +565,17 @@ private fun InjectionGraph.Success.postProcess(
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit,
   usages: MutableMap<UsageKey, MutableList<InjectableRequest>>
 ) {
+  forEachResultRecursive { request, result ->
+    usages.getOrPut(result.usageKey) { mutableListOf() } += request
+    onEachResult(result)
+  }
+}
+
+fun InjectionGraph.Success.forEachResultRecursive(
+  action: (InjectableRequest, ResolutionResult.Success.WithCandidate.Value) -> Unit
+) {
   fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: InjectableRequest) {
-    usages.getOrPut(usageKey) { mutableListOf() } += request
-    onEachResult(this)
+    action(request, this)
     dependencyResults
       .forEach { (request, result) ->
         if (result is ResolutionResult.Success.WithCandidate.Value) {

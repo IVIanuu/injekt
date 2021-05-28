@@ -722,7 +722,7 @@ class InjectCallTransformer(
       return result
 
     val graph = pluginContext.bindingContext[
-        InjektWritableSlices.INJECTION_GRAPH,
+        InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
         SourcePosition(fileStack.last().fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
 
