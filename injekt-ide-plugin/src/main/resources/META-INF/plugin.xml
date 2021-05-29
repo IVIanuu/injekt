@@ -31,17 +31,23 @@
     <depends>org.jetbrains.kotlin</depends>
 
     <actions>
-        <action id="Scala.ShowInjectionHints" class="com.ivianuu.injekt.ide.hints.ShowInjectionHintsAction">
+        <action id="Injekt.ShowInjectionHints" class="com.ivianuu.injekt.ide.hints.ShowInjectionHintsAction">
             <add-to-group group-id="CodeEditorViewGroup" anchor="last"/>
         </action>
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService
+            serviceInterface="org.jetbrains.kotlin.idea.references.KotlinReferenceProviderContributor"
+            serviceImplementation="com.ivianuu.injekt.ide.refs.InjektKotlinReferenceProviderContributor"
+            overrides="true" />
+
+        <referencesSearch implementation="com.ivianuu.injekt.ide.refs.InjektReferencesSearcher"/>
+
         <codeInsight.lineMarkerProvider
             language="kotlin"
             implementationClass="com.ivianuu.injekt.ide.linemarker.InjektLineMarkerProvider"
         />
-        <customUsageSearcher implementation="com.ivianuu.injekt.ide.usages.InjektUsageSearcher"/>
         <usageTypeProvider implementation="com.ivianuu.injekt.ide.usages.InjektUsageTypeProvider"/>
         <highlightingPassFactory
             implementation="com.ivianuu.injekt.ide.hints.InjectionHintsTextEditorHighlightingPassFactory"/>

@@ -131,8 +131,14 @@ private fun addInjectableImport(
     val psiFactory = KtPsiFactory(project)
 
     if (existingProvidersAnnotation != null) {
-      existingProvidersAnnotation.valueArgumentList!!
-        .addArgument(psiFactory.createArgument(newImportPath))
+      existingProvidersAnnotation
+        .valueArgumentList
+        ?.addArgument(psiFactory.createArgument(newImportPath))
+        ?: psiFactory.createCallArguments("($newImportPath)")
+        .also {
+          existingProvidersAnnotation
+            .addAfter(it, existingProvidersAnnotation.typeReference!!)
+        }
     } else {
       val file = call.containingKtFile
       file.addImport(InjektFqNames.Provide, context)
