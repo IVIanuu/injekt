@@ -2,6 +2,7 @@ package com.ivianuu.injekt.ide.usages
 
 import com.intellij.find.findUsages.*
 import com.intellij.psi.*
+import com.intellij.psi.search.*
 import com.intellij.psi.search.searches.*
 import com.intellij.usageView.*
 import com.intellij.usages.*
@@ -15,12 +16,14 @@ import org.jetbrains.kotlin.asJava.classes.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.findUsages.*
+import org.jetbrains.kotlin.idea.search.*
 import org.jetbrains.kotlin.idea.stubindex.*
 import org.jetbrains.kotlin.idea.util.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.concurrent.*
 
 class InjektUsageTypeProvider : UsageTypeProviderEx {
   override fun getUsageType(element: PsiElement?, targets: Array<out UsageTarget>): UsageType? {
@@ -64,12 +67,12 @@ class InjektUsageSearcher : CustomUsageSearcher() {
         else -> return@runReadActionInSmartMode
       }
 
-      val useScope = element.resolveScope
+      val useScope = options.searchScope as GlobalSearchScope
 
       val injectAnnotation = JavaPsiFacade.getInstance(project)
         .findClass(InjektFqNames.Inject.asString(), useScope) as KtLightClass
 
-      val scope = KotlinSourceFilterScope.sourcesAndLibraries(useScope, project)
+      val scope = KotlinSourceFilterScope.projectSources(useScope, project)
       KotlinAnnotationsIndex.getInstance().get(injectAnnotation.name!!, project, scope)
         .mapNotNull { it.getParentOfType<KtFunction>(false) }
         .distinct()
