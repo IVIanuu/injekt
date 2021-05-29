@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ide
+package com.ivianuu.injekt.ide.suppression
 
 import com.intellij.codeInspection.*
 import com.intellij.psi.*

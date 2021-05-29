@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.ide
+package com.ivianuu.injekt.ide.linemarker
 
 import com.intellij.codeHighlighting.Pass
 import com.intellij.codeInsight.daemon.*

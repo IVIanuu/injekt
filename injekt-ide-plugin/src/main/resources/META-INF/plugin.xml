@@ -30,16 +30,24 @@
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
+    <actions>
+        <action id="Scala.ShowInjectionHints" class="com.ivianuu.injekt.ide.hints.ShowInjectionHintsAction">
+            <add-to-group group-id="CodeEditorViewGroup" anchor="last"/>
+        </action>
+    </actions>
+
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.lineMarkerProvider
             language="kotlin"
-            implementationClass="com.ivianuu.injekt.ide.InjektLineMarkerProvider"
+            implementationClass="com.ivianuu.injekt.ide.linemarker.InjektLineMarkerProvider"
         />
         <customUsageSearcher implementation="com.ivianuu.injekt.ide.usages.InjektUsageSearcher"/>
         <usageTypeProvider implementation="com.ivianuu.injekt.ide.usages.InjektUsageTypeProvider"/>
+        <highlightingPassFactory
+            implementation="com.ivianuu.injekt.ide.hints.InjectionHintsTextEditorHighlightingPassFactory"/>
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
         <lang.inspectionSuppressor language="kotlin"
-            implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />
+            implementationClass="com.ivianuu.injekt.ide.suppression.InjektInspectionSuppressor" />
     </extensions>
 
 </idea-plugin>

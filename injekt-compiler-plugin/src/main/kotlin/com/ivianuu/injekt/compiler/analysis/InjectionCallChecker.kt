@@ -33,7 +33,8 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
-    val callExpression = resolvedCall.call.callElement as KtCallExpression
+    val callExpression = resolvedCall.call.callElement as? KtCallExpression
+      ?: return
 
     val file = try {
       callExpression.containingKtFile
