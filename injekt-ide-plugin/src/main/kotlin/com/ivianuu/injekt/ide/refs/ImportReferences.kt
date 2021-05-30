@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.completion.*
-import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.idea.search.*
 import org.jetbrains.kotlin.idea.util.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -41,6 +40,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           element as KtStringTemplateExpression
           if (element.getParentOfType<KtAnnotationEntry>(false) == null)
             return emptyArray()
+
           val importedFqName = element.text
             .removeSurrounding("\"")
 
@@ -68,7 +68,11 @@ class ImportReferenceContributor : PsiReferenceContributor() {
               NoLookupLocation.FROM_IDE
             )
               ?.getContributedDescriptors()
-              ?.filterNot { it.name.isSpecial }
+              ?.filter {
+                !it.name.isSpecial && (it !is FunctionDescriptor ||
+                    // ignore our incremental fix functions
+                    !it.name.asString().endsWith("injectables"))
+              }
               ?.mapNotNull { declaration ->
                 when (declaration) {
                   is PackageViewDescriptor -> {

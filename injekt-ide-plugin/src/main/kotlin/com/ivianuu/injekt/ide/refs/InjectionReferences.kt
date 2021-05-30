@@ -131,7 +131,7 @@ class InjectReference(
     super<PsiReferenceBase>.isReferenceTo(element)
 }
 
-private fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
+fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
   val fqName = fqNameSafe
 
   fun Collection<KtNamedDeclaration>.fqNameFilter() = filter { it.fqName == fqName }
@@ -158,11 +158,13 @@ private fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveS
         .let {
           it.fqNameFilter()
             .takeIf { it.isNotEmpty() }
-            ?: error("nope ")
+            ?: error("nope $fqName $this")
         }
     is DeserializedPropertyDescriptor, is PropertyImportedFromObject ->
       KotlinPropertyShortNameIndex.getInstance()[fqName.shortName()
         .asString(), project, resolveScope].fqNameFilter()
+    is LazyClassReceiverParameterDescriptor ->
+      containingDeclaration.findPsiDeclarations(project, resolveScope)
     is DeclarationDescriptorWithSource -> listOfNotNull(source.getPsi())
     else -> emptyList()
   }
