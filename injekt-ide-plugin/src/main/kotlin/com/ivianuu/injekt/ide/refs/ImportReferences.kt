@@ -54,8 +54,11 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           context: ProcessingContext
         ): Array<PsiReference> {
           element as KtStringTemplateExpression
-          if (element.getParentOfType<KtAnnotationEntry>(false) == null)
-            return emptyArray()
+          if (
+            element.getParentOfType<KtAnnotationEntry>(false)
+              ?.takeIf {
+                it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
+              } == null) return emptyArray()
 
           val importedFqName = element.text
             .removeSurrounding("\"")
@@ -79,33 +82,6 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 
             val finalFqName = FqName(fqName)
 
-            val subElements = injektContext.memberScopeForFqName(
-              finalFqName,
-              NoLookupLocation.FROM_IDE
-            )
-              ?.getContributedDescriptors()
-              ?.filter {
-                !it.name.isSpecial && (it !is FunctionDescriptor ||
-                    // ignore our incremental fix functions
-                    !it.name.asString().endsWith("injectables"))
-              }
-              ?.mapNotNull { declaration ->
-                when (declaration) {
-                  is PackageViewDescriptor -> {
-                    psiFacade.findPackage(declaration.fqName.asString(), element.resolveScope)
-                  }
-                  else -> {
-                    declaration.findPsiDeclarations(
-                      element.project,
-                      element.resolveScope
-                    ).firstOrNull()
-                  }
-                }
-              }
-              ?.filterIsInstance<PsiNamedElement>()
-              ?.toSet()
-              ?: emptySet()
-
             injektContext.memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE)
               ?.getContributedDescriptors()
               ?.filter {
@@ -119,19 +95,19 @@ class ImportReferenceContributor : PsiReferenceContributor() {
                     refs += ImportElementReference(
                       element,
                       range,
-                      subElements,
-                      psiFacade.findPackage(finalFqName.asString(), element.resolveScope)
+                      psiFacade.findPackage(finalFqName.asString(), element.resolveScope),
+                      finalFqName
                     )
                   }
                   else -> {
                     refs += ImportElementReference(
                       element,
                       range,
-                      emptySet(),
                       declaration.findPsiDeclarations(
                         element.project,
                         element.resolveScope
-                      ).first()
+                      ).first(),
+                      finalFqName
                     )
                   }
                 }
@@ -168,6 +144,41 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     if (offsetInElement < range.startOffset) return false
 
     val prefix = template.text.substring(range.startOffset, offsetInElement)
+
+    val module = template.getResolutionFacade().moduleDescriptor
+    val injektContext = module.injektContext
+
+    val subElements = injektContext.memberScopeForFqName(
+      importReference.fqName,
+      NoLookupLocation.FROM_IDE
+    )
+      ?.getContributedDescriptors()
+      ?.filter {
+        !it.name.isSpecial && (it !is FunctionDescriptor ||
+            // ignore our incremental fix functions
+            !it.name.asString().endsWith("injectables"))
+      }
+      ?.mapNotNull { declaration ->
+        when (declaration) {
+          is PackageViewDescriptor -> {
+            val psiFacade = KotlinJavaPsiFacade.getInstance(template.project)
+            psiFacade.findPackage(declaration.fqName.asString(), template.resolveScope)
+          }
+          else -> {
+            declaration.findPsiDeclarations(
+              template.project,
+              template.resolveScope
+            ).firstOrNull()
+          }
+        }
+      }
+      ?.filterIsInstance<PsiNamedElement>()
+      ?.toSet()
+      ?: emptySet()
+
+    subElements
+      .map { LookupElementBuilder.create(it.getKotlinFqName()!!.asString()) }
+
     val variants = importReference.variants
     result
       .addAllElements(variants.toMutableList().cast())
@@ -238,18 +249,13 @@ class ImportCompletionConfidence : CompletionConfidence() {
 class ImportElementReference(
   element: KtStringTemplateExpression,
   rangeInElement: TextRange,
-  val subPackages: Set<PsiNamedElement>,
-  val target: PsiElement
+  val target: PsiElement,
+  val fqName: FqName
 ) : PsiReferenceBase<KtStringTemplateExpression>(
   element,
   rangeInElement
 ) {
   override fun resolve(): PsiElement = target
-  override fun getVariants(): Array<Any> {
-    return subPackages
-      .map { LookupElementBuilder.create(it.getKotlinFqName()!!.asString()) }
-      .toTypedArray()
-  }
 }
 
 class ImportReferencesSearcher :
