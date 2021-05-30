@@ -25,7 +25,15 @@ import com.tschuchort.compiletesting.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
 import org.intellij.lang.annotations.*
+import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.com.intellij.mock.*
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
+import java.io.*
 import java.net.*
 import java.nio.file.*
 import kotlin.reflect.*
@@ -256,19 +264,14 @@ fun multiPlatformCodegen(
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
   compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
-  commandLineProcessors = listOf(InjektCommandLineProcessor(), ComposeCommandLineProcessor())
+  commandLineProcessors = listOf(ComposeCommandLineProcessor())
   inheritClassPath = true
   useIR = true
   jvmTarget = "1.8"
   verbose = false
   kotlincArguments += "-XXLanguage:+NewInference"
   block()
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
-    "dumpDir",
-    workingDir.resolve("injekt/dump").absolutePath
-  )
-  dumpAllFiles = true
+  irDumping()
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
@@ -345,6 +348,50 @@ fun KotlinCompilationAssertionScope.irShouldNotContain(text: String) {
   irAssertions {
     assert(text !in it) {
       "'$text' in source '$it'"
+    }
+  }
+}
+
+private fun KotlinCompilation.irDumping() {
+  compilerPlugins += object : ComponentRegistrar {
+    override fun registerProjectComponents(
+      project: MockProject,
+      configuration: CompilerConfiguration
+    ) {
+      IrGenerationExtension.registerExtensionWithLoadingOrder(
+        project,
+        LoadingOrder.FIRST,
+        object : IrGenerationExtension {
+          override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+            val dumpDir = workingDir.resolve("injekt/dump")
+            moduleFragment.files
+              .forEach { irFile ->
+                val file = File(irFile.fileEntry.name)
+                val content = try {
+                  irFile.dumpKotlinLike(
+                    KotlinLikeDumpOptions(
+                      useNamedArguments = true,
+                      printFakeOverridesStrategy = FakeOverridesStrategy.NONE
+                    )
+                  )
+                } catch (e: Throwable) {
+                  e.stackTraceToString()
+                }
+                val newFile = dumpDir
+                  .resolve(irFile.fqName.asString().replace(".", "/"))
+                  .also { it.mkdirs() }
+                  .resolve(file.name.removeSuffix(".kt"))
+                try {
+                  newFile.createNewFile()
+                  newFile.writeText(content)
+                  println("Generated $newFile:\n$content")
+                } catch (e: Throwable) {
+                  throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
+                }
+              }
+          }
+        }
+      )
     }
   }
 }

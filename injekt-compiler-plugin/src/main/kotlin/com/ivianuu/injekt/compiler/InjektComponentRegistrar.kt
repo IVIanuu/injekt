@@ -53,11 +53,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
       LoadingOrder.FIRST,
       InjektIrGenerationExtension()
     )
-    IrGenerationExtension.registerExtensionWithLoadingOrder(
-      project,
-      LoadingOrder.LAST,
-      InjektIrDumper(dumpDir(configuration))
-    )
     // extension point does not exist CLI for some reason
     // but it's still queried later
     SyntheticScopeProviderExtension.registerExtensionPoint(project)
@@ -71,7 +66,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
   }
 }
 
-private fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
+fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
   project: MockProject,
   loadingOrder: LoadingOrder,
   extension: IrGenerationExtension,

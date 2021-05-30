@@ -28,7 +28,6 @@ object InjektWritableSlices {
     BasicWritableSlice<KtCallExpression, InjectionGraph>(RewritePolicy.DO_NOTHING)
   val USED_INJECTABLE = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
   val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
-  val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val ELEMENT_INJECTABLES_SCOPE =
     BasicWritableSlice<KtElement, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val BLOCK_INJECTABLES_SCOPE =

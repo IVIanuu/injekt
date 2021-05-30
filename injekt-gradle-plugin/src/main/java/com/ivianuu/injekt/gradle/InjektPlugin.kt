@@ -27,7 +27,7 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
-    kotlinCompilation.setupForInjekt()
+    kotlinCompilation.target.project.provider { emptyList() }
 
   override fun apply(target: Project) {
   }
