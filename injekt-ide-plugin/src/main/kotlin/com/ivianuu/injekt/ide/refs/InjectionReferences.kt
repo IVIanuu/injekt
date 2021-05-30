@@ -27,7 +27,9 @@ import com.intellij.psi.search.searches.*
 import com.intellij.util.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.ide.*
 import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.asJava.elements.*
 import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
@@ -49,6 +51,7 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.source.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
+import org.jetbrains.kotlin.tools.projectWizard.core.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContributor {
@@ -92,6 +95,10 @@ class InjektReferencesSearcher :
     params: ReferencesSearch.SearchParameters,
     processor: Processor<in PsiReference>
   ) {
+    val ktElement = params.elementToSearch.ktElementOrNull() ?: return
+
+    if (!ktElement.isProvideOrInjectDeclaration()) return
+
     params.project.runReadActionInSmartMode {
       val psiManager = PsiManager.getInstance(params.project)
 
@@ -103,7 +110,7 @@ class InjektReferencesSearcher :
                 if (call.isValid) {
                   call.references
                     .filterIsInstance<InjectReference>()
-                    .filter { it.isReferenceTo(params.elementToSearch) }
+                    .filter { it.isReferenceTo(ktElement) }
                     .forEach { processor.process(it) }
                 }
               }

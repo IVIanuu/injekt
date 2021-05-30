@@ -31,16 +31,17 @@ import com.intellij.psi.search.*
 import com.intellij.psi.search.searches.*
 import com.intellij.util.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.ide.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.completion.*
-import org.jetbrains.kotlin.idea.search.*
 import org.jetbrains.kotlin.idea.util.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.jvm.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -158,30 +159,11 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
             // ignore our incremental fix functions
             !it.name.asString().endsWith("injectables"))
       }
-      ?.mapNotNull { declaration ->
-        when (declaration) {
-          is PackageViewDescriptor -> {
-            val psiFacade = KotlinJavaPsiFacade.getInstance(template.project)
-            psiFacade.findPackage(declaration.fqName.asString(), template.resolveScope)
-          }
-          else -> {
-            declaration.findPsiDeclarations(
-              template.project,
-              template.resolveScope
-            ).firstOrNull()
-          }
-        }
-      }
-      ?.filterIsInstance<PsiNamedElement>()
-      ?.toSet()
-      ?: emptySet()
+      ?.mapTo(mutableListOf()) { LookupElementBuilder.create(it.fqNameSafe.asString()) }
 
-    subElements
-      .map { LookupElementBuilder.create(it.getKotlinFqName()!!.asString()) }
-
-    val variants = importReference.variants
-    result
-      .addAllElements(variants.toMutableList().cast())
+    if (subElements != null) {
+      result.addAllElements(subElements)
+    }
 
     return true
   }
@@ -264,6 +246,11 @@ class ImportReferencesSearcher :
     params: ReferencesSearch.SearchParameters,
     processor: Processor<in PsiReference>
   ) {
+    val ktElement = params.elementToSearch.ktElementOrNull() ?: return
+
+    if (ktElement !is KtObjectDeclaration &&
+      !ktElement.isProvideOrInjectDeclaration()) return
+
     params.project.runReadActionInSmartMode {
       val psiManager = PsiManager.getInstance(params.project)
 
@@ -275,7 +262,7 @@ class ImportReferencesSearcher :
                 if (expression is KtStringTemplateExpression) {
                   expression.references
                     .filterIsInstance<ImportElementReference>()
-                    .filter { it.isReferenceTo(params.elementToSearch) }
+                    .filter { it.isReferenceTo(ktElement) }
                     .forEach { processor.process(it) }
                 }
               }
