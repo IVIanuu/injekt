@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.ivianuu.injekt.gradle.*
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
@@ -54,27 +53,6 @@ allprojects {
       if (compilation is KotlinJvmCompilation) {
         compilation.kotlinOptions {
           useIR = true
-        }
-      }
-      if (project.name != "injekt-compiler-plugin" &&
-        project.name != "injekt-gradle-plugin"
-      ) {
-        compilation.kotlinOptions {
-          val pluginOptions = compilation.setupForInjekt().get()
-          pluginOptions.forEach {
-            freeCompilerArgs += listOf(
-              "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
-            )
-          }
-          if (configurations.findByName("kotlinCompilerPluginClasspath")
-              ?.dependencies
-              ?.any { it.group == "androidx.compose.compiler" } == true
-          ) {
-            freeCompilerArgs += listOf(
-              "-P",
-              "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
-            )
-          }
         }
       }
     }
