@@ -35,61 +35,10 @@ import org.jetbrains.kotlin.resolve.source.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class InjektReferencesSearcher :
-  QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>() {
-  override fun processQuery(
-    params: ReferencesSearch.SearchParameters,
-    processor: Processor<in PsiReference>
-  ) {
-    params.project.runReadActionInSmartMode {
-      /*val elementToSearch = params.elementToSearch
-      println("check search for element $elementToSearch")
-      if (elementToSearch !is KtDeclaration) return@runReadActionInSmartMode
-      if (!elementToSearch.hasAnnotation(InjektFqNames.Provide) &&
-        !elementToSearch.hasAnnotation(InjektFqNames.Inject) &&
-        elementToSearch.parent.safeAs<KtFunction>()?.hasAnnotation(InjektFqNames.Provide) != true &&
-        (elementToSearch !is KtPrimaryConstructor &&
-            elementToSearch.getParentOfType<KtClassOrObject>(false)
-              ?.hasAnnotation(InjektFqNames.Provide) != true))
-        return@runReadActionInSmartMode
-      println("perform for element $elementToSearch ${elementToSearch.name}")*/
-
-      val psiManager = PsiManager.getInstance(params.project)
-
-      fun search(scope: SearchScope) {
-        if (scope is LocalSearchScope) {
-          for (element in scope.scope) {
-            element.accept(
-              callExpressionRecursiveVisitor { call ->
-                if (call.isValid) {
-                  call.references
-                    .filterIsInstance<InjectReference>()
-                    .filter { it.isReferenceTo(params.elementToSearch) }
-                    .forEach { processor.process(it) }
-                }
-              }
-            )
-          }
-        } else if (scope is GlobalSearchScope) {
-          FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)
-            .forEach { file ->
-              val psiFile = psiManager.findFile(file) as? KtFile
-              if (psiFile != null)
-                search(LocalSearchScope(psiFile))
-            }
-        }
-      }
-
-      search(params.effectiveSearchScope)
-    }
-  }
-}
-
 class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContributor {
   override fun registerReferenceProviders(registrar: KotlinPsiReferenceRegistrar) {
     KotlinReferenceContributor()
       .registerReferenceProviders(registrar)
-
     registrar.registerMultiProvider<KtCallExpression> { call ->
       val context = call.getResolutionFacade().analyze(call)
       val graph = context[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
@@ -117,6 +66,44 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
         }
       }
       references.toTypedArray()
+    }
+  }
+}
+
+class InjektReferencesSearcher :
+  QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>() {
+  override fun processQuery(
+    params: ReferencesSearch.SearchParameters,
+    processor: Processor<in PsiReference>
+  ) {
+    params.project.runReadActionInSmartMode {
+      val psiManager = PsiManager.getInstance(params.project)
+
+      fun search(scope: SearchScope) {
+        if (scope is LocalSearchScope) {
+          for (element in scope.scope) {
+            element.accept(
+              callExpressionRecursiveVisitor { call ->
+                if (call.isValid) {
+                  call.references
+                    .filterIsInstance<InjectReference>()
+                    .filter { it.isReferenceTo(params.elementToSearch) }
+                    .forEach { processor.process(it) }
+                }
+              }
+            )
+          }
+        } else if (scope is GlobalSearchScope) {
+          FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)
+            .forEach { file ->
+              val psiFile = psiManager.findFile(file) as? KtFile
+              if (psiFile != null)
+                search(LocalSearchScope(psiFile))
+            }
+        }
+      }
+
+      search(params.effectiveSearchScope)
     }
   }
 }

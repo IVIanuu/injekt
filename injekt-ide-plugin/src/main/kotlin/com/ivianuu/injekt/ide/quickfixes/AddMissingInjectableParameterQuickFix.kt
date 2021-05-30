@@ -79,7 +79,7 @@ private fun addInjectableParameterQuickFix(
       KtPsiFactory(project)
         .createParameter(
           "${injectText}${valText}" +
-              "${type.classifier.fqName.shortName().asString().decapitalize()}" +
+              type.classifier.fqName.shortName().asString().decapitalize() +
               ": ${type.renderKotlinLikeToString()}"
         )
     )

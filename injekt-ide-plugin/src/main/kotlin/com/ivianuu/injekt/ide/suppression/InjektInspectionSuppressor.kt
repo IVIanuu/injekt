@@ -20,12 +20,15 @@ import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.bindingContextUtil.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjektInspectionSuppressor : InspectionSuppressor {
   override fun getSuppressActions(element: PsiElement?, toolId: String): Array<SuppressQuickFix> =
@@ -52,13 +55,17 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         return resolvedCall.typeArguments
           .any { (typeParameter, typeArgument) ->
             val abbreviation = typeArgument.getAbbreviation()
-            abbreviation != null && typeParameter.defaultType.supertypes()
-              .none { it.getAbbreviation() == typeArgument }
+            (abbreviation != null && typeParameter.defaultType.supertypes()
+              .none { it.getAbbreviation() == typeArgument }) ||
+                typeArgument.toTypeRef(resolvedCall.candidateDescriptor.module
+                  .injektContext, resolvedCall.candidateDescriptor.module.injektContext
+                  .trace).anyType { it.classifier.isQualifier }
           }
       }
       "unused" -> {
         if (element !is LeafPsiElement) return false
-        return element.parent is KtTypeParameter
+        return element.parent.safeAs<KtTypeParameter>()
+          ?.hasAnnotation(InjektFqNames.Spread) == true
       }
       else -> return false
     }
