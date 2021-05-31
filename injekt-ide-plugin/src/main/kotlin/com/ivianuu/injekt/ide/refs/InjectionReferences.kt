@@ -92,47 +92,6 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
   }
 }
 
-class InjektReferencesSearcher :
-  QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>() {
-  override fun processQuery(
-    params: ReferencesSearch.SearchParameters,
-    processor: Processor<in PsiReference>
-  ) {
-    params.project.runReadActionInSmartMode {
-      val ktElement = params.elementToSearch.ktElementOrNull() ?: return@runReadActionInSmartMode
-      if (!ktElement.isProvideOrInjectDeclaration()) return@runReadActionInSmartMode
-
-      val psiManager = PsiManager.getInstance(params.project)
-
-      fun search(scope: SearchScope) {
-        if (scope is LocalSearchScope) {
-          for (element in scope.scope) {
-            element.accept(
-              callExpressionRecursiveVisitor { call ->
-                if (call.isValid) {
-                  call.references
-                    .filterIsInstance<InjectReference>()
-                    .filter { it.isReferenceTo(ktElement) }
-                    .forEach { processor.process(it) }
-                }
-              }
-            )
-          }
-        } else if (scope is GlobalSearchScope) {
-          FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)
-            .forEach { file ->
-              val psiFile = psiManager.findFile(file) as? KtFile
-              if (psiFile != null)
-                search(LocalSearchScope(psiFile))
-            }
-        }
-      }
-
-      search(params.effectiveSearchScope)
-    }
-  }
-}
-
 class InjectReference(
   expression: KtCallExpression,
   computeTarget: () -> KtDeclaration,
@@ -192,7 +151,7 @@ fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: Gl
         .let {
           it.fqNameFilter()
             .takeIf { it.isNotEmpty() }
-            ?: error("nope $fqName $this")
+            ?: error("nope $fqName $this $resolveScope")
         }
     is DeserializedPropertyDescriptor, is PropertyImportedFromObject ->
       KotlinPropertyShortNameIndex.getInstance()[fqName.shortName()

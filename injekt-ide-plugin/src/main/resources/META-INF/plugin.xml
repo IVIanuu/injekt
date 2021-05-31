@@ -44,9 +44,6 @@
         <referencesSearch
             implementation="com.ivianuu.injekt.ide.refs.InjektReferencesSearcher"/>
 
-        <referencesSearch
-            implementation="com.ivianuu.injekt.ide.refs.ImportReferencesSearcher"/>
-
         <psi.referenceContributor
             implementation="com.ivianuu.injekt.ide.refs.ImportReferenceContributor"/>
 
