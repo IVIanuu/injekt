@@ -87,7 +87,7 @@ private fun importInjectableQuickFix(
       addInjectableImport(call, project, candidates.single(), scope.context)
       return
     }
-    object : ListPopupImpl(
+    ListPopupImpl(
       object : BaseListPopupStep<CallableRef>(
         "Pick injectable to import for ${type.renderKotlinLikeToString()}", candidates) {
         override fun isAutoSelectionEnabled() = false
@@ -105,27 +105,7 @@ private fun importInjectableQuickFix(
         override fun getIconFor(value: CallableRef) =
           KotlinDescriptorIconProvider.getIcon(value.callable, null, 0)
       }
-    ) {
-      override fun getListElementRenderer(): ListCellRenderer<CallableRef> {
-        val baseRenderer = super.getListElementRenderer() as PopupListElementRenderer
-        val psiRenderer = DefaultPsiElementCellRenderer()
-        return ListCellRenderer { list, value, index, isSelected, cellHasFocus ->
-          JPanel(BorderLayout()).apply {
-            baseRenderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-            add(baseRenderer.nextStepLabel, BorderLayout.EAST)
-            add(
-              psiRenderer.getListCellRendererComponent(
-                list,
-                value.callable.fqNameSafe.asString(),
-                index,
-                isSelected,
-                cellHasFocus
-              )
-            )
-          }
-        }
-      }
-    }.showInBestPositionFor(editor)
+    ).showInBestPositionFor(editor)
   }
 
   override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
