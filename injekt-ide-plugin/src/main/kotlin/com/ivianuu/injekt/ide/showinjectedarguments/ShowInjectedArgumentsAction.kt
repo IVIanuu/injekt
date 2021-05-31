@@ -18,7 +18,6 @@ package com.ivianuu.injekt.ide.showinjectedarguments
 
 import com.intellij.ide.projectView.*
 import com.intellij.ide.util.treeView.*
-import com.intellij.ide.util.treeView.smartTree.*
 import com.intellij.openapi.*
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.*
@@ -120,6 +119,7 @@ class ShowInjectedArgumentsAction : AnAction(
 
     object : ClickListener() {
       override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
+        if (clickCount != 2) return false
         navigateToSelectedElement()
         return true
       }
