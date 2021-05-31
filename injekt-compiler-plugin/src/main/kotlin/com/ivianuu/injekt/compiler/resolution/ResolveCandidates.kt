@@ -122,7 +122,10 @@ sealed class ResolutionResult {
   sealed class Failure : ResolutionResult() {
     abstract val failureOrdering: Int
 
-    data class CandidateAmbiguity(val candidateResults: List<Success.WithCandidate.Value>) :
+    data class CandidateAmbiguity(
+      val request: InjectableRequest,
+      val candidateResults: List<Success.WithCandidate.Value>
+    ) :
       Failure() {
       override val failureOrdering: Int
         get() = 0
@@ -331,7 +334,7 @@ private fun InjectablesScope.resolveCandidates(
             .uniqueKey(context)
         }
         .singleOrNull()
-      ?: ResolutionResult.Failure.CandidateAmbiguity(successes.cast())
+      ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes.cast())
   } else failure!!
 }
 

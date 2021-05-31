@@ -186,7 +186,7 @@ class InjectedArgumentsTreeStructure(
     request: InjectableRequest,
     private val result: ResolutionResult
   ) : AbstractTreeNode<InjectableRequest>(project, request) {
-    override fun getChildren() = listOf(ResultNode(project!!, result))
+    override fun getChildren() = listOf(result.toResultNode(project!!))
 
     override fun update(data: PresentationData) {
       data.presentableText = value.parameterName.asString()
@@ -195,6 +195,18 @@ class InjectedArgumentsTreeStructure(
           data.setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0))
         }
     }
+  }
+
+  class AmbiguousResultNode(
+    project: Project,
+    failure: ResolutionResult.Failure.CandidateAmbiguity
+  ) : AbstractTreeNode<ResolutionResult.Failure.CandidateAmbiguity>(project, failure) {
+    override fun update(data: PresentationData) {
+      data.presentableText = "Ambiguous candidates"
+    }
+
+    override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
+      value.candidateResults.mapTo(mutableListOf()) { it.toResultNode(project!!) }
   }
 
   class ResultNode(
@@ -207,6 +219,9 @@ class InjectedArgumentsTreeStructure(
           .mapTo(mutableListOf()) { RequestNode(project!!, it.key, it.value) }
         is ResolutionResult.Failure.DependencyFailure -> mutableListOf(
           RequestNode(project!!, value.dependencyRequest, value.dependencyFailure)
+        )
+        is ResolutionResult.Failure.CandidateAmbiguity -> mutableListOf(
+          AmbiguousResultNode(project!!, value)
         )
         else -> mutableListOf()
       }
@@ -222,9 +237,9 @@ class InjectedArgumentsTreeStructure(
           data.presentableText =
             "Call context mismatch: expected ${value.candidate.callContext} but was ${value.actualCallContext}"
         }
-        is ResolutionResult.Failure.CandidateAmbiguity -> {
-          data.presentableText = "ambiguity"
-        }
+        is ResolutionResult.Failure.CandidateAmbiguity ->
+          // amiguous results get there own node
+          throw AssertionError("")
         is ResolutionResult.Failure.DependencyFailure ->
           data.renderInjectable(value.candidate)
         is ResolutionResult.Failure.DivergentInjectable -> {
@@ -238,14 +253,22 @@ class InjectedArgumentsTreeStructure(
         }
       }
     }
-
-    private fun PresentationData.renderInjectable(injectable: Injectable) {
-      presentableText = injectable.callableFqName.asString()
-      injectable
-        .safeAs<CallableInjectable>()
-        ?.callable
-        ?.callable
-        ?.let { setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0)) }
-    }
   }
+}
+
+private fun PresentationData.renderInjectable(injectable: Injectable) {
+  presentableText = injectable.callableFqName.asString()
+  injectable
+    .safeAs<CallableInjectable>()
+    ?.callable
+    ?.callable
+    ?.let { setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0)) }
+}
+
+private fun ResolutionResult.toResultNode(
+  project: Project
+) = when (this) {
+  is ResolutionResult.Failure.CandidateAmbiguity ->
+    InjectedArgumentsTreeStructure.AmbiguousResultNode(project, this)
+  else -> InjectedArgumentsTreeStructure.ResultNode(project, this)
 }
