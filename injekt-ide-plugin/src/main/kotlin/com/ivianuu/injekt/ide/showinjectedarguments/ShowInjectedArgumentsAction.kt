@@ -59,10 +59,13 @@ class ShowInjectedArgumentsAction : AnAction(
     val graph = bindingContext[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
       ?: return
 
-    if (graph !is InjectionGraph.Success) return
+    val results = when (graph) {
+      is InjectionGraph.Success -> graph.results
+      is InjectionGraph.Error -> mapOf(graph.failureRequest to graph.failure)
+    }
 
     val jTree = Tree()
-    val structure = InjectedArgumentsTreeStructure(project, graph.callee, graph.results)
+    val structure = InjectedArgumentsTreeStructure(project, graph.callee, results)
 
     val tmpDisposable = Disposable {
       jTree
@@ -151,7 +154,7 @@ class ShowInjectedArgumentsAction : AnAction(
 class InjectedArgumentsTreeStructure(
   val project: Project,
   val callee: CallableRef,
-  val results: Map<InjectableRequest, ResolutionResult.Success>
+  val results: Map<InjectableRequest, ResolutionResult>
 ): AbstractTreeStructure() {
   override fun getRootElement(): Any = RootNode()
 
@@ -181,7 +184,7 @@ class InjectedArgumentsTreeStructure(
   class RequestNode(
     project: Project,
     request: InjectableRequest,
-    private val result: ResolutionResult.Success
+    private val result: ResolutionResult
   ) : AbstractTreeNode<InjectableRequest>(project, request) {
     override fun getChildren() = listOf(ResultNode(project!!, result))
 
@@ -196,29 +199,53 @@ class InjectedArgumentsTreeStructure(
 
   class ResultNode(
     project: Project,
-    value: ResolutionResult.Success
-  ) : AbstractTreeNode<ResolutionResult.Success>(project, value) {
+    value: ResolutionResult
+  ) : AbstractTreeNode<ResolutionResult>(project, value) {
     override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
       when(val value = value) {
         is ResolutionResult.Success.WithCandidate.Value -> value.dependencyResults
           .mapTo(mutableListOf()) { RequestNode(project!!, it.key, it.value) }
+        is ResolutionResult.Failure.DependencyFailure -> mutableListOf(
+          RequestNode(project!!, value.dependencyRequest, value.dependencyFailure)
+        )
         else -> mutableListOf()
       }
 
     override fun update(data: PresentationData) {
-      data.presentableText = when (val value = value) {
-        ResolutionResult.Success.DefaultValue -> "default value"
-        is ResolutionResult.Success.WithCandidate ->
-          value.candidate.callableFqName.asString()
-      }
-      value.safeAs<ResolutionResult.Success.WithCandidate>()
-        ?.candidate
-        ?.safeAs<CallableInjectable>()
-        ?.callable
-        ?.callable
-        ?.let {
-          data.setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0))
+      when (val value = value) {
+        ResolutionResult.Success.DefaultValue -> {
+          data.presentableText = "Default value"
         }
+        is ResolutionResult.Success.WithCandidate ->
+          data.renderInjectable(value.candidate)
+        is ResolutionResult.Failure.CallContextMismatch -> {
+          data.presentableText =
+            "Call context mismatch: expected ${value.candidate.callContext} but was ${value.actualCallContext}"
+        }
+        is ResolutionResult.Failure.CandidateAmbiguity -> {
+          data.presentableText = "ambiguity"
+        }
+        is ResolutionResult.Failure.DependencyFailure ->
+          data.renderInjectable(value.candidate)
+        is ResolutionResult.Failure.DivergentInjectable -> {
+          data.presentableText = "divergent injectable"
+        }
+        ResolutionResult.Failure.NoCandidates -> {
+          data.presentableText = "Nothing found"
+        }
+        is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
+          data.presentableText = "Reified mismatch"
+        }
+      }
+    }
+
+    private fun PresentationData.renderInjectable(injectable: Injectable) {
+      presentableText = injectable.callableFqName.asString()
+      injectable
+        .safeAs<CallableInjectable>()
+        ?.callable
+        ?.callable
+        ?.let { setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0)) }
     }
   }
 }

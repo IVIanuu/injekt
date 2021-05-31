@@ -151,6 +151,7 @@ sealed class ResolutionResult {
     }
 
     data class DependencyFailure(
+      val candidate: Injectable,
       val dependencyRequest: InjectableRequest,
       val dependencyFailure: Failure,
     ) : Failure() {
@@ -378,6 +379,7 @@ private fun InjectablesScope.resolveCandidate(
               (dependency.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
                   dependencyResult !is ResolutionResult.Failure.NoCandidates) ->
             return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
+              candidate,
               dependency, dependencyResult
             )
           else -> successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
