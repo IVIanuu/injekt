@@ -23,7 +23,7 @@ import com.ivianuu.injekt.ide.refs.*
 import org.jetbrains.kotlin.psi.*
 
 class InjektUsageTypeProvider : UsageTypeProviderEx {
-  override fun getUsageType(element: PsiElement?, targets: Array<out UsageTarget>): UsageType? {
+  override fun getUsageType(element: PsiElement, targets: Array<out UsageTarget>): UsageType? {
     if (element !is KtCallExpression) return null
     val target = (targets.firstOrNull() as? PsiElementUsageTarget)?.element ?: return null
     val ref = element.references
@@ -31,7 +31,7 @@ class InjektUsageTypeProvider : UsageTypeProviderEx {
     return if (ref is InjectReference) InjectionUsageType else null
   }
 
-  override fun getUsageType(p0: PsiElement?): UsageType? = null
+  override fun getUsageType(element: PsiElement): UsageType? = null
 }
 
 private val InjectionUsageType = UsageType { "Injection" }

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.ide.refs
 import com.intellij.lang.findUsages.*
 import com.intellij.openapi.application.*
 import com.intellij.openapi.project.*
+import com.intellij.openapi.util.*
 import com.intellij.patterns.*
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.resolve.*
@@ -137,7 +138,10 @@ class InjectReference(
   expression: KtCallExpression,
   computeTarget: () -> KtDeclaration,
   private val name: Name
-) : PsiReferenceBase<KtCallExpression>(expression, expression.textRange), KtReference, KtDescriptorsBasedReference {
+) : PsiReferenceBase<KtCallExpression>(
+  expression,
+  TextRange.from(0, expression.text.length)
+), KtReference, KtDescriptorsBasedReference {
   private val target by lazy(computeTarget)
 
   override fun multiResolve(p0: Boolean): Array<ResolveResult> =
