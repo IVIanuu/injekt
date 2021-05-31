@@ -45,6 +45,7 @@ sealed class InjectionGraph {
 sealed class ResolutionResult {
   sealed class Success : ResolutionResult() {
     object DefaultValue : Success()
+
     sealed class WithCandidate : ResolutionResult.Success() {
       abstract val candidate: Injectable
       abstract val scope: InjectablesScope
@@ -122,44 +123,46 @@ sealed class ResolutionResult {
   sealed class Failure : ResolutionResult() {
     abstract val failureOrdering: Int
 
-    data class CandidateAmbiguity(
-      val request: InjectableRequest,
-      val candidateResults: List<Success.WithCandidate.Value>
-    ) :
-      Failure() {
-      override val failureOrdering: Int
-        get() = 0
-    }
+    sealed class WithCandidate : Failure() {
+      abstract val candidate: Injectable
 
-    data class CallContextMismatch(
-      val actualCallContext: CallContext,
-      val candidate: Injectable,
-    ) : Failure() {
-      override val failureOrdering: Int
-        get() = 1
-    }
+      data class CallContextMismatch(
+        val actualCallContext: CallContext,
+        override val candidate: Injectable,
+      ) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
 
-    data class ReifiedTypeArgumentMismatch(
-      val parameter: ClassifierRef,
-      val argument: ClassifierRef,
-      val candidate: Injectable
-    ) : Failure() {
-      override val failureOrdering: Int
-        get() = 1
-    }
+      data class ReifiedTypeArgumentMismatch(
+        val parameter: ClassifierRef,
+        val argument: ClassifierRef,
+        override val candidate: Injectable
+      ) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
 
-    data class DivergentInjectable(val candidate: Injectable) : Failure() {
-      override val failureOrdering: Int
-        get() = 1
+      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
     }
 
     data class DependencyFailure(
-      val candidate: Injectable,
       val dependencyRequest: InjectableRequest,
       val dependencyFailure: Failure,
     ) : Failure() {
       override val failureOrdering: Int
         get() = 1
+    }
+
+    data class CandidateAmbiguity(
+      val request: InjectableRequest,
+      val candidateResults: List<Success.WithCandidate.Value>
+    ) : Failure() {
+      override val failureOrdering: Int
+        get() = 0
     }
 
     object NoCandidates : Failure() {
@@ -259,7 +262,7 @@ private fun InjectablesScope.computeForCandidate(
         (prev.second.type.typeSize < candidate.type.typeSize ||
             (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))
       ) {
-        val result = ResolutionResult.Failure.DivergentInjectable(candidate)
+        val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
         return result
       }
@@ -344,7 +347,7 @@ private fun InjectablesScope.resolveCandidate(
   lookupLocation: LookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
   if (!callContext.canCall(candidate.callContext)) {
-    return@computeForCandidate ResolutionResult.Failure.CallContextMismatch(callContext, candidate)
+    return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
   }
 
   if (candidate is CallableInjectable) {
@@ -353,7 +356,7 @@ private fun InjectablesScope.resolveCandidate(
         ?: continue
       val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
       if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
-        return@computeForCandidate ResolutionResult.Failure.ReifiedTypeArgumentMismatch(
+        return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
           typeParameter,
           typeArgument.classifier,
           candidate
@@ -382,8 +385,8 @@ private fun InjectablesScope.resolveCandidate(
               (dependency.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
                   dependencyResult !is ResolutionResult.Failure.NoCandidates) ->
             return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
-              candidate,
-              dependency, dependencyResult
+              dependency,
+              dependencyResult
             )
           else -> successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
         }

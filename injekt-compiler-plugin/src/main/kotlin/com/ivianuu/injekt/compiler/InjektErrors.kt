@@ -257,7 +257,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
   val (unwrappedFailureRequest, unwrappedFailure) = failure.unwrapDependencyFailure(failureRequest)
 
   when (unwrappedFailure) {
-    is ResolutionResult.Failure.CallContextMismatch -> {
+    is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
           "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
@@ -269,7 +269,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine("call context mismatch")
       }
     }
-    is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
+    is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
           "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
@@ -301,7 +301,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
     }
     is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
     is ResolutionResult.Failure.NoCandidates,
-    is ResolutionResult.Failure.DivergentInjectable -> {
+    is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
       appendLine(
         "no injectable found of type " +
             "${unwrappedFailureRequest.type.renderToString()} for parameter " +
@@ -330,7 +330,8 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine("(")
       }
       withIndent {
-        if (isProvider && unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
+        if (isProvider &&
+          unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
           appendLine("${indent()}/* ${callContext.name.toLowerCase()} call context */")
         }
         append(indent())
@@ -345,10 +346,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
         } else {
           append("/* ")
           when (failure) {
-            is ResolutionResult.Failure.CallContextMismatch -> {
+            is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
               append("${failure.candidate.callContext.name.toLowerCase()} call:")
             }
-            is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
+            is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
@@ -362,10 +363,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
             }
             is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.NoCandidates,
-            is ResolutionResult.Failure.DivergentInjectable -> append("missing:")
+            is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          if (failure is ResolutionResult.Failure.CallContextMismatch) {
+          if (failure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
             appendLine("${failure.candidate.callableFqName}()")
           } else {
             appendLine("inject<${request.type.renderToString()}>()")
@@ -381,7 +382,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
     }
 
     withIndent {
-      if (unwrappedFailure is ResolutionResult.Failure.CallContextMismatch) {
+      if (unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
         appendLine("${indent()}/* ${scope.callContext.name.toLowerCase()} call context */")
       }
       append(indent())
@@ -395,10 +396,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
     appendLine()
 
     when (unwrappedFailure) {
-      is ResolutionResult.Failure.CallContextMismatch -> {
+      is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
         appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
       }
-      is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
+      is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
@@ -411,7 +412,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         )
       }
       is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
-      is ResolutionResult.Failure.DivergentInjectable -> {
+      is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
         appendLine(
           "but injectable ${unwrappedFailure.candidate.callableFqName} " +
               "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}"

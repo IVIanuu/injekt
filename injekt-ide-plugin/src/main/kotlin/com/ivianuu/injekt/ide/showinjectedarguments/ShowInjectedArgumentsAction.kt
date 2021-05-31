@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.ide.showinjectedarguments
 
+import com.intellij.icons.*
 import com.intellij.ide.projectView.*
 import com.intellij.ide.util.treeView.*
 import com.intellij.openapi.*
@@ -173,7 +174,7 @@ class InjectedArgumentsTreeStructure(
 
   private inner class RootNode : AbstractTreeNode<Any>(project, Any()) {
     override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
-      results.mapTo(mutableListOf()) { RequestNode(project!!, it.key, it.value) }
+      results.mapTo(mutableListOf()) { it.key.toRequestNode(project!!, it.value) }
 
     override fun update(data: PresentationData) {
       data.presentableText = callee.callable.name.asString()
@@ -181,12 +182,12 @@ class InjectedArgumentsTreeStructure(
     }
   }
 
-  class RequestNode(
+  class DefaultRequestNode(
     project: Project,
     request: InjectableRequest,
     private val result: ResolutionResult
   ) : AbstractTreeNode<InjectableRequest>(project, request) {
-    override fun getChildren() = listOf(result.toResultNode(project!!))
+    override fun getChildren() = listOf(result.toResultNode(project!!, value))
 
     override fun update(data: PresentationData) {
       data.presentableText = "${value.parameterName}: ${value.type.renderKotlinLikeToString()}"
@@ -197,32 +198,87 @@ class InjectedArgumentsTreeStructure(
     }
   }
 
+  class SingleFailureRequestNode(
+    project: Project,
+    request: InjectableRequest,
+    private val result: ResolutionResult.Failure.WithCandidate
+  ) : AbstractTreeNode<InjectableRequest>(project, request) {
+    override fun getChildren() =
+      mutableListOf(ErrorMessageNode(project!!, result.message(), result.candidate))
+
+    override fun update(data: PresentationData) {
+      data.presentableText = "${value.parameterName}: ${value.type.renderKotlinLikeToString()}"
+      value.parameterDescriptor
+        ?.let {
+          data.setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0))
+        }
+    }
+  }
+
+  class ErrorMessageNode(
+    project: Project,
+    message: String,
+    private val injectable: Injectable
+  ) : AbstractTreeNode<String>(project, message) {
+    override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
+      mutableListOf(SingleFailureCandidateNode(project!!, injectable))
+
+    override fun update(data: PresentationData) {
+      data.presentableText = value
+      data.setIcon(AllIcons.General.Error)
+    }
+  }
+
+  class SingleFailureCandidateNode(
+    project: Project,
+    injectable: Injectable
+  ) : AbstractTreeNode<Injectable>(project, injectable) {
+    override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
+      mutableListOf()
+
+    override fun update(data: PresentationData) {
+      data.renderInjectable(value)
+    }
+  }
+
   class AmbiguousResultNode(
     project: Project,
     failure: ResolutionResult.Failure.CandidateAmbiguity
   ) : AbstractTreeNode<ResolutionResult.Failure.CandidateAmbiguity>(project, failure) {
+    override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
+      value.candidateResults.mapTo(mutableListOf()) { it.toResultNode(project!!, value.request) }
+
     override fun update(data: PresentationData) {
       data.presentableText = "Ambiguous candidates"
+      data.setIcon(AllIcons.General.Error)
     }
-
-    override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
-      value.candidateResults.mapTo(mutableListOf()) { it.toResultNode(project!!) }
   }
 
-  class ResultNode(
+  class NoCandidatesResultNode(
+    project: Project
+  ) : AbstractTreeNode<ResolutionResult.Failure.NoCandidates>(
+    project,
+    ResolutionResult.Failure.NoCandidates
+  ) {
+    override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> = mutableListOf()
+
+    override fun update(data: PresentationData) {
+      data.presentableText = "No candidates found"
+    }
+  }
+
+  class SuccessResultNode(
     project: Project,
-    value: ResolutionResult
+    value: ResolutionResult.Success
   ) : AbstractTreeNode<ResolutionResult>(project, value) {
     override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
       when(val value = value) {
         is ResolutionResult.Success.WithCandidate.Value -> value.dependencyResults
-          .mapTo(mutableListOf()) { RequestNode(project!!, it.key, it.value) }
-        is ResolutionResult.Failure.DependencyFailure -> mutableListOf(
-          RequestNode(project!!, value.dependencyRequest, value.dependencyFailure)
-        )
-        is ResolutionResult.Failure.CandidateAmbiguity -> mutableListOf(
-          AmbiguousResultNode(project!!, value)
-        )
+          .mapTo(mutableListOf()) { it.key.toRequestNode(project!!, it.value) }
+        is ResolutionResult.Failure.CandidateAmbiguity ->
+          mutableListOf(AmbiguousResultNode(project!!, value))
+        is ResolutionResult.Failure.NoCandidates ->
+          mutableListOf(NoCandidatesResultNode(project!!))
         else -> mutableListOf()
       }
 
@@ -233,27 +289,21 @@ class InjectedArgumentsTreeStructure(
         }
         is ResolutionResult.Success.WithCandidate ->
           data.renderInjectable(value.candidate)
-        is ResolutionResult.Failure.CallContextMismatch -> {
-          data.presentableText =
-            "Call context mismatch: expected ${value.candidate.callContext} but was ${value.actualCallContext}"
-        }
-        is ResolutionResult.Failure.CandidateAmbiguity ->
-          // amiguous results get there own node
-          throw AssertionError("")
-        is ResolutionResult.Failure.DependencyFailure ->
-          data.renderInjectable(value.candidate)
-        is ResolutionResult.Failure.DivergentInjectable -> {
-          data.presentableText = "divergent injectable"
-        }
-        ResolutionResult.Failure.NoCandidates -> {
-          data.presentableText = "Nothing found"
-        }
-        is ResolutionResult.Failure.ReifiedTypeArgumentMismatch -> {
-          data.presentableText = "Reified mismatch"
-        }
+        else -> throw AssertionError()
       }
     }
   }
+}
+
+private fun ResolutionResult.Failure.message(): String = when (this) {
+  is ResolutionResult.Failure.CandidateAmbiguity -> throw AssertionError()
+  ResolutionResult.Failure.NoCandidates -> throw AssertionError()
+  is ResolutionResult.Failure.WithCandidate.CallContextMismatch ->
+    "Call context mismatch: expected ${candidate.callContext} but was $actualCallContext"
+  is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
+  is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> "divergent injectable"
+  is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch ->
+    "Reified mismatch"
 }
 
 private fun PresentationData.renderInjectable(injectable: Injectable) {
@@ -265,10 +315,32 @@ private fun PresentationData.renderInjectable(injectable: Injectable) {
     ?.let { setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0)) }
 }
 
+private fun InjectableRequest.toRequestNode(
+  project: Project,
+  result: ResolutionResult
+) = when (result) {
+  is ResolutionResult.Failure.WithCandidate ->
+    InjectedArgumentsTreeStructure.SingleFailureRequestNode(project, this, result)
+  else -> InjectedArgumentsTreeStructure.DefaultRequestNode(project, this, result)
+}
+
 private fun ResolutionResult.toResultNode(
-  project: Project
+  project: Project,
+  request: InjectableRequest
 ) = when (this) {
   is ResolutionResult.Failure.CandidateAmbiguity ->
     InjectedArgumentsTreeStructure.AmbiguousResultNode(project, this)
-  else -> InjectedArgumentsTreeStructure.ResultNode(project, this)
+  is ResolutionResult.Failure.NoCandidates ->
+    InjectedArgumentsTreeStructure.NoCandidatesResultNode(project)
+  is ResolutionResult.Failure.DependencyFailure ->
+    dependencyRequest.toRequestNode(project, dependencyFailure)
+  is ResolutionResult.Failure.WithCandidate ->
+    InjectedArgumentsTreeStructure.SingleFailureRequestNode(
+      project,
+      request,
+      this
+    )
+  is ResolutionResult.Success ->
+    InjectedArgumentsTreeStructure.SuccessResultNode(project, this)
+  else -> throw AssertionError("Unexpected result $this")
 }
