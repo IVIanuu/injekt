@@ -97,13 +97,24 @@ class ShowInjectedArgumentsAction : AnAction(
       .createPopup()
 
     fun navigateToSelectedElement() {
-      popup.cancel()
-
       val selectedValue = jTree.lastSelectedPathComponent
         .safeAs<DefaultMutableTreeNode>()
         ?.userObject
         ?.safeAs<AbstractTreeNode<*>>()
         ?.value
+
+      fun navigateToInjectable(injectable: Injectable) {
+        val psiDeclaration = injectable
+          .safeAs<CallableInjectable>()
+          ?.callable
+          ?.callable
+          ?.findPsiDeclarations(project, call.resolveScope)
+          ?.firstOrNull()
+          ?: return
+        (psiDeclaration.navigationElement as? Navigatable)
+          ?.navigate(true)
+        popup.cancel()
+      }
 
       when (selectedValue) {
         is InjectableRequest -> {
@@ -113,20 +124,15 @@ class ShowInjectedArgumentsAction : AnAction(
             ?: return
           (psiDeclaration.navigationElement as? Navigatable)
             ?.navigate(true)
+          popup.cancel()
         }
         ResolutionResult.Success.DefaultValue -> TODO()
-        is ResolutionResult.Success.WithCandidate.CircularDependency -> TODO()
-        is ResolutionResult.Success.WithCandidate.Value -> {
-          val psiDeclaration = selectedValue.candidate
-            .safeAs<CallableInjectable>()
-            ?.callable
-            ?.callable
-            ?.findPsiDeclarations(project, call.resolveScope)
-            ?.firstOrNull()
-            ?: return
-          (psiDeclaration.navigationElement as? Navigatable)
-            ?.navigate(true)
-        }
+        is ResolutionResult.Success.WithCandidate ->
+          navigateToInjectable(selectedValue.candidate)
+        is ResolutionResult.Failure.WithCandidate ->
+          navigateToInjectable(selectedValue.candidate)
+        is Injectable ->
+          navigateToInjectable(selectedValue)
       }
     }
 
