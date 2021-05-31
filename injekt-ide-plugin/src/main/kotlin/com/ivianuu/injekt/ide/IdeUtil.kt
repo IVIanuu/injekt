@@ -26,9 +26,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 fun PsiElement.ktElementOrNull() = safeAs<KtDeclaration>()
   ?: safeAs<KtLightDeclaration<*, *>>()?.kotlinOrigin
 
-fun KtAnnotated.isProvideOrInjectDeclaration() = hasAnnotation(InjektFqNames.Provide) ||
-  hasAnnotation(InjektFqNames.Inject) ||
-    safeAs<KtParameter>()?.getParentOfType<KtNamedFunction>(false)
-    ?.hasAnnotation(InjektFqNames.Provide) == true ||
+fun KtAnnotated.isProvideOrInjectDeclaration(): Boolean = hasAnnotation(InjektFqNames.Provide) ||
+    (this is KtParameter && hasAnnotation(InjektFqNames.Inject)) ||
+    safeAs<KtParameter>()?.getParentOfType<KtFunction>(false)
+      ?.isProvideOrInjectDeclaration() == true ||
   safeAs<KtConstructor<*>>()?.getContainingClassOrObject()
-    ?.hasAnnotation(InjektFqNames.Provide) == true
+    ?.isProvideOrInjectDeclaration() == true
