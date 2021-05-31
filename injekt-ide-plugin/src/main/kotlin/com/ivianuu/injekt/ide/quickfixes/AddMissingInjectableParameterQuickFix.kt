@@ -48,14 +48,22 @@ fun QuickFixes.addMissingInjectableAsParameter() = register(
         }
 
       return when (target) {
-        is KtNamedFunction, is KtClass -> listOf(
-          addInjectableParameterQuickFix(
+        is KtNamedFunction, is KtClass -> buildList<IntentionAction> {
+          this += addInjectableParameterQuickFix(
             target.cast(),
             unwrappedFailureRequest.type,
             diagnostic.psiElement.cast(),
             graph.scope.context
           )
-        )
+          if (graph.failure is ResolutionResult.Failure.DependencyFailure) {
+            this += addInjectableParameterQuickFix(
+              target.cast(),
+              graph.failureRequest.type,
+              diagnostic.psiElement.cast(),
+              graph.scope.context
+            )
+          }
+        }
         else -> emptyList()
       }
     }
