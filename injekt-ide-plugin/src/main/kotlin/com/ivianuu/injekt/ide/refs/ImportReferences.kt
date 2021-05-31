@@ -83,36 +83,30 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 
             val finalFqName = FqName(fqName)
 
+            val packageDescriptor = module.getPackage(finalFqName)
+            if (packageDescriptor.fragments.isNotEmpty()) {
+              refs += ImportElementReference(
+                element,
+                range,
+                psiFacade.findPackage(finalFqName.asString(), element.resolveScope),
+                finalFqName
+              )
+              return
+            }
+
             injektContext.memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE)
-              ?.getContributedDescriptors()
-              ?.filter {
-                it.name == finalFqName.shortName() ||
-                    (it is ConstructorDescriptor &&
-                        it.constructedClass.name == finalFqName.shortName())
-              }
+              ?.getContributedDescriptors { it == finalFqName.shortName() }
               ?.forEach { declaration ->
-                when (declaration) {
-                  is PackageViewDescriptor -> {
-                    refs += ImportElementReference(
-                      element,
-                      range,
-                      psiFacade.findPackage(finalFqName.asString(), element.resolveScope),
-                      finalFqName
-                    )
-                  }
-                  else -> {
-                    refs += ImportElementReference(
-                      element,
-                      range,
-                      declaration.findPsiDeclarations(
-                        element.project,
-                        element.resolveScope
-                      ).first(),
-                      finalFqName
-                    )
-                  }
-                }
-              }
+                refs += ImportElementReference(
+                  element,
+                  range,
+                  declaration.findPsiDeclarations(
+                    element.project,
+                    element.resolveScope
+                  ).first(),
+                  finalFqName
+                )
+              } ?: return
 
             resolveFqName(
               finalFqName.parent().asString(),
