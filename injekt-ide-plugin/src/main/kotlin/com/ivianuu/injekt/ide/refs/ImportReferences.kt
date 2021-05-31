@@ -238,12 +238,12 @@ class ImportReferencesSearcher :
     params: ReferencesSearch.SearchParameters,
     processor: Processor<in PsiReference>
   ) {
-    val ktElement = params.elementToSearch.ktElementOrNull() ?: return
-
-    if (ktElement !is KtObjectDeclaration &&
-      !ktElement.isProvideOrInjectDeclaration()) return
-
     params.project.runReadActionInSmartMode {
+      val ktElement = params.elementToSearch.ktElementOrNull() ?: return@runReadActionInSmartMode
+
+      if (ktElement !is KtObjectDeclaration &&
+        !ktElement.isProvideOrInjectDeclaration()) return@runReadActionInSmartMode
+
       val psiManager = PsiManager.getInstance(params.project)
 
       fun search(scope: SearchScope) {
