@@ -189,7 +189,7 @@ class InjectedArgumentsTreeStructure(
     override fun getChildren() = listOf(result.toResultNode(project!!))
 
     override fun update(data: PresentationData) {
-      data.presentableText = value.parameterName.asString()
+      data.presentableText = "${value.parameterName}: ${value.type.renderKotlinLikeToString()}"
       value.parameterDescriptor
         ?.let {
           data.setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0))
