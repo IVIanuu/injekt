@@ -125,6 +125,16 @@ fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: Gl
       constructedClass.kind == ClassKind.OBJECT)
         return constructedClass.findPsiDeclarations(project, resolveScope)
 
+  if (this is ValueParameterDescriptor &&
+      containingDeclaration is DeserializedDescriptor) {
+    return listOfNotNull(
+      containingDeclaration.findPsiDeclarations(project, resolveScope)
+        .safeAs<KtFunction>()
+        ?.valueParameters
+        ?.get(index)
+    )
+  }
+
   val fqName = fqNameSafe
 
   fun Collection<KtNamedDeclaration>.fqNameFilter() = filter { it.fqName == fqName }

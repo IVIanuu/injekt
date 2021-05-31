@@ -95,18 +95,25 @@ class ShowInjectedArgumentsAction : AnAction(
     fun navigateToSelectedElement() {
       popup.cancel()
 
-      val selectedResult = jTree.lastSelectedPathComponent
+      val selectedValue = jTree.lastSelectedPathComponent
         .safeAs<DefaultMutableTreeNode>()
         ?.userObject
-        ?.cast<InjectedArgumentsTreeStructure.ResultNode>()
+        ?.safeAs<AbstractTreeNode<*>>()
         ?.value
-        ?: return
 
-      when (selectedResult) {
+      when (selectedValue) {
+        is InjectableRequest -> {
+          val psiDeclaration = selectedValue.parameterDescriptor
+            ?.findPsiDeclarations(project, call.resolveScope)
+            ?.firstOrNull()
+            ?: return
+          (psiDeclaration.navigationElement as? Navigatable)
+            ?.navigate(true)
+        }
         ResolutionResult.Success.DefaultValue -> TODO()
         is ResolutionResult.Success.WithCandidate.CircularDependency -> TODO()
         is ResolutionResult.Success.WithCandidate.Value -> {
-          val psiDeclaration = selectedResult.candidate
+          val psiDeclaration = selectedValue.candidate
             .safeAs<CallableInjectable>()
             ?.callable
             ?.callable

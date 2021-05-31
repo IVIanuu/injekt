@@ -49,16 +49,19 @@ class InjektReferencesSearcher :
           for (element in scope.scope) {
             element.accept(
               expressionRecursiveVisitor { expression ->
-                if (expression is KtStringTemplateExpression) {
-                  expression.references
-                    .filterIsInstance<ImportElementReference>()
-                    .filter { it.isReferenceTo(ktElement) }
-                    .forEach { processor.process(it) }
-                } else if (isProvideOrInjectDeclaration && expression is KtCallExpression) {
-                  expression.references
-                    .filterIsInstance<InjectReference>()
-                    .filter { it.isReferenceTo(ktElement) }
-                    .forEach { processor.process(it) }
+                when {
+                  expression is KtStringTemplateExpression -> {
+                    expression.references
+                      .filterIsInstance<ImportElementReference>()
+                      .filter { it.isReferenceTo(ktElement) }
+                      .forEach { processor.process(it) }
+                  }
+                  isProvideOrInjectDeclaration && expression is KtCallExpression -> {
+                    expression.references
+                      .filterIsInstance<InjectReference>()
+                      .filter { it.isReferenceTo(ktElement) }
+                      .forEach { processor.process(it) }
+                  }
                 }
               }
             )
