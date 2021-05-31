@@ -24,14 +24,19 @@ import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed class InjectionGraph {
+  abstract val scope: InjectablesScope
+  abstract val callee: CallableRef
+
   data class Success(
-    val scope: InjectablesScope,
+    override val scope: InjectablesScope,
+    override val callee: CallableRef,
     val results: Map<InjectableRequest, ResolutionResult.Success>,
     val usages: Map<UsageKey, List<InjectableRequest>>
   ) : InjectionGraph()
 
   data class Error(
-    val scope: InjectablesScope,
+    override val scope: InjectablesScope,
+    override val callee: CallableRef,
     val failureRequest: InjectableRequest,
     val failure: ResolutionResult.Failure
   ) : InjectionGraph()
@@ -163,6 +168,7 @@ sealed class ResolutionResult {
 data class UsageKey(val type: TypeRef, val outerMostScope: InjectablesScope)
 
 fun InjectablesScope.resolveRequests(
+  callee: CallableRef,
   requests: List<InjectableRequest>,
   lookupLocation: LookupLocation,
   onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
@@ -188,11 +194,12 @@ fun InjectablesScope.resolveRequests(
   val usages = mutableMapOf<UsageKey, MutableList<InjectableRequest>>()
   return@measureTimeMillisWithResult if (failure == null) InjectionGraph.Success(
     this,
+    callee,
     successes,
     usages
   )
     .also { it.postProcess(onEachResult, usages) }
-  else InjectionGraph.Error(this, failureRequest!!, failure)
+  else InjectionGraph.Error(this, callee, failureRequest!!, failure)
 }.also {
   println("resolving requests $requests in $name took ${it.first} ms")
 }.second

@@ -31,6 +31,7 @@ import com.intellij.ui.treeStructure.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.ide.refs.*
+import org.jetbrains.kotlin.idea.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
@@ -61,7 +62,7 @@ class ShowInjectedArgumentsAction : AnAction(
     if (graph !is InjectionGraph.Success) return
 
     val jTree = Tree()
-    val structure = InjectedArgumentsTreeStructure(project, graph.results)
+    val structure = InjectedArgumentsTreeStructure(project, graph.callee, graph.results)
 
     val tmpDisposable = Disposable {
       jTree
@@ -86,6 +87,7 @@ class ShowInjectedArgumentsAction : AnAction(
       .createComponentPopupBuilder(panel, jTree)
       .setRequestFocus(true)
       .setResizable(true)
+      .setMovable(true)
       .setTitle(title)
       .setMinSize(Dimension(minSize.width + 700, minSize.height))
       .createPopup()
@@ -141,15 +143,13 @@ class ShowInjectedArgumentsAction : AnAction(
 
 class InjectedArgumentsTreeStructure(
   val project: Project,
+  val callee: CallableRef,
   val results: Map<InjectableRequest, ResolutionResult.Success>
 ): AbstractTreeStructure() {
   override fun getRootElement(): Any = RootNode()
 
-  override fun getChildElements(value: Any): Array<Any> = when (value) {
-    is RootNode -> value.children.toTypedArray()
-    is ResultNode -> value.children.toTypedArray()
-    else -> throw AssertionError()
-  }
+  override fun getChildElements(value: Any): Array<Any> =
+    value.cast<AbstractTreeNode<*>>().children.toTypedArray()
 
   override fun createDescriptor(value: Any, descriptor: NodeDescriptor<*>?): NodeDescriptor<*> =
     value.cast()
@@ -163,9 +163,27 @@ class InjectedArgumentsTreeStructure(
 
   private inner class RootNode : AbstractTreeNode<Any>(project, Any()) {
     override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
-      results.mapTo(mutableListOf()) { ResultNode(project!!, it.value) }
+      results.mapTo(mutableListOf()) { RequestNode(project!!, it.key, it.value) }
 
     override fun update(data: PresentationData) {
+      data.presentableText = callee.callable.name.asString()
+      data.setIcon(KotlinDescriptorIconProvider.getIcon(callee.callable, null, 0))
+    }
+  }
+
+  class RequestNode(
+    project: Project,
+    request: InjectableRequest,
+    private val result: ResolutionResult.Success
+  ) : AbstractTreeNode<InjectableRequest>(project, request) {
+    override fun getChildren() = listOf(ResultNode(project!!, result))
+
+    override fun update(data: PresentationData) {
+      data.presentableText = value.parameterName.asString()
+      value.parameterDescriptor
+        ?.let {
+          data.setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0))
+        }
     }
   }
 
@@ -176,7 +194,7 @@ class InjectedArgumentsTreeStructure(
     override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
       when(val value = value) {
         is ResolutionResult.Success.WithCandidate.Value -> value.dependencyResults
-          .mapTo(mutableListOf()) { ResultNode(project!!, it.value) }
+          .mapTo(mutableListOf()) { RequestNode(project!!, it.key, it.value) }
         else -> mutableListOf()
       }
 
@@ -186,6 +204,14 @@ class InjectedArgumentsTreeStructure(
         is ResolutionResult.Success.WithCandidate ->
           value.candidate.callableFqName.asString()
       }
+      value.safeAs<ResolutionResult.Success.WithCandidate>()
+        ?.candidate
+        ?.safeAs<CallableInjectable>()
+        ?.callable
+        ?.callable
+        ?.let {
+          data.setIcon(KotlinDescriptorIconProvider.getIcon(it, null, 0))
+        }
     }
   }
 }

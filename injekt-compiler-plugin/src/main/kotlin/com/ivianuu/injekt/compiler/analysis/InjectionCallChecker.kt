@@ -53,26 +53,26 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
       .mapValues { it.value.toTypeRef(this.context, context.trace) }
       .filter { it.key != it.value.classifier }
 
-    val callable = resultingDescriptor
+    val callee = resultingDescriptor
       .toCallableRef(this.context, context.trace)
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.index }
 
-    val requests = callable.callable.valueParameters
+    val requests = callee.callable.valueParameters
       .filter {
         valueArgumentsByIndex[it.index] is DefaultValueArgument &&
             it.isInject(this.context, context.trace)
       }
-      .map { it.toInjectableRequest(callable) }
+      .map { it.toInjectableRequest(callee) }
       .toList()
 
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(this.context, context.trace, callExpression)
 
-    val graph = scope.resolveRequests(requests, callExpression.lookupLocation) { result ->
+    val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { result ->
       if (result.candidate is CallableInjectable) {
         context.trace.record(
           InjektWritableSlices.USED_INJECTABLE,

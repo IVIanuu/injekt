@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.asJava.classes.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.idea.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.findUsages.*
 import org.jetbrains.kotlin.idea.quickfix.*
@@ -101,7 +102,8 @@ private fun importInjectableQuickFix(
 
         override fun hasSubstep(selectedValue: CallableRef?) = false
         override fun getTextFor(value: CallableRef) = value.callable.fqNameSafe.asString()
-        override fun getIconFor(value: CallableRef) = null
+        override fun getIconFor(value: CallableRef) =
+          KotlinDescriptorIconProvider.getIcon(value.callable, null, 0)
       }
     ) {
       override fun getListElementRenderer(): ListCellRenderer<CallableRef> {
