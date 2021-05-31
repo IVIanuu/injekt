@@ -264,6 +264,7 @@ class InjectedArgumentsTreeStructure(
 
     override fun update(data: PresentationData) {
       data.presentableText = "No candidates found"
+      data.setIcon(AllIcons.General.Error)
     }
   }
 
