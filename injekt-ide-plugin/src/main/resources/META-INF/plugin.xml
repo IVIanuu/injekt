@@ -33,6 +33,9 @@
     <actions>
         <action id="Injekt.ShowInjectedArguments" class="com.ivianuu.injekt.ide.showinjectedarguments.ShowInjectedArgumentsAction">
         </action>
+        <action id="Injekt.ShowInjectionHints" class="com.ivianuu.injekt.ide.hints.ToggleInjectionHintsAction">
+            <add-to-group group-id="CodeEditorViewGroup" anchor="last"/>
+        </action>
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -55,16 +58,15 @@
             order="first"
             implementationClass="com.ivianuu.injekt.ide.refs.ImportCompletionConfidence"/>
 
-        <codeInsight.lineMarkerProvider
-            language="kotlin"
-            implementationClass="com.ivianuu.injekt.ide.linemarker.InjektLineMarkerProvider" />
-
         <usageTypeProvider implementation="com.ivianuu.injekt.ide.usages.InjektUsageTypeProvider"/>
 
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
 
         <lang.inspectionSuppressor language="kotlin"
             implementationClass="com.ivianuu.injekt.ide.suppression.InjektInspectionSuppressor" />
+
+        <highlightingPassFactory
+            implementation="com.ivianuu.injekt.ide.hints.InjectionHintsTextEditorHighlightingPassFactory"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
