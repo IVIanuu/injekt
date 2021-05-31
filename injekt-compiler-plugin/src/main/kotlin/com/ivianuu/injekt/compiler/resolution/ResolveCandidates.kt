@@ -335,9 +335,10 @@ private fun InjectablesScope.resolveCandidates(
             .callable
             .callable
             .uniqueKey(context)
+        }?.let {
+          it.singleOrNull()
+            ?: ResolutionResult.Failure.CandidateAmbiguity(request, it.cast())
         }
-        .singleOrNull()
-      ?: ResolutionResult.Failure.CandidateAmbiguity(request, successes.cast())
   } else failure!!
 }
 
