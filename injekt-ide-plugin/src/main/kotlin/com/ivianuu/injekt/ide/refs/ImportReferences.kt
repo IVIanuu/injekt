@@ -56,11 +56,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           context: ProcessingContext
         ): Array<PsiReference> {
           element as KtStringTemplateExpression
-          if (
-            element.getParentOfType<KtAnnotationEntry>(false)
-              ?.takeIf {
-                it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
-              } == null) return emptyArray()
+          if (!element.isProviderImport()) return emptyArray()
 
           val importedFqName = element.text
             .removeSurrounding("\"")
@@ -119,6 +115,9 @@ class ImportReferenceContributor : PsiReferenceContributor() {
     )
   }
 }
+
+fun KtStringTemplateExpression.isProviderImport() = getParentOfType<KtAnnotationEntry>(false)
+  ?.takeIf { it.typeReference?.text == InjektFqNames.Providers.shortName().asString() } != null
 
 class ImportCompletionExtension : KotlinCompletionExtension() {
   override fun perform(parameters: CompletionParameters, result: CompletionResultSet): Boolean {
