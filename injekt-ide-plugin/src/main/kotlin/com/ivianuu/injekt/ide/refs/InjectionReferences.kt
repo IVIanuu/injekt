@@ -71,15 +71,17 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
           (candidate.callable.callable.findPackage() !is BuiltInsPackageFragment)) {
           references += InjectReference(
             call,
-            candidate.callable.callable.findPsiDeclarations(call.project, call.resolveScope)
-              .firstOrNull()
-              ?.safeAs<KtDeclaration>()
-              ?: candidate.callable.callable.safeAs<ReceiverParameterDescriptor>()
-                ?.containingDeclaration
-                ?.findPsiDeclarations(call.project, call.resolveScope)
-                ?.firstOrNull()
+            {
+              candidate.callable.callable.findPsiDeclarations(call.project, call.resolveScope)
+                .firstOrNull()
                 ?.safeAs<KtDeclaration>()
-              ?: error("Wtf ${candidate.callable.callable}"),
+                ?: candidate.callable.callable.safeAs<ReceiverParameterDescriptor>()
+                  ?.containingDeclaration
+                  ?.findPsiDeclarations(call.project, call.resolveScope)
+                  ?.firstOrNull()
+                  ?.safeAs<KtDeclaration>()
+                ?: error("Wtf ${candidate.callable.callable}")
+            },
             candidate.callable.callable.name
           )
         }
@@ -133,9 +135,11 @@ class InjektReferencesSearcher :
 
 class InjectReference(
   expression: KtCallExpression,
-  private val target: KtDeclaration,
+  computeTarget: () -> KtDeclaration,
   private val name: Name
 ) : PsiReferenceBase<KtCallExpression>(expression, expression.textRange), KtReference, KtDescriptorsBasedReference {
+  private val target by lazy(computeTarget)
+
   override fun multiResolve(p0: Boolean): Array<ResolveResult> =
     arrayOf(PsiElementResolveResult(target, true))
 
@@ -155,6 +159,10 @@ class InjectReference(
 }
 
 fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
+  if (this is ConstructorDescriptor &&
+      constructedClass.kind == ClassKind.OBJECT)
+        return constructedClass.findPsiDeclarations(project, resolveScope)
+
   val fqName = fqNameSafe
 
   fun Collection<KtNamedDeclaration>.fqNameFilter() = filter { it.fqName == fqName }

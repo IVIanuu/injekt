@@ -29,6 +29,7 @@ import com.intellij.patterns.*
 import com.intellij.psi.*
 import com.intellij.psi.search.*
 import com.intellij.psi.search.searches.*
+import com.intellij.psi.util.*
 import com.intellij.util.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.ide.*
@@ -83,30 +84,26 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 
             val finalFqName = FqName(fqName)
 
-            val packageDescriptor = module.getPackage(finalFqName)
-            if (packageDescriptor.fragments.isNotEmpty()) {
-              refs += ImportElementReference(
-                element,
-                range,
-                psiFacade.findPackage(finalFqName.asString(), element.resolveScope),
-                finalFqName
-              )
-              return
-            }
+            refs += ImportElementReference(
+              element,
+              range,
+              lazy@ {
+                val packageDescriptor = module.getPackage(finalFqName)
+                if (packageDescriptor.fragments.isNotEmpty()) {
+                  return@lazy psiFacade.findPackage(finalFqName.asString(), element.resolveScope)
+                }
 
-            injektContext.memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE)
-              ?.getContributedDescriptors { it == finalFqName.shortName() }
-              ?.forEach { declaration ->
-                refs += ImportElementReference(
-                  element,
-                  range,
-                  declaration.findPsiDeclarations(
+                injektContext.memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE)
+                  ?.getContributedDescriptors { it == finalFqName.shortName() }
+                  ?.firstOrNull()
+                  ?.findPsiDeclarations(
                     element.project,
                     element.resolveScope
-                  ).first(),
-                  finalFqName
-                )
-              } ?: return
+                  )
+                  ?.first()
+              },
+              finalFqName
+            )
 
             resolveFqName(
               finalFqName.parent().asString(),
@@ -225,13 +222,14 @@ class ImportCompletionConfidence : CompletionConfidence() {
 class ImportElementReference(
   element: KtStringTemplateExpression,
   rangeInElement: TextRange,
-  val target: PsiElement,
+  computeTarget: () -> PsiElement?,
   val fqName: FqName
 ) : PsiReferenceBase<KtStringTemplateExpression>(
   element,
   rangeInElement
 ) {
-  override fun resolve(): PsiElement = target
+  private val target by lazy(computeTarget)
+  override fun resolve(): PsiElement? = target
 }
 
 class ImportReferencesSearcher :

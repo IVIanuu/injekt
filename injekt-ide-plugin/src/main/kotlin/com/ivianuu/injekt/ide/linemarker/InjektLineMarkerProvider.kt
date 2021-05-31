@@ -87,4 +87,3 @@ class InjektLineMarkerProvider : LineMarkerProvider {
 }
 
 private val InjectionCallIcon = IconLoader.getIcon("icons/needle.svg")
-
