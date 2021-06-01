@@ -27,6 +27,7 @@ import com.intellij.psi.search.*
 import com.intellij.psi.search.searches.*
 import com.intellij.util.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.ide.*
 import org.jetbrains.kotlin.analyzer.*
@@ -126,9 +127,11 @@ fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: Gl
         return constructedClass.findPsiDeclarations(project, resolveScope)
 
   if (this is ValueParameterDescriptor &&
-      containingDeclaration is DeserializedDescriptor) {
+    (containingDeclaration is DeserializedDescriptor ||
+        containingDeclaration is InjectFunctionDescriptor)) {
     return listOfNotNull(
       containingDeclaration.findPsiDeclarations(project, resolveScope)
+        .firstOrNull()
         .safeAs<KtFunction>()
         ?.valueParameters
         ?.get(index)
@@ -168,6 +171,8 @@ fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: Gl
         .asString(), project, resolveScope].fqNameFilter()
     is LazyClassReceiverParameterDescriptor ->
       containingDeclaration.findPsiDeclarations(project, resolveScope)
+    is InjectFunctionDescriptor ->
+      underlyingDescriptor.findPsiDeclarations(project, resolveScope)
     is DeclarationDescriptorWithSource -> listOfNotNull(source.getPsi())
     else -> emptyList()
   }

@@ -126,6 +126,16 @@ class ShowInjectedArgumentsAction : AnAction(
             ?.navigate(true)
           popup.cancel()
         }
+        is CallableRef -> {
+          val psiDeclaration = selectedValue
+            .callable
+            .findPsiDeclarations(project, call.resolveScope)
+            .firstOrNull()
+            ?: return
+          (psiDeclaration.navigationElement as? Navigatable)
+            ?.navigate(true)
+          popup.cancel()
+        }
         ResolutionResult.Success.DefaultValue -> TODO()
         is ResolutionResult.Success.WithCandidate ->
           navigateToInjectable(selectedValue.candidate)
@@ -178,7 +188,7 @@ class InjectedArgumentsTreeStructure(
   override fun commit() {
   }
 
-  private inner class RootNode : AbstractTreeNode<Any>(project, Any()) {
+  private inner class RootNode : AbstractTreeNode<Any>(project, callee) {
     override fun getChildren(): MutableCollection<out AbstractTreeNode<*>> =
       results.mapTo(mutableListOf()) { it.key.toRequestNode(project!!, it.value) }
 
