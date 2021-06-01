@@ -83,7 +83,6 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
                   ?.findPsiDeclarations(call.project, call.resolveScope)
                   ?.firstOrNull()
                   ?.safeAs<KtDeclaration>()
-                ?: error("Wtf ${candidate.callable.callable}")
             },
             candidate.callable.callable.name
           )
@@ -96,7 +95,7 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
 
 class InjectReference(
   expression: KtCallExpression,
-  computeTarget: () -> KtDeclaration,
+  computeTarget: () -> KtDeclaration?,
   private val name: Name
 ) : PsiReferenceBase<KtCallExpression>(
   expression,
@@ -105,10 +104,10 @@ class InjectReference(
   private val target by lazy(computeTarget)
 
   override fun multiResolve(p0: Boolean): Array<ResolveResult> =
-    arrayOf(PsiElementResolveResult(target, true))
+    target?.let { arrayOf(PsiElementResolveResult(it, true)) } ?: emptyArray()
 
   override fun getTargetDescriptors(context: BindingContext): Collection<DeclarationDescriptor> =
-    listOfNotNull(target.descriptor(context))
+    listOfNotNull(target?.descriptor(context))
 
   override val resolver
     get() = KotlinDescriptorsBasedReferenceResolver
@@ -116,7 +115,7 @@ class InjectReference(
   override val resolvesByNames: Collection<Name>
     get() = listOf(name)
 
-  override fun resolve(): PsiElement = target
+  override fun resolve(): PsiElement? = target
 
   override fun isReferenceTo(element: PsiElement): Boolean =
     super<PsiReferenceBase>.isReferenceTo(element)
@@ -133,8 +132,8 @@ fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: Gl
     return underlyingDescriptor.findPsiDeclarations(project, resolveScope)
 
   if (this is ConstructorDescriptor &&
-      constructedClass.kind == ClassKind.OBJECT)
-        return constructedClass.findPsiDeclarations(project, resolveScope)
+    constructedClass.kind == ClassKind.OBJECT)
+      return constructedClass.findPsiDeclarations(project, resolveScope)
 
   if (this is ValueParameterDescriptor &&
     (containingDeclaration is DeserializedDescriptor ||
