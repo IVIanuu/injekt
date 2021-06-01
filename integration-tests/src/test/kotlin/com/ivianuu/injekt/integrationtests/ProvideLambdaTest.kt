@@ -45,11 +45,13 @@ class ProvideLambdaTest {
   @Test fun testCanRequestProvideLambda() = singleAndMultiCodegen(
     """
       typealias MyAlias = @Composable () -> Unit
-      @Provide fun myAlias(): MyAlias = {}
+      @Provide val myAlias: MyAlias = {}
       @Provide class MyComposeView(val content: @Composable () -> Unit)
     """,
     """
-      fun invoke() = inject<(@Provide @Composable () -> Unit) -> MyComposeView>() 
+      fun invoke() = inject<(@Provide @Composable () -> Unit) -> MyComposeView>()
     """
-  )
+  ) {
+    irShouldNotContain("content = <get-myAlias>()")
+  }
 }
