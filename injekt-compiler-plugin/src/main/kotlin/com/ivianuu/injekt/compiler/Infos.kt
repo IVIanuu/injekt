@@ -31,6 +31,8 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
+import org.jetbrains.kotlin.resolve.source.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 /**
@@ -41,7 +43,8 @@ data class CallableInfo(
   val type: TypeRef,
   val parameterTypes: Map<Int, TypeRef> = emptyMap(),
   val injectParameters: Set<Int> = emptySet(),
-  val defaultOnAllErrorsParameters: Set<Int> = emptySet()
+  val defaultOnAllErrorsParameters: Set<Int> = emptySet(),
+  val injectTypes: List<TypeRef> = emptyList()
 ) {
   companion object {
     val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
@@ -101,19 +104,39 @@ fun CallableDescriptor.callableInfo(
     .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
     .mapTo(mutableSetOf()) { it.injektIndex() }
 
+  val injectTypes = annotations
+    .filter { it.isInjectArgsAnnotation() }
+    .flatMap { it.type.arguments }
+    .map { it.type.toTypeRef(context, trace) }
+    .distinct()
+
   val info = CallableInfo(
     type = type,
     parameterTypes = parameterTypes,
     injectParameters = injectParameters,
-    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters,
+    injectTypes = injectTypes
   )
 
   trace.record(InjektWritableSlices.CALLABLE_INFO, this, info)
+
+  removeAnnotations(
+    annotations
+      .filter { it.isInjectArgsAnnotation() }
+  )
 
   persistInfoIfNeeded(info, context, trace)
 
   return info
 }
+
+fun AnnotationDescriptor.isInjectArgsAnnotation() = type.isError &&
+    type.arguments.isNotEmpty() &&
+    source
+      .getPsi()
+      ?.safeAs<KtAnnotationEntry>()
+      ?.shortName
+      ?.asString() == "Inject"
 
 private fun CallableDescriptor.persistInfoIfNeeded(
   info: CallableInfo,
@@ -198,7 +221,8 @@ class ClassifierInfo(
   val lazySuperTypes: Lazy<List<TypeRef>> = unsafeLazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false,
-  val isSingletonInjectable: Boolean = false
+  val isSingletonInjectable: Boolean = false,
+  val injectTypes: List<TypeRef> = emptyList()
 ) {
   val superTypes by lazySuperTypes
 }
@@ -282,17 +306,29 @@ fun ClassifierDescriptor.classifierInfo(
               it.hasBackingField(trace.bindingContext))
     }
 
+  val injectTypes = annotations
+    .filter { it.isInjectArgsAnnotation() }
+    .flatMap { it.type.arguments }
+    .map { it.type.toTypeRef(context, trace) }
+    .distinct()
+
   val info = ClassifierInfo(
     qualifiers = qualifiers,
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
-    isSingletonInjectable = isSingletonInjectable
+    isSingletonInjectable = isSingletonInjectable,
+    injectTypes = injectTypes
   )
 
   trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
 
   persistInfoIfNeeded(info, context)
+
+  removeAnnotations(
+    annotations
+      .filter { it.isInjectArgsAnnotation() }
+  )
 
   return info
 }
@@ -432,6 +468,29 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
     ) { newAnnotations }
     is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
+    else -> {
+      //throw AssertionError("Cannot add annotation to $this $javaClass")
+    }
+  }
+}
+
+fun Annotated.removeAnnotations(annotationsToRemove: List<AnnotationDescriptor>) {
+  if (annotationsToRemove.isEmpty()) return
+  val newAnnotations = Annotations.create(
+    annotationsToRemove
+      .filter { it !in annotationsToRemove }
+  )
+  when (this) {
+    is AnnotatedImpl -> updatePrivateFinalField<Annotations>(
+      AnnotatedImpl::class,
+      "annotations"
+    ) { newAnnotations }
+    is LazyClassDescriptor -> updatePrivateFinalField<Annotations>(
+      LazyClassDescriptor::class,
+      "annotations"
+    ) { newAnnotations }
+    is InjectFunctionDescriptor -> underlyingDescriptor.removeAnnotations(annotationsToRemove)
+    is FunctionImportedFromObject -> callableFromObject.removeAnnotations(annotationsToRemove)
     else -> {
       //throw AssertionError("Cannot add annotation to $this $javaClass")
     }

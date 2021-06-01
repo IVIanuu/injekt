@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
@@ -59,6 +60,10 @@ object InjektWritableSlices {
   val CLASSIFIER_FOR_KEY =
     BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
   val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<TypeRef, List<CallableRef>>(RewritePolicy.DO_NOTHING)
+  val INJECT_TYPE_PARAMETERS =
+    BasicWritableSlice<Pair<CallableRef, TypeRef>, InjectTypeValueParameter>(RewritePolicy.DO_NOTHING)
+  val INJECT_TYPE_PROPERTY =
+    BasicWritableSlice<Pair<ClassifierRef, TypeRef>, InjectTypeProperty>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)

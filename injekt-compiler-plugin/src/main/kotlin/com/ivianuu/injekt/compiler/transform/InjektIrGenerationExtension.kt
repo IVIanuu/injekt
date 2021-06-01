@@ -28,7 +28,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     val trace = DelegatingBindingTrace(
       pluginContext.bindingContext, "IR trace"
     )
-    moduleFragment.transform(InjectCallTransformer(context, pluginContext), null)
+    val typeValueParametersTransformer =
+      InjectTypeValueParametersTransformer(context, trace, pluginContext)
+    moduleFragment.transform(typeValueParametersTransformer, null)
+    moduleFragment.transform(
+      InjectCallTransformer(context, pluginContext, typeValueParametersTransformer), null)
     moduleFragment.transform(SingletonTransformer(context, trace, pluginContext), null)
     moduleFragment.transform(IncrementalFixTransformer(context, trace, pluginContext), null)
     moduleFragment.patchDeclarationParents()

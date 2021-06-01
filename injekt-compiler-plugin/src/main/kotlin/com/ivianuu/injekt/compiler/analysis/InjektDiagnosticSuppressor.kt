@@ -33,6 +33,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
+    if (diagnostic.factory == Errors.WRONG_NUMBER_OF_TYPE_ARGUMENTS)
+      return true
+
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
     )

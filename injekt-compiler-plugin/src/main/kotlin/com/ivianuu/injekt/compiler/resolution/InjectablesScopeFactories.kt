@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
@@ -305,8 +306,16 @@ private fun FunctionParameterInjectablesScopes(
   until: ValueParameterDescriptor? = null
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
-  return function.allParameters
-    .asSequence()
+  var baseIndex = 0
+  if (function.dispatchReceiverParameter != null) baseIndex--
+  if (function.extensionReceiverParameter != null) baseIndex--
+  val injectTypeValueParameters = function.callableInfo(context, trace)
+    .injectTypes
+    .mapIndexed { index, injectType ->
+      InjectTypeValueParameter(injectType, index, function, baseIndex - index)
+    }
+
+  return (injectTypeValueParameters + function.allParameters)
     .filter {
       (maxIndex == null || it.injektIndex() < maxIndex) &&
           (it.isProvide(context, trace) || it === function.extensionReceiverParameter)

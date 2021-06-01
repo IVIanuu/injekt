@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
@@ -47,7 +48,8 @@ import kotlin.collections.set
 
 class InjectCallTransformer(
   private val context: InjektContext,
-  private val pluginContext: IrPluginContext
+  private val pluginContext: IrPluginContext,
+  private val typeValueParametersTransformer: InjectTypeValueParametersTransformer
 ) : IrElementTransformerVoid() {
   private inner class GraphContext(val graph: InjectionGraph.Success) {
     val statements = mutableListOf<IrStatement>()
@@ -116,8 +118,7 @@ class InjectCallTransformer(
     fun findScopeContext(scopeToFind: InjectablesScope): ScopeContext {
       val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
       if (finalScope == scope) return this@ScopeContext
-      return parent?.findScopeContext(finalScope)
-        ?: error("wtf")
+      return parent?.findScopeContext(finalScope) ?: error("wtf")
     }
 
     fun expressionFor(result: ResolutionResult.Success.WithCandidate): IrExpression {
@@ -605,7 +606,13 @@ class InjectCallTransformer(
               function.allParameters
                 .filter { it != function.dispatchReceiverParameter }
             }
-            .single { it.index == descriptor.index() }
+            .single {
+              if (descriptor is InjectTypeValueParameter) {
+                it.name.asString() == "\$injectType${descriptor.typeIndex}"
+              } else {
+                it.index == descriptor.index()
+              }
+            }
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
@@ -654,9 +661,11 @@ class InjectCallTransformer(
         it.descriptor.uniqueKey(context) == uniqueKey(context)
       }
     }
-    return pluginContext.referenceFunctions(fqNameSafe)
+    val rawFunction = pluginContext.referenceFunctions(fqNameSafe)
       .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
       .owner
+    return typeValueParametersTransformer.transformedFunctions[rawFunction]
+      ?: rawFunction
   }
 
   private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()

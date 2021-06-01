@@ -60,11 +60,29 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.index }
 
-    val requests = callee.callable.valueParameters
+    var baseIndex = 0
+    if (callee.dispatchReceiverParameter != null) baseIndex--
+    if (callee.extensionReceiverParameter != null) baseIndex--
+    val injectTypeValueParameters = function.callableInfo(context, trace)
+      .injectTypes
+      .mapIndexed { index, injectType ->
+        InjectTypeValueParameter(injectType, index, function, baseIndex - index)
+      }
+
+    val requests = (callee.callable.callableInfo(this.context, context.trace)
+      .injectTypes
+      .mapIndexed { index, injectType ->
+        InjectTypeValueParameter(
+          injectType.substitute(substitutionMap),
+          index,
+          callee.callable,
+          callee.ca
+        )
+      } + callee.callable.valueParameters
       .filter {
         valueArgumentsByIndex[it.index] is DefaultValueArgument &&
             it.isInject(this.context, context.trace)
-      }
+      })
       .map { it.toInjectableRequest(callee) }
       .toList()
 

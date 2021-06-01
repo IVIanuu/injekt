@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.backend.common.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.lower.*
@@ -237,4 +238,124 @@ fun IrBuilderWithScope.irLambda(
     function = lambda,
     origin = IrStatementOrigin.LAMBDA
   )
+}
+
+fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor =
+  when (descriptor) {
+    is PropertyGetterDescriptor ->
+      WrappedPropertyGetterDescriptor()
+    is PropertySetterDescriptor ->
+      WrappedPropertySetterDescriptor()
+    is DescriptorWithContainerSource ->
+      WrappedFunctionDescriptorWithContainerSource()
+    else -> object : WrappedSimpleFunctionDescriptor() {
+      override fun getSource(): SourceElement = descriptor.source
+    }
+  }
+
+fun IrBuilderWithScope.jvmNameAnnotation(
+  name: String,
+  pluginContext: IrPluginContext
+): IrConstructorCall {
+  val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
+  return irCall(jvmName.constructors.single()).apply {
+    putValueArgument(0, irString(name))
+  }
+}
+
+fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
+  val descriptor = descriptor
+  val newDescriptor = wrapDescriptor(descriptor)
+  return IrFunctionImpl(
+    startOffset,
+    endOffset,
+    origin,
+    IrSimpleFunctionSymbolImpl(newDescriptor),
+    name,
+    visibility,
+    descriptor.modality,
+    returnType,
+    isInline,
+    isExternal,
+    descriptor.isTailrec,
+    isSuspend,
+    descriptor.isOperator,
+    descriptor.isInfix,
+    isExpect,
+    isFakeOverride,
+    containerSource
+  ).also { fn ->
+    newDescriptor.bind(fn)
+    if (this is IrSimpleFunction) {
+      val propertySymbol = correspondingPropertySymbol
+      if (propertySymbol != null) {
+        fn.correspondingPropertySymbol = propertySymbol
+        if (propertySymbol.owner.getter == this) {
+          propertySymbol.owner.getter = fn
+        }
+        if (propertySymbol.owner.setter == this) {
+          propertySymbol.owner.setter = this
+        }
+      }
+    }
+    fn.parent = parent
+    fn.typeParameters = this.typeParameters.map {
+      it.parent = fn
+      it
+    }
+
+    fn.dispatchReceiverParameter = dispatchReceiverParameter?.copyTo(fn)
+    fn.extensionReceiverParameter = extensionReceiverParameter?.copyTo(fn)
+    fn.valueParameters = valueParameters.map { p ->
+      p.copyTo(fn, name = dexSafeName(p.name))
+    }
+    fn.annotations = annotations.map { a -> a }
+    fn.metadata = metadata
+    fn.body = body?.deepCopyWithSymbols(this)
+    val parameterMapping = allParameters
+      .map { it.symbol }
+      .toMap(fn.allParameters)
+    fn.transformChildrenVoid(object : IrElementTransformerVoid() {
+      override fun visitGetValue(expression: IrGetValue): IrExpression {
+        return parameterMapping[expression.symbol]
+          ?.let { DeclarationIrBuilder(pluginContext, fn.symbol).irGet(it) }
+          ?: super.visitGetValue(expression)
+      }
+
+      override fun visitReturn(expression: IrReturn): IrExpression {
+        if (expression.returnTargetSymbol == symbol) {
+          return super.visitReturn(
+            IrReturnImpl(
+              expression.startOffset,
+              expression.endOffset,
+              expression.type,
+              fn.symbol,
+              expression.value
+            )
+          )
+        }
+        return super.visitReturn(expression)
+      }
+    })
+  }
+}
+
+private fun dexSafeName(name: Name): Name = if (name.isSpecial && name.asString().contains(' ')) {
+  val sanitized = name
+    .asString()
+    .replace(' ', '$')
+    .replace('<', '$')
+    .replace('>', '$')
+  Name.identifier(sanitized)
+} else name
+
+fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
+  for (scope in reversed()) {
+    when (val element = scope.irElement) {
+      is IrFunction ->
+        element.dispatchReceiverParameter?.let { if (it.type.classOrNull == declaration.symbol) return it }
+      is IrClass -> if (element == declaration) return element.thisReceiver
+    }
+  }
+  return null
 }
