@@ -74,7 +74,8 @@ class DivergenceTest {
     invokeSingleFile()
   }
 
-  @Test fun testDoubleProviderBreaksCircularDependency() = singleAndMultiCodegen(
+  // todo @Test
+  fun testDoubleProviderBreaksCircularDependency() = singleAndMultiCodegen(
     """
       @Provide class A(b: () -> B)
       @Provide class B(a: () -> A)
