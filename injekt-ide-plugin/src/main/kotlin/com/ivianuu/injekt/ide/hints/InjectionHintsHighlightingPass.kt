@@ -41,12 +41,12 @@ class InjectionHintsHighlightingPass(
   override fun doCollectInformation(progress: ProgressIndicator) {
     if (!injectionHintsEnabled) return
     hints.clear()
-    file.accept(callExpressionRecursiveVisitor { call ->
+    file.accept(expressionRecursiveVisitor { call ->
       val bindingContext = call.getResolutionFacade().analyze(call)
       val graph = bindingContext[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
-        ?: return@callExpressionRecursiveVisitor
+        ?: return@expressionRecursiveVisitor
       if (graph !is InjectionGraph.Success)
-        return@callExpressionRecursiveVisitor
+        return@expressionRecursiveVisitor
       hints += InjectionCallHint(call, graph.results.toList())
     })
   }
@@ -67,23 +67,25 @@ class InjectionHintsHighlightingPass(
 }
 
 class InjectionCallHint(
-  val call: KtCallExpression,
+  val expression: KtExpression,
   val results: List<Pair<InjectableRequest, ResolutionResult.Success>>
 ) {
   val elements: List<Element> = run {
     val elements = mutableListOf<Element>()
-    var currentOffset = call.valueArgumentList?.rightParenthesis?.endOffset?.let { it - 1 }
-      ?: call.lambdaArguments.firstOrNull()
+    var currentOffset = expression.safeAs<KtCallExpression>()
+      ?.valueArgumentList?.rightParenthesis?.endOffset?.let { it - 1 }
+      ?: expression.safeAs<KtCallExpression>()?.lambdaArguments?.firstOrNull()
         ?.startOffset
         ?.let { it - 1 }
       ?: return@run emptyList()
     results.forEachIndexed { index, (request, result) ->
       val text = buildString {
-        if (index == 0 && call.valueArgumentList?.leftParenthesis == null) {
+        if (index == 0 &&
+          expression.safeAs<KtCallExpression>()?.valueArgumentList?.leftParenthesis == null) {
           append("(")
         }
 
-        if (index == 0 && call.valueArgumentList?.arguments
+        if (index == 0 && expression.safeAs<KtCallExpression>()?.valueArgumentList?.arguments
             ?.isNotEmpty() == true) append(", ")
 
         append("${request.parameterName} = " +
@@ -92,7 +94,8 @@ class InjectionCallHint(
 
         if (index != results.lastIndex) append(", ")
 
-        if (index == results.lastIndex && call.valueArgumentList?.rightParenthesis == null) {
+        if (index == results.lastIndex &&
+          expression.safeAs<KtCallExpression>()?.valueArgumentList?.rightParenthesis == null) {
           append(")")
         }
       }

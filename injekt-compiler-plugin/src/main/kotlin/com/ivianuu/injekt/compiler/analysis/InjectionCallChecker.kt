@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -33,8 +32,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
-    val callExpression = resolvedCall.call.callElement as? KtCallExpression
-      ?: return
+    val callExpression = resolvedCall.call.callElement
 
     val file = try {
       callExpression.containingKtFile

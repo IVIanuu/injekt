@@ -61,9 +61,9 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
   override fun registerReferenceProviders(registrar: KotlinPsiReferenceRegistrar) {
     KotlinReferenceContributor()
       .registerReferenceProviders(registrar)
-    registrar.registerMultiProvider<KtCallExpression> { call ->
-      val context = call.getResolutionFacade().analyze(call)
-      val graph = context[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
+    registrar.registerMultiProvider<KtExpression> { expression ->
+      val context = expression.getResolutionFacade().analyze(expression)
+      val graph = context[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, expression]
         ?: return@registerMultiProvider emptyArray()
       if (graph !is InjectionGraph.Success)
         return@registerMultiProvider emptyArray()
@@ -72,15 +72,13 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
         val candidate = value.candidate
         if (candidate is CallableInjectable &&
           (candidate.callable.callable.findPackage() !is BuiltInsPackageFragment)) {
-          references += InjectReference(
-            call,
-            {
-              candidate.callable.callable.findPsiDeclarations(call.project, call.resolveScope)
+          references += InjectReference(expression, {
+              candidate.callable.callable.findPsiDeclarations(expression.project, expression.resolveScope)
                 .firstOrNull()
                 ?.safeAs<KtDeclaration>()
                 ?: candidate.callable.callable.safeAs<ReceiverParameterDescriptor>()
                   ?.containingDeclaration
-                  ?.findPsiDeclarations(call.project, call.resolveScope)
+                  ?.findPsiDeclarations(expression.project, expression.resolveScope)
                   ?.firstOrNull()
                   ?.safeAs<KtDeclaration>()
             },
@@ -94,10 +92,10 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
 }
 
 class InjectReference(
-  expression: KtCallExpression,
+  expression: KtExpression,
   computeTarget: () -> KtDeclaration?,
   private val name: Name
-) : PsiReferenceBase<KtCallExpression>(
+) : PsiReferenceBase<KtExpression>(
   expression,
   TextRange.from(0, expression.text.length)
 ), KtReference, KtDescriptorsBasedReference {

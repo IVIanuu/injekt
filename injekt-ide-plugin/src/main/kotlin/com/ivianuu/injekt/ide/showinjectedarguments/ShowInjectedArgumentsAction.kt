@@ -52,8 +52,11 @@ class ShowInjectedArgumentsAction : AnAction(
 
     val file = PsiUtilBase.getPsiFileInEditor(editor, project) ?: return
 
-    val call = file.findElementAt(editor.caretModel.offset)
-      ?.getParentOfType<KtCallExpression>(false) ?: return
+    val selectedElement = file.findElementAt(editor.caretModel.offset)
+
+    val call = selectedElement?.getParentOfTypes2<KtCallExpression, KtBinaryExpression>()
+      ?.cast<KtElement>()
+      ?: return
 
     val bindingContext = call.getResolutionFacade().analyze(call)
 
