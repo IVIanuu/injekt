@@ -60,6 +60,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 
           val importedFqName = element.text
             .removeSurrounding("\"")
+            .removeSuffix("IntellijIdeaRulezzz")
 
           val refs = mutableListOf<PsiReference>()
 
@@ -140,16 +141,18 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     val injektContext = module.injektContext
 
     val subElements = injektContext.memberScopeForFqName(
-      importReference.fqName,
+      importReference.fqName.parent(),
       NoLookupLocation.FROM_IDE
     )
       ?.getContributedDescriptors()
       ?.filter {
-        !it.name.isSpecial && (it !is FunctionDescriptor ||
+        it.name.asString().startsWith(prefix) &&
+            !it.name.isSpecial && (it !is FunctionDescriptor ||
             // ignore our incremental fix functions
             !it.name.asString().endsWith("injectables"))
       }
-      ?.mapTo(mutableListOf()) { LookupElementBuilder.create(it.fqNameSafe.asString()) }
+      ?.mapTo(mutableListOf()) { LookupElementBuilder.create(it.name.asString()) }
+      ?.distinct()
 
     if (subElements != null) {
       result.addAllElements(subElements)
