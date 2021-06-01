@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.jvm.*
 import org.jetbrains.kotlin.resolve.source.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.tools.projectWizard.core.*
@@ -122,6 +123,15 @@ class InjectReference(
 }
 
 fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
+  if (this is PackageViewDescriptor)
+    return listOf(
+      KotlinJavaPsiFacade.getInstance(project)
+        .findPackage(fqName.asString(), resolveScope)
+    )
+
+  if (this is InjectFunctionDescriptor)
+    return underlyingDescriptor.findPsiDeclarations(project, resolveScope)
+
   if (this is ConstructorDescriptor &&
       constructedClass.kind == ClassKind.OBJECT)
         return constructedClass.findPsiDeclarations(project, resolveScope)
@@ -138,42 +148,8 @@ fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: Gl
     )
   }
 
-  val fqName = fqNameSafe
+  if (this is LazyClassReceiverParameterDescriptor)
+    return containingDeclaration.findPsiDeclarations(project, resolveScope)
 
-  fun Collection<KtNamedDeclaration>.fqNameFilter() = filter { it.fqName == fqName }
-  return when (this) {
-    is DeserializedClassDescriptor ->
-      KotlinFullClassNameIndex.getInstance()[fqName.asString(), project, resolveScope]
-    is DeserializedClassConstructorDescriptor ->
-      KotlinFullClassNameIndex.getInstance()[fqName.parent().asString(), project, resolveScope]
-        .singleOrNull()
-        ?.let { declaration ->
-          if (isPrimary) listOf(declaration.primaryConstructor!!)
-          else listOf(declaration.secondaryConstructors[
-              constructedClass.constructors
-                .filterNot { it.isPrimary }
-                .indexOf(this)
-          ])
-        } ?: error("nope")
-    is DeserializedTypeAliasDescriptor ->
-      KotlinTypeAliasShortNameIndex.getInstance()[fqName.shortName()
-        .asString(), project, resolveScope].fqNameFilter()
-    is DeserializedSimpleFunctionDescriptor, is FunctionImportedFromObject ->
-      KotlinFunctionShortNameIndex.getInstance()[fqName.shortName()
-        .asString(), project, resolveScope]
-        .let {
-          it.fqNameFilter()
-            .takeIf { it.isNotEmpty() }
-            ?: error("nope $fqName $this $resolveScope")
-        }
-    is DeserializedPropertyDescriptor, is PropertyImportedFromObject ->
-      KotlinPropertyShortNameIndex.getInstance()[fqName.shortName()
-        .asString(), project, resolveScope].fqNameFilter()
-    is LazyClassReceiverParameterDescriptor ->
-      containingDeclaration.findPsiDeclarations(project, resolveScope)
-    is InjectFunctionDescriptor ->
-      underlyingDescriptor.findPsiDeclarations(project, resolveScope)
-    is DeclarationDescriptorWithSource -> listOfNotNull(source.getPsi())
-    else -> emptyList()
-  }
+  return DescriptorToSourceUtilsIde.getAllDeclarations(project, this, resolveScope)
 }
