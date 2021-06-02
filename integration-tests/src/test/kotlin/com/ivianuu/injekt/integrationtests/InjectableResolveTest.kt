@@ -553,7 +553,7 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = multiCodegen(
+  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass<T> {
         fun <S : T> func(@Inject s: S) {

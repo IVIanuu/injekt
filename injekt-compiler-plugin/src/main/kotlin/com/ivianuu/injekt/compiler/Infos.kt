@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.constants.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -55,15 +56,44 @@ fun CallableDescriptor.callableInfo(
   trace[InjektWritableSlices.CALLABLE_INFO, this]?.let { return it }
 
   if (isDeserializedDeclaration()) {
-    annotations
+    val info = annotations
       .findAnnotation(InjektFqNames.CallableInfo)
       ?.readChunkedValue()
       ?.decode<PersistedCallableInfo>()
       ?.toCallableInfo(context, trace)
-      ?.let {
-        trace.record(InjektWritableSlices.CALLABLE_INFO, this, it)
-        return it
+
+    if (info != null) {
+      val finalInfo = if (this !is CallableMemberDescriptor ||
+        kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+        info
+      } else {
+        val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
+        val rootClassifier = rootOverriddenCallable.containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef(context, trace)
+        val classifierInfo = containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef(context, trace)
+        val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
+          it.classifier == rootClassifier
+        }!!
+        val substitutionMap = rootClassifier.typeParameters
+          .toMap(superType.arguments) + rootOverriddenCallable
+          .typeParameters
+          .map { it.toClassifierRef(context, trace) }
+          .toMap(typeParameters.map { it.defaultType.toTypeRef(context, trace) })
+        val subs = info.copy(
+          type = info.type.substitute(substitutionMap),
+          parameterTypes = info.parameterTypes.mapValues {
+            it.value.substitute(substitutionMap)
+          }
+        )
+        subs
       }
+
+      trace.record(InjektWritableSlices.CALLABLE_INFO, this, finalInfo)
+      return finalInfo
+    }
 
     // if this is a deserialized declaration and no info was persisted
     // we can return a dummy object because this callable is not relevant for injekt

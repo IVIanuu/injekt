@@ -353,6 +353,9 @@ fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
 fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
   action(this) || superTypes.any { it.anySuperType(action) }
 
+fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
+  takeIf(action) ?: superTypes.firstNotNullResult { it.firstSuperTypeOrNull(action) }
+
 fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
   if (map.isEmpty()) return this
   return copy(
