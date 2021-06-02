@@ -70,10 +70,6 @@ fun CallableDescriptor.callableInfo(
     return CallableInfo.Empty
   }
 
-  // if this is a deserialized declaration and no info was persisted
-  // we can return a dummy object because this callable is not relevant for injekt
-  if (isDeserializedDeclaration()) return CallableInfo.Empty
-
   val type = run {
     val qualifiers = if (this is ConstructorDescriptor)
       getAnnotatedAnnotations(InjektFqNames.Qualifier)
