@@ -69,6 +69,8 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
         return@registerMultiProvider emptyArray()
       val references = mutableListOf<PsiReference>()
       graph.forEachResultRecursive { _, value ->
+        if (value !is ResolutionResult.Success.WithCandidate.Value)
+          return@forEachResultRecursive
         val candidate = value.candidate
         if (candidate is CallableInjectable &&
           (candidate.callable.callable.findPackage() !is BuiltInsPackageFragment)) {

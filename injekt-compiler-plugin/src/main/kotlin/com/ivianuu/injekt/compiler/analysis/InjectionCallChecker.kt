@@ -70,8 +70,9 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
 
     val scope = ElementInjectablesScope(this.context, context.trace, callExpression)
 
-    val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { result ->
-      if (result.candidate is CallableInjectable) {
+    val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
+      if (result is ResolutionResult.Success.WithCandidate.Value &&
+        result.candidate is CallableInjectable) {
         context.trace.record(
           InjektWritableSlices.USED_INJECTABLE,
           result.candidate.callable.callable,

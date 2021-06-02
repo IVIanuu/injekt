@@ -21,11 +21,7 @@ import com.intellij.openapi.project.*
 
 var injectionHintsEnabled = false
 
-class ToggleInjectionHintsAction : ToggleAction(
-  "Toggle injection hints",
-  "Show hints for injected parameters",
-  null
-) {
+class ToggleInjectionHintsAction : ToggleAction("Toggle injection hints") {
   override fun isSelected(event: AnActionEvent): Boolean = injectionHintsEnabled
 
   override fun setSelected(event: AnActionEvent, value: Boolean) {

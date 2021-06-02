@@ -178,7 +178,7 @@ fun InjectablesScope.resolveRequests(
   callee: CallableRef,
   requests: List<InjectableRequest>,
   lookupLocation: LookupLocation,
-  onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit
+  onEachResult: (InjectableRequest, ResolutionResult) -> Unit
 ): InjectionGraph = measureTimeMillisWithResult {
   println("resolve requests $requests in $name")
   recordLookup(lookupLocation)
@@ -578,32 +578,38 @@ fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
 }
 
 private fun InjectionGraph.Success.postProcess(
-  onEachResult: (ResolutionResult.Success.WithCandidate.Value) -> Unit,
+  onEachResult: (InjectableRequest, ResolutionResult) -> Unit,
   usages: MutableMap<UsageKey, MutableList<InjectableRequest>>
 ) {
   forEachResultRecursive { request, result ->
-    usages.getOrPut(result.usageKey) { mutableListOf() } += request
-    onEachResult(result)
+    if (result is ResolutionResult.Success.WithCandidate.Value)
+      usages.getOrPut(result.usageKey) { mutableListOf() } += request
+    onEachResult(request, result)
   }
 }
 
-fun InjectionGraph.Success.forEachResultRecursive(
-  action: (InjectableRequest, ResolutionResult.Success.WithCandidate.Value) -> Unit
+fun InjectionGraph.forEachResultRecursive(
+  action: (InjectableRequest, ResolutionResult) -> Unit
 ) {
-  fun ResolutionResult.Success.WithCandidate.Value.postProcess(request: InjectableRequest) {
+  fun ResolutionResult.visit(request: InjectableRequest) {
     action(request, this)
-    dependencyResults
-      .forEach { (request, result) ->
-        if (result is ResolutionResult.Success.WithCandidate.Value) {
-          result.postProcess(request)
+    if (this is ResolutionResult.Success.WithCandidate.Value) {
+      dependencyResults
+        .forEach { (request, result) ->
+          if (result is ResolutionResult.Success.WithCandidate.Value) {
+            result.visit(request)
+          }
         }
-      }
+    }
+  }
+
+  val results = when (this) {
+    is InjectionGraph.Success -> results
+    is InjectionGraph.Error -> mapOf(failureRequest to failure)
   }
 
   results
     .forEach { (request, result) ->
-      if (result is ResolutionResult.Success.WithCandidate.Value) {
-        result.postProcess(request)
-      }
+      result.visit(request)
     }
 }
