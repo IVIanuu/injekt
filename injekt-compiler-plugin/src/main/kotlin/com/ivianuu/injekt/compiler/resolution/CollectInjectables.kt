@@ -67,8 +67,8 @@ fun TypeRef.collectInjectables(
       .memberScope
       .collectInjectables(context, trace, classBodyView)
       .filter {
-        (it.callable as CallableMemberDescriptor)
-          .kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
+        it.callable.safeAs<CallableMemberDescriptor>()
+          ?.kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
       }
       .map { it.substitute(substitutionMap) }
       .map { callable ->
