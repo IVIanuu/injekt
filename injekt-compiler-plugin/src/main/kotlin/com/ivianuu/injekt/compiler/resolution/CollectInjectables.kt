@@ -76,9 +76,13 @@ fun TypeRef.collectInjectables(
           overriddenDepth = overriddenDepth,
           owner = this.classifier,
           isProvide = true,
-          parameterTypes = if (callable.callable.dispatchReceiverParameter != null) {
+          parameterTypes = if (callable.callable.dispatchReceiverParameter != null &&
+              callable.parameterTypes.isNotEmpty()) {
             callable.parameterTypes.toMutableMap()
-              .also { it[DISPATCH_RECEIVER_INDEX] = this }
+              .also {
+                it[DISPATCH_RECEIVER_INDEX] =
+                  subtypeView(callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.classifier)!!
+              }
           } else callable.parameterTypes
         )
       }

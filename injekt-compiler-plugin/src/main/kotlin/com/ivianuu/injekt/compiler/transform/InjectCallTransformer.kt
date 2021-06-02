@@ -257,7 +257,10 @@ class InjectCallTransformer(
 
       val expression: ScopeContext.() -> IrExpression = {
         DeclarationIrBuilder(pluginContext, symbol)
-          .irCall(function)
+          .irCall(
+            function.symbol,
+            result.candidate.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+          )
       }
       expression
     }
@@ -530,12 +533,11 @@ class InjectCallTransformer(
       injectable,
       injectable.callable.callable
     )
-    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapQualifiers().classifier.isObject) objectExpression(
-      injectable.type
-    )
-    else parameterExpression(injectable.callable.callable)
-    is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable)
-    is VariableDescriptor -> variableExpression(injectable.callable.callable)
+    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapQualifiers().classifier.isObject)
+      objectExpression(injectable.type)
+    else parameterExpression(injectable.callable.callable, injectable)
+    is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
+    is VariableDescriptor -> variableExpression(injectable.callable.callable, injectable)
     else -> error("Unsupported callable $injectable")
   }
 
@@ -550,7 +552,10 @@ class InjectCallTransformer(
   } else {
     val constructor = descriptor.irConstructor()
     DeclarationIrBuilder(pluginContext, symbol)
-      .irCall(constructor.symbol)
+      .irCall(
+        constructor.symbol,
+        injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+      )
       .apply {
         fillTypeParameters(injectable.callable)
         inject(this@classExpression, result.dependencyResults)
@@ -566,7 +571,10 @@ class InjectCallTransformer(
       .single { it.descriptor.uniqueKey(context) == descriptor.uniqueKey(context) }
     val getter = property.owner.getter!!
     return DeclarationIrBuilder(pluginContext, symbol)
-      .irCall(getter.symbol)
+      .irCall(
+        getter.symbol,
+        injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+      )
       .apply {
         fillTypeParameters(injectable.callable)
         inject(this@propertyExpression, result.dependencyResults)
@@ -580,32 +588,42 @@ class InjectCallTransformer(
   ): IrExpression {
     val function = descriptor.irFunction()
     return DeclarationIrBuilder(pluginContext, symbol)
-      .irCall(function.symbol)
+      .irCall(
+        function.symbol,
+        injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+      )
       .apply {
         fillTypeParameters(injectable.callable)
         inject(this@functionExpression, result.dependencyResults)
       }
   }
 
-  private fun ScopeContext.parameterExpression(descriptor: ParameterDescriptor): IrExpression =
+  private fun ScopeContext.parameterExpression(
+    descriptor: ParameterDescriptor,
+    injectable: CallableInjectable
+  ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
       is ClassDescriptor -> receiverAccessors.last {
         descriptor.type.constructor.declarationDescriptor == it.first.descriptor
       }.second()
       is ClassConstructorDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
+          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
           containingDeclaration.irConstructor()
             .allParameters
             .single { it.name == descriptor.name }
+            .symbol
         )
       is FunctionDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
-          parameterMap[descriptor] ?: containingDeclaration.irFunction()
+          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+          (parameterMap[descriptor] ?: containingDeclaration.irFunction()
             .let { function ->
               function.allParameters
                 .filter { it != function.dispatchReceiverParameter }
             }
-            .single { it.index == descriptor.index() }
+            .single { it.index == descriptor.index() })
+            .symbol
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
@@ -622,17 +640,27 @@ class InjectCallTransformer(
       }
   }
 
-  private fun ScopeContext.variableExpression(descriptor: VariableDescriptor): IrExpression {
+  private fun ScopeContext.variableExpression(
+    descriptor: VariableDescriptor,
+    injectable: CallableInjectable
+  ): IrExpression {
     return if (descriptor is LocalVariableDescriptor && descriptor.isDelegated) {
       val localFunction = localFunctions.single { candidateFunction ->
         candidateFunction.descriptor
           .safeAs<LocalVariableAccessorDescriptor.Getter>()
           ?.correspondingVariable == descriptor
       }
-      DeclarationIrBuilder(pluginContext, symbol).irCall(localFunction)
+      DeclarationIrBuilder(pluginContext, symbol)
+        .irCall(
+          localFunction.symbol,
+          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+        )
     } else {
       DeclarationIrBuilder(pluginContext, symbol)
-        .irGet(localVariables.single { it.descriptor == descriptor })
+        .irGet(
+          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+          localVariables.single { it.descriptor == descriptor }.symbol
+        )
     }
   }
 

@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
-import org.jetbrains.kotlin.ir.descriptors.*
 import org.jetbrains.kotlin.ir.symbols.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
@@ -70,9 +69,7 @@ class IncrementalFixTransformer(
         UNDEFINED_OFFSET,
         IrDeclarationOrigin.DEFINED,
         IrSimpleFunctionSymbolImpl(
-          object : WrappedSimpleFunctionDescriptor() {
-            override fun hasStableParameterNames(): Boolean = true
-          }
+          IncrementalFixFunctionDescriptor(declaration.packageFragmentDescriptor)
         ),
         injectablesLookupName(
           callable.callable.fqNameSafe.parent(),
@@ -89,7 +86,7 @@ class IncrementalFixTransformer(
         false,
         false
       ).apply {
-        descriptor.cast<WrappedSimpleFunctionDescriptor>().bind(this)
+        descriptor.cast<IncrementalFixFunctionDescriptor>().bind(this)
         parent = declaration
         declaration.addChild(this)
         addValueParameter("marker", clazz.defaultType)

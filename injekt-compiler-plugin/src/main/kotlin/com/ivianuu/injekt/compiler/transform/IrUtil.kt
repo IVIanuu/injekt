@@ -87,7 +87,15 @@ fun TypeRef.toIrType(
                           .typeOrNull!!
                       }
                   )
-              )
+              ).apply {
+                qualifierConstructor.owner.typeParameters.indices
+                  .forEach { index ->
+                    putTypeArgument(
+                      index,
+                      arguments[index].toIrType(pluginContext, localClasses, context).typeOrNull!!
+                    )
+                  }
+              }
           ) + type.annotations,
           type.abbreviation
         )

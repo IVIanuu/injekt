@@ -82,13 +82,12 @@ fun CallableDescriptor.callableInfo(
           .typeParameters
           .map { it.toClassifierRef(context, trace) }
           .toMap(typeParameters.map { it.defaultType.toTypeRef(context, trace) })
-        val subs = info.copy(
+        info.copy(
           type = info.type.substitute(substitutionMap),
           parameterTypes = info.parameterTypes.mapValues {
             it.value.substitute(substitutionMap)
           }
         )
-        subs
       }
 
       trace.record(InjektWritableSlices.CALLABLE_INFO, this, finalInfo)
