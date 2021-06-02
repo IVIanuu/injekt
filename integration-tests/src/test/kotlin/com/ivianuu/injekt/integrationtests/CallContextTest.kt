@@ -72,7 +72,7 @@ class CallContextTest {
         @Provide fun bar(foo: Foo) = Bar(foo)
       """,
       """
-        fun invoke() = inject<suspend () -> Bar>() 
+        fun invoke() = inject<suspend () -> Bar>()
       """
     )
 

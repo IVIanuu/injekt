@@ -38,7 +38,7 @@ class InjectValueParameterDescriptor(
   trace: BindingTrace
 ) : ValueParameterDescriptorImpl(
   parent,
-  null,
+  underlyingDescriptor,
   underlyingDescriptor.index,
   underlyingDescriptor.annotations,
   underlyingDescriptor.injektName(),
