@@ -38,17 +38,21 @@ class InjectValueParameterDescriptor(
   trace: BindingTrace
 ) : ValueParameterDescriptorImpl(
   parent,
-  underlyingDescriptor,
+  null,
   underlyingDescriptor.index,
   underlyingDescriptor.annotations,
   underlyingDescriptor.injektName(),
   underlyingDescriptor.type,
-  underlyingDescriptor.isInject(context, trace) || underlyingDescriptor.declaresDefaultValue(),
+  false,
   underlyingDescriptor.isCrossinline,
   underlyingDescriptor.isNoinline,
   underlyingDescriptor.varargElementType,
   underlyingDescriptor.source
-)
+) {
+  private val declaresDefaultValue =
+    underlyingDescriptor.isInject(context, trace) || underlyingDescriptor.declaresDefaultValue()
+  override fun declaresDefaultValue(): Boolean = declaresDefaultValue
+}
 
 val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
   get() = (this as? InjectValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()

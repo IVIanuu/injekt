@@ -539,6 +539,20 @@ class InjectableResolveTest {
       """
     )
 
+  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithInjectParameters() = singleAndMultiCodegen(
+    """
+      open class MySuperClass() {
+        fun func(@Inject foo: Foo) {
+        }
+      }
+
+      class MySubClass : MySuperClass()
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = MySubClass().func()
+    """
+  )
+
   @Test fun testCanResolveProvideParameterInDefaultValueOfFollowingParameter() = codegen(
     """
       fun invoke(@Provide foo: Foo, bar: Bar = Bar(inject())) {
