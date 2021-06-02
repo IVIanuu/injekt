@@ -156,7 +156,7 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
           .withIcon(KotlinDescriptorIconProvider.getIcon(declaration, null, 0))
       }
       ?.distinct()
-      ?.let { result.addElements(it) }
+      ?.let { result.addAllElements(it) }
 
     return true
   }
