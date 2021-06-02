@@ -140,23 +140,23 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     val module = template.getResolutionFacade().moduleDescriptor
     val injektContext = module.injektContext
 
-    val subElements = injektContext.memberScopeForFqName(
+    injektContext.memberScopeForFqName(
       importReference.fqName.parent(),
       NoLookupLocation.FROM_IDE
     )
       ?.getContributedDescriptors()
-      ?.filter {
-        it.name.asString().startsWith(prefix) &&
-            !it.name.isSpecial && (it !is FunctionDescriptor ||
+      ?.filter { declaration ->
+        declaration.name.asString().startsWith(prefix) &&
+            !declaration.name.isSpecial && (declaration !is FunctionDescriptor ||
             // ignore our incremental fix functions
-            !it.name.asString().endsWith("injectables"))
+            !declaration.name.asString().endsWith("injectables"))
       }
-      ?.mapTo(mutableListOf()) { LookupElementBuilder.create(it.name.asString()) }
+      ?.mapTo(mutableListOf()) { declaration ->
+        LookupElementBuilder.create(declaration.name.asString())
+          .withIcon(KotlinDescriptorIconProvider.getIcon(declaration, null, 0))
+      }
       ?.distinct()
-
-    if (subElements != null) {
-      result.addAllElements(subElements)
-    }
+      ?.let { result.addElements(it) }
 
     return true
   }
