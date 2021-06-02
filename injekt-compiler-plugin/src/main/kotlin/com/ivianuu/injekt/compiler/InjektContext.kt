@@ -33,7 +33,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val trace = CliBindingTrace()
+  val trace: BindingTrace = CliBindingTrace()
 
   val setClassifier by unsafeLazy {
     module.builtIns.set.toClassifierRef(this, trace)
