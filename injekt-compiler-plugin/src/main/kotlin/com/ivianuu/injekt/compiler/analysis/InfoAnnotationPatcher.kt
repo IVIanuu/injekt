@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
 
@@ -31,13 +32,31 @@ class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChe
     when (descriptor) {
       is ClassDescriptor -> {
         descriptor.classifierInfo(this.context, context.trace)
+
         descriptor.declaredTypeParameters
           .forEach { it.classifierInfo(this.context, context.trace) }
+
         descriptor.constructors
           .forEach { it.callableInfo(this.context, context.trace) }
+
+        descriptor.unsubstitutedMemberScope
+          .getContributedDescriptors()
+          .filterIsInstance<FunctionDescriptor>()
+          .filter { it.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE }
+          .forEach { callable ->
+            val info = callable.callableInfo(this.context, context.trace)
+            if (info != CallableInfo.Empty) {
+              context.trace.record(InjektWritableSlices.WAS_FAKE_OVERRIDE, callable, Unit)
+              callable.updatePrivateFinalField<CallableMemberDescriptor.Kind>(
+                FunctionDescriptorImpl::class,
+                "kind"
+              ) { CallableMemberDescriptor.Kind.DECLARATION }
+            }
+          }
       }
       is CallableDescriptor -> {
         descriptor.callableInfo(this.context, context.trace)
+
         descriptor.typeParameters
           .forEach { it.classifierInfo(this.context, context.trace) }
       }

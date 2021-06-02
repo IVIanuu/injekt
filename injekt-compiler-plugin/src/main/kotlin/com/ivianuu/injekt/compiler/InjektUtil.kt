@@ -129,12 +129,11 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
     }"
     is ClassDescriptor -> "class:$fqNameSafe"
     is FunctionDescriptor -> "function:$fqNameSafe:${
-      listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+      listOfNotNull(original.extensionReceiverParameter)
         .plus(original.valueParameters)
         .joinToString(",") { parameter ->
           buildString {
             when {
-              parameter === original.dispatchReceiverParameter -> append("d:")
               parameter === original.extensionReceiverParameter -> append("e:")
               else -> append("p:")
             }
