@@ -187,8 +187,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   )
 }
 
-@Serializable
-data class PersistedCallableInfo(
+@Serializable data class PersistedCallableInfo(
   @SerialName("0") val type: PersistedTypeRef,
   @SerialName("1") val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
   @SerialName("2") val injectParameters: Set<Int> = emptySet(),
@@ -322,8 +321,7 @@ fun ClassifierDescriptor.classifierInfo(
   return info
 }
 
-@Serializable
-data class PersistedClassifierInfo(
+@Serializable data class PersistedClassifierInfo(
   @SerialName("0") val qualifiers: List<PersistedTypeRef> = emptyList(),
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
