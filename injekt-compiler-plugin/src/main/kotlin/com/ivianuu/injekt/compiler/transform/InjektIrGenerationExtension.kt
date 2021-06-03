@@ -19,11 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.expressions.*
-import org.jetbrains.kotlin.ir.symbols.*
-import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
 
 class InjektIrGenerationExtension : IrGenerationExtension {
@@ -36,46 +32,5 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     moduleFragment.transform(SingletonTransformer(context, trace, pluginContext), null)
     moduleFragment.transform(IncrementalFixTransformer(context, trace, pluginContext), null)
     moduleFragment.patchDeclarationParents()
-    moduleFragment.transform(
-      object : IrElementTransformerVoid() {
-        override fun visitCall(expression: IrCall): IrExpression {
-          expression.getTypeSubstitutionMap(expression.symbol.owner)
-          return super.visitCall(expression)
-        }
-      },
-      null
-    )
-  }
-}
-
-fun IrMemberAccessExpression<*>.getTypeSubstitutionMap(irFunction: IrFunction): Map<IrTypeParameterSymbol, IrType> {
-  val typeParameters = irFunction.allTypeParameters
-  val dispatchReceiverTypeArguments = (dispatchReceiver?.type as? IrSimpleType)?.arguments ?: emptyList()
-  if (typeParameters.isEmpty() && dispatchReceiverTypeArguments.isEmpty()) {
-    return emptyMap()
-  }
-
-  val result = mutableMapOf<IrTypeParameterSymbol, IrType>()
-  if (dispatchReceiverTypeArguments.isNotEmpty()) {
-    val parentTypeParameters =
-      if (irFunction is IrConstructor) {
-        val constructedClass = irFunction.parentAsClass
-        if (!constructedClass.isInner && dispatchReceiver != null) {
-          throw AssertionError("Non-inner class constructor reference with dispatch receiver:\n${this.dump()}")
-        }
-        extractTypeParameters(constructedClass.parent as IrClass)
-      } else {
-        extractTypeParameters(irFunction.parentClassOrNull!!)
-      }
-    parentTypeParameters.withIndex().forEach { (index, typeParam) ->
-      if (index !in dispatchReceiverTypeArguments.indices)
-        error("Wtf")
-      dispatchReceiverTypeArguments[index].typeOrNull?.let {
-        result[typeParam.symbol] = it
-      }
-    }
-  }
-  return typeParameters.withIndex().associateTo(result) {
-    it.value.symbol to getTypeArgument(it.index)!!
   }
 }
