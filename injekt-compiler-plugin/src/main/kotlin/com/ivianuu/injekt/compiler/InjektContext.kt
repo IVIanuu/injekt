@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -32,29 +32,41 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val setClassifier by unsafeLazy {
+  val setClassifier by lazy {
     module.builtIns.set.toClassifierRef(this, null)
   }
-  val collectionClassifier by unsafeLazy {
+  val collectionClassifier by lazy {
     module.builtIns.collection.toClassifierRef(this, null)
   }
-  val nothingType by unsafeLazy {
+  val nothingType by lazy {
     module.builtIns.nothingType.toTypeRef(this, null)
   }
-  val nullableNothingType by unsafeLazy {
+  val nullableNothingType by lazy {
     nothingType.copy(isMarkedNullable = true)
   }
-  val anyType by unsafeLazy {
+  val anyType by lazy {
     module.builtIns.anyType.toTypeRef(this, null)
   }
-  val nullableAnyType by unsafeLazy {
+  val nullableAnyType by lazy {
     anyType.copy(isMarkedNullable = true)
   }
-  val typeKeyType by unsafeLazy {
+  val typeKeyType by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.TypeKey)
     )!!.toClassifierRef(this, null)
   }
+
+  val injectableConstructors = mutableMapOf<ClassDescriptor, List<CallableRef>>()
+  val isProvide = mutableMapOf<Any, Boolean>()
+  val isInject = mutableMapOf<Any, Boolean>()
+  val classifierRefs = mutableMapOf<ClassifierDescriptor, ClassifierRef>()
+  val callableRefs = mutableMapOf<CallableDescriptor, CallableRef>()
+  val callableInfos = mutableMapOf<CallableDescriptor, CallableInfo>()
+  val classifierInfos = mutableMapOf<ClassifierDescriptor, ClassifierInfo>()
+  val elementScopes = mutableMapOf<KtElement, InjectablesScope>()
+  val declarationScopes = mutableMapOf<DeclarationDescriptor, InjectablesScope>()
+  val typeScopes = mutableMapOf<TypeRef, InjectablesScope>()
+  val typeScopeInjectables = mutableMapOf<TypeRef, List<CallableRef>>()
 
   fun classifierDescriptorForFqName(
     fqName: FqName,
@@ -65,29 +77,33 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
       ?.getContributedClassifier(fqName.shortName(), lookupLocation)
   }
 
-  fun classifierDescriptorForKey(key: String, trace: BindingTrace?): ClassifierDescriptor {
-    trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
-    val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
-      fqName.shortName(), NoLookupLocation.FROM_BACKEND
-    )?.takeIf { it.uniqueKey(this) == key }
-      ?: functionDescriptorsForFqName(fqName.parent())
-        .flatMap { it.typeParameters }
-        .firstOrNull {
-          it.uniqueKey(this) == key
-        }
-      ?: propertyDescriptorsForFqName(fqName.parent())
-        .flatMap { it.typeParameters }
-        .firstOrNull {
-          it.uniqueKey(this) == key
-        }
-      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
-        .safeAs<ClassifierDescriptorWithTypeParameters>()
-        ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(this) == key }
-      ?: error("Could not get for $fqName $key")
-    trace?.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
-    return classifier
+  private val classifierForKey = mutableMapOf<String, ClassifierDescriptor>()
+
+  fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
+    synchronized(classifierForKey) {
+      classifierForKey[key]?.let { return it }
+      val fqName = FqName(key.split(":")[1])
+      val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
+        fqName.shortName(), NoLookupLocation.FROM_BACKEND
+      )?.takeIf { it.uniqueKey(this) == key }
+        ?: functionDescriptorsForFqName(fqName.parent())
+          .flatMap { it.typeParameters }
+          .firstOrNull {
+            it.uniqueKey(this) == key
+          }
+        ?: propertyDescriptorsForFqName(fqName.parent())
+          .flatMap { it.typeParameters }
+          .firstOrNull {
+            it.uniqueKey(this) == key
+          }
+        ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+          .safeAs<ClassifierDescriptorWithTypeParameters>()
+          ?.declaredTypeParameters
+          ?.firstOrNull { it.uniqueKey(this) == key }
+        ?: error("Could not get for $fqName $key")
+      classifierForKey[key] = classifier
+      return classifier
+    }
   }
 
   private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> =

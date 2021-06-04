@@ -46,7 +46,7 @@ fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = Persi
 
 fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = context.classifierDescriptorForKey(classifierKey, trace)
+  val classifier = context.classifierDescriptorForKey(classifierKey)
     .toClassifierRef(context, trace)
   val arguments = if (classifier.isQualifier) {
     arguments
@@ -68,4 +68,3 @@ fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): Ty
       ignoreElementsWithErrors = ignoreElementsWithErrors
     )
 }
-

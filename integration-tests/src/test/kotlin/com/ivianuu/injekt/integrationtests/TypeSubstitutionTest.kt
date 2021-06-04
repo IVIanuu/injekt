@@ -84,7 +84,7 @@ class TypeSubstitutionTest {
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef(injektContext, injektContext.trace) }
+      .map { it.toClassifierRef(injektContext, null) }
     val appScope = typeFor(FqName("com.ivianuu.injekt.scope.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {
@@ -109,7 +109,7 @@ class TypeSubstitutionTest {
         )!!
           .cast<ClassDescriptor>()
           .unsubstitutedPrimaryConstructor!!
-          .toCallableRef(injektContext, injektContext.trace)
+          .toCallableRef(injektContext, null)
           .typeParameters
 
       val injectableCoroutineScopeElementReturnType =
@@ -122,7 +122,7 @@ class TypeSubstitutionTest {
             NoLookupLocation.FROM_BACKEND
           )
           .single()
-          .callableInfo(injektContext, injektContext.trace)
+          .callableInfo(injektContext, null)
           .type
           .arguments
           .last()

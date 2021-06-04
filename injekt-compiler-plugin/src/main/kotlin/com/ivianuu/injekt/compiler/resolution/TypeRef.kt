@@ -93,7 +93,7 @@ fun ClassifierDescriptor.toClassifierRef(
   context: InjektContext,
   trace: BindingTrace?
 ): ClassifierRef {
-  trace?.get(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this)?.let { return it }
+  context.classifierRefs[this]?.let { return it }
   val info = classifierInfo(context, trace)
 
   val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
@@ -108,7 +108,7 @@ fun ClassifierDescriptor.toClassifierRef(
       key = "${uniqueKey(context)}.\$QT",
       fqName = fqNameSafe.child("\$QT".asNameId()),
       isTypeParameter = true,
-      lazySuperTypes = unsafeLazy { listOf(context.nullableAnyType) },
+      lazySuperTypes = lazy { listOf(context.nullableAnyType) },
       variance = TypeVariance.OUT
     )
   }
@@ -129,7 +129,7 @@ fun ClassifierDescriptor.toClassifierRef(
       .map { it.asNameId() },
     variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
   ).also {
-    trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
+    context.classifierRefs[this] = it
   }
 }
 
@@ -359,7 +359,7 @@ fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
 fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
   if (map.isEmpty()) return this
   return copy(
-    lazySuperTypes = unsafeLazy { superTypes.map { it.substitute(map) } },
+    lazySuperTypes = lazy { superTypes.map { it.substitute(map) } },
     typeParameters = typeParameters.substitute(map),
     qualifiers = qualifiers.map { it.substitute(map) }
   )
@@ -368,7 +368,7 @@ fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
 fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<ClassifierRef> {
   val allNewSuperTypes = map { mutableListOf<TypeRef>() }
   val newClassifiers = mapIndexed { index, classifier ->
-    classifier.copy(lazySuperTypes = unsafeLazy { allNewSuperTypes[index] })
+    classifier.copy(lazySuperTypes = lazy { allNewSuperTypes[index] })
   }
   val combinedMap = map + toMap(newClassifiers.map { it.defaultType })
   for (i in indices) {

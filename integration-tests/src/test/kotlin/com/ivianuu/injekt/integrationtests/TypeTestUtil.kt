@@ -98,7 +98,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = unsafeLazy {
+    lazySuperTypes = lazy {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
     },
   ).defaultType
@@ -109,7 +109,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = unsafeLazy { listOf(expandedType) },
+    lazySuperTypes = lazy { listOf(expandedType) },
     isTypeAlias = true
   ).defaultType
 
@@ -120,7 +120,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = unsafeLazy {
+    lazySuperTypes = lazy {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
     },
     typeParameters = typeParameters
@@ -146,7 +146,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = unsafeLazy {
+    lazySuperTypes = lazy {
       if (upperBounds.isNotEmpty()) upperBounds.toList() else
         listOf(any.copy(isMarkedNullable = nullable))
     },
@@ -156,7 +156,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
 
   fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(
     fqName, NoLookupLocation.FROM_BACKEND)
-    ?.defaultType?.toTypeRef(injektContext, injektContext.trace) ?: error("Wtf $fqName")
+    ?.defaultType?.toTypeRef(injektContext, null) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
     shouldBeAssignableTo(other, emptyList())

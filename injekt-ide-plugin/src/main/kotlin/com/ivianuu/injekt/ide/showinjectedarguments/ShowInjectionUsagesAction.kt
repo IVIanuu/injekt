@@ -49,7 +49,7 @@ class ShowInjectionUsagesAction : AnAction("Show injection usages") {
       ?.let { descriptor ->
         when (descriptor) {
           is ClassDescriptor ->
-            descriptor.provideConstructors(descriptor.module.injektContext, null)
+            descriptor.injectableConstructors(descriptor.module.injektContext, null)
           is CallableDescriptor -> descriptor
           else -> null
         }

@@ -106,8 +106,6 @@ fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is Deseria
 
 fun String.asNameId() = Name.identifier(this)
 
-fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
-
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
 

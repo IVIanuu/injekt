@@ -60,8 +60,8 @@ sealed class ResolutionResult {
         override val scope: InjectablesScope,
         val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
-        val usageKey by unsafeLazy { UsageKey(candidate.type, outerMostScope) }
-        val outerMostScope: InjectablesScope by unsafeLazy {
+        val usageKey by lazy { UsageKey(candidate.type, outerMostScope) }
+        val outerMostScope: InjectablesScope by lazy {
           when {
             dependencyResults.isEmpty() -> scope.allScopes.first {
               it.nesting >= candidate.ownerScope.nesting &&
@@ -216,30 +216,32 @@ private fun InjectablesScope.resolveRequest(
   lookupLocation: LookupLocation
 ): ResolutionResult {
   checkCancelled()
-  resultsByType[request.type]?.let { return it }
-  val userCandidates = injectablesForRequest(request, this)
-    ?: run {
-      // try the type scope if the requested type is not a framework type
-      if (!request.type.isProviderFunctionType &&
-        request.type.classifier != context.setClassifier &&
-        request.type.classifier.fqName != InjektFqNames.TypeKey)
+  synchronized(this) {
+    resultsByType[request.type]?.let { return it }
+    val userCandidates = injectablesForRequest(request, this)
+      ?: run {
+        // try the type scope if the requested type is not a framework type
+        if (!request.type.isProviderFunctionType &&
+          request.type.classifier != context.setClassifier &&
+          request.type.classifier.fqName != InjektFqNames.TypeKey)
           TypeInjectablesScope(context, trace, request.type, lookupLocation)
             .also { it.recordLookup(lookupLocation) }
             .injectablesForRequest(request, this)
-      else null
+        else null
+      }
+    val result = if (userCandidates != null) {
+      resolveCandidates(request, userCandidates, lookupLocation)
+    } else {
+      val frameworkCandidate = frameworkInjectableForRequest(request)
+      when {
+        frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
+        request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+        else -> ResolutionResult.Success.DefaultValue
+      }
     }
-  val result = if (userCandidates != null) {
-    resolveCandidates(request, userCandidates, lookupLocation)
-  } else {
-    val frameworkCandidate = frameworkInjectableForRequest(request)
-    when {
-      frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
-      request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
-      else -> ResolutionResult.Success.DefaultValue
-    }
+    resultsByType[request.type] = result
+    return result
   }
-  resultsByType[request.type] = result
-  return result
 }
 
 private fun InjectablesScope.computeForCandidate(
@@ -248,36 +250,38 @@ private fun InjectablesScope.computeForCandidate(
   compute: () -> ResolutionResult,
 ): ResolutionResult {
   checkCancelled()
-  resultsByCandidate[candidate]?.let { return it }
-  if (candidate.dependencies.isEmpty())
-    return compute().also { resultsByCandidate[candidate] = it }
+  synchronized(this) {
+    resultsByCandidate[candidate]?.let { return it }
+    if (candidate.dependencies.isEmpty())
+      return compute().also { resultsByCandidate[candidate] = it }
 
-  if (chain.isNotEmpty()) {
-    var isLazy = false
-    for (i in chain.lastIndex downTo 0) {
-      val prev = chain[i]
-      isLazy = isLazy || prev.first.isLazy
-      if (prev.second.callableFqName == candidate.callableFqName &&
-        prev.second.type.coveringSet == candidate.type.coveringSet &&
-        (prev.second.type.typeSize < candidate.type.typeSize ||
-            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))
-      ) {
-        val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
-        resultsByCandidate[candidate] = result
-        return result
+    if (chain.isNotEmpty()) {
+      var isLazy = false
+      for (i in chain.lastIndex downTo 0) {
+        val prev = chain[i]
+        isLazy = isLazy || prev.first.isLazy
+        if (prev.second.callableFqName == candidate.callableFqName &&
+          prev.second.type.coveringSet == candidate.type.coveringSet &&
+          (prev.second.type.typeSize < candidate.type.typeSize ||
+              (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))
+        ) {
+          val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
+          resultsByCandidate[candidate] = result
+          return result
+        }
       }
     }
+
+    if (chain.any { it.second == candidate })
+      return ResolutionResult.Success.WithCandidate.CircularDependency(candidate, this)
+
+    val pair = request to candidate
+    chain += pair
+    val result = compute()
+    resultsByCandidate[candidate] = result
+    chain -= pair
+    return result
   }
-
-  if (chain.any { it.second == candidate })
-    return ResolutionResult.Success.WithCandidate.CircularDependency(candidate, this)
-
-  val pair = request to candidate
-  chain += pair
-  val result = compute()
-  resultsByCandidate[candidate] = result
-  chain -= pair
-  return result
 }
 
 private fun InjectablesScope.resolveCandidates(

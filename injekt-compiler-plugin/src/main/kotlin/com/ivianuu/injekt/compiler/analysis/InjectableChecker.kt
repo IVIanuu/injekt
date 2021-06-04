@@ -69,7 +69,7 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     descriptor: ClassDescriptor,
     trace: BindingTrace
   ) {
-    val provideConstructors = descriptor.provideConstructors(context, trace)
+    val provideConstructors = descriptor.injectableConstructors(context, trace)
     val isProvider = provideConstructors.isNotEmpty() ||
         descriptor.hasAnnotation(InjektFqNames.Provide)
 
