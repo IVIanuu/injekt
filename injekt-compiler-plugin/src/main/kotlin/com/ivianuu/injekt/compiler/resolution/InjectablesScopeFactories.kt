@@ -452,7 +452,6 @@ private fun BlockExpressionInjectablesScope(
     .filter { it.isProvide(context, trace) }
   if (visibleInjectableDeclarations.isEmpty()) return parent
   val injectableDeclaration = visibleInjectableDeclarations.last()
-  val key = block to injectableDeclaration
   val finalParent = if (visibleInjectableDeclarations.size > 1)
     BlockExpressionInjectablesScope(block, injectableDeclaration.findPsi().cast(), context, trace, parent)
   else parent
