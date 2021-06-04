@@ -70,30 +70,28 @@ fun CallableDescriptor.toCallableRef(
   context: InjektContext,
   trace: BindingTrace?
 ): CallableRef {
-  synchronized(context.callableRefs) {
-    context.callableRefs[this]?.let { return it }
-    val info = callableInfo(context, trace)
-    val typeParameters = typeParameters.map { it.toClassifierRef(context, trace) }
-    return CallableRef(
-      callable = this,
-      type = info.type,
-      originalType = info.type,
-      typeParameters = typeParameters,
-      parameterTypes = info.parameterTypes,
-      injectParameters = info.injectParameters,
-      defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
-      typeArguments = typeParameters
-        .map { it to it.defaultType }
-        .toMap(),
-      isProvide = isProvide(context, trace),
-      source = null,
-      callContext = callContext(trace?.bindingContext),
-      owner = null,
-      overriddenDepth = 0,
-      doNotIncludeChildren = false,
-      import = null
-    ).also {
-      context.callableRefs[this] = it
-    }
+  context.callableRefs[this]?.let { return it }
+  val info = callableInfo(context, trace)
+  val typeParameters = typeParameters.map { it.toClassifierRef(context, trace) }
+  return CallableRef(
+    callable = this,
+    type = info.type,
+    originalType = info.type,
+    typeParameters = typeParameters,
+    parameterTypes = info.parameterTypes,
+    injectParameters = info.injectParameters,
+    defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
+    typeArguments = typeParameters
+      .map { it to it.defaultType }
+      .toMap(),
+    isProvide = isProvide(context, trace),
+    source = null,
+    callContext = callContext(trace?.bindingContext),
+    owner = null,
+    overriddenDepth = 0,
+    doNotIncludeChildren = false,
+    import = null
+  ).also {
+    context.callableRefs[this] = it
   }
 }

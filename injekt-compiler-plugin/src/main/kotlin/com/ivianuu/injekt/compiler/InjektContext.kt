@@ -80,30 +80,28 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   private val classifierForKey = mutableMapOf<String, ClassifierDescriptor>()
 
   fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
-    synchronized(classifierForKey) {
-      classifierForKey[key]?.let { return it }
-      val fqName = FqName(key.split(":")[1])
-      val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
-        fqName.shortName(), NoLookupLocation.FROM_BACKEND
-      )?.takeIf { it.uniqueKey(this) == key }
-        ?: functionDescriptorsForFqName(fqName.parent())
-          .flatMap { it.typeParameters }
-          .firstOrNull {
-            it.uniqueKey(this) == key
-          }
-        ?: propertyDescriptorsForFqName(fqName.parent())
-          .flatMap { it.typeParameters }
-          .firstOrNull {
-            it.uniqueKey(this) == key
-          }
-        ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
-          .safeAs<ClassifierDescriptorWithTypeParameters>()
-          ?.declaredTypeParameters
-          ?.firstOrNull { it.uniqueKey(this) == key }
-        ?: error("Could not get for $fqName $key")
-      classifierForKey[key] = classifier
-      return classifier
-    }
+    classifierForKey[key]?.let { return it }
+    val fqName = FqName(key.split(":")[1])
+    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
+      fqName.shortName(), NoLookupLocation.FROM_BACKEND
+    )?.takeIf { it.uniqueKey(this) == key }
+      ?: functionDescriptorsForFqName(fqName.parent())
+        .flatMap { it.typeParameters }
+        .firstOrNull {
+          it.uniqueKey(this) == key
+        }
+      ?: propertyDescriptorsForFqName(fqName.parent())
+        .flatMap { it.typeParameters }
+        .firstOrNull {
+          it.uniqueKey(this) == key
+        }
+      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+        .safeAs<ClassifierDescriptorWithTypeParameters>()
+        ?.declaredTypeParameters
+        ?.firstOrNull { it.uniqueKey(this) == key }
+      ?: error("Could not get for $fqName $key")
+    classifierForKey[key] = classifier
+    return classifier
   }
 
   private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> =

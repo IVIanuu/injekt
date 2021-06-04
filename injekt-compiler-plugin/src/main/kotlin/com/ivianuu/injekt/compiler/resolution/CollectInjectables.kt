@@ -133,83 +133,77 @@ fun ResolutionScope.collectInjectables(
   }
 
 fun Annotated.isProvide(context: InjektContext, trace: BindingTrace?): Boolean {
-  synchronized(context.isProvide) {
-    @Suppress("IMPLICIT_CAST_TO_ANY")
-    val key = if (this is KotlinType) System.identityHashCode(this) else this
-    context.isProvide[key]?.let { return it }
-    var isProvide = hasAnnotation(InjektFqNames.Provide) ||
-        hasAnnotation(InjektFqNames.Inject)
-    if (!isProvide && this is PropertyDescriptor) {
-      isProvide = primaryConstructorPropertyValueParameter(context, trace)
-        ?.isProvide(context, trace) == true
-    }
-    if (!isProvide && this is ParameterDescriptor) {
-      isProvide = type.isProvide(context, trace) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide(context, trace) ||
-                  containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo(context, trace).injectParameters
-            } == true
-    }
-    if (!isProvide && this is ClassConstructorDescriptor && isPrimary) {
-      isProvide = constructedClass.isProvide(context, trace)
-    }
-    context.isProvide[key] = isProvide
-    return isProvide
+  @Suppress("IMPLICIT_CAST_TO_ANY")
+  val key = if (this is KotlinType) System.identityHashCode(this) else this
+  context.isProvide[key]?.let { return it }
+  var isProvide = hasAnnotation(InjektFqNames.Provide) ||
+      hasAnnotation(InjektFqNames.Inject)
+  if (!isProvide && this is PropertyDescriptor) {
+    isProvide = primaryConstructorPropertyValueParameter(context, trace)
+      ?.isProvide(context, trace) == true
   }
+  if (!isProvide && this is ParameterDescriptor) {
+    isProvide = type.isProvide(context, trace) ||
+        containingDeclaration.safeAs<FunctionDescriptor>()
+          ?.let { containingFunction ->
+            containingFunction.isProvide(context, trace) ||
+                containingFunction.isDeserializedDeclaration() &&
+                injektIndex() in containingFunction.callableInfo(context, trace).injectParameters
+          } == true
+  }
+  if (!isProvide && this is ClassConstructorDescriptor && isPrimary) {
+    isProvide = constructedClass.isProvide(context, trace)
+  }
+  context.isProvide[key] = isProvide
+  return isProvide
 }
 
 fun Annotated.isInject(context: InjektContext, trace: BindingTrace?): Boolean {
-  synchronized(context.isInject) {
-    @Suppress("IMPLICIT_CAST_TO_ANY")
-    val key = if (this is KotlinType) System.identityHashCode(this) else this
-    context.isInject[key]?.let { return it }
-    var isInject = hasAnnotation(InjektFqNames.Inject)
-    if (!isInject && this is PropertyDescriptor) {
-      isInject = primaryConstructorPropertyValueParameter(context, trace)
-        ?.isInject(context, trace) == true
-    }
-    if (!isInject && this is ParameterDescriptor) {
-      isInject = type.isProvide(context, trace) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide(context, trace) ||
-                  containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo(context, trace).injectParameters
-            } == true
-    }
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary) {
-      isInject = constructedClass.isProvide(context, trace)
-    }
-    context.isInject[key] = isInject
-    return isInject
+  @Suppress("IMPLICIT_CAST_TO_ANY")
+  val key = if (this is KotlinType) System.identityHashCode(this) else this
+  context.isInject[key]?.let { return it }
+  var isInject = hasAnnotation(InjektFqNames.Inject)
+  if (!isInject && this is PropertyDescriptor) {
+    isInject = primaryConstructorPropertyValueParameter(context, trace)
+      ?.isInject(context, trace) == true
   }
+  if (!isInject && this is ParameterDescriptor) {
+    isInject = type.isProvide(context, trace) ||
+        containingDeclaration.safeAs<FunctionDescriptor>()
+          ?.let { containingFunction ->
+            containingFunction.isProvide(context, trace) ||
+                containingFunction.isDeserializedDeclaration() &&
+                injektIndex() in containingFunction.callableInfo(context, trace).injectParameters
+          } == true
+  }
+  if (!isInject && this is ClassConstructorDescriptor && isPrimary) {
+    isInject = constructedClass.isProvide(context, trace)
+  }
+  context.isInject[key] = isInject
+  return isInject
 }
 
 fun ClassDescriptor.injectableConstructors(
   context: InjektContext,
   trace: BindingTrace?
 ): List<CallableRef> {
-  synchronized(context.injectableConstructors) {
-    context.injectableConstructors[this]?.let { return it }
-    val injectableConstructors = constructors
-      .filter { constructor ->
-        constructor.hasAnnotation(InjektFqNames.Provide) ||
-            (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide))
-      }
-      .map { constructor ->
-        val callable = constructor.toCallableRef(context, trace)
-        val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
-        callable.copy(
-          isProvide = true,
-          type = qualifiedType,
-          originalType = qualifiedType
-        )
-      }
-    context.injectableConstructors[this] = injectableConstructors
-    return injectableConstructors
-  }
+  context.injectableConstructors[this]?.let { return it }
+  val injectableConstructors = constructors
+    .filter { constructor ->
+      constructor.hasAnnotation(InjektFqNames.Provide) ||
+          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide))
+    }
+    .map { constructor ->
+      val callable = constructor.toCallableRef(context, trace)
+      val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
+      callable.copy(
+        isProvide = true,
+        type = qualifiedType,
+        originalType = qualifiedType
+      )
+    }
+  context.injectableConstructors[this] = injectableConstructors
+  return injectableConstructors
 }
 
 fun ClassDescriptor.injectableReceiver(
