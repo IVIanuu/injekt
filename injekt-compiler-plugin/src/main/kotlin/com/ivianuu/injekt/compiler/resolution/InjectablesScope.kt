@@ -125,8 +125,6 @@ class InjectablesScope(
   private var shouldDelegateToParent = false
 
   init {
-    println("initialize scope $trace $context $name")
-
     initialInjectables
       .forEach { injectable ->
         injectable.collectInjectables(
