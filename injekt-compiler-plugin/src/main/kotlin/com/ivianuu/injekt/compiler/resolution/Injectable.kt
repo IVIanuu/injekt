@@ -140,6 +140,22 @@ class ProviderInjectable(
     get() = true
 }
 
+class SourceKeyInjectable(
+  override val type: TypeRef,
+  override val ownerScope: InjectablesScope
+) : Injectable() {
+  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
+  override val dependencies: List<InjectableRequest> = emptyList()
+  override val dependencyScope: InjectablesScope
+    get() = ownerScope
+  override val callContext: CallContext
+    get() = CallContext.DEFAULT
+  override val originalType: TypeRef
+    get() = type
+  override val cacheExpressionResultIfPossible: Boolean
+    get() = false
+}
+
 class TypeKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope

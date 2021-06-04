@@ -332,6 +332,9 @@ class InjectablesScope(
       request.type.classifier.fqName == InjektFqNames.TypeKey -> {
         return TypeKeyInjectable(request.type, this)
       }
+      request.type.classifier.fqName == InjektFqNames.SourceKey -> {
+        return SourceKeyInjectable(request.type, this)
+      }
       else -> return null
     }
   }

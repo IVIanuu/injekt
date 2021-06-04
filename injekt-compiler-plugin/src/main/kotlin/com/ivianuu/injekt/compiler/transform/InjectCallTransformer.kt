@@ -48,8 +48,12 @@ import kotlin.collections.set
 class InjectCallTransformer(
   private val context: InjektContext,
   private val pluginContext: IrPluginContext
-) : IrElementTransformerVoid() {
-  private inner class GraphContext(val graph: InjectionGraph.Success) {
+) : IrElementTransformerVoidWithContext() {
+  private inner class GraphContext(
+    val graph: InjectionGraph.Success,
+    val scope: ScopeWithIr,
+    val startOffset: Int
+  ) {
     val statements = mutableListOf<IrStatement>()
 
     var variableIndex = 0
@@ -197,6 +201,7 @@ class InjectCallTransformer(
             is CallableInjectable -> callableExpression(result, result.candidate.cast())
             is ProviderInjectable -> providerExpression(result, result.candidate.cast())
             is SetInjectable -> setExpression(result, result.candidate.cast())
+            is SourceKeyInjectable -> sourceKeyExpression()
             is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
           }
         }
@@ -442,6 +447,23 @@ class InjectCallTransformer(
       }
     }
   }
+
+  private val sourceKeyConstructor = pluginContext.referenceClass(InjektFqNames.SourceKey)
+    ?.constructors?.single()
+
+  private fun ScopeContext.sourceKeyExpression(): IrExpression =
+    DeclarationIrBuilder(pluginContext, symbol).run {
+      irCall(sourceKeyConstructor!!).apply {
+        putValueArgument(
+          0,
+          irString(
+            "${currentFile.name}:${
+              graphContext.scope.irElement.cast<IrDeclaration>()
+                .descriptor.fqNameSafe.asString()}:${graphContext.startOffset}"
+          )
+        )
+      }
+    }
 
   private val typeKey = pluginContext.referenceClass(InjektFqNames.TypeKey)
   private val typeKeyValue = typeKey?.owner?.properties
@@ -693,14 +715,7 @@ class InjectCallTransformer(
   private val localFunctions = mutableListOf<IrFunction>()
   private val localClasses = mutableListOf<IrClass>()
 
-  private val fileStack = mutableListOf<IrFile>()
-  override fun visitFile(declaration: IrFile): IrFile {
-    fileStack.push(declaration)
-    return super.visitFile(declaration)
-      .also { fileStack.pop() }
-  }
-
-  override fun visitClass(declaration: IrClass): IrStatement {
+  override fun visitClassNew(declaration: IrClass): IrStatement {
     receiverAccessors.push(
       declaration to {
         DeclarationIrBuilder(pluginContext, declaration.symbol)
@@ -708,12 +723,12 @@ class InjectCallTransformer(
       }
     )
     if (declaration.isLocal) localClasses += declaration
-    val result = super.visitClass(declaration)
+    val result = super.visitClassNew(declaration)
     receiverAccessors.pop()
     return result
   }
 
-  override fun visitFunction(declaration: IrFunction): IrStatement {
+  override fun visitFunctionNew(declaration: IrFunction): IrStatement {
     val dispatchReceiver = declaration.dispatchReceiverParameter?.type?.classOrNull?.owner
     if (dispatchReceiver != null) {
       receiverAccessors.push(
@@ -733,7 +748,7 @@ class InjectCallTransformer(
       )
     }
     if (declaration.isLocal) localFunctions += declaration
-    val result = super.visitFunction(declaration)
+    val result = super.visitFunctionNew(declaration)
     if (dispatchReceiver != null) receiverAccessors.pop()
     if (extensionReceiver != null) receiverAccessors.pop()
     return result
@@ -751,12 +766,12 @@ class InjectCallTransformer(
 
     val graph = pluginContext.bindingContext[
         InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
-        SourcePosition(fileStack.last().fileEntry.name, result.startOffset, result.endOffset)
+        SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
 
     return DeclarationIrBuilder(pluginContext, result.symbol)
       .irBlock {
-        val graphContext = GraphContext(graph)
+        val graphContext = GraphContext(graph, currentScope!!, result.startOffset)
         try {
           ScopeContext(
             parent = null,

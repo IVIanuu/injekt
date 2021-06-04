@@ -50,6 +50,11 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val nullableAnyType by lazy {
     anyType.copy(isMarkedNullable = true)
   }
+  val sourceKeyType by lazy {
+    module.findClassAcrossModuleDependencies(
+      ClassId.topLevel(InjektFqNames.SourceKey)
+    )!!.toClassifierRef(this, null)
+  }
   val typeKeyType by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.TypeKey)
