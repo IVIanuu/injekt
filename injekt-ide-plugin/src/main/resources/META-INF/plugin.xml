@@ -63,8 +63,6 @@
 
         <usageTypeProvider implementation="com.ivianuu.injekt.ide.usages.InjektUsageTypeProvider"/>
 
-        <customUsageSearcher implementation="com.ivianuu.injekt.ide.usages.InjektUsageSearcher"/>
-
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
 
         <lang.inspectionSuppressor language="kotlin"
