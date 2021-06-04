@@ -61,64 +61,46 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
   override fun registerReferenceProviders(registrar: KotlinPsiReferenceRegistrar) {
     KotlinReferenceContributor()
       .registerReferenceProviders(registrar)
-    registrar.registerMultiProvider<KtExpression> { expression ->
-      val context = expression.getResolutionFacade().analyze(expression)
-      val graph = context[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, expression]
-        ?: return@registerMultiProvider emptyArray()
-      if (graph !is InjectionGraph.Success)
-        return@registerMultiProvider emptyArray()
-      val references = mutableListOf<PsiReference>()
-      graph.forEachResultRecursive { _, value ->
-        if (value !is ResolutionResult.Success.WithCandidate.Value)
-          return@forEachResultRecursive
-        val candidate = value.candidate
-        if (candidate is CallableInjectable &&
-          (candidate.callable.callable.findPackage() !is BuiltInsPackageFragment)) {
-          references += InjectReference(expression, {
-              candidate.callable.callable.findPsiDeclarations(expression.project, expression.resolveScope)
-                .firstOrNull()
-                ?.safeAs<KtDeclaration>()
-                ?: candidate.callable.callable.safeAs<ReceiverParameterDescriptor>()
-                  ?.containingDeclaration
-                  ?.findPsiDeclarations(expression.project, expression.resolveScope)
-                  ?.firstOrNull()
-                  ?.safeAs<KtDeclaration>()
-            },
-            candidate.callable.callable.name
-          )
-        }
-      }
-      references.toTypedArray()
-    }
+    registrar.registerProvider<KtCallExpression> { InjectReference(it) }
   }
 }
 
-class InjectReference(
-  expression: KtExpression,
-  computeTarget: () -> KtDeclaration?,
-  private val name: Name
-) : PsiReferenceBase<KtExpression>(
+class InjectReference(expression: KtExpression) : PsiPolyVariantReferenceBase<KtExpression>(
   expression,
   TextRange.from(0, expression.text.length)
 ), KtReference, KtDescriptorsBasedReference {
-  private val target by lazy(computeTarget)
 
-  override fun multiResolve(p0: Boolean): Array<ResolveResult> =
-    target?.let { arrayOf(PsiElementResolveResult(it, true)) } ?: emptyArray()
+  override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> =
+    ResolveCache.getInstance(element.project).resolveWithCaching(this, resolver, false, incompleteCode)
 
-  override fun getTargetDescriptors(context: BindingContext): Collection<DeclarationDescriptor> =
-    listOfNotNull(target?.descriptor(context))
+  override fun getTargetDescriptors(context: BindingContext): Collection<DeclarationDescriptor> {
+    val graph = context[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, element]
+      ?: return emptyList()
+    if (graph !is InjectionGraph.Success)
+      return emptyList()
+
+    val references = mutableListOf<DeclarationDescriptor>()
+    graph.forEachResultRecursive { _, value ->
+      if (value !is ResolutionResult.Success.WithCandidate.Value)
+        return@forEachResultRecursive
+      val candidate = value.candidate
+      if (candidate is CallableInjectable &&
+        (candidate.callable.callable.findPackage() !is BuiltInsPackageFragment)
+      ) references += candidate.callable.callable
+    }
+
+    return references
+  }
+
+  override fun isReferenceTo(element: PsiElement): Boolean =
+    super<KtDescriptorsBasedReference>.isReferenceTo(element)
 
   override val resolver
     get() = KotlinDescriptorsBasedReferenceResolver
 
   override val resolvesByNames: Collection<Name>
-    get() = listOf(name)
+    get() = emptyList()
 
-  override fun resolve(): PsiElement? = target
-
-  override fun isReferenceTo(element: PsiElement): Boolean =
-    super<PsiReferenceBase>.isReferenceTo(element)
 }
 
 fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
