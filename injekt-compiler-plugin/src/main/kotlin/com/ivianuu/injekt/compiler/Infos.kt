@@ -51,9 +51,9 @@ data class CallableInfo(
 
 fun CallableDescriptor.callableInfo(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): CallableInfo {
-  trace[InjektWritableSlices.CALLABLE_INFO, this]?.let { return it }
+  trace?.get(InjektWritableSlices.CALLABLE_INFO, this)?.let { return it }
 
   if (isDeserializedDeclaration()) {
     val info = annotations
@@ -90,7 +90,7 @@ fun CallableDescriptor.callableInfo(
         )
       }
 
-      trace.record(InjektWritableSlices.CALLABLE_INFO, this, finalInfo)
+      trace?.record(InjektWritableSlices.CALLABLE_INFO, this, finalInfo)
       return finalInfo
     }
 
@@ -133,7 +133,7 @@ fun CallableDescriptor.callableInfo(
     defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
   )
 
-  trace.record(InjektWritableSlices.CALLABLE_INFO, this, info)
+  trace?.record(InjektWritableSlices.CALLABLE_INFO, this, info)
 
   persistInfoIfNeeded(info, context, trace)
 
@@ -143,7 +143,7 @@ fun CallableDescriptor.callableInfo(
 private fun CallableDescriptor.persistInfoIfNeeded(
   info: CallableInfo,
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ) {
   if (isExternalDeclaration(context) || isDeserializedDeclaration()) return
 
@@ -204,7 +204,7 @@ fun CallableInfo.toPersistedCallableInfo(context: InjektContext) = PersistedCall
 
 fun PersistedCallableInfo.toCallableInfo(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ) = CallableInfo(
   type = type.toTypeRef(context, trace),
   parameterTypes = parameterTypes
@@ -229,9 +229,9 @@ class ClassifierInfo(
 
 fun ClassifierDescriptor.classifierInfo(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): ClassifierInfo {
-  trace[InjektWritableSlices.CLASSIFIER_INFO, this]?.let { return it }
+  trace?.get(InjektWritableSlices.CLASSIFIER_INFO, this)?.let { return it }
 
   if (isDeserializedDeclaration()) {
     (if (this is TypeParameterDescriptor) {
@@ -252,7 +252,7 @@ fun ClassifierDescriptor.classifierInfo(
         ?.decode<PersistedClassifierInfo>()
         ?.toClassifierInfo(context, trace)
     })?.let {
-      trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, it)
+      trace?.record(InjektWritableSlices.CLASSIFIER_INFO, this, it)
       return it
     }
   }
@@ -303,7 +303,7 @@ fun ClassifierDescriptor.classifierInfo(
       (it is ClassDescriptor &&
           it.isInner) ||
           (it is PropertyDescriptor &&
-              it.hasBackingField(trace.bindingContext))
+              it.hasBackingField(trace?.bindingContext))
     }
 
   val info = ClassifierInfo(
@@ -314,7 +314,7 @@ fun ClassifierDescriptor.classifierInfo(
     isSingletonInjectable = isSingletonInjectable
   )
 
-  trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
+  trace?.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
 
   persistInfoIfNeeded(info, context)
 
@@ -331,7 +331,7 @@ fun ClassifierDescriptor.classifierInfo(
 
 fun PersistedClassifierInfo.toClassifierInfo(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): ClassifierInfo = ClassifierInfo(
   qualifiers = qualifiers.map { it.toTypeRef(context, trace) },
   lazySuperTypes = unsafeLazy { superTypes.map { it.toTypeRef(context, trace) } },

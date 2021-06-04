@@ -37,7 +37,7 @@ import kotlin.reflect.*
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
   .map { it.containingDeclaration }
   .filterIsInstance<ClassDescriptor>()

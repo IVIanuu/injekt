@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -33,22 +32,20 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val trace: BindingTrace = CliBindingTrace()
-
   val setClassifier by unsafeLazy {
-    module.builtIns.set.toClassifierRef(this, trace)
+    module.builtIns.set.toClassifierRef(this, null)
   }
   val collectionClassifier by unsafeLazy {
-    module.builtIns.collection.toClassifierRef(this, trace)
+    module.builtIns.collection.toClassifierRef(this, null)
   }
   val nothingType by unsafeLazy {
-    module.builtIns.nothingType.toTypeRef(this, trace)
+    module.builtIns.nothingType.toTypeRef(this, null)
   }
   val nullableNothingType by unsafeLazy {
     nothingType.copy(isMarkedNullable = true)
   }
   val anyType by unsafeLazy {
-    module.builtIns.anyType.toTypeRef(this, trace)
+    module.builtIns.anyType.toTypeRef(this, null)
   }
   val nullableAnyType by unsafeLazy {
     anyType.copy(isMarkedNullable = true)
@@ -56,7 +53,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val typeKeyType by unsafeLazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.TypeKey)
-    )!!.toClassifierRef(this, trace)
+    )!!.toClassifierRef(this, null)
   }
 
   fun classifierDescriptorForFqName(
@@ -68,8 +65,8 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
       ?.getContributedClassifier(fqName.shortName(), lookupLocation)
   }
 
-  fun classifierDescriptorForKey(key: String, trace: BindingTrace): ClassifierDescriptor {
-    trace.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
+  fun classifierDescriptorForKey(key: String, trace: BindingTrace?): ClassifierDescriptor {
+    trace?.get(InjektWritableSlices.CLASSIFIER_FOR_KEY, key)?.let { return it }
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -89,7 +86,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
         ?.declaredTypeParameters
         ?.firstOrNull { it.uniqueKey(this) == key }
       ?: error("Could not get for $fqName $key")
-    trace.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
+    trace?.record(InjektWritableSlices.CLASSIFIER_FOR_KEY, key, classifier)
     return classifier
   }
 

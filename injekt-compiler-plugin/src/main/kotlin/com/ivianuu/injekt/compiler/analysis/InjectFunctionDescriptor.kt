@@ -35,7 +35,7 @@ class InjectValueParameterDescriptor(
   parent: InjectFunctionDescriptor,
   val underlyingDescriptor: ValueParameterDescriptor,
   val context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ) : ValueParameterDescriptorImpl(
   parent,
   underlyingDescriptor,
@@ -61,7 +61,7 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
 abstract class AbstractInjectFunctionDescriptor(
   final override val underlyingDescriptor: FunctionDescriptor,
   val context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ) : InjectFunctionDescriptor {
   private val valueParameters = underlyingDescriptor
     .valueParameters
@@ -75,10 +75,10 @@ abstract class AbstractInjectFunctionDescriptor(
 
 fun FunctionDescriptor.toInjectFunctionDescriptor(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): InjectFunctionDescriptor? {
   if (this is JavaMethodDescriptor) return null
-  if (allParameters.none { it.isInject(context, context.trace) }) return null
+  if (allParameters.none { it.isInject(context, trace) }) return null
   return when (this) {
     is InjectFunctionDescriptor -> this
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, context, trace)
@@ -90,7 +90,7 @@ fun FunctionDescriptor.toInjectFunctionDescriptor(
 class InjectConstructorDescriptorImpl(
   underlyingDescriptor: ClassConstructorDescriptor,
   context: InjektContext,
-  private val trace: BindingTrace
+  private val trace: BindingTrace?
 ) : AbstractInjectFunctionDescriptor(underlyingDescriptor, context, trace),
   ClassConstructorDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
@@ -106,7 +106,7 @@ class InjectConstructorDescriptorImpl(
 class InjectFunctionDescriptorImpl(
   underlyingDescriptor: FunctionDescriptor,
   context: InjektContext,
-  private val trace: BindingTrace
+  private val trace: BindingTrace?
 ) : AbstractInjectFunctionDescriptor(underlyingDescriptor, context, trace),
   FunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
@@ -121,7 +121,7 @@ class InjectFunctionDescriptorImpl(
 class InjectSimpleFunctionDescriptorImpl(
   underlyingDescriptor: SimpleFunctionDescriptor,
   context: InjektContext,
-  private val trace: BindingTrace
+  private val trace: BindingTrace?
 ) : AbstractInjectFunctionDescriptor(underlyingDescriptor, context, trace),
   SimpleFunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =

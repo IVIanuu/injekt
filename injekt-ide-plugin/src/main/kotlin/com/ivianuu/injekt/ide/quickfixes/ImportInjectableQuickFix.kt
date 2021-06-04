@@ -187,9 +187,9 @@ fun InjektContext.getAllInjectables(project: Project, useScope: GlobalSearchScop
       annotatedDeclaration.resolveToDescriptorIfAny()
         ?.let { descriptor ->
           when (descriptor) {
-            is ClassDescriptor -> injectables += descriptor.provideConstructors(this, trace)
-            is FunctionDescriptor -> injectables += descriptor.toCallableRef(this, trace)
-            is PropertyDescriptor -> injectables += descriptor.toCallableRef(this, trace)
+            is ClassDescriptor -> injectables += descriptor.provideConstructors(this, null)
+            is FunctionDescriptor -> injectables += descriptor.toCallableRef(this, null)
+            is PropertyDescriptor -> injectables += descriptor.toCallableRef(this, null)
           }
         }
     }

@@ -58,8 +58,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             (abbreviation != null && typeParameter.defaultType.supertypes()
               .none { it.getAbbreviation() == typeArgument }) ||
                 typeArgument.toTypeRef(resolvedCall.candidateDescriptor.module
-                  .injektContext, resolvedCall.candidateDescriptor.module.injektContext
-                  .trace).anyType { it.classifier.isQualifier }
+                  .injektContext, null).anyType { it.classifier.isQualifier }
           }
       }
       "unused" -> {

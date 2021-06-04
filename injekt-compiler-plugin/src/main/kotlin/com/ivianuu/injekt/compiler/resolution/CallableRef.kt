@@ -68,9 +68,9 @@ fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isPro
 
 fun CallableDescriptor.toCallableRef(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): CallableRef {
-  trace.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
+  trace?.get(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this)?.let { return it }
   val info = callableInfo(context, trace)
   val typeParameters = typeParameters.map { it.toClassifierRef(context, trace) }
   return CallableRef(
@@ -86,12 +86,12 @@ fun CallableDescriptor.toCallableRef(
       .toMap(),
     isProvide = isProvide(context, trace),
     source = null,
-    callContext = callContext(trace.bindingContext),
+    callContext = callContext(trace?.bindingContext),
     owner = null,
     overriddenDepth = 0,
     doNotIncludeChildren = false,
     import = null
   ).also {
-    trace.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
+    trace?.record(InjektWritableSlices.CALLABLE_REF_FOR_DESCRIPTOR, this, it)
   }
 }

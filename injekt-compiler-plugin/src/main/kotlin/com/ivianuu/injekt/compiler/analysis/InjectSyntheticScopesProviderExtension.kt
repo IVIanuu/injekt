@@ -50,20 +50,20 @@ class InjectSyntheticScopes(
 
 private class InjectSyntheticScope(private val context: InjektContext) : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
-    constructor.toInjectFunctionDescriptor(context, context.trace) as? ConstructorDescriptor
+    constructor.toInjectFunctionDescriptor(context, null) as? ConstructorDescriptor
 
   override fun getSyntheticConstructors(
     contributedClassifier: ClassifierDescriptor,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedClassifier.safeAs<ClassDescriptor>()
     ?.constructors
-    ?.mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) } ?: emptyList()
+    ?.mapNotNull { it.toInjectFunctionDescriptor(context, null) } ?: emptyList()
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
       .flatMap { it.memberScope.getContributedDescriptors() }
       .filterIsInstance<FunctionDescriptor>()
-      .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
+      .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
 
   override fun getSyntheticMemberFunctions(
     receiverTypes: Collection<KotlinType>,
@@ -71,11 +71,11 @@ private class InjectSyntheticScope(private val context: InjektContext) : Synthet
     location: LookupLocation
   ): Collection<FunctionDescriptor> = receiverTypes
     .flatMap { it.memberScope.getContributedFunctions(name, location) }
-    .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
+    .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
 
   override fun getSyntheticStaticFunctions(
     contributedFunctions: Collection<FunctionDescriptor>,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedFunctions
-    .mapNotNull { it.toInjectFunctionDescriptor(context, context.trace) }
+    .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
 }

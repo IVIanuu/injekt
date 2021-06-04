@@ -37,11 +37,13 @@ enum class CallContext {
 fun CallContext.canCall(other: CallContext) =
   this == other || other == CallContext.DEFAULT
 
-fun CallableDescriptor.callContext(bindingContext: BindingContext): CallContext {
+fun CallableDescriptor.callContext(bindingContext: BindingContext?): CallContext {
   if (this !is FunctionDescriptor && this !is PropertyDescriptor)
     return CallContext.DEFAULT
 
   if (this is ConstructorDescriptor) return CallContext.DEFAULT
+
+  if (bindingContext == null) return callContextOfThis
 
   if (composeCompilerInClasspath && isComposableCallable(bindingContext))
     return CallContext.COMPOSABLE

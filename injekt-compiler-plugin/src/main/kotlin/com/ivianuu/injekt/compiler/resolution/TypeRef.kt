@@ -91,9 +91,9 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
 
 fun ClassifierDescriptor.toClassifierRef(
   context: InjektContext,
-  trace: BindingTrace
+  trace: BindingTrace?
 ): ClassifierRef {
-  trace.get(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this)?.let { return it }
+  trace?.get(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this)?.let { return it }
   val info = classifierInfo(context, trace)
 
   val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
@@ -129,13 +129,13 @@ fun ClassifierDescriptor.toClassifierRef(
       .map { it.asNameId() },
     variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
   ).also {
-    trace.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
+    trace?.record(InjektWritableSlices.CLASSIFIER_REF_FOR_CLASSIFIER, this, it)
   }
 }
 
 fun KotlinType.toTypeRef(
   context: InjektContext,
-  trace: BindingTrace,
+  trace: BindingTrace?,
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV
 ): TypeRef {
