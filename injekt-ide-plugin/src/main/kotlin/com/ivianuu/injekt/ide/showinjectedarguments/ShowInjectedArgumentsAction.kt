@@ -53,8 +53,9 @@ class ShowInjectedArgumentsAction : AnAction("Show injected arguments") {
 
     val selectedElement = file.findElementAt(editor.caretModel.offset)
 
-    val call = selectedElement?.getParentOfTypes2<KtCallExpression, KtBinaryExpression>()
-      ?.cast<KtExpression>()
+    val call = selectedElement
+      ?.getParentOfTypes3<KtCallExpression, KtBinaryExpression, KtSuperTypeCallEntry>()
+      ?.cast<KtElement>()
       ?: return
 
     showInjectedArgumentsPopup(call, project, editor)
@@ -62,7 +63,7 @@ class ShowInjectedArgumentsAction : AnAction("Show injected arguments") {
 }
 
 fun showInjectedArgumentsPopup(
-  call: KtExpression,
+  call: KtElement,
   project: Project,
   editor: Editor,
   initialSelectionPredicate: ((InjectableRequest, ResolutionResult) -> Boolean)? = null

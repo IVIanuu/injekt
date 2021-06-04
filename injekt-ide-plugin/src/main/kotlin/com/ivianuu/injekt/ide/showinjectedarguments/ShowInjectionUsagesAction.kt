@@ -65,7 +65,7 @@ class ShowInjectionUsagesAction : AnAction("Show injection usages") {
       showInjectedArgumentsPopup(referencingExpressions.single(), project, editor)
     } else {
       ListPopupImpl(
-        object : BaseListPopupStep<KtExpression>(
+        object : BaseListPopupStep<KtElement>(
           "Pick call",
           referencingExpressions
         ) {
@@ -74,7 +74,7 @@ class ShowInjectionUsagesAction : AnAction("Show injection usages") {
           override fun isSpeedSearchEnabled() = true
 
           override fun onChosen(
-            selectedValue: KtExpression?,
+            selectedValue: KtElement?,
             finalChoice: Boolean
           ): PopupStep<String>? {
             if (selectedValue == null || !finalChoice) return null
@@ -82,9 +82,9 @@ class ShowInjectionUsagesAction : AnAction("Show injection usages") {
             return null
           }
 
-          override fun hasSubstep(selectedValue: KtExpression?) = false
-          override fun getTextFor(value: KtExpression) = value.text
-          override fun getIconFor(value: KtExpression) = null
+          override fun hasSubstep(selectedValue: KtElement?) = false
+          override fun getTextFor(value: KtElement) = value.text
+          override fun getIconFor(value: KtElement) = null
         }
       ).showInBestPositionFor(editor)
     }

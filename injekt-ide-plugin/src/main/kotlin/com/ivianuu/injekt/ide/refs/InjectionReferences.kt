@@ -62,10 +62,12 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
     KotlinReferenceContributor()
       .registerReferenceProviders(registrar)
     registrar.registerProvider<KtCallExpression> { InjectReference(it) }
+    registrar.registerProvider<KtBinaryExpression> { InjectReference(it) }
+    registrar.registerProvider<KtSuperTypeCallEntry> { InjectReference(it) }
   }
 }
 
-class InjectReference(expression: KtExpression) : PsiPolyVariantReferenceBase<KtExpression>(
+class InjectReference(expression: KtElement) : PsiPolyVariantReferenceBase<KtElement>(
   expression,
   TextRange.from(0, expression.text.length)
 ), KtReference, KtDescriptorsBasedReference {

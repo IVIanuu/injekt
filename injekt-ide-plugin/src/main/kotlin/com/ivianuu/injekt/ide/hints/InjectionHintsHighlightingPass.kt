@@ -41,14 +41,23 @@ class InjectionHintsHighlightingPass(
   override fun doCollectInformation(progress: ProgressIndicator) {
     if (!injectionHintsEnabled) return
     hints.clear()
-    file.accept(expressionRecursiveVisitor { call ->
-      val bindingContext = call.getResolutionFacade().analyze(call)
-      val graph = bindingContext[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, call]
-        ?: return@expressionRecursiveVisitor
-      if (graph !is InjectionGraph.Success)
-        return@expressionRecursiveVisitor
-      hints += InjectionCallHint(call, graph.results.toList())
-    })
+    file.accept(
+      object : KtVisitorVoid() {
+        override fun visitKtElement(element: KtElement) {
+          super.visitKtElement(element)
+          if (element is KtCallExpression ||
+            element is KtBinaryExpression ||
+            element is KtSuperTypeCallEntry) {
+            val bindingContext = element.getResolutionFacade().analyze(element)
+            val graph = bindingContext[InjektWritableSlices.INJECTION_GRAPH_FOR_CALL, element]
+              ?: return
+            if (graph !is InjectionGraph.Success)
+              return
+            hints += InjectionCallHint(element, graph.results.toList())
+          }
+        }
+      }
+    )
   }
 
   override fun doApplyInformationToEditor() {
@@ -67,7 +76,7 @@ class InjectionHintsHighlightingPass(
 }
 
 class InjectionCallHint(
-  val expression: KtExpression,
+  val expression: KtElement,
   val results: List<Pair<InjectableRequest, ResolutionResult.Success>>
 ) {
   val elements: List<Element> = run {
