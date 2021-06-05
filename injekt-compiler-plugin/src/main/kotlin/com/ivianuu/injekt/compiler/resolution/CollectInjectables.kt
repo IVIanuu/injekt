@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.cfg.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.load.java.lazy.descriptors.*
 import org.jetbrains.kotlin.name.*
@@ -55,41 +56,35 @@ fun TypeRef.collectInjectables(
     )
   }
 
-  val callables = mutableListOf<CallableRef>()
-  val seen = mutableSetOf<TypeRef>()
-  fun collectInner(type: TypeRef, overriddenDepth: Int) {
-    checkCancelled()
-    if (type in seen) return
-    seen += type
-    val substitutionMap = type.classifier.typeParameters.toMap(type.arguments)
-    callables += type.classifier.descriptor!!
-      .defaultType
-      .memberScope
-      .collectInjectables(context, trace, classBodyView)
-      .filter {
-        it.callable.safeAs<CallableMemberDescriptor>()
-          ?.kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE
-      }
-      .map { it.substitute(substitutionMap) }
-      .map { callable ->
-        callable.copy(
-          overriddenDepth = overriddenDepth,
-          owner = this.classifier,
-          isProvide = true,
-          parameterTypes = if (callable.callable.dispatchReceiverParameter != null &&
-              callable.parameterTypes.isNotEmpty()) {
-            callable.parameterTypes.toMutableMap()
-              .also {
-                it[DISPATCH_RECEIVER_INDEX] =
-                  subtypeView(callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.classifier)!!
-              }
-          } else callable.parameterTypes
-        )
-      }
-    type.superTypes.forEach { collectInner(it, overriddenDepth + 1) }
-  }
-  collectInner(this, 0)
-  return callables
+  return classifier.descriptor!!
+    .defaultType
+    .memberScope
+    .collectInjectables(context, trace, classBodyView)
+    .map {
+      val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+        CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+        val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
+          .overriddenTreeAsSequence(false)
+          .last()
+          .containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef(context, trace)
+        classifier.typeParameters.toMap(arguments) + originalClassifier.typeParameters
+          .toMap(subtypeView(originalClassifier)!!.arguments)
+      } else classifier.typeParameters.toMap(arguments)
+      it.substitute(substitutionMap)
+    }
+    .map { callable ->
+      callable.copy(
+        owner = classifier,
+        isProvide = true,
+        parameterTypes = if (callable.callable.dispatchReceiverParameter != null &&
+          callable.parameterTypes.isNotEmpty()) {
+          callable.parameterTypes.toMutableMap()
+            .also { it[DISPATCH_RECEIVER_INDEX] = this }
+        } else callable.parameterTypes
+      )
+    }
 }
 
 fun ResolutionScope.collectInjectables(
@@ -236,7 +231,7 @@ fun CallableRef.collectInjectables(
     return
   }
 
-  val nextCallable = if (type.isProvide) {
+  val nextCallable = if (type.isProvideFunctionType) {
     addInjectable(this)
     copy(type = type.copy(frameworkKey = generateFrameworkKey()))
   } else this
@@ -351,11 +346,21 @@ fun TypeRef.collectTypeScopeInjectables(
     if (currentType.isStarProjection) return@forEach
     injectables += currentType.collectInjectablesForSingleType(context, trace, lookupLocation)
   }
-  return injectables.filter {
-    it.typeParameters.none { typeParameter ->
-      typeParameter.isSpread
+  return injectables
+    .filter { callable ->
+      if (callable.callable !is CallableMemberDescriptor) return@filter true
+      if (callable.typeParameters.any { it.isSpread }) return@filter false
+
+      val containingObjectClassifier = callable.callable.containingDeclaration
+        .safeAs<ClassDescriptor>()
+        ?.takeIf { it.kind == ClassKind.OBJECT }
+        ?.toClassifierRef(context, trace)
+
+      containingObjectClassifier == null || injectables.none { other ->
+        other.callable is LazyClassReceiverParameterDescriptor &&
+            other.buildContext(context, emptyList(), containingObjectClassifier.defaultType).isOk
+      }
     }
-  }
 }
 
 private fun TypeRef.collectInjectablesForSingleType(

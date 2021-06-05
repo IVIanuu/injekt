@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
+import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
@@ -53,5 +54,18 @@ class ProvideLambdaTest {
     """
   ) {
     irShouldNotContain("content = <get-myAlias>()")
+  }
+
+  @Test fun testProvideLambdaIdentity() = codegen(
+    """
+      private val foo1 = Foo()
+      @Provide val foo1Lambda: @Provide () -> Foo = { foo1 }
+      private val foo2 = Foo()
+      @Provide val foo2Lambda: @Provide () -> Foo = { foo2 }
+      fun invoke() = inject<Set<Foo>>()
+    """
+  ) {
+    val foos = invokeSingleFile<Set<Foo>>()
+    foos shouldBe foos.distinct()
   }
 }

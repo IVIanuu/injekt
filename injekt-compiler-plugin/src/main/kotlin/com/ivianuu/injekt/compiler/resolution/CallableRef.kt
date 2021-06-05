@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -88,7 +89,7 @@ fun CallableDescriptor.toCallableRef(
     source = null,
     callContext = callContext(trace?.bindingContext),
     owner = null,
-    overriddenDepth = 0,
+    overriddenDepth = overriddenTreeUniqueAsSequence(false).count() - 1,
     doNotIncludeChildren = false,
     import = null
   ).also {
