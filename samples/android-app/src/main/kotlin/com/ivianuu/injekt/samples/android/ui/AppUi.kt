@@ -63,7 +63,7 @@ class CounterViewModel(
   private val incCounter: IncCounterUseCase,
   private val decCounter: DecCounterUseCase,
   val state: CounterFlow,
-  private val scope: InjectCoroutineScope<ActivityRetainedScope>
+  private val scope: InjektCoroutineScope<ActivityRetainedScope>
 ) {
   fun inc() {
     scope.launch { incCounter() }

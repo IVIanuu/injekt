@@ -37,14 +37,14 @@ class InjectCoroutineScopeTest {
     val scope = inject<TestScope1>()
     val a = scope.coroutineScope
     val b = scope.element<CoroutineScope>()
-    val c = scope.element<InjectCoroutineScope<TestScope1>>()
+    val c = scope.element<InjektCoroutineScope<TestScope1>>()
     a shouldBeSameInstanceAs b
     b shouldBeSameInstanceAs c
   }
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: InjectCoroutineContext<TestScope1> = Dispatchers.Main
+    @Provide val customContext: InjektCoroutineContext<TestScope1> = Dispatchers.Main
     val scope = inject<TestScope1>()
     scope.coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }

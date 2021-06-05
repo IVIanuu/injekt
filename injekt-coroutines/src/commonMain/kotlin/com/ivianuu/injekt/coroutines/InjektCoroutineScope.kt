@@ -24,16 +24,16 @@ import kotlin.coroutines.*
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
  *
- * [CoroutineContext] of the scope can be specified with a injectable [InjectCoroutineContext]<S> and
+ * [CoroutineContext] of the scope can be specified with a injectable [InjektCoroutineContext]<S> and
  * defaults to [DefaultDispatcher]
  */
-typealias InjectCoroutineScope<S> = CoroutineScope
+typealias InjektCoroutineScope<S> = CoroutineScope
 
 /**
- * Installs a [InjectCoroutineScope] for scope [S]
+ * Installs a [InjektCoroutineScope] for scope [S]
  */
-@Provide fun <S : Scope> injectCoroutineScopeElement(context: InjectCoroutineContext<S>):
-    @Scoped<S> @ScopeElement<S> InjectCoroutineScope<S> =
+@Provide fun <S : Scope> injektCoroutineScopeElement(context: InjektCoroutineContext<S>):
+    @Scoped<S> @ScopeElement<S> InjektCoroutineScope<S> =
   object : CoroutineScope, ScopeDisposable {
     override val coroutineContext: CoroutineContext = context + SupervisorJob()
     override fun dispose() {
@@ -49,16 +49,16 @@ val Scope.coroutineScope: CoroutineScope get() = element()
 /**
  * Installs a [CoroutineScope] for scope [S]
  */
-@Provide inline fun <S : Scope> coroutineScopeElement(scope: InjectCoroutineScope<S>):
+@Provide inline fun <S : Scope> coroutineScopeElement(scope: InjektCoroutineScope<S>):
     @ScopeElement<S> CoroutineScope = scope
 
 /**
- * [CoroutineContext] of a [InjectCoroutineScope]
+ * [CoroutineContext] of a [InjektCoroutineScope]
  */
-typealias InjectCoroutineContext<S> = CoroutineContext
+typealias InjektCoroutineContext<S> = CoroutineContext
 
 /**
- * The default [InjectCoroutineContext] for type [S]
+ * The default [InjektCoroutineContext] for type [S]
  */
-@Provide inline fun <S : Scope> defaultInjectCoroutineContext(dispatcher: DefaultDispatcher):
-    InjectCoroutineContext<S> = dispatcher
+@Provide inline fun <S : Scope> defaultInjektCoroutineContext(dispatcher: DefaultDispatcher):
+    InjektCoroutineContext<S> = dispatcher
