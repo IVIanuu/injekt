@@ -246,7 +246,7 @@ class SpreadingInjectableTest {
       @Provide
       class DepWrapper2(dep: () -> Dep, wrapper: () -> DepWrapper)
   
-      @InstallElement<AppScope>
+      @ScopeElement<AppScope>
       @Provide
       class MyComponent(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2)
   
@@ -256,7 +256,7 @@ class SpreadingInjectableTest {
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun invoke() {
-        inject<(@Provide @InstallElement<AppScope> App) -> AppScope>()
+        inject<(@Provide @ScopeElement<AppScope> App) -> AppScope>()
       }
     """
   )

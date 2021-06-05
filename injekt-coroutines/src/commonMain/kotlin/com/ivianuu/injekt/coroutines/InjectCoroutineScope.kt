@@ -33,7 +33,7 @@ typealias InjectCoroutineScope<S> = CoroutineScope
  * Installs a [InjectCoroutineScope] for scope [S]
  */
 @Provide fun <S : Scope> injectCoroutineScopeElement(context: InjectCoroutineContext<S>):
-    @Scoped<S> @InstallElement<S> InjectCoroutineScope<S> =
+    @Scoped<S> @ScopeElement<S> InjectCoroutineScope<S> =
   object : CoroutineScope, ScopeDisposable {
     override val coroutineContext: CoroutineContext = context + SupervisorJob()
     override fun dispose() {
@@ -50,7 +50,7 @@ val Scope.coroutineScope: CoroutineScope get() = element()
  * Installs a [CoroutineScope] for scope [S]
  */
 @Provide inline fun <S : Scope> coroutineScopeElement(scope: InjectCoroutineScope<S>):
-    @InstallElement<S> CoroutineScope = scope
+    @ScopeElement<S> CoroutineScope = scope
 
 /**
  * [CoroutineContext] of a [InjectCoroutineScope]

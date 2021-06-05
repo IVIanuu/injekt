@@ -33,7 +33,7 @@ val ApplicationCall.appScope: AppScope
   get() = application.appScope
 
 inline fun Application.initializeAppScope(
-  @Inject scopeFactory: (@Provide @InstallElement<AppScope> Application) -> AppScope
+  @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Application) -> AppScope
 ) {
   val scope = scopeFactory(this)
   registerAppScope(scope)

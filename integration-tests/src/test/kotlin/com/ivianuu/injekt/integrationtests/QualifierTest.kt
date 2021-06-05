@@ -151,7 +151,7 @@ class QualifierTest {
   
       @Provide val childScopeModule = ChildScopeModule0<AppScope, ChildScope>()
   
-      @InstallElement<ChildScope>
+      @ScopeElement<ChildScope>
       @Provide
       class MyElement(val foo: Foo)
     """,

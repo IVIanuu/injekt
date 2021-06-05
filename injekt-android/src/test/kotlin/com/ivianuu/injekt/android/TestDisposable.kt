@@ -27,5 +27,5 @@ class TestScopeDisposable<S : Scope> : ScopeDisposable {
 }
 
 @Provide inline fun <S : Scope> testScopeDisposable():
-    @Scoped<S> @InstallElement<S> TestScopeDisposable<S> =
+    @Scoped<S> @ScopeElement<S> TestScopeDisposable<S> =
   TestScopeDisposable()

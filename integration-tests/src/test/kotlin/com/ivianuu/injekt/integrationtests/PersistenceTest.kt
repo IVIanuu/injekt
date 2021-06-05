@@ -90,7 +90,7 @@ class PersistenceTest {
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
     """
       fun myFunction(
-        @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
+        @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Any) -> AppScope
       ): AppScope = TODO()
     """,
     """
@@ -102,7 +102,7 @@ class PersistenceTest {
   @Test fun testNonInjectablePrimaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass(
-        @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
+        @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Any) -> AppScope
       )
     """,
     """
@@ -115,7 +115,7 @@ class PersistenceTest {
     """
       class MyClass {
         constructor(
-          @Inject scopeFactory: (@Provide @InstallElement<AppScope> Any) -> AppScope
+          @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Any) -> AppScope
         )
       }
     """,
@@ -142,11 +142,11 @@ class PersistenceTest {
   @Test fun testNonInjectableClassWithInjectableMembers2() = singleAndMultiCodegen(
     """ 
       abstract class MyAbstractChildScopeModule<P : Scope, T : Any, S : T> {
-        @Provide fun factory(scopeFactory: S): @InstallElement<P> @ChildScopeFactory T = scopeFactory
+        @Provide fun factory(scopeFactory: S): @ScopeElement<P> @ChildScopeFactory T = scopeFactory
       }
       
       class MyChildScopeModule1<P : Scope, P1, C : Scope> : MyAbstractChildScopeModule<P,
-        (P1) -> C, (@Provide @InstallElement<C> P1) -> C>()
+        (P1) -> C, (@Provide @ScopeElement<C> P1) -> C>()
     """,
     """
       typealias TestScope1 = Scope

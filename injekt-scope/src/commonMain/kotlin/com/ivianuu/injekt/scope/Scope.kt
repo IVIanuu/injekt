@@ -73,7 +73,7 @@ interface Scope : ScopeDisposable {
     @Provide inline fun <S : Scope> Scope(
       parent: @Parent Scope? = null,
       typeKey: TypeKey<S>,
-      elements: (@Provide S, @Provide @Parent Scope?) -> Set<ScopeElement<S>> = { _, _ -> emptySet() },
+      elements: (@Provide S, @Provide @Parent Scope?) -> Set<ScopeElementPair<S>> = { _, _ -> emptySet() },
       initializers: (@Provide S, @Provide @Parent Scope?) -> Set<ScopeInitializer<S>> = { _, _ -> emptySet() }
     ): S {
       val scope = ScopeImpl(typeKey, parent)
@@ -157,7 +157,7 @@ private class InvokeOnDisposeKey
 
 private val NoOpScopeDisposable = ScopeDisposable { }
 
-class ScopeElement<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
+class ScopeElementPair<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
 
 /**
  * Registers the declaration in the [Scope] [S]
@@ -165,7 +165,7 @@ class ScopeElement<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
  * Example:
  * ```
  * @Provide
- * @InstallElement<AppScope>
+ * @ScopeElement<AppScope>
  * class MyAppDeps(val api: Api, val database: Database)
  *
  * fun runApp(@Inject appScope: AppScope) {
@@ -173,13 +173,13 @@ class ScopeElement<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
  * }
  * ```
  */
-@Qualifier annotation class InstallElement<S : Scope> {
+@Qualifier annotation class ScopeElement<S : Scope> {
   companion object {
-    @Provide class Module<@Spread T : @InstallElement<S> U, U : Any, S : Scope> {
-      @Provide inline fun scopeElement(
+    @Provide class Module<@Spread T : @ScopeElement<S> U, U : Any, S : Scope> {
+      @Provide inline fun elementPair(
         noinline factory: () -> T,
         key: TypeKey<U>
-      ): ScopeElement<S> = ScopeElement(key, factory)
+      ): ScopeElementPair<S> = ScopeElementPair(key, factory)
 
       @Provide inline fun elementAccessor(scope: S, key: TypeKey<U>): U = scope.element(key)
     }

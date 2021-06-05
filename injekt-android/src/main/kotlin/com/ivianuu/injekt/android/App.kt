@@ -41,7 +41,7 @@ interface AppScopeOwner {
 }
 
 inline fun Application.createAppScope(
-  @Inject scopeFactory: (@Provide @InstallElement<AppScope> Application) -> AppScope
+  @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Application) -> AppScope
 ): AppScope = scopeFactory(this)
 
 typealias AppContext = Context

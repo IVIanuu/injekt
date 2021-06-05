@@ -25,7 +25,7 @@ import org.junit.*
 
 class ScopeTest {
   @Test fun testGetElement() {
-    @Provide val element: @InstallElement<TestScope1> String = "value"
+    @Provide val element: @ScopeElement<TestScope1> String = "value"
     val scope = inject<TestScope1>()
     scope.element<String>() shouldBe "value"
   }
@@ -153,7 +153,7 @@ class ScopeTest {
   }
 
   @Test fun testChildReturnsParentElement() {
-    @Provide val parentElement: @InstallElement<TestScope1> String = "value"
+    @Provide val parentElement: @ScopeElement<TestScope1> String = "value"
     @Provide val childScopeModule = ChildScopeModule0<TestScope1, TestScope2>()
     val parentScope = inject<TestScope1>()
     val childScope = parentScope.element<@ChildScopeFactory () -> TestScope2>()

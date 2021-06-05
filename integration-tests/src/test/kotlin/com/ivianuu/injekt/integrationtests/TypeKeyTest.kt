@@ -130,7 +130,7 @@ class TypeKeyTest {
   @Test fun testTypeKeyWithStar2() = codegen(
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      val scope = inject<(@Provide @InstallElement<AppScope> Map<*, *>) -> AppScope>()
+      val scope = inject<(@Provide @ScopeElement<AppScope> Map<*, *>) -> AppScope>()
         .invoke(emptyMap<Any?, Any?>())
       fun invoke() = scope.element<Map<*, *>>()
     """

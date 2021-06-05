@@ -76,20 +76,20 @@ class ProviderTest {
       @Provide fun scopeBFactory(
         parent: ScopeA,
         scopeFactory: () -> ScopeB
-      ): @InstallElement<ScopeA> () -> ScopeB = scopeFactory
+      ): @ScopeElement<ScopeA> () -> ScopeB = scopeFactory
 
       typealias ScopeC = Scope
 
       @Provide fun scopeCFactory(
         parent: ScopeB,
         scopeFactory: () -> ScopeC
-      ): @InstallElement<ScopeB> () -> ScopeC = scopeFactory
+      ): @ScopeElement<ScopeB> () -> ScopeC = scopeFactory
     """,
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
       fun createScopeA() = inject<ScopeA>()
 
-      @InstallElement<ScopeC>
+      @ScopeElement<ScopeC>
       @Provide 
       class MyComponent(
         val a: ScopeA,

@@ -33,7 +33,7 @@ class ScopedTest {
       return Foo()
     }
 
-    @Provide fun fooElement(foo: Foo): @InstallElement<TestScope1> @Element Foo = foo
+    @Provide fun fooElement(foo: Foo): @ScopeElement<TestScope1> @Element Foo = foo
     val scope = inject<TestScope1>()
     callCount shouldBe 0
     scope.element<@Element Foo>()

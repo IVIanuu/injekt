@@ -100,11 +100,11 @@ class TypeSubstitutionTest {
     map[scopedS] shouldBe appScope
   }
 
-  @Test fun testGetSubstitutionMapInInstallElementAndInjectCoroutineScopeLikeScenario() =
+  @Test fun testGetSubstitutionMapInScopeElementAndInjectCoroutineScopeLikeScenario() =
     withTypeCheckerContext {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
         injektContext.classifierDescriptorForFqName(
-          FqName("com.ivianuu.injekt.scope.InstallElement.Companion.Module"),
+          FqName("com.ivianuu.injekt.scope.ScopeElement.Companion.Module"),
           NoLookupLocation.FROM_BACKEND
         )!!
           .cast<ClassDescriptor>()
