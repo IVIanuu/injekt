@@ -457,9 +457,16 @@ class InjectCallTransformer(
         putValueArgument(
           0,
           irString(
-            "${currentFile.name}:${
-              graphContext.scope.irElement.cast<IrDeclaration>()
-                .descriptor.fqNameSafe.asString()}:${graphContext.startOffset}"
+            buildString {
+              append(currentFile.name)
+              append(":")
+              append(graphContext.scope.irElement.cast<IrDeclaration>()
+                .descriptor.fqNameSafe)
+              append(":")
+              append(currentFile.fileEntry.getLineNumber(graphContext.startOffset) + 1)
+              append(":")
+              append(currentFile.fileEntry.getColumnNumber(graphContext.startOffset))
+            }
           )
         )
       }

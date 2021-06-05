@@ -26,7 +26,7 @@ class SourceKeyTest {
       fun invoke() = sourceKey()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:470"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:21"
   }
 
   @Test fun testSourceKeyInLambda() = codegen(
@@ -34,7 +34,7 @@ class SourceKeyTest {
       fun invoke() = { { sourceKey() }() }()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke.<anonymous>.<anonymous>:474"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke.<anonymous>.<anonymous>:17:25"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
@@ -44,6 +44,6 @@ class SourceKeyTest {
       fun invoke() = b()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:554"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:19:21"
   }
 }

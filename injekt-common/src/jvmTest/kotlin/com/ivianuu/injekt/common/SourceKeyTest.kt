@@ -21,6 +21,7 @@ import org.junit.*
 
 class SourceKeyTest {
   @Test fun testSourceKey() {
-    sourceKey().value shouldBe "SourceKeyTest.kt:com.ivianuu.injekt.common.SourceKeyTest.testSourceKey:732"
+    sourceKey().value shouldBe
+        "SourceKeyTest.kt:com.ivianuu.injekt.common.SourceKeyTest.testSourceKey:24:4"
   }
 }
