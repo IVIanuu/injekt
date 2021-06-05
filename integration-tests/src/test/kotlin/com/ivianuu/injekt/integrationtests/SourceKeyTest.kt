@@ -21,7 +21,7 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class SourceKeyTest {
-  @Test fun testSimpleSourceKey() = codegen(
+  @Test fun testSourceKeyInFunction() = codegen(
     """
       fun invoke() = sourceKey()
     """
@@ -29,12 +29,44 @@ class SourceKeyTest {
     invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:21"
   }
 
+  @Test fun testSourceKeyInProperty() = codegen(
+    """
+      val key = sourceKey()
+      fun invoke() = key
+    """
+  ) {
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:17:16"
+  }
+
+  @Test fun testSourceKeyInPropertyGetter() = codegen(
+    """
+      val key get() = sourceKey()
+      fun invoke() = key
+    """
+  ) {
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:17:22"
+  }
+
   @Test fun testSourceKeyInLambda() = codegen(
     """
       fun invoke() = { { sourceKey() }() }()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke.<anonymous>.<anonymous>:17:25"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke.\$anonymous.\$anonymous:17:25"
+  }
+
+  @Test fun testSourceKeyInClassInitializer() = codegen(
+    """
+      class MyClass {
+        val key: String
+        init {
+          key = sourceKey().value
+        }
+      }
+      fun invoke() = MyClass().key
+    """
+  ) {
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:16"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
