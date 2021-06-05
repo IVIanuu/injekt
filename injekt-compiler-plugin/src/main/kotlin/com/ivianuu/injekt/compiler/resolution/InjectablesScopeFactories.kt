@@ -444,9 +444,8 @@ private fun BlockExpressionInjectablesScope(
   trace: BindingTrace,
   parent: InjectablesScope
 ): InjectablesScope {
-  val positionOffset = position.getStartOffsetIn(block)
   val visibleInjectableDeclarations = block.statements
-    .filter { it.getStartOffsetIn(block) < positionOffset }
+    .filter { it.endOffset < position.startOffset }
     .filterIsInstance<KtNamedDeclaration>()
     .mapNotNull { it.descriptor(trace.bindingContext) }
     .filter { it.isProvide(context, trace) }
