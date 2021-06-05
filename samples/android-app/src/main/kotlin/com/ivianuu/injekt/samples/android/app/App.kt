@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
+@file:Providers(
+  "com.ivianuu.injekt.android.*",
+  "com.ivianuu.injekt.coroutines.*",
+  "com.ivianuu.injekt.scope.*",
+  "com.ivianuu.injekt.samples.android.data.*",
+  "com.ivianuu.injekt.samples.android.domain.*",
+  "com.ivianuu.injekt.samples.android.ui.*"
+)
+
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.*
@@ -24,14 +33,6 @@ import com.ivianuu.injekt.scope.*
 class App : Application(), AppScopeOwner {
   override lateinit var appScope: AppScope
 
-  @Providers(
-    "com.ivianuu.injekt.android.*",
-    "com.ivianuu.injekt.coroutines.*",
-    "com.ivianuu.injekt.scope.*",
-    "com.ivianuu.injekt.samples.android.data.*",
-    "com.ivianuu.injekt.samples.android.domain.*",
-    "com.ivianuu.injekt.samples.android.ui.*"
-  )
   override fun onCreate() {
     appScope = createAppScope()
     super.onCreate()
