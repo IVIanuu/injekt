@@ -69,6 +69,20 @@ class SourceKeyTest {
     invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:16"
   }
 
+  @Test fun testSourceKeyInLambdaInClassInitializer() = codegen(
+    """
+      class MyClass {
+        val key: String
+        init {
+          key = { sourceKey().value }()
+        }
+      }
+      fun invoke() = MyClass().key
+    """
+  ) {
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:18"
+  }
+
   @Test fun testSourceKeyPassing() = codegen(
     """
       fun a(@Inject key: SourceKey) = key

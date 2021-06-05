@@ -464,7 +464,10 @@ class InjectCallTransformer(
                 .descriptor
                 .fqNameSafe
                 .pathSegments()
-                .filter { it.asString() != "<anonymous>" }
+                .filter {
+                  it.asString() != "<anonymous>" &&
+                      it.asString() != "<init>"
+                }
                 .map {
                   it.asString()
                     .removePrefix("<get-")
