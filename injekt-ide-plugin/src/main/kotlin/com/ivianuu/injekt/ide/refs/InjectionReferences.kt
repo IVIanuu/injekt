@@ -82,9 +82,9 @@ class InjectReference(expression: KtElement) : PsiPolyVariantReferenceBase<KtEle
       return emptyList()
 
     val references = mutableListOf<DeclarationDescriptor>()
-    graph.forEachResultRecursive { _, value ->
+    graph.visitRecursive { _, value ->
       if (value !is ResolutionResult.Success.WithCandidate.Value)
-        return@forEachResultRecursive
+        return@visitRecursive
       val candidate = value.candidate
       if (candidate is CallableInjectable &&
         (candidate.callable.callable.findPackage() !is BuiltInsPackageFragment)

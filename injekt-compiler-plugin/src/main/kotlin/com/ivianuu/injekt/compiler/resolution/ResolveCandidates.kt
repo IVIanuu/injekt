@@ -570,28 +570,27 @@ private fun InjectionGraph.Success.postProcess(
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit,
   usages: MutableMap<UsageKey, MutableList<InjectableRequest>>
 ) {
-  forEachResultRecursive { request, result ->
+  visitRecursive { request, result ->
     if (result is ResolutionResult.Success.WithCandidate.Value)
       usages.getOrPut(result.usageKey) { mutableListOf() } += request
     onEachResult(request, result)
   }
 }
 
-fun InjectionGraph.forEachResultRecursive(
+fun ResolutionResult.visitRecursive(
+  request: InjectableRequest,
   action: (InjectableRequest, ResolutionResult) -> Unit
 ) {
-  fun ResolutionResult.visit(request: InjectableRequest) {
-    action(request, this)
-    if (this is ResolutionResult.Success.WithCandidate.Value) {
-      dependencyResults
-        .forEach { (request, result) ->
-          if (result is ResolutionResult.Success.WithCandidate.Value) {
-            result.visit(request)
-          }
-        }
-    }
+  action(request, this)
+  if (this is ResolutionResult.Success.WithCandidate.Value) {
+    dependencyResults
+      .forEach { (request, result) ->
+        result.visitRecursive(request, action)
+      }
   }
+}
 
+fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) -> Unit) {
   val results = when (this) {
     is InjectionGraph.Success -> results
     is InjectionGraph.Error -> mapOf(failureRequest to failure)
@@ -599,6 +598,6 @@ fun InjectionGraph.forEachResultRecursive(
 
   results
     .forEach { (request, result) ->
-      result.visit(request)
+      result.visitRecursive(request, action)
     }
 }
