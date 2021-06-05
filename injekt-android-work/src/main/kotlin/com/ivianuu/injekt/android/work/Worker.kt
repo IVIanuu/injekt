@@ -29,26 +29,24 @@ import kotlin.reflect.*
  * Example:
  * ```
  * @Provide
- * @InstallWorker
+ * @InjektWorker
  * class MyWorker(
  *   context: AppContext,
  *   parameters: WorkerParameters
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
-@Qualifier annotation class InstallWorker {
+@Qualifier annotation class InjektWorker {
   companion object {
-    @Provide inline fun <@Spread T : @InstallWorker S, S : ListenableWorker> workerFactory(
+    @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
       noinline factory: (@Provide WorkerParameters) -> T,
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
 }
 
-internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
-
 /**
- * Factory which is able to create [ListenableWorker]s installed via [InstallWorker]
+ * Factory which is able to create [ListenableWorker]s installed via [InjektWorker]
  */
 @Provide class InjektWorkerFactory(
   private val workers: Map<String, SingleWorkerFactory>
@@ -89,3 +87,5 @@ object WorkerInitializerModule {
 
 @Provide inline val AppContext.workManager: WorkManager
   get() = WorkManager.getInstance(this)
+
+internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker

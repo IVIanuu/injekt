@@ -28,7 +28,7 @@ import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
-class InstallWorkerTest {
+class InjektWorkerTest {
   @Providers(
     "com.ivianuu.injekt.common.kClass",
     "com.ivianuu.injekt.common.mapOfPairs"
@@ -41,7 +41,7 @@ class InstallWorkerTest {
   }
 }
 
-@Provide @InstallWorker class TestWorker(
+@Provide @InjektWorker class TestWorker(
   appContext: Context,
   workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
