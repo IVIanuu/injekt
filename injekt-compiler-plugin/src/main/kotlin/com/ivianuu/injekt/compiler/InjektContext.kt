@@ -64,6 +64,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val injectableConstructors = mutableMapOf<ClassDescriptor, List<CallableRef>>()
   val isProvide = mutableMapOf<Any, Boolean>()
   val isInject = mutableMapOf<Any, Boolean>()
+  val blockScopes = mutableMapOf<Pair<KtBlockExpression, DeclarationDescriptor>, InjectablesScope>()
   val classifierRefs = mutableMapOf<ClassifierDescriptor, ClassifierRef>()
   val callableRefs = mutableMapOf<CallableDescriptor, CallableRef>()
   val callableInfos = mutableMapOf<CallableDescriptor, CallableInfo>()
