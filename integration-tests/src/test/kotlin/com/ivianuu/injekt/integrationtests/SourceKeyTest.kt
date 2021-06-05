@@ -52,7 +52,7 @@ class SourceKeyTest {
       fun invoke() = { { sourceKey() }() }()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke.\$anonymous.\$anonymous:17:25"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:25"
   }
 
   @Test fun testSourceKeyInClassInitializer() = codegen(
