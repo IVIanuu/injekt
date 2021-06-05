@@ -47,4 +47,3 @@ class InstallWorkerTest {
 ) : Worker(appContext, workerParams) {
   override fun doWork(): Result = Result.success()
 }
-
