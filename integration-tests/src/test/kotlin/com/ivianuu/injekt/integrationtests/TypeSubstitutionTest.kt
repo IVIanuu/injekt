@@ -118,7 +118,7 @@ class TypeSubstitutionTest {
           NoLookupLocation.FROM_BACKEND
         )!!
           .getContributedFunctions(
-            "injectCoroutineScopeElement".asNameId(),
+            "injektCoroutineScopeElement".asNameId(),
             NoLookupLocation.FROM_BACKEND
           )
           .single()
