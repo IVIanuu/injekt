@@ -40,6 +40,9 @@ interface AppScopeOwner {
   val appScope: AppScope
 }
 
+/**
+ * Creates the [AppScope] which must be manually stored
+ */
 inline fun Application.createAppScope(
   @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Application) -> AppScope
 ): AppScope = scopeFactory(this)
