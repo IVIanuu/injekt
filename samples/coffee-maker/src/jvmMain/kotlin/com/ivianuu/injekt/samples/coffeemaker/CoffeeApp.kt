@@ -19,9 +19,12 @@ package com.ivianuu.injekt.samples.coffeemaker
 import com.ivianuu.injekt.*
 
 fun main() {
-  val heater = inject<Heater>()
+  makeCoffee()
+}
+
+private fun makeCoffee(@Inject heater: Heater, @Inject pump: Pump) {
   heater.on()
-  inject<Pump>().pump()
+  pump()
   println(" [_]P coffee! [_]P ")
   heater.off()
 }
@@ -33,6 +36,9 @@ interface Heater {
 }
 
 @Provide object ElectricHeater : Heater {
+  override val isHot: Boolean
+    get() = heating
+
   private var heating: Boolean = false
 
   override fun on() {
@@ -43,19 +49,12 @@ interface Heater {
   override fun off() {
     heating = false
   }
-
-  override val isHot: Boolean
-    get() = heating
 }
 
-interface Pump {
-  fun pump()
-}
+typealias Pump = () -> Unit
 
-@Provide class Thermosiphon(private val heater: Heater) : Pump {
-  override fun pump() {
-    if (heater.isHot) {
-      println("=> => pumping => =>")
-    }
+@Provide fun thermosiphon(heater: Heater): Pump = {
+  if (heater.isHot) {
+    println("=> => pumping => =>")
   }
 }
