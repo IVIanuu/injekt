@@ -50,89 +50,95 @@ data class CallableInfo(
   }
 }
 
-fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableInfo =
-  context.injektContext.callableInfos.getOrPut(this) {
-    if (isDeserializedDeclaration()) {
-      val info = annotations
-        .findAnnotation(InjektFqNames.CallableInfo)
-        ?.readChunkedValue()
-        ?.decode<PersistedCallableInfo>()
-        ?.toCallableInfo()
+fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableInfo {
+  context.injektContext.callableInfos[this]?.let { return it }
 
-      if (info != null) {
-        val finalInfo = if (this !is CallableMemberDescriptor ||
-          kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          info
-        } else {
-          val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
-          val rootClassifier = rootOverriddenCallable.containingDeclaration
-            .cast<ClassDescriptor>()
-            .toClassifierRef()
-          val classifierInfo = containingDeclaration
-            .cast<ClassDescriptor>()
-            .toClassifierRef()
-          val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
-            it.classifier == rootClassifier
-          }!!
-          val substitutionMap = rootClassifier.typeParameters
-            .toMap(superType.arguments) + rootOverriddenCallable
-            .typeParameters
-            .map { it.toClassifierRef() }
-            .toMap(typeParameters.map { it.defaultType.toTypeRef() })
-          info.copy(
-            type = info.type.substitute(substitutionMap),
-            parameterTypes = info.parameterTypes.mapValues {
-              it.value.substitute(substitutionMap)
-            }
-          )
-        }
+  if (isDeserializedDeclaration()) {
+    val info = annotations
+      .findAnnotation(InjektFqNames.CallableInfo)
+      ?.readChunkedValue()
+      ?.decode<PersistedCallableInfo>()
+      ?.toCallableInfo()
 
-        return@getOrPut finalInfo
+    if (info != null) {
+      val finalInfo = if (this !is CallableMemberDescriptor ||
+        kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+        info
+      } else {
+        val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
+        val rootClassifier = rootOverriddenCallable.containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef()
+        val classifierInfo = containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef()
+        val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
+          it.classifier == rootClassifier
+        }!!
+        val substitutionMap = rootClassifier.typeParameters
+          .toMap(superType.arguments) + rootOverriddenCallable
+          .typeParameters
+          .map { it.toClassifierRef() }
+          .toMap(typeParameters.map { it.defaultType.toTypeRef() })
+        info.copy(
+          type = info.type.substitute(substitutionMap),
+          parameterTypes = info.parameterTypes.mapValues {
+            it.value.substitute(substitutionMap)
+          }
+        )
       }
 
-      // if this is a deserialized declaration and no info was persisted
-      // we can return a dummy object because this callable is not relevant for injekt
-      return@getOrPut CallableInfo.Empty
+      context.injektContext.callableInfos[this] = info
+      return finalInfo
     }
 
-    val type = run {
-      val qualifiers = if (this is ConstructorDescriptor)
-        getAnnotatedAnnotations(InjektFqNames.Qualifier)
-          .map { it.type.toTypeRef() }
-      else emptyList()
-      qualifiers.wrap(returnType!!.toTypeRef())
-    }
-
-    val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-      .map { it.injektIndex() to it.type.toTypeRef() }
-      .toMap()
-
-    val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-      .filter {
-        it.hasAnnotation(InjektFqNames.Inject) ||
-            ((this is FunctionInvokeDescriptor ||
-                (this is InjectFunctionDescriptor &&
-                    underlyingDescriptor is FunctionInvokeDescriptor)) &&
-                it.type.hasAnnotation(InjektFqNames.Inject))
-      }
-      .mapTo(mutableSetOf()) { it.injektIndex() }
-
-    val defaultOnAllErrorsParameters = valueParameters
-      .asSequence()
-      .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
-      .mapTo(mutableSetOf()) { it.injektIndex() }
-
-    val info = CallableInfo(
-      type = type,
-      parameterTypes = parameterTypes,
-      injectParameters = injectParameters,
-      defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
-    )
-
-    persistInfoIfNeeded(info)
-
-    info
+    // if this is a deserialized declaration and no info was persisted
+    // we can return a dummy object because this callable is not relevant for injekt
+    context.injektContext.callableInfos[this] = CallableInfo.Empty
+    return CallableInfo.Empty
   }
+
+  val type = run {
+    val qualifiers = if (this is ConstructorDescriptor)
+      getAnnotatedAnnotations(InjektFqNames.Qualifier)
+        .map { it.type.toTypeRef() }
+    else emptyList()
+    qualifiers.wrap(returnType!!.toTypeRef())
+  }
+
+  val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+    .map { it.injektIndex() to it.type.toTypeRef() }
+    .toMap()
+
+  val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+    .filter {
+      it.hasAnnotation(InjektFqNames.Inject) ||
+          ((this is FunctionInvokeDescriptor ||
+              (this is InjectFunctionDescriptor &&
+                  underlyingDescriptor is FunctionInvokeDescriptor)) &&
+              it.type.hasAnnotation(InjektFqNames.Inject))
+    }
+    .mapTo(mutableSetOf()) { it.injektIndex() }
+
+  val defaultOnAllErrorsParameters = valueParameters
+    .asSequence()
+    .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
+    .mapTo(mutableSetOf()) { it.injektIndex() }
+
+  val info = CallableInfo(
+    type = type,
+    parameterTypes = parameterTypes,
+    injectParameters = injectParameters,
+    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+  )
+
+  // really important to cache the info BEFORE persisting it
+  context.injektContext.callableInfos[this] = info
+
+  persistInfoIfNeeded(info)
+
+  return info
+}
 
 private fun CallableDescriptor.persistInfoIfNeeded(
   info: CallableInfo,
@@ -216,92 +222,97 @@ class ClassifierInfo(
   val superTypes by lazySuperTypes
 }
 
-fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): ClassifierInfo =
-  context.injektContext.classifierInfos.getOrPut(this) {
-    if (isDeserializedDeclaration()) {
-      (if (this is TypeParameterDescriptor) {
-        containingDeclaration
-          .annotations
-          .findAnnotation(InjektFqNames.TypeParameterInfos)
-          ?.readChunkedValue()
-          ?.split("=:=")
-          ?.get(cast<TypeParameterDescriptor>().index)
-          ?.takeIf { it.isNotEmpty() }
-          ?.decode<PersistedClassifierInfo>()
-          ?.toClassifierInfo()
-      } else {
-        annotations
-          .findAnnotation(InjektFqNames.ClassifierInfo)
-          ?.readChunkedValue()
-          ?.cast<String>()
-          ?.decode<PersistedClassifierInfo>()
-          ?.toClassifierInfo()
-      })?.let {
-        return@getOrPut it
-      }
+fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): ClassifierInfo {
+  context.injektContext.classifierInfos[this]?.let { return it }
+
+  if (isDeserializedDeclaration()) {
+    (if (this is TypeParameterDescriptor) {
+      containingDeclaration
+        .annotations
+        .findAnnotation(InjektFqNames.TypeParameterInfos)
+        ?.readChunkedValue()
+        ?.split("=:=")
+        ?.get(cast<TypeParameterDescriptor>().index)
+        ?.takeIf { it.isNotEmpty() }
+        ?.decode<PersistedClassifierInfo>()
+        ?.toClassifierInfo()
+    } else {
+      annotations
+        .findAnnotation(InjektFqNames.ClassifierInfo)
+        ?.readChunkedValue()
+        ?.cast<String>()
+        ?.decode<PersistedClassifierInfo>()
+        ?.toClassifierInfo()
+    })?.let {
+      context.injektContext.classifierInfos[this] = it
+      return it
     }
-
-    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
-      ?.toTypeRef()
-
-    val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
-
-    val lazySuperTypes = lazy {
-      when {
-        expandedType != null -> listOf(expandedType)
-        isQualifier -> listOf(context.injektContext.anyType)
-        else -> typeConstructor.supertypes.map { it.toTypeRef() }
-      }
-    }
-
-    val isDeserialized = isDeserializedDeclaration()
-
-    val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
-      .map { it.type.toTypeRef() }
-
-    val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
-    else safeAs<ClassDescriptor>()
-      ?.unsubstitutedPrimaryConstructor
-      ?.valueParameters
-      ?.asSequence()
-      ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
-      ?.map { it.name.asString() }
-      ?.toList()
-      ?: emptyList()
-
-    val isSpread = if (isDeserialized) false
-    else hasAnnotation(InjektFqNames.Spread) ||
-        findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
-
-    val isSingletonInjectable = !isDeserialized &&
-        this is ClassDescriptor &&
-        kind == ClassKind.CLASS &&
-        constructors
-          .filter {
-            it.hasAnnotation(InjektFqNames.Provide) ||
-                (it.isPrimary && hasAnnotation(InjektFqNames.Provide))
-          }
-          .any { it.valueParameters.isEmpty() } &&
-        unsubstitutedMemberScope.getContributedDescriptors()
-          .none {
-            (it is ClassDescriptor &&
-                it.isInner) ||
-                (it is PropertyDescriptor &&
-                    it.hasBackingField(context.trace?.bindingContext))
-          }
-
-    val info = ClassifierInfo(
-      qualifiers = qualifiers,
-      lazySuperTypes = lazySuperTypes,
-      primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-      isSpread = isSpread,
-      isSingletonInjectable = isSingletonInjectable
-    )
-
-    persistInfoIfNeeded(info)
-
-    info
   }
+
+  val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
+    ?.toTypeRef()
+
+  val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
+
+  val lazySuperTypes = lazy {
+    when {
+      expandedType != null -> listOf(expandedType)
+      isQualifier -> listOf(context.injektContext.anyType)
+      else -> typeConstructor.supertypes.map { it.toTypeRef() }
+    }
+  }
+
+  val isDeserialized = isDeserializedDeclaration()
+
+  val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+    .map { it.type.toTypeRef() }
+
+  val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
+  else safeAs<ClassDescriptor>()
+    ?.unsubstitutedPrimaryConstructor
+    ?.valueParameters
+    ?.asSequence()
+    ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
+    ?.map { it.name.asString() }
+    ?.toList()
+    ?: emptyList()
+
+  val isSpread = if (isDeserialized) false
+  else hasAnnotation(InjektFqNames.Spread) ||
+      findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
+
+  val isSingletonInjectable = !isDeserialized &&
+      this is ClassDescriptor &&
+      kind == ClassKind.CLASS &&
+      constructors
+        .filter {
+          it.hasAnnotation(InjektFqNames.Provide) ||
+              (it.isPrimary && hasAnnotation(InjektFqNames.Provide))
+        }
+        .any { it.valueParameters.isEmpty() } &&
+      unsubstitutedMemberScope.getContributedDescriptors()
+        .none {
+          (it is ClassDescriptor &&
+              it.isInner) ||
+              (it is PropertyDescriptor &&
+                  it.hasBackingField(context.trace?.bindingContext))
+        }
+
+  val info = ClassifierInfo(
+    qualifiers = qualifiers,
+    lazySuperTypes = lazySuperTypes,
+    primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
+    isSpread = isSpread,
+    isSingletonInjectable = isSingletonInjectable
+  )
+
+  // really important to cache the info BEFORE persisting it
+  context.injektContext.classifierInfos[this] = info
+
+  persistInfoIfNeeded(info)
+
+  return info
+}
 
 @Serializable data class PersistedClassifierInfo(
   @SerialName("0") val qualifiers: List<PersistedTypeRef> = emptyList(),
