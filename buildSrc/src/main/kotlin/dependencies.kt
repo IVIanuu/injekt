@@ -85,8 +85,6 @@ object Deps {
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
-    const val stdlibJvm = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$version"
-    const val stdlibCommon = "org.jetbrains.kotlin:kotlin-stdlib-common:$version"
   }
 
   object KotlinSerialization {
@@ -99,7 +97,7 @@ object Deps {
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
   object Ktor {
-    private const val version = "1.5.3"
+    private const val version = "1.6.0"
     const val core = "io.ktor:ktor-server-core:$version"
     const val serverTestHost = "io.ktor:ktor-server-test-host:$version"
   }
