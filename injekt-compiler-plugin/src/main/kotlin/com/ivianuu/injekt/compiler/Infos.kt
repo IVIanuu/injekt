@@ -50,94 +50,89 @@ data class CallableInfo(
   }
 }
 
-fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableInfo {
-  context.injektContext.callableInfos[this]?.let { return it }
+fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableInfo =
+  context.injektContext.callableInfos.getOrPut(this) {
+    if (isDeserializedDeclaration()) {
+      val info = annotations
+        .findAnnotation(InjektFqNames.CallableInfo)
+        ?.readChunkedValue()
+        ?.decode<PersistedCallableInfo>()
+        ?.toCallableInfo()
 
-  if (isDeserializedDeclaration()) {
-    val info = annotations
-      .findAnnotation(InjektFqNames.CallableInfo)
-      ?.readChunkedValue()
-      ?.decode<PersistedCallableInfo>()
-      ?.toCallableInfo()
+      if (info != null) {
+        val finalInfo = if (this !is CallableMemberDescriptor ||
+          kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+          info
+        } else {
+          val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
+          val rootClassifier = rootOverriddenCallable.containingDeclaration
+            .cast<ClassDescriptor>()
+            .toClassifierRef()
+          val classifierInfo = containingDeclaration
+            .cast<ClassDescriptor>()
+            .toClassifierRef()
+          val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
+            it.classifier == rootClassifier
+          }!!
+          val substitutionMap = rootClassifier.typeParameters
+            .toMap(superType.arguments) + rootOverriddenCallable
+            .typeParameters
+            .map { it.toClassifierRef() }
+            .toMap(typeParameters.map { it.defaultType.toTypeRef() })
+          info.copy(
+            type = info.type.substitute(substitutionMap),
+            parameterTypes = info.parameterTypes.mapValues {
+              it.value.substitute(substitutionMap)
+            }
+          )
+        }
 
-    if (info != null) {
-      val finalInfo = if (this !is CallableMemberDescriptor ||
-        kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-        info
-      } else {
-        val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
-        val rootClassifier = rootOverriddenCallable.containingDeclaration
-          .cast<ClassDescriptor>()
-          .toClassifierRef()
-        val classifierInfo = containingDeclaration
-          .cast<ClassDescriptor>()
-          .toClassifierRef()
-        val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
-          it.classifier == rootClassifier
-        }!!
-        val substitutionMap = rootClassifier.typeParameters
-          .toMap(superType.arguments) + rootOverriddenCallable
-          .typeParameters
-          .map { it.toClassifierRef() }
-          .toMap(typeParameters.map { it.defaultType.toTypeRef() })
-        info.copy(
-          type = info.type.substitute(substitutionMap),
-          parameterTypes = info.parameterTypes.mapValues {
-            it.value.substitute(substitutionMap)
-          }
-        )
+        return@getOrPut finalInfo
       }
 
-      context.injektContext.callableInfos[this] = finalInfo
-      return finalInfo
+      // if this is a deserialized declaration and no info was persisted
+      // we can return a dummy object because this callable is not relevant for injekt
+      return@getOrPut CallableInfo.Empty
     }
 
-    // if this is a deserialized declaration and no info was persisted
-    // we can return a dummy object because this callable is not relevant for injekt
-    context.injektContext.callableInfos[this] = CallableInfo.Empty
-    return CallableInfo.Empty
-  }
-
-  val type = run {
-    val qualifiers = if (this is ConstructorDescriptor)
-      getAnnotatedAnnotations(InjektFqNames.Qualifier)
-        .map { it.type.toTypeRef() }
-    else emptyList()
-    qualifiers.wrap(returnType!!.toTypeRef())
-  }
-
-  val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-    .map { it.injektIndex() to it.type.toTypeRef() }
-    .toMap()
-
-  val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-    .filter {
-      it.hasAnnotation(InjektFqNames.Inject) ||
-          ((this is FunctionInvokeDescriptor ||
-              (this is InjectFunctionDescriptor &&
-                  underlyingDescriptor is FunctionInvokeDescriptor)) &&
-              it.type.hasAnnotation(InjektFqNames.Inject))
+    val type = run {
+      val qualifiers = if (this is ConstructorDescriptor)
+        getAnnotatedAnnotations(InjektFqNames.Qualifier)
+          .map { it.type.toTypeRef() }
+      else emptyList()
+      qualifiers.wrap(returnType!!.toTypeRef())
     }
-    .mapTo(mutableSetOf()) { it.injektIndex() }
 
-  val defaultOnAllErrorsParameters = valueParameters
-    .asSequence()
-    .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
-    .mapTo(mutableSetOf()) { it.injektIndex() }
+    val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+      .map { it.injektIndex() to it.type.toTypeRef() }
+      .toMap()
 
-  val info = CallableInfo(
-    type = type,
-    parameterTypes = parameterTypes,
-    injectParameters = injectParameters,
-    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
-  )
+    val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+      .filter {
+        it.hasAnnotation(InjektFqNames.Inject) ||
+            ((this is FunctionInvokeDescriptor ||
+                (this is InjectFunctionDescriptor &&
+                    underlyingDescriptor is FunctionInvokeDescriptor)) &&
+                it.type.hasAnnotation(InjektFqNames.Inject))
+      }
+      .mapTo(mutableSetOf()) { it.injektIndex() }
 
-  context.injektContext.callableInfos[this] = info
+    val defaultOnAllErrorsParameters = valueParameters
+      .asSequence()
+      .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
+      .mapTo(mutableSetOf()) { it.injektIndex() }
 
-  persistInfoIfNeeded(info)
+    val info = CallableInfo(
+      type = type,
+      parameterTypes = parameterTypes,
+      injectParameters = injectParameters,
+      defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+    )
 
-  return info
-}
+    persistInfoIfNeeded(info)
+
+    info
+  }
 
 private fun CallableDescriptor.persistInfoIfNeeded(
   info: CallableInfo,

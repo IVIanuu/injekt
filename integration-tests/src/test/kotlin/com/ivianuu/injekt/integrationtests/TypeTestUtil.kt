@@ -65,7 +65,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
   )
 }
 
-class TypeCheckerTestContext(val module: ModuleDescriptor) {
+class TypeCheckerTestContext(module: ModuleDescriptor) {
   @Provide val analysisContext = AnalysisContext(module.injektContext, null)
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
@@ -159,7 +159,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
 
   fun typeFor(fqName: FqName) = analysisContext.injektContext.classifierDescriptorForFqName(
     fqName, NoLookupLocation.FROM_BACKEND)
-    ?.defaultType?.toTypeRef() ?: error("Wtf $fqName")
+    ?.defaultType?.toTypeRef(context = analysisContext) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
     shouldBeAssignableTo(other, emptyList())
@@ -170,7 +170,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(staticTypeParameters),
+      buildBaseContext(staticTypeParameters, analysisContext),
       other,
       true
     )
@@ -188,7 +188,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(staticTypeParameters),
+      buildBaseContext(staticTypeParameters, analysisContext),
       other,
       true
     )
@@ -198,13 +198,13 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   }
 
   infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-    if (!isSubTypeOf(other)) {
+    if (!isSubTypeOf(other, analysisContext.injektContext)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }
 
   infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-    if (isSubTypeOf(other)) {
+    if (isSubTypeOf(other, analysisContext.injektContext)) {
       throw AssertionError("'$this' is sub type of '$other'")
     }
   }
