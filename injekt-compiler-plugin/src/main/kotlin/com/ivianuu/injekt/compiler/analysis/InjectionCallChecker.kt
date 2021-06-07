@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
@@ -23,12 +24,13 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 
-class InjectionCallChecker(private val context: InjektContext) : CallChecker {
+class InjectionCallChecker(@Provide private val context: InjektContext) : CallChecker {
   override fun check(
     resolvedCall: ResolvedCall<*>,
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
+    @Provide val trace = context.trace
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
@@ -47,12 +49,12 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     }
 
     val substitutionMap = resolvedCall.typeArguments
-      .mapKeys { it.key.toClassifierRef(this.context, context.trace) }
-      .mapValues { it.value.toTypeRef(this.context, context.trace) }
+      .mapKeys { it.key.toClassifierRef() }
+      .mapValues { it.value.toTypeRef() }
       .filter { it.key != it.value.classifier }
 
     val callee = resultingDescriptor
-      .toCallableRef(this.context, context.trace)
+      .toCallableRef()
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
@@ -60,8 +62,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
 
     val requests = callee.callable.valueParameters
       .filter {
-        valueArgumentsByIndex[it.index] is DefaultValueArgument &&
-            it.isInject(this.context, context.trace)
+        valueArgumentsByIndex[it.index] is DefaultValueArgument && it.isInject()
       }
       .map { it.toInjectableRequest(callee) }
       .toList()
@@ -69,7 +70,7 @@ class InjectionCallChecker(private val context: InjektContext) : CallChecker {
     if (requests.isEmpty()) return
 
     val scope = synchronized(context) {
-      ElementInjectablesScope(this.context, context.trace, callExpression)
+      ElementInjectablesScope(callExpression)
     }
 
     val graph = synchronized(scope) {

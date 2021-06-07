@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.model.*
@@ -33,7 +35,7 @@ interface TypeCheckerContext {
   fun addSubTypeConstraint(subType: TypeRef, superType: TypeRef): Boolean? = null
 }
 
-fun TypeRef.isEqualTo(context: TypeCheckerContext, other: TypeRef): Boolean {
+fun TypeRef.isEqualTo(other: TypeRef, @Inject context: TypeCheckerContext): Boolean {
   if (this == other) return true
 
   if (context.isDenotable(this) && context.isDenotable(other)) {
@@ -52,19 +54,19 @@ fun TypeRef.isEqualTo(context: TypeCheckerContext, other: TypeRef): Boolean {
         effectiveVariance(otherParameter.variance, thisParameter.variance, TypeVariance.INV)
       )
         return false
-      if (!thisParameter.isEqualTo(context, otherParameter))
+      if (!thisParameter.isEqualTo(otherParameter))
         return false
     }
 
     return true
   }
 
-  return isSubTypeOf(context, other) && other.isSubTypeOf(context, this)
+  return isSubTypeOf(other) && other.isSubTypeOf(this)
 }
 
 fun TypeRef.isSubTypeOf(
-  context: TypeCheckerContext,
-  superType: TypeRef
+  superType: TypeRef,
+  @Inject context: TypeCheckerContext
 ): Boolean {
   if (this == superType) return true
 
@@ -82,14 +84,14 @@ fun TypeRef.isSubTypeOf(
   if (isNullableType && !superType.isNullableType) return false
 
   subtypeView(superType.classifier)
-    ?.let { return it.isSubTypeOfSameClassifier(context, superType) }
+    ?.let { return it.isSubTypeOfSameClassifier(superType) }
 
   return false
 }
 
 private fun TypeRef.isSubTypeOfSameClassifier(
-  context: TypeCheckerContext,
-  superType: TypeRef
+  superType: TypeRef,
+  @Inject context: TypeCheckerContext
 ): Boolean {
   if (isMarkedComposable != superType.isMarkedComposable) return false
 
@@ -101,9 +103,9 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     val variance =
       effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)
     val argumentOk = when (variance) {
-      TypeVariance.IN -> parameter.isSubTypeOf(context, argument)
-      TypeVariance.OUT -> argument.isSubTypeOf(context, parameter)
-      TypeVariance.INV -> argument.isEqualTo(context, parameter)
+      TypeVariance.IN -> parameter.isSubTypeOf(argument)
+      TypeVariance.OUT -> argument.isSubTypeOf(parameter)
+      TypeVariance.INV -> argument.isEqualTo(parameter)
     }
 
     if (!argumentOk) return false
@@ -200,20 +202,19 @@ data class SpreadingInjectableBaseContext(
 )
 
 fun buildBaseContextForSpreadingInjectable(
-  injektContext: InjektContext,
   candidateType: TypeRef,
-  staticTypeParameters: List<ClassifierRef>
+  staticTypeParameters: List<ClassifierRef>,
+  @Inject context: AnalysisContext
 ): SpreadingInjectableBaseContext {
   val candidateTypeParameters = mutableListOf<ClassifierRef>()
   candidateType.allTypes.forEach {
     if (it.classifier.isTypeParameter)
       candidateTypeParameters += it.classifier
   }
-  val context = candidateType.buildBaseContext(
-    injektContext,
+  val spreadingInjectableContext = candidateType.buildBaseContext(
     candidateTypeParameters + staticTypeParameters
   )
-  return SpreadingInjectableBaseContext(context, candidateTypeParameters)
+  return SpreadingInjectableBaseContext(spreadingInjectableContext, candidateTypeParameters)
 }
 
 fun buildContextForSpreadingInjectable(
@@ -242,29 +243,29 @@ fun buildContextForSpreadingInjectable(
 }
 
 fun CallableRef.buildContext(
-  injektContext: InjektContext,
   staticTypeParameters: List<ClassifierRef>,
   superType: TypeRef,
-  collectSuperTypeVariables: Boolean = false
+  collectSuperTypeVariables: Boolean = false,
+  @Inject context: AnalysisContext
 ): TypeContext = type.buildContext(
   contextsByStaticTypeParameters.getOrPut(staticTypeParameters) {
-    type.buildBaseContext(injektContext, staticTypeParameters)
+    type.buildBaseContext(staticTypeParameters)
   },
   superType,
   collectSuperTypeVariables
 )
 
 fun TypeRef.buildBaseContext(
-  injektContext: InjektContext,
-  staticTypeParameters: List<ClassifierRef>
+  staticTypeParameters: List<ClassifierRef>,
+  @Inject context: AnalysisContext
 ): TypeContext {
-  val context = TypeContext(injektContext)
-  staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
+  val baseContext = TypeContext(context.injektContext)
+  staticTypeParameters.forEach { baseContext.addStaticTypeParameter(it) }
   allTypes.forEach {
     if (it.classifier.isTypeParameter)
-      context.addTypeVariable(it.classifier)
+      baseContext.addTypeVariable(it.classifier)
   }
-  return context
+  return baseContext
 }
 
 fun TypeRef.buildContext(
@@ -475,9 +476,9 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     kind: ConstraintKind,
     resultType: TypeRef
   ): Boolean = when (kind) {
-    ConstraintKind.EQUAL -> constraintType.isEqualTo(this, resultType)
-    ConstraintKind.LOWER -> constraintType.isSubTypeOf(this, resultType)
-    ConstraintKind.UPPER -> resultType.isSubTypeOf(this, constraintType)
+    ConstraintKind.EQUAL -> constraintType.isEqualTo(resultType)
+    ConstraintKind.LOWER -> constraintType.isSubTypeOf(resultType)
+    ConstraintKind.UPPER -> resultType.isSubTypeOf(constraintType)
   }
 
   private fun findSuperType(variableWithConstraints: VariableWithConstraints): TypeRef? {
@@ -485,7 +486,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
       .constraints
       .filter { it.kind == ConstraintKind.UPPER }
     return if (upperConstraints.isNotEmpty()) {
-      intersectTypes(this, upperConstraints.map { it.type })
+      intersectTypes(upperConstraints.map { it.type })
     } else null
   }
 
@@ -494,16 +495,14 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
       .filter { it.kind == ConstraintKind.LOWER }
       .map { it.type }
     return if (lowerConstraintTypes.isNotEmpty()) {
-      commonSuperType(injektContext, lowerConstraintTypes)
+      commonSuperType(lowerConstraintTypes, context = injektContext)
     } else null
   }
 
   private fun List<TypeRef>.singleBestRepresentative(): TypeRef? {
     if (size == 1) return first()
     return firstOrNull { candidate ->
-      all { other ->
-        candidate.isEqualTo(this@TypeContext, other)
-      }
+      all { other -> candidate.isEqualTo(other) }
     }
   }
 
@@ -545,7 +544,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 
     if (typeVariable.isMarkedNullable) {
       result = superType.classifier in typeVariables ||
-          injektContext.nullableNothingType.isSubTypeOf(this, superType)
+          injektContext.nullableNothingType.isSubTypeOf(superType)
     }
 
     return result
@@ -596,7 +595,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
   }
 
   private fun runIsSubTypeOf(subType: TypeRef, superType: TypeRef) {
-    if (!subType.isSubTypeOf(this, superType)) {
+    if (!subType.isSubTypeOf(superType)) {
       addError(TypeContextError.ConstraintError(subType, superType, ConstraintKind.UPPER))
     }
   }
@@ -655,15 +654,15 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
 }
 
 private fun commonSuperType(
-  context: TypeCheckerContext,
   types: List<TypeRef>,
-  depth: Int = -(types.maxOfOrNull { it.typeDepth } ?: 0)
+  depth: Int = -(types.maxOfOrNull { it.typeDepth } ?: 0),
+  @Inject context: TypeCheckerContext
 ): TypeRef {
   types.singleOrNull()?.let { return it }
   val notAllNotNull = types.any { it.isNullableType }
   val notNullTypes = if (notAllNotNull) types.map { it.withNullability(false) } else types
 
-  val commonSuperType = commonSuperTypeForNotNullTypes(context, notNullTypes, depth)
+  val commonSuperType = commonSuperTypeForNotNullTypes(notNullTypes, depth)
   return if (notAllNotNull)
     refineNullabilityForUndefinedNullability(context, types, commonSuperType)
       ?: commonSuperType.withNullability(true)
@@ -685,22 +684,20 @@ private fun refineNullabilityForUndefinedNullability(
 }
 
 private fun uniquify(
-  context: TypeCheckerContext,
-  types: List<TypeRef>
+  types: List<TypeRef>,
+  @Inject context: TypeCheckerContext
 ): List<TypeRef> {
   val uniqueTypes = mutableListOf<TypeRef>()
   for (type in types) {
-    val isNewUniqueType = uniqueTypes.none {
-      it.isEqualTo(context, type)
-    }
+    val isNewUniqueType = uniqueTypes.none { it.isEqualTo(type) }
     if (isNewUniqueType) uniqueTypes += type
   }
   return uniqueTypes
 }
 
 private fun filterSupertypes(
-  context: TypeCheckerContext,
-  list: List<TypeRef>
+  list: List<TypeRef>,
+  @Inject context: TypeCheckerContext
 ): List<TypeRef> {
   val supertypes = list.toMutableList()
   val iterator = supertypes.iterator()
@@ -708,7 +705,7 @@ private fun filterSupertypes(
     val potentialSubType = iterator.next()
     val isSubType = supertypes.any { supertype ->
       supertype !== potentialSubType &&
-          potentialSubType.isSubTypeOf(context, supertype)
+          potentialSubType.isSubTypeOf(supertype)
     }
 
     if (isSubType) iterator.remove()
@@ -718,29 +715,28 @@ private fun filterSupertypes(
 }
 
 private fun commonSuperTypeForNotNullTypes(
-  context: TypeCheckerContext,
   types: List<TypeRef>,
-  depth: Int
+  depth: Int,
+  @Inject context: TypeCheckerContext
 ): TypeRef {
   if (types.size == 1) return types.single()
 
-  val uniqueTypes = uniquify(context, types)
+  val uniqueTypes = uniquify(types)
   if (uniqueTypes.size == 1) return uniqueTypes.single()
 
-  val explicitSupertypes = filterSupertypes(context, uniqueTypes)
+  val explicitSupertypes = filterSupertypes(uniqueTypes)
   if (explicitSupertypes.size == 1) return explicitSupertypes.single()
 
-  return findSuperTypeConstructorsAndIntersectResult(context, explicitSupertypes, depth)
+  return findSuperTypeConstructorsAndIntersectResult(explicitSupertypes, depth)
 }
 
 private fun findSuperTypeConstructorsAndIntersectResult(
-  context: TypeCheckerContext,
   types: List<TypeRef>,
-  depth: Int
+  depth: Int,
+  @Inject context: TypeCheckerContext
 ): TypeRef = intersectTypes(
-  context,
   allCommonSuperTypeClassifiers(types)
-    .map { superTypeWithInjectableClassifier(context, types, it, depth) }
+    .map { superTypeWithInjectableClassifier(types, it, depth) }
 )
 
 private fun allCommonSuperTypeClassifiers(types: List<TypeRef>): List<ClassifierRef> {
@@ -767,10 +763,10 @@ private fun collectAllSupertypes(type: TypeRef) = mutableSetOf<ClassifierRef>().
 }
 
 private fun superTypeWithInjectableClassifier(
-  context: TypeCheckerContext,
   types: List<TypeRef>,
   classifier: ClassifierRef,
-  depth: Int
+  depth: Int,
+  @Inject context: TypeCheckerContext
 ): TypeRef {
   if (classifier.typeParameters.isEmpty()) return classifier.defaultType
 
@@ -808,7 +804,6 @@ private fun superTypeWithInjectableClassifier(
     } else {
       collapseRecursiveArgumentIfPossible(
         calculateArgument(
-          context,
           parameter,
           typeArguments,
           depth
@@ -822,10 +817,10 @@ private fun superTypeWithInjectableClassifier(
 }
 
 private fun calculateArgument(
-  context: TypeCheckerContext,
   parameter: ClassifierRef,
   arguments: List<TypeRef>,
-  depth: Int
+  depth: Int,
+  @Inject context: TypeCheckerContext
 ): TypeRef {
   if (depth > 0) return STAR_PROJECTION_TYPE
 
@@ -854,26 +849,26 @@ private fun calculateArgument(
     val parameterIsNotInv = parameter.variance != TypeVariance.INV
 
     if (parameterIsNotInv) {
-      return commonSuperType(context, arguments, depth + 1)
+      return commonSuperType(arguments, depth + 1)
     }
 
     val equalToEachOtherType = arguments.firstOrNull { potentialSuperType ->
-      arguments.all { it.isEqualTo(context, potentialSuperType) }
+      arguments.all { it.isEqualTo(potentialSuperType) }
     }
 
     return if (equalToEachOtherType == null) {
-      commonSuperType(context, arguments, depth + 1).withVariance(TypeVariance.OUT)
+      commonSuperType(arguments, depth + 1).withVariance(TypeVariance.OUT)
     } else {
       val thereIsNotInv = arguments.any { it.variance != TypeVariance.INV }
       equalToEachOtherType.withVariance(if (thereIsNotInv) TypeVariance.OUT else TypeVariance.INV)
     }
   } else {
-    val type = intersectTypes(context, arguments)
+    val type = intersectTypes(arguments)
     return if (parameter.variance != TypeVariance.INV) type else type.withVariance(TypeVariance.IN)
   }
 }
 
-internal fun intersectTypes(context: TypeCheckerContext, types: List<TypeRef>): TypeRef {
+internal fun intersectTypes(types: List<TypeRef>, @Inject context: TypeCheckerContext): TypeRef {
   if (types.size == 1) return types.single()
 
   val resultNullability = types.fold(ResultNullability.START, ResultNullability::combine)
@@ -884,21 +879,21 @@ internal fun intersectTypes(context: TypeCheckerContext, types: List<TypeRef>): 
     } else it
   }
 
-  return intersectTypesWithoutIntersectionType(context, correctNullability)
+  return intersectTypesWithoutIntersectionType(correctNullability)
 }
 
 private fun intersectTypesWithoutIntersectionType(
-  context: TypeCheckerContext,
-  types: Set<TypeRef>
+  types: Set<TypeRef>,
+  @Inject context: TypeCheckerContext
 ): TypeRef {
   if (types.size == 1) return types.single()
 
   val filteredEqualTypes = filterTypes(types) { lower, upper ->
-    isStrictSupertype(context, lower, upper)
+    isStrictSupertype(lower, upper, context.injektContext)
   }
 
   val filteredSuperAndEqualTypes = filterTypes(filteredEqualTypes) { lower, upper ->
-    lower.isEqualTo(context.injektContext, upper)
+    lower.isEqualTo(upper, context.injektContext)
   }
 
   if (filteredSuperAndEqualTypes.size < 2) return filteredSuperAndEqualTypes.single()
@@ -924,11 +919,11 @@ private fun filterTypes(
 }
 
 private fun isStrictSupertype(
-  context: TypeCheckerContext,
   subtype: TypeRef,
-  supertype: TypeRef
-): Boolean = subtype.isSubTypeOf(context.injektContext, supertype) &&
-    !supertype.isSubTypeOf(context.injektContext, subtype)
+  supertype: TypeRef,
+  @Inject context: TypeCheckerContext
+): Boolean = subtype.isSubTypeOf(supertype, context.injektContext) &&
+    !supertype.isSubTypeOf(subtype, context.injektContext)
 
 private enum class ResultNullability {
   START {

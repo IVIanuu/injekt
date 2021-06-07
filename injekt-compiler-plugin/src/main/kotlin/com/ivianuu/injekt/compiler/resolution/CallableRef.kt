@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 data class CallableRef(
@@ -67,32 +68,27 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
 
 fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isProvide = true)
 
-fun CallableDescriptor.toCallableRef(
-  context: InjektContext,
-  trace: BindingTrace?
-): CallableRef {
-  context.callableRefs[this]?.let { return it }
-  val info = callableInfo(context, trace)
-  val typeParameters = typeParameters.map { it.toClassifierRef(context, trace) }
-  return CallableRef(
-    callable = this,
-    type = info.type,
-    originalType = info.type,
-    typeParameters = typeParameters,
-    parameterTypes = info.parameterTypes,
-    injectParameters = info.injectParameters,
-    defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
-    typeArguments = typeParameters
-      .map { it to it.defaultType }
-      .toMap(),
-    isProvide = isProvide(context, trace),
-    source = null,
-    callContext = callContext(trace?.bindingContext),
-    owner = null,
-    overriddenDepth = overriddenTreeUniqueAsSequence(false).count() - 1,
-    doNotIncludeChildren = false,
-    import = null
-  ).also {
-    context.callableRefs[this] = it
+fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): CallableRef =
+  context.injektContext.callableRefs.getOrPut(this) {
+    val info = callableInfo()
+    val typeParameters = typeParameters.map { it.toClassifierRef() }
+    return CallableRef(
+      callable = this,
+      type = info.type,
+      originalType = info.type,
+      typeParameters = typeParameters,
+      parameterTypes = info.parameterTypes,
+      injectParameters = info.injectParameters,
+      defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
+      typeArguments = typeParameters
+        .map { it to it.defaultType }
+        .toMap(),
+      isProvide = isProvide(),
+      source = null,
+      callContext = callContext(),
+      owner = null,
+      overriddenDepth = overriddenTreeUniqueAsSequence(false).count() - 1,
+      doNotIncludeChildren = false,
+      import = null
+    )
   }
-}

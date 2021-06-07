@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
@@ -46,13 +48,16 @@ import kotlin.collections.component2
 import kotlin.collections.set
 
 class InjectCallTransformer(
-  private val context: InjektContext,
-  private val pluginContext: IrPluginContext
+  @Inject private val analysisContext: AnalysisContext,
+  @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
     val scope: ScopeWithIr,
-    val startOffset: Int
+    val startOffset: Int,
+    // todo remove once inner class support is fixed
+    @Provide private val analysisContext: AnalysisContext,
+    @Provide private val pluginContext: IrPluginContext
   ) {
     val statements = mutableListOf<IrStatement>()
 
@@ -105,7 +110,10 @@ class InjectCallTransformer(
     val parent: ScopeContext?,
     val graphContext: GraphContext,
     val scope: InjectablesScope,
-    val irScope: Scope
+    val irScope: Scope,
+    // todo remove once inner class support is fixed
+    @Provide private val analysisContext: AnalysisContext,
+    @Provide private val pluginContext: IrPluginContext
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
@@ -173,7 +181,7 @@ class InjectCallTransformer(
     fun ScopeContext.get(): IrExpression {
       if (initializing) {
         if (block == null) {
-          val resultType = result.candidate.type.toIrType(pluginContext, localClasses, context)
+          val resultType = result.candidate.type.toIrType()
             .typeOrNull!!
           block = DeclarationIrBuilder(pluginContext, symbol)
             .irBlock(resultType = resultType) {
@@ -238,7 +246,7 @@ class InjectCallTransformer(
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
         name = "local${graphContext.variableIndex++}".asNameId()
-        returnType = result.candidate.type.toIrType(pluginContext, localClasses, context)
+        returnType = result.candidate.type.toIrType()
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
         isSuspend = scope.callContext == CallContext.SUSPEND
@@ -264,7 +272,7 @@ class InjectCallTransformer(
         DeclarationIrBuilder(pluginContext, symbol)
           .irCall(
             function.symbol,
-            result.candidate.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+            result.candidate.type.toIrType().typeOrNull!!
           )
       }
       expression
@@ -307,14 +315,15 @@ class InjectCallTransformer(
     injectable: ProviderInjectable
   ): IrExpression = DeclarationIrBuilder(pluginContext, symbol)
     .irLambda(
-      injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+      injectable.type.toIrType().typeOrNull!!,
       parameterNameProvider = { "p${graphContext.variableIndex++}" }
     ) { function ->
       when (val dependencyResult = result.dependencyResults.values.single()) {
         is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
         is ResolutionResult.Success.WithCandidate -> {
           val dependencyScopeContext = ScopeContext(
-            this@providerExpression, graphContext, injectable.dependencyScope, scope
+            this@providerExpression, graphContext, injectable.dependencyScope, scope,
+            analysisContext, pluginContext
           )
           val expression = with(dependencyScopeContext) {
             val previousParametersMap = parameterMap.toMap()
@@ -370,10 +379,10 @@ class InjectCallTransformer(
           .cast<ResolutionResult.Success.WithCandidate.Value>()
       when {
         singleDependency.candidate.type
-          .isSubTypeOf(context, injectable.type) ->
+          .isSubTypeOf(injectable.type) ->
           expressionFor(result.dependencyResults.values.single().cast())
         singleDependency.candidate.type
-          .isSubTypeOf(context, injectable.collectionElementType) -> {
+          .isSubTypeOf(injectable.collectionElementType) -> {
           DeclarationIrBuilder(pluginContext, symbol)
             .irCall(iterableToSet)
             .apply {
@@ -381,11 +390,7 @@ class InjectCallTransformer(
                 expressionFor(result.dependencyResults.values.single().cast())
               putTypeArgument(
                 0,
-                injectable.singleElementType.toIrType(
-                  pluginContext,
-                  localClasses,
-                  context
-                ).typeOrNull
+                injectable.singleElementType.toIrType().typeOrNull
               )
             }
         }
@@ -394,11 +399,7 @@ class InjectCallTransformer(
           .apply {
             putTypeArgument(
               0,
-              injectable.singleElementType.toIrType(
-                pluginContext,
-                localClasses,
-                context
-              ).typeOrNull
+              injectable.singleElementType.toIrType().typeOrNull
             )
             putValueArgument(
               0,
@@ -414,11 +415,7 @@ class InjectCallTransformer(
             .apply {
               putTypeArgument(
                 0,
-                injectable.singleElementType.toIrType(
-                  pluginContext,
-                  localClasses,
-                  this@InjectCallTransformer.context
-                ).typeOrNull
+                injectable.singleElementType.toIrType().typeOrNull
               )
             },
           nameHint = "${graphContext.variableIndex++}"
@@ -428,9 +425,7 @@ class InjectCallTransformer(
           .forEach { (_, dependency) ->
             if (dependency !is ResolutionResult.Success.WithCandidate.Value)
               return@forEach
-            if (dependency.candidate.type
-                .isSubTypeOf(this@InjectCallTransformer.context, injectable.collectionElementType)
-            ) {
+            if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType)) {
               +irCall(setAddAll).apply {
                 dispatchReceiver = irGet(tmpSet)
                 putValueArgument(0, expressionFor(dependency))
@@ -554,9 +549,7 @@ class InjectCallTransformer(
     }
 
     irCall(typeKeyConstructor!!).apply {
-      putTypeArgument(0,
-        injectable.type.arguments.single()
-          .toIrType(pluginContext, localClasses, this@InjectCallTransformer.context).cast())
+      putTypeArgument(0, injectable.type.arguments.single().toIrType().cast())
       putValueArgument(0, stringExpression)
     }
   }
@@ -601,7 +594,7 @@ class InjectCallTransformer(
     DeclarationIrBuilder(pluginContext, symbol)
       .irCall(
         constructor.symbol,
-        injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+        injectable.type.toIrType().typeOrNull!!
       )
       .apply {
         fillTypeParameters(injectable.callable)
@@ -615,12 +608,12 @@ class InjectCallTransformer(
     descriptor: PropertyDescriptor
   ): IrExpression {
     val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
-      .single { it.descriptor.uniqueKey(context) == descriptor.uniqueKey(context) }
+      .single { it.descriptor.uniqueKey() == descriptor.uniqueKey() }
     val getter = property.owner.getter!!
     return DeclarationIrBuilder(pluginContext, symbol)
       .irCall(
         getter.symbol,
-        injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+        injectable.type.toIrType().typeOrNull!!
       )
       .apply {
         fillTypeParameters(injectable.callable)
@@ -637,7 +630,7 @@ class InjectCallTransformer(
     return DeclarationIrBuilder(pluginContext, symbol)
       .irCall(
         function.symbol,
-        injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+        injectable.type.toIrType().typeOrNull!!
       )
       .apply {
         fillTypeParameters(injectable.callable)
@@ -655,7 +648,7 @@ class InjectCallTransformer(
       }.second()
       is ClassConstructorDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
-          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+          injectable.type.toIrType().typeOrNull!!,
           containingDeclaration.irConstructor()
             .allParameters
             .single { it.name == descriptor.name }
@@ -663,7 +656,7 @@ class InjectCallTransformer(
         )
       is FunctionDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
-          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+          injectable.type.toIrType().typeOrNull!!,
           (parameterMap[descriptor] ?: containingDeclaration.irFunction()
             .let { function ->
               function.allParameters
@@ -680,10 +673,7 @@ class InjectCallTransformer(
       .typeArguments
       .values
       .forEachIndexed { index, typeArgument ->
-        putTypeArgument(
-          index, typeArgument.toIrType(pluginContext, localClasses, context)
-            .typeOrNull
-        )
+        putTypeArgument(index, typeArgument.toIrType().typeOrNull)
       }
   }
 
@@ -700,12 +690,12 @@ class InjectCallTransformer(
       DeclarationIrBuilder(pluginContext, symbol)
         .irCall(
           localFunction.symbol,
-          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!
+          injectable.type.toIrType().typeOrNull!!
         )
     } else {
       DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
-          injectable.type.toIrType(pluginContext, localClasses, context).typeOrNull!!,
+          injectable.type.toIrType().typeOrNull!!,
           localVariables.single { it.descriptor == descriptor }.symbol
         )
     }
@@ -716,21 +706,21 @@ class InjectCallTransformer(
       return localClasses
         .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
         .constructors
-        .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
+        .single { it.descriptor.uniqueKey() == uniqueKey() }
     }
     return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
-      .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
       .owner
   }
 
   private fun FunctionDescriptor.irFunction(): IrFunction {
     if (visibility == DescriptorVisibilities.LOCAL) {
       return localFunctions.single {
-        it.descriptor.uniqueKey(context) == uniqueKey(context)
+        it.descriptor.uniqueKey() == uniqueKey()
       }
     }
     return pluginContext.referenceFunctions(fqNameSafe)
-      .single { it.descriptor.uniqueKey(context) == uniqueKey(context) }
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
       .owner
   }
 
@@ -738,7 +728,7 @@ class InjectCallTransformer(
 
   private val localVariables = mutableListOf<IrVariable>()
   private val localFunctions = mutableListOf<IrFunction>()
-  private val localClasses = mutableListOf<IrClass>()
+  @Provide private val localClasses = mutableListOf<IrClass>()
 
   override fun visitClassNew(declaration: IrClass): IrStatement {
     receiverAccessors.push(
@@ -796,13 +786,16 @@ class InjectCallTransformer(
 
     return DeclarationIrBuilder(pluginContext, result.symbol)
       .irBlock {
-        val graphContext = GraphContext(graph, currentScope!!, result.startOffset)
+        val graphContext = GraphContext(graph, currentScope!!, result.startOffset,
+          analysisContext, pluginContext)
         try {
           ScopeContext(
             parent = null,
             graphContext = graphContext,
             scope = graph.scope,
-            irScope = scope
+            irScope = scope,
+            analysisContext = analysisContext,
+            pluginContext = pluginContext
           ).run { result.inject(this, graph.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)

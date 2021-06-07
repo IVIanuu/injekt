@@ -16,30 +16,32 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
 
-class InfoAnnotationPatcher(private val context: InjektContext) : DeclarationChecker {
+class InfoAnnotationPatcher(@Provide private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
+    @Provide val trace = context.trace
     // requesting infos triggers saving them
     when (descriptor) {
       is ClassDescriptor -> {
-        descriptor.classifierInfo(this.context, context.trace)
+        descriptor.classifierInfo()
         descriptor.declaredTypeParameters
-          .forEach { it.classifierInfo(this.context, context.trace) }
+          .forEach { it.classifierInfo() }
         descriptor.constructors
-          .forEach { it.callableInfo(this.context, context.trace) }
+          .forEach { it.callableInfo() }
       }
       is CallableDescriptor -> {
-        descriptor.callableInfo(this.context, context.trace)
+        descriptor.callableInfo()
         descriptor.typeParameters
-          .forEach { it.classifierInfo(this.context, context.trace) }
+          .forEach { it.classifierInfo() }
       }
     }
   }

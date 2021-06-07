@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.descriptors.*
@@ -39,10 +41,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  val context: InjektContext,
+  @Inject @Provide val context: AnalysisContext,
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
-  val trace: BindingTrace,
   val initialInjectables: List<CallableRef>,
   imports: List<ResolvedProviderImport>,
   val typeParameters: List<ClassifierRef>,
@@ -128,9 +129,7 @@ class InjectablesScope(
     initialInjectables
       .forEach { injectable ->
         injectable.collectInjectables(
-          context = context,
           scope = this,
-          trace = trace,
           addImport = { importFqName, packageFqName ->
             this.imports += ResolvedProviderImport(
               null,
@@ -207,7 +206,7 @@ class InjectablesScope(
         recordLookup(it.callable.callable)
     }
     imports.forEach { import ->
-        context.memberScopeForFqName(import.packageFqName, lookupLocation)
+        context.injektContext.memberScopeForFqName(import.packageFqName, lookupLocation)
           ?.recordLookup(
             injectablesLookupName(
               FqName(import.importPath!!.removeSuffix(".*")),
@@ -225,7 +224,7 @@ class InjectablesScope(
     if (shouldDelegateToParent) return parent?.injectablesForRequest(request, requestingScope)
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
-      request.type.classifier == context.setClassifier
+      request.type.classifier == context.injektContext.setClassifier
     ) return null
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       ?.filter { it -> it.isValidObjectRequest(request) }
@@ -240,14 +239,14 @@ class InjectablesScope(
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
-          val context = candidate.buildContext(context, key.staticTypeParameters, key.type)
+          val context = candidate.buildContext(key.staticTypeParameters, key.type)
           if (!context.isOk)
             return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
           val finalCandidate = candidate.substitute(substitutionMap)
           CallableInjectable(
             key.type,
-            finalCandidate.getInjectableRequests(this.context, trace),
+            finalCandidate.getInjectableRequests(),
             this,
             finalCandidate
           )
@@ -278,10 +277,10 @@ class InjectablesScope(
           )
         }
       }
-      request.type.classifier == context.setClassifier -> {
+      request.type.classifier == context.injektContext.setClassifier -> {
         return setInjectablesByType.getOrPut(request.type) {
           val singleElementType = request.type.arguments[0]
-          val collectionElementType = context.collectionClassifier.defaultType
+          val collectionElementType = context.injektContext.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
 
           var elements = setElementsForType(
@@ -291,7 +290,7 @@ class InjectablesScope(
           if (elements == null && singleElementType.isProviderFunctionType) {
             val providerReturnType = singleElementType.arguments.last()
             elements = setElementsForType(
-              providerReturnType, context.collectionClassifier
+              providerReturnType, context.injektContext.collectionClassifier
                 .defaultType.withArguments(listOf(providerReturnType)),
               CallableRequestKey(providerReturnType, allStaticTypeParameters)
             )
@@ -354,9 +353,9 @@ class InjectablesScope(
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           var context =
-            candidate.buildContext(this.context, key.staticTypeParameters, singleElementType)
+            candidate.buildContext(key.staticTypeParameters, singleElementType)
           if (!context.isOk) {
-            context = candidate.buildContext(this.context, key.staticTypeParameters, collectionElementType)
+            context = candidate.buildContext(key.staticTypeParameters, collectionElementType)
           }
           if (!context.isOk) return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
@@ -393,7 +392,6 @@ class InjectablesScope(
     spreadingInjectable.processedCandidateTypes += candidate.type
     val baseContext = candidate.contextsByStaticTypeParameters.getOrPut(allStaticTypeParameters) {
       buildBaseContextForSpreadingInjectable(
-        this.context,
         candidate.type,
         allStaticTypeParameters
       )
@@ -421,9 +419,7 @@ class InjectablesScope(
       )
 
     newInjectable.collectInjectables(
-      context = this.context,
       scope = this,
-      trace = trace,
       addImport = { importFqName, packageFqName ->
         this.imports += ResolvedProviderImport(
           null,

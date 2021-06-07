@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.openapi.progress.*
@@ -30,19 +31,19 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.util.slicedMap.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
 import kotlin.reflect.*
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  context: InjektContext,
-  trace: BindingTrace?
+  @Inject context: AnalysisContext
 ): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
   .map { it.containingDeclaration }
   .filterIsInstance<ClassDescriptor>()
   .mapNotNull { clazz ->
-    val clazzClassifier = clazz.toClassifierRef(context, trace)
+    val clazzClassifier = clazz.toClassifierRef()
     clazz.unsubstitutedPrimaryConstructor
       ?.valueParameters
       ?.firstOrNull {
@@ -93,10 +94,10 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 }
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
-  bindingContext: BindingContext,
+  @Inject bindingContext: BindingContext,
 ) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-fun DeclarationDescriptor.isExternalDeclaration(context: InjektContext): Boolean =
+fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
   module != context.module
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
@@ -115,8 +116,8 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
     inner.hasAnnotation(annotation)
   }
 
-fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
-  return when (val original = this.original) {
+fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
+  when (val original = this.original) {
     is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
       original.valueParameters
         .joinToString(",") {
@@ -162,7 +163,6 @@ fun DeclarationDescriptor.uniqueKey(context: InjektContext): String {
     is VariableDescriptor -> "variable:${fqNameSafe}"
     else -> error("Unexpected declaration $this")
   }
-}
 
 private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
@@ -272,3 +272,13 @@ fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
+
+fun <K, V> BindingTrace.getOrRecord(
+  slice: WritableSlice<K, V>,
+  key: K,
+  defaultValue: () -> V
+): V = get(slice, key) ?: defaultValue()
+  .also { record(slice, key, it) }
+
+@Provide fun bindingContext(trace: BindingTrace?): BindingContext =
+  trace?.bindingContext ?: error("Wtf")

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.transform.*
@@ -23,7 +24,6 @@ import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -79,7 +79,7 @@ class SetInjectable(
 
 class ProviderInjectable(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope,
+  @Provide override val ownerScope: InjectablesScope,
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable() {
@@ -113,9 +113,8 @@ class ProviderInjectable(
     context = ownerScope.context,
     callContext = dependencyCallContext,
     ownerDescriptor = ownerScope.ownerDescriptor,
-    trace = ownerScope.trace,
     initialInjectables = type
-      .toKotlinType(ownerScope.context)
+      .toKotlinType()
       .memberScope
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
       .first()
@@ -124,7 +123,7 @@ class ProviderInjectable(
       .onEach { parameterDescriptors += it }
       .mapIndexed { index, parameter ->
         parameter
-          .toCallableRef(ownerScope.context, ownerScope.trace)
+          .toCallableRef()
           .copy(isProvide = true, type = type.arguments[index])
       }
       .toList(),
@@ -170,7 +169,7 @@ class TypeKeyInjectable(
     typeParameterDependencies
       .mapIndexed { index, typeParameter ->
         InjectableRequest(
-          type = ownerScope.context.typeKeyType.defaultType
+          type = ownerScope.context.injektContext.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
           defaultStrategy = InjectableRequest.DefaultStrategy.NONE,
           callableFqName = callableFqName,
@@ -193,8 +192,7 @@ class TypeKeyInjectable(
 }
 
 fun CallableRef.getInjectableRequests(
-  context: InjektContext,
-  trace: BindingTrace
+  @Inject context: AnalysisContext
 ): List<InjectableRequest> = callable.allParameters
   .asSequence()
   .filter {
@@ -203,7 +201,7 @@ fun CallableRef.getInjectableRequests(
   .filter {
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isProvide(context, trace) ||
+        it.isProvide() ||
         parameterTypes[it.injektIndex()]!!.isProvide
   }
   .map { it.toInjectableRequest(this) }

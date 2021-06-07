@@ -16,11 +16,12 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
@@ -89,55 +90,49 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(
-  context: InjektContext,
-  trace: BindingTrace?
-): ClassifierRef {
-  context.classifierRefs[this]?.let { return it }
-  val info = classifierInfo(context, trace)
+fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): ClassifierRef =
+  context.injektContext.classifierRefs.getOrPut(this) {
+    val info = classifierInfo()
 
-  val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
-    ?.declaredTypeParameters
-    ?.map { it.toClassifierRef(context, trace) }
-    ?.toMutableList()
+    val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
+      ?.declaredTypeParameters
+      ?.map { it.toClassifierRef() }
+      ?.toMutableList()
 
-  val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
+    val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
 
-  if (isQualifier) {
-    typeParameters!! += ClassifierRef(
-      key = "${uniqueKey(context)}.\$QT",
-      fqName = fqNameSafe.child("\$QT".asNameId()),
-      isTypeParameter = true,
-      lazySuperTypes = lazy { listOf(context.nullableAnyType) },
-      variance = TypeVariance.OUT
+    if (isQualifier) {
+      typeParameters!! += ClassifierRef(
+        key = "${uniqueKey()}.\$QT",
+        fqName = fqNameSafe.child("\$QT".asNameId()),
+        isTypeParameter = true,
+        lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
+        variance = TypeVariance.OUT
+      )
+    }
+
+    ClassifierRef(
+      key = original.uniqueKey(),
+      fqName = original.fqNameSafe,
+      typeParameters = typeParameters ?: emptyList(),
+      lazySuperTypes = info.lazySuperTypes,
+      isTypeParameter = this is TypeParameterDescriptor,
+      isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+      isQualifier = isQualifier,
+      isTypeAlias = this is TypeAliasDescriptor,
+      descriptor = this,
+      qualifiers = info.qualifiers,
+      isSpread = info.isSpread,
+      primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
+        .map { it.asNameId() },
+      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
 
-  return ClassifierRef(
-    key = original.uniqueKey(context),
-    fqName = original.fqNameSafe,
-    typeParameters = typeParameters ?: emptyList(),
-    lazySuperTypes = info.lazySuperTypes,
-    isTypeParameter = this is TypeParameterDescriptor,
-    isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-    isQualifier = isQualifier,
-    isTypeAlias = this is TypeAliasDescriptor,
-    descriptor = this,
-    qualifiers = info.qualifiers,
-    isSpread = info.isSpread,
-    primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
-      .map { it.asNameId() },
-    variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
-  ).also {
-    context.classifierRefs[this] = it
-  }
-}
-
 fun KotlinType.toTypeRef(
-  context: InjektContext,
-  trace: BindingTrace?,
   isStarProjection: Boolean = false,
-  variance: TypeVariance = TypeVariance.INV
+  variance: TypeVariance = TypeVariance.INV,
+  @Inject context: AnalysisContext
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this
@@ -146,10 +141,10 @@ fun KotlinType.toTypeRef(
       unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
         .commonSupertype(unwrapped.constructor.supertypes)
       else -> null
-    } ?: return context.nullableAnyType
+    } ?: return context.injektContext.nullableAnyType
 
     val classifier = kotlinType
-      .constructor.declarationDescriptor!!.toClassifierRef(context, trace)
+      .constructor.declarationDescriptor!!.toClassifierRef()
 
     val rawType = TypeRef(
       classifier = classifier,
@@ -161,10 +156,8 @@ fun KotlinType.toTypeRef(
         .take(classifier.typeParameters.size)
         .map {
           it.type.toTypeRef(
-            context,
-            trace,
-            it.isStarProjection,
-            it.projectionKind.convertVariance()
+            isStarProjection = it.isStarProjection,
+            variance = it.projectionKind.convertVariance()
           )
         }
         .toMutableList()
@@ -172,7 +165,7 @@ fun KotlinType.toTypeRef(
           if (classifier.isQualifier &&
             it.size != classifier.typeParameters.size
           )
-            it += context.nullableAnyType
+            it += context.injektContext.nullableAnyType
         },
       isMarkedComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
@@ -187,7 +180,7 @@ fun KotlinType.toTypeRef(
     val qualifierAnnotations = unwrapped.getAnnotatedAnnotations(InjektFqNames.Qualifier)
     if (qualifierAnnotations.isNotEmpty()) {
       qualifierAnnotations
-        .map { it.type.toTypeRef(context, trace) }
+        .map { it.type.toTypeRef() }
         .map {
           it.copy(
             arguments = it.arguments,

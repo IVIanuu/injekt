@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.test.*
 import org.jetbrains.kotlin.analyzer.*
@@ -64,7 +66,8 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(val module: ModuleDescriptor) {
-  val injektContext = module.injektContext
+  @Provide val analysisContext = AnalysisContext(module.injektContext, null)
+
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
   val nullableAny = any.nullable()
@@ -154,9 +157,9 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = injektContext.classifierDescriptorForFqName(
+  fun typeFor(fqName: FqName) = analysisContext.injektContext.classifierDescriptorForFqName(
     fqName, NoLookupLocation.FROM_BACKEND)
-    ?.defaultType?.toTypeRef(injektContext, null) ?: error("Wtf $fqName")
+    ?.defaultType?.toTypeRef() ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
     shouldBeAssignableTo(other, emptyList())
@@ -167,7 +170,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(injektContext, staticTypeParameters),
+      buildBaseContext(staticTypeParameters),
       other,
       true
     )
@@ -185,7 +188,7 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(injektContext, staticTypeParameters),
+      buildBaseContext(staticTypeParameters),
       other,
       true
     )
@@ -195,13 +198,13 @@ class TypeCheckerTestContext(val module: ModuleDescriptor) {
   }
 
   infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-    if (!isSubTypeOf(injektContext, other)) {
+    if (!isSubTypeOf(other)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }
 
   infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-    if (isSubTypeOf(injektContext, other)) {
+    if (isSubTypeOf(other)) {
       throw AssertionError("'$this' is sub type of '$other'")
     }
   }
