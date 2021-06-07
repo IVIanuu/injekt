@@ -528,6 +528,19 @@ class InjectableDeclarationTest {
     """
   )
 
+  @Test fun testProvideInnerClass() = codegen(
+    """
+      class Outer(@Provide val _foo: Foo) {
+        val foo = Inner().foo
+        inner class Inner(@Inject val foo: Foo)
+      }
+      fun invoke(foo: Foo): Foo = Outer(foo).foo
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
   @Test fun testProvideSuspendFunction() = singleAndMultiCodegen(
     """
       @Provide suspend fun foo() = Foo()
