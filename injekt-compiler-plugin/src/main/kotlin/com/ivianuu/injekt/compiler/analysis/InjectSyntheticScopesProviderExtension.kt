@@ -61,8 +61,14 @@ private class InjectSyntheticScope(private val context: InjektContext) : Synthet
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
-      .flatMap { it.memberScope.getContributedDescriptors() }
-      .filterIsInstance<FunctionDescriptor>()
+      .flatMap { receiverType ->
+        receiverType.memberScope.getContributedDescriptors()
+          .flatMap { declaration ->
+            if (declaration is ClassDescriptor && declaration.isInner) {
+              declaration.constructors
+            } else listOfNotNull(declaration as? FunctionDescriptor)
+          }
+      }
       .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
 
   override fun getSyntheticMemberFunctions(
@@ -70,7 +76,14 @@ private class InjectSyntheticScope(private val context: InjektContext) : Synthet
     name: Name,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = receiverTypes
-    .flatMap { it.memberScope.getContributedFunctions(name, location) }
+    .flatMap { receiverType ->
+      receiverType.memberScope.getContributedFunctions(name, location) +
+          (receiverType.memberScope.getContributedClassifier(name, location)
+            ?.safeAs<ClassDescriptor>()
+            ?.takeIf { it.isInner }
+            ?.constructors
+            ?: emptyList())
+    }
     .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
 
   override fun getSyntheticStaticFunctions(
