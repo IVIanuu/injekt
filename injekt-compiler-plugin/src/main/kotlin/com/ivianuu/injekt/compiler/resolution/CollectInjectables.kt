@@ -431,7 +431,7 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
         allScopes.any {
           it.ownerDescriptor == callableParent ||
               (it.ownerDescriptor is ClassDescriptor &&
-                  it.ownerDescriptor.toClassifierRef(context) == callable.owner)
+                  it.ownerDescriptor.toClassifierRef() == callable.owner)
         }
       } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&
       callable.callable.containingDeclaration is PackageFragmentDescriptor &&

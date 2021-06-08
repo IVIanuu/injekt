@@ -154,16 +154,16 @@ private fun TypeRef.toIrAbbreviation(
 fun TypeRef.toKotlinType(@Inject context: AnalysisContext): SimpleType {
   if (isStarProjection) return context.injektContext.module.builtIns.anyType
   return when {
-    classifier.isTypeAlias -> superTypes.single().toKotlinType(context)
-      .withAbbreviation(toAbbreviation(context))
+    classifier.isTypeAlias -> superTypes.single().toKotlinType()
+      .withAbbreviation(toAbbreviation())
     // todo add this qualifier to type
-    classifier.isQualifier -> arguments.last().toKotlinType(context)
+    classifier.isQualifier -> arguments.last().toKotlinType()
     else -> classifier.descriptor!!.original.defaultType
       .replace(
         newArguments = arguments.map {
           TypeProjectionImpl(
             Variance.INVARIANT,
-            it.toKotlinType(context)
+            it.toKotlinType()
           )
         },
         newAnnotations = if (isMarkedComposable) {

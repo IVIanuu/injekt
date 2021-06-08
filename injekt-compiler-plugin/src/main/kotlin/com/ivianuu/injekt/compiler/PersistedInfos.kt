@@ -36,7 +36,7 @@ import kotlinx.serialization.*
 fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeRef =
   PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey() ?: "",
-    arguments = arguments.map { it.toPersistedTypeRef(context) },
+    arguments = arguments.map { it.toPersistedTypeRef() },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,

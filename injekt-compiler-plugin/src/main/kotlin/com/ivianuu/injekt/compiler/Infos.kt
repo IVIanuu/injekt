@@ -371,7 +371,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       .findAnnotation(InjektFqNames.TypeParameterInfos)
     val initialTypeParameterInfos = loadTypeParameterInfos()
     if (initialTypeParameterInfos[index].isEmpty()) {
-      val serializedInfo = info.toPersistedClassifierInfo(context).encode()
+      val serializedInfo = info.toPersistedClassifierInfo().encode()
       // load again if the annotation has changed
       val finalTypeParameterInfos =
         if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfos) !=
@@ -401,7 +401,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       info.superTypes.none { it.shouldBePersisted() }
     ) return
 
-    val serializedInfo = info.toPersistedClassifierInfo(context).encode()
+    val serializedInfo = info.toPersistedClassifierInfo().encode()
 
     updateAnnotation(
       AnnotationDescriptorImpl(
