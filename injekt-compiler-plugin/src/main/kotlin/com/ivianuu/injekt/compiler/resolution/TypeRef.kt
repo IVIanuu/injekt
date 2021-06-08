@@ -90,44 +90,47 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): ClassifierRef =
-  context.injektContext.classifierRefs.getOrPut(this) {
-    val info = classifierInfo()
+fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): ClassifierRef {
+  context.injektContext.classifierRefs[this]?.let { return it }
 
-    val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
-      ?.declaredTypeParameters
-      ?.map { it.toClassifierRef() }
-      ?.toMutableList()
+  val info = classifierInfo()
 
-    val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
+  val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
+    ?.declaredTypeParameters
+    ?.map { it.toClassifierRef() }
+    ?.toMutableList()
 
-    if (isQualifier) {
-      typeParameters!! += ClassifierRef(
-        key = "${uniqueKey()}.\$QT",
-        fqName = fqNameSafe.child("\$QT".asNameId()),
-        isTypeParameter = true,
-        lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
-        variance = TypeVariance.OUT
-      )
-    }
+  val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
 
-    ClassifierRef(
-      key = original.uniqueKey(),
-      fqName = original.fqNameSafe,
-      typeParameters = typeParameters ?: emptyList(),
-      lazySuperTypes = info.lazySuperTypes,
-      isTypeParameter = this is TypeParameterDescriptor,
-      isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-      isQualifier = isQualifier,
-      isTypeAlias = this is TypeAliasDescriptor,
-      descriptor = this,
-      qualifiers = info.qualifiers,
-      isSpread = info.isSpread,
-      primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
-        .map { it.asNameId() },
-      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+  if (isQualifier) {
+    typeParameters!! += ClassifierRef(
+      key = "${uniqueKey()}.\$QT",
+      fqName = fqNameSafe.child("\$QT".asNameId()),
+      isTypeParameter = true,
+      lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
+      variance = TypeVariance.OUT
     )
   }
+
+  return ClassifierRef(
+    key = original.uniqueKey(),
+    fqName = original.fqNameSafe,
+    typeParameters = typeParameters ?: emptyList(),
+    lazySuperTypes = info.lazySuperTypes,
+    isTypeParameter = this is TypeParameterDescriptor,
+    isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+    isQualifier = isQualifier,
+    isTypeAlias = this is TypeAliasDescriptor,
+    descriptor = this,
+    qualifiers = info.qualifiers,
+    isSpread = info.isSpread,
+    primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
+      .map { it.asNameId() },
+    variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+  ).also {
+    context.injektContext.classifierRefs[this] = it
+  }
+}
 
 fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
