@@ -16,21 +16,23 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.resolve.*
 
 class InjektIrGenerationExtension : IrGenerationExtension {
-  override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    val context = pluginContext.moduleDescriptor.injektContext
-    val trace = DelegatingBindingTrace(
-      pluginContext.bindingContext, "IR trace"
+  override fun generate(moduleFragment: IrModuleFragment, @Provide pluginContext: IrPluginContext) {
+    @Provide val context = AnalysisContext(
+      pluginContext.moduleDescriptor.injektContext,
+      DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
-    moduleFragment.transform(InjectCallTransformer(context, pluginContext), null)
-    moduleFragment.transform(SingletonTransformer(context, trace, pluginContext), null)
-    moduleFragment.transform(IncrementalFixTransformer(context, trace, pluginContext), null)
+    moduleFragment.transform(InjectCallTransformer(), null)
+    moduleFragment.transform(SingletonTransformer(), null)
+    moduleFragment.transform(IncrementalFixTransformer(), null)
     moduleFragment.patchDeclarationParents()
   }
 }

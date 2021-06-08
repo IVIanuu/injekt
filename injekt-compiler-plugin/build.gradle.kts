@@ -21,6 +21,7 @@ plugins {
   kotlin("kapt")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
+  id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -50,6 +51,7 @@ dependencies {
   api(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.AndroidX.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
+  implementation(Deps.Injekt.scope)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -32,7 +33,8 @@ class InjectSyntheticScopeProviderExtension : SyntheticScopeProviderExtension {
   override fun getScopes(
     moduleDescriptor: ModuleDescriptor,
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
-  ): List<SyntheticScope> = listOf(InjectSyntheticScope(moduleDescriptor.injektContext))
+  ): List<SyntheticScope> =
+    listOf(InjectSyntheticScope(AnalysisContext(moduleDescriptor.injektContext, null)))
 }
 
 class InjectSyntheticScopes(
@@ -45,19 +47,21 @@ class InjectSyntheticScopes(
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
   override val scopes: Collection<SyntheticScope> = delegate.scopes +
-      InjectSyntheticScope(moduleDescriptor.injektContext)
+      InjectSyntheticScope(AnalysisContext(moduleDescriptor.injektContext, null))
 }
 
-private class InjectSyntheticScope(private val context: InjektContext) : SyntheticScope.Default() {
+private class InjectSyntheticScope(
+  @Inject private val context: AnalysisContext
+) : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
-    constructor.toInjectFunctionDescriptor(context, null) as? ConstructorDescriptor
+    constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor
 
   override fun getSyntheticConstructors(
     contributedClassifier: ClassifierDescriptor,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedClassifier.safeAs<ClassDescriptor>()
     ?.constructors
-    ?.mapNotNull { it.toInjectFunctionDescriptor(context, null) } ?: emptyList()
+    ?.mapNotNull { it.toInjectFunctionDescriptor() } ?: emptyList()
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
@@ -69,7 +73,7 @@ private class InjectSyntheticScope(private val context: InjektContext) : Synthet
             } else listOfNotNull(declaration as? FunctionDescriptor)
           }
       }
-      .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
+      .mapNotNull { it.toInjectFunctionDescriptor() }
 
   override fun getSyntheticMemberFunctions(
     receiverTypes: Collection<KotlinType>,
@@ -84,11 +88,11 @@ private class InjectSyntheticScope(private val context: InjektContext) : Synthet
             ?.constructors
             ?: emptyList())
     }
-    .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
+    .mapNotNull { it.toInjectFunctionDescriptor() }
 
   override fun getSyntheticStaticFunctions(
     contributedFunctions: Collection<FunctionDescriptor>,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedFunctions
-    .mapNotNull { it.toInjectFunctionDescriptor(context, null) }
+    .mapNotNull { it.toInjectFunctionDescriptor() }
 }

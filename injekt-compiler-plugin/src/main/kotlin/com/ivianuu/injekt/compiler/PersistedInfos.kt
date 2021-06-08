@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
-import org.jetbrains.kotlin.resolve.*
 
 @Serializable data class PersistedTypeRef(
   @SerialName("0") val classifierKey: String,
@@ -32,31 +33,32 @@ import org.jetbrains.kotlin.resolve.*
   @SerialName("8") val ignoreElementsWithErrors: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(context: InjektContext): PersistedTypeRef = PersistedTypeRef(
-  classifierKey = classifier.descriptor?.uniqueKey(context) ?: "",
-  arguments = arguments.map { it.toPersistedTypeRef(context) },
-  isStarProjection = isStarProjection,
-  isMarkedNullable = isMarkedNullable,
-  isMarkedComposable = isMarkedComposable,
-  isProvide = isProvide,
-  isInject = isInject,
-  defaultOnAllErrors = defaultOnAllErrors,
-  ignoreElementsWithErrors = ignoreElementsWithErrors
-)
+fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeRef =
+  PersistedTypeRef(
+    classifierKey = classifier.descriptor?.uniqueKey() ?: "",
+    arguments = arguments.map { it.toPersistedTypeRef(context) },
+    isStarProjection = isStarProjection,
+    isMarkedNullable = isMarkedNullable,
+    isMarkedComposable = isMarkedComposable,
+    isProvide = isProvide,
+    isInject = isInject,
+    defaultOnAllErrors = defaultOnAllErrors,
+    ignoreElementsWithErrors = ignoreElementsWithErrors
+  )
 
-fun PersistedTypeRef.toTypeRef(context: InjektContext, trace: BindingTrace?): TypeRef {
+fun PersistedTypeRef.toTypeRef(@Inject context: AnalysisContext): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = context.classifierDescriptorForKey(classifierKey)
-    .toClassifierRef(context, trace)
+  val classifier = context.injektContext.classifierDescriptorForKey(classifierKey)
+    .toClassifierRef()
   val arguments = if (classifier.isQualifier) {
     arguments
-      .map { it.toTypeRef(context, trace) } +
+      .map { it.toTypeRef() } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
-            context.nullableAnyType
+            context.injektContext.nullableAnyType
           else null
         )
-  } else arguments.map { it.toTypeRef(context, trace) }
+  } else arguments.map { it.toTypeRef() }
   return classifier.unqualifiedType
     .copy(
       arguments = arguments,

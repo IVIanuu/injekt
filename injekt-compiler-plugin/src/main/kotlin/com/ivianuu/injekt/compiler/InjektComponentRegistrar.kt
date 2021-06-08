@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.transform.*
 import org.jetbrains.kotlin.backend.common.extensions.*
@@ -35,39 +36,47 @@ class InjektComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration,
   ) {
-    val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
-    val kaptOutputDirs = listOf(
-      listOf("tmp", "kapt3", "stubs"),
-      listOf("tmp", "kapt3", "incrementalData"),
-      listOf("tmp", "kapt3", "incApCache")
-    ).map { File(it.joinToString(File.separator)) }
-    val isGenerateKaptStubs = kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
-    if (isGenerateKaptStubs) return
-
-    StorageComponentContainerContributor.registerExtension(
-      project,
-      InjektStorageComponentContainerContributor()
-    )
-    IrGenerationExtension.registerExtensionWithLoadingOrder(
-      project,
-      LoadingOrder.FIRST,
-      InjektIrGenerationExtension()
-    )
-    // extension point does not exist CLI for some reason
-    // but it's still queried later
-    SyntheticScopeProviderExtension.registerExtensionPoint(project)
-    SyntheticScopeProviderExtension.registerExtension(
-      project,
-      InjectSyntheticScopeProviderExtension()
-    )
-    @Suppress("DEPRECATION")
-    Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-      .registerExtension(InjektDiagnosticSuppressor())
+    if (isKaptCompilation(configuration)) return
+    registerExtensions(project)
   }
 }
 
+private fun registerExtensions(project: MockProject) {
+  StorageComponentContainerContributor.registerExtension(
+    project,
+    InjektStorageComponentContainerContributor()
+  )
+  IrGenerationExtension.registerExtensionWithLoadingOrder(
+    project,
+    LoadingOrder.FIRST,
+    InjektIrGenerationExtension()
+  )
+
+  // extension point does not exist CLI for some reason
+  // but it's still queried later
+  SyntheticScopeProviderExtension.registerExtensionPoint(project)
+  SyntheticScopeProviderExtension.registerExtension(
+    project,
+    InjectSyntheticScopeProviderExtension()
+  )
+
+  @Suppress("DEPRECATION")
+  Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
+    .registerExtension(InjektDiagnosticSuppressor())
+}
+
+private fun isKaptCompilation(configuration: CompilerConfiguration): Boolean {
+  val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
+  val kaptOutputDirs = listOf(
+    listOf("tmp", "kapt3", "stubs"),
+    listOf("tmp", "kapt3", "incrementalData"),
+    listOf("tmp", "kapt3", "incApCache")
+  ).map { File(it.joinToString(File.separator)) }
+  return kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
+}
+
 fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
-  project: MockProject,
+  @Inject project: MockProject,
   loadingOrder: LoadingOrder,
   extension: IrGenerationExtension,
 ) {

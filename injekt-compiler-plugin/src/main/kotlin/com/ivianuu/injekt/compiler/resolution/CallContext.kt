@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import androidx.compose.compiler.plugins.kotlin.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.com.intellij.psi.*
@@ -37,7 +38,7 @@ enum class CallContext {
 fun CallContext.canCall(other: CallContext) =
   this == other || other == CallContext.DEFAULT
 
-fun CallableDescriptor.callContext(bindingContext: BindingContext?): CallContext {
+fun CallableDescriptor.callContext(@Inject bindingContext: BindingContext? = null): CallContext {
   if (this !is FunctionDescriptor && this !is PropertyDescriptor)
     return CallContext.DEFAULT
 

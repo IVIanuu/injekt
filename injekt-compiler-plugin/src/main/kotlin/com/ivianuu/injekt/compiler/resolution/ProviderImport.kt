@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
@@ -34,17 +36,17 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   element, importPath, packageFqName
 )
 
-fun ProviderImport.resolve(context: InjektContext): ResolvedProviderImport? {
+fun ProviderImport.resolve(@Inject context: AnalysisContext): ResolvedProviderImport? {
   if (!isValidImport()) return null
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
-    val objectForFqName = context.classifierDescriptorForFqName(packageFqName,
+    val objectForFqName = context.injektContext.classifierDescriptorForFqName(packageFqName,
       element.lookupLocation)
     objectForFqName?.findPackage()?.fqName ?: packageFqName
   } else {
     val fqName = FqName(importPath)
     val parentFqName = fqName.parent()
-    val objectForFqName = context.classifierDescriptorForFqName(
+    val objectForFqName = context.injektContext.classifierDescriptorForFqName(
       parentFqName, NoLookupLocation.FROM_BACKEND)
     objectForFqName?.findPackage()?.fqName ?: parentFqName
   }

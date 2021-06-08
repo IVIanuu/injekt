@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.ir.*
@@ -30,15 +32,13 @@ import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.symbols.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
-import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
 class IncrementalFixTransformer(
-  private val context: InjektContext,
-  private val trace: BindingTrace,
-  private val pluginContext: IrPluginContext
+  @Inject private val pluginContext: IrPluginContext,
+  @Inject private val analysisContext: AnalysisContext
 ) : IrElementTransformerVoid() {
   private val injectablesByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
   override fun visitFile(declaration: IrFile): IrFile {
@@ -150,12 +150,12 @@ class IncrementalFixTransformer(
           (declaration.constructedClass.visibility == DescriptorVisibilities.PUBLIC ||
               declaration.constructedClass.visibility == DescriptorVisibilities.INTERNAL ||
               declaration.constructedClass.visibility == DescriptorVisibilities.PROTECTED)) &&
-      declaration.descriptor.isProvide(context, trace)
+      declaration.descriptor.isProvide()
     ) {
       injectablesByFile.getOrPut(declaration.file) { mutableSetOf() } += when (declaration) {
-        is IrClass -> declaration.descriptor.injectableConstructors(context, trace)
-        is IrFunction -> listOf(declaration.descriptor.toCallableRef(context, trace))
-        is IrProperty -> listOf(declaration.descriptor.toCallableRef(context, trace))
+        is IrClass -> declaration.descriptor.injectableConstructors()
+        is IrFunction -> listOf(declaration.descriptor.toCallableRef())
+        is IrProperty -> listOf(declaration.descriptor.toCallableRef())
         else -> return super.visitDeclaration(declaration)
       }
     }

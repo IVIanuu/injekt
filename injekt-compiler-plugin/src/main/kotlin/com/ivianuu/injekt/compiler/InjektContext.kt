@@ -33,19 +33,19 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   override fun isDenotable(type: TypeRef): Boolean = true
 
   val setClassifier by lazy {
-    module.builtIns.set.toClassifierRef(this, null)
+    module.builtIns.set.toClassifierRef()
   }
   val collectionClassifier by lazy {
-    module.builtIns.collection.toClassifierRef(this, null)
+    module.builtIns.collection.toClassifierRef()
   }
   val nothingType by lazy {
-    module.builtIns.nothingType.toTypeRef(this, null)
+    module.builtIns.nothingType.toTypeRef()
   }
   val nullableNothingType by lazy {
     nothingType.copy(isMarkedNullable = true)
   }
   val anyType by lazy {
-    module.builtIns.anyType.toTypeRef(this, null)
+    module.builtIns.anyType.toTypeRef()
   }
   val nullableAnyType by lazy {
     anyType.copy(isMarkedNullable = true)
@@ -53,12 +53,12 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val sourceKeyType by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.SourceKey)
-    )!!.toClassifierRef(this, null)
+    )!!.toClassifierRef()
   }
   val typeKeyType by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.TypeKey)
-    )!!.toClassifierRef(this, null)
+    )!!.toClassifierRef()
   }
 
   val injectableConstructors = mutableMapOf<ClassDescriptor, List<CallableRef>>()

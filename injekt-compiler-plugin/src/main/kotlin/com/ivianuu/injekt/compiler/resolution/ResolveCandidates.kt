@@ -221,9 +221,9 @@ private fun InjectablesScope.resolveRequest(
     ?: run {
       // try the type scope if the requested type is not a framework type
       if (!request.type.isProviderFunctionType &&
-        request.type.classifier != context.setClassifier &&
+        request.type.classifier != context.injektContext.setClassifier &&
         request.type.classifier.fqName != InjektFqNames.TypeKey)
-        TypeInjectablesScope(context, trace, request.type, lookupLocation)
+        TypeInjectablesScope(request.type, lookupLocation)
           .also { it.recordLookup(lookupLocation) }
           .injectablesForRequest(request, this)
       else null
@@ -334,7 +334,7 @@ private fun InjectablesScope.resolveCandidates(
             .cast<CallableInjectable>()
             .callable
             .callable
-            .uniqueKey(context)
+            .uniqueKey()
         }.let {
           it.singleOrNull()
             ?: ResolutionResult.Failure.CandidateAmbiguity(request, it.cast())
@@ -525,8 +525,8 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
   }
 
   if (a.classifier != b.classifier) {
-    val aSubTypeOfB = a.isSubTypeOf(context, b)
-    val bSubTypeOfA = b.isSubTypeOf(context, a)
+    val aSubTypeOfB = a.isSubTypeOf(b)
+    val bSubTypeOfA = b.isSubTypeOf(a)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
     if (requestedType != null) {

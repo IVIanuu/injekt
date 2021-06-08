@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.ir.*
@@ -45,14 +47,14 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun TypeRef.toIrType(
-  pluginContext: IrPluginContext,
-  localClasses: List<IrClass>,
-  context: InjektContext
+  @Inject pluginContext: IrPluginContext,
+  @Inject localClasses: List<IrClass>,
+  @Inject context: InjektContext
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
     classifier.isTypeAlias -> superTypes.single()
-      .toIrType(pluginContext, localClasses, context)
+      .toIrType()
       .let {
         it as IrSimpleType
         IrSimpleTypeImpl(
@@ -60,10 +62,10 @@ fun TypeRef.toIrType(
           it.hasQuestionMark,
           it.arguments,
           it.annotations,
-          toIrAbbreviation(pluginContext, localClasses, context)
+          toIrAbbreviation()
         )
       }
-    classifier.isQualifier -> arguments.last().toIrType(pluginContext, localClasses, context)
+    classifier.isQualifier -> arguments.last().toIrType()
       .typeOrNull!!
       .cast<IrSimpleType>()
       .let { type ->
@@ -82,17 +84,14 @@ fun TypeRef.toIrType(
                   .classifierOrFail
                   .typeWith(
                     arguments.dropLast(1)
-                      .map {
-                        it.toIrType(pluginContext, localClasses, context)
-                          .typeOrNull!!
-                      }
+                      .map { it.toIrType().typeOrNull!! }
                   )
               ).apply {
                 qualifierConstructor.owner.typeParameters.indices
                   .forEach { index ->
                     putTypeArgument(
                       index,
-                      arguments[index].toIrType(pluginContext, localClasses, context).typeOrNull!!
+                      arguments[index].toIrType().typeOrNull!!
                     )
                   }
               }
@@ -101,30 +100,30 @@ fun TypeRef.toIrType(
         )
       }
     else -> {
-      val key = classifier.descriptor!!.uniqueKey(context)
+      val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
       val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
         ?.symbol
         ?: pluginContext.referenceClass(fqName)
         ?: pluginContext.referenceFunctions(fqName.parent())
           .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(context) == key }
+          .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: pluginContext.referenceProperties(fqName.parent())
           .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(context) == key }
+          .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: (pluginContext.referenceClass(fqName.parent())
           ?: pluginContext.referenceTypeAlias(fqName.parent()))
           ?.owner
           ?.typeParameters
-          ?.singleOrNull { it.descriptor.uniqueKey(context) == key }
+          ?.singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: error("Could not get for $fqName $key")
       IrSimpleTypeImpl(
         irClassifier,
         isMarkedNullable,
-        arguments.map { it.toIrType(pluginContext, localClasses, context) },
+        arguments.map { it.toIrType() },
         if (isMarkedComposable) {
           val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
             .single()
@@ -139,21 +138,21 @@ fun TypeRef.toIrType(
 }
 
 private fun TypeRef.toIrAbbreviation(
-  pluginContext: IrPluginContext,
-  localClasses: List<IrClass>,
-  context: InjektContext
+  @Inject pluginContext: IrPluginContext,
+  @Inject localClasses: List<IrClass>,
+  @Inject context: InjektContext
 ): IrTypeAbbreviation {
   val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
   return IrTypeAbbreviationImpl(
     typeAlias,
     isMarkedNullable,
-    arguments.map { it.toIrType(pluginContext, localClasses, context) },
+    arguments.map { it.toIrType() },
     emptyList()
   )
 }
 
-fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
-  if (isStarProjection) return context.module.builtIns.anyType
+fun TypeRef.toKotlinType(@Inject context: AnalysisContext): SimpleType {
+  if (isStarProjection) return context.injektContext.module.builtIns.anyType
   return when {
     classifier.isTypeAlias -> superTypes.single().toKotlinType(context)
       .withAbbreviation(toAbbreviation(context))
@@ -171,7 +170,7 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
           Annotations.create(
             listOf(
               AnnotationDescriptorImpl(
-                context.classifierDescriptorForFqName(
+                context.injektContext.classifierDescriptorForFqName(
                   InjektFqNames.Composable,
                   NoLookupLocation.FROM_BACKEND
                 )!!.defaultType,
@@ -188,18 +187,15 @@ fun TypeRef.toKotlinType(context: InjektContext): SimpleType {
   }
 }
 
-fun TypeRef.toAbbreviation(context: InjektContext): SimpleType {
-  val defaultType = classifier.descriptor!!.defaultType
-  return defaultType
+fun TypeRef.toAbbreviation(@Inject context: AnalysisContext): SimpleType =
+  classifier.descriptor!!.defaultType
     .replace(newArguments = arguments.map {
       TypeProjectionImpl(
         Variance.INVARIANT,
-        it.toKotlinType(context)
+        it.toKotlinType()
       )
     })
-
     .makeNullableAsSpecified(isMarkedNullable)
-}
 
 fun IrBuilderWithScope.irLambda(
   type: IrType,

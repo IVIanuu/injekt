@@ -77,21 +77,21 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
     val scoped = typeFor(FqName("com.ivianuu.injekt.scope.Scoped"))
-    val (scopedT, scopedU, scopedS) = injektContext.memberScopeForFqName(
+    val (scopedT, scopedU, scopedS) = analysisContext.injektContext.memberScopeForFqName(
       FqName("com.ivianuu.injekt.scope.Scoped.Companion"),
       NoLookupLocation.FROM_BACKEND
     )!!
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef(injektContext, null) }
+      .map { it.toClassifierRef() }
     val appScope = typeFor(FqName("com.ivianuu.injekt.scope.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {
         it.withArguments(listOf(appScope) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
-      buildBaseContextForSpreadingInjectable(injektContext, substitutionType, emptyList()),
+      buildBaseContextForSpreadingInjectable(substitutionType, emptyList()),
       scopedT.defaultType,
       substitutionType
     )
@@ -103,17 +103,17 @@ class TypeSubstitutionTest {
   @Test fun testGetSubstitutionMapInScopeElementAndInjectCoroutineScopeLikeScenario() =
     withTypeCheckerContext {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
-        injektContext.classifierDescriptorForFqName(
+        analysisContext.injektContext.classifierDescriptorForFqName(
           FqName("com.ivianuu.injekt.scope.ScopeElement.Companion.Module"),
           NoLookupLocation.FROM_BACKEND
         )!!
           .cast<ClassDescriptor>()
           .unsubstitutedPrimaryConstructor!!
-          .toCallableRef(injektContext, null)
+          .toCallableRef()
           .typeParameters
 
       val injectableCoroutineScopeElementReturnType =
-        injektContext.memberScopeForFqName(
+        analysisContext.injektContext.memberScopeForFqName(
           FqName("com.ivianuu.injekt.coroutines"),
           NoLookupLocation.FROM_BACKEND
         )!!
@@ -122,13 +122,16 @@ class TypeSubstitutionTest {
             NoLookupLocation.FROM_BACKEND
           )
           .single()
-          .callableInfo(injektContext, null)
+          .callableInfo()
           .type
           .arguments
           .last()
 
       val (_, map) = buildContextForSpreadingInjectable(
-        buildBaseContextForSpreadingInjectable(injektContext, injectableCoroutineScopeElementReturnType, emptyList()),
+        buildBaseContextForSpreadingInjectable(
+          injectableCoroutineScopeElementReturnType,
+          emptyList()
+        ),
         installElementModuleT.defaultType,
         injectableCoroutineScopeElementReturnType
       )
@@ -158,7 +161,7 @@ class TypeSubstitutionTest {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ): Map<ClassifierRef, TypeRef> {
     val context = subType.buildContext(
-      subType.buildBaseContext(injektContext, staticTypeParameters),
+      subType.buildBaseContext(staticTypeParameters),
       superType,
       true
     )

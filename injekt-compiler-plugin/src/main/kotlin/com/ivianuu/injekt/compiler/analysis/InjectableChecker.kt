@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
@@ -31,45 +32,42 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.multiplatform.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class InjectableChecker(private val context: InjektContext) : DeclarationChecker {
+class InjectableChecker(private val injektContext: InjektContext) : DeclarationChecker {
+  @Provide private lateinit var trace: BindingTrace
+  @Provide private lateinit var analysisContext: AnalysisContext
+
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext,
   ) {
+    trace = context.trace
+    analysisContext = AnalysisContext(injektContext)
     when (descriptor) {
-      is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor, context.trace)
-      is ConstructorDescriptor -> checkConstructor(declaration, descriptor, context.trace)
-      is ClassDescriptor -> checkClass(declaration, descriptor, context.trace)
-      is LocalVariableDescriptor -> checkLocalVariable(declaration, descriptor, context.trace)
-      is PropertyDescriptor -> checkProperty(declaration, descriptor, context.trace)
-      is TypeAliasDescriptor -> checkTypeAlias(descriptor, context.trace)
+      is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor)
+      is ConstructorDescriptor -> checkConstructor(declaration, descriptor)
+      is ClassDescriptor -> checkClass(declaration, descriptor)
+      is LocalVariableDescriptor -> checkLocalVariable(declaration, descriptor)
+      is PropertyDescriptor -> checkProperty(declaration, descriptor)
+      is TypeAliasDescriptor -> checkTypeAlias(descriptor)
     }
   }
 
-  private fun checkFunction(
-    declaration: KtDeclaration,
-    descriptor: FunctionDescriptor,
-    trace: BindingTrace
-  ) {
-    if (descriptor.isProvide(this.context, trace)) {
+  private fun checkFunction(declaration: KtDeclaration, descriptor: FunctionDescriptor) {
+    if (descriptor.isProvide()) {
       descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
-      checkSpreadingInjectable(declaration, descriptor.typeParameters, trace)
+        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
+      checkSpreadingInjectable(declaration, descriptor.typeParameters)
     } else {
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, trace)
+      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
     }
-    checkOverrides(declaration, descriptor, trace)
-    checkExceptActual(declaration, descriptor, trace)
-    checkReceiver(descriptor, declaration, trace)
+    checkOverrides(declaration, descriptor)
+    checkExceptActual(declaration, descriptor)
+    checkReceiver(descriptor, declaration)
   }
 
-  private fun checkClass(
-    declaration: KtDeclaration,
-    descriptor: ClassDescriptor,
-    trace: BindingTrace
-  ) {
-    val provideConstructors = descriptor.injectableConstructors(context, trace)
+  private fun checkClass(declaration: KtDeclaration, descriptor: ClassDescriptor) {
+    val provideConstructors = descriptor.injectableConstructors()
     val isProvider = provideConstructors.isNotEmpty() ||
         descriptor.hasAnnotation(InjektFqNames.Provide)
 
@@ -138,44 +136,32 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     }
 
     if (isProvider) {
-      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, trace)
+      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters)
     } else {
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, trace)
+      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters)
     }
 
-    checkExceptActual(declaration, descriptor, trace)
+    checkExceptActual(declaration, descriptor)
   }
 
-  private fun checkConstructor(
-    declaration: KtDeclaration,
-    descriptor: ConstructorDescriptor,
-    trace: BindingTrace
-  ) {
-    if (descriptor.isProvide(this.context, trace)) {
+  private fun checkConstructor(declaration: KtDeclaration, descriptor: ConstructorDescriptor) {
+    if (descriptor.isProvide()) {
       descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, trace)
+        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
     } else {
-      checkExceptActual(declaration, descriptor, trace)
+      checkExceptActual(declaration, descriptor)
     }
   }
 
-  private fun checkProperty(
-    declaration: KtDeclaration,
-    descriptor: PropertyDescriptor,
-    trace: BindingTrace
-  ) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, trace)
-    checkReceiver(descriptor, declaration, trace)
-    checkOverrides(declaration, descriptor, trace)
-    checkExceptActual(declaration, descriptor, trace)
+  private fun checkProperty(declaration: KtDeclaration, descriptor: PropertyDescriptor) {
+    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
+    checkReceiver(descriptor, declaration)
+    checkOverrides(declaration, descriptor)
+    checkExceptActual(declaration, descriptor)
   }
 
-  private fun checkLocalVariable(
-    declaration: KtDeclaration,
-    descriptor: LocalVariableDescriptor,
-    trace: BindingTrace
-  ) {
-    if (descriptor.isProvide(this.context, trace) &&
+  private fun checkLocalVariable(declaration: KtDeclaration, descriptor: LocalVariableDescriptor) {
+    if (descriptor.isProvide() &&
       !descriptor.isDelegated &&
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
@@ -184,18 +170,11 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     }
   }
 
-  private fun checkTypeAlias(
-    descriptor: TypeAliasDescriptor,
-    trace: BindingTrace
-  ) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, trace)
+  private fun checkTypeAlias(descriptor: TypeAliasDescriptor) {
+    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters)
   }
 
-  private fun checkReceiver(
-    descriptor: CallableDescriptor,
-    declaration: KtDeclaration,
-    trace: BindingTrace
-  ) {
+  private fun checkReceiver(descriptor: CallableDescriptor, declaration: KtDeclaration) {
     if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Provide) == true ||
       descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true) {
       trace.report(
@@ -221,11 +200,10 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
 
   private fun checkSpreadingInjectable(
     declaration: KtDeclaration,
-    typeParameters: List<TypeParameterDescriptor>,
-    trace: BindingTrace
+    typeParameters: List<TypeParameterDescriptor>
   ) {
     val spreadParameters = typeParameters.filter {
-      it.classifierInfo(context, trace).isSpread
+      it.classifierInfo().isSpread
     }
     if (spreadParameters.size > 1) {
       spreadParameters
@@ -239,14 +217,10 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
     }
   }
 
-  private fun checkOverrides(
-    declaration: KtDeclaration,
-    descriptor: CallableMemberDescriptor,
-    trace: BindingTrace
-  ) {
+  private fun checkOverrides(declaration: KtDeclaration, descriptor: CallableMemberDescriptor) {
     descriptor.overriddenTreeAsSequence(false)
       .drop(1)
-      .filterNot { isValidOverride(descriptor, it, trace) }
+      .filterNot { isValidOverride(descriptor, it) }
       .forEach {
         trace.report(
           Errors.NOTHING_TO_OVERRIDE
@@ -255,14 +229,10 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
       }
   }
 
-  private fun checkExceptActual(
-    declaration: KtDeclaration,
-    descriptor: MemberDescriptor,
-    trace: BindingTrace
-  ) {
+  private fun checkExceptActual(declaration: KtDeclaration, descriptor: MemberDescriptor) {
     if (!descriptor.isActual) return
     descriptor.findExpects()
-      .filterNot { isValidOverride(descriptor, it, trace) }
+      .filterNot { isValidOverride(descriptor, it) }
       .forEach {
         trace.report(
           Errors.ACTUAL_WITHOUT_EXPECT
@@ -273,11 +243,9 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
 
   private fun isValidOverride(
     descriptor: MemberDescriptor,
-    overriddenDescriptor: MemberDescriptor,
-    trace: BindingTrace
+    overriddenDescriptor: MemberDescriptor
   ): Boolean {
-    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
-      !descriptor.isProvide(context, trace)) {
+    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) && !descriptor.isProvide()) {
       return false
     }
 
@@ -303,8 +271,8 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
 
     overriddenTypeParameters
       .forEachWith(typeParameters) { overriddenTypeParameter, typeParameter ->
-        if (typeParameter.classifierInfo(context, trace).isSpread !=
-          overriddenTypeParameter.classifierInfo(context, trace).isSpread) {
+        if (typeParameter.classifierInfo().isSpread !=
+          overriddenTypeParameter.classifierInfo().isSpread) {
           return false
         }
       }
@@ -313,13 +281,12 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
   }
 
   private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
-    typeParameters: List<TypeParameterDescriptor>,
-    trace: BindingTrace
+    typeParameters: List<TypeParameterDescriptor>
   ) {
     if (typeParameters.isEmpty()) return
     typeParameters
       .asSequence()
-      .filter { it.classifierInfo(context, trace).isSpread }
+      .filter { it.classifierInfo().isSpread }
       .forEach { typeParameter ->
         trace.report(
           InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
@@ -329,8 +296,7 @@ class InjectableChecker(private val context: InjektContext) : DeclarationChecker
   }
 
   private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
-    declaration: KtDeclaration,
-    trace: BindingTrace,
+    declaration: KtDeclaration
   ) {
     if (isEmpty()) return
     this
