@@ -694,6 +694,16 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
+  @Test fun testInnerClassCanResolveOuterClassInjectables() = codegen(
+    """
+      class Outer(@Provide val foo: Foo = Foo()) {
+        inner class Inner {
+          fun foo() = inject<Foo>()
+        }
+      }
+    """
+  )
+
   @Test fun testNestedClassCanResolveOuterObjectInjectables() = codegen(
     """
       object Outer {
@@ -706,13 +716,17 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testInnerClassCanResolveOuterClassInjectables() = codegen(
+  @Test fun testNestedObjectCannotResolveOuterClassInjectables() = codegen(
     """
-      class Outer(@Provide val foo: Foo = Foo()) {
-        inner class Inner {
+      class Outer {
+        @Provide private val foo: Foo = Foo()
+
+        object Inner {
           fun foo() = inject<Foo>()
         }
       }
     """
-  )
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
 }

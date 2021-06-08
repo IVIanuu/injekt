@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
+import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
@@ -108,27 +109,51 @@ fun ElementInjectablesScope(
   return scope
 }
 
-private fun KtElement.isScopeOwner(position: KtElement): Boolean =
-  this is KtFile ||
-      (this is KtClassOrObject && position.getParentOfType<KtSuperTypeList>(false) == null &&
-          run {
-            val constructor = position.getParentOfType<KtConstructor<*>>(false)
-            constructor == null ||
-                constructor.bodyExpression.let { it != null && it in position.parents }
-          }) ||
-      this is KtClassInitializer ||
-      (this is KtFunction && position.parents.none { it in valueParameters }) ||
-      this is KtProperty ||
-      this is KtParameter ||
-      this is KtSuperTypeList ||
-      this is KtBlockExpression ||
-      (this is KtClassBody && position.parents
-        .takeWhile { it != this }
-        .none {
-          (it is KtFunction && it.parent == this) ||
-              (it is KtPropertyAccessor && it.property.parent == this)
-        }) ||
-      (this is KtAnnotatedExpression && hasAnnotation(InjektFqNames.Providers))
+private fun KtElement.isScopeOwner(position: KtElement): Boolean {
+  if (this is KtFile ||
+    this is KtObjectDeclaration ||
+    this is KtClassInitializer ||
+    this is KtProperty ||
+    this is KtParameter ||
+    this is KtSuperTypeList ||
+    this is KtBlockExpression)
+      return true
+
+  if (this is KtFunction && position.parents.none { it in valueParameters })
+    return true
+
+  if (this is KtAnnotatedExpression && hasAnnotation(InjektFqNames.Providers))
+    return true
+
+  if (this is KtClass && position.getParentOfType<KtSuperTypeList>(false) == null) {
+    val constructor = position.getParentOfType<KtConstructor<*>>(false)
+    if (constructor != null &&
+      constructor.bodyExpression.let { it == null || it !in position.parents })
+        return false
+
+    val allClassesBetween = position.parentsWithSelf
+      .filterIsInstance<KtClassOrObject>()
+      .takeWhile { it != this }
+      .toList()
+    val nearestClassFromPosition = allClassesBetween.firstOrNull()
+      ?: return true
+
+    return nearestClassFromPosition !is KtObjectDeclaration &&
+        allClassesBetween.all {
+          it.hasModifier(KtTokens.INNER_KEYWORD)
+        }
+  }
+
+  if (this is KtClassBody && position.parents
+      .takeWhile { it != this }
+      .none {
+        (it is KtClass && it != this) ||
+            (it is KtFunction && it.parent == this) ||
+            (it is KtPropertyAccessor && it.property.parent == this)
+      }) return true
+
+  return false
+}
 
 private fun FileInjectablesScope(
   file: KtFile,
