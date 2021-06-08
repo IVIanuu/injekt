@@ -42,6 +42,7 @@ class InjectablesScope(
   val context: InjektContext,
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
+  val file: KtFile?,
   val trace: BindingTrace,
   val initialInjectables: List<CallableRef>,
   imports: List<ResolvedProviderImport>,

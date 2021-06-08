@@ -113,6 +113,7 @@ class ProviderInjectable(
     context = ownerScope.context,
     callContext = dependencyCallContext,
     ownerDescriptor = ownerScope.ownerDescriptor,
+    file = null,
     trace = ownerScope.trace,
     initialInjectables = type
       .toKotlinType(ownerScope.context)

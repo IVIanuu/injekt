@@ -23,10 +23,12 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.load.java.lazy.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -454,4 +456,14 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
                     trace
                   ) == callable.owner)
         }
-      }
+      } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&
+      callable.callable.containingDeclaration is PackageFragmentDescriptor &&
+      run {
+        val scopeFile = allScopes.firstNotNullResult { it.file }
+
+        callable.callable.containingDeclaration
+          .safeAs<LazyPackageDescriptor>()
+          ?.declarationProvider
+          ?.getPackageFiles()
+          ?.singleOrNull() == scopeFile
+      })

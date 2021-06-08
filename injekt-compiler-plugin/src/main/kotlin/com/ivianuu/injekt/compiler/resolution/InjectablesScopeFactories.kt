@@ -162,6 +162,7 @@ private fun FileInjectablesScope(
 ): InjectablesScope {
   context.elementScopes[file]?.let { return it }
   return ImportInjectablesScope(
+    file = file,
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE ${file.name}",
     parent = null,
@@ -192,7 +193,9 @@ private fun ClassImportsInjectablesScope(
     .safeAs<KtClassOrObject>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(it, "CLASS ${clazz.fqNameSafe}", finalParent, context, trace) }
+    ?.let {
+      ImportInjectablesScope(null, it, "CLASS ${clazz.fqNameSafe}", finalParent, context, trace)
+    }
     ?: finalParent)
 }
 
@@ -213,6 +216,7 @@ private fun ClassInjectablesScope(
     callContext = CallContext.DEFAULT,
     parent = finalParent,
     ownerDescriptor = clazz,
+    file = null,
     trace = trace,
     initialInjectables = listOf(clazz.injectableReceiver(context, trace, false)),
     imports = emptyList(),
@@ -244,6 +248,7 @@ private fun ConstructorPreInitInjectablesScope(
     trace = trace,
     callContext = CallContext.DEFAULT,
     ownerDescriptor = constructor,
+    file = null,
     initialInjectables = emptyList(),
     imports = emptyList(),
     typeParameters = typeParameters,
@@ -264,7 +269,10 @@ private fun FunctionImportsInjectablesScope(
     .safeAs<KtFunction>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(it, "$baseName ${function.fqNameSafe}", finalParent, context, trace) }
+    ?.let {
+      ImportInjectablesScope(null, it, "$baseName ${function.fqNameSafe}",
+        finalParent, context, trace)
+    }
     ?: finalParent
 }
 
@@ -286,6 +294,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
       // suspend functions cannot be called from a default value context
       .takeIf { it != CallContext.SUSPEND } ?: CallContext.DEFAULT,
     ownerDescriptor = function,
+    file = null,
     initialInjectables = emptyList(),
     imports = emptyList(),
     typeParameters = function.typeParameters.map { it.toClassifierRef(context, trace) },
@@ -314,6 +323,7 @@ private fun FunctionInjectablesScope(
     trace = trace,
     callContext = function.callContext(trace.bindingContext),
     ownerDescriptor = function,
+    file = null,
     initialInjectables = emptyList(),
     imports = emptyList(),
     typeParameters = typeParameters,
@@ -361,6 +371,7 @@ private fun FunctionParameterInjectablesScope(
     callContext = CallContext.DEFAULT,
     parent = parent,
     ownerDescriptor = function,
+    file = null,
     trace = trace,
     initialInjectables = listOf(parameter),
     imports = emptyList(),
@@ -382,7 +393,9 @@ private fun PropertyInjectablesScope(
     .safeAs<KtProperty>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(it, "PROPERTY ${property.fqNameSafe}", parent, context, trace) }
+    ?.let {
+      ImportInjectablesScope(null, it, "PROPERTY ${property.fqNameSafe}", parent, context, trace)
+    }
     ?: parent
   return InjectablesScope(
     name = "PROPERTY ${property.fqNameSafe}",
@@ -390,6 +403,7 @@ private fun PropertyInjectablesScope(
     callContext = property.callContext(trace.bindingContext),
     parent = finalParent,
     ownerDescriptor = property,
+    file = null,
     trace = trace,
     initialInjectables = listOfNotNull(
       property.extensionReceiverParameter
@@ -416,7 +430,10 @@ private fun LocalVariableInjectablesScope(
     .safeAs<KtProperty>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(it, "LOCAL VARIABLE ${variable.fqNameSafe}", parent, context, trace) }
+    ?.let {
+      ImportInjectablesScope(null, it, "LOCAL VARIABLE ${variable.fqNameSafe}",
+        parent, context, trace)
+    }
     ?: parent
   return InjectablesScope(
     name = "LOCAL VARIABLE ${variable.fqNameSafe}",
@@ -424,6 +441,7 @@ private fun LocalVariableInjectablesScope(
     callContext = parent.callContext,
     parent = finalParent,
     ownerDescriptor = variable,
+    file = null,
     trace = trace,
     initialInjectables = emptyList(),
     imports = emptyList(),
@@ -444,7 +462,10 @@ private fun ExpressionInjectablesScope(
   val finalParent = expression
     .getProviderImports()
     .takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(it, "EXPRESSION ${expression.startOffset}", parent, context, trace) }
+    ?.let {
+      ImportInjectablesScope(null, it, "EXPRESSION ${expression.startOffset}",
+        parent, context, trace)
+    }
     ?: parent
   return InjectablesScope(
     name = "EXPRESSION ${expression.startOffset}",
@@ -452,6 +473,7 @@ private fun ExpressionInjectablesScope(
     callContext = finalParent.callContext,
     parent = finalParent,
     ownerDescriptor = null,
+    file = null,
     trace = trace,
     initialInjectables = emptyList(),
     imports = emptyList(),
@@ -487,6 +509,7 @@ private fun BlockExpressionInjectablesScope(
     callContext = finalParent.callContext,
     parent = finalParent,
     ownerDescriptor = null,
+    file = null,
     trace = trace,
     initialInjectables = when (injectableDeclaration) {
       is ClassDescriptor -> injectableDeclaration.injectableConstructors(context, trace)
@@ -514,6 +537,7 @@ fun TypeInjectablesScope(
   return InjectablesScope(
     name = "TYPE ${finalType.renderToString()}",
     parent = null,
+    file = null,
     context = context,
     callContext = CallContext.DEFAULT,
     ownerDescriptor = finalType.classifier.descriptor,
@@ -528,6 +552,7 @@ fun TypeInjectablesScope(
 }
 
 private fun ImportInjectablesScope(
+  file: KtFile?,
   imports: List<ProviderImport>,
   namePrefix: String,
   parent: InjectablesScope?,
@@ -545,6 +570,7 @@ private fun ImportInjectablesScope(
       callContext = CallContext.DEFAULT,
       parent = parent,
       ownerDescriptor = null,
+      file = file,
       trace = trace,
       initialInjectables = resolvedImports
         .filter { it.callable.isExternalDeclaration(context) },
@@ -553,6 +579,7 @@ private fun ImportInjectablesScope(
       nesting = parent?.nesting?.inc() ?: 0
     ),
     ownerDescriptor = null,
+    file = file,
     trace = trace,
     initialInjectables = resolvedImports
       .filterNot { it.callable.isExternalDeclaration(context) },
