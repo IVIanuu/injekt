@@ -22,6 +22,7 @@ import com.intellij.openapi.editor.*
 import com.intellij.openapi.project.*
 import com.intellij.psi.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.idea.quickfix.*
@@ -74,7 +75,7 @@ private fun addInjectableParameterQuickFix(
   target: KtDeclaration,
   type: TypeRef,
   call: KtElement,
-  context: InjektContext
+  context: AnalysisContext
 ) = object : BaseIntentionAction() {
   override fun getFamilyName(): String = ""
 

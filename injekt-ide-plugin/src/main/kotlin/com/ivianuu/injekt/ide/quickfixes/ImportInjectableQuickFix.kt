@@ -32,6 +32,7 @@ import com.intellij.psi.util.parents
 import com.intellij.ui.popup.list.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.InjektErrors.Companion.UNRESOLVED_INJECTION
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.asJava.classes.*
@@ -115,7 +116,7 @@ private fun addInjectableImport(
   call: KtElement,
   project: Project,
   injectable: CallableRef,
-  context: InjektContext
+  context: AnalysisContext
 ) {
   val existingProvidersAnnotation = call.parents
     .toList()
@@ -155,18 +156,18 @@ private fun addInjectableImport(
   }
 }
 
-private fun InjektContext.injectablesForType(
+private fun AnalysisContext.injectablesForType(
   type: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
   project: Project,
   scope: GlobalSearchScope
 ): List<CallableRef> = getAllInjectables(project, scope)
   .filter { candidate ->
-    val context = candidate.buildContext(this, staticTypeParameters, type)
+    val context = candidate.buildContext(staticTypeParameters, type, context = this)
     context.isOk
   }
 
-fun InjektContext.getAllInjectables(project: Project, useScope: GlobalSearchScope): List<CallableRef> {
+fun AnalysisContext.getAllInjectables(project: Project, useScope: GlobalSearchScope): List<CallableRef> {
   val provideAnnotation = JavaPsiFacade.getInstance(project)
     .findClass(InjektFqNames.Provide.asString(), useScope) as KtLightClass
 
@@ -187,9 +188,9 @@ fun InjektContext.getAllInjectables(project: Project, useScope: GlobalSearchScop
       annotatedDeclaration.resolveToDescriptorIfAny()
         ?.let { descriptor ->
           when (descriptor) {
-            is ClassDescriptor -> injectables += descriptor.injectableConstructors(this, null)
-            is FunctionDescriptor -> injectables += descriptor.toCallableRef(this, null)
-            is PropertyDescriptor -> injectables += descriptor.toCallableRef(this, null)
+            is ClassDescriptor -> injectables += descriptor.injectableConstructors(this)
+            is FunctionDescriptor -> injectables += descriptor.toCallableRef(this)
+            is PropertyDescriptor -> injectables += descriptor.toCallableRef(this)
           }
         }
     }

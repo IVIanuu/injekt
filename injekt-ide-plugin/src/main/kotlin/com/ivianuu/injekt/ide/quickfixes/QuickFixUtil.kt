@@ -16,17 +16,17 @@
 
 package com.ivianuu.injekt.ide.quickfixes
 
-import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.idea.util.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 
-fun KtFile.addImport(fqName: FqName, context: InjektContext) {
+fun KtFile.addImport(fqName: FqName, context: AnalysisContext) {
   ImportInsertHelper.getInstance(project)
     .importDescriptor(
       this,
-      context.classifierDescriptorForFqName(
+      context.injektContext.classifierDescriptorForFqName(
         fqName,
         NoLookupLocation.FROM_BACKEND
       )!!

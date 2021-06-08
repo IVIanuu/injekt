@@ -23,6 +23,7 @@ import com.intellij.psi.search.searches.*
 import com.intellij.psi.util.*
 import com.intellij.ui.popup.list.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import com.ivianuu.injekt.ide.*
 import com.ivianuu.injekt.ide.refs.*
@@ -49,7 +50,8 @@ class ShowInjectionUsagesAction : AnAction("Show injection usages") {
       ?.let { descriptor ->
         when (descriptor) {
           is ClassDescriptor ->
-            descriptor.injectableConstructors(descriptor.module.injektContext, null)
+            descriptor.injectableConstructors(
+              AnalysisContext(descriptor.module.injektContext))
           is CallableDescriptor -> descriptor
           else -> null
         }

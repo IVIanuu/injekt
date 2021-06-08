@@ -20,6 +20,7 @@ import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
@@ -57,8 +58,10 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             val abbreviation = typeArgument.getAbbreviation()
             (abbreviation != null && typeParameter.defaultType.supertypes()
               .none { it.getAbbreviation() == typeArgument }) ||
-                typeArgument.toTypeRef(resolvedCall.candidateDescriptor.module
-                  .injektContext, null).anyType { it.classifier.isQualifier }
+                typeArgument.toTypeRef(context = AnalysisContext(
+                  resolvedCall.candidateDescriptor.module
+                    .injektContext
+                )).anyType { it.classifier.isQualifier }
           }
       }
       "unused" -> {
