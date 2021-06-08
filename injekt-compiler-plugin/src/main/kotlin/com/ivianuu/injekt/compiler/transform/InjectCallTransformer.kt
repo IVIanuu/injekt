@@ -54,10 +54,7 @@ class InjectCallTransformer(
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
     val scope: ScopeWithIr,
-    val startOffset: Int,
-    // todo remove once inner class support is fixed
-    @Provide private val analysisContext: AnalysisContext,
-    @Provide private val pluginContext: IrPluginContext
+    val startOffset: Int
   ) {
     val statements = mutableListOf<IrStatement>()
 
@@ -110,10 +107,7 @@ class InjectCallTransformer(
     val parent: ScopeContext?,
     val graphContext: GraphContext,
     val scope: InjectablesScope,
-    val irScope: Scope,
-    // todo remove once inner class support is fixed
-    @Provide private val analysisContext: AnalysisContext,
-    @Provide private val pluginContext: IrPluginContext
+    val irScope: Scope
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
@@ -322,8 +316,7 @@ class InjectCallTransformer(
         is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
         is ResolutionResult.Success.WithCandidate -> {
           val dependencyScopeContext = ScopeContext(
-            this@providerExpression, graphContext, injectable.dependencyScope, scope,
-            analysisContext, pluginContext
+            this@providerExpression, graphContext, injectable.dependencyScope, scope
           )
           val expression = with(dependencyScopeContext) {
             val previousParametersMap = parameterMap.toMap()
@@ -786,16 +779,13 @@ class InjectCallTransformer(
 
     return DeclarationIrBuilder(pluginContext, result.symbol)
       .irBlock {
-        val graphContext = GraphContext(graph, currentScope!!, result.startOffset,
-          analysisContext, pluginContext)
+        val graphContext = GraphContext(graph, currentScope!!, result.startOffset)
         try {
           ScopeContext(
             parent = null,
             graphContext = graphContext,
             scope = graph.scope,
-            irScope = scope,
-            analysisContext = analysisContext,
-            pluginContext = pluginContext
+            irScope = scope
           ).run { result.inject(this, graph.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)
