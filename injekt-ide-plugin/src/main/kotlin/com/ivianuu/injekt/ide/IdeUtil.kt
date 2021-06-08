@@ -18,7 +18,12 @@ package com.ivianuu.injekt.ide
 
 import com.intellij.psi.*
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.asJava.elements.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.idea.caches.project.*
+import org.jetbrains.kotlin.idea.core.*
+import org.jetbrains.kotlin.idea.facet.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -32,3 +37,17 @@ fun KtAnnotated.isProvideOrInjectDeclaration(): Boolean = hasAnnotation(InjektFq
       ?.isProvideOrInjectDeclaration() == true ||
   safeAs<KtConstructor<*>>()?.getContainingClassOrObject()
     ?.isProvideOrInjectDeclaration() == true
+
+fun ModuleDescriptor.isInjektEnabled(): Boolean = getCapability(ModuleInfo.Capability)
+  ?.isInjektEnabled() ?: false
+
+fun PsiElement.isInjektEnabled(): Boolean = getModuleInfo().isInjektEnabled()
+
+fun ModuleInfo.isInjektEnabled(): Boolean {
+  val module = unwrapModuleSourceInfo()?.module ?: return false
+  val facet = KotlinFacet.get(module) ?: return false
+  val pluginClasspath = facet.configuration.settings.compilerArguments?.pluginClasspaths ?: return false
+  return pluginClasspath.any {
+    it.contains("injekt-compiler-plugin")
+  }
+}

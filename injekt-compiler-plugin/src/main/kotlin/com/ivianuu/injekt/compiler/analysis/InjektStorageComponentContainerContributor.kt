@@ -22,12 +22,16 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
 
-class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor(
+  val isEnabled: (ModuleDescriptor) -> Boolean = { true }
+) : StorageComponentContainerContributor {
   override fun registerModuleComponents(
     container: StorageComponentContainer,
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
+    if (!isEnabled(moduleDescriptor)) return
+
     val context = moduleDescriptor.injektContext
     if (platform.componentPlatforms.size > 1)
       container.useImpl<InjectSyntheticScopes>()

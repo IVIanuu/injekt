@@ -20,12 +20,15 @@ import com.intellij.codeHighlighting.*
 import com.intellij.openapi.editor.*
 import com.intellij.openapi.project.*
 import com.intellij.psi.*
+import com.ivianuu.injekt.ide.*
 import org.jetbrains.kotlin.psi.*
 
 class InjectionHintsTextEditorHighlightingPassFactory : TextEditorHighlightingPassFactory,
   TextEditorHighlightingPassFactoryRegistrar {
-  override fun createHighlightingPass(file: PsiFile, editor: Editor): TextEditorHighlightingPass? =
-    if (file is KtFile) InjectionHintsHighlightingPass(file, editor) else null
+  override fun createHighlightingPass(file: PsiFile, editor: Editor): TextEditorHighlightingPass? {
+    return if (file !is KtFile || !file.isInjektEnabled()) null
+    else InjectionHintsHighlightingPass(file, editor)
+  }
 
   override fun registerHighlightingPassFactory(
     registrar: TextEditorHighlightingPassRegistrar,

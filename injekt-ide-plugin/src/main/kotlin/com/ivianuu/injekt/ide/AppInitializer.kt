@@ -39,11 +39,11 @@ class AppInitializer : ApplicationInitializedListener {
           override fun projectOpened(project: Project) {
             StorageComponentContainerContributor.registerExtension(
               project,
-              InjektStorageComponentContainerContributor()
+              InjektStorageComponentContainerContributor { it.isInjektEnabled() }
             )
             SyntheticScopeProviderExtension.registerExtension(
               project,
-              InjectSyntheticScopeProviderExtension()
+              InjectSyntheticScopeProviderExtension { it.isInjektEnabled() }
             )
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(QuickFixContributor.EP_NAME)

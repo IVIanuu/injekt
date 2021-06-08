@@ -33,6 +33,8 @@ class InjektReferencesSearcher :
     params: ReferencesSearch.SearchParameters,
     processor: Processor<in PsiReference>
   ) {
+    if (!params.elementToSearch.isInjektEnabled()) return
+
     params.project.runReadActionInSmartMode {
       val ktElement = params.elementToSearch.ktElementOrNull() ?: return@runReadActionInSmartMode
 

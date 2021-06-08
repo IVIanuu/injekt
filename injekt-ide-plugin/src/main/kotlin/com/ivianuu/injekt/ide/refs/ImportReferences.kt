@@ -55,6 +55,8 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           element: PsiElement,
           context: ProcessingContext
         ): Array<PsiReference> {
+          if (!element.isInjektEnabled()) return emptyArray()
+
           element as KtStringTemplateExpression
           if (!element.isProviderImport()) return emptyArray()
 

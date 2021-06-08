@@ -22,6 +22,7 @@ import com.intellij.psi.impl.source.tree.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.ide.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.bindingContextUtil.*
@@ -36,6 +37,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
     emptyArray()
 
   override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
+    if (!element.isInjektEnabled()) return false
     when (toolId) {
       "RedundantExplicitType" -> {
         if (element is KtTypeReference)

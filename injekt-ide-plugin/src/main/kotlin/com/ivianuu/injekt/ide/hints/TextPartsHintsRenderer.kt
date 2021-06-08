@@ -33,7 +33,6 @@ data class ExpandableText(
 )
 
 class TextPartsHintRenderer(text: String) : HintRenderer(text) {
-
   override fun calcWidthInPixels(inlay: Inlay<*>): Int {
     val metrics = getFontMetrics0(inlay.editor).metrics
     return metrics.stringWidth(text)
