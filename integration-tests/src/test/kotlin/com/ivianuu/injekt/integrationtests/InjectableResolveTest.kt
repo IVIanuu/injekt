@@ -370,7 +370,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCannotResolvePrivateInjectableFromOuterScope() = singleAndMultiCodegen(
+  @Test fun testCannotResolvePrivateClassInjectableFromOuterScope() = singleAndMultiCodegen(
     """
       @Provide class FooHolder {
         @Provide private val foo = Foo()
@@ -383,7 +383,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCanResolvePrivateInjectableFromInnerScope() = codegen(
+  @Test fun testCanResolvePrivateClassInjectableFromInnerScope() = codegen(
     """
       @Provide class FooHolder {
         @Provide private val foo = Foo()
@@ -426,6 +426,24 @@ class InjectableResolveTest {
       } 
     """
   )
+
+  @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
+    """
+      @Provide private val foo = Foo()
+      fun invoke() = inject<Foo>()
+    """
+  )
+
+  @Test fun testCannotResolvePrivateTopLevelInjectableInDifferentFile() = codegen(
+    """
+      @Provide private val foo = Foo()
+    """,
+    """
+      fun invoke() = inject<Foo>()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
+  }
 
   @Test fun testCannotResolvePropertyWithTheSameNameAsAnInjectablePrimaryConstructorParameter() =
     singleAndMultiCodegen(
