@@ -170,7 +170,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(staticTypeParameters, analysisContext),
+      buildBaseContext(staticTypeParameters),
       other,
       true
     )
@@ -188,7 +188,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(staticTypeParameters, analysisContext),
+      buildBaseContext(staticTypeParameters),
       other,
       true
     )
@@ -198,13 +198,13 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   }
 
   infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-    if (!isSubTypeOf(other, analysisContext.injektContext)) {
+    if (!isSubTypeOf(other)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }
 
   infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-    if (isSubTypeOf(other, analysisContext.injektContext)) {
+    if (isSubTypeOf(other)) {
       throw AssertionError("'$this' is sub type of '$other'")
     }
   }

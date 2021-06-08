@@ -84,14 +84,14 @@ class TypeSubstitutionTest {
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef(analysisContext) }
+      .map { it.toClassifierRef() }
     val appScope = typeFor(FqName("com.ivianuu.injekt.scope.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {
         it.withArguments(listOf(appScope) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
-      buildBaseContextForSpreadingInjectable(substitutionType, emptyList(), analysisContext),
+      buildBaseContextForSpreadingInjectable(substitutionType, emptyList()),
       scopedT.defaultType,
       substitutionType
     )
@@ -109,7 +109,7 @@ class TypeSubstitutionTest {
         )!!
           .cast<ClassDescriptor>()
           .unsubstitutedPrimaryConstructor!!
-          .toCallableRef(analysisContext)
+          .toCallableRef()
           .typeParameters
 
       val injectableCoroutineScopeElementReturnType =
@@ -122,7 +122,7 @@ class TypeSubstitutionTest {
             NoLookupLocation.FROM_BACKEND
           )
           .single()
-          .callableInfo(analysisContext)
+          .callableInfo()
           .type
           .arguments
           .last()
@@ -130,8 +130,7 @@ class TypeSubstitutionTest {
       val (_, map) = buildContextForSpreadingInjectable(
         buildBaseContextForSpreadingInjectable(
           injectableCoroutineScopeElementReturnType,
-          emptyList(),
-          analysisContext
+          emptyList()
         ),
         installElementModuleT.defaultType,
         injectableCoroutineScopeElementReturnType
@@ -162,7 +161,7 @@ class TypeSubstitutionTest {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ): Map<ClassifierRef, TypeRef> {
     val context = subType.buildContext(
-      subType.buildBaseContext(staticTypeParameters, analysisContext),
+      subType.buildBaseContext(staticTypeParameters),
       superType,
       true
     )

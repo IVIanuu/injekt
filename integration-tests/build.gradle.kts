@@ -36,4 +36,6 @@ dependencies {
   implementation(project(":injekt-ktor"))
   implementation(project(":injekt-scope"))
   implementation(project(":test-util"))
+  configurations.getByName("kotlinCompilerPluginClasspath")
+    .dependencies.add(project(":injekt-compiler-plugin"))
 }
