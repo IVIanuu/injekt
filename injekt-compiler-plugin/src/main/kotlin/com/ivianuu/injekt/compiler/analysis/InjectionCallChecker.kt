@@ -73,7 +73,7 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
       ElementInjectablesScope(callExpression)
     }
 
-    val graph = synchronized(scope) {
+    val graph = synchronized(scope.allScopes.first()) {
       scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
         if (result is ResolutionResult.Success.WithCandidate.Value &&
           result.candidate is CallableInjectable) {
