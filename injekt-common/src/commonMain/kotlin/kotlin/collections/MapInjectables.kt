@@ -14,22 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.common
+package kotlin.collections
 
 import com.ivianuu.injekt.*
-import kotlin.reflect.*
 
 /**
  * Provides a Map<K, V> for each Set<Pair<K, V>>
  */
 @Provide inline fun <K, V> mapOfPairs(pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
-
-/**
- * Provides a [KClass] of [T]
- */
-@Provide inline fun <reified T : Any> kClass(): KClass<T> = T::class
-
-/**
- * Provides a [Lazy] of [T]
- */
-@Provide inline fun <T> lazy(noinline init: () -> T): Lazy<T> = kotlin.lazy(init)
