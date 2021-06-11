@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.*
-import org.jetbrains.kotlin.gradle.plugin.*
-import org.jetbrains.kotlin.gradle.plugin.mpp.*
-
 buildscript {
   repositories {
     mavenLocal()
@@ -46,42 +42,5 @@ allprojects {
     jcenter()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://plugins.gradle.org/m2")
-  }
-
-  afterEvaluate {
-    fun setupCompilation(compilation: KotlinCompilation<*>) {
-      if (compilation is KotlinJvmCompilation) {
-        compilation.kotlinOptions {
-          useIR = true
-        }
-      }
-    }
-    if (pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
-      extensions.getByType(KotlinMultiplatformExtension::class.java).run {
-        project.afterEvaluate {
-          targets
-            .flatMap { it.compilations }
-            .forEach { setupCompilation(it) }
-        }
-      }
-    } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
-      extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
-        project.afterEvaluate {
-          target.compilations
-            .forEach {
-              setupCompilation(it)
-            }
-        }
-      }
-    } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
-      extensions.getByType(KotlinJvmProjectExtension::class.java).run {
-        project.afterEvaluate {
-          target.compilations
-            .forEach {
-              setupCompilation(it)
-            }
-        }
-      }
-    }
   }
 }
