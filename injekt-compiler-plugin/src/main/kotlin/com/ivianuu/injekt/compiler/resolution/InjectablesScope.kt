@@ -473,15 +473,14 @@ class InjectablesScope(
    * Here we ensure that the user cannot resolve such implicit object injectable if they are not
    * provided by the user
    */
-  private fun Injectable.isValidObjectRequest(request: InjectableRequest): Boolean {
-    if (!originalType.classifier.isObject) return true
-    return request.parameterName == DISPATCH_RECEIVER_NAME ||
+  private fun Injectable.isValidObjectRequest(request: InjectableRequest): Boolean =
+    !originalType.classifier.isObject ||
+        request.parameterName == DISPATCH_RECEIVER_NAME ||
         (this !is CallableInjectable ||
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
             originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
-  }
 
   override fun toString(): String = "InjectablesScope($name)"
 }
