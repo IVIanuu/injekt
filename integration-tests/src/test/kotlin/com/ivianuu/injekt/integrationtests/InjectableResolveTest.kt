@@ -349,6 +349,19 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable")
   }
 
+  @Test fun testCannotResolveObjectBySubTypeWithoutInjectable() = codegen(
+    """
+      interface Json {
+        companion object : Json
+      }
+    """,
+    """
+      fun invoke() = inject<Json>()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable")
+  }
+
   @Test fun testCanResolveObjectWithInjectable() = singleAndMultiCodegen(
     """
       @Provide object MyObject

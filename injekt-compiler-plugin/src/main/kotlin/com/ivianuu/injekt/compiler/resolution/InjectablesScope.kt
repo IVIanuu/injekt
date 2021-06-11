@@ -474,13 +474,13 @@ class InjectablesScope(
    * provided by the user
    */
   private fun Injectable.isValidObjectRequest(request: InjectableRequest): Boolean {
-    if (!request.type.classifier.isObject) return true
+    if (!originalType.classifier.isObject) return true
     return request.parameterName == DISPATCH_RECEIVER_NAME ||
         (this !is CallableInjectable ||
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            request.type.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
+            originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
   }
 
   override fun toString(): String = "InjectablesScope($name)"
