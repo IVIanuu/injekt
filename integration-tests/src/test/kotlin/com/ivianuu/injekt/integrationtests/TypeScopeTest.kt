@@ -283,7 +283,7 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testExternalDeclarationsDoNotContributeToPackageTypeScope() = multiCodegen(
+  @Test fun testExternalModulesCanContributeToPackageTypeScope() = multiCodegen(
     listOf(
       listOf(
         source(
@@ -307,7 +307,5 @@ class TypeScopeTest {
         )
       )
     )
-  ) {
-    compilationShouldHaveFailed("no injectable found of type injectables.Dep for parameter value of function com.ivianuu.injekt.inject")
-  }
+  )
 }

@@ -352,8 +352,8 @@ fun TypeRef.collectTypeScopeInjectables(
 }
 
 private fun TypeRef.collectInjectablesForSingleType(
-  @Inject lookupLocation: LookupLocation,
-  @Inject context: AnalysisContext
+  @Inject context: AnalysisContext,
+  @Inject lookupLocation: LookupLocation
 ): List<CallableRef> = context.injektContext.typeScopeInjectables.getOrPut(this) {
   val injectables = mutableListOf<CallableRef>()
   injectables += collectPackageTypeScopeInjectables()
@@ -391,12 +391,15 @@ private fun TypeRef.collectInjectablesForSingleType(
 }
 
 private fun TypeRef.collectPackageTypeScopeInjectables(
-  @Inject context: AnalysisContext
+  @Inject context: AnalysisContext,
+  @Inject lookupLocation: LookupLocation
 ): List<CallableRef> {
-  if (classifier.fqName == InjektFqNames.Any || classifier.isTypeParameter) return emptyList()
+  if (classifier.isTypeParameter) return emptyList()
 
-  val packageDescriptor = classifier.descriptor!!.findPackage()
-  val module = packageDescriptor.module
+  val packageMemberScope = context.injektContext.memberScopeForFqName(
+    classifier.descriptor!!.findPackage().fqName,
+    lookupLocation
+  ) ?: return emptyList()
   val injectables = mutableListOf<CallableRef>()
   fun collectInjectables(scope: MemberScope) {
     injectables += scope.collectInjectables(
@@ -408,14 +411,13 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
       classBodyView = false
     )
       .filter { callable ->
-        module.shouldSeeInternalsOf(callable.callable.module) &&
-            callable.callable.containingDeclaration
-              .safeAs<ClassDescriptor>()
-              ?.let { it.kind == ClassKind.OBJECT } != false &&
+        callable.callable.containingDeclaration
+          .safeAs<ClassDescriptor>()
+          ?.let { it.kind == ClassKind.OBJECT } != false &&
             callable.buildContext(emptyList(), this).isOk
       }
   }
-  collectInjectables(packageDescriptor.getMemberScope())
+  collectInjectables(packageMemberScope)
   return injectables
 }
 
