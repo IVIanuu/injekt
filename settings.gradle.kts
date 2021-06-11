@@ -10,7 +10,6 @@ include(
     ":injekt-ide-plugin",
     ":injekt-ktor",
     ":injekt-scope",
-    ":injekt-serialization",
     ":integration-tests",
     ":test-util",
     "samples:android-app",
