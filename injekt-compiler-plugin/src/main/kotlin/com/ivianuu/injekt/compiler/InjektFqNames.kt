@@ -39,6 +39,8 @@ object InjektFqNames {
   val SourceKey = CommonPackage.child("SourceKey".asNameId())
   val TypeKey = CommonPackage.child("TypeKey".asNameId())
 
+  val KSerializer = FqName("kotlinx.serialization.KSerializer")
+
   val Composable = FqName("androidx.compose.runtime.Composable")
 
   val Any = StandardNames.FqNames.any.toSafe()
