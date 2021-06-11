@@ -92,10 +92,12 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
       return finalInfo
     }
 
-    // if this is a deserialized declaration and no info was persisted
-    // we can return a dummy object because this callable is not relevant for injekt
-    context.injektContext.callableInfos[this] = CallableInfo.Empty
-    return CallableInfo.Empty
+    if (!isSyntheticSerializerFunction()) {
+      // if this is a deserialized declaration and no info was persisted
+      // we can return a dummy object because this callable is not relevant for injekt
+      context.injektContext.callableInfos[this] = CallableInfo.Empty
+      return CallableInfo.Empty
+    }
   }
 
   val type = run {
@@ -166,7 +168,8 @@ private fun CallableDescriptor.persistInfoIfNeeded(
       info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
-      }
+      } ||
+      isSyntheticSerializerFunction()
 
   if (!shouldPersistInfo) return
 

@@ -28,29 +28,12 @@ kotlin {
     }
   }
   sourceSets {
-    named("jvmMain") {
+    commonMain {
       dependencies {
-        api(project(":injekt-scope"))
+        api(project(":injekt-core"))
+        api(Deps.KotlinSerialization.core)
         configurations.getByName("kotlinCompilerPluginClasspath")
           .dependencies.add(project(":injekt-compiler-plugin"))
-        api(project(":injekt-compiler-plugin"))
-
-        api(Deps.AndroidX.Compose.compiler)
-
-        api(Deps.Coroutines.core)
-        api(Deps.Coroutines.test)
-
-        api(Deps.Kotlin.compilerEmbeddable)
-        api(Deps.kotlinCompileTesting)
-
-        api(Deps.kotestAssertions)
-
-        api(Deps.KotlinSerialization.gradlePlugin)
-
-        api(Deps.junit)
-        api(Deps.AndroidX.Test.core)
-        api(Deps.AndroidX.Test.junit)
-        api(Deps.roboelectric)
       }
     }
     named("jvmTest") {
@@ -61,3 +44,5 @@ kotlin {
     }
   }
 }
+
+plugins.apply("com.vanniktech.maven.publish")
