@@ -143,6 +143,36 @@ class InjectablesImportsTest {
     shouldNotContainMessage("unused injectable import")
   }
 
+  @Test fun testExplicitAndStarImportMarksStarAsUnused() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val value = "explicit"
+          """,
+          packageFqName = FqName("explicit")
+        ),
+        source(
+          """
+            @Provide val value = "star"
+          """,
+          packageFqName = FqName("star")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("explicit.value", "star.*")
+            fun invoke() = inject<String>()
+        """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    shouldContainMessage("unused injectable import: 'star.*'")
+  }
+
   @Test fun testStarImportSamePackage() = codegen(
     """
       @Providers("com.ivianuu.injekt.integrationtests.*")

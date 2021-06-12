@@ -448,7 +448,8 @@ private inline fun <T> InjectablesScope.compareCandidate(
   type: (T) -> TypeRef,
   scopeNesting: (T) -> Int,
   owner: (T) -> ClassifierRef?,
-  subClassNesting: (T) -> Int
+  subClassNesting: (T) -> Int,
+  importPath: (T) -> String?
 ): Int {
   if (a === b) return 0
 
@@ -477,6 +478,16 @@ private inline fun <T> InjectablesScope.compareCandidate(
   if (diff < 0) return -1
   if (diff > 0) return 1
 
+  val importPathA = importPath(a)
+  val importPathB = importPath(b)
+
+  if (importPathA != null && importPathB != null) {
+    if (!importPathA.endsWith("*")
+      && importPathB.endsWith("*")) return -1
+    if (!importPathB.endsWith("*") &&
+        importPathA.endsWith("*")) return 1
+  }
+
   return 0
 }
 
@@ -487,7 +498,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   type = { it.originalType },
   scopeNesting = { it.ownerScope.nesting },
   owner = { (it as? CallableInjectable)?.callable?.owner },
-  subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 }
+  subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 },
+  importPath = { (it as? CallableInjectable)?.callable?.import?.importPath }
 )
 
 fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
@@ -553,7 +565,8 @@ fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     type = { it.originalType },
     scopeNesting = { -1 },
     owner = { it.owner },
-    subClassNesting = { it.overriddenDepth }
+    subClassNesting = { it.overriddenDepth },
+    importPath = { it.import?.importPath }
   )
   if (diff < 0) return -1
   if (diff > 0) return 1

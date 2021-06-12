@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.name.*
 import org.junit.*
 
 class InjectableResolutionTest {
@@ -455,4 +456,34 @@ class InjectableResolutionTest {
       fun invoke() = inject<Foo>() 
     """
   )
+
+  @Test fun testPrefersExplicitImportOverStarImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val value = "explicit"
+          """,
+          packageFqName = FqName("explicit")
+        ),
+        source(
+          """
+            @Provide val value = "star"
+          """,
+          packageFqName = FqName("star")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("explicit.value", "star.*")
+            fun invoke() = inject<String>()
+        """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "explicit"
+  }
 }
