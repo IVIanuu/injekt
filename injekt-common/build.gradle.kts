@@ -24,10 +24,16 @@ kotlin {
     compilations.forEach {
       it.kotlinOptions {
         jvmTarget = "1.8"
-        freeCompilerArgs += "-Xallow-kotlin-package"
       }
     }
   }
+  targets
+    .flatMap { it.compilations }
+    .forEach {
+      it.kotlinOptions {
+        freeCompilerArgs += "-Xallow-kotlin-package"
+      }
+    }
   sourceSets {
     commonMain {
       dependencies {
