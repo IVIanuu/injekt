@@ -45,8 +45,6 @@ kotlin {
 
         api(Deps.kotestAssertions)
 
-        api(Deps.KotlinSerialization.gradlePlugin)
-
         api(Deps.junit)
         api(Deps.AndroidX.Test.core)
         api(Deps.AndroidX.Test.junit)

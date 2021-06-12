@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.util.slicedMap.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
@@ -283,13 +282,3 @@ fun <K, V> BindingTrace.getOrRecord(
 
 @Provide fun bindingContext(trace: BindingTrace?): BindingContext =
   trace?.bindingContext ?: error("Wtf")
-
-fun DeclarationDescriptor.isSyntheticSerializerFunction(
-  @Inject analysisContext: AnalysisContext
-): Boolean = this is FunctionDescriptor &&
-    name.asString() == "serializer" &&
-    kind == CallableMemberDescriptor.Kind.SYNTHESIZED &&
-    containingDeclaration
-      .safeAs<ClassDescriptor>()
-      ?.isCompanionObject == true &&
-    returnType?.toTypeRef()?.classifier?.fqName == InjektFqNames.KSerializer

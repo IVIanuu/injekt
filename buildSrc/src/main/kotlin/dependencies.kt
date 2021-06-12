@@ -89,10 +89,8 @@ object Deps {
   }
 
   object KotlinSerialization {
-    private const val version = "1.2.1"
-    const val core = "org.jetbrains.kotlinx:kotlinx-serialization-core:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:$version"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1"
   }
 
   const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.6"

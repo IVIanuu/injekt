@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlinx.serialization.compiler.extensions.*
 import java.io.*
 import java.net.*
 import java.nio.file.*
@@ -64,7 +63,6 @@ fun source(
       appendLine("import com.ivianuu.injekt.test.*")
       appendLine("import kotlin.reflect.*")
       appendLine("import kotlinx.coroutines.*")
-      appendLine("import kotlinx.serialization.*")
       appendLine()
     }
 
@@ -264,11 +262,7 @@ fun multiPlatformCodegen(
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-  compilerPlugins = listOf(
-    InjektComponentRegistrar(),
-    ComposeComponentRegistrar(),
-    SerializationComponentRegistrar()
-  )
+  compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
   commandLineProcessors = listOf(ComposeCommandLineProcessor())
   inheritClassPath = true
   useIR = true
