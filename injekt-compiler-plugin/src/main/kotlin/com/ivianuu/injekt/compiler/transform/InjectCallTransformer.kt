@@ -367,15 +367,12 @@ class InjectCallTransformer(
     injectable: SetInjectable
   ): IrExpression = when (injectable.dependencies.size) {
     1 -> {
-      val singleDependency =
-        result.dependencyResults.values.single()
-          .cast<ResolutionResult.Success.WithCandidate.Value>()
+      val singleDependency = result.dependencyResults.values.single()
+        .cast<ResolutionResult.Success.WithCandidate.Value>()
       when {
-        singleDependency.candidate.type
-          .isSubTypeOf(injectable.type) ->
+        singleDependency.candidate.type.isSubTypeOf(injectable.type) ->
           expressionFor(result.dependencyResults.values.single().cast())
-        singleDependency.candidate.type
-          .isSubTypeOf(injectable.collectionElementType) -> {
+        singleDependency.candidate.type.isSubTypeOf(injectable.collectionElementType) -> {
           DeclarationIrBuilder(pluginContext, symbol)
             .irCall(iterableToSet)
             .apply {
