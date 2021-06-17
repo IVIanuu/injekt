@@ -72,7 +72,7 @@ fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): Callable
   context.injektContext.callableRefs.getOrPut(this) {
     val info = callableInfo()
     val typeParameters = typeParameters.map { it.toClassifierRef() }
-    return CallableRef(
+    CallableRef(
       callable = this,
       type = info.type,
       originalType = info.type,
