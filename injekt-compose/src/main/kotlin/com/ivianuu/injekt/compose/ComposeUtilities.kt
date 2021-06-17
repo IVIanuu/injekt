@@ -50,5 +50,6 @@ val LocalScope = staticCompositionLocalOf<Scope> { error("No scope provided") }
     scope.setScopedValue(finalKey, value)
     onDispose { }
   }
+
   return value
 }
