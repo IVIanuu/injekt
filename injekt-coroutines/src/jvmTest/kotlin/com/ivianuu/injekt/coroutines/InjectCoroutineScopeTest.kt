@@ -23,7 +23,6 @@ import io.kotest.matchers.types.*
 import kotlinx.coroutines.*
 import org.junit.*
 
-@Providers("com.ivianuu.injekt.scope.*")
 class InjectCoroutineScopeTest {
   @Test fun testInjectCoroutineScopeLifecycle() {
     val scope = inject<TestScope1>()

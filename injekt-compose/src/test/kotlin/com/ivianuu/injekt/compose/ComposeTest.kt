@@ -26,7 +26,6 @@ import org.junit.*
 import org.junit.runner.*
 
 @RunWith(AndroidJUnit4::class)
-@Providers("com.ivianuu.injekt.scope.*")
 class ComposeTest {
   @get:Rule
   val composeRule = createComposeRule()

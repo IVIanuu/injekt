@@ -23,7 +23,6 @@ import io.ktor.server.testing.*
 import org.junit.*
 
 class AppTest {
-  @Providers("com.ivianuu.injekt.scope.*")
   @Test
   fun testServerLifecycle() {
     lateinit var listener: ScopeDisposeListener
