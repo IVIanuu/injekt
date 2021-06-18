@@ -211,24 +211,6 @@ interface InjektErrors {
         })
       }
 
-    @JvmField
-    val TYPE_ALIAS_MODULE_NOT_OBJECT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
-          override fun render(diagnostic: Diagnostic): String =
-            "typealias module must be an object"
-        })
-      }
-
-    @JvmField
-    val TYPE_ALIAS_MODULE_NOT_DECLARED_IN_SAME_COMPILATION_UNIT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
-          override fun render(diagnostic: Diagnostic): String =
-            "typealias module must be declared in the same compilation unit"
-        })
-      }
-
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,

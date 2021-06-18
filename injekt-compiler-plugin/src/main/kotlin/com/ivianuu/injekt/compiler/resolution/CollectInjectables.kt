@@ -20,6 +20,7 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.serialization.*
+import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.cfg.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -262,6 +263,7 @@ fun List<ProviderImport>.collectImportedInjectables(
   buildList<CallableRef> {
     if (!import.isValidImport()) return@buildList
     checkCancelled()
+
     fun importObjectIfExists(
       fqName: FqName,
       doNotIncludeChildren: Boolean
@@ -331,121 +333,115 @@ fun List<ProviderImport>.collectImportedInjectables(
 
 fun TypeRef.collectTypeScopeInjectables(
   @Inject context: AnalysisContext
-): InjectablesWithLookupActions {
+): InjectablesWithLookups {
   val finalType = withNullability(false)
 
   return context.injektContext.typeScopeInjectables.getOrPut(finalType) {
     val injectables = mutableListOf<CallableRef>()
-    val lookupActions = mutableListOf<(LookupLocation) -> Unit>()
+    val lookedUpPackages = mutableSetOf<FqName>()
 
-    finalType.allTypes.forEach { currentType ->
-      if (currentType.isStarProjection) return@forEach
+    val processedTypes = mutableSetOf<TypeRef>()
+    val nextTypes = finalType.allTypes.toMutableList()
+
+    while (nextTypes.isNotEmpty()) {
+      val currentType = nextTypes.removeFirst()
+      if (currentType.isStarProjection) continue
+      if (currentType in processedTypes) continue
+      processedTypes += currentType
+
       val resultForType = currentType.collectInjectablesForSingleType()
 
       injectables += resultForType.injectables
-      lookupActions += resultForType.lookupActions
+      lookedUpPackages += resultForType.lookedUpPackages
+
+      nextTypes += resultForType.injectables
+        .flatMap { it.type.allTypes }
     }
 
-    InjectablesWithLookupActions(
-      injectables = injectables
-        .filter { callable ->
-          if (callable.callable !is CallableMemberDescriptor) return@filter true
-          if (callable.typeParameters.any { it.isSpread }) return@filter false
+    injectables.removeAll { callable ->
+      if (callable.callable !is CallableMemberDescriptor) return@removeAll false
+      val containingObjectClassifier = callable.callable.containingDeclaration
+        .safeAs<ClassDescriptor>()
+        ?.takeIf { it.kind == ClassKind.OBJECT }
+        ?.toClassifierRef()
 
-          val containingObjectClassifier = callable.callable.containingDeclaration
-            .safeAs<ClassDescriptor>()
-            ?.takeIf { it.kind == ClassKind.OBJECT }
-            ?.toClassifierRef()
+      containingObjectClassifier != null && injectables.any { other ->
+        other.callable is LazyClassReceiverParameterDescriptor &&
+            other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
+      }
+    }
 
-          containingObjectClassifier == null || injectables.none { other ->
-            other.callable is LazyClassReceiverParameterDescriptor &&
-                other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
-          }
-        },
-      lookupActions = lookupActions
+    InjectablesWithLookups(
+      injectables = injectables.distinct(),
+      lookedUpPackages = lookedUpPackages
     )
   }
 }
 
-data class InjectablesWithLookupActions(
+data class InjectablesWithLookups(
   val injectables: List<CallableRef>,
-  val lookupActions: List<(LookupLocation) -> Unit>
+  val lookedUpPackages: Set<FqName>
 ) {
   companion object {
-    val Empty = InjectablesWithLookupActions(emptyList(), emptyList())
+    val Empty = InjectablesWithLookups(emptyList(), emptySet())
   }
 }
 
 private fun TypeRef.collectInjectablesForSingleType(
   @Inject context: AnalysisContext
-): InjectablesWithLookupActions {
-  if (classifier.isTypeParameter) return InjectablesWithLookupActions.Empty
+): InjectablesWithLookups {
+  if (classifier.isTypeParameter) return InjectablesWithLookups.Empty
 
   val finalType = withNullability(false)
 
-  return context.injektContext.typeScopeInjectablesForSingleType.getOrPut(finalType) {
-    val injectables = mutableListOf<CallableRef>()
-    val lookupActions = mutableListOf<(LookupLocation) -> Unit>()
-    val packageResult = collectPackageTypeScopeInjectables()
-    injectables += packageResult.injectables
-    lookupActions += packageResult.lookupActions
+  context.injektContext.typeScopeInjectablesForSingleType[finalType]?.let { return it }
 
-    when {
-      classifier.isTypeAlias -> {
-        val moduleFqName = classifier.fqName.parent()
-          .child("${classifier.fqName.shortName()}Module".asNameId())
-        lookupActions += {
-          context.injektContext.classifierDescriptorForFqName(moduleFqName, it)
-        }
-        context.injektContext.classifierDescriptorForFqName(
-          moduleFqName,
-          NoLookupLocation.FROM_BACKEND
-        )
-          ?.safeAs<ClassDescriptor>()
-          ?.takeIf { it.kind == ClassKind.OBJECT }
+  val injectables = mutableListOf<CallableRef>()
+  val lookedUpPackages = mutableSetOf<FqName>()
+
+  val result = InjectablesWithLookups(injectables, lookedUpPackages)
+
+  // we might recursively call our self so we make sure that we do not end up in a endless loop
+  context.injektContext.typeScopeInjectablesForSingleType[finalType] = result
+
+  val packageResult = collectPackageTypeScopeInjectables()
+  injectables += packageResult.injectables
+  lookedUpPackages += packageResult.lookedUpPackages
+
+  classifier.descriptor!!
+    .safeAs<ClassDescriptor>()
+    ?.let { clazz ->
+      if (clazz.kind == ClassKind.OBJECT) {
+        injectables += clazz.injectableReceiver(false)
+      } else {
+        injectables += clazz.injectableConstructors()
+        clazz.companionObjectDescriptor
           ?.let { injectables += it.injectableReceiver(false) }
       }
-      else -> {
-        classifier.descriptor!!
-          .safeAs<ClassDescriptor>()
-          ?.let { clazz ->
-            if (clazz.kind == ClassKind.OBJECT) {
-              injectables += clazz.injectableReceiver(false)
-            } else {
-              injectables += clazz.injectableConstructors()
-              clazz.companionObjectDescriptor
-                ?.let { injectables += it.injectableReceiver(false) }
-            }
-            clazz.classifierInfo().qualifiers.forEach { qualifier ->
-              val resultForQualifier = qualifier.collectTypeScopeInjectables()
-              injectables += resultForQualifier.injectables
-              lookupActions += resultForQualifier.lookupActions
-            }
-          }
+
+      clazz.classifierInfo().qualifiers.forEach { qualifier ->
+        val resultForQualifier = qualifier.classifier.defaultType.collectTypeScopeInjectables()
+        injectables += resultForQualifier.injectables
+        lookedUpPackages += resultForQualifier.lookedUpPackages
       }
     }
 
-    InjectablesWithLookupActions(injectables, lookupActions)
-  }
+  return result
 }
 
 private fun TypeRef.collectPackageTypeScopeInjectables(
   @Inject context: AnalysisContext
-): InjectablesWithLookupActions {
+): InjectablesWithLookups {
   val packageFqName = classifier.descriptor!!.findPackage().fqName
 
   return context.injektContext.packageTypeScopeInjectables.getOrPut(packageFqName) {
-    val lookupActions = if (packageFqName.isRoot) emptyList() else {
-      listOf<(LookupLocation) -> Unit> {
-        context.injektContext.module.getPackage(packageFqName.parent())
-          .memberScope
-          .recordLookup(packageFqName.shortName(), it)
-      }
-    }
-    val packageMemberScope = context.injektContext.memberScopeForFqName(
-      packageFqName,
-      NoLookupLocation.FROM_BACKEND
-    ) ?: return InjectablesWithLookupActions(emptyList(), lookupActions)
+    val lookedUpPackages = setOf(packageFqName)
+
+    val packageFragments = context.injektContext.packageFragmentsForFqName(packageFqName)
+      .filterNot { it is BuiltInsPackageFragment }
+
+    if (packageFragments.isEmpty())
+      return@getOrPut InjectablesWithLookups(emptyList(), lookedUpPackages)
 
     val injectables = mutableListOf<CallableRef>()
 
@@ -461,13 +457,12 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
         .filter { callable ->
           callable.callable.containingDeclaration
             .safeAs<ClassDescriptor>()
-            ?.let { it.kind == ClassKind.OBJECT } != false &&
-              callable.buildContext(emptyList(), this).isOk
+            ?.let { it.kind == ClassKind.OBJECT } != false
         }
     }
-    collectInjectables(packageMemberScope)
+    packageFragments.forEach { collectInjectables(it.getMemberScope()) }
 
-    InjectablesWithLookupActions(injectables, lookupActions)
+    InjectablesWithLookups(injectables, lookedUpPackages)
   }
 }
 

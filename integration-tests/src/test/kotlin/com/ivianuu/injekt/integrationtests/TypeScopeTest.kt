@@ -308,4 +308,98 @@ class TypeScopeTest {
       )
     )
   )
+
+  @Test fun testTypeScopeWhichReferencesTypeInInjectableDeclaration() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Qualifier annotation class MyQualifier {
+              companion object {
+                @Provide inline fun <@Spread T : @MyQualifier S, S> value(t: T): S = t
+              }
+            }
+          """,
+          packageFqName = FqName("qualifiers")
+        )
+      ),
+      listOf(
+        source(
+          """
+            class Dep {
+              companion object {
+                @Provide fun dep(): @qualifiers.MyQualifier Dep = Dep()
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Qualifier annotation class MyQualifier {
+              companion object {
+                @Provide inline fun <@Spread T : @MyQualifier S, S> value(t: T): S = t
+              }
+            }
+
+            @MyQualifier @Provide class Dep
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testNestedClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Qualifier annotation class MyQualifier1 {
+              companion object {
+                @Provide inline fun <@Spread T : @MyQualifier1 S, S> value(t: T): @MyQualifier2 S = t
+              }
+            }
+
+            @Qualifier annotation class MyQualifier2 {
+              companion object {
+                @Provide inline fun <@Spread T : @MyQualifier2 S, S> value(t: T): S = t
+              }
+            }
+
+            @MyQualifier1 @Provide class Dep
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
 }

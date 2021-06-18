@@ -186,7 +186,7 @@ fun InjectablesScope.resolveRequests(
   var failureRequest: InjectableRequest? = null
   var failure: ResolutionResult.Failure? = null
   for (request in requests) {
-    when (val result = resolveRequest(request, lookupLocation)) {
+    when (val result = resolveRequest(request, lookupLocation, false)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure -> if ((request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE ||
             (request.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
@@ -213,33 +213,55 @@ fun InjectablesScope.resolveRequests(
 
 private fun InjectablesScope.resolveRequest(
   request: InjectableRequest,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  fromTypeScope: Boolean
 ): ResolutionResult {
   checkCancelled()
   resultsByType[request.type]?.let { return it }
-  val userCandidates = injectablesForRequest(request, this)
+
+  val result = tryToResolveRequestWithUserInjectables(request, lookupLocation)
     ?: run {
-      // try the type scope if the requested type is not a framework type
-      if (!request.type.isProviderFunctionType &&
-        request.type.classifier != context.injektContext.setClassifier &&
-        request.type.classifier.fqName != InjektFqNames.TypeKey)
-        TypeInjectablesScope(request.type)
-          .also { it.recordLookup(lookupLocation) }
-          .injectablesForRequest(request, this)
-      else null
+      if (!fromTypeScope) {
+        tryToResolveRequestInTypeScope(request, lookupLocation)
+          ?.takeIf { it !is ResolutionResult.Failure.NoCandidates }
+          ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
+      } else ResolutionResult.Failure.NoCandidates
     }
-  val result = if (userCandidates != null) {
-    resolveCandidates(request, userCandidates, lookupLocation)
-  } else {
-    val frameworkCandidate = frameworkInjectableForRequest(request)
-    when {
-      frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
-      request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
-      else -> ResolutionResult.Success.DefaultValue
-    }
-  }
+
   resultsByType[request.type] = result
   return result
+}
+
+private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
+  request: InjectableRequest,
+  lookupLocation: LookupLocation
+): ResolutionResult? = injectablesForRequest(request, this)
+  ?.let { resolveCandidates(request, it, lookupLocation) }
+
+private fun InjectablesScope.tryToResolveRequestInTypeScope(
+  request: InjectableRequest,
+  lookupLocation: LookupLocation
+): ResolutionResult? {
+  // try the type scope if the requested type is not a framework type
+  return if (!request.type.isProviderFunctionType &&
+    request.type.classifier != context.injektContext.setClassifier &&
+    request.type.classifier.fqName != InjektFqNames.TypeKey)
+    with(TypeInjectablesScope(request.type, this)) {
+      recordLookup(lookupLocation)
+      resolveRequest(request, lookupLocation, true)
+    } else null
+}
+
+private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
+  request: InjectableRequest,
+  lookupLocation: LookupLocation
+): ResolutionResult {
+  val frameworkCandidate = frameworkInjectableForRequest(request)
+  return when {
+    frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
+    request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+    else -> ResolutionResult.Success.DefaultValue
+  }
 }
 
 private fun InjectablesScope.computeForCandidate(
@@ -376,7 +398,7 @@ private fun InjectablesScope.resolveCandidate(
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
     val dependencyScope = candidate.dependencyScope ?: this
-    when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation)) {
+    when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
@@ -410,16 +432,10 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   a!!
   b!!
 
-  if (a is ResolutionResult.Success &&
-    b !is ResolutionResult.Success
-  ) return -1
-  if (b is ResolutionResult.Success &&
-    a !is ResolutionResult.Success
-  ) return 1
+  if (a is ResolutionResult.Success && b !is ResolutionResult.Success) return -1
+  if (b is ResolutionResult.Success && a !is ResolutionResult.Success) return 1
 
-  if (a is ResolutionResult.Success &&
-    b is ResolutionResult.Success
-  ) {
+  if (a is ResolutionResult.Success && b is ResolutionResult.Success) {
     if (a !is ResolutionResult.Success.DefaultValue &&
       b is ResolutionResult.Success.DefaultValue
     ) return -1
@@ -446,6 +462,7 @@ private inline fun <T> InjectablesScope.compareCandidate(
   b: T?,
   requestedType: TypeRef?,
   type: (T) -> TypeRef,
+  isFromTypeScope: (T) -> Boolean,
   scopeNesting: (T) -> Int,
   owner: (T) -> ClassifierRef?,
   subClassNesting: (T) -> Int,
@@ -458,6 +475,11 @@ private inline fun <T> InjectablesScope.compareCandidate(
 
   a!!
   b!!
+
+  val aIsFromTypeScope = isFromTypeScope(a)
+  val bIsFromTypeScope = isFromTypeScope(b)
+  if (!aIsFromTypeScope && bIsFromTypeScope) return -1
+  if (!bIsFromTypeScope && aIsFromTypeScope) return 1
 
   val aScopeNesting = scopeNesting(a)
   val bScopeNesting = scopeNesting(b)
@@ -496,6 +518,7 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   b = b,
   requestedType = a?.type ?: b?.type,
   type = { it.originalType },
+  isFromTypeScope = { it.ownerScope.isTypeScope },
   scopeNesting = { it.ownerScope.nesting },
   owner = { (it as? CallableInjectable)?.callable?.owner },
   subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 },
@@ -563,6 +586,7 @@ fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     b = b,
     requestedType = null,
     type = { it.originalType },
+    isFromTypeScope = { false },
     scopeNesting = { -1 },
     owner = { it.owner },
     subClassNesting = { it.overriddenDepth },

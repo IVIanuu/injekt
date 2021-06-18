@@ -71,11 +71,9 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val classifierInfos = mutableMapOf<ClassifierDescriptor, ClassifierInfo>()
   val elementScopes = mutableMapOf<KtElement, InjectablesScope>()
   val declarationScopes = mutableMapOf<DeclarationDescriptor, InjectablesScope>()
-  val typeScopes = mutableMapOf<TypeRef, InjectablesScope>()
-
-  val typeScopeInjectables = mutableMapOf<TypeRef, InjectablesWithLookupActions>()
-  val typeScopeInjectablesForSingleType = mutableMapOf<TypeRef, InjectablesWithLookupActions>()
-  val packageTypeScopeInjectables = mutableMapOf<FqName, InjectablesWithLookupActions>()
+  val typeScopeInjectables = mutableMapOf<TypeRef, InjectablesWithLookups>()
+  val typeScopeInjectablesForSingleType = mutableMapOf<TypeRef, InjectablesWithLookups>()
+  val packageTypeScopeInjectables = mutableMapOf<FqName, InjectablesWithLookups>()
 
   fun classifierDescriptorForFqName(
     fqName: FqName,
@@ -138,6 +136,10 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
 
     return classDescriptor.unsubstitutedMemberScope
   }
+
+  fun packageFragmentsForFqName(fqName: FqName): List<PackageFragmentDescriptor> =
+    module.getPackage(fqName).fragments
+
 }
 
 val InjektContextModuleCapability = ModuleCapability<InjektContext>("InjektContext")

@@ -38,7 +38,6 @@ class InjektStorageComponentContainerContributor(
     container.useInstance(InjectableChecker(context))
     container.useInstance(QualifierChecker())
     container.useInstance(ProviderImportsChecker(context))
-    container.useInstance(TypeAliasModuleChecker(context))
     container.useInstance(InjectionCallChecker(context))
     container.useInstance(InfoAnnotationPatcher(context))
   }

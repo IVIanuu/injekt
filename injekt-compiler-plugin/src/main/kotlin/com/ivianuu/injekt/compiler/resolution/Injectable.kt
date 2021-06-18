@@ -128,7 +128,6 @@ class ProviderInjectable(
           .copy(isProvide = true, type = type.arguments[index])
       }
       .toList(),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = ownerScope.nesting + 1

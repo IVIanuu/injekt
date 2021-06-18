@@ -46,7 +46,6 @@ class InjectablesScope(
   val ownerDescriptor: DeclarationDescriptor?,
   val file: KtFile?,
   val initialInjectables: List<CallableRef>,
-  val lookupActions: List<(LookupLocation) -> Unit>,
   imports: List<ResolvedProviderImport>,
   val typeParameters: List<ClassifierRef>,
   val nesting: Int
@@ -54,6 +53,7 @@ class InjectablesScope(
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
+  val typeScopes = mutableMapOf<TypeRef, InjectablesScope>()
 
   private data class InjectableKey(
     val type: TypeRef,
@@ -126,6 +126,8 @@ class InjectablesScope(
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
   private var shouldDelegateToParent = false
+
+  val isTypeScope = name.startsWith("TYPE ")
 
   init {
     initialInjectables
@@ -217,8 +219,6 @@ class InjectablesScope(
           lookupLocation
         )
     }
-
-    lookupActions.forEach { it(lookupLocation) }
   }
 
   fun injectablesForRequest(
@@ -226,10 +226,12 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable>? {
     if (shouldDelegateToParent) return parent?.injectablesForRequest(request, requestingScope)
+
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
       request.type.classifier == context.injektContext.setClassifier
     ) return null
+
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       ?.filter { it -> it.isValidObjectRequest(request) }
       ?.takeIf { it.isNotEmpty() }

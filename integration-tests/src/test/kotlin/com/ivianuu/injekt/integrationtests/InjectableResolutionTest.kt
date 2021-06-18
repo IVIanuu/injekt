@@ -385,6 +385,22 @@ class InjectableResolutionTest {
     compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
   }
 
+  @Test fun testPrefersAnyInjectablesOverTypeScopeInjectable() = singleAndMultiCodegen(
+    """
+      class Dep(val value: String) {
+        companion object {
+          @Provide val string = "b"
+          @Provide fun dep(string: String) = Dep(string)
+        }
+      }
+    """,
+    """
+      fun invoke(@Provide string: String) = inject<Dep>().value
+    """
+  ) {
+    invokeSingleFile("a") shouldBe "a"
+  }
+
   @Test fun testUsesDefaultValueIfNoCandidateExists() = codegen(
     """
       fun invoke(_foo: Foo): Foo {

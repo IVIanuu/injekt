@@ -101,6 +101,7 @@ class InjectCallTransformer(
 
     fun mapScopeIfNeeded(scope: InjectablesScope) =
       if (scope in graphContextParents) graph.scope else scope
+        .allScopes.last { !it.isTypeScope }
   }
 
   private inner class ScopeContext(

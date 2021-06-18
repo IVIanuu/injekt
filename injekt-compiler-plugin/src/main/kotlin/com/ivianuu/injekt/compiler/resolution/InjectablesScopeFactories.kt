@@ -196,7 +196,6 @@ private fun ClassInjectablesScope(
     ownerDescriptor = clazz,
     file = null,
     initialInjectables = listOf(clazz.injectableReceiver(false)),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
     nesting = finalParent.nesting + 1
@@ -223,7 +222,6 @@ private fun ConstructorPreInitInjectablesScope(
     ownerDescriptor = constructor,
     file = null,
     initialInjectables = emptyList(),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting
@@ -262,7 +260,6 @@ private fun ValueParameterDefaultValueInjectablesScope(
     ownerDescriptor = function,
     file = null,
     initialInjectables = emptyList(),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = function.typeParameters.map { it.toClassifierRef() },
     nesting = finalParent.nesting + 1
@@ -288,7 +285,6 @@ private fun FunctionInjectablesScope(
     ownerDescriptor = function,
     file = null,
     initialInjectables = emptyList(),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting
@@ -332,7 +328,6 @@ private fun FunctionParameterInjectablesScope(
     ownerDescriptor = function,
     file = null,
     initialInjectables = listOf(parameter),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = if (parent.name.startsWith("FUNCTION_PARAMETER")) parent.nesting
@@ -364,7 +359,6 @@ private fun PropertyInjectablesScope(
         ?.toCallableRef()
         ?.makeProvide()
     ),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = property.typeParameters.map { it.toClassifierRef() },
     nesting = finalParent.nesting + 1
@@ -391,7 +385,6 @@ private fun LocalVariableInjectablesScope(
     ownerDescriptor = variable,
     file = null,
     initialInjectables = emptyList(),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = finalParent.nesting
@@ -416,7 +409,6 @@ private fun ExpressionInjectablesScope(
     ownerDescriptor = null,
     file = null,
     initialInjectables = emptyList(),
-    lookupActions = emptyList(),
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = finalParent.nesting
@@ -453,7 +445,6 @@ private fun BlockExpressionInjectablesScope(
         is CallableDescriptor -> listOf(injectableDeclaration.toCallableRef())
         else -> throw AssertionError("Unexpected injectable $injectableDeclaration")
       },
-      lookupActions = emptyList(),
       imports = emptyList(),
       typeParameters = emptyList(),
       nesting = if (visibleInjectableDeclarations.size > 1) finalParent.nesting
@@ -464,22 +455,23 @@ private fun BlockExpressionInjectablesScope(
 
 fun TypeInjectablesScope(
   type: TypeRef,
+  parent: InjectablesScope,
   @Inject context: AnalysisContext
 ): InjectablesScope {
   val finalType = type.withNullability(false)
-  return context.injektContext.typeScopes.getOrPut(finalType) {
-    val injectablesAndLookupActions = finalType.collectTypeScopeInjectables()
+  return parent.typeScopes.getOrPut(finalType) {
+    val injectablesWithLookups = finalType.collectTypeScopeInjectables()
     InjectablesScope(
       name = "TYPE ${finalType.renderToString()}",
-      parent = null,
+      parent = parent,
       callContext = CallContext.DEFAULT,
       ownerDescriptor = finalType.classifier.descriptor,
       file = null,
-      initialInjectables = injectablesAndLookupActions.injectables,
-      lookupActions = injectablesAndLookupActions.lookupActions,
-      imports = emptyList(),
+      initialInjectables = injectablesWithLookups.injectables,
+      imports = injectablesWithLookups.lookedUpPackages
+        .map { ResolvedProviderImport(null, "$it.*", it) },
       typeParameters = emptyList(),
-      nesting = 0
+      nesting = parent.nesting
     )
   }
 }
@@ -503,7 +495,6 @@ private fun ImportInjectablesScope(
       file = file,
       initialInjectables = resolvedImports
         .filter { it.callable.isExternalDeclaration() },
-      lookupActions = emptyList(),
       imports = emptyList(),
       typeParameters = emptyList(),
       nesting = parent?.nesting?.inc() ?: 0
@@ -512,7 +503,6 @@ private fun ImportInjectablesScope(
     file = file,
     initialInjectables = resolvedImports
       .filterNot { it.callable.isExternalDeclaration() },
-    lookupActions = emptyList(),
     imports = imports.mapNotNull { it.resolve() },
     typeParameters = emptyList(),
     nesting = parent?.nesting?.inc()?.inc() ?: 1
