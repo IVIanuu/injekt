@@ -53,6 +53,8 @@ interface Scope : ScopeDisposable {
   fun <T : Any> getScopedValueOrNull(key: Any): T?
   fun <T : Any> getScopedValueOrNull(key: TypeKey<T>): T? =
     getScopedValueOrNull(key.value)
+  fun <T : Any> getScopedValueOrNull(key: SourceKey): T? =
+    getScopedValueOrNull(key.value)
 
   /**
    * Sets the scoped value [T] for [key] to [value]
@@ -60,12 +62,15 @@ interface Scope : ScopeDisposable {
   fun <T : Any> setScopedValue(key: Any, value: T)
   fun <T : Any> setScopedValue(key: TypeKey<T>, value: T) =
     setScopedValue(key.value, value)
+  fun <T : Any> setScopedValue(key: SourceKey, value: T) =
+    setScopedValue(key.value, value)
 
   /**
    * Removes the scoped value for [key]
    */
   fun removeScopedValue(key: Any)
   fun removeScopedValue(key: TypeKey<*>) = removeScopedValue(key.value)
+  fun removeScopedValue(key: SourceKey) = removeScopedValue(key.value)
 
   companion object {
     @Qualifier private annotation class Parent
