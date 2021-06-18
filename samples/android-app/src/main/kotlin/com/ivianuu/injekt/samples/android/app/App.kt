@@ -19,8 +19,7 @@
   "com.ivianuu.injekt.coroutines.*",
   "com.ivianuu.injekt.scope.*",
   "com.ivianuu.injekt.samples.android.data.*",
-  "com.ivianuu.injekt.samples.android.domain.*",
-  "com.ivianuu.injekt.samples.android.ui.*"
+  "com.ivianuu.injekt.samples.android.domain.*"
 )
 
 package com.ivianuu.injekt.samples.android.app

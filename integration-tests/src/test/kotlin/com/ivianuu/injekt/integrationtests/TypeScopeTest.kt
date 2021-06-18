@@ -110,6 +110,27 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testTypeAliasPackageTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            typealias Dep = String
+            @Provide val dep: Dep = ""
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testQualifierTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -376,19 +397,31 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier1 {
-              companion object {
-                @Provide inline fun <@Spread T : @MyQualifier1 S, S> value(t: T): @MyQualifier2 S = t
-              }
-            }
-
             @Qualifier annotation class MyQualifier2 {
               companion object {
                 @Provide inline fun <@Spread T : @MyQualifier2 S, S> value(t: T): S = t
               }
             }
-
-            @MyQualifier1 @Provide class Dep
+          """,
+          packageFqName = FqName("qualifiers2")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Qualifier annotation class MyQualifier1 {
+              companion object {
+                @Provide inline fun <@Spread T : @MyQualifier1 S, S> value(t: T): @qualifiers2.MyQualifier2 S = t
+              }
+            }
+          """,
+          packageFqName = FqName("qualifiers1")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @qualifiers1.MyQualifier1 @Provide class Dep
           """,
           packageFqName = FqName("injectables")
         )
@@ -397,6 +430,36 @@ class TypeScopeTest {
         invokableSource(
           """
             fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testTypeScopeCanAccessOtherTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            typealias AppTheme = () -> Unit
+            @Provide fun appTheme(): AppTheme = {}
+          """,
+          packageFqName = FqName("package1")
+        )
+      ),
+      listOf(
+        source(
+          """
+            typealias AppContent = () -> Unit
+            @Provide fun appContent(appTheme: package1.AppTheme): AppContent = {}
+          """,
+          packageFqName = FqName("package2")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<package2.AppContent>()
           """
         )
       )
