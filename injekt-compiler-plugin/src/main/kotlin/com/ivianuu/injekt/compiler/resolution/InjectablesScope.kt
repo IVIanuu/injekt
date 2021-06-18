@@ -46,6 +46,7 @@ class InjectablesScope(
   val ownerDescriptor: DeclarationDescriptor?,
   val file: KtFile?,
   val initialInjectables: List<CallableRef>,
+  val lookupActions: List<(LookupLocation) -> Unit>,
   imports: List<ResolvedProviderImport>,
   val typeParameters: List<ClassifierRef>,
   val nesting: Int
@@ -207,15 +208,17 @@ class InjectablesScope(
         recordLookup(it.callable.callable)
     }
     imports.forEach { import ->
-        context.injektContext.memberScopeForFqName(import.packageFqName, lookupLocation)
-          ?.recordLookup(
-            injectablesLookupName(
-              FqName(import.importPath!!.removeSuffix(".*")),
-              import.packageFqName
-            ),
-            lookupLocation
-          )
-      }
+      context.injektContext.memberScopeForFqName(import.packageFqName, lookupLocation)
+        ?.recordLookup(
+          injectablesLookupName(
+            FqName(import.importPath!!.removeSuffix(".*")),
+            import.packageFqName
+          ),
+          lookupLocation
+        )
+    }
+
+    lookupActions.forEach { it(lookupLocation) }
   }
 
   fun injectablesForRequest(

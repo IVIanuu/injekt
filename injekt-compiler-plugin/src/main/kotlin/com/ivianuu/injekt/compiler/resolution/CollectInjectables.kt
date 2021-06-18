@@ -330,99 +330,145 @@ fun List<ProviderImport>.collectImportedInjectables(
 }
 
 fun TypeRef.collectTypeScopeInjectables(
-  @Inject lookupLocation: LookupLocation,
   @Inject context: AnalysisContext
-): List<CallableRef> {
-  val injectables = mutableListOf<CallableRef>()
-  allTypes.forEach { currentType ->
-    if (currentType.isStarProjection) return@forEach
-    injectables += currentType.collectInjectablesForSingleType()
-  }
-  return injectables
-    .filter { callable ->
-      if (callable.callable !is CallableMemberDescriptor) return@filter true
-      if (callable.typeParameters.any { it.isSpread }) return@filter false
+): InjectablesWithLookupActions {
+  val finalType = withNullability(false)
 
-      val containingObjectClassifier = callable.callable.containingDeclaration
-        .safeAs<ClassDescriptor>()
-        ?.takeIf { it.kind == ClassKind.OBJECT }
-        ?.toClassifierRef()
+  return context.injektContext.typeScopeInjectables.getOrPut(finalType) {
+    val injectables = mutableListOf<CallableRef>()
+    val lookupActions = mutableListOf<(LookupLocation) -> Unit>()
 
-      containingObjectClassifier == null || injectables.none { other ->
-        other.callable is LazyClassReceiverParameterDescriptor &&
-            other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
-      }
+    finalType.allTypes.forEach { currentType ->
+      if (currentType.isStarProjection) return@forEach
+      val resultForType = currentType.collectInjectablesForSingleType()
+
+      injectables += resultForType.injectables
+      lookupActions += resultForType.lookupActions
     }
+
+    InjectablesWithLookupActions(
+      injectables = injectables
+        .filter { callable ->
+          if (callable.callable !is CallableMemberDescriptor) return@filter true
+          if (callable.typeParameters.any { it.isSpread }) return@filter false
+
+          val containingObjectClassifier = callable.callable.containingDeclaration
+            .safeAs<ClassDescriptor>()
+            ?.takeIf { it.kind == ClassKind.OBJECT }
+            ?.toClassifierRef()
+
+          containingObjectClassifier == null || injectables.none { other ->
+            other.callable is LazyClassReceiverParameterDescriptor &&
+                other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
+          }
+        },
+      lookupActions = lookupActions
+    )
+  }
+}
+
+data class InjectablesWithLookupActions(
+  val injectables: List<CallableRef>,
+  val lookupActions: List<(LookupLocation) -> Unit>
+) {
+  companion object {
+    val Empty = InjectablesWithLookupActions(emptyList(), emptyList())
+  }
 }
 
 private fun TypeRef.collectInjectablesForSingleType(
-  @Inject context: AnalysisContext,
-  @Inject lookupLocation: LookupLocation
-): List<CallableRef> = context.injektContext.typeScopeInjectables.getOrPut(this) {
-  val injectables = mutableListOf<CallableRef>()
-  injectables += collectPackageTypeScopeInjectables()
+  @Inject context: AnalysisContext
+): InjectablesWithLookupActions {
+  if (classifier.isTypeParameter) return InjectablesWithLookupActions.Empty
 
-  when {
-    classifier.isTypeAlias -> {
-      context.injektContext.classifierDescriptorForFqName(
-        classifier.fqName.parent()
-          .child("${classifier.fqName.shortName()}Module".asNameId()),
-        lookupLocation
-      )
-        ?.safeAs<ClassDescriptor>()
-        ?.takeIf { it.kind == ClassKind.OBJECT }
-        ?.let { injectables += it.injectableReceiver(false) }
-    }
-    else -> {
-      classifier.descriptor!!
-        .safeAs<ClassDescriptor>()
-        ?.let { clazz ->
-          if (clazz.kind == ClassKind.OBJECT) {
-            injectables += clazz.injectableReceiver(false)
-          } else {
-            injectables += clazz.injectableConstructors()
-            clazz.companionObjectDescriptor
-              ?.let { injectables += it.injectableReceiver(false) }
-          }
-          clazz.classifierInfo().qualifiers.forEach {
-            injectables += it.collectTypeScopeInjectables()
-          }
+  val finalType = withNullability(false)
+
+  return context.injektContext.typeScopeInjectablesForSingleType.getOrPut(finalType) {
+    val injectables = mutableListOf<CallableRef>()
+    val lookupActions = mutableListOf<(LookupLocation) -> Unit>()
+    val packageResult = collectPackageTypeScopeInjectables()
+    injectables += packageResult.injectables
+    lookupActions += packageResult.lookupActions
+
+    when {
+      classifier.isTypeAlias -> {
+        val moduleFqName = classifier.fqName.parent()
+          .child("${classifier.fqName.shortName()}Module".asNameId())
+        lookupActions += {
+          context.injektContext.classifierDescriptorForFqName(moduleFqName, it)
         }
+        context.injektContext.classifierDescriptorForFqName(
+          moduleFqName,
+          NoLookupLocation.FROM_BACKEND
+        )
+          ?.safeAs<ClassDescriptor>()
+          ?.takeIf { it.kind == ClassKind.OBJECT }
+          ?.let { injectables += it.injectableReceiver(false) }
+      }
+      else -> {
+        classifier.descriptor!!
+          .safeAs<ClassDescriptor>()
+          ?.let { clazz ->
+            if (clazz.kind == ClassKind.OBJECT) {
+              injectables += clazz.injectableReceiver(false)
+            } else {
+              injectables += clazz.injectableConstructors()
+              clazz.companionObjectDescriptor
+                ?.let { injectables += it.injectableReceiver(false) }
+            }
+            clazz.classifierInfo().qualifiers.forEach { qualifier ->
+              val resultForQualifier = qualifier.collectTypeScopeInjectables()
+              injectables += resultForQualifier.injectables
+              lookupActions += resultForQualifier.lookupActions
+            }
+          }
+      }
     }
-  }
 
-  injectables
+    InjectablesWithLookupActions(injectables, lookupActions)
+  }
 }
 
 private fun TypeRef.collectPackageTypeScopeInjectables(
-  @Inject context: AnalysisContext,
-  @Inject lookupLocation: LookupLocation
-): List<CallableRef> {
-  if (classifier.isTypeParameter) return emptyList()
+  @Inject context: AnalysisContext
+): InjectablesWithLookupActions {
+  val packageFqName = classifier.descriptor!!.findPackage().fqName
 
-  val packageMemberScope = context.injektContext.memberScopeForFqName(
-    classifier.descriptor!!.findPackage().fqName,
-    lookupLocation
-  ) ?: return emptyList()
-  val injectables = mutableListOf<CallableRef>()
-  fun collectInjectables(scope: MemberScope) {
-    injectables += scope.collectInjectables(
-      onEach = { declaration ->
-        if (declaration is ClassDescriptor &&
-            declaration !is LazyJavaClassDescriptor)
-          collectInjectables(declaration.unsubstitutedMemberScope)
-      },
-      classBodyView = false
-    )
-      .filter { callable ->
-        callable.callable.containingDeclaration
-          .safeAs<ClassDescriptor>()
-          ?.let { it.kind == ClassKind.OBJECT } != false &&
-            callable.buildContext(emptyList(), this).isOk
+  return context.injektContext.packageTypeScopeInjectables.getOrPut(packageFqName) {
+    val lookupActions = if (packageFqName.isRoot) emptyList() else {
+      listOf<(LookupLocation) -> Unit> {
+        context.injektContext.module.getPackage(packageFqName.parent())
+          .memberScope
+          .recordLookup(packageFqName.shortName(), it)
       }
+    }
+    val packageMemberScope = context.injektContext.memberScopeForFqName(
+      packageFqName,
+      NoLookupLocation.FROM_BACKEND
+    ) ?: return InjectablesWithLookupActions(emptyList(), lookupActions)
+
+    val injectables = mutableListOf<CallableRef>()
+
+    fun collectInjectables(scope: MemberScope) {
+      injectables += scope.collectInjectables(
+        onEach = { declaration ->
+          if (declaration is ClassDescriptor &&
+            declaration !is LazyJavaClassDescriptor)
+            collectInjectables(declaration.unsubstitutedMemberScope)
+        },
+        classBodyView = false
+      )
+        .filter { callable ->
+          callable.callable.containingDeclaration
+            .safeAs<ClassDescriptor>()
+            ?.let { it.kind == ClassKind.OBJECT } != false &&
+              callable.buildContext(emptyList(), this).isOk
+        }
+    }
+    collectInjectables(packageMemberScope)
+
+    InjectablesWithLookupActions(injectables, lookupActions)
   }
-  collectInjectables(packageMemberScope)
-  return injectables
 }
 
 private fun InjectablesScope.canSee(callable: CallableRef): Boolean =

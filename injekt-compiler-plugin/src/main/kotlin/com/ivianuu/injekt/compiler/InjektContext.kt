@@ -72,7 +72,10 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val elementScopes = mutableMapOf<KtElement, InjectablesScope>()
   val declarationScopes = mutableMapOf<DeclarationDescriptor, InjectablesScope>()
   val typeScopes = mutableMapOf<TypeRef, InjectablesScope>()
-  val typeScopeInjectables = mutableMapOf<TypeRef, List<CallableRef>>()
+
+  val typeScopeInjectables = mutableMapOf<TypeRef, InjectablesWithLookupActions>()
+  val typeScopeInjectablesForSingleType = mutableMapOf<TypeRef, InjectablesWithLookupActions>()
+  val packageTypeScopeInjectables = mutableMapOf<FqName, InjectablesWithLookupActions>()
 
   fun classifierDescriptorForFqName(
     fqName: FqName,

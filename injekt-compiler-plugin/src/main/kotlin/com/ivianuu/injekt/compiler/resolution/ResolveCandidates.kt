@@ -223,7 +223,7 @@ private fun InjectablesScope.resolveRequest(
       if (!request.type.isProviderFunctionType &&
         request.type.classifier != context.injektContext.setClassifier &&
         request.type.classifier.fqName != InjektFqNames.TypeKey)
-        TypeInjectablesScope(request.type, lookupLocation)
+        TypeInjectablesScope(request.type)
           .also { it.recordLookup(lookupLocation) }
           .injectablesForRequest(request, this)
       else null
