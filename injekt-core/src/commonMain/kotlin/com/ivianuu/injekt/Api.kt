@@ -79,14 +79,14 @@ inline fun <T> inject(@Inject value: T): T = value
 inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors value: T? = null): T? = value
 
 /**
- * Marks an annotation as an qualifier which can then be used
+ * Marks an annotation as an tag which can then be used
  * to distinct types
  *
  * For example:
  * ```
- * @Qualifier annotation class UserId
+ * @Tag annotation class UserId
  *
- * @Qualifier annotation class Username
+ * @Tag annotation class Username
  *
  * @Provide val userId: @UserId String = "123"
  *
@@ -101,7 +101,7 @@ inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors value: T? = null): T? = 
  * ```
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class Qualifier
+annotation class Tag
 
 /**
  * Creates a version of the annotated injectable for each other injectable whose type matches the constraints

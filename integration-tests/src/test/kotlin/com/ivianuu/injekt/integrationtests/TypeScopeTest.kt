@@ -131,14 +131,14 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testQualifierTypeScope() = singleAndMultiCodegen(
+  @Test fun testTagTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier {
+            @Tag annotation class MyTag {
               companion object {
-                @Provide val default: @MyQualifier String = ""
+                @Provide val default: @MyTag String = ""
               }
             }
           """,
@@ -148,7 +148,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = inject<@injectables.MyQualifier String>()
+            fun invoke() = inject<@injectables.MyTag String>()
           """
         )
       )
@@ -248,22 +248,22 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testClassQualifierScope() = singleAndMultiCodegen(
+  @Test fun testClassTagScope() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier {
+            @Tag annotation class MyTag {
               companion object {
                 @Provide val dep = injectables.Dep()
               }
             }
           """,
-          packageFqName = FqName("qualifiers")
+          packageFqName = FqName("tags")
         ),
         source(
           """
-            @Provide @qualifiers.MyQualifier class Dep
+            @Provide @tags.MyTag class Dep
           """,
           packageFqName = FqName("injectables")
         )
@@ -357,13 +357,13 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier {
+            @Tag annotation class MyTag {
               companion object {
-                @Provide inline fun <@Spread T : @MyQualifier S, S> value(t: T): S = t
+                @Provide inline fun <@Spread T : @MyTag S, S> value(t: T): S = t
               }
             }
           """,
-          packageFqName = FqName("qualifiers")
+          packageFqName = FqName("tags")
         )
       ),
       listOf(
@@ -371,7 +371,7 @@ class TypeScopeTest {
           """
             class Dep {
               companion object {
-                @Provide fun dep(): @qualifiers.MyQualifier Dep = Dep()
+                @Provide fun dep(): @tags.MyTag Dep = Dep()
               }
             }
           """,
@@ -393,13 +393,13 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier {
+            @Tag annotation class MyTag {
               companion object {
-                @Provide inline fun <@Spread T : @MyQualifier S, S> value(t: T): S = t
+                @Provide inline fun <@Spread T : @MyTag S, S> value(t: T): S = t
               }
             }
 
-            @MyQualifier @Provide class Dep
+            @MyTag @Provide class Dep
           """,
           packageFqName = FqName("injectables")
         )
@@ -419,31 +419,31 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier2 {
+            @Tag annotation class MyTag2 {
               companion object {
-                @Provide inline fun <@Spread T : @MyQualifier2 S, S> value(t: T): S = t
+                @Provide inline fun <@Spread T : @MyTag2 S, S> value(t: T): S = t
               }
             }
           """,
-          packageFqName = FqName("qualifiers2")
+          packageFqName = FqName("tags2")
         )
       ),
       listOf(
         source(
           """
-            @Qualifier annotation class MyQualifier1 {
+            @Tag annotation class MyTag1 {
               companion object {
-                @Provide inline fun <@Spread T : @MyQualifier1 S, S> value(t: T): @qualifiers2.MyQualifier2 S = t
+                @Provide inline fun <@Spread T : @MyTag1 S, S> value(t: T): @tags2.MyTag2 S = t
               }
             }
           """,
-          packageFqName = FqName("qualifiers1")
+          packageFqName = FqName("tags1")
         )
       ),
       listOf(
         source(
           """
-            @qualifiers1.MyQualifier1 @Provide class Dep
+            @tags1.MyTag1 @Provide class Dep
           """,
           packageFqName = FqName("injectables")
         )

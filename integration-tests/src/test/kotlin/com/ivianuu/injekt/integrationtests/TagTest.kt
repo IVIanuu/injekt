@@ -20,15 +20,15 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class QualifierTest {
-  @Test fun testDistinctQualifier() = singleAndMultiCodegen(
+class TagTest {
+  @Test fun testDistinctTag() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      @Provide val qualifiedFoo: @Qualifier1 Foo = Foo()
+      @Provide val taggedFoo: @Tag1 Foo = Foo()
     """,
     """
       fun invoke(): Pair<Foo, Foo> {
-        return inject<Foo>() to inject<@Qualifier1 Foo>()
+        return inject<Foo>() to inject<@Tag1 Foo>()
       } 
     """
   ) {
@@ -36,91 +36,91 @@ class QualifierTest {
     foo1 shouldNotBeSameInstanceAs foo2
   }
 
-  @Test fun testTypeParameterWithQualifierUpperBound() = singleAndMultiCodegen(
+  @Test fun testTypeParameterWithTagUpperBound() = singleAndMultiCodegen(
     """
-      @Provide class Dep<T>(val value: @Qualifier1 T)
+      @Provide class Dep<T>(val value: @Tag1 T)
             
-      @Provide fun qualified(): @Qualifier1 String = ""
+      @Provide fun tagged(): @Tag1 String = ""
     """,
     """
       fun invoke() = inject<Dep<String>>() 
     """
   )
 
-  @Test fun testQualifiedClass() = singleAndMultiCodegen(
+  @Test fun testTaggedClass() = singleAndMultiCodegen(
     """ 
-      @Provide @Qualifier1 class Dep
+      @Provide @Tag1 class Dep
     """,
     """
-      fun invoke() = inject<@Qualifier1 Dep>()
+      fun invoke() = inject<@Tag1 Dep>()
     """
   )
 
-  @Test fun testQualifiedPrimaryConstructor() = singleAndMultiCodegen(
+  @Test fun testTaggedPrimaryConstructor() = singleAndMultiCodegen(
     """ 
-      class Dep @Provide @Qualifier1 constructor()
+      class Dep @Provide @Tag1 constructor()
     """,
     """
-      fun invoke() = inject<@Qualifier1 Dep>()
+      fun invoke() = inject<@Tag1 Dep>()
     """
   )
 
-  @Test fun testQualifiedSecondaryConstructor() = singleAndMultiCodegen(
+  @Test fun testTaggedSecondaryConstructor() = singleAndMultiCodegen(
     """ 
       class Dep {
-        @Provide @Qualifier1 constructor()
+        @Provide @Tag1 constructor()
       }
     """,
     """
-      fun invoke() = inject<@Qualifier1 Dep>()
+      fun invoke() = inject<@Tag1 Dep>()
     """
   )
 
-  @Test fun testQualifiedObject() = singleAndMultiCodegen(
+  @Test fun testTaggedObject() = singleAndMultiCodegen(
     """ 
-      @Provide @Qualifier1 object Dep
+      @Provide @Tag1 object Dep
     """,
     """
-      fun invoke() = inject<@Qualifier1 Dep>()
+      fun invoke() = inject<@Tag1 Dep>()
     """
   )
 
-  @Test fun testQualifiedFunction() = codegen(
+  @Test fun testTaggedFunction() = codegen(
     """ 
-      @Provide @Qualifier1 fun foo() = Foo()
+      @Provide @Tag1 fun foo() = Foo()
     """
   ) {
-    compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a qualifier")
+    compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a tag")
   }
 
-  @Test fun testQualifierWithArguments() = codegen(
+  @Test fun testTagWithArguments() = codegen(
     """ 
-      @Qualifier annotation class MyQualifier(val value: String)
+      @Tag annotation class MyTag(val value: String)
     """
   ) {
-    compilationShouldHaveFailed("qualifier cannot have value parameters")
+    compilationShouldHaveFailed("tag cannot have value parameters")
   }
 
-  @Test fun testQualifierWithTypeArguments() = singleAndMultiCodegen(
+  @Test fun testTagWithTypeArguments() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class MyQualifier<T>
-      @Provide val qualifiedFoo: @MyQualifier<String> Foo = Foo()
+      @Tag annotation class MyTag<T>
+      @Provide val taggedFoo: @MyTag<String> Foo = Foo()
     """,
     """
-      fun invoke() = inject<@MyQualifier<String> Foo>() 
+      fun invoke() = inject<@MyTag<String> Foo>() 
     """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testQualifierWithGenericTypeArguments() = singleAndMultiCodegen(
+  @Test fun testTagWithGenericTypeArguments() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class MyQualifier<T>
-      @Provide fun <T> qualifiedFoo(): @MyQualifier<T> Foo = Foo()
+      @Tag annotation class MyTag<T>
+      @Provide fun <T> taggedFoo(): @MyTag<T> Foo = Foo()
     """,
     """
-      fun invoke() = inject<@MyQualifier<String> Foo>() 
+      fun invoke() = inject<@MyTag<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -129,7 +129,7 @@ class QualifierTest {
 
   @Test fun testUiState() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class UiState
+      @Tag annotation class UiState
 
       @Provide fun <T> uiState(instance: @UiState T): T = instance
 
@@ -143,7 +143,7 @@ class QualifierTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testSubstitutesQualifierTypeParameters() = singleAndMultiCodegen(
+  @Test fun testSubstitutesTagTypeParameters() = singleAndMultiCodegen(
     """
       @Provide fun foo(): @Eager<AppScope> Foo = Foo()
   

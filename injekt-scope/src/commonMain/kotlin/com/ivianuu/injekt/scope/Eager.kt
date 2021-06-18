@@ -21,7 +21,7 @@ import com.ivianuu.injekt.*
 /**
  * Creates a scoped instance as soon as scope [S] gets initialized
  */
-@Qualifier annotation class Eager<S : Scope> {
+@Tag annotation class Eager<S : Scope> {
   companion object {
     @Provide class Module<@Spread T : @Eager<S> U, U : Any, S : Scope> {
       @Provide inline fun scopedValue(value: T): @Scoped<S> U = value

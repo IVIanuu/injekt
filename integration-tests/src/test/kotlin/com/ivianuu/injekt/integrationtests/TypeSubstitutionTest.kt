@@ -50,12 +50,12 @@ class TypeSubstitutionTest {
     map[superType.classifier] shouldBe stringType
   }
 
-  @Test fun testGetSubstitutionMapWithQualifiers() = withTypeCheckerContext {
-    val unqualifiedSuperType = typeParameter()
-    val qualifiedSuperType = qualifier1.wrap(unqualifiedSuperType)
-    val substitutionType = qualifier1.wrap(stringType)
-    val map = getSubstitutionMap(substitutionType, qualifiedSuperType)
-    map[unqualifiedSuperType.classifier] shouldBe stringType
+  @Test fun testGetSubstitutionMapWithTags() = withTypeCheckerContext {
+    val untaggedSuperType = typeParameter()
+    val taggedSuperType = tag1.wrap(untaggedSuperType)
+    val substitutionType = tag1.wrap(stringType)
+    val map = getSubstitutionMap(substitutionType, taggedSuperType)
+    map[untaggedSuperType.classifier] shouldBe stringType
   }
 
   @Test fun testGetSubstitutionMapWithSubClass() = withTypeCheckerContext {
@@ -66,10 +66,10 @@ class TypeSubstitutionTest {
     map.shouldContain(typeParameter.classifier, stringType)
   }
 
-  @Test fun testGetSubstitutionMapWithSameQualifiers() = withTypeCheckerContext {
+  @Test fun testGetSubstitutionMapWithSameTags() = withTypeCheckerContext {
     val typeParameterS = typeParameter()
-    val typeParameterT = typeParameter(qualifier1.wrap(typeParameterS))
-    val substitutionType = qualifier1.wrap(stringType)
+    val typeParameterT = typeParameter(tag1.wrap(typeParameterS))
+    val substitutionType = tag1.wrap(stringType)
     val map = getSubstitutionMap(substitutionType, typeParameterT)
     map[typeParameterT.classifier] shouldBe substitutionType
     map[typeParameterS.classifier] shouldBe stringType

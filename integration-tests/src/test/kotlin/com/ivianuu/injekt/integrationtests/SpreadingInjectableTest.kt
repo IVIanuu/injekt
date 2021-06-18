@@ -25,7 +25,7 @@ import org.junit.*
 class SpreadingInjectableTest {
   @Test fun testSpreadingInjectableFunction() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
 
       @Provide fun foo(): @Trigger Foo = Foo()
@@ -42,9 +42,9 @@ class SpreadingInjectableTest {
       @Provide class MyModule<@Spread T : @Trigger S, S> {
           @Provide fun intoSet(instance: T): @Final S = instance
       }
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
 
-      @Qualifier annotation class Final
+      @Tag annotation class Final
 
       @Provide fun foo(): @Trigger Foo = Foo()
       @Provide fun string(): @Trigger String = ""
@@ -90,7 +90,7 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableTriggeredByClass() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
       
       @Trigger @Provide class NotAny
@@ -104,7 +104,7 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableChain() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class A
+      @Tag annotation class A
       
       @Provide fun <@Spread T : @A S, S> aImpl() = AModule_<S>()
       
@@ -113,7 +113,7 @@ class SpreadingInjectableTest {
         fun my(instance: T): @B T = instance
       }
       
-      @Qualifier annotation class B
+      @Tag annotation class B
       @Provide fun <@Spread T : @B S, S> bImpl() = BModule_<T>()
       
       class BModule_<T> {
@@ -121,7 +121,7 @@ class SpreadingInjectableTest {
         fun my(instance: T): @C Any? = instance
       }
       
-      @Qualifier annotation class C
+      @Tag annotation class C
       @Provide fun <@Spread T : @C Any?> cImpl() = Foo()
       
       @Provide fun dummy(): @A Long = 0L
@@ -149,7 +149,7 @@ class SpreadingInjectableTest {
 
   @Test fun testMultipleSpreadCandidatesWithSameType() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger String> triggerImpl(instance: T): String = instance
 
       @Provide fun a(): @Trigger String = "a"
@@ -165,7 +165,7 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadTypeParameterIsNotMarkedAsUnused() = codegen(
     """
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
       @ProvideSetElement fun <@Spread T : @Trigger String> triggerImpl(): String = ""
     """
   ) {
@@ -174,7 +174,7 @@ class SpreadingInjectableTest {
 
   @Test fun testNoFinalTypeWarningOnSpreadTypeParameter() = codegen(
     """
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
       @ProvideSetElement fun <@Spread T : @Trigger String> triggerImpl(): String = ""
     """
   ) {
@@ -183,7 +183,7 @@ class SpreadingInjectableTest {
 
   @Test fun testCanResolveTypeBasedOnSpreadConstraintType() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class Trigger
+      @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(pair: Pair<S, S>): Int = 0
       
       @Provide val string: @Trigger String = ""
@@ -212,7 +212,7 @@ class SpreadingInjectableTest {
     """
       typealias UiDecorator = @Composable (@Composable () -> Unit) -> Unit
   
-      @Qualifier annotation class UiDecoratorBinding
+      @Tag annotation class UiDecoratorBinding
   
       @Provide fun <@Spread T : @UiDecoratorBinding S, S : UiDecorator> uiDecoratorBindingImpl(
         instance: T,
@@ -263,7 +263,7 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class ClassSingleton
+      @Tag annotation class ClassSingleton
       
       @Provide inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
         factory: () -> T
@@ -273,10 +273,10 @@ class SpreadingInjectableTest {
         @Provide fun value(v: T): S = v
       }
   
-      @Provide fun <@Spread T : @Qualifier1 S, S> myModule():
+      @Provide fun <@Spread T : @Tag1 S, S> myModule():
           @ClassSingleton MyModule<T, S> = MyModule()
   
-      @Provide val foo: @Qualifier1 Foo = Foo()
+      @Provide val foo: @Tag1 Foo = Foo()
     """,
     """
       fun invoke() = inject<Foo>() 
@@ -287,7 +287,7 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class ClassSingleton
+      @Tag annotation class ClassSingleton
       
       @Provide inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
         factory: () -> T,
@@ -298,10 +298,10 @@ class SpreadingInjectableTest {
         @Provide fun value(v: T): S = v
       }
       
-      @Provide fun <@Spread T : @Qualifier1 S, S> myModule(): 
+      @Provide fun <@Spread T : @Tag1 S, S> myModule(): 
         @ClassSingleton MyModule<T, S> = MyModule()
       
-      @Provide val foo: @Qualifier1 Foo = Foo()
+      @Provide val foo: @Tag1 Foo = Foo()
     """,
     """
       @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
@@ -313,7 +313,7 @@ class SpreadingInjectableTest {
 
   @Test fun testNestedSpreadingInjectablesWithGenerics() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class A<T>
+      @Tag annotation class A<T>
       
       @Provide class Outer<@Spread T : @A<U> S, S, U> {
         @Provide fun <@Spread K : U> inner(): Unit = Unit

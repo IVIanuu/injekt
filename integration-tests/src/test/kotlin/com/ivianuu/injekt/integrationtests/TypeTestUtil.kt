@@ -89,9 +89,9 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     FqName("kotlin.Function$parameterCount")
   )
 
-  val qualifier1 = typeFor(FqName("com.ivianuu.injekt.test.Qualifier1"))
+  val tag1 = typeFor(FqName("com.ivianuu.injekt.test.Tag1"))
 
-  val qualifier2 = typeFor(FqName("com.ivianuu.injekt.test.Qualifier2"))
+  val tag2 = typeFor(FqName("com.ivianuu.injekt.test.Tag2"))
 
   private var id = 0
 

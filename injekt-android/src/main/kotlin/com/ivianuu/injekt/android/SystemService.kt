@@ -21,14 +21,14 @@ import com.ivianuu.injekt.*
 import kotlin.reflect.*
 
 /**
- * Qualifier for android system services
+ * Tag for android system services
  *
  * Example:
  * ```
  * fun Notification.post(@Inject notificationManager: @SystemService NotificationManager) { ... }
  * ```
  */
-@Qualifier annotation class SystemService {
+@Tag annotation class SystemService {
   companion object {
     @Provide inline fun <T : Any> systemService(context: AppContext, serviceClass: KClass<T>):
         @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!

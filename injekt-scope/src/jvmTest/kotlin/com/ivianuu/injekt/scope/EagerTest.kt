@@ -21,7 +21,7 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class EagerTest {
-  @Qualifier private annotation class Element
+  @Tag private annotation class Element
 
   @Test fun testEager() {
     var callCount = 0

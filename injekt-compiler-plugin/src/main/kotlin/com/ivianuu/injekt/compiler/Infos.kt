@@ -99,11 +99,11 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
   }
 
   val type = run {
-    val qualifiers = if (this is ConstructorDescriptor)
-      getAnnotatedAnnotations(InjektFqNames.Qualifier)
+    val tags = if (this is ConstructorDescriptor)
+      getAnnotatedAnnotations(InjektFqNames.Tag)
         .map { it.type.toTypeRef() }
     else emptyList()
-    qualifiers.wrap(returnType!!.toTypeRef())
+    tags.wrap(returnType!!.toTypeRef())
   }
 
   val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
@@ -213,7 +213,7 @@ fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = Cal
  * but is critical to injekt
  */
 class ClassifierInfo(
-  val qualifiers: List<TypeRef> = emptyList(),
+  val tags: List<TypeRef> = emptyList(),
   val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false,
@@ -253,19 +253,19 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
   val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
     ?.toTypeRef()
 
-  val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
+  val isTag = hasAnnotation(InjektFqNames.Tag)
 
   val lazySuperTypes = lazy {
     when {
       expandedType != null -> listOf(expandedType)
-      isQualifier -> listOf(context.injektContext.anyType)
+      isTag -> listOf(context.injektContext.anyType)
       else -> typeConstructor.supertypes.map { it.toTypeRef() }
     }
   }
 
   val isDeserialized = isDeserializedDeclaration()
 
-  val qualifiers = getAnnotatedAnnotations(InjektFqNames.Qualifier)
+  val tags = getAnnotatedAnnotations(InjektFqNames.Tag)
     .map { it.type.toTypeRef() }
 
   val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
@@ -300,7 +300,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
         }
 
   val info = ClassifierInfo(
-    qualifiers = qualifiers,
+    tags = tags,
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
@@ -316,7 +316,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
 }
 
 @Serializable data class PersistedClassifierInfo(
-  @SerialName("0") val qualifiers: List<PersistedTypeRef> = emptyList(),
+  @SerialName("0") val tags: List<PersistedTypeRef> = emptyList(),
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
   @SerialName("3") val isSpread: Boolean = false,
@@ -326,7 +326,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
 fun PersistedClassifierInfo.toClassifierInfo(
   @Inject context: AnalysisContext
 ): ClassifierInfo = ClassifierInfo(
-  qualifiers = qualifiers.map { it.toTypeRef() },
+  tags = tags.map { it.toTypeRef() },
   lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
@@ -336,7 +336,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
 fun ClassifierInfo.toPersistedClassifierInfo(
   @Inject context: AnalysisContext
 ): PersistedClassifierInfo = PersistedClassifierInfo(
-  qualifiers = qualifiers.map { it.toPersistedTypeRef() },
+  tags = tags.map { it.toPersistedTypeRef() },
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
@@ -393,7 +393,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
     if (!info.isSingletonInjectable &&
-      info.qualifiers.isEmpty() &&
+      info.tags.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       !hasAnnotation(InjektFqNames.Provide) &&
       (this !is ClassDescriptor ||
@@ -431,7 +431,7 @@ private fun String.toChunkedAnnotationArguments() = chunked(65535 / 2)
   .toMap()
 
 private fun TypeRef.shouldBePersisted() = anyType {
-  (it.classifier.isQualifier && it.classifier.typeParameters.size > 1) ||
+  (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
       (it.classifier.isTypeAlias && it.isSuspendFunctionType)
 }
 

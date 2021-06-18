@@ -68,7 +68,7 @@ interface Scope : ScopeDisposable {
   fun removeScopedValue(key: TypeKey<*>) = removeScopedValue(key.value)
 
   companion object {
-    @Qualifier private annotation class Parent
+    @Tag private annotation class Parent
 
     @Provide inline fun <S : Scope> Scope(
       parent: @Parent Scope? = null,
@@ -173,7 +173,7 @@ class ScopeElementPair<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
  * }
  * ```
  */
-@Qualifier annotation class ScopeElement<S : Scope> {
+@Tag annotation class ScopeElement<S : Scope> {
   companion object {
     @Provide class Module<@Spread T : @ScopeElement<S> U, U : Any, S : Scope> {
       @Provide inline fun elementPair(

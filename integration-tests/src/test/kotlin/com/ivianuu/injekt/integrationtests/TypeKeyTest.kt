@@ -93,30 +93,30 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyWithQualifiers() = codegen(
+  @Test fun testTypeKeyWithTags() = codegen(
     """
-      fun invoke() = inject<TypeKey<@Qualifier2 String>>()
+      fun invoke() = inject<TypeKey<@Tag2 String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Qualifier2<kotlin.String>"
+    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Tag2<kotlin.String>"
   }
 
-  @Test fun testTypeKeyWithTypeAliasWithQualifiedExpandedType() = codegen(
+  @Test fun testTypeKeyWithTypeAliasWithTaggedExpandedType() = codegen(
     """
-      typealias MyAlias = @Qualifier2 String
+      typealias MyAlias = @Tag2 String
       fun invoke() = inject<TypeKey<MyAlias>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyWithParameterizedQualifiers() = codegen(
+  @Test fun testTypeKeyWithParameterizedTags() = codegen(
     """
-      @Qualifier annotation class MyQualifier<T>
-      fun invoke() = inject<TypeKey<@MyQualifier<String> String>>()
+      @Tag annotation class MyTag<T>
+      fun invoke() = inject<TypeKey<@MyTag<String> String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyQualifier<kotlin.String, kotlin.String>"
+    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyTag<kotlin.String, kotlin.String>"
   }
 
   @Test fun testTypeKeyWithStar() = codegen(

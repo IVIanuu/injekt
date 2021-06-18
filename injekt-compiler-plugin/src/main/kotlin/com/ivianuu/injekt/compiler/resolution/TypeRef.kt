@@ -35,15 +35,15 @@ class ClassifierRef(
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
   val isTypeAlias: Boolean = false,
-  val isQualifier: Boolean = false,
+  val isTag: Boolean = false,
   val descriptor: ClassifierDescriptor? = null,
-  val qualifiers: List<TypeRef> = emptyList(),
+  val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV
 ) {
   val superTypes by lazySuperTypes
-  val unqualifiedType: TypeRef
+  val untaggedType: TypeRef
     get() = TypeRef(
       this,
       arguments = typeParameters.map { it.defaultType },
@@ -58,30 +58,30 @@ class ClassifierRef(
     isTypeParameter: Boolean = this.isTypeParameter,
     isObject: Boolean = this.isObject,
     isTypeAlias: Boolean = this.isTypeAlias,
-    isQualifier: Boolean = this.isQualifier,
+    isTag: Boolean = this.isTag,
     descriptor: ClassifierDescriptor? = this.descriptor,
-    qualifiers: List<TypeRef> = this.qualifiers,
+    tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isQualifier, descriptor, qualifiers, isSpread,
+    isTypeAlias, isTag, descriptor, tags, isSpread,
     primaryConstructorPropertyParameters, variance
   )
 
-  val defaultType: TypeRef get() = qualifiers.wrap(unqualifiedType)
+  val defaultType: TypeRef get() = tags.wrap(untaggedType)
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
   override fun hashCode(): Int = key.hashCode()
 }
 
-fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextQualifier, acc ->
-  nextQualifier.wrap(acc)
+fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextTag, acc ->
+  nextTag.wrap(acc)
 }
 
-fun TypeRef.unwrapQualifiers(): TypeRef = if (!classifier.isQualifier) this
-else arguments.last().unwrapQualifiers()
+fun TypeRef.unwrapTags(): TypeRef = if (!classifier.isTag) this
+else arguments.last().unwrapTags()
 
 fun TypeRef.wrap(type: TypeRef): TypeRef {
   val newArguments = if (arguments.size < classifier.typeParameters.size)
@@ -100,9 +100,9 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): Clas
     ?.map { it.toClassifierRef() }
     ?.toMutableList()
 
-  val isQualifier = hasAnnotation(InjektFqNames.Qualifier)
+  val isTag = hasAnnotation(InjektFqNames.Tag)
 
-  if (isQualifier) {
+  if (isTag) {
     typeParameters!! += ClassifierRef(
       key = "${uniqueKey()}.\$QT",
       fqName = fqNameSafe.child("\$QT".asNameId()),
@@ -119,10 +119,10 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): Clas
     lazySuperTypes = info.lazySuperTypes,
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-    isQualifier = isQualifier,
+    isTag = isTag,
     isTypeAlias = this is TypeAliasDescriptor,
     descriptor = this,
-    qualifiers = info.qualifiers,
+    tags = info.tags,
     isSpread = info.isSpread,
     primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
       .map { it.asNameId() },
@@ -165,7 +165,7 @@ fun KotlinType.toTypeRef(
         }
         .toMutableList()
         .also {
-          if (classifier.isQualifier &&
+          if (classifier.isTag &&
             it.size != classifier.typeParameters.size
           )
             it += context.injektContext.nullableAnyType
@@ -180,9 +180,9 @@ fun KotlinType.toTypeRef(
       variance = variance
     )
 
-    val qualifierAnnotations = unwrapped.getAnnotatedAnnotations(InjektFqNames.Qualifier)
-    if (qualifierAnnotations.isNotEmpty()) {
-      qualifierAnnotations
+    val tagAnnotations = unwrapped.getAnnotatedAnnotations(InjektFqNames.Tag)
+    if (tagAnnotations.isNotEmpty()) {
+      tagAnnotations
         .map { it.type.toTypeRef() }
         .map {
           it.copy(
@@ -355,7 +355,7 @@ fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
   return copy(
     lazySuperTypes = lazy { superTypes.map { it.substitute(map) } },
     typeParameters = typeParameters.substitute(map),
-    qualifiers = qualifiers.map { it.substitute(map) }
+    tags = tags.map { it.substitute(map) }
   )
 }
 
@@ -458,14 +458,14 @@ fun TypeRef.renderKotlinLike(depth: Int = 0, append: (String) -> Unit) {
   fun TypeRef.inner() {
     if (isMarkedComposable) append("@Composable ")
 
-    if (classifier.isQualifier) append("@")
+    if (classifier.isTag) append("@")
 
     when {
       isStarProjection -> append("*")
       else -> append(classifier.fqName.shortName().asString())
     }
 
-    val argumentsToRender = if (classifier.isQualifier) arguments.dropLast(1) else arguments
+    val argumentsToRender = if (classifier.isTag) arguments.dropLast(1) else arguments
     if (argumentsToRender.isNotEmpty()) {
       append("<")
       argumentsToRender.forEachIndexed { index, typeArgument ->
@@ -475,7 +475,7 @@ fun TypeRef.renderKotlinLike(depth: Int = 0, append: (String) -> Unit) {
       append(">")
     }
 
-    if (classifier.isQualifier) {
+    if (classifier.isTag) {
       append(" ")
       arguments.last().renderKotlinLike(depth = depth + 1, append)
     }

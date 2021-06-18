@@ -564,7 +564,7 @@ class InjectCallTransformer(
       injectable,
       injectable.callable.callable
     )
-    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapQualifiers().classifier.isObject)
+    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapTags().classifier.isObject)
       objectExpression(injectable.type)
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)

@@ -330,7 +330,7 @@ class InjectableResolveTest {
     """
       @Provide fun foos() = Foo() to Foo()
       
-      @Qualifier annotation class First
+      @Tag annotation class First
       @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
     """,
     """
@@ -544,17 +544,17 @@ class InjectableResolveTest {
     """
   )
 
-  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedInjectableWithQualifiers() =
+  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedInjectableWithTags() =
     singleAndMultiCodegen(
       """
         typealias TypedString<T> = String
 
         @Provide val foo = Foo()
 
-        @Provide fun <T : Foo> typedString(value: T): @TypedQualifier<T> TypedString<T> = ""
+        @Provide fun <T : Foo> typedString(value: T): @TypedTag<T> TypedString<T> = ""
       """,
       """
-        fun invoke() = inject<@TypedQualifier<Foo> String>() 
+        fun invoke() = inject<@TypedTag<Foo> String>() 
       """
     )
 

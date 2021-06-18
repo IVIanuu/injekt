@@ -61,7 +61,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   val annotationEntries = annotationEntries
   if (annotationEntries.isEmpty()) return null
 
-  // Check if the fully qualified name is used, e.g. `@dagger.Module`.
+  // Check if the fully tagged name is used, e.g. `@dagger.Module`.
   val annotationEntry = annotationEntries.firstOrNull {
     it.text.startsWith("@${fqName.asString()}")
   }

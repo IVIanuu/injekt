@@ -63,7 +63,7 @@ TODO
 # Type aliases
 TODO
 
-# Qualifiers
+# Tags
 TODO
 
 # Sets

@@ -30,8 +30,8 @@ class CommandA : Command
 
 class CommandB : Command
 
-@Qualifier annotation class Qualifier1
+@Tag annotation class Tag1
 
-@Qualifier annotation class Qualifier2
+@Tag annotation class Tag2
 
-@Qualifier annotation class TypedQualifier<T>
+@Tag annotation class TypedTag<T>

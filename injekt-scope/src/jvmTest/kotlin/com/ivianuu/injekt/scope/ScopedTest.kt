@@ -21,7 +21,7 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class ScopedTest {
-  @Qualifier private annotation class Element
+  @Tag private annotation class Element
 
   @Test fun testScoped() {
     var callCount = 0

@@ -65,26 +65,26 @@ class PersistenceTest {
   @Test fun testFunctionTypeParameterClassifier() = singleAndMultiCodegen(
     """
       var callCount = 0
-      @Qualifier annotation class MyQualifier
-      @Qualifier annotation class MyOtherQualifier
-      @Provide fun <@Spread T : @MyQualifier S, S : FuncA> impl(instance: T): @MyOtherQualifier S =
+      @Tag annotation class MyTag
+      @Tag annotation class MyOtherTag
+      @Provide fun <@Spread T : @MyTag S, S : FuncA> impl(instance: T): @MyOtherTag S =
         instance
   
       typealias FuncA = suspend () -> Unit
       typealias FuncB = suspend () -> Boolean
   
-      @Provide fun funcA(funcB: FuncB): @MyQualifier FuncA = { }
-      @Provide fun funcB(): @MyQualifier FuncB = { true }
+      @Provide fun funcA(funcB: FuncB): @MyTag FuncA = { }
+      @Provide fun funcB(): @MyTag FuncB = { true }
     """,
     """
       fun invoke() {
-        inject<@MyOtherQualifier FuncA>()
-        inject<@MyOtherQualifier FuncB>()
+        inject<@MyOtherTag FuncA>()
+        inject<@MyOtherTag FuncB>()
       } 
     """
   ) {
-    shouldNotContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
-    shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherQualifier<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
+    shouldNotContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherTag<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
+    shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherTag<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
@@ -130,11 +130,11 @@ class PersistenceTest {
       abstract class MyModule<T : S, S> {
         @Provide fun func(t: T): S = t
       }
-      class MyModuleImpl<T> : MyModule<@Qualifier1 T, T>()
+      class MyModuleImpl<T> : MyModule<@Tag1 T, T>()
     """,
     """
       @Provide val myFooModule = MyModuleImpl<Foo>()
-      @Provide val foo: @Qualifier1 Foo = Foo()
+      @Provide val foo: @Tag1 Foo = Foo()
       fun invoke() = inject<Foo>()
         """
   )

@@ -36,7 +36,7 @@ import kotlin.reflect.*
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
-@Qualifier annotation class InjektWorker {
+@Tag annotation class InjektWorker {
   companion object {
     @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
       noinline factory: (@Provide WorkerParameters) -> T,
@@ -82,7 +82,7 @@ object WorkerInitializerModule {
     .setWorkerFactory(workerFactory)
     .build()
 
-  @Qualifier private annotation class Default
+  @Tag private annotation class Default
 }
 
 @Provide inline val AppContext.workManager: WorkManager

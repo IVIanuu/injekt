@@ -72,7 +72,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
       if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(InjektFqNames.Qualifier) == true
+          ?.hasAnnotation(InjektFqNames.Tag) == true
       )
         return true
     }

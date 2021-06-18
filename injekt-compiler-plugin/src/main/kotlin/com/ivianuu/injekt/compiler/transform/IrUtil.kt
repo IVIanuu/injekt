@@ -65,11 +65,11 @@ fun TypeRef.toIrType(
           toIrAbbreviation()
         )
       }
-    classifier.isQualifier -> arguments.last().toIrType()
+    classifier.isTag -> arguments.last().toIrType()
       .typeOrNull!!
       .cast<IrSimpleType>()
       .let { type ->
-        val qualifierConstructor = pluginContext.referenceClass(classifier.fqName)!!
+        val tagConstructor = pluginContext.referenceClass(classifier.fqName)!!
           .constructors.single()
         IrSimpleTypeImpl(
           type.originalKotlinType,
@@ -77,17 +77,17 @@ fun TypeRef.toIrType(
           type.hasQuestionMark,
           type.arguments,
           listOf(
-            DeclarationIrBuilder(pluginContext, qualifierConstructor)
+            DeclarationIrBuilder(pluginContext, tagConstructor)
               .irCall(
-                qualifierConstructor,
-                qualifierConstructor.owner.returnType
+                tagConstructor,
+                tagConstructor.owner.returnType
                   .classifierOrFail
                   .typeWith(
                     arguments.dropLast(1)
                       .map { it.toIrType().typeOrNull!! }
                   )
               ).apply {
-                qualifierConstructor.owner.typeParameters.indices
+                tagConstructor.owner.typeParameters.indices
                   .forEach { index ->
                     putTypeArgument(
                       index,
@@ -156,8 +156,8 @@ fun TypeRef.toKotlinType(@Inject context: AnalysisContext): SimpleType {
   return when {
     classifier.isTypeAlias -> superTypes.single().toKotlinType()
       .withAbbreviation(toAbbreviation())
-    // todo add this qualifier to type
-    classifier.isQualifier -> arguments.last().toKotlinType()
+    // todo add this tag to type
+    classifier.isTag -> arguments.last().toKotlinType()
     else -> classifier.descriptor!!.original.defaultType
       .replace(
         newArguments = arguments.map {

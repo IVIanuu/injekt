@@ -20,7 +20,7 @@ package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
 
-@Qualifier annotation class ChildScopeFactory
+@Tag annotation class ChildScopeFactory
 
 abstract class AbstractChildScopeModule<P : Scope, T, S : T> {
   @Provide fun factory(scopeFactory: S): @ScopeElement<P> @ChildScopeFactory T = scopeFactory

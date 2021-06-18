@@ -441,13 +441,13 @@ class InjectableResolutionTest {
 
   @Test fun testSpreadingInjectableWithTheSameOrigin() = singleAndMultiCodegen(
     """
-      @Provide @MyQualifier class FooModule {
+      @Provide @MyTag class FooModule {
         @Provide val foo = Foo()
       }
 
-      @Qualifier annotation class MyQualifier
+      @Tag annotation class MyTag
 
-      @Provide fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
+      @Provide fun <@Spread T : @MyTag S, S> myTag(instance: T): S = instance
     """,
     """
       fun invoke() = inject<Foo>() 
@@ -459,14 +459,14 @@ class InjectableResolutionTest {
       abstract class FooModule {
         @Provide val foo = Foo()
         companion object {
-          @Provide fun create(): @MyQualifier FooModule = object : FooModule() {
+          @Provide fun create(): @MyTag FooModule = object : FooModule() {
           }
         }
       }
 
-      @Qualifier annotation class MyQualifier
+      @Tag annotation class MyTag
 
-      @Provide fun <@Spread T : @MyQualifier S, S> myQualifier(instance: T): S = instance
+      @Provide fun <@Spread T : @MyTag S, S> myTag(instance: T): S = instance
     """,
     """
       fun invoke() = inject<Foo>() 

@@ -193,21 +193,21 @@ fun ClassDescriptor.injectableConstructors(
     }
     .map { constructor ->
       val callable = constructor.toCallableRef()
-      val qualifiedType = callable.type.classifier.qualifiers.wrap(callable.type)
+      val taggedType = callable.type.classifier.tags.wrap(callable.type)
       callable.copy(
         isProvide = true,
-        type = qualifiedType,
-        originalType = qualifiedType
+        type = taggedType,
+        originalType = taggedType
       )
     }
 }
 
 fun ClassDescriptor.injectableReceiver(
-  qualified: Boolean,
+  tagged: Boolean,
   @Inject context: AnalysisContext
 ): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef()
-  val finalType = if (qualified) callable.type.classifier.qualifiers.wrap(callable.type)
+  val finalType = if (tagged) callable.type.classifier.tags.wrap(callable.type)
   else callable.type
   return callable.copy(isProvide = true, type = finalType, originalType = finalType)
 }
@@ -422,10 +422,10 @@ private fun TypeRef.collectInjectablesForSingleType(
           ?.let { injectables += it.injectableReceiver(false) }
       }
 
-      clazz.classifierInfo().qualifiers.forEach { qualifier ->
-        val resultForQualifier = qualifier.classifier.defaultType.collectTypeScopeInjectables()
-        injectables += resultForQualifier.injectables
-        lookedUpPackages += resultForQualifier.lookedUpPackages
+      clazz.classifierInfo().tags.forEach { tag ->
+        val resultForTag = tag.classifier.defaultType.collectTypeScopeInjectables()
+        injectables += resultForTag.injectables
+        lookedUpPackages += resultForTag.lookedUpPackages
       }
     }
 
@@ -476,7 +476,7 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
           DescriptorVisibilities.INTERNAL.isVisible(null,
             callable.callable, context.injektContext.module)) ||
       (callable.callable is ClassConstructorDescriptor &&
-          callable.type.unwrapQualifiers().classifier.isObject) ||
+          callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->
         allScopes.any {
           it.ownerDescriptor == callableParent ||

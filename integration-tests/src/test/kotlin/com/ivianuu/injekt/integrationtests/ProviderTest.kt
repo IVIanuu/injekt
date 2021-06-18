@@ -54,13 +54,13 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProviderWithQualifiedInjectableArgs() = singleAndMultiCodegen(
+  @Test fun testProviderWithTaggedInjectableArgs() = singleAndMultiCodegen(
     """
-      @Qualifier annotation class MyQualifier
-      @Provide fun bar(foo: @MyQualifier Foo) = Bar(foo)
+      @Tag annotation class MyTag
+      @Provide fun bar(foo: @MyTag Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<(@Provide @MyQualifier Foo) -> Bar>()(Foo()) 
+      fun invoke() = inject<(@Provide @MyTag Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()

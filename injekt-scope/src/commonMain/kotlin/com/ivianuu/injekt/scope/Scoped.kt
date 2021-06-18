@@ -35,7 +35,7 @@ import com.ivianuu.injekt.common.*
  * }
  * ```
  */
-@Qualifier annotation class Scoped<S : Scope> {
+@Tag annotation class Scoped<S : Scope> {
   companion object {
     @Provide inline fun <@Spread T : @Scoped<S> U, U : Any, S : Scope> scopedValue(
       factory: () -> T,

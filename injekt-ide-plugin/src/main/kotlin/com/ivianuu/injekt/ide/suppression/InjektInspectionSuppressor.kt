@@ -44,7 +44,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
           element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
             .let { element.getAbbreviatedTypeOrType(it) }
             .let {
-              return it?.getAnnotatedAnnotations(InjektFqNames.Qualifier)
+              return it?.getAnnotatedAnnotations(InjektFqNames.Tag)
                 ?.isNotEmpty() == true
             }
         else return false
@@ -63,7 +63,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
                 typeArgument.toTypeRef(context = AnalysisContext(
                   resolvedCall.candidateDescriptor.module
                     .injektContext
-                )).anyType { it.classifier.isQualifier }
+                )).anyType { it.classifier.isTag }
           }
       }
       "unused" -> {
