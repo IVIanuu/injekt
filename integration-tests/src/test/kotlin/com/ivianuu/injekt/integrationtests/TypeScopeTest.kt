@@ -226,6 +226,28 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testClassPackageTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            interface Dep
+
+            @Provide class DepImpl : Dep
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testClassQualifierScope() = singleAndMultiCodegen(
     listOf(
       listOf(

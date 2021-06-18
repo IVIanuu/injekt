@@ -240,7 +240,10 @@ fun CallableRef.collectInjectables(
 
   nextCallable
     .type
-    .also { addImport(it.classifier.fqName, it.classifier.descriptor!!.findPackage().fqName) }
+    .also {
+      addImport(it.classifier.fqName, it.classifier.descriptor?.findPackage()?.fqName ?:
+      error("Wtf $it ${nextCallable.callable}"))
+    }
     .collectInjectables(
       scope.allScopes.any {
         it.ownerDescriptor == nextCallable.type.classifier.descriptor
@@ -455,7 +458,7 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
         classBodyView = false
       )
         .filter { callable ->
-          callable.callable.containingDeclaration
+          callable.callable is ConstructorDescriptor || callable.callable.containingDeclaration
             .safeAs<ClassDescriptor>()
             ?.let { it.kind == ClassKind.OBJECT } != false
         }
