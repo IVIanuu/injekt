@@ -130,7 +130,7 @@ annotation class DefaultOnAllErrors
  *
  * Should be used like so:
  * ```
- * val elements = inject<@IgnoreElementsWithErrors Set<Interceptor>>()
+ * val interceptors = inject<@IgnoreElementsWithErrors Set<Interceptor>>()
  * ```
  */
 @Target(AnnotationTarget.TYPE)
