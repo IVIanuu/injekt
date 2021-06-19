@@ -405,6 +405,7 @@ private val hostClasspaths by lazy<List<File>> {
   val modules = classGraph.modules.mapNotNull { it.locationFile }
 
   (classpaths + modules)
+    // exclude possible old injekt artifacts which are required by the compiler plugin
     .filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
     .distinctBy(File::getAbsolutePath)
 }
