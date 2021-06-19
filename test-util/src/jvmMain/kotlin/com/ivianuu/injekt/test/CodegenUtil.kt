@@ -21,6 +21,7 @@ package com.ivianuu.injekt.test
 import androidx.compose.compiler.plugins.kotlin.*
 import com.ivianuu.injekt.compiler.*
 import com.tschuchort.compiletesting.*
+import io.github.classgraph.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
 import org.intellij.lang.annotations.*
@@ -264,7 +265,7 @@ fun multiPlatformCodegen(
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
   compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
   commandLineProcessors = listOf(ComposeCommandLineProcessor())
-  inheritClassPath = true
+  classpaths += hostClasspaths
   useIR = true
   jvmTarget = "1.8"
   verbose = false
@@ -393,4 +394,17 @@ private fun KotlinCompilation.irDumping() {
       )
     }
   }
+}
+
+private val hostClasspaths by lazy<List<File>> {
+  val classGraph = ClassGraph()
+    .enableSystemJarsAndModules()
+    .removeTemporaryFilesAfterScan()
+
+  val classpaths = classGraph.classpathFiles
+  val modules = classGraph.modules.mapNotNull { it.locationFile }
+
+  (classpaths + modules)
+    .filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
+    .distinctBy(File::getAbsolutePath)
 }

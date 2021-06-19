@@ -37,6 +37,8 @@ kotlin {
 
         api(Deps.AndroidX.Compose.compiler)
 
+        api(Deps.classGraph)
+
         api(Deps.Coroutines.core)
         api(Deps.Coroutines.test)
 

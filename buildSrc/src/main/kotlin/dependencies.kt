@@ -63,6 +63,8 @@ object Deps {
   const val buildConfigGradlePlugin =
     "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
+  const val classGraph = "io.github.classgraph:classgraph:4.8.108"
+
   object Coroutines {
     private const val version = "1.5.0"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
