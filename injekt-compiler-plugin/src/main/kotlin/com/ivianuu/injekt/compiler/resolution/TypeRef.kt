@@ -104,8 +104,8 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): Clas
 
   if (isTag) {
     typeParameters!! += ClassifierRef(
-      key = "${uniqueKey()}.\$QT",
-      fqName = fqNameSafe.child("\$QT".asNameId()),
+      key = "${uniqueKey()}.\$TT",
+      fqName = fqNameSafe.child("\$TT".asNameId()),
       isTypeParameter = true,
       lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
       variance = TypeVariance.OUT
