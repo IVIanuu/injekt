@@ -17,33 +17,33 @@
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.scope.*
 import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.util.*
 
-val Application.appScope: AppScope
-  get() = attributes.getOrNull(AppScopeKey)
-    ?: error("No app scope found. Did you forget to call initializeAppScope()?")
+@Provide val Application.ambients: Ambients
+  get() = attributes.getOrNull(AmbientsKey)
+    ?: error("No ambients found. Did you forget to call initializeAppAmbients()?")
 
-val Routing.appScope: AppScope
-  get() = application.appScope
+@Provide val Routing.appScope: Ambients
+  get() = application.ambients
 
-val ApplicationCall.appScope: AppScope
-  get() = application.appScope
+@Provide val ApplicationCall.appScope: Ambients
+  get() = application.ambients
 
-inline fun Application.initializeAppScope(
-  @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Application) -> AppScope
+inline fun Application.initializeAppAmbients(
+  @Inject providedValuesFactory: (@Provide Application) -> NamedProvidedValues<ForApp>
 ) {
-  val scope = scopeFactory(this)
-  registerAppScope(scope)
+  registerAppAmbients(providedValuesFactory(this).createAmbients(ambientsOf()))
 }
 
-@PublishedApi internal fun Application.registerAppScope(scope: AppScope) {
-  attributes.put(AppScopeKey, scope)
+@PublishedApi internal fun Application.registerAppAmbients(@Inject ambients: Ambients) {
+  attributes.put(AmbientsKey, ambients)
   environment.monitor.subscribe(ApplicationStopped) {
-    scope.dispose()
+    (AmbientScope.current() as DisposableScope).dispose()
   }
 }
 
-private val AppScopeKey = AttributeKey<AppScope>("AppScope")
+val AmbientsKey = AttributeKey<Ambients>("Ambients")

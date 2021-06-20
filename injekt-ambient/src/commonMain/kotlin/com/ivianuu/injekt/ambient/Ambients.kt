@@ -52,7 +52,7 @@ operator fun Ambients.plus(values: Iterable<ProvidedValue<*>>): Ambients =
 operator fun Ambients.plus(values: NamedProvidedValues<*>): Ambients =
   values.createAmbients()
 
-@Provide fun ambientsOf(): Ambients = Ambients(emptyMap())
+fun ambientsOf(): Ambients = Ambients(emptyMap())
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ambientsOf(value: ProvidedValue<*>): Ambients =

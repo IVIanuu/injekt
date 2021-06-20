@@ -18,14 +18,15 @@ package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.service.*
 
-class TestScopeDisposable<S : Scope> : ScopeDisposable {
+class TestDisposable<N> : ScopeDisposable {
   var disposed = false
+
   override fun dispose() {
     disposed = true
   }
 }
 
-@Provide inline fun <S : Scope> testScopeDisposable():
-    @Scoped<S> @ScopeElement<S> TestScopeDisposable<S> =
-  TestScopeDisposable()
+@Provide inline fun <N> testDisposable():
+    @Scoped<NamedScope<N>> @AmbientService<N> TestDisposable<N> = TestDisposable()

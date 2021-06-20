@@ -30,7 +30,7 @@ import kotlin.let
 @Tag annotation class AmbientService<N> {
   companion object {
     @Suppress("NOTHING_TO_INLINE")
-    inline fun <T> current(@Inject key: TypeKey<T>, @Inject ambients: Ambients): T =
+    inline fun <T> current(@Inject ambients: Ambients, @Inject key: TypeKey<T>, ): T =
       serviceAmbientOf<T>().current().invoke()
 
     @Provide class Module<@Spread T : @AmbientService<N> U, U : Any, N> {
