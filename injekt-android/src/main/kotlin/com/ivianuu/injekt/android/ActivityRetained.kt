@@ -18,20 +18,22 @@ package com.ivianuu.injekt.android
 
 import androidx.activity.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.service.*
 
 /**
- * Returns the [ActivityRetainedScope] of this [ComponentActivity]
+ * Returns the [Ambients] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
-val ComponentActivity.activityRetainedScope: ActivityRetainedScope
-  get() = viewModelStore.scope {
-    application.appScope
-      .element<@ChildScopeFactory () -> ActivityRetainedScope>()
-      .invoke()
+@Provide val ComponentActivity.activityRetainedAmbients: Ambients
+  get() = viewModelStore.cachedAmbients {
+    with(application.appAmbients) {
+      this + AmbientService.current<@ProvidedValuesFactory () -> NamedProvidedValues<ForActivityRetained>>()
+        .invoke()
+    }
   }
 
-typealias ActivityRetainedScope = Scope
+abstract class ForActivityRetained private constructor()
 
-@Provide val activityRetainedScopeModule =
-  ChildScopeModule0<AppScope, ActivityRetainedScope>()
+@Provide val activityRetainedProvidedValuesModule =
+  ProvidedValuesFactoryModule0<ForApp, ForActivityRetained>()

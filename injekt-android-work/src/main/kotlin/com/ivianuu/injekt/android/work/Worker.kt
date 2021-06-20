@@ -62,7 +62,7 @@ import kotlin.reflect.*
  * Defines providers to initialize the work manager library
  */
 object WorkerInitializerModule {
-  /**
+  /*/**
    * Defines the [ScopeInitializer] for work manager initialization in the [AppScope]
    */
   @Provide fun workerScopeInitializer(
@@ -71,7 +71,7 @@ object WorkerInitializerModule {
     defaultConfiguration: () -> @Default Configuration
   ): ScopeInitializer<AppScope> = {
     WorkManager.initialize(context, configuration ?: defaultConfiguration())
-  }
+  }*/
 
   /**
    * Defines the worker configuration which is used by [workerScopeInitializer] to initialize the [WorkManager]

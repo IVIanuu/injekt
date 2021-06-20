@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
++ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -21,31 +21,31 @@ import android.content.*
 import android.content.res.*
 import androidx.lifecycle.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.ambient.*
 
 /**
- * Returns the [AppScope] which is stored in the [Application]
+ * Returns [Ambients] of this
  */
-val Application.appScope: AppScope
-  get() = (this as? AppScopeOwner)?.appScope
-    ?: error("application does not implement AppScopeOwner")
+@Provide val Application.appAmbients: Ambients
+  get() = (this as? AppAmbientsOwner)?.appAmbients
+    ?: error("application does not implement AppAmbientsOwner")
 
 /**
- * Host of an [AppScope]
+ * Host of application wide [Ambients]
  */
-interface AppScopeOwner {
+interface AppAmbientsOwner {
   /**
-   * The app scope which is typically created via [createAppScope]
+   * The app ambients which are typically created via [createAppAmbients]
    */
-  val appScope: AppScope
+  val appAmbients: Ambients
 }
 
 /**
- * Creates the [AppScope] which must be manually stored
+ * Creates the [Ambients] which must be manually stored
  */
-inline fun Application.createAppScope(
-  @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Application) -> AppScope
-): AppScope = scopeFactory(this)
+inline fun Application.createAppAmbients(
+  @Inject providedValuesFactory: (@Provide Application) -> NamedProvidedValues<ForApp>
+): Ambients = providedValuesFactory().createAmbients(ambientsOf())
 
 typealias AppContext = Context
 

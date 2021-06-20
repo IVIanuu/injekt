@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.common.*
 
 /**
@@ -41,6 +42,6 @@ import com.ivianuu.injekt.common.*
       factory: () -> T,
       scope: S,
       key: TypeKey<U>
-    ): U = scope.getOrCreateScopedValue(key, factory)
+    ): U = scope.cache(key, factory)
   }
 }

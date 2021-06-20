@@ -23,10 +23,13 @@ import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
@@ -127,6 +130,7 @@ fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
         }
     }"
     is ClassDescriptor -> "class:$fqNameSafe"
+    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.startOffset}"
     is FunctionDescriptor -> "function:$fqNameSafe:${
       listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
         .plus(original.valueParameters)

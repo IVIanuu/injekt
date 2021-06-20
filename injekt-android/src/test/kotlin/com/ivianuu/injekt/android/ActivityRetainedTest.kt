@@ -31,7 +31,7 @@ class ActivityRetainedTest {
   @Test fun testActivityRetainedScopeLifecycle() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     lateinit var disposable: TestScopeDisposable<ActivityRetainedScope>
-    scenario.onActivity { disposable = it.activityRetainedScope.element() }
+    scenario.onActivity { disposable = it.activityRetainedAmbients.element() }
     disposable.disposed.shouldBeFalse()
     scenario.recreate()
     disposable.disposed.shouldBeFalse()

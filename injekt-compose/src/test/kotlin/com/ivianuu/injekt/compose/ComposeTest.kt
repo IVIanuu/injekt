@@ -34,7 +34,7 @@ class ComposeTest {
     @Provide val element: @ScopeElement<TestScope1> String = "value"
     val scope = inject<TestScope1>()
     composeRule.setContent {
-      CompositionLocalProvider(LocalScope provides scope) {
+      CompositionLocalProvider(LocalAmbients provides scope) {
         rememberElement<String>() shouldBe "value"
       }
     }
@@ -43,7 +43,7 @@ class ComposeTest {
   @Test fun testInitialRememberScopedValue() {
     val scope = inject<TestScope1>()
     composeRule.setContent {
-      CompositionLocalProvider(LocalScope provides scope) {
+      CompositionLocalProvider(LocalAmbients provides scope) {
         val value = rememberScopedValue(key = "key") { "a" }
         value shouldBe "a"
         DisposableEffect(Unit) {
@@ -59,7 +59,7 @@ class ComposeTest {
     val scope = inject<TestScope1>()
     scope.setScopedValue("key", "b")
     composeRule.setContent {
-      CompositionLocalProvider(LocalScope provides scope) {
+      CompositionLocalProvider(LocalAmbients provides scope) {
         val value = rememberScopedValue(key = "key") { "a" }
         value shouldBe "b"
         DisposableEffect(Unit) {

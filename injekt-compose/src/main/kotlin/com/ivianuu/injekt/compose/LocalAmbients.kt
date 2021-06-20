@@ -14,34 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-  kotlin("multiplatform")
-}
+package com.ivianuu.injekt.compose
 
-kotlin {
-  jvm {
-    withJava()
-    compilations.forEach {
-      it.kotlinOptions {
-        jvmTarget = "1.8"
-      }
-    }
-  }
-  sourceSets {
-    commonMain {
-      dependencies {
-        api(project(":injekt-common"))
-        configurations.getByName("kotlinCompilerPluginClasspath")
-          .dependencies.add(project(":injekt-compiler-plugin"))
-      }
-    }
-    named("jvmTest") {
-      dependencies {
-        implementation(Deps.junit)
-        implementation(Deps.kotestAssertions)
-      }
-    }
-  }
-}
+import androidx.compose.runtime.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.scope.*
 
-plugins.apply("com.vanniktech.maven.publish")
+val LocalAmbients = staticCompositionLocalOf { ambientsOf() }
+
+@Provide val localAmbients: Ambients
+  @Composable get() = LocalAmbients.current

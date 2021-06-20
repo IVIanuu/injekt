@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.ambient.synchronized
 import com.ivianuu.injekt.common.*
 
 interface Scope {
@@ -39,7 +41,7 @@ interface Scope {
   /**
    * Store's [value] for [key]
    *
-   * If [value] is a [ScopeDisposable] [ScopeDisposable.dispose] will be invoked once this scope get's disposed
+   * If [value] is a [ScopeDisposable] [ScopeDisposable.dispose] will be invoked once this scope gets disposed
    */
   fun <T : Any> set(key: Any, value: T)
 
@@ -62,12 +64,12 @@ interface Scope {
 /**
  * The current scope
  */
-val AmbientScope = ambientOf { GlobalScope }
+val AmbientScope = ambientOf<Scope> { GlobalScope }
 
 /**
  * Global scope which will never get disposed
  */
-val GlobalScope: Scope = DisposableScope()
+object GlobalScope : Scope by DisposableScope()
 
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [init]
@@ -99,11 +101,11 @@ inline fun <R> Scope.withLock(block: () -> R): R = synchronized(this, block)
 private val NoOpScopeDisposable = ScopeDisposable { }
 
 /**
- * Allows scoped values to be notified when the hosting [Scope] get's disposed
+ * Allows scoped values to be notified when the hosting [Scope] gets disposed
  */
 fun interface ScopeDisposable {
   /**
-   * Get's called while the hosting [Scope] get's disposed via [Scope.dispose]
+   * Get's called while the hosting [Scope] gets disposed via [Scope.dispose]
    */
   fun dispose()
 }
@@ -200,3 +202,5 @@ private class DisposableScopeImpl : DisposableScope {
     }
   }
 }
+
+typealias NamedScope<N> = Scope

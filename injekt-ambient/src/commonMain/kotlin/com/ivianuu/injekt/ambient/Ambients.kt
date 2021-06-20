@@ -19,12 +19,16 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 inline class Ambients(val map: Map<Ambient<*>, Any?>)
 
 operator fun <T> Ambients.getOrNull(ambient: Ambient<T>): T? =
   map[ambient] as? T
+
+fun <T> Ambients.getOrElse(ambient: Ambient<T>, defaultValue: () -> T): T =
+  map[ambient] as? T ?: defaultValue()
 
 operator fun <T> Ambients.get(ambient: Ambient<T>): T =
   map[ambient] as? T ?: ambient.default()
@@ -39,12 +43,16 @@ operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
         .merge(oldValue, providedValue.value)
   }
 
-  newMap[AmbientBaseAmbients] = this
-
   return Ambients(newMap)
 }
 
-fun ambientsOf(): Ambients = Ambients(emptyMap())
+operator fun Ambients.plus(values: Iterable<ProvidedValue<*>>): Ambients =
+  plus(*values.toList().toTypedArray())
+
+operator fun Ambients.plus(values: NamedProvidedValues<*>): Ambients =
+  values.createAmbients()
+
+@Provide fun ambientsOf(): Ambients = Ambients(emptyMap())
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ambientsOf(value: ProvidedValue<*>): Ambients =
@@ -53,15 +61,8 @@ fun ambientsOf(value: ProvidedValue<*>): Ambients =
   })
 
 @OptIn(ExperimentalStdlibApi::class)
-fun ambientsOf(values: Iterable<ProvidedValue<*>>): Ambients {
-  val map: MutableMap<Ambient<*>, Any?> = if (values is Collection<*>) HashMap(values.size)
-  else HashMap()
-
-  for (providedValue in values)
-    map[providedValue.ambient] = providedValue.value
-
-  return Ambients(map)
-}
+fun ambientsOf(values: Iterable<ProvidedValue<*>>): Ambients =
+  ambientsOf(*values.toList().toTypedArray())
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
@@ -73,16 +74,42 @@ fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
   return Ambients(map)
 }
 
+@OptIn(ExperimentalStdlibApi::class)
+fun <N> ambientsOf(@Inject values: NamedProvidedValues<N>, @Inject ambients: Ambients): Ambients =
+  values.createAmbients()
+
 class ProvidedValue<T> internal constructor(
   val ambient: Ambient<T>,
   val value: T,
-  val canOverride: Boolean = true
+  val canOverride: Boolean
 )
 
-infix fun <T> Ambient<T>.provides(value: T) = ProvidedValue(this, value)
+typealias NamedProvidedValue<N, T> = ProvidedValue<T>
 
-infix fun <T> Ambient<T>.providesDefault(value: T) =
-  ProvidedValue(this, value, false)
+@Provide fun <@Spread T : NamedProvidedValue<N, S>, S, N> unwrappedNamedProvidedValue(
+  providedValue: T
+): S = providedValue.value
+
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
+@Provide
+class NamedProvidedValues<N>(
+  valueFactories: (
+    @Provide NamedScope<N>,
+    @Provide Ambients
+  ) -> Set<NamedProvidedValue<N, *>> = { _, _ -> emptySet() }
+) {
+  // todo move to constructor once fixed
+  private val valueFactories = valueFactories
+
+  fun createAmbients(@Inject ambients: Ambients): Ambients {
+    val parent = AmbientScope.current()
+    @Provide val scope = DisposableScope()
+    val parentDisposable = scope.disposeWith(parent)
+    parentDisposable.disposeWith(scope)
+    val values = valueFactories(scope)
+    return ambients + (AmbientScope provides scope) + values
+  }
+}
 
 interface Ambient<T> {
   fun default(): T
@@ -90,10 +117,16 @@ interface Ambient<T> {
   fun merge(oldValue: T?, newValue: T): T
 }
 
-private class AmbientImpl<T>(
+interface ProvidableAmbient<T> : Ambient<T> {
+  infix fun provides(value: T) = ProvidedValue(this, value, true)
+
+  infix fun providesDefault(value: T) = ProvidedValue(this, value, false)
+}
+
+private class ProvidableAmbientImpl<T>(
   private val merge: (T?, T) -> T,
   private val defaultFactory: () -> T
-) : Ambient<T> {
+) : ProvidableAmbient<T> {
   override fun default(): T = defaultFactory.invoke()
 
   override fun merge(oldValue: T?, newValue: T): T = merge.invoke(oldValue, newValue)
@@ -102,8 +135,6 @@ private class AmbientImpl<T>(
 fun <T> ambientOf(
   merge: (T?, T) -> T = { _, newValue -> newValue },
   defaultFactory: () -> T
-): Ambient<T> = AmbientImpl(merge, defaultFactory)
+): ProvidableAmbient<T> = ProvidableAmbientImpl(merge, defaultFactory)
 
 inline fun <T> Ambient<T>.current(@Inject ambients: Ambients): T = ambients[this]
-
-val AmbientBaseAmbients = ambientOf<Ambients?> { null }

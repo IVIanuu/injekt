@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.ambient
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import io.kotest.matchers.*
-import io.kotest.matchers.nulls.*
 import org.junit.*
 
 class AmbientsTest {
@@ -35,15 +32,5 @@ class AmbientsTest {
     ambients[ambient] shouldBe 42
   }
 
-  @Test fun testBaseAmbients() {
-    @Provide val base = ambientsOf()
-
-    AmbientBaseAmbients.current().shouldBeNull()
-
-    withInstances(base.plus(AmbientDummy provides Unit)) {
-      AmbientBaseAmbients.current() shouldBe base
-    }
-  }
-
-  private val AmbientDummy = ambientOf<Unit> { Unit }
+  private val AmbientDummy = ambientOf { Unit }
 }

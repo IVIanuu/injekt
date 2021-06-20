@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.scope
+package com.ivianuu.injekt.ambient
 
-typealias TestScope1 = Scope
-typealias TestScope2 = Scope
-typealias TestScope3 = Scope
+abstract class ForApp private constructor()

@@ -16,4 +16,29 @@
 
 package com.ivianuu.injekt.scope
 
-@PublishedApi internal expect inline fun <T> synchronized(lock: Any, block: () -> T): T
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.ForApp
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import org.junit.*
+
+class ScopedTest {
+  @Test fun testScoped() {
+    var callCount = 0
+
+    class Foo
+
+    @Provide fun scopedFoo(): @Scoped<NamedScope<ForApp>> Foo {
+      callCount++
+      return Foo()
+    }
+
+    @Provide val scope: NamedScope<ForApp> = DisposableScope()
+    callCount shouldBe 0
+    val a = inject<Foo>()
+    callCount shouldBe 1
+    val b = inject<Foo>()
+    callCount shouldBe 1
+    a shouldBeSameInstanceAs b
+  }
+}

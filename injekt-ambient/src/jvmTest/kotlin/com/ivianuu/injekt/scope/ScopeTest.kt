@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+package com.ivianuu.injekt.scope
 
+import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.*
 import io.kotest.matchers.booleans.*
 import org.junit.*

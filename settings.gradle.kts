@@ -10,7 +10,6 @@ include(
     ":injekt-gradle-plugin",
     ":injekt-ide-plugin",
     ":injekt-ktor",
-    ":injekt-scope",
     ":integration-tests",
     ":samples:type-classes",
     ":test-util",

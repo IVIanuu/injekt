@@ -30,8 +30,8 @@ kotlin {
   sourceSets {
     commonMain {
       dependencies {
+        api(project(":injekt-ambient"))
         api(project(":injekt-coroutines"))
-        api(project(":injekt-scope"))
         configurations.getByName("kotlinCompilerPluginClasspath")
           .dependencies.add(project(":injekt-compiler-plugin"))
       }
