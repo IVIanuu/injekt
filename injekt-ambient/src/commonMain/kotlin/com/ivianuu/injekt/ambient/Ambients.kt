@@ -112,18 +112,13 @@ class AmbientsFactory<N>(
 }
 
 interface Ambient<T> {
-  fun current(@Inject ambients: Ambients): T = ambients.map[this] as? T ?: default()
-
   fun default(): T
 
   fun merge(oldValue: T?, newValue: T): T = newValue
 }
 
-class MyService {
-  companion object : Ambient<MyService> {
-    override fun default(): MyService = MyService()
-  }
-}
+fun <T> Ambient<T>.current(@Inject ambients: Ambients): T =
+  ambients.map[this] as? T ?: default()
 
 interface ProvidableAmbient<T> : Ambient<T> {
   infix fun provides(value: T) = ProvidedValue(this, value, true)
