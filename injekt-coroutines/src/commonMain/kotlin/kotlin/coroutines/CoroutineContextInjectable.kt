@@ -14,22 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.coroutines
+package kotlin.coroutines
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
-import io.kotest.matchers.*
-import kotlinx.coroutines.*
-import org.junit.*
 
-class CoroutineContextAmbientsTest {
-  @Test fun testCoroutineContextAmbients() {
-    val ambientInt = ambientOf { 0 }
-    runBlocking {
-      @Providers("kotlin.coroutines.currentCoroutineContext")
-      withContext(ambientsOf(ambientInt provides 42).asCoroutineContext()) {
-        ambientInt.current() shouldBe 42
-      }
-    }
-  }
-}
+@Provide suspend fun currentCoroutineContext(): CoroutineContext = coroutineContext
+

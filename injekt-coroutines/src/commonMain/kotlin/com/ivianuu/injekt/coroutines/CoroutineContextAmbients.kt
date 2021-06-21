@@ -20,11 +20,11 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
 import kotlin.coroutines.*
 
-@Provide suspend fun coroutineContextAmbients(): Ambients =
-  coroutineContext[AmbientsCoroutineContextElement]?.ambients
+@Provide val CoroutineContext.ambients: Ambients
+  get() = this[AmbientsCoroutineContextElement]?.ambients
     ?: error("No ambients provided in the current coroutine context")
 
-fun Ambients.asCoroutineContextElement(): CoroutineContext.Element =
+fun Ambients.asCoroutineContext(): CoroutineContext =
   AmbientsCoroutineContextElement(this)
 
 private class AmbientsCoroutineContextElement(

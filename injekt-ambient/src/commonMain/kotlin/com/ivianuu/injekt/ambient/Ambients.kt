@@ -21,7 +21,11 @@ package com.ivianuu.injekt.ambient
 import com.ivianuu.injekt.*
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class Ambients(val map: Map<Ambient<*>, Any?>)
+inline class Ambients(val map: Map<Ambient<*>, Any?>) {
+  companion object {
+    @Provide val empty = ambientsOf()
+  }
+}
 
 operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
   val newMap = map.toMutableMap()
@@ -66,7 +70,7 @@ fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
 
 @OptIn(ExperimentalStdlibApi::class)
 fun <N> ambientsOf(
-  @Inject ambients: Ambients = ambientsOf(),
+  @Inject ambients: Ambients,
   @Inject values: AmbientsFactory<N>
 ): Ambients = values.create()
 

@@ -27,6 +27,13 @@ kotlin {
       }
     }
   }
+  targets
+    .flatMap { it.compilations }
+    .forEach {
+      it.kotlinOptions {
+        freeCompilerArgs += "-Xallow-kotlin-package"
+      }
+    }
   sourceSets {
     commonMain {
       dependencies {

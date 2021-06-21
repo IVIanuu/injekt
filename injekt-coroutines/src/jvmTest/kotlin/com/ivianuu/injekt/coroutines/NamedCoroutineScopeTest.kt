@@ -25,6 +25,7 @@ import org.junit.*
 
 class InjectCoroutineScopeTest {
   @Test fun testAmbientCoroutineScopeLifecycle() {
+    @Providers("com.ivianuu.injekt.ambient.Ambients")
     @Provide val ambients = ambientsOf<ForApp>()
     val scope = AmbientScope.current()
     val coroutineScope = AmbientCoroutineScope.current()
@@ -36,7 +37,7 @@ class InjectCoroutineScopeTest {
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val customContext: NamedCoroutineContext<ForApp> = Dispatchers.Main
-    @Provide val ambients = ambientsOf<ForApp>()
+    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
     val coroutineScope = AmbientCoroutineScope.current()
     coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }

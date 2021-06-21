@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-@file:Providers(
-  "com.ivianuu.injekt.ambient.*",
-  "com.ivianuu.injekt.scope.*",
-  "com.ivianuu.injekt.service.*"
-)
+@file:Providers("com.ivianuu.injekt.ambient.*")
 
 package com.ivianuu.injekt.android
 

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:Providers("com.ivianuu.injekt.ambient.*")
-
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
@@ -28,6 +26,7 @@ class AppTest {
   @Test fun testServerLifecycle() {
     lateinit var listener: ScopeDisposeListener
     withTestApplication({
+      @Providers("com.ivianuu.injekt.ambient.*")
       initializeAppAmbients()
       listener = AmbientService.current()
       listener.disposed.shouldBeFalse()
