@@ -42,6 +42,13 @@ operator fun Ambients.plus(values: Iterable<ProvidedValue<*>>): Ambients =
 operator fun Ambients.plus(values: AmbientsFactory<*>): Ambients =
   values.create()
 
+operator fun Ambients.minus(ambient: Ambient<*>): Ambients =
+  if (ambient !in map) this
+  else Ambients(map.toMutableMap().also { it.remove(ambient) })
+
+operator fun Ambients.minus(vararg ambients: Ambient<*>): Ambients =
+  Ambients(map.filterKeys { it !in ambients })
+
 fun ambientsOf(): Ambients = Ambients(emptyMap())
 
 @OptIn(ExperimentalStdlibApi::class)
