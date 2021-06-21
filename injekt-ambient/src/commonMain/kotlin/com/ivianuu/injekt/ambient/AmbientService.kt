@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.service
+package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.ambient.synchronized
 import com.ivianuu.injekt.common.*
-import kotlin.Any
-import kotlin.PublishedApi
-import kotlin.String
-import kotlin.Suppress
-import kotlin.error
-import kotlin.let
 
 @Tag annotation class AmbientService<N> {
   companion object {
@@ -33,12 +25,10 @@ import kotlin.let
     inline fun <T> current(@Inject ambients: Ambients, @Inject key: TypeKey<T>, ): T =
       serviceAmbientOf<T>().current().invoke()
 
-    @Provide class Module<@Spread T : @AmbientService<N> U, U : Any, N> {
-      @Provide inline fun providedServiceValue(
-        noinline factory: () -> T,
-        key: TypeKey<U>
-      ): NamedProvidedValue<N, () -> U> = serviceAmbientOf<U>() provides factory
-    }
+    @Provide inline fun <@Spread T : @AmbientService<N> U, U : Any, N> providedServiceValue(
+      noinline factory: () -> T,
+      key: TypeKey<U>
+    ): NamedProvidedValue<N, () -> U> = serviceAmbientOf<U>() provides factory
   }
 }
 

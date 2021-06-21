@@ -17,19 +17,27 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 import io.kotest.matchers.*
 import org.junit.*
 
-class AmbientsTest {
-  @Test fun testGetReturnsProvidedValue() {
+class ProvidedValuesTest {
+  @Test fun testNamedProvidedValue() {
     val ambient = ambientOf { 0 }
-    @Provide val ambients = ambientsOf(ambient provides 42)
+    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
+    @Provide val ambients = ambientsOf<ForApp>()
     ambient.current() shouldBe 42
   }
 
-  @Test fun testGetReturnsDefaultIfNoValueIsProvided() {
-    val ambient = ambientOf { 42 }
-    @Provide val ambients = ambientsOf()
-    ambient.current() shouldBe 42
+  @Test fun testProvidedValuesFactoryModule() {
+    val ambient = ambientOf { 0 }
+    @Provide val childProvidedValuesModule = ProvidedValuesFactoryModule0<ForApp, ForChild>()
+    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
+    @Provide val parentAmbients = ambientsOf<ForApp>()
+    withInstances(createAmbientsFromProvidedValues<ForChild>()) {
+      ambient.current() shouldBe 42
+    }
   }
+
+  private abstract class ForChild private constructor()
 }

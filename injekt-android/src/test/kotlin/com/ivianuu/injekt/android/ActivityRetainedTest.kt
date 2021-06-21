@@ -18,7 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.*
 import androidx.test.core.app.*
-import com.ivianuu.injekt.service.*
+import com.ivianuu.injekt.ambient.*
 import io.kotest.matchers.booleans.*
 import org.junit.*
 import org.junit.runner.*

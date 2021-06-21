@@ -20,7 +20,6 @@ import android.app.*
 import android.content.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.service.*
 
 /**
  * Returns a new [Ambients] which must be manually stored and disposed
@@ -28,11 +27,9 @@ import com.ivianuu.injekt.service.*
 fun BroadcastReceiver.createReceiverAmbients(
   context: Context,
   intent: Intent,
-): Ambients = with((context.applicationContext as Application).appAmbients) {
-  this + AmbientService
-    .current<@ProvidedValuesFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> NamedProvidedValues<ForService>>()
-    .invoke(this@createReceiverAmbients, context, intent)
-}
+): Ambients = createAmbientsFromProvidedValues<ForReceiver, BroadcastReceiver, ReceiverContext, ReceiverIntent>(
+  this, context, intent, (context.applicationContext as Application).appAmbients
+)
 
 abstract class ForReceiver private constructor()
 

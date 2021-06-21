@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android
 import androidx.activity.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.service.*
 
 /**
  * Returns the [Ambients] of this [ComponentActivity]
@@ -27,10 +26,7 @@ import com.ivianuu.injekt.service.*
  */
 @Provide val ComponentActivity.activityRetainedAmbients: Ambients
   get() = viewModelStore.cachedAmbients {
-    with(application.appAmbients) {
-      this + AmbientService.current<@ProvidedValuesFactory () -> NamedProvidedValues<ForActivityRetained>>()
-        .invoke()
-    }
+    createAmbientsFromProvidedValues<ForActivityRetained>(application.appAmbients)
   }
 
 abstract class ForActivityRetained private constructor()

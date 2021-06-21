@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.scope
+package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.ambient.synchronized
 import com.ivianuu.injekt.common.*
 
 interface Scope {
@@ -105,9 +103,26 @@ private val NoOpScopeDisposable = ScopeDisposable { }
  */
 fun interface ScopeDisposable {
   /**
-   * Get's called while the hosting [Scope] gets disposed via [Scope.dispose]
+   * Will be called when the hosting [Scope] gets disposed
    */
   fun dispose()
+}
+
+/**
+ * Listener for scope lifecycles
+ */
+interface ScopeObserver<N> {
+  /**
+   * Will be called when the scope gets initialized
+   */
+  fun onInit(scope: NamedScope<N>) {
+  }
+
+  /**
+   * Will be called when the scope gets disposed
+   */
+  fun onDispose(scope: NamedScope<N>) {
+  }
 }
 
 /**

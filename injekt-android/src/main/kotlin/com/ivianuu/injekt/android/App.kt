@@ -44,7 +44,7 @@ interface AppAmbientsOwner {
  * Creates the [Ambients] which must be manually stored
  */
 inline fun Application.createAppAmbients(
-  @Inject providedValuesFactory: (@Provide Application) -> NamedProvidedValues<ForApp>
+  @Inject providedValuesFactory: (@Provide Application) -> ProvidedValues<ForApp>
 ): Ambients = providedValuesFactory().createAmbients(ambientsOf())
 
 typealias AppContext = Context

@@ -18,7 +18,6 @@ package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.scope.*
 import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.util.*
@@ -34,7 +33,7 @@ import io.ktor.util.*
   get() = application.ambients
 
 inline fun Application.initializeAppAmbients(
-  @Inject providedValuesFactory: (@Provide Application) -> NamedProvidedValues<ForApp>
+  @Inject providedValuesFactory: (@Provide Application) -> ProvidedValues<ForApp>
 ) {
   registerAppAmbients(providedValuesFactory(this).createAmbients(ambientsOf()))
 }

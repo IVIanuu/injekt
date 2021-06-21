@@ -14,34 +14,21 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.scope
+package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.common.*
+import kotlin.coroutines.*
 
-/**
- * Reuses the same instance within scope [S]
- *
- * In the following example each request to Repo resolvers to the same instance
- * ```
- * @Scoped<AppScope>
- * @Provide
- * class MyRepo
- *
- * fun runApp(@Inject appScope: AppScope) {
- *   val repo1 = inject<MyRepo>()
- *   val repo2 = inject<MyRepo>()
- *   // repo === repo2
- * }
- * ```
- */
-@Tag annotation class Scoped<N> {
-  companion object {
-    @Provide inline fun <@Spread T : @Scoped<N> U, U : Any, N> scopedValue(
-      factory: () -> T,
-      scope: NamedScope<N>,
-      key: TypeKey<U>
-    ): U = scope.cache(key, factory)
-  }
+@Provide suspend fun coroutineContextAmbients(): Ambients =
+  coroutineContext[AmbientsCoroutineContextElement]?.ambients
+    ?: error("No ambients provided in the current coroutine context")
+
+fun Ambients.asCoroutineContextElement(): CoroutineContext.Element =
+  AmbientsCoroutineContextElement(this)
+
+private class AmbientsCoroutineContextElement(
+  val ambients: Ambients
+) : AbstractCoroutineContextElement(AmbientsCoroutineContextElement) {
+  companion object : CoroutineContext.Key<AmbientsCoroutineContextElement>
 }

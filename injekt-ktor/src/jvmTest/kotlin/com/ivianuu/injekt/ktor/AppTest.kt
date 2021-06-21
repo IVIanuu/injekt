@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-@file:Providers(
-  "com.ivianuu.injekt.ambient.*",
-  "com.ivianuu.injekt.scope.*",
-  "com.ivianuu.injekt.service.*"
-)
+@file:Providers("com.ivianuu.injekt.ambient.*")
 
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.scope.*
-import com.ivianuu.injekt.service.*
 import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
 import org.junit.*

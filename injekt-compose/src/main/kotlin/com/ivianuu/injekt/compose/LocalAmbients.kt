@@ -19,8 +19,6 @@ package com.ivianuu.injekt.compose
 import androidx.compose.runtime.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.scope.*
 
 val LocalAmbients = staticCompositionLocalOf { ambientsOf() }
 

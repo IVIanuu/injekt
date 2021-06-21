@@ -18,7 +18,6 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import kotlinx.coroutines.*

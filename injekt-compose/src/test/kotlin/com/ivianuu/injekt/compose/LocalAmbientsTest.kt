@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.compose
 
-import androidx.lifecycle.*
-import androidx.test.core.app.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.test.junit4.*
+import androidx.test.ext.junit.runners.*
 import com.ivianuu.injekt.ambient.*
-import io.kotest.matchers.booleans.*
+import io.kotest.matchers.*
 import org.junit.*
 import org.junit.runner.*
-import org.robolectric.*
-import org.robolectric.annotation.*
 
-@Config(sdk = [28])
-@RunWith(RobolectricTestRunner::class)
-class ActivityTest {
-  @Test fun testActivityScopeLifecycle() {
-    val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-    lateinit var disposable: TestDisposable<ForActivity>
-    scenario.onActivity { disposable = AmbientService.current(it.activityAmbients) }
-    disposable.disposed.shouldBeFalse()
-    scenario.moveToState(Lifecycle.State.DESTROYED)
-    disposable.disposed.shouldBeTrue()
+@RunWith(AndroidJUnit4::class)
+class LocalAmbientsTest {
+  @get:Rule val composeRule = createComposeRule()
+
+  @Test fun testLocalAmbients() {
+    val ambientInt = ambientOf { 0 }
+    composeRule.setContent {
+      CompositionLocalProvider(LocalAmbients provides ambientsOf(ambientInt provides 42)) {
+        ambientInt.current() shouldBe 42
+      }
+    }
   }
 }

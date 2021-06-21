@@ -14,18 +14,30 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import org.junit.*
 
-class TestDisposable<N> : ScopeDisposable {
-  var disposed = false
+class ScopedTest {
+  @Test fun testScoped() {
+    var callCount = 0
 
-  override fun dispose() {
-    disposed = true
+    class Foo
+
+    @Provide fun scopedFoo(): @Scoped<ForApp> Foo {
+      callCount++
+      return Foo()
+    }
+
+    @Provide val scope: NamedScope<ForApp> = DisposableScope()
+    callCount shouldBe 0
+    val a = inject<Foo>()
+    callCount shouldBe 1
+    val b = inject<Foo>()
+    callCount shouldBe 1
+    a shouldBeSameInstanceAs b
   }
 }
-
-@Provide inline fun <N> testDisposable():
-    @Scoped<N> @AmbientService<N> TestDisposable<N> = TestDisposable()

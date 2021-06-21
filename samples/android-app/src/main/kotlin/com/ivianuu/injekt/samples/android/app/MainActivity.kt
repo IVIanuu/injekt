@@ -18,20 +18,18 @@
 
 package com.ivianuu.injekt.samples.android.app
 
-import com.ivianuu.injekt.ambient.*
 import android.os.*
 import androidx.activity.*
 import androidx.activity.compose.*
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.android.*
 import com.ivianuu.injekt.samples.android.ui.*
-import com.ivianuu.injekt.scope.*
-import com.ivianuu.injekt.service.*
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    // retrieve our dependencies from the activity scope
+    // retrieve our dependencies
     val dependencies = AmbientService.current<MainActivityDependencies>()
     // display ui
     setContent {
@@ -42,6 +40,6 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-// Declare dependencies we want to retrieve from the activity scope
+// Declare dependencies we want to retrieve in our activity
 @Provide @AmbientService<ForActivity>
 class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)

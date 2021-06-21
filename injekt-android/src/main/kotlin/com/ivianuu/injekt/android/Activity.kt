@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.*
 import android.content.*
 import android.content.res.*
 import androidx.activity.*
@@ -24,7 +23,6 @@ import androidx.lifecycle.*
 import androidx.savedstate.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.service.*
 
 /**
  * Returns the [Ambients] of this [ComponentActivity]
@@ -32,10 +30,7 @@ import com.ivianuu.injekt.service.*
  */
 @Provide val ComponentActivity.activityAmbients: Ambients
   get() = lifecycle.cachedAmbients {
-    with(activityRetainedAmbients) {
-      this + AmbientService.current<@ProvidedValuesFactory (ComponentActivity) -> NamedProvidedValues<ForActivity>>()
-        .invoke(this@activityAmbients)
-    }
+    createAmbientsFromProvidedValues<ForActivity, ComponentActivity>(this, activityRetainedAmbients)
   }
 
 abstract class ForActivity private constructor()

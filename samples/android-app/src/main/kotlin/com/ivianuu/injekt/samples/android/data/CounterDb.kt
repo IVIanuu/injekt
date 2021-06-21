@@ -18,7 +18,6 @@ package com.ivianuu.injekt.samples.android.data
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.*
 

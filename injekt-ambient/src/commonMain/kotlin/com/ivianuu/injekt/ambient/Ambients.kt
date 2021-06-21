@@ -19,19 +19,9 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 inline class Ambients(val map: Map<Ambient<*>, Any?>)
-
-operator fun <T> Ambients.getOrNull(ambient: Ambient<T>): T? =
-  map[ambient] as? T
-
-fun <T> Ambients.getOrElse(ambient: Ambient<T>, defaultValue: () -> T): T =
-  map[ambient] as? T ?: defaultValue()
-
-operator fun <T> Ambients.get(ambient: Ambient<T>): T =
-  map[ambient] as? T ?: ambient.default()
 
 operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
   val newMap = map.toMutableMap()
@@ -49,7 +39,7 @@ operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
 operator fun Ambients.plus(values: Iterable<ProvidedValue<*>>): Ambients =
   plus(*values.toList().toTypedArray())
 
-operator fun Ambients.plus(values: NamedProvidedValues<*>): Ambients =
+operator fun Ambients.plus(values: ProvidedValues<*>): Ambients =
   values.createAmbients()
 
 fun ambientsOf(): Ambients = Ambients(emptyMap())
@@ -75,8 +65,10 @@ fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-fun <N> ambientsOf(@Inject values: NamedProvidedValues<N>, @Inject ambients: Ambients): Ambients =
-  values.createAmbients()
+fun <N> ambientsOf(
+  @Inject ambients: Ambients = ambientsOf(),
+  @Inject values: ProvidedValues<N>
+): Ambients = values.createAmbients()
 
 class ProvidedValue<T> internal constructor(
   val ambient: Ambient<T>,
@@ -92,14 +84,13 @@ typealias NamedProvidedValue<N, T> = ProvidedValue<T>
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @Provide
-class NamedProvidedValues<N>(
-  valueFactories: (
-    @Provide NamedScope<N>,
-    @Provide Ambients
-  ) -> Set<NamedProvidedValue<N, *>> = { _, _ -> emptySet() }
+class ProvidedValues<N>(
+  valueFactories: (@Provide NamedScope<N>) -> Set<NamedProvidedValue<N, *>> = { emptySet() },
+  scopeObservers: (@Provide NamedScope<N>) -> Set<ScopeObserver<N>> = { emptySet() }
 ) {
   // todo move to constructor once fixed
   private val valueFactories = valueFactories
+  private val scopeObservers = scopeObservers
 
   fun createAmbients(@Inject ambients: Ambients): Ambients {
     val parent = AmbientScope.current()
@@ -107,14 +98,25 @@ class NamedProvidedValues<N>(
     val parentDisposable = scope.disposeWith(parent)
     parentDisposable.disposeWith(scope)
     val values = valueFactories(scope)
+
+    val finalObservers = scopeObservers(scope)
+
+    for (scopeObserver in finalObservers)
+      scope.invokeOnDispose { scopeObserver.onDispose(scope) }
+
+    for (scopeObserver in finalObservers)
+      scopeObserver.onInit(scope)
+
     return ambients + (AmbientScope provides scope) + values
   }
 }
 
 interface Ambient<T> {
+  fun current(@Inject ambients: Ambients): T = ambients.map[this] as? T ?: default()
+
   fun default(): T
 
-  fun merge(oldValue: T?, newValue: T): T
+  fun merge(oldValue: T?, newValue: T): T = newValue
 }
 
 interface ProvidableAmbient<T> : Ambient<T> {
@@ -124,17 +126,22 @@ interface ProvidableAmbient<T> : Ambient<T> {
 }
 
 private class ProvidableAmbientImpl<T>(
-  private val merge: (T?, T) -> T,
+  private val merge: ((T?, T) -> T)?,
   private val defaultFactory: () -> T
 ) : ProvidableAmbient<T> {
   override fun default(): T = defaultFactory.invoke()
 
-  override fun merge(oldValue: T?, newValue: T): T = merge.invoke(oldValue, newValue)
+  override fun merge(oldValue: T?, newValue: T): T = merge?.invoke(oldValue, newValue)
+    ?: super.merge(oldValue, newValue)
 }
 
 fun <T> ambientOf(
-  merge: (T?, T) -> T = { _, newValue -> newValue },
+  merge: ((T?, T) -> T)? = null,
   defaultFactory: () -> T
 ): ProvidableAmbient<T> = ProvidableAmbientImpl(merge, defaultFactory)
 
-inline fun <T> Ambient<T>.current(@Inject ambients: Ambients): T = ambients[this]
+inline fun <R> withAmbients(
+  vararg values: ProvidedValue<*>,
+  @Inject ambients: Ambients,
+  block: (@Provide Ambients) -> R
+): R = block(ambients.plus(*values))

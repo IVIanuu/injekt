@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
+import io.kotest.matchers.*
+import kotlinx.coroutines.*
+import org.junit.*
 
-class TestDisposable<N> : ScopeDisposable {
-  var disposed = false
-
-  override fun dispose() {
-    disposed = true
+class CoroutineContextAmbientsTest {
+  @Test fun testCoroutineContextAmbients() {
+    val ambientInt = ambientOf { 0 }
+    runBlocking {
+      withContext(ambientsOf(ambientInt provides 42).asCoroutineContextElement()) {
+        ambientInt.current() shouldBe 42
+      }
+    }
   }
 }
-
-@Provide inline fun <N> testDisposable():
-    @Scoped<N> @AmbientService<N> TestDisposable<N> = TestDisposable()

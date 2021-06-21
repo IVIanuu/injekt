@@ -21,15 +21,14 @@ import android.content.*
 import android.content.res.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.service.*
 
 /**
  * Returns a new [Ambients] including all [ForService] services which must be manually stored and disposed
  */
-fun Service.createServiceAmbients(): Ambients = with(application.appAmbients) {
-  this + AmbientService.current<@ProvidedValuesFactory (Service) -> NamedProvidedValues<ForService>>()
-    .invoke(this@createServiceAmbients)
-}
+fun Service.createServiceAmbients(): Ambients = createAmbientsFromProvidedValues<ForService, Service>(
+  this,
+  application.appAmbients
+)
 
 abstract class ForService private constructor()
 
