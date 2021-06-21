@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.util.slicedMap.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
@@ -130,7 +131,9 @@ fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
         }
     }"
     is ClassDescriptor -> "class:$fqNameSafe"
-    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.startOffset}"
+    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let { 
+      "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
+    }}"
     is FunctionDescriptor -> "function:$fqNameSafe:${
       listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
         .plus(original.valueParameters)

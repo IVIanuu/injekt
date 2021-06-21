@@ -706,10 +706,9 @@ class InjectCallTransformer(
 
   private fun FunctionDescriptor.irFunction(): IrFunction {
     if (visibility == DescriptorVisibilities.LOCAL) {
-      return localFunctions.singleOrNull {
+      return localFunctions.single {
         it.descriptor.uniqueKey() == uniqueKey()
       }
-        ?: error("wtf")
     }
     return pluginContext.referenceFunctions(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
