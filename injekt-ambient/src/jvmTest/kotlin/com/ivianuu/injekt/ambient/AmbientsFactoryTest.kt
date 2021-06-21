@@ -54,8 +54,7 @@ class AmbientsFactoryTest {
       }
     }
 
-    @Provide val ambients =
-      inject<AmbientsFactory<ForApp>>().create(ambientsOf())
+    @Provide val ambients = inject<AmbientsFactory<ForApp>>().create(ambientsOf())
 
     initCalls shouldBe 1
     disposeCalls shouldBe 0

@@ -70,7 +70,7 @@ object WorkerInitializerModule {
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
   ): ScopeObserver<ForApp> = object : ScopeObserver<ForApp> {
-    override fun onInit(scope: NamedScope<ForApp>) {
+    override fun onInit() {
       WorkManager.initialize(context, configuration ?: defaultConfiguration())
     }
   }
