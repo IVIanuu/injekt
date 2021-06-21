@@ -115,13 +115,13 @@ interface ScopeObserver<N> {
   /**
    * Will be called when the scope gets initialized
    */
-  fun onInit(scope: NamedScope<N>) {
+  fun onInit() {
   }
 
   /**
    * Will be called when the scope gets disposed
    */
-  fun onDispose(scope: NamedScope<N>) {
+  fun onDispose() {
   }
 }
 

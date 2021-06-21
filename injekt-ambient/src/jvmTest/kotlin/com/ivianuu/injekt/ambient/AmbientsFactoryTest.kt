@@ -25,7 +25,7 @@ class AmbientsFactoryTest {
   @Test fun testNamedProvidedValue() {
     val ambient = ambientOf { 0 }
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
-    @Provide val ambients = ambientsOf<ForApp>()
+    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
     ambient.current() shouldBe 42
   }
 
@@ -33,11 +33,38 @@ class AmbientsFactoryTest {
     val ambient = ambientOf { 0 }
     @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
-    @Provide val parentAmbients = ambientsOf<ForApp>()
+    @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
     withInstances(ambientsFromFactoryOf<ForChild>()) {
       ambient.current() shouldBe 42
     }
   }
 
   private abstract class ForChild private constructor()
+
+  @Test fun testScopeObserver() {
+    var initCalls = 0
+    var disposeCalls = 0
+    @Provide val observer = object : ScopeObserver<ForApp> {
+      override fun onInit() {
+        initCalls++
+      }
+
+      override fun onDispose() {
+        disposeCalls++
+      }
+    }
+
+    @Provide val ambients =
+      inject<AmbientsFactory<ForApp>>().create(ambientsOf())
+
+    initCalls shouldBe 1
+    disposeCalls shouldBe 0
+
+    val scope = AmbientScope.current()
+
+    (scope as DisposableScope).dispose()
+
+    initCalls shouldBe 1
+    disposeCalls shouldBe 1
+  }
 }

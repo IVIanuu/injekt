@@ -21,11 +21,7 @@ package com.ivianuu.injekt.ambient
 import com.ivianuu.injekt.*
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class Ambients(val map: Map<Ambient<*>, Any?>) {
-  companion object {
-    @Provide val empty = ambientsOf()
-  }
-}
+inline class Ambients(val map: Map<Ambient<*>, Any?>)
 
 operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
   val newMap = map.toMutableMap()
@@ -106,10 +102,10 @@ class AmbientsFactory<N>(
     val finalObservers = scopeObservers(scope)
 
     for (scopeObserver in finalObservers)
-      scope.invokeOnDispose { scopeObserver.onDispose(scope) }
+      scope.invokeOnDispose { scopeObserver.onDispose() }
 
     for (scopeObserver in finalObservers)
-      scopeObserver.onInit(scope)
+      scopeObserver.onInit()
 
     return ambients + (AmbientScope provides scope) + values
   }
@@ -121,6 +117,12 @@ interface Ambient<T> {
   fun default(): T
 
   fun merge(oldValue: T?, newValue: T): T = newValue
+}
+
+class MyService {
+  companion object : Ambient<MyService> {
+    override fun default(): MyService = MyService()
+  }
 }
 
 interface ProvidableAmbient<T> : Ambient<T> {
