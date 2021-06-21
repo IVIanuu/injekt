@@ -28,8 +28,7 @@ import org.robolectric.annotation.*
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class SystemServiceTest {
-  @Test
-  fun testCanRequestSystemService() {
+  @Test fun testCanRequestSystemService() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     scenario.onActivity {
       withInstances(it.application as AppContext) {
