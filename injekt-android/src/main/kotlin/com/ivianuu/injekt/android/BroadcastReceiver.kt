@@ -19,23 +19,22 @@ package com.ivianuu.injekt.android
 import android.app.*
 import android.content.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.ambient.*
 
 /**
- * Returns a new [ReceiverScope] which must be manually stored and disposed
+ * Returns a new [Ambients] which must be manually stored and disposed
  */
-fun BroadcastReceiver.createReceiverScope(
+fun BroadcastReceiver.createReceiverAmbients(
   context: Context,
   intent: Intent,
-): ReceiverScope = (context.applicationContext as Application)
-  .appScope
-  .element<@ChildScopeFactory (BroadcastReceiver, ReceiverContext, ReceiverIntent) -> ReceiverScope>()
-  .invoke(this, context, intent)
+): Ambients = ambientsFromFactoryOf<ForReceiver, BroadcastReceiver, ReceiverContext, ReceiverIntent>(
+  this, context, intent, (context.applicationContext as Application).appAmbients
+)
 
-typealias ReceiverScope = Scope
+abstract class ForReceiver private constructor()
 
-@Provide val receiverScopeModule = ChildScopeModule3<AppScope, BroadcastReceiver,
-    ReceiverContext, ReceiverIntent, ReceiverScope>()
+@Provide val receiverAmbientsFactoryModule = AmbientsFactoryModule3<ForApp,
+    BroadcastReceiver, ReceiverContext, ReceiverIntent, ForReceiver>()
 
 typealias ReceiverContext = Context
 

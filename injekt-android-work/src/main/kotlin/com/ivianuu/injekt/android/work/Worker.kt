@@ -19,8 +19,8 @@ package com.ivianuu.injekt.android.work
 import android.content.*
 import androidx.work.*
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.scope.*
 import kotlin.reflect.*
 
 /**
@@ -63,14 +63,16 @@ import kotlin.reflect.*
  */
 object WorkerInitializerModule {
   /**
-   * Defines the [ScopeInitializer] for work manager initialization in the [AppScope]
+   * Defines the [ScopeObserver] for work manager initialization in the [NamedScope] of [ForApp]
    */
   @Provide fun workerScopeInitializer(
     context: AppContext,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
-  ): ScopeInitializer<AppScope> = {
-    WorkManager.initialize(context, configuration ?: defaultConfiguration())
+  ): ScopeObserver<ForApp> = object : ScopeObserver<ForApp> {
+    override fun onInit(scope: NamedScope<ForApp>) {
+      WorkManager.initialize(context, configuration ?: defaultConfiguration())
+    }
   }
 
   /**

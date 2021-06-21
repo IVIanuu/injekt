@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+@file:Providers("com.ivianuu.injekt.ambient.*")
+
 package com.ivianuu.injekt.android
 
 import android.app.*
+import com.ivianuu.injekt.*
 
-class AndroidTestApplication : Application(), AppScopeOwner {
-  override val appScope by lazy { createAppScope() }
+class AndroidTestApplication : Application(), AppAmbientsOwner {
+  override val appAmbients by lazy { createAppAmbients() }
 }

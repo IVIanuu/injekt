@@ -27,10 +27,17 @@ kotlin {
       }
     }
   }
+  targets
+    .flatMap { it.compilations }
+    .forEach {
+      it.kotlinOptions {
+        freeCompilerArgs += "-Xallow-kotlin-package"
+      }
+    }
   sourceSets {
     commonMain {
       dependencies {
-        api(project(":injekt-scope"))
+        api(project(":injekt-ambient"))
         api(Deps.Coroutines.core)
         configurations.getByName("kotlinCompilerPluginClasspath")
           .dependencies.add(project(":injekt-compiler-plugin"))

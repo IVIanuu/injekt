@@ -240,9 +240,10 @@ fun CallableRef.collectInjectables(
 
   nextCallable
     .type
-    .also {
-      addImport(it.classifier.fqName, it.classifier.descriptor?.findPackage()?.fqName ?:
-      error("Wtf $it ${nextCallable.callable}"))
+    .also { type ->
+      type.classifier.descriptor?.findPackage()?.fqName?.let {
+        addImport(type.classifier.fqName, it)
+      }
     }
     .collectInjectables(
       scope.allScopes.any {

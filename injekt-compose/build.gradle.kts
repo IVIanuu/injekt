@@ -31,7 +31,7 @@ android {
 }
 
 dependencies {
-  api(project(":injekt-scope"))
+  api(project(":injekt-ambient"))
   api(Deps.AndroidX.Compose.runtime)
   debugImplementation(Deps.AndroidX.Activity.compose)
   kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
@@ -45,4 +45,3 @@ dependencies {
 }
 
 plugins.apply("com.vanniktech.maven.publish")
-

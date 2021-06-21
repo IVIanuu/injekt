@@ -89,39 +89,31 @@ class PersistenceTest {
 
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
     """
-      fun myFunction(
-        @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Any) -> AppScope
-      ): AppScope = TODO()
+      fun myFunction(@Inject unit: Unit) {
+      }
     """,
-    """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = myFunction()
+    """ 
+      fun invoke(@Provide unit: Unit) = myFunction()
     """
   )
 
   @Test fun testNonInjectablePrimaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
     """
-      class MyClass(
-        @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Any) -> AppScope
-      )
+      class MyClass(@Inject unit: Unit)
     """,
     """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = MyClass()
+      fun invoke(@Inject unit: Unit) = MyClass()
     """
   )
 
   @Test fun testNonInjectableSecondaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass {
-        constructor(
-          @Inject scopeFactory: (@Provide @ScopeElement<AppScope> Any) -> AppScope
-        )
+        constructor(@Inject unit: Unit)
       }
     """,
     """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = MyClass()
+      fun invoke(@Provide unit: Unit) = MyClass()
     """
   )
 
@@ -138,30 +130,6 @@ class PersistenceTest {
       fun invoke() = inject<Foo>()
         """
   )
-
-  @Test fun testNonInjectableClassWithInjectableMembers2() = singleAndMultiCodegen(
-    """ 
-      abstract class MyAbstractChildScopeModule<P : Scope, T : Any, S : T> {
-        @Provide fun factory(scopeFactory: S): @ScopeElement<P> @ChildScopeFactory T = scopeFactory
-      }
-      
-      class MyChildScopeModule1<P : Scope, P1, C : Scope> : MyAbstractChildScopeModule<P,
-        (P1) -> C, (@Provide @ScopeElement<C> P1) -> C>()
-    """,
-    """
-      typealias TestScope1 = Scope
-      typealias TestScope2 = Scope
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() {
-        @Provide val childScopeModule = MyChildScopeModule1<TestScope1, String, TestScope2>()
-        val parentScope = inject<TestScope1>()
-        val childScope = parentScope.element<@ChildScopeFactory (String) -> TestScope2>()("42")
-        childScope.element<String>()
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
 
   @Test fun testSupportsLargeFunction() = singleAndMultiCodegen(
     """

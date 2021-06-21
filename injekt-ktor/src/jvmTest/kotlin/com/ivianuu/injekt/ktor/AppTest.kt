@@ -17,18 +17,18 @@
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.ambient.*
 import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
 import org.junit.*
 
 class AppTest {
-  @Test
-  fun testServerLifecycle() {
+  @Test fun testServerLifecycle() {
     lateinit var listener: ScopeDisposeListener
     withTestApplication({
-      initializeAppScope()
-      listener = appScope.element()
+      @Providers("com.ivianuu.injekt.ambient.*")
+      initializeAppAmbients()
+      listener = AmbientService.current()
       listener.disposed.shouldBeFalse()
     }) {
     }
@@ -37,10 +37,11 @@ class AppTest {
 }
 
 @Provide
-@Scoped<AppScope>
-@ScopeElement<AppScope>
+@Scoped<ForApp>
+@AmbientService<ForApp>
 class ScopeDisposeListener : ScopeDisposable {
   var disposed = false
+
   override fun dispose() {
     disposed = true
   }

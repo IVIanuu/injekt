@@ -15,8 +15,9 @@
  */
 
 @file:Providers(
-  "com.ivianuu.injekt.android.*",
-  "com.ivianuu.injekt.coroutines.*"
+  "com.ivianuu.injekt.coroutines.*",
+  "com.ivianuu.injekt.ambient.*",
+  "com.ivianuu.injekt.android.*"
 )
 
 package com.ivianuu.injekt.samples.android.app
@@ -24,13 +25,7 @@ package com.ivianuu.injekt.samples.android.app
 import android.app.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.scope.*
 
-class App : Application(), AppScopeOwner {
-  override lateinit var appScope: AppScope
-
-  override fun onCreate() {
-    appScope = createAppScope()
-    super.onCreate()
-  }
+class App : Application(), AppAmbientsOwner {
+  override val appAmbients by lazy { createAppAmbients() }
 }

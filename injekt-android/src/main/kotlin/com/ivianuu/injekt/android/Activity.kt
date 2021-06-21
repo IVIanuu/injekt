@@ -22,23 +22,21 @@ import androidx.activity.*
 import androidx.lifecycle.*
 import androidx.savedstate.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.ambient.*
 
 /**
- * Returns the [ActivityScope] of this [ComponentActivity]
+ * Returns the [Ambients] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
-val ComponentActivity.activityScope: ActivityScope
-  get() = lifecycle.scope {
-    activityRetainedScope
-      .element<@ChildScopeFactory (ComponentActivity) -> ActivityScope>()
-      .invoke(this)
+@Provide val ComponentActivity.activityAmbients: Ambients
+  get() = lifecycle.cachedAmbients {
+    ambientsFromFactoryOf<ForActivity, ComponentActivity>(this, activityRetainedAmbients)
   }
 
-typealias ActivityScope = Scope
+abstract class ForActivity private constructor()
 
-@Provide val activityScopeModule =
-  ChildScopeModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
+@Provide val activityAmbientsFactoryModule =
+  AmbientsFactoryModule1<ForActivityRetained, ComponentActivity, ForActivity>()
 
 typealias ActivityContext = Context
 

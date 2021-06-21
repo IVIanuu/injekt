@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.samples.android.data
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.ambient.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.*
 
@@ -26,7 +26,7 @@ interface CounterDb {
   suspend fun updateCounter(transform: Int.() -> Int)
 }
 
-@Provide @Scoped<AppScope>
+@Provide @Scoped<ForApp>
 class CounterDbImpl : CounterDb {
   private val _counterState = MutableStateFlow(0)
   override val counterState: Flow<Int> by this::_counterState

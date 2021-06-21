@@ -67,38 +67,6 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProviderWithGenericInjectableArgs() = singleAndMultiCodegen(
-    """ 
-      typealias ScopeA = Scope
-
-      typealias ScopeB = Scope
-
-      @Provide fun scopeBFactory(
-        parent: ScopeA,
-        scopeFactory: () -> ScopeB
-      ): @ScopeElement<ScopeA> () -> ScopeB = scopeFactory
-
-      typealias ScopeC = Scope
-
-      @Provide fun scopeCFactory(
-        parent: ScopeB,
-        scopeFactory: () -> ScopeC
-      ): @ScopeElement<ScopeB> () -> ScopeC = scopeFactory
-    """,
-    """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun createScopeA() = inject<ScopeA>()
-
-      @ScopeElement<ScopeC>
-      @Provide 
-      class MyComponent(
-        val a: ScopeA,
-        val b: ScopeB,
-        val c: ScopeC
-      )
-    """
-  )
-
   @Test fun testProviderModule() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)

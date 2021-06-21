@@ -19,44 +19,42 @@
 package com.ivianuu.injekt.android
 
 import androidx.lifecycle.*
-import com.ivianuu.injekt.scope.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
 
-internal val scopesByLifecycle = mutableMapOf<Lifecycle, Scope>()
+internal val ambientsByLifecycle = mutableMapOf<Lifecycle, Ambients>()
 
-internal inline fun <T : Scope> Lifecycle.scope(init: () -> T): T {
-  scopesByLifecycle[this]?.let { return it as T }
-  return synchronized(scopesByLifecycle) {
-    scopesByLifecycle[this]?.let { return it as T }
+internal inline fun Lifecycle.cachedAmbients(init: () -> Ambients): Ambients {
+  ambientsByLifecycle[this]?.let { return it }
+  return synchronized(ambientsByLifecycle) {
+    ambientsByLifecycle[this]?.let { return it }
     val value = init()
-    scopesByLifecycle[this] = value
+    ambientsByLifecycle[this] = value
     value
-  }.also {
+  }.also { ambients: @Provide Ambients ->
     addObserver(object : LifecycleEventObserver {
       override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
         if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-          synchronized(scopesByLifecycle) {
-            scopesByLifecycle
-              .remove(this@scope)
-          }!!.dispose()
+          synchronized(ambientsByLifecycle) { ambientsByLifecycle.remove(this@cachedAmbients) }
+          (AmbientScope.current() as DisposableScope).dispose()
         }
       }
     })
   }
 }
 
-internal inline fun <T : Scope> ViewModelStore.scope(crossinline init: () -> T): T {
-  return ViewModelProvider(
+internal inline fun ViewModelStore.cachedAmbients(crossinline init: () -> Ambients): Ambients =
+  ViewModelProvider(
     this,
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        ScopeHolder(init()) as T
+        ValueHolder(init()) as T
     }
-  )[ScopeHolder::class.java].scope as T
-}
+  )[ValueHolder::class.java].ambients
 
-internal class ScopeHolder<T : Scope>(val scope: T) : ViewModel() {
+internal class ValueHolder(@Provide val ambients: Ambients) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
-    scope.dispose()
+    (AmbientScope.current() as DisposableScope).dispose()
   }
 }

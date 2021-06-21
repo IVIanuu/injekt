@@ -23,15 +23,19 @@ import org.jetbrains.kotlin.com.intellij.openapi.progress.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.util.slicedMap.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
 import kotlin.collections.set
@@ -127,6 +131,9 @@ fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
         }
     }"
     is ClassDescriptor -> "class:$fqNameSafe"
+    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let { 
+      "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
+    }}"
     is FunctionDescriptor -> "function:$fqNameSafe:${
       listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
         .plus(original.valueParameters)

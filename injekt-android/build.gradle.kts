@@ -31,8 +31,8 @@ android {
 }
 
 dependencies {
+  api(project(":injekt-ambient"))
   api(project(":injekt-coroutines"))
-  api(project(":injekt-scope"))
   kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
   api(Deps.AndroidX.Activity.activity)
   api(Deps.AndroidX.Lifecycle.runtime)

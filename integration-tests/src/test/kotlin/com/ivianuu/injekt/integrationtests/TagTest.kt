@@ -142,26 +142,5 @@ class TagTest {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
   }
-
-  @Test fun testSubstitutesTagTypeParameters() = singleAndMultiCodegen(
-    """
-      @Provide fun foo(): @Eager<AppScope> Foo = Foo()
-  
-      typealias ChildScope = Scope
-  
-      @Provide val childScopeModule = ChildScopeModule0<AppScope, ChildScope>()
-  
-      @ScopeElement<ChildScope>
-      @Provide
-      class MyElement(val foo: Foo)
-    """,
-    """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = inject<AppScope>()
-    """
-  ) {
-    compilationShouldBeOk()
-    irShouldNotContain("scopedImpl<Foo, Foo, U>(")
-  }
 }
 
