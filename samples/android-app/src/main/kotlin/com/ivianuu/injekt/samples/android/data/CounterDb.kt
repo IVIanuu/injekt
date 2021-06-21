@@ -27,7 +27,7 @@ interface CounterDb {
   suspend fun updateCounter(transform: Int.() -> Int)
 }
 
-@Provide @Scoped<NamedScope<ForApp>>
+@Provide @Scoped<ForApp>
 class CounterDbImpl : CounterDb {
   private val _counterState = MutableStateFlow(0)
   override val counterState: Flow<Int> by this::_counterState

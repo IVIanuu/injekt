@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.ForApp
+import com.ivianuu.injekt.ambient.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.junit.*
@@ -28,7 +28,7 @@ class ScopedTest {
 
     class Foo
 
-    @Provide fun scopedFoo(): @Scoped<NamedScope<ForApp>> Foo {
+    @Provide fun scopedFoo(): @Scoped<ForApp> Foo {
       callCount++
       return Foo()
     }

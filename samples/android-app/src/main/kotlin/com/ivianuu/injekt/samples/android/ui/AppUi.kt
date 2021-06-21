@@ -58,7 +58,7 @@ typealias AppUi = @Composable () -> Unit
   }
 }
 
-@Provide @Scoped<NamedScope<ForActivityRetained>>
+@Provide @Scoped<ForActivityRetained>
 class CounterViewModel(
   private val incCounter: IncCounterUseCase,
   private val decCounter: DecCounterUseCase,

@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.assertions.throwables.*
 import io.kotest.matchers.*
 import org.junit.*
 
@@ -125,16 +124,5 @@ class TypeKeyTest {
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"
-  }
-
-  @Test fun testTypeKeyWithStar2() = codegen(
-    """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      val scope = inject<(@Provide @ScopeElement<AppScope> Map<*, *>) -> AppScope>()
-        .invoke(emptyMap<Any?, Any?>())
-      fun invoke() = scope.element<Map<*, *>>()
-    """
-  ) {
-    shouldNotThrow<Throwable> { invokeSingleFile() }
   }
 }

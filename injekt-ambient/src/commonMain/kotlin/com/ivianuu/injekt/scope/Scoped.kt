@@ -36,11 +36,11 @@ import com.ivianuu.injekt.common.*
  * }
  * ```
  */
-@Tag annotation class Scoped<S : Scope> {
+@Tag annotation class Scoped<N> {
   companion object {
-    @Provide inline fun <@Spread T : @Scoped<S> U, U : Any, S : Scope> scopedValue(
+    @Provide inline fun <@Spread T : @Scoped<N> U, U : Any, N> scopedValue(
       factory: () -> T,
-      scope: S,
+      scope: NamedScope<N>,
       key: TypeKey<U>
     ): U = scope.cache(key, factory)
   }

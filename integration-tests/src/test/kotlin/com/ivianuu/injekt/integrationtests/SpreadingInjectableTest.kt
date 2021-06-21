@@ -133,20 +133,6 @@ class SpreadingInjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testScoped() = singleAndMultiCodegen(
-    """
-      typealias ActivityScope = Scope
-      @Provide val activityScopeModule = ChildScopeModule0<AppScope, ActivityScope>()
-    """,
-    """
-      @Provide fun foo(): @Scoped<AppScope> Foo = Foo()
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() = inject<Foo>()
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testMultipleSpreadCandidatesWithSameType() = singleAndMultiCodegen(
     """
       @Tag annotation class Trigger
@@ -230,37 +216,6 @@ class SpreadingInjectableTest {
     1 shouldBe invokeSingleFile()
   }
 
-  @Test fun testComplexSpreadingSetup() = singleAndMultiCodegen(
-    """
-      typealias App = Any
-  
-      @Scoped<AppScope>
-      @Provide
-      class Dep(app: App)
-  
-      @Scoped<AppScope>
-      @Provide
-      class DepWrapper(dep: Dep)
-  
-      @Scoped<AppScope>
-      @Provide
-      class DepWrapper2(dep: () -> Dep, wrapper: () -> DepWrapper)
-  
-      @ScopeElement<AppScope>
-      @Provide
-      class MyComponent(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2)
-  
-      @Provide
-      fun myInitializer(dep: Dep, wrapper: () -> () -> DepWrapper, wrapper2: () -> DepWrapper2): ScopeInitializer<AppScope> = {}
-    """,
-    """
-      @Providers("com.ivianuu.injekt.common.*", "com.ivianuu.injekt.scope.*")
-      fun invoke() {
-        inject<(@Provide @ScopeElement<AppScope> App) -> AppScope>()
-      }
-    """
-  )
-
   @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
     """
       @Tag annotation class ClassSingleton
@@ -290,9 +245,8 @@ class SpreadingInjectableTest {
       @Tag annotation class ClassSingleton
       
       @Provide inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
-        factory: () -> T,
-        scope: AppScope
-      ): U = scope.getOrCreateScopedValue(U::class, factory)
+        factory: () -> T
+      ): U = factory()
       
       class MyModule<T : S, S> {
         @Provide fun value(v: T): S = v

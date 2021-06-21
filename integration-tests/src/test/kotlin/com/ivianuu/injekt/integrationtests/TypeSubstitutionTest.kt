@@ -77,7 +77,7 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
     val scoped = typeFor(FqName("com.ivianuu.injekt.scope.Scoped"))
-    val (scopedT, scopedU, scopedS) = analysisContext.injektContext.memberScopeForFqName(
+    val (scopedT, scopedU, scopedN) = analysisContext.injektContext.memberScopeForFqName(
       FqName("com.ivianuu.injekt.scope.Scoped.Companion"),
       NoLookupLocation.FROM_BACKEND
     )!!
@@ -85,10 +85,10 @@ class TypeSubstitutionTest {
       .single()
       .typeParameters
       .map { it.toClassifierRef() }
-    val appScope = typeFor(FqName("com.ivianuu.injekt.scope.AppScope"))
+    val forApp = typeFor(FqName("com.ivianuu.injekt.ambient.ForApp"))
     val substitutionType = scoped.wrap(stringType)
       .let {
-        it.withArguments(listOf(appScope) + it.arguments.drop(1))
+        it.withArguments(listOf(forApp) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
       buildBaseContextForSpreadingInjectable(substitutionType, emptyList()),
@@ -97,10 +97,10 @@ class TypeSubstitutionTest {
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
-    map[scopedS] shouldBe appScope
+    map[scopedN] shouldBe forApp
   }
 
-  @Test fun testGetSubstitutionMapInScopeElementAndInjectCoroutineScopeLikeScenario() =
+  @Test fun testGetSubstitutionMapNamedCoroutineScopeLikeScenario() =
     withTypeCheckerContext {
       val (installElementModuleT, installElementModuleU, installElementModuleS) =
         analysisContext.injektContext.classifierDescriptorForFqName(

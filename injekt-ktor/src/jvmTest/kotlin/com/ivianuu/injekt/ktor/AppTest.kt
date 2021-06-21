@@ -44,7 +44,7 @@ class AppTest {
 }
 
 @Provide
-@Scoped<NamedScope<ForApp>>
+@Scoped<ForApp>
 @AmbientService<ForApp>
 class ScopeDisposeListener : ScopeDisposable {
   var disposed = false
