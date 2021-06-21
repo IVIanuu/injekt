@@ -21,7 +21,7 @@ import com.ivianuu.injekt.common.*
 import io.kotest.matchers.*
 import org.junit.*
 
-class ProvidedValuesTest {
+class AmbientsFactoryTest {
   @Test fun testNamedProvidedValue() {
     val ambient = ambientOf { 0 }
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
@@ -29,12 +29,12 @@ class ProvidedValuesTest {
     ambient.current() shouldBe 42
   }
 
-  @Test fun testProvidedValuesFactoryModule() {
+  @Test fun testAmbientsFactoryModule() {
     val ambient = ambientOf { 0 }
-    @Provide val childProvidedValuesModule = ProvidedValuesFactoryModule0<ForApp, ForChild>()
+    @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
     @Provide val parentAmbients = ambientsOf<ForApp>()
-    withInstances(createAmbientsFromProvidedValues<ForChild>()) {
+    withInstances(ambientsFromFactoryOf<ForChild>()) {
       ambient.current() shouldBe 42
     }
   }

@@ -25,15 +25,15 @@ import com.ivianuu.injekt.ambient.*
 /**
  * Returns a new [Ambients] including all [ForService] services which must be manually stored and disposed
  */
-fun Service.createServiceAmbients(): Ambients = createAmbientsFromProvidedValues<ForService, Service>(
+fun Service.createServiceAmbients(): Ambients = ambientsFromFactoryOf<ForService, Service>(
   this,
   application.appAmbients
 )
 
 abstract class ForService private constructor()
 
-@Provide val serviceProvidedValuesModule =
-  ProvidedValuesFactoryModule1<ForApp, Service, ForService>()
+@Provide val serviceAmbientsFactoryModule =
+  AmbientsFactoryModule1<ForApp, Service, ForService>()
 
 typealias ServiceContext = Context
 

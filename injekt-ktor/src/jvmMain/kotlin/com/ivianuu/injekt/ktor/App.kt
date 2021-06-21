@@ -33,9 +33,9 @@ import io.ktor.util.*
   get() = application.ambients
 
 inline fun Application.initializeAppAmbients(
-  @Inject providedValuesFactory: (@Provide Application) -> ProvidedValues<ForApp>
+  @Inject ambientsFactory: (@Provide Application) -> AmbientsFactory<ForApp>
 ) {
-  registerAppAmbients(providedValuesFactory(this).createAmbients(ambientsOf()))
+  registerAppAmbients(ambientsFactory(this).create(ambientsOf()))
 }
 
 @PublishedApi internal fun Application.registerAppAmbients(@Inject ambients: Ambients) {

@@ -27,13 +27,13 @@ import com.ivianuu.injekt.ambient.*
 fun BroadcastReceiver.createReceiverAmbients(
   context: Context,
   intent: Intent,
-): Ambients = createAmbientsFromProvidedValues<ForReceiver, BroadcastReceiver, ReceiverContext, ReceiverIntent>(
+): Ambients = ambientsFromFactoryOf<ForReceiver, BroadcastReceiver, ReceiverContext, ReceiverIntent>(
   this, context, intent, (context.applicationContext as Application).appAmbients
 )
 
 abstract class ForReceiver private constructor()
 
-@Provide val receiverProvidedValuesModule = ProvidedValuesFactoryModule3<ForApp,
+@Provide val receiverAmbientsFactoryModule = AmbientsFactoryModule3<ForApp,
     BroadcastReceiver, ReceiverContext, ReceiverIntent, ForReceiver>()
 
 typealias ReceiverContext = Context

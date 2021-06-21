@@ -20,7 +20,6 @@ import android.content.*
 import androidx.work.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.scope.*
 import kotlin.reflect.*
 
 /**

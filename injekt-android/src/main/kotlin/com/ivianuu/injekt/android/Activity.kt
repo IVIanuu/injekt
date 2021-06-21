@@ -30,13 +30,13 @@ import com.ivianuu.injekt.ambient.*
  */
 @Provide val ComponentActivity.activityAmbients: Ambients
   get() = lifecycle.cachedAmbients {
-    createAmbientsFromProvidedValues<ForActivity, ComponentActivity>(this, activityRetainedAmbients)
+    ambientsFromFactoryOf<ForActivity, ComponentActivity>(this, activityRetainedAmbients)
   }
 
 abstract class ForActivity private constructor()
 
-@Provide val activityProvidedValuesModule =
-  ProvidedValuesFactoryModule1<ForActivityRetained, ComponentActivity, ForActivity>()
+@Provide val activityAmbientsFactoryModule =
+  AmbientsFactoryModule1<ForActivityRetained, ComponentActivity, ForActivity>()
 
 typealias ActivityContext = Context
 

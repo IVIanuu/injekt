@@ -39,8 +39,8 @@ operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
 operator fun Ambients.plus(values: Iterable<ProvidedValue<*>>): Ambients =
   plus(*values.toList().toTypedArray())
 
-operator fun Ambients.plus(values: ProvidedValues<*>): Ambients =
-  values.createAmbients()
+operator fun Ambients.plus(values: AmbientsFactory<*>): Ambients =
+  values.create()
 
 fun ambientsOf(): Ambients = Ambients(emptyMap())
 
@@ -67,8 +67,8 @@ fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
 @OptIn(ExperimentalStdlibApi::class)
 fun <N> ambientsOf(
   @Inject ambients: Ambients = ambientsOf(),
-  @Inject values: ProvidedValues<N>
-): Ambients = values.createAmbients()
+  @Inject values: AmbientsFactory<N>
+): Ambients = values.create()
 
 class ProvidedValue<T> internal constructor(
   val ambient: Ambient<T>,
@@ -84,7 +84,7 @@ typealias NamedProvidedValue<N, T> = ProvidedValue<T>
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @Provide
-class ProvidedValues<N>(
+class AmbientsFactory<N>(
   valueFactories: (@Provide NamedScope<N>) -> Set<NamedProvidedValue<N, *>> = { emptySet() },
   scopeObservers: (@Provide NamedScope<N>) -> Set<ScopeObserver<N>> = { emptySet() }
 ) {
@@ -92,7 +92,7 @@ class ProvidedValues<N>(
   private val valueFactories = valueFactories
   private val scopeObservers = scopeObservers
 
-  fun createAmbients(@Inject ambients: Ambients): Ambients {
+  fun create(@Inject ambients: Ambients): Ambients {
     val parent = AmbientScope.current()
     @Provide val scope = DisposableScope()
     val parentDisposable = scope.disposeWith(parent)

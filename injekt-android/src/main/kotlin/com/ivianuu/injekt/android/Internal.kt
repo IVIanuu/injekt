@@ -21,7 +21,6 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
-import com.ivianuu.injekt.scope.*
 
 internal val ambientsByLifecycle = mutableMapOf<Lifecycle, Ambients>()
 

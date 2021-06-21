@@ -21,83 +21,83 @@ package com.ivianuu.injekt.ambient
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
 
-@Tag private annotation class ProvidedValuesFactory
+@Tag private annotation class AmbientsFactoryMarker
 
-abstract class AbstractProvidedValuesFactoryModule<P, T, S : T> {
-  @Provide fun factoryService(factory: S): @AmbientService<P> @ProvidedValuesFactory T = factory
+abstract class AbstractAmbientsFactoryModule<P, T, S : T> {
+  @Provide fun factoryService(factory: S): @AmbientService<P> @AmbientsFactoryMarker T = factory
 }
 
-class ProvidedValuesFactoryModule0<P, C> :
-  AbstractProvidedValuesFactoryModule<P, () -> ProvidedValues<C>, () -> ProvidedValues<C>>()
+class AmbientsFactoryModule0<P, C> :
+  AbstractAmbientsFactoryModule<P, () -> AmbientsFactory<C>, () -> AmbientsFactory<C>>()
 
-class ProvidedValuesFactoryModule1<P, P1, C> : AbstractProvidedValuesFactoryModule<P,
-      (P1) -> ProvidedValues<C>,
-      (@Provide @AmbientService<C> P1) -> ProvidedValues<C>>()
+class AmbientsFactoryModule1<P, P1, C> : AbstractAmbientsFactoryModule<P,
+      (P1) -> AmbientsFactory<C>,
+      (@Provide @AmbientService<C> P1) -> AmbientsFactory<C>>()
 
-class ProvidedValuesFactoryModule2<P, P1, P2, C> : AbstractProvidedValuesFactoryModule<P,
-      (P1, P2) -> ProvidedValues<C>,
+class AmbientsFactoryModule2<P, P1, P2, C> : AbstractAmbientsFactoryModule<P,
+      (P1, P2) -> AmbientsFactory<C>,
       (
   @Provide @AmbientService<C> P1,
   @Provide @AmbientService<C> P2
-) -> ProvidedValues<C>>()
+) -> AmbientsFactory<C>>()
 
-class ProvidedValuesFactoryModule3<P, P1, P2, P3, C> : AbstractProvidedValuesFactoryModule<P,
-      (P1, P2, P3) -> ProvidedValues<C>,
+class AmbientsFactoryModule3<P, P1, P2, P3, C> : AbstractAmbientsFactoryModule<P,
+      (P1, P2, P3) -> AmbientsFactory<C>,
       (
   @Provide @AmbientService<C> P1,
   @Provide @AmbientService<C> P2,
   @Provide @AmbientService<C> P3
-) -> ProvidedValues<C>>()
+) -> AmbientsFactory<C>>()
 
-class ProvidedValuesFactoryModule4<P, P1, P2, P3, P4, C> :
-  AbstractProvidedValuesFactoryModule<P,
-        (P1, P2, P3, P4) -> ProvidedValues<C>,
+class AmbientsFactoryModule4<P, P1, P2, P3, P4, C> :
+  AbstractAmbientsFactoryModule<P,
+        (P1, P2, P3, P4) -> AmbientsFactory<C>,
         (
     @Provide @AmbientService<C> P1,
     @Provide @AmbientService<C> P2,
     @Provide @AmbientService<C> P3,
     @Provide @AmbientService<C> P4
-  ) -> ProvidedValues<C>>()
+  ) -> AmbientsFactory<C>>()
 
-class ProvidedValuesFactoryModule5<P, P1, P2, P3, P4, P5, C> :
-  AbstractProvidedValuesFactoryModule<P,
-        (P1, P2, P3, P4, P5) -> ProvidedValues<C>,
+class AmbientsFactoryModule5<P, P1, P2, P3, P4, P5, C> :
+  AbstractAmbientsFactoryModule<P,
+        (P1, P2, P3, P4, P5) -> AmbientsFactory<C>,
         (
     @Provide @AmbientService<C> P1,
     @Provide @AmbientService<C> P2,
     @Provide @AmbientService<C> P3,
     @Provide @AmbientService<C> P4,
     @Provide @AmbientService<C> P5
-  ) -> ProvidedValues<C>>()
+  ) -> AmbientsFactory<C>>()
 
-fun <N> createAmbientsFromProvidedValues(
+fun <N> ambientsFromFactoryOf(
   @Inject ambients: Ambients,
   @Inject nameKey: TypeKey<N>
-): Ambients = AmbientService.current<@ProvidedValuesFactory () -> ProvidedValues<N>>()
+): Ambients = AmbientService.current<@AmbientsFactoryMarker () -> AmbientsFactory<N>>()
   .invoke()
-  .createAmbients()
+  .create()
 
-fun <N, P1> createAmbientsFromProvidedValues(
+fun <N, P1> ambientsFromFactoryOf(
   p1: P1,
   @Inject ambients: Ambients,
   @Inject nameKey: TypeKey<N>,
   @Inject p1Key: TypeKey<P1>
-): Ambients = AmbientService.current<@ProvidedValuesFactory (P1) -> ProvidedValues<N>>()
+): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1) -> AmbientsFactory<N>>()
   .invoke(p1)
-  .createAmbients()
+  .create()
 
-fun <N, P1, P2> createAmbientsFromProvidedValues(
+fun <N, P1, P2> ambientsFromFactoryOf(
   p1: P1,
   p2: P2,
   @Inject ambients: Ambients,
   @Inject nameKey: TypeKey<N>,
   @Inject p1Key: TypeKey<P1>,
   @Inject p2Key: TypeKey<P2>
-): Ambients = AmbientService.current<@ProvidedValuesFactory (P1, P2) -> ProvidedValues<N>>()
+): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2) -> AmbientsFactory<N>>()
   .invoke(p1, p2)
-  .createAmbients()
+  .create()
 
-fun <N, P1, P2, P3> createAmbientsFromProvidedValues(
+fun <N, P1, P2, P3> ambientsFromFactoryOf(
   p1: P1,
   p2: P2,
   p3: P3,
@@ -106,11 +106,11 @@ fun <N, P1, P2, P3> createAmbientsFromProvidedValues(
   @Inject p1Key: TypeKey<P1>,
   @Inject p2Key: TypeKey<P2>,
   @Inject p3Key: TypeKey<P3>
-): Ambients = AmbientService.current<@ProvidedValuesFactory (P1, P2, P3) -> ProvidedValues<N>>()
+): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2, P3) -> AmbientsFactory<N>>()
   .invoke(p1, p2, p3)
-  .createAmbients()
+  .create()
 
-fun <N, P1, P2, P3, P4> createAmbientsFromProvidedValues(
+fun <N, P1, P2, P3, P4> ambientsFromFactoryOf(
   p1: P1,
   p2: P2,
   p3: P3,
@@ -121,11 +121,11 @@ fun <N, P1, P2, P3, P4> createAmbientsFromProvidedValues(
   @Inject p2Key: TypeKey<P2>,
   @Inject p3Key: TypeKey<P3>,
   @Inject p4Key: TypeKey<P4>
-): Ambients = AmbientService.current<@ProvidedValuesFactory (P1, P2, P3, P4) -> ProvidedValues<N>>()
+): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2, P3, P4) -> AmbientsFactory<N>>()
   .invoke(p1, p2, p3, p4)
-  .createAmbients()
+  .create()
 
-fun <N, P1, P2, P3, P4, P5> createAmbientsFromProvidedValues(
+fun <N, P1, P2, P3, P4, P5> ambientsFromFactoryOf(
   p1: P1,
   p2: P2,
   p3: P3,
@@ -138,6 +138,6 @@ fun <N, P1, P2, P3, P4, P5> createAmbientsFromProvidedValues(
   @Inject p3Key: TypeKey<P3>,
   @Inject p4Key: TypeKey<P4>,
   @Inject p5Key: TypeKey<P5>
-): Ambients = AmbientService.current<@ProvidedValuesFactory (P1, P2, P3, P4, P5) -> ProvidedValues<N>>()
+): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2, P3, P4, P5) -> AmbientsFactory<N>>()
   .invoke(p1, p2, p3, p4, p5)
-  .createAmbients()
+  .create()
