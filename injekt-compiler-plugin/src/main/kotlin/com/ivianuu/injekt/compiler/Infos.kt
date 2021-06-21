@@ -41,12 +41,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
  */
 data class CallableInfo(
   val type: TypeRef,
-  val parameterTypes: Map<Int, TypeRef> = emptyMap(),
-  val injectParameters: Set<Int> = emptySet(),
-  val defaultOnAllErrorsParameters: Set<Int> = emptySet()
+  val parameterTypes: Map<Int, TypeRef>,
+  val injectParameters: Set<Int>,
+  val defaultOnAllErrorsParameters: Set<Int>,
+  val contextParameters: Set<TypeRef>
 ) {
   companion object {
-    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
+    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet(), emptySet())
   }
 }
 
@@ -125,11 +126,23 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
     .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
     .mapTo(mutableSetOf()) { it.injektIndex() }
 
+  val contextParameters = annotations
+    .filter {
+      it.type.constructor.declarationDescriptor?.fqNameSafe?.asString()
+        ?.startsWith(InjektFqNames.Inject.asString()) == true
+    }
+    .flatMapTo(mutableSetOf()) { annotation ->
+      annotation.type
+      .arguments
+      .map { it.type.toTypeRef() }
+    }
+
   val info = CallableInfo(
     type = type,
     parameterTypes = parameterTypes,
     injectParameters = injectParameters,
-    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+    defaultOnAllErrorsParameters = defaultOnAllErrorsParameters,
+    contextParameters = contextParameters
   )
 
   // import to cache the info before persisting it
@@ -189,7 +202,8 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   @SerialName("0") val type: PersistedTypeRef,
   @SerialName("1") val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
   @SerialName("2") val injectParameters: Set<Int> = emptySet(),
-  @SerialName("3") val defaultOnAllErrorsParameters: Set<Int> = emptySet()
+  @SerialName("3") val defaultOnAllErrorsParameters: Set<Int> = emptySet(),
+  @SerialName("4") val contextParameters: Set<PersistedTypeRef> = emptySet()
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject context: AnalysisContext) = PersistedCallableInfo(
@@ -197,7 +211,8 @@ fun CallableInfo.toPersistedCallableInfo(@Inject context: AnalysisContext) = Per
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
   injectParameters = injectParameters,
-  defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+  defaultOnAllErrorsParameters = defaultOnAllErrorsParameters,
+  contextParameters = contextParameters.mapTo(mutableSetOf()) { it.toPersistedTypeRef() }
 )
 
 fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = CallableInfo(
@@ -205,7 +220,8 @@ fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = Cal
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef() },
   injectParameters = injectParameters,
-  defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+  defaultOnAllErrorsParameters = defaultOnAllErrorsParameters,
+  contextParameters = contextParameters.mapTo(mutableSetOf()) { it.toTypeRef() }
 )
 
 /**
@@ -217,7 +233,8 @@ class ClassifierInfo(
   val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false,
-  val isSingletonInjectable: Boolean = false
+  val isSingletonInjectable: Boolean = false,
+  val contextProperties: Set<TypeRef>
 ) {
   val superTypes by lazySuperTypes
 }
@@ -299,12 +316,15 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
                   it.hasBackingField(context.trace?.bindingContext))
         }
 
+  val contextProperties = setOf<TypeRef>()
+
   val info = ClassifierInfo(
     tags = tags,
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
-    isSingletonInjectable = isSingletonInjectable
+    isSingletonInjectable = isSingletonInjectable,
+    contextProperties = contextProperties
   )
 
   // import to cache the info before persisting it
@@ -320,7 +340,8 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
   @SerialName("3") val isSpread: Boolean = false,
-  @SerialName("5") val isSingletonInjectable: Boolean = false
+  @SerialName("5") val isSingletonInjectable: Boolean = false,
+  @SerialName("6") val contextProperties: Set<PersistedTypeRef> = emptySet()
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
@@ -330,7 +351,8 @@ fun PersistedClassifierInfo.toClassifierInfo(
   lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  isSingletonInjectable = isSingletonInjectable
+  isSingletonInjectable = isSingletonInjectable,
+  contextProperties = contextProperties.mapTo(mutableSetOf()) { it.toTypeRef() }
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(
@@ -340,7 +362,8 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  isSingletonInjectable = isSingletonInjectable
+  isSingletonInjectable = isSingletonInjectable,
+  contextProperties = contextProperties.mapTo(mutableSetOf()) { it.toPersistedTypeRef() }
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
@@ -451,6 +474,29 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
     ) { newAnnotations }
     is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
+    else -> {
+      //throw AssertionError("Cannot add annotation to $this $javaClass")
+    }
+  }
+}
+
+fun Annotated.removeAnnotations(annotationsToRemove: List<AnnotationDescriptor>) {
+  if (annotationsToRemove.isEmpty()) return
+  val newAnnotations = Annotations.create(
+    annotationsToRemove
+      .filter { it !in annotationsToRemove }
+  )
+  when (this) {
+    is AnnotatedImpl -> updatePrivateFinalField<Annotations>(
+      AnnotatedImpl::class,
+      "annotations"
+    ) { newAnnotations }
+    is LazyClassDescriptor -> updatePrivateFinalField<Annotations>(
+      LazyClassDescriptor::class,
+      "annotations"
+    ) { newAnnotations }
+    is InjectFunctionDescriptor -> underlyingDescriptor.removeAnnotations(annotationsToRemove)
+    is FunctionImportedFromObject -> callableFromObject.removeAnnotations(annotationsToRemove)
     else -> {
       //throw AssertionError("Cannot add annotation to $this $javaClass")
     }

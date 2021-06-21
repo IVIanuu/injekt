@@ -49,7 +49,7 @@ annotation class Provide
 
   // Lambda
   // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
+  AnnotationTarget.TYPE,
 )
 annotation class Inject
 

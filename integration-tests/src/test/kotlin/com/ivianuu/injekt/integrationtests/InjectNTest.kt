@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.typeclasses
+package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.test.*
+import org.junit.*
 
-fun interface Ord<in T> {
-  fun compare(a: T, b: T): Int
+class InjectNTest {
+  @Test fun testFunctionWithInjectNAnnotation() = singleAndMultiCodegen(
+    """
+      @Inject1<Foo>
+      fun fooOf() = inject<Foo>()
+    """,
+    """
+      @Provide val foo = Foo()
+      fun invoke() = fooOf()
+    """
+  )
 
-  companion object {
-    @Provide val int = Ord<Int> { a, b -> a.compareTo(b) }
-  }
-}
-
-@Inject1<Ord<T>>
-infix fun <T> T.compareTo(other: T): Int = inject<Ord<T>>().compare(this, other)
-
-@Inject1<Ord<T>>
-fun <T> List<T>.sorted(): List<T> = sortedWith { a, b -> a compareTo b }
-
-fun main() {
-  val items = listOf(5, 3, 4, 1, 2).sorted()
 }
