@@ -103,7 +103,7 @@ class AmbientsFactory<N>(
   fun create(@Inject ambients: Ambients): Ambients {
     val parent = AmbientScope.current()
     @Provide val scope = DisposableScope()
-    val parentDisposable = scope.bind()
+    val parentDisposable = scope.bind(parent)
     parentDisposable.bind()
     val values = valueFactories(scope)
 
