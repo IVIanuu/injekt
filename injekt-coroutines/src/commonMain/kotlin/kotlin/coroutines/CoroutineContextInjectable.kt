@@ -19,4 +19,3 @@ package kotlin.coroutines
 import com.ivianuu.injekt.*
 
 @Provide suspend fun currentCoroutineContext(): CoroutineContext = coroutineContext
-
