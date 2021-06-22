@@ -28,36 +28,22 @@ interface Scope {
   /**
    * Returns the scoped value [T] for [key] or null
    */
-  fun <T : Any> get(key: Any): T?
-
-  fun <T : Any> get(key: TypeKey<T>): T? =
-    get(key.value)
-
-  fun <T : Any> get(key: SourceKey): T? =
-    get(key.value)
+  @InternalScopeApi fun <T : Any> get(key: Any): T?
 
   /**
    * Store's [value] for [key]
    *
    * If [value] is a [ScopeDisposable] [ScopeDisposable.dispose] will be invoked once this scope gets disposed
    */
-  fun <T : Any> set(key: Any, value: T)
-
-  fun <T : Any> set(key: TypeKey<T>, value: T) =
-    set(key.value, value)
-
-  fun <T : Any> set(key: SourceKey, value: T) =
-    set(key.value, value)
+  @InternalScopeApi fun <T : Any> set(key: Any, value: T)
 
   /**
    * Removes the scoped value for [key]
    */
-  fun remove(key: Any)
-
-  fun remove(key: TypeKey<*>) = remove(key.value)
-
-  fun remove(key: SourceKey) = remove(key.value)
+  @InternalScopeApi fun remove(key: Any)
 }
+
+@RequiresOptIn annotation class InternalScopeApi
 
 /**
  * Runs the [block] with a fresh [Scope] which will be disposed after the execution
@@ -74,6 +60,7 @@ inline fun <R> withScope(block: (@Inject Scope) -> R): R {
 /**
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [computation]
  */
+@OptIn(InternalScopeApi::class)
 inline fun <T : Any> scoped(key: Any, @Inject scope: Scope, computation: () -> T): T {
   scope.get<T>(key)?.let { return it }
   scope.withLock {
@@ -116,6 +103,7 @@ fun interface ScopeDisposable {
  *
  * Returns a [ScopeDisposable] to unregister for disposables
  */
+@OptIn(InternalScopeApi::class)
 fun ScopeDisposable.bind(@Inject scope: Scope): ScopeDisposable {
   if (scope.isDisposed) {
     dispose()
@@ -164,8 +152,10 @@ private class DisposableScopeImpl : DisposableScope {
     (values ?: hashMapOf<Any, Any>().also { values = it })
 
   @Suppress("UNCHECKED_CAST")
+  @InternalScopeApi
   override fun <T : Any> get(key: Any): T? = values?.get(key) as? T
 
+  @InternalScopeApi
   override fun <T : Any> set(key: Any, value: T) {
     synchronizedWithDisposedCheck {
       removeScopedValueImpl(key)
@@ -175,6 +165,7 @@ private class DisposableScopeImpl : DisposableScope {
     }
   }
 
+  @InternalScopeApi
   override fun remove(key: Any) {
     synchronizedWithDisposedCheck { removeScopedValueImpl(key) }
   }
