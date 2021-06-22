@@ -24,3 +24,10 @@ val LocalAmbients = staticCompositionLocalOf { ambientsOf() }
 
 @Provide val localAmbients: Ambients
   @Composable get() = LocalAmbients.current
+
+@Composable fun AmbientsProvider(
+  @Inject ambients: Ambients,
+  content: @Composable () -> Unit
+) {
+  CompositionLocalProvider(LocalAmbients provides ambients, content = content)
+}

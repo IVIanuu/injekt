@@ -18,6 +18,7 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
+import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
 @Provide val CoroutineContext.ambients: Ambients
@@ -26,6 +27,12 @@ import kotlin.coroutines.*
 
 fun Ambients.asCoroutineContext(): CoroutineContext =
   AmbientsCoroutineContextElement(this)
+
+suspend fun <R> withAmbientsContext(
+  context: CoroutineContext = EmptyCoroutineContext,
+  @Inject ambients: Ambients,
+  block: suspend CoroutineScope.() -> R
+) = withContext(coroutineContext + context + ambients.asCoroutineContext(),  block)
 
 private class AmbientsCoroutineContextElement(
   val ambients: Ambients
