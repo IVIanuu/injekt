@@ -19,6 +19,7 @@ package com.ivianuu.injekt.samples.coffeemaker
 import com.ivianuu.injekt.*
 
 fun main() {
+  // make coffee with automatically injected parameters
   makeCoffee()
 }
 

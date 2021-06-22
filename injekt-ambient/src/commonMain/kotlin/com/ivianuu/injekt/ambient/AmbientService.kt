@@ -33,6 +33,7 @@ import com.ivianuu.injekt.scope.*
   }
 }
 
+@OptIn(InternalScopeApi::class)
 @Suppress("UNCHECKED_CAST")
 @PublishedApi
 internal fun <T> serviceAmbientOf(@Inject key: TypeKey<T>): ProvidableAmbient<() -> T> {

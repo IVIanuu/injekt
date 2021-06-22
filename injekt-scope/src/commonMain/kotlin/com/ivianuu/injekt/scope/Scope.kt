@@ -33,7 +33,7 @@ interface Scope {
   /**
    * Store's [value] for [key]
    *
-   * If [value] is a [ScopeDisposable] [ScopeDisposable.dispose] will be invoked once this scope gets disposed
+   * If [value] is a [Disposable] [Disposable.dispose] will be invoked once this scope gets disposed
    */
   @InternalScopeApi fun <T : Any> set(key: Any, value: T)
 
@@ -71,26 +71,23 @@ inline fun <T : Any> scoped(key: Any, @Inject scope: Scope, computation: () -> T
   }
 }
 
-inline fun <T : Any> scoped(@Inject scope: Scope, @Inject key: TypeKey<T>, computation: () -> T): T =
+inline fun <T : Any> scoped(@Inject key: TypeKey<T>, @Inject scope: Scope, computation: () -> T): T =
   scoped(key = key.value, computation = computation)
 
 /**
  * Invokes the [action] function once [scope] gets disposed
  * or invokes it synchronously if [scope] is already disposed
  *
- * Returns a [ScopeDisposable] to unregister the [action]
+ * Returns a [Disposable] to unregister the [action]
  */
-inline fun invokeOnDispose(@Inject scope: Scope, crossinline action: () -> Unit): ScopeDisposable =
-  ScopeDisposable { action() }.bind()
-
-inline fun <R> Scope.withLock(block: () -> R): R = synchronized(this, block)
-
-private val NoOpScopeDisposable = ScopeDisposable { }
+inline fun invokeOnDispose(@Inject scope: Scope, crossinline action: () -> Unit) {
+  Disposable { action() }.bind()
+}
 
 /**
  * Allows scoped values to be notified when the hosting [Scope] gets disposed
  */
-fun interface ScopeDisposable {
+fun interface Disposable {
   /**
    * Will be called when the hosting [Scope] gets disposed
    */
@@ -98,48 +95,68 @@ fun interface ScopeDisposable {
 }
 
 /**
+ * Type class to dispose values of [T]
+ */
+fun interface Disposer<in T> {
+  /**
+   * Disposes [value]
+   */
+  fun dispose(value: T)
+}
+
+/**
+ * Returns a [Disposable] which disposes [this] using [disposer]
+ */
+fun <T> T.asDisposable(@Inject disposer: Disposer<T>): Disposable =
+  Disposable { disposer.dispose(this) }
+
+/**
+ * Disposes this value with [scope] using [disposer]
+ */
+fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): T =
+  apply { asDisposable().bind() }
+
+/**
  * Disposes this disposable once [scope] gets disposed
  * or synchronously if [scope] is already disposed
  *
- * Returns a [ScopeDisposable] to unregister for disposables
+ * Returns a [Disposable] to unregister for disposables
  */
 @OptIn(InternalScopeApi::class)
-fun ScopeDisposable.bind(@Inject scope: Scope): ScopeDisposable {
+fun <T : Disposable> T.bind(@Inject scope: Scope): T {
   if (scope.isDisposed) {
     dispose()
-    return NoOpScopeDisposable
+    return this
   }
   scope.withLock {
     if (scope.isDisposed) {
       dispose()
-      return NoOpScopeDisposable
+      return this
     }
 
-    class DisposableKey
-
-    val key = DisposableKey()
-    var notifyDisposal = true
-    scope.set(key, ScopeDisposable {
-      if (notifyDisposal) dispose()
-    })
-    return ScopeDisposable {
-      notifyDisposal = false
-      scope.remove(key)
-    }
+    val disposable = Disposable { dispose() }
+    scope.set(disposable, disposable)
   }
+
+  return this
 }
 
+@OptIn(InternalScopeApi::class)
+inline fun <R> Scope.withLock(block: () -> R): R = synchronized(this, block)
+
 /**
- * A mutable version of [Scope] which is also a [ScopeDisposable]
+ * A mutable version of [Scope] which is also a [Disposable]
  */
-interface DisposableScope : Scope, ScopeDisposable
+interface DisposableScope : Scope, Disposable
 
 /**
  * Returns a new [DisposableScope]
  */
-fun DisposableScope(): DisposableScope = DisposableScopeImpl()
+@OptIn(InternalScopeApi::class)
+fun DisposableScope(): DisposableScope = DisposableImpl()
 
-private class DisposableScopeImpl : DisposableScope {
+@InternalScopeApi
+private class DisposableImpl : DisposableScope {
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() {
@@ -152,20 +169,17 @@ private class DisposableScopeImpl : DisposableScope {
     (values ?: hashMapOf<Any, Any>().also { values = it })
 
   @Suppress("UNCHECKED_CAST")
-  @InternalScopeApi
   override fun <T : Any> get(key: Any): T? = values?.get(key) as? T
 
-  @InternalScopeApi
   override fun <T : Any> set(key: Any, value: T) {
     synchronizedWithDisposedCheck {
       removeScopedValueImpl(key)
       values()[key] = value
     } ?: kotlin.run {
-      (value as? ScopeDisposable)?.dispose()
+      (value as? Disposable)?.dispose()
     }
   }
 
-  @InternalScopeApi
   override fun remove(key: Any) {
     synchronizedWithDisposedCheck { removeScopedValueImpl(key) }
   }
@@ -182,7 +196,7 @@ private class DisposableScopeImpl : DisposableScope {
   }
 
   private fun removeScopedValueImpl(key: Any) {
-    (values?.remove(key) as? ScopeDisposable)?.dispose()
+    (values?.remove(key) as? Disposable)?.dispose()
   }
 
   private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {
@@ -194,4 +208,5 @@ private class DisposableScopeImpl : DisposableScope {
   }
 }
 
+@InternalScopeApi
 expect inline fun <T> synchronized(lock: Any, block: () -> T): T

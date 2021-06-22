@@ -33,7 +33,7 @@ class ScopeTest {
   @Test fun testRemoveDisposesValue() {
     val scope = DisposableScope()
     var disposed = false
-    scope.set(0, ScopeDisposable { disposed = true })
+    scope.set(0, Disposable { disposed = true })
 
     disposed.shouldBeFalse()
     scope.remove(0)
@@ -43,7 +43,7 @@ class ScopeTest {
   @Test fun testSetDisposesOldValue() {
     val scope = DisposableScope()
     var disposed = false
-    scope.set(0, ScopeDisposable { disposed = true })
+    scope.set(0, Disposable { disposed = true })
 
     disposed.shouldBeFalse()
     scope.set(0, 0)
@@ -53,7 +53,7 @@ class ScopeTest {
   @Test fun testDisposeDisposesValues() {
     val scope = DisposableScope()
     var disposed = false
-    scope.set(0, ScopeDisposable { disposed = true })
+    scope.set(0, Disposable { disposed = true })
 
     disposed.shouldBeFalse()
     scope.dispose()
@@ -76,12 +76,31 @@ class ScopeTest {
     scope.isDisposed.shouldBeTrue()
   }
 
-  @Test fun testBind() {
+  @Test fun testDisposableBind() {
     @Provide val scope = DisposableScope()
     var called = false
-    ScopeDisposable { called = true }.bind()
+    Disposable { called = true }.bind()
     called.shouldBeFalse()
     scope.dispose()
+    called.shouldBeTrue()
+  }
+
+  @Test fun testDisposerAsDisposable() {
+    var called = false
+    @Provide val disposer = Disposer<Unit> { called = true }
+    val disposable = Unit.asDisposable()
+    called.shouldBeFalse()
+    disposable.dispose()
+    called.shouldBeTrue()
+  }
+
+  @Test fun testDisposerBind() {
+    var called = false
+    @Provide val disposer = Disposer<Unit> { called = true }
+    withScope {
+      Unit.bind()
+      called.shouldBeFalse()
+    }
     called.shouldBeTrue()
   }
 
@@ -89,18 +108,8 @@ class ScopeTest {
     @Provide val scope = DisposableScope()
     var called = false
     scope.dispose()
-    ScopeDisposable { called = true }.bind()
+    Disposable { called = true }.bind()
     called.shouldBeTrue()
-  }
-
-  @Test fun testDoesNotDisposeIfReturnDisposableWasDisposed() {
-    @Provide val scope = DisposableScope()
-    var called = false
-    val disposable = ScopeDisposable { called = true }.bind()
-    disposable.dispose()
-    called.shouldBeFalse()
-    scope.dispose()
-    called.shouldBeFalse()
   }
 
   @Test fun testInvokeOnDispose() {

@@ -44,7 +44,7 @@ typealias NamedCoroutineScope<N> = CoroutineScope
 
 private class DisposableCoroutineScope(
   context: CoroutineContext
-) : CoroutineScope, ScopeDisposable {
+) : CoroutineScope, Disposable {
   override val coroutineContext: CoroutineContext = context + SupervisorJob()
   override fun dispose() {
     coroutineContext.cancel()

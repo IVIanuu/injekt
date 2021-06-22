@@ -20,7 +20,7 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.scope.*
 
-class TestDisposable<N> : ScopeDisposable {
+class TestDisposable<N> : Disposable {
   var disposed = false
 
   override fun dispose() {
