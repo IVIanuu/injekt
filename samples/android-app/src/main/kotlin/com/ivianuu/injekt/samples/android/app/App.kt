@@ -25,18 +25,7 @@ package com.ivianuu.injekt.samples.android.app
 import android.app.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.scope.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
 
 class App : Application(), AppAmbientsOwner {
   override val appAmbients by lazy { createAppAmbients() }
-
-  override fun onCreate() {
-    super.onCreate()
-    withScope {
-      val coroutineScope = CoroutineScope(EmptyCoroutineContext).bind()
-
-    }
-  }
 }
