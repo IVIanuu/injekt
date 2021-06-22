@@ -17,11 +17,11 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.scope.*
 
 /**
- * Reuses the same instance within scope [S]
+ * Reuses the same instance within scope [NamedScope] of [N]
  *
  * In the following example each request to Repo resolvers to the same instance
  * ```
@@ -42,6 +42,6 @@ import com.ivianuu.injekt.common.*
       factory: () -> T,
       scope: NamedScope<N>,
       key: TypeKey<U>
-    ): U = scope.cache(key, factory)
+    ): U = scoped(key = key, computation = factory)
   }
 }

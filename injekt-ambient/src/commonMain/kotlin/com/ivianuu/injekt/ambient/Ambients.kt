@@ -19,6 +19,7 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 inline class Ambients(val map: Map<Ambient<*>, Any?>)
@@ -102,14 +103,14 @@ class AmbientsFactory<N>(
   fun create(@Inject ambients: Ambients): Ambients {
     val parent = AmbientScope.current()
     @Provide val scope = DisposableScope()
-    val parentDisposable = scope.disposeWith(parent)
-    parentDisposable.disposeWith(scope)
+    val parentDisposable = scope.bind()
+    parentDisposable.bind()
     val values = valueFactories(scope)
 
     val finalObservers = scopeObservers(scope)
 
     for (scopeObserver in finalObservers)
-      scope.invokeOnDispose { scopeObserver.onDispose() }
+      invokeOnDispose { scopeObserver.onDispose() }
 
     for (scopeObserver in finalObservers)
       scopeObserver.onInit()

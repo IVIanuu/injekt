@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.junit.*

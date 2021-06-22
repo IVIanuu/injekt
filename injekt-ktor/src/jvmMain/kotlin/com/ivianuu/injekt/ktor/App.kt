@@ -18,6 +18,7 @@ package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.scope.*
 import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.util.*

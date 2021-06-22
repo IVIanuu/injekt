@@ -18,6 +18,7 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.GlobalScope
 import kotlin.coroutines.*
@@ -39,7 +40,7 @@ typealias NamedCoroutineScope<N> = CoroutineScope
   context: NamedCoroutineContext<N>,
   scope: NamedScope<N>
 ): NamedProvidedValue<N, NamedCoroutineScope<N>> = AmbientCoroutineScope provides
-    scope.cache { DisposableCoroutineScope(context) }
+    scoped { DisposableCoroutineScope(context) }
 
 private class DisposableCoroutineScope(
   context: CoroutineContext

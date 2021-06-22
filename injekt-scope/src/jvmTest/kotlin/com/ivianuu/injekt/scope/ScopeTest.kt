@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+package com.ivianuu.injekt.scope
 
+import com.ivianuu.injekt.*
 import io.kotest.matchers.*
 import io.kotest.matchers.booleans.*
 import org.junit.*
@@ -58,12 +59,12 @@ class ScopeTest {
     disposed.shouldBeTrue()
   }
 
-  @Test fun testCache() {
-    val scope = DisposableScope()
+  @Test fun testScoped() {
+    @Provide val scope = DisposableScope()
     var calls = 0
-    scope.cache(0) { calls++ }
-    scope.cache(0) { calls++ }
-    scope.cache(1) { calls++ }
+    scoped(0) { calls++ }
+    scoped(0) { calls++ }
+    scoped(1) { calls++ }
     calls shouldBe 2
   }
 
@@ -74,27 +75,27 @@ class ScopeTest {
     scope.isDisposed.shouldBeTrue()
   }
 
-  @Test fun testDisposeWith() {
-    val scope = DisposableScope()
+  @Test fun testBind() {
+    @Provide val scope = DisposableScope()
     var called = false
-    ScopeDisposable { called = true }.disposeWith(scope)
+    ScopeDisposable { called = true }.bind()
     called.shouldBeFalse()
     scope.dispose()
     called.shouldBeTrue()
   }
 
   @Test fun testDisposeWithOnDisposeOnDisposedScope() {
-    val scope = DisposableScope()
+    @Provide val scope = DisposableScope()
     var called = false
     scope.dispose()
-    ScopeDisposable { called = true }.disposeWith(scope)
+    ScopeDisposable { called = true }.bind()
     called.shouldBeTrue()
   }
 
   @Test fun testDoesNotDisposeIfReturnDisposableWasDisposed() {
-    val scope = DisposableScope()
+    @Provide val scope = DisposableScope()
     var called = false
-    val disposable = ScopeDisposable { called = true }.disposeWith(scope)
+    val disposable = ScopeDisposable { called = true }.bind()
     disposable.dispose()
     called.shouldBeFalse()
     scope.dispose()
@@ -102,11 +103,20 @@ class ScopeTest {
   }
 
   @Test fun testInvokeOnDispose() {
-    val scope = DisposableScope()
+    @Provide val scope = DisposableScope()
     var called = false
-    scope.invokeOnDispose { called = true }
+    invokeOnDispose { called = true }
     called.shouldBeFalse()
     scope.dispose()
     called.shouldBeTrue()
+  }
+
+  @Test fun testWithScope() {
+    var open = true
+    withScope {
+      invokeOnDispose { open = false }
+      open.shouldBeTrue()
+    }
+    open.shouldBeFalse()
   }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+package com.ivianuu.injekt.scope
 
-@PublishedApi internal expect inline fun <T> synchronized(lock: Any, block: () -> T): T
+actual inline fun <T> synchronized(lock: Any, block: () -> T): T =
+  kotlin.synchronized(lock, block)

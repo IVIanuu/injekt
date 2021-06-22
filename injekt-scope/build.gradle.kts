@@ -14,7 +14,34 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+plugins {
+  kotlin("multiplatform")
+}
 
-@PublishedApi internal actual inline fun <T> synchronized(lock: Any, block: () -> T): T =
-  kotlin.synchronized(lock, block)
+kotlin {
+  jvm {
+    withJava()
+    compilations.forEach {
+      it.kotlinOptions {
+        jvmTarget = "1.8"
+      }
+    }
+  }
+  sourceSets {
+    commonMain {
+      dependencies {
+        api(project(":injekt-common"))
+        configurations.getByName("kotlinCompilerPluginClasspath")
+          .dependencies.add(project(":injekt-compiler-plugin"))
+      }
+    }
+    named("jvmTest") {
+      dependencies {
+        implementation(Deps.junit)
+        implementation(Deps.kotestAssertions)
+      }
+    }
+  }
+}
+
+plugins.apply("com.vanniktech.maven.publish")
