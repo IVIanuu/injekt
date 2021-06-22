@@ -217,7 +217,7 @@ class ClassifierInfo(
   val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false,
-  val isSingletonInjectable: Boolean = false
+  val isStateless: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 }
@@ -282,19 +282,12 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
   else hasAnnotation(InjektFqNames.Spread) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
 
-  val isSingletonInjectable = !isDeserialized &&
+  val isStateless = !isDeserialized &&
       this is ClassDescriptor &&
       kind == ClassKind.CLASS &&
-      constructors
-        .filter {
-          it.hasAnnotation(InjektFqNames.Provide) ||
-              (it.isPrimary && hasAnnotation(InjektFqNames.Provide))
-        }
-        .any { it.valueParameters.isEmpty() } &&
       unsubstitutedMemberScope.getContributedDescriptors()
         .none {
-          (it is ClassDescriptor &&
-              it.isInner) ||
+          (it is ClassDescriptor && it.isInner) ||
               (it is PropertyDescriptor &&
                   it.hasBackingField(context.trace?.bindingContext))
         }
@@ -304,7 +297,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
     isSpread = isSpread,
-    isSingletonInjectable = isSingletonInjectable
+    isStateless = isStateless
   )
 
   // import to cache the info before persisting it
@@ -320,7 +313,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
   @SerialName("3") val isSpread: Boolean = false,
-  @SerialName("5") val isSingletonInjectable: Boolean = false
+  @SerialName("5") val isStateless: Boolean = false
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
@@ -330,7 +323,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
   lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  isSingletonInjectable = isSingletonInjectable
+  isStateless = isStateless
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(
@@ -340,7 +333,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  isSingletonInjectable = isSingletonInjectable
+  isStateless = isStateless
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
@@ -392,7 +385,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (!visibility.shouldPersistInfo()) return
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
-    if (!info.isSingletonInjectable &&
+    if (!info.isStateless &&
       info.tags.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       !hasAnnotation(InjektFqNames.Provide) &&

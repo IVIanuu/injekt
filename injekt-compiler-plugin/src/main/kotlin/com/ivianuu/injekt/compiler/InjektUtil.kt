@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.util.slicedMap.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import java.util.concurrent.*
@@ -279,13 +278,6 @@ fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
-
-fun <K, V> BindingTrace.getOrRecord(
-  slice: WritableSlice<K, V>,
-  key: K,
-  defaultValue: () -> V
-): V = get(slice, key) ?: defaultValue()
-  .also { record(slice, key, it) }
 
 @Provide fun bindingContext(trace: BindingTrace?): BindingContext =
   trace?.bindingContext ?: error("Wtf")
