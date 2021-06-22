@@ -21,6 +21,7 @@ import io.kotest.matchers.*
 import io.kotest.matchers.booleans.*
 import org.junit.*
 
+@OptIn(InternalScopeApi::class)
 class ScopeTest {
   @Test fun testGetSet() {
     val scope = DisposableScope()
