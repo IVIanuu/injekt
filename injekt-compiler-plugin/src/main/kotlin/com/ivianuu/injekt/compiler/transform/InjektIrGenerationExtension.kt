@@ -31,7 +31,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
     moduleFragment.transform(InjectCallTransformer(), null)
-    moduleFragment.transform(StatelessInjectableTransformer(), null)
+    moduleFragment.transform(SingletonTransformer(), null)
     moduleFragment.transform(IncrementalFixTransformer(), null)
     moduleFragment.patchDeclarationParents()
   }

@@ -20,8 +20,8 @@ import com.ivianuu.injekt.test.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class StatelessInjectableTest {
-  @Test fun testOptimizesInjectableClass() = singleAndMultiCodegen(
+class SingletonInjectableTest {
+  @Test fun testSingleton() = singleAndMultiCodegen(
     """
       @Provide class MyModule {
         @Provide fun foo() = Foo()

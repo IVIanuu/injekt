@@ -241,23 +241,20 @@ class InjectablesScope(
     if (shouldDelegateToParent || injectables.isEmpty()) return parent?.injectablesForType(key)
     return injectablesByRequest.getOrPut(key) {
       val thisInjectables = injectables
+        .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           val context = candidate.buildContext(key.staticTypeParameters, key.type)
           if (!context.isOk)
             return@mapNotNull null
-
           val substitutionMap = context.fixedTypeVariables
-          candidate.substitute(substitutionMap)
-        }
-        .reduceObjectsOrStatelessClasses(key.type)
-        .map { candidate ->
+          val finalCandidate = candidate.substitute(substitutionMap)
           CallableInjectable(
             key.type,
-            candidate.getInjectableRequests(),
+            finalCandidate.getInjectableRequests(),
             this,
-            candidate
+            finalCandidate
           )
         }
         .toList()
@@ -357,6 +354,7 @@ class InjectablesScope(
     return setElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef>? = injectables
         .toList()
+        .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
@@ -369,7 +367,6 @@ class InjectablesScope(
           val substitutionMap = context.fixedTypeVariables
           candidate.substitute(substitutionMap)
         }
-        .reduceObjectsOrStatelessClasses(key.type)
         .map { callable ->
           val typeWithFrameworkKey = callable.type.copy(
             frameworkKey = generateFrameworkKey()
@@ -474,14 +471,6 @@ class InjectablesScope(
       }
     )
   }
-
-  /**
-   * Since objects in kotlin are singletons we can confidently filter out duplicates
-   */
-  private fun List<CallableRef>.reduceObjectsOrStatelessClasses(type: TypeRef): List<CallableRef> =
-    if (type.classifier.isObject || type.classifier.isStateless)
-      listOfNotNull(sortedWith { a, b -> compareCallable(a, b) }.firstOrNull())
-    else this
 
   /**
    * We add implicit injectables for objects under some circumstances to allow

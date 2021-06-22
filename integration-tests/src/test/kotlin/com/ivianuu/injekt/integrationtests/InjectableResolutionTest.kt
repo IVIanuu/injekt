@@ -502,32 +502,4 @@ class InjectableResolutionTest {
   ) {
     invokeSingleFile() shouldBe "explicit"
   }
-
-  @Test fun testMultipleObjectInjectablesAreNotAmbiguous() = singleAndMultiCodegen(
-    """
-      object BaseModule {
-        @Provide val foo = Foo()
-      }
-
-      @Provide val baseModuleA = BaseModule
-      @Provide val baseModuleB = BaseModule
-    """,
-    """
-      fun invoke() = inject<Foo>()
-    """
-  )
-
-  @Test fun testMultipleStatelessClassesAreNotAmbiguous() = singleAndMultiCodegen(
-    """
-      class BaseModule {
-        @Provide fun foo() = Foo()
-      }
-
-      @Provide val baseModuleA = BaseModule()
-      @Provide val baseModuleB = BaseModule()
-    """,
-    """
-      fun invoke() = inject<Foo>()
-    """
-  )
 }

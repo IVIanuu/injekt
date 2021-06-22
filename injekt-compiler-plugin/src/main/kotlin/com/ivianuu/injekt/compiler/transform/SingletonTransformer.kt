@@ -19,10 +19,8 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
@@ -32,17 +30,13 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 
-class StatelessInjectableTransformer(
+class SingletonTransformer(
   @Inject private val pluginContext: IrPluginContext,
   @Inject private val analysisContext: AnalysisContext
 ) : IrElementTransformerVoid() {
   private val ignoredExpressions = mutableListOf<IrExpression>()
-
-  private val ClassifierDescriptor.isStatelessInjectable: Boolean
-    get() = classifierInfo().isStateless && isProvide()
-
   override fun visitClass(declaration: IrClass): IrStatement {
-    if (declaration.descriptor.isStatelessInjectable) {
+    if (declaration.descriptor.classifierInfo().isSingletonInjectable) {
       instanceFieldForDeclaration(declaration)
     }
     return super.visitClass(declaration)
@@ -50,7 +44,8 @@ class StatelessInjectableTransformer(
 
   override fun visitConstructorCall(expression: IrConstructorCall): IrExpression {
     if (expression in ignoredExpressions) return super.visitConstructorCall(expression)
-    if (expression.type.classifierOrNull?.descriptor?.isStatelessInjectable == true) {
+    if (expression.type.classifierOrNull?.descriptor
+        ?.classifierInfo()?.isSingletonInjectable == true) {
       val module = expression.type.classOrNull!!.owner
       val instanceField = instanceFieldForDeclaration(module)
       return DeclarationIrBuilder(pluginContext, expression.symbol)
