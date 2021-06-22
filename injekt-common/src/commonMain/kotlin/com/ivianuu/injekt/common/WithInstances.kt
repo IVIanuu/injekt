@@ -18,8 +18,6 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
 
-// todo use value classes
-
 /**
  * Calls the specified function [block] with [a] as injectable and returns it's result
  */

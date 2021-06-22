@@ -27,10 +27,10 @@ import io.ktor.util.*
   get() = attributes.getOrNull(AmbientsKey)
     ?: error("No ambients found. Did you forget to call initializeAppAmbients()?")
 
-@Provide val Routing.appScope: Ambients
+@Provide val Routing.ambients: Ambients
   get() = application.ambients
 
-@Provide val ApplicationCall.appScope: Ambients
+@Provide val ApplicationCall.ambients: Ambients
   get() = application.ambients
 
 inline fun Application.initializeAppAmbients(

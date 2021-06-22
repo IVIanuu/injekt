@@ -164,39 +164,37 @@ private class DisposableImpl : DisposableScope {
       return synchronized(this) { _isDisposed }
     }
 
-  private var values: MutableMap<Any, Any>? = null
-  private fun values(): MutableMap<Any, Any> =
-    (values ?: hashMapOf<Any, Any>().also { values = it })
+  private val values = hashMapOf<Any, Any>()
 
   @Suppress("UNCHECKED_CAST")
-  override fun <T : Any> get(key: Any): T? = values?.get(key) as? T
+  override fun <T : Any> get(key: Any): T? = values[key] as? T
 
   override fun <T : Any> set(key: Any, value: T) {
     synchronizedWithDisposedCheck {
-      removeScopedValueImpl(key)
-      values()[key] = value
+      removeAndDispose(key)
+      values[key] = value
     } ?: kotlin.run {
       (value as? Disposable)?.dispose()
     }
   }
 
   override fun remove(key: Any) {
-    synchronizedWithDisposedCheck { removeScopedValueImpl(key) }
+    synchronizedWithDisposedCheck { removeAndDispose(key) }
   }
 
   override fun dispose() {
     synchronizedWithDisposedCheck {
       _isDisposed = true
-      if (values != null && values!!.isNotEmpty()) {
-        values!!.keys
+      if (values.isNotEmpty()) {
+        values.keys
           .toList()
-          .forEach { removeScopedValueImpl(it) }
+          .forEach { removeAndDispose(it) }
       }
     }
   }
 
-  private fun removeScopedValueImpl(key: Any) {
-    (values?.remove(key) as? Disposable)?.dispose()
+  private fun removeAndDispose(key: Any) {
+    (values.remove(key) as? Disposable)?.dispose()
   }
 
   private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {
@@ -208,5 +206,4 @@ private class DisposableImpl : DisposableScope {
   }
 }
 
-@InternalScopeApi
-expect inline fun <T> synchronized(lock: Any, block: () -> T): T
+@InternalScopeApi expect inline fun <T> synchronized(lock: Any, block: () -> T): T
