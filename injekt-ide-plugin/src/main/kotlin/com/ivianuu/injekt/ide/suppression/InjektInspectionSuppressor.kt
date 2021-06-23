@@ -68,8 +68,12 @@ class InjektInspectionSuppressor : InspectionSuppressor {
       }
       "unused" -> {
         if (element !is LeafPsiElement) return false
-        return element.parent.safeAs<KtTypeParameter>()
-          ?.hasAnnotation(InjektFqNames.Spread) == true
+        val typeParameter = element.parent.safeAs<KtTypeParameter>()
+          ?: return false
+        return typeParameter.hasAnnotation(InjektFqNames.Spread) ||
+            typeParameter.parent.parent is KtTypeAlias ||
+            typeParameter.parent.parent.safeAs<KtClass>()
+              ?.hasAnnotation(InjektFqNames.Tag) == true
       }
       else -> return false
     }
