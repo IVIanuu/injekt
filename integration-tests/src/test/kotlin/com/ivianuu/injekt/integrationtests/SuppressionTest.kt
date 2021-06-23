@@ -100,6 +100,19 @@ class SuppressionTest {
     """
   )
 
+  @Test fun testCanUseUnaryPlusWithInject() = singleAndMultiCodegen(
+    """
+      operator fun <T> T.unaryPlus(@Inject builder: StringBuilder) {
+        builder.append(toString())
+      }
+    """,
+    """
+      fun invoke() = buildString {
+        +42
+      }
+    """
+  )
+
   @Test fun testUsedInjectParameterIsNotMarkedAsUnused() = codegen(
     """
       fun func1(@Inject foo: Foo) {
