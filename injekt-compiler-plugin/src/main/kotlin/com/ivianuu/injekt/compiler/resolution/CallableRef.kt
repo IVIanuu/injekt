@@ -32,7 +32,7 @@ data class CallableRef(
   val defaultOnAllErrorParameters: Set<Int>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
-  val source: CallableRef?,
+  val origin: CallableRef?,
   val callContext: CallContext,
   val owner: ClassifierRef?,
   val overriddenDepth: Int,
@@ -84,7 +84,7 @@ fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): Callable
         .map { it to it.defaultType }
         .toMap(),
       isProvide = isProvide(),
-      source = null,
+      origin = null,
       callContext = callContext(),
       owner = null,
       overriddenDepth = overriddenTreeUniqueAsSequence(false).count() - 1,

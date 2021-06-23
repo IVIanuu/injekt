@@ -236,6 +236,7 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
   request: InjectableRequest,
   lookupLocation: LookupLocation
 ): ResolutionResult? = injectablesForRequest(request, this)
+  .takeIf { it.isNotEmpty() }
   ?.let { resolveCandidates(request, it, lookupLocation) }
 
 private fun InjectablesScope.tryToResolveRequestInTypeScope(

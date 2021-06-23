@@ -48,7 +48,8 @@ class InjectablesScope(
   val initialInjectables: List<CallableRef>,
   imports: List<ResolvedProviderImport>,
   val typeParameters: List<ClassifierRef>,
-  val nesting: Int
+  val nesting: Int,
+  ignoredInjectables: List<CallableDescriptor>
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -62,7 +63,7 @@ class InjectablesScope(
   )
 
   private val CallableRef.injectableKey: InjectableKey
-    get() = InjectableKey(type, callable, source)
+    get() = InjectableKey(type, callable, origin)
 
   /**
    * There should be only one injectable for a type + callable combination
@@ -101,13 +102,13 @@ class InjectablesScope(
   private data class SpreadingInjectableCandidate(
     val type: TypeRef,
     val rawType: TypeRef,
-    val source: CallableRef?
+    val origin: CallableRef?
   ) {
     val contextsByStaticTypeParameters =
       mutableMapOf<List<ClassifierRef>, SpreadingInjectableBaseContext>()
   }
 
-  val allScopes: List<InjectablesScope> = (parent?.allScopes ?: emptyList()) + this
+  val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
@@ -116,9 +117,9 @@ class InjectablesScope(
     val staticTypeParameters: List<ClassifierRef>
   )
 
-  private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<Injectable>?>()
+  private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val setElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>?>()
+  private val setElementsByType = mutableMapOf<CallableRequestKey, List<SetElementWithOrigin>>()
 
   private data class ProviderRequestKey(val type: TypeRef, val callContext: CallContext)
 
@@ -126,6 +127,9 @@ class InjectablesScope(
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
   private var shouldDelegateToParent = false
+
+  private val ignoredInjectables: List<CallableDescriptor> =
+    parent?.ignoredInjectables?.let { it + ignoredInjectables } ?: ignoredInjectables
 
   val isTypeScope = name.startsWith("TYPE ")
 
@@ -141,18 +145,22 @@ class InjectablesScope(
               packageFqName
             )
           },
-          addInjectable = { callable ->
-            addInjectableIfAbsentOrBetter(callable.copy(source = injectable))
+          addInjectable = lambda@ { callable ->
+            if (callable.callable in ignoredInjectables) return@lambda
+            addInjectableIfAbsentOrBetter(callable.copy(origin = injectable))
             val typeWithFrameworkKey = callable.type
               .copy(frameworkKey = generateFrameworkKey())
-            addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, source = injectable))
+            addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, origin = injectable))
             spreadingInjectableCandidates += SpreadingInjectableCandidate(
               type = typeWithFrameworkKey,
               rawType = callable.type,
-              source = injectable
+              origin = injectable
             )
           },
-          addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) }
+          addSpreadingInjectable = lambda@ { callable ->
+            if (callable.callable in ignoredInjectables) return@lambda
+            spreadingInjectables += SpreadingInjectable(callable)
+          }
         )
       }
 
@@ -176,6 +184,7 @@ class InjectablesScope(
     }
 
     shouldDelegateToParent = parent != null &&
+        ignoredInjectables.isEmpty() &&
         !hasSpreadingInjectableCandidates &&
         !hasSpreadingInjectables &&
         callContext == parent.callContext &&
@@ -224,24 +233,24 @@ class InjectablesScope(
   fun injectablesForRequest(
     request: InjectableRequest,
     requestingScope: InjectablesScope
-  ): List<Injectable>? {
-    if (shouldDelegateToParent) return parent?.injectablesForRequest(request, requestingScope)
+  ): List<Injectable> {
+    if (shouldDelegateToParent)
+      return parent?.injectablesForRequest(request, requestingScope) ?: emptyList()
 
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
       request.type.classifier == context.injektContext.setClassifier
-    ) return null
+    ) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
-      ?.filter { it -> it.isValidObjectRequest(request) }
-      ?.takeIf { it.isNotEmpty() }
+      .filter { it.isValidObjectRequest(request) }
   }
 
-  private fun injectablesForType(key: CallableRequestKey): List<Injectable>? {
-    if (shouldDelegateToParent || injectables.isEmpty()) return parent?.injectablesForType(key)
+  private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
+    if (shouldDelegateToParent || (injectables.isEmpty() && ignoredInjectables.isEmpty()))
+      return parent?.injectablesForType(key) ?: emptyList()
     return injectablesByRequest.getOrPut(key) {
       val thisInjectables = injectables
-        .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
@@ -257,11 +266,13 @@ class InjectablesScope(
             finalCandidate
           )
         }
-        .toList()
-        .takeIf { it.isNotEmpty() }
       val parentInjectables = parent?.injectablesForType(key)
-      if (parentInjectables != null && thisInjectables != null) parentInjectables + thisInjectables
-      else thisInjectables ?: parentInjectables
+        ?.filter {
+          it.callable.callable !in ignoredInjectables &&
+              (it.callable.origin == null || it.callable.origin.callable !in ignoredInjectables)
+        }
+      if (parentInjectables != null) parentInjectables + thisInjectables
+      else thisInjectables
     }
   }
 
@@ -293,26 +304,28 @@ class InjectablesScope(
             singleElementType, collectionElementType,
             CallableRequestKey(request.type, allStaticTypeParameters)
           )
-          if (elements == null && singleElementType.isProviderFunctionType) {
+          if (elements.isEmpty() && singleElementType.isProviderFunctionType) {
             val providerReturnType = singleElementType.arguments.last()
             elements = setElementsForType(
               providerReturnType, context.injektContext.collectionClassifier
                 .defaultType.withArguments(listOf(providerReturnType)),
               CallableRequestKey(providerReturnType, allStaticTypeParameters)
             )
-              ?.map { elementType ->
-                singleElementType.copy(
-                  arguments = singleElementType.arguments
-                    .dropLast(1) + elementType
+              .map { element ->
+                element.copy(
+                  type = singleElementType.copy(
+                    arguments = singleElementType.arguments
+                      .dropLast(1) + element.type
+                  )
                 )
               }
           }
 
-          if (elements != null) {
+          if (elements.isNotEmpty()) {
             val elementRequests = elements
               .mapIndexed { index, element ->
                 InjectableRequest(
-                  type = element,
+                  type = element.type,
                   defaultStrategy = if (request.type.ignoreElementsWithErrors)
                     InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
                   else InjectableRequest.DefaultStrategy.NONE,
@@ -344,15 +357,20 @@ class InjectablesScope(
     }
   }
 
+  private data class SetElementWithOrigin(
+    val type: TypeRef,
+    val origin: CallableRef
+  )
+
   private fun setElementsForType(
     singleElementType: TypeRef,
     collectionElementType: TypeRef,
     key: CallableRequestKey
-  ): List<TypeRef>? {
-    if (shouldDelegateToParent || injectables.isEmpty())
-      return parent?.setElementsForType(singleElementType, collectionElementType, key)
+  ): List<SetElementWithOrigin> {
+    if (shouldDelegateToParent || (injectables.isEmpty() && ignoredInjectables.isEmpty()))
+      return parent?.setElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
     return setElementsByType.getOrPut(key) {
-      val thisElements: List<TypeRef>? = injectables
+      val thisElements: List<SetElementWithOrigin> = injectables
         .toList()
         .asSequence()
         .mapNotNull { (_, candidate) ->
@@ -367,18 +385,22 @@ class InjectablesScope(
           val substitutionMap = context.fixedTypeVariables
           candidate.substitute(substitutionMap)
         }
+        .filter { it.callable !in ignoredInjectables }
         .map { callable ->
           val typeWithFrameworkKey = callable.type.copy(
             frameworkKey = generateFrameworkKey()
           )
           addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
-          typeWithFrameworkKey
+          SetElementWithOrigin(typeWithFrameworkKey, callable)
         }
         .toList()
-        .takeIf { it.isNotEmpty() }
       val parentElements = parent?.setElementsForType(singleElementType, collectionElementType, key)
-      if (parentElements != null && thisElements != null) parentElements + thisElements
-      else thisElements ?: parentElements
+        ?.filter {
+          it.origin.callable !in ignoredInjectables &&
+              (it.origin.origin == null || it.origin.origin.callable !in ignoredInjectables)
+        }
+      if (parentElements != null) parentElements + thisElements
+      else thisElements
     }
   }
 
@@ -421,7 +443,7 @@ class InjectablesScope(
         typeArguments = spreadingInjectable.callable
           .typeArguments
           .mapValues { it.value.substitute(substitutionMap) },
-        source = candidate.source
+        origin = candidate.origin
       )
 
     newInjectable.collectInjectables(
@@ -433,10 +455,11 @@ class InjectablesScope(
           packageFqName
         )
       },
-      addInjectable = { newInnerInjectable ->
+      addInjectable = lambda@ { newInnerInjectable ->
+        if (newInnerInjectable.callable in ignoredInjectables) return@lambda
         val finalNewInnerInjectable = newInnerInjectable
           .copy(
-            source = candidate.source,
+            origin = candidate.origin,
             originalType = newInnerInjectable.type
           )
         addInjectableIfAbsentOrBetter(finalNewInnerInjectable)
@@ -450,15 +473,16 @@ class InjectablesScope(
         val newCandidate = SpreadingInjectableCandidate(
           type = newInnerInjectableWithFrameworkKey.type,
           rawType = finalNewInnerInjectable.type,
-          source = candidate.source
+          origin = candidate.origin
         )
         spreadingInjectableCandidates += newCandidate
         spreadInjectables(newCandidate)
       },
-      addSpreadingInjectable = { newInnerInjectable ->
+      addSpreadingInjectable = lambda@ { newInnerInjectable ->
+        if (newInnerInjectable.callable in ignoredInjectables) return@lambda
         val finalNewInnerInjectable = newInnerInjectable
           .copy(
-            source = candidate.source,
+            origin = candidate.origin,
             originalType = newInnerInjectable.type
           )
         val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)

@@ -225,7 +225,7 @@ fun CallableRef.collectInjectables(
   seen += this
   if (!scope.canSee(this)) return
 
-  if (source == null && typeParameters.any { it.isSpread }) {
+  if (origin == null && typeParameters.any { it.isSpread }) {
     addSpreadingInjectable(this)
     return
   }
