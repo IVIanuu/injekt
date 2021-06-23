@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.scope.*
 
 /**
- * Reuses the same instance within scope [NamedScope] of [N]
+ * Reuses the same instance within scope [Scope] [S]
  *
  * In the following example each request to Repo resolvers to the same instance
  * ```
@@ -36,11 +35,11 @@ import com.ivianuu.injekt.scope.*
  * }
  * ```
  */
-@Tag annotation class Scoped<N> {
+@Tag annotation class Scoped<S : Scope> {
   companion object {
-    @Provide inline fun <@Spread T : @Scoped<N> U, U : Any, N> scopedValue(
+    @Provide inline fun <@Spread T : @Scoped<S> U, U : Any, S : Scope> scopedValue(
       factory: () -> T,
-      scope: NamedScope<N>,
+      scope: S,
       key: TypeKey<U>
     ): U = scoped(key = key, computation = factory)
   }

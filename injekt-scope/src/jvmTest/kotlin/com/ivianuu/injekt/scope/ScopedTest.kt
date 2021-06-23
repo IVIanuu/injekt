@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ambient
+package com.ivianuu.injekt.scope
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import org.junit.*
@@ -28,12 +27,12 @@ class ScopedTest {
 
     class Foo
 
-    @Provide fun scopedFoo(): @Scoped<ForApp> Foo {
+    @Provide fun scopedFoo(): @Scoped<TestScope> Foo {
       callCount++
       return Foo()
     }
 
-    @Provide val scope: NamedScope<ForApp> = DisposableScope()
+    @Provide val scope: TestScope = DisposableScope()
     callCount shouldBe 0
     val a = inject<Foo>()
     callCount shouldBe 1
@@ -42,3 +41,5 @@ class ScopedTest {
     a shouldBeSameInstanceAs b
   }
 }
+
+typealias TestScope = Scope

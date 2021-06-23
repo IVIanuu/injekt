@@ -29,4 +29,4 @@ class TestDisposable<N> : Disposable {
 }
 
 @Provide inline fun <N> testDisposable():
-    @Scoped<N> @AmbientService<N> TestDisposable<N> = TestDisposable()
+    @Scoped<NamedScope<N>> @AmbientService<N> TestDisposable<N> = TestDisposable()

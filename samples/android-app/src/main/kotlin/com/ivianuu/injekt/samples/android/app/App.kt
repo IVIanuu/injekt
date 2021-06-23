@@ -17,7 +17,8 @@
 @file:Providers(
   "com.ivianuu.injekt.coroutines.*",
   "com.ivianuu.injekt.ambient.*",
-  "com.ivianuu.injekt.android.*"
+  "com.ivianuu.injekt.android.*",
+  "com.ivianuu.injekt.scope.*"
 )
 
 package com.ivianuu.injekt.samples.android.app
