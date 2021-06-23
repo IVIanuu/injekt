@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
+  import: ResolvedProviderImport?,
   @Inject context: AnalysisContext
 ): List<CallableRef> {
   // special case to support @Provide () -> Foo
@@ -54,7 +55,8 @@ fun TypeRef.collectInjectables(
             type = arguments.last(),
             isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
-              .also { it[DISPATCH_RECEIVER_INDEX] = this }
+              .also { it[DISPATCH_RECEIVER_INDEX] = this },
+            import = import
           ).substitute(classifier.typeParameters.toMap(arguments))
         }
     )
@@ -86,7 +88,8 @@ fun TypeRef.collectInjectables(
           callable.parameterTypes.isNotEmpty()) {
           callable.parameterTypes.toMutableMap()
             .also { it[DISPATCH_RECEIVER_INDEX] = this }
-        } else callable.parameterTypes
+        } else callable.parameterTypes,
+        import = import
       )
     }
 }
@@ -218,6 +221,7 @@ fun CallableRef.collectInjectables(
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
+  import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
   checkCancelled()
@@ -248,7 +252,8 @@ fun CallableRef.collectInjectables(
     .collectInjectables(
       scope.allScopes.any {
         it.ownerDescriptor == nextCallable.type.classifier.descriptor
-      }
+      },
+      import
     )
     .forEach { innerCallable ->
       innerCallable.collectInjectables(
@@ -256,6 +261,7 @@ fun CallableRef.collectInjectables(
         addImport = addImport,
         addInjectable = addInjectable,
         addSpreadingInjectable = addSpreadingInjectable,
+        import = import,
         seen = seen
       )
     }

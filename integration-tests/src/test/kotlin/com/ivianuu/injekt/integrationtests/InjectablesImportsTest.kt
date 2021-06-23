@@ -119,6 +119,36 @@ class InjectablesImportsTest {
     shouldNotContainMessage("unused injectable import")
   }
 
+  @Test fun testClassImportIsNotMarkedUnusedIfACompanionClassInjectableWasUsed() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class MyClass {
+              companion object {
+                @Provide class FooProvider {
+                  @Provide val foo = Foo()
+                }
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.MyClass")
+            fun invoke() = inject<Foo>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    shouldNotContainMessage("unused injectable import")
+  }
+
   @Test fun testUsedStarImport() = singleAndMultiCodegen(
     listOf(
       listOf(
