@@ -153,12 +153,12 @@ interface DisposableScope : Scope, Disposable
  * Returns a new [DisposableScope]
  */
 @OptIn(InternalScopeApi::class)
-fun DisposableScope(): DisposableScope = DisposableImpl()
+fun DisposableScope(): DisposableScope = DisposableScopeImpl()
 
 object SingletonScope : Scope by DisposableScope()
 
 @InternalScopeApi
-private class DisposableImpl : DisposableScope {
+private class DisposableScopeImpl : DisposableScope {
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() {
