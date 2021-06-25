@@ -275,7 +275,7 @@ class InjectableResolutionTest {
       fun invoke() = inject<String>() 
     """
   ) {
-    "a" shouldBe invokeSingleFile()
+    invokeSingleFile() shouldBe "a"
   }
 
   @Test fun testPrefersNearerInjectableOverBetterType() = codegen(
@@ -289,7 +289,7 @@ class InjectableResolutionTest {
       }
     """
   ) {
-    "b" shouldBe invokeSingleFile()
+    invokeSingleFile() shouldBe "b"
   }
 
   @Test fun testAmbiguousInjectables() = codegen(
@@ -472,6 +472,62 @@ class InjectableResolutionTest {
       fun invoke() = inject<Foo>() 
     """
   )
+
+  @Test fun testPrefersNearerImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            object MyInjectables {
+              @Provide val a = "a"
+              @Provide val b = "b"
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = @Providers("injectables.MyInjectables.a") run {
+              @Providers("injectables.MyInjectables.b") run {
+                inject<String>()
+              }
+            }
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "b"
+  }
+
+  @Test fun testPrefersNearerImportOverdeclaration() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val value = "b"
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke(): String {
+              @Provide val a = "a"
+              return run {
+                @Providers("injectables.value") inject<String>()
+              }
+            }
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "b"
+  }
 
   @Test fun testPrefersExplicitImportOverStarImport() = singleAndMultiCodegen(
     listOf(
