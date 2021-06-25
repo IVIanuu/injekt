@@ -22,20 +22,20 @@ import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.*
 import org.junit.*
 
-class AmbientsFactoryTest {
+class NamedAmbientsTest {
   @Test fun testNamedProvidedValue() {
     @Provide val ambient = ambientOf { 0 }
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = provide(42)
-    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
+    @Provide val ambients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
     current<Int>() shouldBe 42
   }
 
   @Test fun testAmbientsFactoryModule() {
     @Provide val ambient = ambientOf { 0 }
-    @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
+    @Provide val childAmbientsFactoryModule = NamedAmbientsModule0<ForApp, ForChild>()
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = provide(42)
-    @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
-    withInstances(ambientsFromFactoryOf<ForChild>()) {
+    @Provide val parentAmbients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
+    withInstances(namedAmbientsOf<ForChild>()) {
       current<Int>() shouldBe 42
     }
   }
@@ -46,7 +46,7 @@ class AmbientsFactoryTest {
     @Provide fun providedScope(scope: NamedScope<ForApp>): NamedProvidedValue<ForApp, MyScope> =
       provide(scope)
 
-    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
+    @Provide val ambients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
 
     current<MyScope>() shouldBe current<Scope>()
   }
@@ -57,11 +57,11 @@ class AmbientsFactoryTest {
     @Provide fun providedScope(scope: NamedScope<ForApp>): NamedProvidedValue<ForChild, MyScope> =
       provide(scope)
 
-    @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
+    @Provide val childAmbientsFactoryModule = NamedAmbientsModule0<ForApp, ForChild>()
 
-    @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
+    @Provide val parentAmbients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
     val parentScope = current<Scope>()
-    withInstances(ambientsFromFactoryOf<ForChild>()) {
+    withInstances(namedAmbientsOf<ForChild>()) {
       current<MyScope>() shouldBe parentScope
     }
   }
@@ -75,7 +75,7 @@ class AmbientsFactoryTest {
 
     @Provide val providedInt: NamedProvidedValue<ForApp, Int> = provide(42)
 
-    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
+    @Provide val ambients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
     val foo = current<Foo>()
     ambients shouldBe foo.ambients
     foo.answer shouldBe 42
@@ -91,11 +91,11 @@ class AmbientsFactoryTest {
     @Provide @Scoped<NamedScope<ForChild>> @AmbientService<ForChild>
     class FooReader(val foo: Foo)
 
-    @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
+    @Provide val childAmbientsFactoryModule = NamedAmbientsModule0<ForApp, ForChild>()
 
-    @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
+    @Provide val parentAmbients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
     val foo = current<Foo>()
-    withInstances(ambientsFromFactoryOf<ForChild>()) {
+    withInstances(namedAmbientsOf<ForChild>()) {
       current<FooReader>().foo shouldBe foo
     }
   }
@@ -115,7 +115,7 @@ class AmbientsFactoryTest {
       }
     }
 
-    @Provide val ambients = inject<AmbientsFactory<ForApp>>().create(ambientsOf())
+    @Provide val ambients = inject<(@Provide Ambients) -> NamedAmbients<ForApp>>()(ambientsOf())
 
     initCalls shouldBe 1
     disposeCalls shouldBe 0

@@ -26,10 +26,10 @@ import com.ivianuu.injekt.ambient.*
  */
 @Provide val ComponentActivity.activityRetainedAmbients: Ambients
   get() = viewModelStore.cachedAmbients {
-    ambientsFromFactoryOf<ForActivityRetained>(application.appAmbients)
+    namedAmbientsOf<ForActivityRetained>(application.appAmbients)
   }
 
 abstract class ForActivityRetained private constructor()
 
 @Provide val activityRetainedAmbientsFactoryModule =
-  AmbientsFactoryModule0<ForApp, ForActivityRetained>()
+  NamedAmbientsModule0<ForApp, ForActivityRetained>()

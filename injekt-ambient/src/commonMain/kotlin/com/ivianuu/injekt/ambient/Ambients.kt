@@ -19,10 +19,8 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
 
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class Ambients(val map: Map<Ambient<*>, () -> Any?>)
+class Ambients(val map: Map<Ambient<*>, () -> Any?>)
 
 operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
   val newMap = map.toMutableMap()
@@ -64,12 +62,6 @@ fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
   return Ambients(map)
 }
 
-@OptIn(ExperimentalStdlibApi::class)
-fun <N> ambientsOf(
-  @Inject ambients: Ambients,
-  @Inject values: AmbientsFactory<N>
-): Ambients = values.create()
-
 inline fun <R> withAmbients(
   vararg values: ProvidedValue<*>,
   @Inject ambients: Ambients,
@@ -81,47 +73,6 @@ class ProvidedValue<T> internal constructor(
   val factory: () -> T,
   val canOverride: Boolean
 )
-
-typealias NamedProvidedValue<N, T> = ProvidedValue<T>
-
-@Provide fun <@Spread T : NamedProvidedValue<N, S>, S, N> unwrappedNamedProvidedValue(
-  providedValue: T
-): S = providedValue.factory()
-
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
-@Provide
-class AmbientsFactory<N>(
-  valueFactories: (@Provide NamedScope<N>, @Provide Ambients) -> Set<NamedProvidedValue<N, *>> = { _, _ -> emptySet() },
-  scopeObservers: (@Provide NamedScope<N>, @Provide Ambients) -> Set<ScopeObserver<N>> = { _, _ -> emptySet() }
-) {
-  // todo move to constructor once fixed
-  private val valueFactories = valueFactories
-  private val scopeObservers = scopeObservers
-
-  fun create(@Inject ambients: Ambients): Ambients {
-    val parent = current<Scope>()
-    @Provide val scope = DisposableScope()
-    val parentDisposable = scope.bind(parent)
-    parentDisposable.bind()
-
-    val finalValues = mutableMapOf<Ambient<*>, () -> Any?>()
-    val finalAmbients = Ambients(finalValues)
-
-    val values = valueFactories(scope, finalAmbients)
-
-    val finalObservers = scopeObservers(scope, finalAmbients)
-
-    for (scopeObserver in finalObservers)
-      invokeOnDispose { scopeObserver.onDispose() }
-
-    for (scopeObserver in finalObservers)
-      scopeObserver.onInit()
-
-    finalValues += (ambients + provide<Scope>(scope) + values).map
-
-    return finalAmbients
-  }
-}
 
 interface Ambient<T> {
   fun default(): T
