@@ -138,11 +138,11 @@ fun <T> Ambient<T>.current(@Inject ambients: Ambients): T =
 interface ProvidableAmbient<T> : Ambient<T> {
   infix fun provides(factory: () -> T) = ProvidedValue(this, factory, true)
 
-  infix fun provides(value: T) = ProvidedValue(this, { value }, true)
+  infix fun provides(value: T) = provides { value }
 
   infix fun providesDefault(factory: () -> T) = ProvidedValue(this, factory, false)
 
-  infix fun providesDefault(value: T) = ProvidedValue(this, { value }, false)
+  infix fun providesDefault(value: T) = providesDefault { value }
 }
 
 private class ProvidableAmbientImpl<T>(
