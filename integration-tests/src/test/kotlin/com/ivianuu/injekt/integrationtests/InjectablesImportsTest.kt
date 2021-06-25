@@ -72,19 +72,6 @@ class InjectablesImportsTest {
     compilationShouldHaveFailed("duplicated injectable import")
   }
 
-  @Test fun testNestedDuplicatedImports() = codegen(
-    """
-      @Providers("kotlin.collections.*")
-      fun invoke() {
-        @Providers("kotlin.collections.*")
-        fun inner() {
-        }
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("duplicated injectable import")
-  }
-
   @Test fun testUnusedImport() = codegen(
     """
       @Providers("kotlin.collections.*")

@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class ProviderImportsChecker(private val context: InjektContext) : DeclarationChecker {
   private val checkedFiles = mutableSetOf<KtFile>()
+
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
@@ -47,47 +48,21 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
     val file = declaration.containingKtFile
     checkFile(file, context.trace)
     if (!declaration.hasAnnotation(InjektFqNames.Providers)) return
-    val outerImports = file.getProviderImports() + descriptor.parents
-      .distinct()
-      .flatMap { parent ->
-        parent.findPsi()
-          .safeAs<KtAnnotated>()
-          ?.getProviderImports() ?: emptyList()
-      }
-      .toList()
-    checkImports(
-      file.packageFqName, outerImports,
-      declaration.getProviderImports(), context.trace
-    )
+    checkImports(file.packageFqName, declaration.getProviderImports(), context.trace)
   }
 
   private fun checkFile(file: KtFile, trace: BindingTrace) {
     if (file in checkedFiles) return
     checkedFiles += file
-    checkImports(file.packageFqName, emptyList(), file.getProviderImports(), trace)
+    checkImports(file.packageFqName, file.getProviderImports(), trace)
   }
 
   private fun checkImports(
     currentPackage: FqName,
-    outerImports: List<ProviderImport>,
     imports: List<ProviderImport>,
     trace: BindingTrace
   ) {
     if (imports.isEmpty()) return
-
-    imports
-      .filter { it.importPath != null }
-      .filter { import ->
-        outerImports.any {
-          it.importPath == import.importPath
-        }
-      }
-      .forEach { (element, _) ->
-        trace.report(
-          InjektErrors.DUPLICATED_INJECTABLE_IMPORT
-            .on(element!!)
-        )
-      }
 
     imports
       .filter { it.importPath != null }
