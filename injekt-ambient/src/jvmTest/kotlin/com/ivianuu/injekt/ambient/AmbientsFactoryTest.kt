@@ -24,19 +24,19 @@ import org.junit.*
 
 class AmbientsFactoryTest {
   @Test fun testNamedProvidedValue() {
-    val ambient = ambientOf { 0 }
-    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
+    @Provide val ambient = ambientOf { 0 }
+    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = provide(42)
     @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
-    ambient.current() shouldBe 42
+    current<Int>() shouldBe 42
   }
 
   @Test fun testAmbientsFactoryModule() {
-    val ambient = ambientOf { 0 }
+    @Provide val ambient = ambientOf { 0 }
     @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
-    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = ambient provides 42
+    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = provide(42)
     @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
     withInstances(ambientsFromFactoryOf<ForChild>()) {
-      ambient.current() shouldBe 42
+      current<Int>() shouldBe 42
     }
   }
 
@@ -60,7 +60,7 @@ class AmbientsFactoryTest {
     initCalls shouldBe 1
     disposeCalls shouldBe 0
 
-    val scope = AmbientScope.current()
+    val scope = current<Scope>()
 
     (scope as DisposableScope).dispose()
 

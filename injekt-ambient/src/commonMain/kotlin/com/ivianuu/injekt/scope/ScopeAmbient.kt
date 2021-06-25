@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-@file:Providers(
-  "com.ivianuu.injekt.ambient.*",
-  "com.ivianuu.injekt.scope.*"
-)
+package com.ivianuu.injekt.scope
 
-package com.ivianuu.injekt.android
-
-import android.app.*
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.ambient.*
 
-class AndroidTestApplication : Application(), AppAmbientsOwner {
-  override val appAmbients by lazy { createAppAmbients() }
-}
+@Provide val scopeAmbient: ProvidableAmbient<Scope> = ambientOf { SingletonScope }

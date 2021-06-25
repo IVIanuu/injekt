@@ -18,12 +18,18 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.GlobalScope
 import kotlin.coroutines.*
 
-val AmbientCoroutineScope = ambientOf<CoroutineScope> { GlobalScope }
+@Provide val coroutineScopeAmbient: ProvidableAmbient<CoroutineScope> = ambientOf { GlobalScope }
+
+@Provide fun <N> namedCoroutineScopeAmbient(
+  nameKey: TypeKey<N>
+): ProvidableAmbient<NamedCoroutineScope<N>> = scoped(scope = SingletonScope) {
+  ambientOf { error("No scope provided for ${nameKey.value}") }
+}
 
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
@@ -38,14 +44,16 @@ typealias NamedCoroutineScope<N> = CoroutineScope
  */
 @Provide fun <N> ambientCoroutineScopeValue(
   context: NamedCoroutineContext<N>,
+  nameKey: TypeKey<N>,
   scope: NamedScope<N>
-): NamedProvidedValue<N, NamedCoroutineScope<N>> = AmbientCoroutineScope provides
-    scoped { DisposableCoroutineScope(context) }
+): NamedProvidedValue<N, NamedCoroutineScope<N>> =
+  provide(scoped { DisposableCoroutineScope(context) })
 
 private class DisposableCoroutineScope(
   context: CoroutineContext
 ) : CoroutineScope, Disposable {
   override val coroutineContext: CoroutineContext = context + SupervisorJob()
+
   override fun dispose() {
     coroutineContext.cancel()
   }

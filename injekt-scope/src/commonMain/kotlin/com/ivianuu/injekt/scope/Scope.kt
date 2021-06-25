@@ -155,6 +155,8 @@ interface DisposableScope : Scope, Disposable
 @OptIn(InternalScopeApi::class)
 fun DisposableScope(): DisposableScope = DisposableImpl()
 
+object SingletonScope : Scope by DisposableScope()
+
 @InternalScopeApi
 private class DisposableImpl : DisposableScope {
   private var _isDisposed = false

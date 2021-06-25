@@ -20,10 +20,6 @@ import com.ivianuu.injekt.scope.*
 
 typealias NamedScope<N> = Scope
 
-object GlobalScope : Scope by DisposableScope()
-
-val AmbientScope = ambientOf<Scope> { GlobalScope }
-
 /**
  * Listener for scope lifecycles
  */

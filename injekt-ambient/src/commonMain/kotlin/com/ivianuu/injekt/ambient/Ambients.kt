@@ -30,11 +30,12 @@ operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
   for (providedValue in values) {
     val oldFactory = newMap[providedValue.ambient]
     newMap[providedValue.ambient] = when {
+      oldFactory != null && !providedValue.canOverride -> continue
       oldFactory == null -> providedValue.factory
       providedValue.canOverride -> {
         {
           (providedValue.ambient as Ambient<Any?>)
-            .merge(oldFactory.invoke(), providedValue.factory)
+            .merge(oldFactory.invoke(), providedValue.factory())
         }
       }
       else -> continue
@@ -47,27 +48,11 @@ operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
 operator fun Ambients.plus(values: Iterable<ProvidedValue<*>>): Ambients =
   plus(*values.toList().toTypedArray())
 
-operator fun Ambients.plus(values: AmbientsFactory<*>): Ambients =
-  values.create()
-
-operator fun Ambients.minus(ambient: Ambient<*>): Ambients =
+operator fun <T> Ambients.minus(@Inject ambient: Ambient<T>): Ambients =
   if (ambient !in map) this
   else Ambients(map.toMutableMap().also { it.remove(ambient) })
 
-operator fun Ambients.minus(vararg ambients: Ambient<*>): Ambients =
-  Ambients(map.filterKeys { it !in ambients })
-
 fun ambientsOf(): Ambients = Ambients(emptyMap())
-
-@OptIn(ExperimentalStdlibApi::class)
-fun ambientsOf(value: ProvidedValue<*>): Ambients =
-  Ambients(HashMap<Ambient<*>, () -> Any?>(1).also {
-    it[value.ambient] = value.factory
-  })
-
-@OptIn(ExperimentalStdlibApi::class)
-fun ambientsOf(values: Iterable<ProvidedValue<*>>): Ambients =
-  ambientsOf(*values.toList().toTypedArray())
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
@@ -84,6 +69,12 @@ fun <N> ambientsOf(
   @Inject ambients: Ambients,
   @Inject values: AmbientsFactory<N>
 ): Ambients = values.create()
+
+inline fun <R> withAmbients(
+  vararg values: ProvidedValue<*>,
+  @Inject ambients: Ambients,
+  block: (@Provide Ambients) -> R
+): R = block(ambients.plus(*values))
 
 class ProvidedValue<T> internal constructor(
   val ambient: Ambient<T>,
@@ -108,7 +99,7 @@ class AmbientsFactory<N>(
   private val scopeObservers = scopeObservers
 
   fun create(@Inject ambients: Ambients): Ambients {
-    val parent = AmbientScope.current()
+    val parent = current<Scope>()
     @Provide val scope = DisposableScope()
     val parentDisposable = scope.bind(parent)
     parentDisposable.bind()
@@ -122,7 +113,7 @@ class AmbientsFactory<N>(
     for (scopeObserver in finalObservers)
       scopeObserver.onInit()
 
-    return ambients + (AmbientScope provides scope) + values
+    return ambients + provide<Scope>(scope) + values
   }
 }
 
@@ -132,18 +123,30 @@ interface Ambient<T> {
   fun merge(oldValue: T?, newValue: T): T = newValue
 }
 
-fun <T> Ambient<T>.current(@Inject ambients: Ambients): T =
-  ambients.map[this]?.invoke() as? T ?: default()
+fun <T> current(@Inject ambients: Ambients, @Inject ambient: Ambient<T>): T =
+  ambients.map[ambient]?.invoke() as? T ?: ambient.default()
 
-interface ProvidableAmbient<T> : Ambient<T> {
-  infix fun provides(factory: () -> T) = ProvidedValue(this, factory, true)
+interface ProvidableAmbient<T> : Ambient<T>
 
-  infix fun provides(value: T) = provides { value }
+infix fun <T> provide(
+  @Inject ambient: ProvidableAmbient<T>,
+  factory: () -> T
+) = ProvidedValue(ambient, factory, true)
 
-  infix fun providesDefault(factory: () -> T) = ProvidedValue(this, factory, false)
+infix fun <T> provide(
+  value: T,
+  @Inject ambient: ProvidableAmbient<T>
+) = provide { value }
 
-  infix fun providesDefault(value: T) = providesDefault { value }
-}
+infix fun <T> provideDefault(
+  @Inject ambient: ProvidableAmbient<T>,
+  factory: () -> T
+) = ProvidedValue(ambient, factory, false)
+
+infix fun <T> provideDefault(
+  value: T,
+  @Inject ambient: ProvidableAmbient<T>
+) = provideDefault { value }
 
 private class ProvidableAmbientImpl<T>(
   private val merge: ((T?, T) -> T)?,
@@ -159,9 +162,3 @@ fun <T> ambientOf(
   merge: ((T?, T) -> T)? = null,
   defaultFactory: () -> T
 ): ProvidableAmbient<T> = ProvidableAmbientImpl(merge, defaultFactory)
-
-inline fun <R> withAmbients(
-  vararg values: ProvidedValue<*>,
-  @Inject ambients: Ambients,
-  block: (@Provide Ambients) -> R
-): R = block(ambients.plus(*values))

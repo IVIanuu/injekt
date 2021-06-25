@@ -22,28 +22,19 @@ import com.ivianuu.injekt.scope.*
 
 @Tag annotation class AmbientService<N> {
   companion object {
-    @Suppress("NOTHING_TO_INLINE")
-    inline fun <T> current(@Inject ambients: Ambients, @Inject key: TypeKey<T>, ): T =
-      serviceAmbientOf<T>().current()
+    @Provide fun <@Spread T : @AmbientService<N> S, S, N> ambient(key: TypeKey<S>): Ambient<S> =
+      serviceAmbientOf()
 
-    @Provide inline fun <@Spread T : @AmbientService<N> U, U : Any, N> providedServiceValue(
-      noinline factory: () -> T,
-      key: TypeKey<U>
-    ): NamedProvidedValue<N, U> = serviceAmbientOf<U>() provides factory
+    @Provide fun <@Spread T : @AmbientService<N> S, S, N> providedServiceValue(
+      factory: () -> T,
+      key: TypeKey<S>
+    ): NamedProvidedValue<N, S> = provide(ambient = serviceAmbientOf(), factory = factory)
   }
 }
 
 @OptIn(InternalScopeApi::class)
 @Suppress("UNCHECKED_CAST")
-@PublishedApi
-internal fun <T> serviceAmbientOf(@Inject key: TypeKey<T>): ProvidableAmbient<T> {
-  serviceAmbients[key.value]?.let { return it as ProvidableAmbient<T> }
-  synchronized(serviceAmbients) {
-    serviceAmbients[key.value]?.let { return it as ProvidableAmbient<T> }
-    val ambient = ambientOf<T> { error("No service provided for ${key.value}") }
-    serviceAmbients[key.value] = ambient
-    return ambient
+fun <T> serviceAmbientOf(@Inject key: TypeKey<T>): ProvidableAmbient<T> =
+  scoped(scope = SingletonScope) {
+    ambientOf { error("No service provided for ${key.value}") }
   }
-}
-
-private val serviceAmbients = mutableMapOf<String, ProvidableAmbient<*>>()

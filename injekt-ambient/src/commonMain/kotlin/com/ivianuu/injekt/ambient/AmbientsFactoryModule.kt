@@ -19,7 +19,6 @@
 package com.ivianuu.injekt.ambient
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 
 @Tag private annotation class AmbientsFactoryMarker
 
@@ -72,17 +71,16 @@ class AmbientsFactoryModule5<P, P1, P2, P3, P4, P5, C> :
 
 fun <N> ambientsFromFactoryOf(
   @Inject ambients: Ambients,
-  @Inject nameKey: TypeKey<N>
-): Ambients = AmbientService.current<@AmbientsFactoryMarker () -> AmbientsFactory<N>>()
+  @Inject ambient: Ambient<@AmbientsFactoryMarker () -> AmbientsFactory<N>>
+): Ambients = current(ambient = ambient)
   .invoke()
   .create()
 
 fun <N, P1> ambientsFromFactoryOf(
   p1: P1,
   @Inject ambients: Ambients,
-  @Inject nameKey: TypeKey<N>,
-  @Inject p1Key: TypeKey<P1>
-): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1) -> AmbientsFactory<N>>()
+  @Inject ambient: Ambient<@AmbientsFactoryMarker (P1) -> AmbientsFactory<N>>
+): Ambients = current(ambient = ambient)
   .invoke(p1)
   .create()
 
@@ -90,10 +88,8 @@ fun <N, P1, P2> ambientsFromFactoryOf(
   p1: P1,
   p2: P2,
   @Inject ambients: Ambients,
-  @Inject nameKey: TypeKey<N>,
-  @Inject p1Key: TypeKey<P1>,
-  @Inject p2Key: TypeKey<P2>
-): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2) -> AmbientsFactory<N>>()
+  @Inject ambient: Ambient<@AmbientsFactoryMarker (P1, P2) -> AmbientsFactory<N>>
+): Ambients = current(ambient = ambient)
   .invoke(p1, p2)
   .create()
 
@@ -102,11 +98,8 @@ fun <N, P1, P2, P3> ambientsFromFactoryOf(
   p2: P2,
   p3: P3,
   @Inject ambients: Ambients,
-  @Inject nameKey: TypeKey<N>,
-  @Inject p1Key: TypeKey<P1>,
-  @Inject p2Key: TypeKey<P2>,
-  @Inject p3Key: TypeKey<P3>
-): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2, P3) -> AmbientsFactory<N>>()
+  @Inject ambient: Ambient<@AmbientsFactoryMarker (P1, P2, P3) -> AmbientsFactory<N>>
+): Ambients = current(ambient = ambient)
   .invoke(p1, p2, p3)
   .create()
 
@@ -116,12 +109,8 @@ fun <N, P1, P2, P3, P4> ambientsFromFactoryOf(
   p3: P3,
   p4: P4,
   @Inject ambients: Ambients,
-  @Inject nameKey: TypeKey<N>,
-  @Inject p1Key: TypeKey<P1>,
-  @Inject p2Key: TypeKey<P2>,
-  @Inject p3Key: TypeKey<P3>,
-  @Inject p4Key: TypeKey<P4>
-): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2, P3, P4) -> AmbientsFactory<N>>()
+  @Inject ambient: Ambient<@AmbientsFactoryMarker (P1, P2, P3, P4) -> AmbientsFactory<N>>
+): Ambients = current(ambient = ambient)
   .invoke(p1, p2, p3, p4)
   .create()
 
@@ -132,12 +121,7 @@ fun <N, P1, P2, P3, P4, P5> ambientsFromFactoryOf(
   p4: P4,
   p5: P5,
   @Inject ambients: Ambients,
-  @Inject nameKey: TypeKey<N>,
-  @Inject p1Key: TypeKey<P1>,
-  @Inject p2Key: TypeKey<P2>,
-  @Inject p3Key: TypeKey<P3>,
-  @Inject p4Key: TypeKey<P4>,
-  @Inject p5Key: TypeKey<P5>
-): Ambients = AmbientService.current<@AmbientsFactoryMarker (P1, P2, P3, P4, P5) -> AmbientsFactory<N>>()
+  @Inject ambient: Ambient<@AmbientsFactoryMarker (P1, P2, P3, P4, P5) -> AmbientsFactory<N>>
+): Ambients = current(ambient = ambient)
   .invoke(p1, p2, p3, p4, p5)
   .create()

@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-@file:Providers("com.ivianuu.injekt.android.activityAmbients")
+@file:Providers(
+  "com.ivianuu.injekt.android.activityAmbients",
+  "com.ivianuu.injekt.ambient.AmbientService"
+)
 
 package com.ivianuu.injekt.samples.android.app
 
@@ -30,7 +33,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = AmbientService.current<MainActivityDependencies>()
+    val dependencies = current<MainActivityDependencies>()
     // display ui
     setContent {
       dependencies.theme {

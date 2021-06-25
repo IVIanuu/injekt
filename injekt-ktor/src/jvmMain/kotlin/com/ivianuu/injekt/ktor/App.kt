@@ -42,7 +42,7 @@ inline fun Application.initializeAppAmbients(
 @PublishedApi internal fun Application.registerAppAmbients(@Inject ambients: Ambients) {
   attributes.put(AmbientsKey, ambients)
   environment.monitor.subscribe(ApplicationStopped) {
-    (AmbientScope.current() as DisposableScope).dispose()
+    (current<Scope>() as DisposableScope).dispose()
   }
 }
 

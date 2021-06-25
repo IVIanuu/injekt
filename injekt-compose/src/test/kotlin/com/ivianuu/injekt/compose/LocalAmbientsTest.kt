@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compose
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.junit4.*
 import androidx.test.ext.junit.runners.*
+import com.ivianuu.injekt.*
 import com.ivianuu.injekt.ambient.*
 import io.kotest.matchers.*
 import org.junit.*
@@ -29,10 +30,10 @@ class LocalAmbientsTest {
   @get:Rule val composeRule = createComposeRule()
 
   @Test fun testLocalAmbients() {
-    val ambientInt = ambientOf { 0 }
+    @Provide val ambientInt = ambientOf { 0 }
     composeRule.setContent {
-      CompositionLocalProvider(LocalAmbients provides ambientsOf(ambientInt provides 42)) {
-        ambientInt.current() shouldBe 42
+      CompositionLocalProvider(LocalAmbients provides ambientsOf(provide(42))) {
+        current<Int>() shouldBe 42
       }
     }
   }

@@ -38,7 +38,7 @@ internal inline fun Lifecycle.cachedAmbients(init: () -> Ambients): Ambients {
       override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
         if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
           synchronized(ambientsByLifecycle) { ambientsByLifecycle.remove(this@cachedAmbients) }
-          (AmbientScope.current() as DisposableScope).dispose()
+          (current<Scope>() as DisposableScope).dispose()
         }
       }
     })
@@ -57,6 +57,6 @@ internal inline fun ViewModelStore.cachedAmbients(crossinline init: () -> Ambien
 internal class ValueHolder(@Provide val ambients: Ambients) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
-    (AmbientScope.current() as DisposableScope).dispose()
+    (current<Scope>() as DisposableScope).dispose()
   }
 }

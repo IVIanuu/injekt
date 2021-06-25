@@ -16,50 +16,51 @@
 
 package com.ivianuu.injekt.ambient
 
+import com.ivianuu.injekt.*
 import io.kotest.matchers.*
 import org.junit.*
 
 class AmbientsTest {
   @Test fun testGetReturnsProvidedValue() {
-    val ambient = ambientOf { 0 }
-    val ambients = ambientsOf(ambient provides 42)
-    ambient.current(ambients) shouldBe 42
+    @Provide val ambient = ambientOf { 0 }
+    @Provide val ambients = ambientsOf(provide(42))
+    current<Int>() shouldBe 42
   }
 
   @Test fun testGetReturnsDefaultIfNoValueIsProvided() {
-    val ambient = ambientOf { 42 }
-    val ambients = ambientsOf()
-    ambient.current(ambients) shouldBe 42
+    @Provide val ambient = ambientOf { 42 }
+    @Provide val ambients = ambientsOf()
+    current<Int>() shouldBe 42
   }
 
   @Test fun testProvidesDoesOverrideExistingValue() {
-    val ambient = ambientOf { 0 }
-    val baseAmbients = ambientsOf(ambient provides 1)
-    ambient.current(baseAmbients) shouldBe 1
-    val finalAmbients = ambientsOf(ambient provides 42)
-    ambient.current(finalAmbients) shouldBe 42
+    @Provide val ambient = ambientOf { 0 }
+    val baseAmbients = ambientsOf(provide(1))
+    current<Int>(baseAmbients) shouldBe 1
+    val finalAmbients = ambientsOf(provide(42))
+    current<Int>(finalAmbients) shouldBe 42
   }
 
   @Test fun testProvidesDefaultDoesNotOverrideExistingValue() {
-    val ambient = ambientOf { 0 }
-    val baseAmbients = ambientsOf(ambient provides 42)
-    val finalAmbients = baseAmbients.plus(ambient providesDefault 1)
-    ambient.current(finalAmbients) shouldBe 42
+    @Provide val ambient = ambientOf { 0 }
+    val baseAmbients = ambientsOf(provide(42))
+    val finalAmbients = baseAmbients.plus(provideDefault(1))
+    current<Int>(finalAmbients) shouldBe 42
   }
 
   @Test fun testPlus() {
-    val ambient = ambientOf { 0 }
+    @Provide val ambient = ambientOf { 0 }
     val baseAmbients = ambientsOf()
-    ambient.current(baseAmbients) shouldBe 0
-    val finalAmbients = baseAmbients.plus(ambient provides 42)
-    ambient.current(finalAmbients) shouldBe 42
+    current<Int>(baseAmbients) shouldBe 0
+    val finalAmbients = baseAmbients + provide(42)
+    current<Int>(finalAmbients) shouldBe 42
   }
 
   @Test fun testMinus() {
-    val ambient = ambientOf { 42 }
-    val baseAmbients = ambientsOf(ambient provides 0)
-    ambient.current(baseAmbients) shouldBe 0
-    val finalAmbients = baseAmbients.minus(ambient)
-    ambient.current(finalAmbients) shouldBe 42
+    @Provide val ambient = ambientOf { 42 }
+    val baseAmbients = ambientsOf(provide(0))
+    current<Int>(baseAmbients) shouldBe 0
+    val finalAmbients = baseAmbients.minus<Int>()
+    current<Int>(finalAmbients) shouldBe 42
   }
 }
