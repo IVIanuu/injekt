@@ -25,4 +25,3 @@ import kotlinx.coroutines.*
 @Provide val jobDisposer = Disposer<Job> { it.cancel() }
 
 @Provide suspend fun currentCoroutineContext(): CoroutineContext = coroutineContext
-
