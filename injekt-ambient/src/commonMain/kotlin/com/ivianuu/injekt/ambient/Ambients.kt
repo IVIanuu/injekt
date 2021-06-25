@@ -68,12 +68,6 @@ inline fun <R> withAmbients(
   block: (@Provide Ambients) -> R
 ): R = block(ambients.plus(*values))
 
-class ProvidedValue<T> internal constructor(
-  val ambient: Ambient<T>,
-  val factory: () -> T,
-  val canOverride: Boolean
-)
-
 interface Ambient<T> {
   fun default(): T
 
@@ -84,6 +78,12 @@ fun <T> current(@Inject ambients: Ambients, @Inject ambient: Ambient<T>): T =
   ambients.map[ambient]?.invoke() as? T ?: ambient.default()
 
 interface ProvidableAmbient<T> : Ambient<T>
+
+class ProvidedValue<T> internal constructor(
+  val ambient: Ambient<T>,
+  val factory: () -> T,
+  val canOverride: Boolean
+)
 
 infix fun <T> provide(
   @Inject ambient: ProvidableAmbient<T>,
