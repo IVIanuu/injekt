@@ -105,7 +105,7 @@ class NamedAmbientsTest {
   @Test fun testScopeObserver() {
     var initCalls = 0
     var disposeCalls = 0
-    @Provide val observer = object : ScopeObserver<ForApp> {
+    @Provide val observer = object : NamedScopeObserver<ForApp> {
       override fun onInit() {
         initCalls++
       }
@@ -131,4 +131,4 @@ class NamedAmbientsTest {
 
 private typealias MyScope = Scope
 
-@Provide private val myScopeAmbient: ProvidableAmbient<MyScope> = ambientOf { error("") }
+@Provide val myScopeAmbient: ProvidableAmbient<MyScope> = ambientOf { error("") }

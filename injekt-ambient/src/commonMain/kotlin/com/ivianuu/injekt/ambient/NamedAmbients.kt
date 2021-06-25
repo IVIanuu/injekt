@@ -21,18 +21,37 @@ package com.ivianuu.injekt.ambient
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
+typealias NamedAmbients<N> = Ambients
+
 typealias NamedProvidedValue<N, T> = ProvidedValue<T>
 
 @Provide fun <@Spread T : NamedProvidedValue<N, S>, S, N> unwrappedNamedProvidedValue(
   providedValue: T
 ): S = providedValue.factory()
 
-typealias NamedAmbients<N> = Ambients
+typealias NamedScope<N> = Scope
+
+/**
+ * Listener for scope lifecycles
+ */
+interface NamedScopeObserver<N> {
+  /**
+   * Will be called when the scope gets initialized
+   */
+  fun onInit() {
+  }
+
+  /**
+   * Will be called when the scope gets disposed
+   */
+  fun onDispose() {
+  }
+}
 
 @Provide fun <N> namedAmbients(
   ambients: Ambients,
   valueFactories: (@Provide NamedScope<N>, @Provide Ambients) -> Set<NamedProvidedValue<N, *>> = { _, _ -> emptySet() },
-  scopeObservers: (@Provide NamedScope<N>, @Provide Ambients) -> Set<ScopeObserver<N>> = { _, _ -> emptySet() }
+  scopeObservers: (@Provide NamedScope<N>, @Provide Ambients) -> Set<NamedScopeObserver<N>> = { _, _ -> emptySet() }
 ): NamedAmbients<N> {
   val parent = current<Scope>()
   @Provide val scope = DisposableScope()

@@ -63,13 +63,13 @@ import kotlin.reflect.*
  */
 object WorkerInitializerModule {
   /**
-   * Defines the [ScopeObserver] for work manager initialization in the [NamedScope] of [ForApp]
+   * Defines the [NamedScopeObserver] for work manager initialization in the [NamedScope] of [ForApp]
    */
   @Provide fun workerScopeInitializer(
     context: AppContext,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
-  ): ScopeObserver<ForApp> = object : ScopeObserver<ForApp> {
+  ): NamedScopeObserver<ForApp> = object : NamedScopeObserver<ForApp> {
     override fun onInit() {
       WorkManager.initialize(context, configuration ?: defaultConfiguration())
     }
