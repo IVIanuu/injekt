@@ -40,7 +40,33 @@ class AmbientsFactoryTest {
     }
   }
 
-  @Test fun testAmbientServiceCanAccessAmbients() {
+  @Test fun testProvidedValueCanAccessScope() {
+    @Provide val ambient = ambientOf { 0 }
+
+    @Provide fun providedScope(scope: NamedScope<ForApp>): NamedProvidedValue<ForApp, MyScope> =
+      provide(scope)
+
+    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
+
+    current<MyScope>() shouldBe current<Scope>()
+  }
+
+  @Test fun testProvidedValueCanAccessParentScope() {
+    @Provide val ambient = ambientOf { 0 }
+
+    @Provide fun providedScope(scope: NamedScope<ForApp>): NamedProvidedValue<ForChild, MyScope> =
+      provide(scope)
+
+    @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
+
+    @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
+    val parentScope = current<Scope>()
+    withInstances(ambientsFromFactoryOf<ForChild>()) {
+      current<MyScope>() shouldBe parentScope
+    }
+  }
+
+  @Test fun testProvidedValueCanAccessAmbients() {
     @Provide val intAmbient = ambientOf { 0 }
 
     @Provide @AmbientService<ForApp> class Foo(val ambients: Ambients) {
@@ -53,6 +79,25 @@ class AmbientsFactoryTest {
     val foo = current<Foo>()
     ambients shouldBe foo.ambients
     foo.answer shouldBe 42
+  }
+
+  @Providers("com.ivianuu.injekt.scope.*")
+  @Test fun testProvidedValueCanAccessParentProvidedValue() {
+    @Provide val ambient = ambientOf { 0 }
+
+    @Provide @Scoped<NamedScope<ForApp>> @AmbientService<ForApp>
+    class Foo
+
+    @Provide @Scoped<NamedScope<ForChild>> @AmbientService<ForChild>
+    class FooReader(val foo: Foo)
+
+    @Provide val childAmbientsFactoryModule = AmbientsFactoryModule0<ForApp, ForChild>()
+
+    @Provide val parentAmbients = ambientsOf<ForApp>(ambientsOf())
+    val foo = current<Foo>()
+    withInstances(ambientsFromFactoryOf<ForChild>()) {
+      current<FooReader>().foo shouldBe foo
+    }
   }
 
   private abstract class ForChild private constructor()
@@ -83,3 +128,7 @@ class AmbientsFactoryTest {
     disposeCalls shouldBe 1
   }
 }
+
+private typealias MyScope = Scope
+
+@Provide private val myScopeAmbient: ProvidableAmbient<MyScope> = ambientOf { error("") }
