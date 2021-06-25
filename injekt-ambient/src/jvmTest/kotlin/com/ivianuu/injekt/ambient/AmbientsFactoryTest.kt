@@ -40,6 +40,21 @@ class AmbientsFactoryTest {
     }
   }
 
+  @Test fun testAmbientServiceCanAccessAmbients() {
+    @Provide val intAmbient = ambientOf { 0 }
+
+    @Provide @AmbientService<ForApp> class Foo(val ambients: Ambients) {
+      val answer = current<Int>()
+    }
+
+    @Provide val providedInt: NamedProvidedValue<ForApp, Int> = provide(42)
+
+    @Provide val ambients = ambientsOf<ForApp>(ambientsOf())
+    val foo = current<Foo>()
+    ambients shouldBe foo.ambients
+    foo.answer shouldBe 42
+  }
+
   private abstract class ForChild private constructor()
 
   @Test fun testScopeObserver() {

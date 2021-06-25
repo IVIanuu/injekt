@@ -91,8 +91,8 @@ typealias NamedProvidedValue<N, T> = ProvidedValue<T>
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @Provide
 class AmbientsFactory<N>(
-  valueFactories: (@Provide NamedScope<N>) -> Set<NamedProvidedValue<N, *>> = { emptySet() },
-  scopeObservers: (@Provide NamedScope<N>) -> Set<ScopeObserver<N>> = { emptySet() }
+  valueFactories: (@Provide NamedScope<N>, @Provide Ambients) -> Set<NamedProvidedValue<N, *>> = { _, _ -> emptySet() },
+  scopeObservers: (@Provide NamedScope<N>, @Provide Ambients) -> Set<ScopeObserver<N>> = { _, _ -> emptySet() }
 ) {
   // todo move to constructor once fixed
   private val valueFactories = valueFactories
@@ -103,9 +103,13 @@ class AmbientsFactory<N>(
     @Provide val scope = DisposableScope()
     val parentDisposable = scope.bind(parent)
     parentDisposable.bind()
-    val values = valueFactories(scope)
 
-    val finalObservers = scopeObservers(scope)
+    val finalValues = mutableMapOf<Ambient<*>, () -> Any?>()
+    val finalAmbients = Ambients(finalValues)
+
+    val values = valueFactories(scope, finalAmbients)
+
+    val finalObservers = scopeObservers(scope, finalAmbients)
 
     for (scopeObserver in finalObservers)
       invokeOnDispose { scopeObserver.onDispose() }
@@ -113,7 +117,9 @@ class AmbientsFactory<N>(
     for (scopeObserver in finalObservers)
       scopeObserver.onInit()
 
-    return ambients + provide<Scope>(scope) + values
+    finalValues += (ambients + provide<Scope>(scope) + values).map
+
+    return finalAmbients
   }
 }
 
