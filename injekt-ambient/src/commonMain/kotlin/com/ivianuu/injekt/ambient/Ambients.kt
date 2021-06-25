@@ -22,16 +22,23 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class Ambients(val map: Map<Ambient<*>, Any?>)
+inline class Ambients(val map: Map<Ambient<*>, () -> Any?>)
 
 operator fun Ambients.plus(vararg values: ProvidedValue<*>): Ambients {
   val newMap = map.toMutableMap()
 
   for (providedValue in values) {
-    val oldValue = newMap[providedValue.ambient]
-    if (oldValue == null || providedValue.canOverride)
-      newMap[providedValue.ambient] = (providedValue.ambient as Ambient<Any?>)
-        .merge(oldValue, providedValue.value)
+    val oldFactory = newMap[providedValue.ambient]
+    newMap[providedValue.ambient] = when {
+      oldFactory == null -> providedValue.factory
+      providedValue.canOverride -> {
+        {
+          (providedValue.ambient as Ambient<Any?>)
+            .merge(oldFactory.invoke(), providedValue.factory)
+        }
+      }
+      else -> continue
+    }
   }
 
   return Ambients(newMap)
@@ -54,8 +61,8 @@ fun ambientsOf(): Ambients = Ambients(emptyMap())
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ambientsOf(value: ProvidedValue<*>): Ambients =
-  Ambients(HashMap<Ambient<*>, Any?>(1).also {
-    it[value.ambient] = value.value
+  Ambients(HashMap<Ambient<*>, () -> Any?>(1).also {
+    it[value.ambient] = value.factory
   })
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -64,10 +71,10 @@ fun ambientsOf(values: Iterable<ProvidedValue<*>>): Ambients =
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ambientsOf(vararg values: ProvidedValue<*>): Ambients {
-  val map: MutableMap<Ambient<*>, Any?> = HashMap(values.size)
+  val map: MutableMap<Ambient<*>, () -> Any?> = HashMap(values.size)
 
   for (providedValue in values)
-    map[providedValue.ambient] = providedValue.value
+    map[providedValue.ambient] = providedValue.factory
 
   return Ambients(map)
 }
@@ -80,7 +87,7 @@ fun <N> ambientsOf(
 
 class ProvidedValue<T> internal constructor(
   val ambient: Ambient<T>,
-  val value: T,
+  val factory: () -> T,
   val canOverride: Boolean
 )
 
@@ -88,7 +95,7 @@ typealias NamedProvidedValue<N, T> = ProvidedValue<T>
 
 @Provide fun <@Spread T : NamedProvidedValue<N, S>, S, N> unwrappedNamedProvidedValue(
   providedValue: T
-): S = providedValue.value
+): S = providedValue.factory()
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @Provide
@@ -126,12 +133,16 @@ interface Ambient<T> {
 }
 
 fun <T> Ambient<T>.current(@Inject ambients: Ambients): T =
-  ambients.map[this] as? T ?: default()
+  ambients.map[this]?.invoke() as? T ?: default()
 
 interface ProvidableAmbient<T> : Ambient<T> {
-  infix fun provides(value: T) = ProvidedValue(this, value, true)
+  infix fun provides(factory: () -> T) = ProvidedValue(this, factory, true)
 
-  infix fun providesDefault(value: T) = ProvidedValue(this, value, false)
+  infix fun provides(value: T) = ProvidedValue(this, { value }, true)
+
+  infix fun providesDefault(factory: () -> T) = ProvidedValue(this, factory, false)
+
+  infix fun providesDefault(value: T) = ProvidedValue(this, { value }, false)
 }
 
 private class ProvidableAmbientImpl<T>(

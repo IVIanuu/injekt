@@ -24,23 +24,23 @@ import com.ivianuu.injekt.scope.*
   companion object {
     @Suppress("NOTHING_TO_INLINE")
     inline fun <T> current(@Inject ambients: Ambients, @Inject key: TypeKey<T>, ): T =
-      serviceAmbientOf<T>().current().invoke()
+      serviceAmbientOf<T>().current()
 
     @Provide inline fun <@Spread T : @AmbientService<N> U, U : Any, N> providedServiceValue(
       noinline factory: () -> T,
       key: TypeKey<U>
-    ): NamedProvidedValue<N, () -> U> = serviceAmbientOf<U>() provides factory
+    ): NamedProvidedValue<N, U> = serviceAmbientOf<U>() provides factory
   }
 }
 
 @OptIn(InternalScopeApi::class)
 @Suppress("UNCHECKED_CAST")
 @PublishedApi
-internal fun <T> serviceAmbientOf(@Inject key: TypeKey<T>): ProvidableAmbient<() -> T> {
-  serviceAmbients[key.value]?.let { return it as ProvidableAmbient<() -> T> }
+internal fun <T> serviceAmbientOf(@Inject key: TypeKey<T>): ProvidableAmbient<T> {
+  serviceAmbients[key.value]?.let { return it as ProvidableAmbient<T> }
   synchronized(serviceAmbients) {
-    serviceAmbients[key.value]?.let { return it as ProvidableAmbient<() -> T> }
-    val ambient = ambientOf<() -> T> { error("No service provided for ${key.value}") }
+    serviceAmbients[key.value]?.let { return it as ProvidableAmbient<T> }
+    val ambient = ambientOf<T> { error("No service provided for ${key.value}") }
     serviceAmbients[key.value] = ambient
     return ambient
   }
