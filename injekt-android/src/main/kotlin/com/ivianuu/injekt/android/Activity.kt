@@ -68,8 +68,3 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 @Provide inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
   get() = this
-
-typealias ActivityCoroutineScope = LifecycleCoroutineScope
-
-@Provide inline val ComponentActivity.activityCoroutineScope: ActivityCoroutineScope
-  get() = lifecycleScope
