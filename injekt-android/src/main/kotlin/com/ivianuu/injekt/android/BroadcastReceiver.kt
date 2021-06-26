@@ -33,7 +33,7 @@ fun BroadcastReceiver.createReceiverAmbients(
 
 abstract class ForReceiver private constructor()
 
-@Provide val receiverAmbientsFactoryModule = NamedAmbientsModule3<ForApp,
+@Provide val receiverAmbientsModule = NamedAmbientsModule3<ForApp,
     BroadcastReceiver, ReceiverContext, ReceiverIntent, ForReceiver>()
 
 typealias ReceiverContext = Context

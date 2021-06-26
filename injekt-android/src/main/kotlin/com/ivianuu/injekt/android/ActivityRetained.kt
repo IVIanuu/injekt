@@ -31,5 +31,5 @@ import com.ivianuu.injekt.ambient.*
 
 abstract class ForActivityRetained private constructor()
 
-@Provide val activityRetainedAmbientsFactoryModule =
+@Provide val activityRetainedAmbientsModule =
   NamedAmbientsModule0<ForApp, ForActivityRetained>()

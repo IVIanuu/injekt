@@ -32,7 +32,7 @@ fun Service.createServiceAmbients(): Ambients = namedAmbientsOf<ForService, Serv
 
 abstract class ForService private constructor()
 
-@Provide val serviceAmbientsFactoryModule =
+@Provide val serviceAmbientsRModule =
   NamedAmbientsModule1<ForApp, Service, ForService>()
 
 typealias ServiceContext = Context
