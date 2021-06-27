@@ -28,7 +28,7 @@ import com.ivianuu.injekt.scope.*
  */
 val Application.appScope: AppScope
   get() = (this as? AppScopeOwner)?.appScope
-    ?: error("application does not implement AppContainerOwner")
+    ?: error("application does not implement AppScopeOwner")
 
 /**
  * Host of the [AppScope]
@@ -44,8 +44,8 @@ interface AppScopeOwner {
  * Creates the [AppScope] which must be manually stored
  */
 inline fun Application.createAppScope(
-  @Inject containerFactory: (@Provide Application) -> AppScope
-): AppScope = containerFactory(this)
+  @Inject scopeFactory: (@Provide Application) -> AppScope
+): AppScope = scopeFactory(this)
 
 typealias AppContext = Context
 

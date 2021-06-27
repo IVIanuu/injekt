@@ -117,11 +117,11 @@ class ScopeElementPair<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
  * Example:
  * ```
  * @Provide
- * @ScopeElement<AppContainer>
+ * @ScopeElement<AppScope>
  * class MyAppDeps(val api: Api, val database: Database)
  *
- * fun runApp(@Inject appContainer: AppContainer) {
- *   val deps = appContainer.element<MyAppDeps>()
+ * fun runApp(@Inject appScope: AppScope) {
+ *   val deps = appScope.element<MyAppDeps>()
  * }
  * ```
  */
