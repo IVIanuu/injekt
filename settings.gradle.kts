@@ -1,10 +1,9 @@
 include(
-    ":injekt-ambient",
     ":injekt-android",
     ":injekt-android-work",
     ":injekt-common",
     ":injekt-compiler-plugin",
-    ":injekt-compose",
+    ":injekt-container",
     ":injekt-core",
     ":injekt-coroutines",
     ":injekt-gradle-plugin",

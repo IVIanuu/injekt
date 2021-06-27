@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.*
 import androidx.test.core.app.*
-import com.ivianuu.injekt.ambient.*
 import io.kotest.matchers.booleans.*
 import org.junit.*
 import org.junit.runner.*
@@ -30,8 +29,8 @@ import org.robolectric.annotation.*
 class ActivityRetainedTest {
   @Test fun testActivityRetainedScopeLifecycle() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-    lateinit var disposable: TestDisposable<ForActivityRetained>
-    scenario.onActivity { disposable = current(it.activityRetainedAmbients) }
+    lateinit var disposable: TestDisposable<ActivityRetainedScope>
+    scenario.onActivity { disposable = it.activityRetainedContainer.element() }
     disposable.disposed.shouldBeFalse()
     scenario.recreate()
     disposable.disposed.shouldBeFalse()

@@ -27,11 +27,10 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 dependencies {
   implementation(Deps.AndroidX.Compose.runtime)
   implementation(Deps.AndroidX.Activity.compose)
-  implementation(project(":injekt-ambient"))
   implementation(project(":injekt-android"))
   implementation(project(":injekt-android-work"))
   implementation(project(":injekt-common"))
-  implementation(project(":injekt-compose"))
+  implementation(project(":injekt-container"))
   implementation(project(":injekt-core"))
   implementation(project(":injekt-coroutines"))
   implementation(project(":injekt-ktor"))

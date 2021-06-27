@@ -21,31 +21,31 @@ import android.content.*
 import android.content.res.*
 import androidx.lifecycle.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.container.*
 
 /**
- * Returns [Ambients] of this
+ * Returns the [Container] for [AppScope] hosted in this application
  */
-@Provide val Application.appAmbients: Ambients
-  get() = (this as? AppAmbientsOwner)?.appAmbients
-    ?: error("application does not implement AppAmbientsOwner")
+val Application.appContainer: Container<AppScope>
+  get() = (this as? AppContainerOwner)?.appContainer
+    ?: error("application does not implement AppContainerOwner")
 
 /**
- * Host of application wide [Ambients]
+ * Host of the app container
  */
-interface AppAmbientsOwner {
+interface AppContainerOwner {
   /**
-   * The app ambients which are typically created via [createAppAmbients]
+   * The app ambients which are typically created via [createAppContainer]
    */
-  val appAmbients: Ambients
+  val appContainer: Container<AppScope>
 }
 
 /**
- * Creates the [Ambients] which must be manually stored
+ * Creates the [Container] for [AppScope] which must be manually stored
  */
-inline fun Application.createAppAmbients(
-  @Inject ambientsFactory: (@Provide Application, @Provide Ambients) -> NamedAmbients<ForApp>
-): Ambients = ambientsFactory(this, ambientsOf())
+inline fun Application.createAppContainer(
+  @Inject containerFactory: (@Provide Application) -> Container<AppScope>
+): Container<AppScope> = containerFactory(this)
 
 typealias AppContext = Context
 

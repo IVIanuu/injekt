@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.scope.*
 
 class TestDisposable<N> : Disposable {
@@ -29,4 +29,4 @@ class TestDisposable<N> : Disposable {
 }
 
 @Provide inline fun <N> testDisposable():
-    @Scoped<NamedScope<N>> @AmbientService<N> TestDisposable<N> = TestDisposable()
+    @Scoped<NamedScope<N>> @ContainerElement<N> TestDisposable<N> = TestDisposable()

@@ -46,8 +46,6 @@ dependencies {
   classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
   // optional - androidx work support
   classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
-  // optional - compose support
-  classpath("com.ivianuu.injekt:injekt-compose:${latest_version}")
   // optional - ktor support
   classpath("com.ivianuu.injekt:injekt-ktor:${latest_version}")
 }

@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.scope
+package com.ivianuu.injekt.container
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
-
-@Provide val scopeAmbient: ProvidableAmbient<Scope> = ambientOf { SingletonScope }
+abstract class AppScope

@@ -15,8 +15,8 @@
  */
 
 @file:Providers(
+  "com.ivianuu.injekt.container.*",
   "com.ivianuu.injekt.coroutines.*",
-  "com.ivianuu.injekt.ambient.*",
   "com.ivianuu.injekt.android.*",
   "com.ivianuu.injekt.scope.*"
 )
@@ -27,6 +27,6 @@ import android.app.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
 
-class App : Application(), AppAmbientsOwner {
-  override val appAmbients by lazy { createAppAmbients() }
+class App : Application(), AppContainerOwner {
+  override val appContainer by lazy { createAppContainer() }
 }

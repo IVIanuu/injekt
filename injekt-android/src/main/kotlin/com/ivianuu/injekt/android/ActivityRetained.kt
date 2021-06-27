@@ -17,19 +17,38 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.*
+import androidx.lifecycle.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.container.*
 
 /**
- * Returns the [Ambients] of this [ComponentActivity]
+ * Returns the [Container] for [ActivityRetainedScope] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
-@Provide val ComponentActivity.activityRetainedAmbients: Ambients
-  get() = viewModelStore.cachedAmbients {
-    namedAmbientsOf<ForActivityRetained>(application.appAmbients)
+@Suppress("UNCHECKED_CAST")
+val ComponentActivity.activityRetainedContainer: Container<ActivityRetainedScope>
+  get() = ViewModelProvider(
+    this,
+    object : ViewModelProvider.Factory {
+      override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        ActivityRetainedContainerHolder(
+          application.appContainer
+            .element<@ChildContainerFactory () -> Container<ActivityRetainedScope>>()
+            .invoke()
+        ) as T
+    }
+  )[ActivityRetainedContainerHolder::class.java].container
+
+abstract class ActivityRetainedScope private constructor()
+
+@Provide val activityRetainedContainerModule =
+  ChildContainerModule0<AppScope, ActivityRetainedScope>()
+
+private class ActivityRetainedContainerHolder(
+  val container: Container<ActivityRetainedScope>
+) : ViewModel() {
+  override fun onCleared() {
+    super.onCleared()
+    container.dispose()
   }
-
-abstract class ForActivityRetained private constructor()
-
-@Provide val activityRetainedAmbientsModule =
-  NamedAmbientsModule0<ForApp, ForActivityRetained>()
+}

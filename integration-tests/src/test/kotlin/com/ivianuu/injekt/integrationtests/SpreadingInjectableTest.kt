@@ -258,7 +258,6 @@ class SpreadingInjectableTest {
       @Provide val foo: @Tag1 Foo = Foo()
     """,
     """
-      @Providers("com.ivianuu.injekt.ambient.*")
       fun invoke() = inject<Set<Foo>>()
     """
   ) {

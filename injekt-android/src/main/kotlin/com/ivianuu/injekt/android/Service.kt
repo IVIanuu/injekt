@@ -20,20 +20,19 @@ import android.app.*
 import android.content.*
 import android.content.res.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.container.*
 
 /**
- * Returns a new [Ambients] including all [ForService] services which must be manually stored and disposed
+ * Returns a new [Container] for [ServiceScope] which must be manually stored and disposed
  */
-fun Service.createServiceAmbients(): Ambients = namedAmbientsOf<ForService, Service>(
-  this,
-  application.appAmbients
-)
+fun Service.createServiceContainer(): Container<ServiceScope> = application.appContainer
+  .element<@ChildContainerFactory (Service) -> Container<ServiceScope>>()
+  .invoke(this)
 
-abstract class ForService private constructor()
+abstract class ServiceScope private constructor()
 
-@Provide val serviceAmbientsRModule =
-  NamedAmbientsModule1<ForApp, Service, ForService>()
+@Provide val serviceContainerModuleModule =
+  ChildContainerModule1<AppScope, Service, ServiceScope>()
 
 typealias ServiceContext = Context
 

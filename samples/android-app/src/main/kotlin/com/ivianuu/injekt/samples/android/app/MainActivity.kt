@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-@file:Providers(
-  "com.ivianuu.injekt.android.activityAmbients",
-  "com.ivianuu.injekt.ambient.AmbientService"
-)
-
 package com.ivianuu.injekt.samples.android.app
 
 import android.os.*
 import androidx.activity.*
 import androidx.activity.compose.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
 import com.ivianuu.injekt.android.*
+import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.samples.android.ui.*
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = current<MainActivityDependencies>()
+    val dependencies = activityContainer.element<MainActivityDependencies>()
     // display ui
     setContent {
       dependencies.theme {
@@ -44,5 +39,5 @@ class MainActivity : ComponentActivity() {
 }
 
 // Declare dependencies we want to retrieve in our activity
-@Provide @AmbientService<ForActivity>
+@Provide @ContainerElement<ActivityScope>
 class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)

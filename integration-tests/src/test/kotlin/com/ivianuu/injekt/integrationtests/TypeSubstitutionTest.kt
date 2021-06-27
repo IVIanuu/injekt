@@ -85,8 +85,8 @@ class TypeSubstitutionTest {
       .single()
       .typeParameters
       .map { it.toClassifierRef() }
-    val namedScope = typeFor(FqName("com.ivianuu.injekt.ambient.NamedScope"))
-      .typeWith(typeFor(FqName("com.ivianuu.injekt.ambient.ForApp")))
+    val namedScope = typeFor(FqName("com.ivianuu.injekt.container.NamedScope"))
+      .typeWith(typeFor(FqName("com.ivianuu.injekt.container.AppScope")))
     val substitutionType = scoped.wrap(stringType)
       .let {
         it.withArguments(listOf(namedScope) + it.arguments.drop(1))

@@ -22,21 +22,40 @@ import androidx.activity.*
 import androidx.lifecycle.*
 import androidx.savedstate.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.ambient.*
+import com.ivianuu.injekt.container.*
+import com.ivianuu.injekt.scope.*
+import kotlin.synchronized
 
 /**
- * Returns the [Ambients] of this [ComponentActivity]
+ * Returns the [Container] for [ActivityScope] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
-@Provide val ComponentActivity.activityAmbients: Ambients
-  get() = lifecycle.cachedAmbients {
-    namedAmbientsOf<ForActivity, ComponentActivity>(this, activityRetainedAmbients)
+val ComponentActivity.activityContainer: Container<ActivityScope>
+  get() {
+    activityContainers[this]?.let { return it }
+    return synchronized(activityContainers) {
+      activityContainers[this]?.let { return it }
+      val value = activityRetainedContainer
+        .element<@ChildContainerFactory (ComponentActivity) -> Container<ActivityScope>>()
+        .invoke(this)
+      activityContainers[this] = value
+      value
+    }.also { container ->
+      lifecycle.addObserver(object : LifecycleEventObserver {
+        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+          if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+            synchronized(activityContainers) { activityContainers.remove(this@activityContainer) }
+            container.dispose()
+          }
+        }
+      })
+    }
   }
 
-abstract class ForActivity private constructor()
+abstract class ActivityScope private constructor()
 
-@Provide val activityAmbientsModule =
-  NamedAmbientsModule1<ForActivityRetained, ComponentActivity, ForActivity>()
+@Provide val activityContainerModule =
+  ChildContainerModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
 
 typealias ActivityContext = Context
 
@@ -68,3 +87,5 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 @Provide inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
   get() = this
+
+private val activityContainers = mutableMapOf<ComponentActivity, Container<ActivityScope>>()
