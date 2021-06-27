@@ -20,7 +20,7 @@ import android.content.*
 import androidx.work.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.container.*
+import com.ivianuu.injekt.scope.*
 import kotlin.reflect.*
 
 /**
@@ -63,13 +63,13 @@ import kotlin.reflect.*
  */
 object WorkerInitializerModule {
   /**
-   * Defines the [ContainerObserver] for work manager initialization in the [Container] for [AppScope]
+   * Defines the [ScopeObserver] for work manager initialization in the [AppScope]
    */
   @Provide fun workerInitializer(
     context: AppContext,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
-  ): ContainerObserver<AppScope> = object : ContainerObserver<AppScope> {
+  ): ScopeObserver<AppScope> = object : ScopeObserver<AppScope> {
     override fun onInit() {
       WorkManager.initialize(context, configuration ?: defaultConfiguration())
     }

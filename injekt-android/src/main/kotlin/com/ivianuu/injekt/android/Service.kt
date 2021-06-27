@@ -20,19 +20,19 @@ import android.app.*
 import android.content.*
 import android.content.res.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
+import com.ivianuu.injekt.scope.*
 
 /**
- * Returns a new [Container] for [ServiceScope] which must be manually stored and disposed
+ * Returns a new [Scope] which must be manually stored and disposed
  */
-fun Service.createServiceContainer(): Container<ServiceScope> = application.appContainer
-  .element<@ChildContainerFactory (Service) -> Container<ServiceScope>>()
+fun Service.createServiceScope(): ServiceScope = application.appScope
+  .element<@ChildScopeFactory (Service) -> ServiceScope>()
   .invoke(this)
 
-abstract class ServiceScope private constructor()
+typealias ServiceScope = Scope
 
-@Provide val serviceContainerModuleModule =
-  ChildContainerModule1<AppScope, Service, ServiceScope>()
+@Provide val serviceScopeModule =
+  ChildScopeModule1<AppScope, Service, ServiceScope>()
 
 typealias ServiceContext = Context
 

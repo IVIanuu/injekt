@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.scope.*
 import io.kotest.matchers.booleans.*
 import io.ktor.server.testing.*
@@ -27,12 +26,9 @@ class AppTest {
   @Test fun testServerLifecycle() {
     lateinit var listener: ScopeDisposeListener
     withTestApplication({
-      @Providers(
-        "com.ivianuu.injekt.scope.*",
-        "com.ivianuu.injekt.container.*"
-      )
-      initializeAppContainer()
-      listener = appContainer.element()
+      @Providers("com.ivianuu.injekt.scope.*")
+      initializeAppScope()
+      listener = appScope.element()
       listener.disposed.shouldBeFalse()
     }) {
     }
@@ -41,8 +37,8 @@ class AppTest {
 }
 
 @Provide
-@Scoped<NamedScope<AppScope>>
-@ContainerElement<AppScope>
+@Scoped<AppScope>
+@ScopeElement<AppScope>
 class ScopeDisposeListener : Disposable {
   var disposed = false
 

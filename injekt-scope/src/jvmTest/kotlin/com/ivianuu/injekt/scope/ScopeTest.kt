@@ -25,35 +25,35 @@ import org.junit.*
 class ScopeTest {
   @Test fun testGetSet() {
     val scope = DisposableScope()
-    scope.get<String>(0) shouldBe null
-    scope.set(0, "value")
-    scope.get<String>(0) shouldBe "value"
+    scope.getScopedValueOrNull<String>(0) shouldBe null
+    scope.setScopedValue(0, "value")
+    scope.getScopedValueOrNull<String>(0) shouldBe "value"
   }
 
   @Test fun testRemoveDisposesValue() {
     val scope = DisposableScope()
     var disposed = false
-    scope.set(0, Disposable { disposed = true })
+    scope.setScopedValue(0, Disposable { disposed = true })
 
     disposed.shouldBeFalse()
-    scope.remove(0)
+    scope.removeScopedValue(0)
     disposed.shouldBeTrue()
   }
 
   @Test fun testSetDisposesOldValue() {
     val scope = DisposableScope()
     var disposed = false
-    scope.set(0, Disposable { disposed = true })
+    scope.setScopedValue(0, Disposable { disposed = true })
 
     disposed.shouldBeFalse()
-    scope.set(0, 0)
+    scope.setScopedValue(0, 0)
     disposed.shouldBeTrue()
   }
 
   @Test fun testDisposeDisposesValues() {
     val scope = DisposableScope()
     var disposed = false
-    scope.set(0, Disposable { disposed = true })
+    scope.setScopedValue(0, Disposable { disposed = true })
 
     disposed.shouldBeFalse()
     scope.dispose()

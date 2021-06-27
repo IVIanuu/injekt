@@ -17,27 +17,27 @@
 package com.ivianuu.injekt.ktor
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
+import com.ivianuu.injekt.scope.*
 import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.util.*
 
-@Provide val Application.appContainer: Container<AppScope>
-  get() = attributes.getOrNull(AppContainerKey)
-    ?: error("No app container installed. Did you forget to call initializeAppContainer()?")
+@Provide val Application.appScope: AppScope
+  get() = attributes.getOrNull(AppScopeKey)
+    ?: error("No AppScope installed. Did you forget to call initializeAppScope()?")
 
-@Provide val Routing.appContainer: Container<AppScope>
-  get() = application.appContainer
+@Provide val Routing.appScope: AppScope
+  get() = application.appScope
 
-@Provide val ApplicationCall.appContainer: Container<AppScope>
-  get() = application.appContainer
+@Provide val ApplicationCall.appScope: AppScope
+  get() = application.appScope
 
-fun Application.initializeAppContainer(
-  @Inject containerFactory: (@Provide Application) -> Container<AppScope>
+fun Application.initializeAppScope(
+  @Inject scopeFactory: (@Provide Application) -> AppScope
 ) {
-  val container = containerFactory(this)
-  attributes.put(AppContainerKey, container)
-  environment.monitor.subscribe(ApplicationStopped) { container.dispose() }
+  val scope = scopeFactory(this)
+  attributes.put(AppScopeKey, scope)
+  environment.monitor.subscribe(ApplicationStopped) { (scope as DisposableScope).dispose() }
 }
 
-val AppContainerKey = AttributeKey<Container<AppScope>>("AppContainer")
+val AppScopeKey = AttributeKey<AppScope>("AppScope")

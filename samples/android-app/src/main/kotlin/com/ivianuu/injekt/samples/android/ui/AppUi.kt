@@ -23,7 +23,6 @@ import androidx.compose.ui.*
 import androidx.compose.ui.unit.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.samples.android.domain.*
 import com.ivianuu.injekt.scope.*
@@ -59,12 +58,12 @@ typealias AppUi = @Composable () -> Unit
   }
 }
 
-@Provide @Scoped<NamedScope<ActivityRetainedScope>>
+@Provide @Scoped<ActivityRetainedScope>
 class CounterViewModel(
   private val incCounter: IncCounterUseCase,
   private val decCounter: DecCounterUseCase,
   val state: CounterFlow,
-  private val scope: NamedCoroutineScope<ActivityRetainedScope>
+  private val scope: InjektCoroutineScope<ActivityRetainedScope>
 ) {
   fun inc() {
     scope.launch { incCounter() }

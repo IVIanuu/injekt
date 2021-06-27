@@ -19,36 +19,36 @@ package com.ivianuu.injekt.android
 import androidx.activity.*
 import androidx.lifecycle.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
+import com.ivianuu.injekt.scope.*
 
 /**
- * Returns the [Container] for [ActivityRetainedScope] of this [ComponentActivity]
+ * Returns the [ActivityRetainedScope] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
 @Suppress("UNCHECKED_CAST")
-val ComponentActivity.activityRetainedContainer: Container<ActivityRetainedScope>
+val ComponentActivity.activityRetainedScope: ActivityRetainedScope
   get() = ViewModelProvider(
     this,
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        ActivityRetainedContainerHolder(
-          application.appContainer
-            .element<@ChildContainerFactory () -> Container<ActivityRetainedScope>>()
+        ActivityRetainedScopeHolder(
+          application.appScope
+            .element<@ChildScopeFactory () -> ActivityRetainedScope>()
             .invoke()
         ) as T
     }
-  )[ActivityRetainedContainerHolder::class.java].container
+  )[ActivityRetainedScopeHolder::class.java].scope
 
-abstract class ActivityRetainedScope private constructor()
+typealias ActivityRetainedScope = Scope
 
-@Provide val activityRetainedContainerModule =
-  ChildContainerModule0<AppScope, ActivityRetainedScope>()
+@Provide val activityRetainedScopeModule =
+  ChildScopeModule0<AppScope, ActivityRetainedScope>()
 
-private class ActivityRetainedContainerHolder(
-  val container: Container<ActivityRetainedScope>
+private class ActivityRetainedScopeHolder(
+  val scope: ActivityRetainedScope
 ) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
-    container.dispose()
+    (scope as DisposableScope).dispose()
   }
 }

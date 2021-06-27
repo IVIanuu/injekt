@@ -17,10 +17,9 @@
 package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.scope.*
 
-class TestDisposable<N> : Disposable {
+class TestDisposable<S : Scope> : Disposable {
   var disposed = false
 
   override fun dispose() {
@@ -28,5 +27,5 @@ class TestDisposable<N> : Disposable {
   }
 }
 
-@Provide inline fun <N> testDisposable():
-    @Scoped<NamedScope<N>> @ContainerElement<N> TestDisposable<N> = TestDisposable()
+@Provide inline fun <S : Scope> testDisposable():
+    @Scoped<S> @ScopeElement<S> TestDisposable<S> = TestDisposable()

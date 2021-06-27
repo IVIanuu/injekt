@@ -14,34 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-  kotlin("multiplatform")
-}
+package com.ivianuu.injekt.scope
 
-kotlin {
-  jvm {
-    withJava()
-    compilations.forEach {
-      it.kotlinOptions {
-        jvmTarget = "1.8"
-      }
-    }
-  }
-  sourceSets {
-    commonMain {
-      dependencies {
-        api(project(":injekt-scope"))
-        configurations.getByName("kotlinCompilerPluginClasspath")
-          .dependencies.add(project(":injekt-compiler-plugin"))
-      }
-    }
-    named("jvmTest") {
-      dependencies {
-        implementation(Deps.junit)
-        implementation(Deps.kotestAssertions)
-      }
-    }
-  }
-}
-
-plugins.apply("com.vanniktech.maven.publish")
+typealias AppScope = Scope

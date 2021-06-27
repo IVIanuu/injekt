@@ -21,14 +21,14 @@ import androidx.activity.*
 import androidx.activity.compose.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.samples.android.ui.*
+import com.ivianuu.injekt.scope.*
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = activityContainer.element<MainActivityDependencies>()
+    val dependencies = activityScope.element<MainActivityDependencies>()
     // display ui
     setContent {
       dependencies.theme {
@@ -39,5 +39,5 @@ class MainActivity : ComponentActivity() {
 }
 
 // Declare dependencies we want to retrieve in our activity
-@Provide @ContainerElement<ActivityScope>
+@Provide @ScopeElement<ActivityScope>
 class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)

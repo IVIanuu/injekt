@@ -18,7 +18,6 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
@@ -26,19 +25,19 @@ import kotlin.coroutines.*
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
  *
- * [CoroutineContext] of the scope can be specified with a injectable [NamedCoroutineContext]<S> and
+ * [CoroutineContext] of the scope can be specified with a injectable [InjektCoroutineContext]<S> and
  * defaults to [DefaultDispatcher]
  */
-typealias NamedCoroutineScope<N> = CoroutineScope
+typealias InjektCoroutineScope<S> = CoroutineScope
 
 /**
- * Installs a [NamedCoroutineScope] for [Container] for [N]
+ * Installs a [InjektCoroutineScope] for scope [S]
  */
-@Provide fun <N> namedCoroutineScopeElement(
-  context: NamedCoroutineContext<N>,
-  nameKey: TypeKey<N>,
-  scope: NamedScope<N>
-): @ContainerElement<N> NamedCoroutineScope<N> = scoped<NamedCoroutineScope<N>> {
+@Provide fun <S : Scope> injektCoroutineScopeElement(
+  context: InjektCoroutineContext<S>,
+  nameKey: TypeKey<S>,
+  scope: S
+): @ScopeElement<S> InjektCoroutineScope<S> = scoped<InjektCoroutineScope<S>> {
   DisposableCoroutineScope(context)
 }
 
@@ -53,13 +52,14 @@ private class DisposableCoroutineScope(
 }
 
 /**
- * [CoroutineContext] of a [NamedCoroutineScope]
+ * [CoroutineContext] of a [InjektCoroutineScope]
  */
-typealias NamedCoroutineContext<N> = CoroutineContext
+typealias InjektCoroutineContext<S> = CoroutineContext
 
 /**
- * The default [NamedCoroutineContext] for type [N]
+ * The default [InjektCoroutineContext] for scope [S]
  */
 @Provide
-inline fun <N> namedCoroutineContext(dispatcher: DefaultDispatcher): NamedCoroutineContext<N> =
-  dispatcher
+inline fun <S : Scope> injektCoroutineContext(
+  dispatcher: DefaultDispatcher
+): InjektCoroutineContext<S> = dispatcher

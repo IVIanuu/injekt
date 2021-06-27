@@ -57,7 +57,6 @@ fun source(
       appendLine("import com.ivianuu.injekt.android.*")
       appendLine("import com.ivianuu.injekt.android.work.*")
       appendLine("import com.ivianuu.injekt.common.*")
-      appendLine("import com.ivianuu.injekt.container.*")
       appendLine("import com.ivianuu.injekt.coroutines.*")
       appendLine("import com.ivianuu.injekt.internal.*")
       appendLine("import com.ivianuu.injekt.ktor.*")

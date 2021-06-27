@@ -22,40 +22,39 @@ import androidx.activity.*
 import androidx.lifecycle.*
 import androidx.savedstate.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
 import com.ivianuu.injekt.scope.*
 import kotlin.synchronized
 
 /**
- * Returns the [Container] for [ActivityScope] of this [ComponentActivity]
+ * Returns the [ActivityScope] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
-val ComponentActivity.activityContainer: Container<ActivityScope>
+val ComponentActivity.activityScope: ActivityScope
   get() {
-    activityContainers[this]?.let { return it }
-    return synchronized(activityContainers) {
-      activityContainers[this]?.let { return it }
-      val value = activityRetainedContainer
-        .element<@ChildContainerFactory (ComponentActivity) -> Container<ActivityScope>>()
+    activityScopes[this]?.let { return it }
+    return synchronized(activityScopes) {
+      activityScopes[this]?.let { return it }
+      val value = activityRetainedScope
+        .element<@ChildScopeFactory (ComponentActivity) -> ActivityScope>()
         .invoke(this)
-      activityContainers[this] = value
+      activityScopes[this] = value
       value
-    }.also { container ->
+    }.also { scope ->
       lifecycle.addObserver(object : LifecycleEventObserver {
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
           if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-            synchronized(activityContainers) { activityContainers.remove(this@activityContainer) }
-            container.dispose()
+            synchronized(activityScopes) { activityScopes.remove(this@activityScope) }
+            (scope as DisposableScope).dispose()
           }
         }
       })
     }
   }
 
-abstract class ActivityScope private constructor()
+typealias ActivityScope = Scope
 
-@Provide val activityContainerModule =
-  ChildContainerModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
+@Provide val activityScopeModule =
+  ChildScopeModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
 
 typealias ActivityContext = Context
 
@@ -88,4 +87,4 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 @Provide inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
   get() = this
 
-private val activityContainers = mutableMapOf<ComponentActivity, Container<ActivityScope>>()
+private val activityScopes = mutableMapOf<ComponentActivity, ActivityScope>()

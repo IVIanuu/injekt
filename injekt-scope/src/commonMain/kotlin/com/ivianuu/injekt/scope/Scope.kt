@@ -28,19 +28,114 @@ interface Scope {
   /**
    * Returns the scoped value [T] for [key] or null
    */
-  @InternalScopeApi fun <T : Any> get(key: Any): T?
+  @InternalScopeApi fun <T : Any> getScopedValueOrNull(key: Any): T?
 
   /**
    * Store's [value] for [key]
    *
    * If [value] is a [Disposable] [Disposable.dispose] will be invoked once this scope gets disposed
    */
-  @InternalScopeApi fun <T : Any> set(key: Any, value: T)
+  @InternalScopeApi fun <T : Any> setScopedValue(key: Any, value: T)
 
   /**
    * Removes the scoped value for [key]
    */
-  @InternalScopeApi fun remove(key: Any)
+  @InternalScopeApi fun removeScopedValue(key: Any)
+
+  /**
+   * Returns the element for [key] or throws if it doesn't exist
+   */
+  fun <T> element(@Inject key: TypeKey<T>): T
+
+  companion object {
+    @Tag private annotation class Parent
+
+    @OptIn(InternalScopeApi::class)
+    @Provide
+    fun <S : Scope> default(
+      key: TypeKey<S>,
+      parent: @Parent Scope? = null,
+      elementsFactory: (
+        @Provide S,
+        @Provide @Parent Scope?
+      ) -> Set<ScopeElementPair<S>> = { _, _ -> emptySet() },
+      observersFactory: (
+        @Provide S,
+        @Provide @Parent Scope?
+      ) -> Set<ScopeObserver<S>> = { _, _ -> emptySet() }
+    ): S {
+      val scope = ElementScopeImpl(key, parent as? ElementScopeImpl)
+      @Suppress("UNCHECKED_CAST")
+      scope as S
+
+      if (parent != null)
+        ParentScopeDisposable(scope).bind(parent)
+
+      val elements = elementsFactory(scope, scope)
+
+      scope.elements = if (elements.isEmpty()) emptyMap()
+      else HashMap<String, () -> Any>(elements.size).apply {
+        for (elementPair in elements)
+          this[elementPair.key.value] = elementPair.factory
+      }
+
+      val observers = observersFactory(scope, scope)
+
+      for (observer in observers)
+        invokeOnDispose(scope) { observer.onDispose() }
+
+      for (observer in observers)
+        observer.onInit()
+
+      return scope
+    }
+  }
+}
+
+/**
+ * Lifecycle observer for [Scope] of [S]
+ */
+interface ScopeObserver<S : Scope> {
+  /**
+   * Will be called when the scope gets initialized
+   */
+  fun onInit() {
+  }
+
+  /**
+   * Will be called when the scope gets disposed
+   */
+  fun onDispose() {
+  }
+}
+
+class ScopeElementPair<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
+
+/**
+ * Registers the declaration in the scope [S]
+ *
+ * Example:
+ * ```
+ * @Provide
+ * @ScopeElement<AppContainer>
+ * class MyAppDeps(val api: Api, val database: Database)
+ *
+ * fun runApp(@Inject appContainer: AppContainer) {
+ *   val deps = appContainer.element<MyAppDeps>()
+ * }
+ * ```
+ */
+@Tag annotation class ScopeElement<S : Scope> {
+  companion object {
+    @Provide class Module<@Spread T : @ScopeElement<S> U, U : Any, S : Scope> {
+      @Provide inline fun elementPair(
+        noinline factory: () -> T,
+        key: TypeKey<U>
+      ): ScopeElementPair<S> = ScopeElementPair(key, factory)
+
+      @Provide inline fun elementAccessor(scope: S, key: TypeKey<U>): U = scope.element(key)
+    }
+  }
 }
 
 @RequiresOptIn annotation class InternalScopeApi
@@ -62,11 +157,11 @@ inline fun <R> withScope(block: (@Inject Scope) -> R): R {
  */
 @OptIn(InternalScopeApi::class)
 inline fun <T : Any> scoped(key: Any, @Inject scope: Scope, computation: () -> T): T {
-  scope.get<T>(key)?.let { return it }
+  scope.getScopedValueOrNull<T>(key)?.let { return it }
   scope.withLock {
-    scope.get<T>(key)?.let { return it }
+    scope.getScopedValueOrNull<T>(key)?.let { return it }
     val value = computation()
-    scope.set(key, value)
+    scope.setScopedValue(key, value)
     return value
   }
 }
@@ -135,7 +230,7 @@ fun <T : Disposable> T.bind(@Inject scope: Scope): T {
     }
 
     val disposable = Disposable { dispose() }
-    scope.set(disposable, disposable)
+    scope.setScopedValue(disposable, disposable)
   }
 
   return this
@@ -155,10 +250,28 @@ interface DisposableScope : Scope, Disposable
 @OptIn(InternalScopeApi::class)
 fun DisposableScope(): DisposableScope = DisposableScopeImpl()
 
-object SingletonScope : Scope by DisposableScope()
+@InternalScopeApi expect inline fun <T> synchronized(lock: Any, block: () -> T): T
 
 @InternalScopeApi
-private class DisposableScopeImpl : DisposableScope {
+private class ElementScopeImpl(
+  private val key: TypeKey<*>,
+  private val parent: ElementScopeImpl?
+) : DisposableScopeImpl() {
+  lateinit var elements: Map<String, () -> Any>
+
+  override fun <T> element(@Inject key: TypeKey<T>): T =
+    elementOrNull() ?: error("No element for ${key.value} in ${this.key.value}")
+
+  @Suppress("UNCHECKED_CAST")
+  private fun <T> elementOrNull(@Inject key: TypeKey<T>): T? =
+    elements[key.value]?.invoke() as? T ?: parent?.elementOrNull(key)
+}
+
+@InternalScopeApi
+private open class DisposableScopeImpl : DisposableScope {
+  override fun <T> element(@Inject key: TypeKey<T>): T =
+    throw UnsupportedOperationException("Not support")
+
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() {
@@ -169,9 +282,9 @@ private class DisposableScopeImpl : DisposableScope {
   private val values = hashMapOf<Any, Any>()
 
   @Suppress("UNCHECKED_CAST")
-  override fun <T : Any> get(key: Any): T? = values[key] as? T
+  override fun <T : Any> getScopedValueOrNull(key: Any): T? = values[key] as? T
 
-  override fun <T : Any> set(key: Any, value: T) {
+  override fun <T : Any> setScopedValue(key: Any, value: T) {
     synchronizedWithDisposedCheck {
       removeAndDispose(key)
       values[key] = value
@@ -180,7 +293,7 @@ private class DisposableScopeImpl : DisposableScope {
     }
   }
 
-  override fun remove(key: Any) {
+  override fun removeScopedValue(key: Any) {
     synchronizedWithDisposedCheck { removeAndDispose(key) }
   }
 
@@ -208,4 +321,16 @@ private class DisposableScopeImpl : DisposableScope {
   }
 }
 
-@InternalScopeApi expect inline fun <T> synchronized(lock: Any, block: () -> T): T
+private class ParentScopeDisposable(scope: DisposableScope) : Disposable {
+  private var scope: DisposableScope? = scope
+
+  init {
+    // do not leak a reference to the child scope
+    invokeOnDispose(scope) { this.scope = null }
+  }
+
+  override fun dispose() {
+    scope?.dispose()
+    scope = null
+  }
+}

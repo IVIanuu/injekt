@@ -26,7 +26,7 @@ class SourceKeyTest {
       fun invoke() = sourceKey()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:18:21"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:21"
   }
 
   @Test fun testSourceKeyInProperty() = codegen(
@@ -35,7 +35,7 @@ class SourceKeyTest {
       fun invoke() = key
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:18:16"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:17:16"
   }
 
   @Test fun testSourceKeyInPropertyGetter() = codegen(
@@ -44,7 +44,7 @@ class SourceKeyTest {
       fun invoke() = key
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:18:22"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:17:22"
   }
 
   @Test fun testSourceKeyInLambda() = codegen(
@@ -52,7 +52,7 @@ class SourceKeyTest {
       fun invoke() = { { sourceKey() }() }()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:18:25"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:25"
   }
 
   @Test fun testSourceKeyInClassInitializer() = codegen(
@@ -66,7 +66,7 @@ class SourceKeyTest {
       fun invoke() = MyClass().key
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:21:16"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:16"
   }
 
   @Test fun testSourceKeyInLambdaInClassInitializer() = codegen(
@@ -80,7 +80,7 @@ class SourceKeyTest {
       fun invoke() = MyClass().key
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:21:18"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:18"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
@@ -90,6 +90,6 @@ class SourceKeyTest {
       fun invoke() = b()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:20:21"
+    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:19:21"
   }
 }

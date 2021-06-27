@@ -19,27 +19,27 @@ package com.ivianuu.injekt.android
 import android.app.*
 import android.content.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.container.*
+import com.ivianuu.injekt.scope.*
 
 /**
- * Returns a new [Container] for [ReceiverScope] which must be manually stored and disposed
+ * Returns a new [ReceiverScope] which must be manually stored and disposed
  */
-fun BroadcastReceiver.createReceiverContainer(
+fun BroadcastReceiver.createReceiverScope(
   context: Context,
   intent: Intent,
-): Container<ReceiverScope> = (context.applicationContext as Application)
-  .appContainer
-  .element<@ChildContainerFactory (
+): ReceiverScope = (context.applicationContext as Application)
+  .appScope
+  .element<@ChildScopeFactory (
     BroadcastReceiver,
     ReceiverContext,
     ReceiverIntent
-  ) -> Container<ReceiverScope>>()
+  ) -> ReceiverScope>()
   .invoke(this, context, intent)
 
 
-abstract class ReceiverScope private constructor()
+typealias ReceiverScope = Scope
 
-@Provide val receiverContainerModule = ChildContainerModule3<AppScope,
+@Provide val receiverScopeModule = ChildScopeModule3<AppScope,
     BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverScope>()
 
 typealias ReceiverContext = Context
