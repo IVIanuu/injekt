@@ -77,7 +77,6 @@ class InjectReference(expression: KtElement) : PsiPolyVariantReferenceBase<KtEle
   expression,
   TextRange.from(0, expression.text.length)
 ), KtReference, KtDescriptorsBasedReference {
-
   override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> =
     ResolveCache.getInstance(element.project).resolveWithCaching(this, resolver, false, incompleteCode)
 
@@ -108,7 +107,6 @@ class InjectReference(expression: KtElement) : PsiPolyVariantReferenceBase<KtEle
 
   override val resolvesByNames: Collection<Name>
     get() = emptyList()
-
 }
 
 fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {

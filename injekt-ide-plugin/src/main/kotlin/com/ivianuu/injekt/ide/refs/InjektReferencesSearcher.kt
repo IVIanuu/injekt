@@ -70,12 +70,11 @@ class InjektReferencesSearcher :
             )
           }
         } else if (scope is GlobalSearchScope) {
-          FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)
-            .forEach { file ->
-              val psiFile = psiManager.findFile(file) as? KtFile
-              if (psiFile != null)
-                search(LocalSearchScope(psiFile))
-            }
+          for (file in FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)) {
+            val psiFile = psiManager.findFile(file) as? KtFile
+            if (psiFile != null)
+              search(LocalSearchScope(psiFile))
+          }
         }
       }
 
