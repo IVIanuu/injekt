@@ -35,18 +35,19 @@ class InjektReferencesSearcher :
   ) {
     if (!params.elementToSearch.isInjektEnabled()) return
 
-    params.project.runReadActionInSmartMode {
-      val ktElement = params.elementToSearch.ktElementOrNull() ?: return@runReadActionInSmartMode
+    val tasks = mutableListOf<() -> Unit>()
+    runReadAction {
+      val ktElement = params.elementToSearch.ktElementOrNull() ?: return@runReadAction
 
       val isProvideOrInjectDeclaration = ktElement.isProvideOrInjectDeclaration()
       val isObjectDeclaration = ktElement is KtObjectDeclaration
 
       if (!isProvideOrInjectDeclaration && !isObjectDeclaration)
-        return@runReadActionInSmartMode
+        return@runReadAction
 
       val psiManager = PsiManager.getInstance(params.project)
 
-      fun search(scope: SearchScope) {
+      fun collectTasks(scope: SearchScope) {
         if (scope is LocalSearchScope) {
           for (element in scope.scope) {
             element.accept(
@@ -54,16 +55,20 @@ class InjektReferencesSearcher :
                 when {
                   expression is KtStringTemplateExpression &&
                   expression.isProviderImport() -> {
-                    expression.references
-                      .filterIsInstance<ImportElementReference>()
-                      .filter { it.isReferenceTo(ktElement) }
-                      .forEach { processor.process(it) }
+                    tasks += {
+                      expression.references
+                        .filterIsInstance<ImportElementReference>()
+                        .filter { it.isReferenceTo(ktElement) }
+                        .forEach { processor.process(it) }
+                    }
                   }
                   isProvideOrInjectDeclaration && expression is KtCallExpression -> {
-                    expression.references
-                      .filterIsInstance<InjectReference>()
-                      .filter { it.isReferenceTo(ktElement) }
-                      .forEach { processor.process(it) }
+                    tasks += {
+                      expression.references
+                        .filterIsInstance<InjectReference>()
+                        .filter { it.isReferenceTo(ktElement) }
+                        .forEach { processor.process(it) }
+                    }
                   }
                 }
               }
@@ -73,12 +78,15 @@ class InjektReferencesSearcher :
           for (file in FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)) {
             val psiFile = psiManager.findFile(file) as? KtFile
             if (psiFile != null)
-              search(LocalSearchScope(psiFile))
+              collectTasks(LocalSearchScope(psiFile))
           }
         }
       }
 
-      search(params.effectiveSearchScope)
+      collectTasks(params.effectiveSearchScope)
+
+      for (task in tasks)
+        runReadAction { task() }
     }
   }
 }
