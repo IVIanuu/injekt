@@ -31,13 +31,13 @@ object Deps {
 
   object AndroidX {
     object Activity {
-      private const val version = "1.3.0-beta02"
+      private const val version = "1.3.0-rc01"
       const val activity = "androidx.activity:activity:$version"
       const val compose = "androidx.activity:activity-compose:$version"
     }
 
     object Compose {
-      const val version = "1.0.0-beta09"
+      const val version = "1.0.0-rc01"
       const val compiler = "androidx.compose.compiler:compiler:$version"
       const val material = "androidx.compose.material:material:$version"
       const val runtime = "androidx.compose.runtime:runtime:$version"
