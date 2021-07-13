@@ -75,7 +75,7 @@ class IncrementalFixTransformer(
           callable.callable.fqNameSafe.parent(),
           declaration.fqName
         ),
-        DescriptorVisibilities.INTERNAL,
+        DescriptorVisibilities.PUBLIC,
         Modality.FINAL,
         pluginContext.irBuiltIns.unitType,
         false,
