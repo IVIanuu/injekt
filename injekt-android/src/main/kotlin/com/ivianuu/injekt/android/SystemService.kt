@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.*
 import androidx.core.content.*
 import com.ivianuu.injekt.*
 import kotlin.reflect.*
@@ -30,7 +31,7 @@ import kotlin.reflect.*
  */
 @Tag annotation class SystemService {
   companion object {
-    @Provide inline fun <T : Any> systemService(context: AppContext, serviceClass: KClass<T>):
+    @Provide inline fun <T : Any> systemService(context: Context, serviceClass: KClass<T>):
         @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
   }
 }
