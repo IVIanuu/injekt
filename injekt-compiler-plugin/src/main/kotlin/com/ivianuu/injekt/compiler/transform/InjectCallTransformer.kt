@@ -446,27 +446,6 @@ class InjectCallTransformer(
             buildString {
               append(currentFile.name)
               append(":")
-              val path = graphContext.scope.irElement.cast<IrDeclaration>()
-                .descriptor
-                .fqNameSafe
-                .pathSegments()
-                .filter {
-                  it.asString() != "<anonymous>" &&
-                      it.asString() != "<init>"
-                }
-                .map {
-                  it.asString()
-                    .removePrefix("<get-")
-                    .removePrefix("<set-")
-                    .removeSuffix(">")
-                }
-
-              path.forEachIndexed { index, name ->
-                append(name)
-                if (index != path.lastIndex) append(".")
-              }
-              append(":")
-
               append(currentFile.fileEntry.getLineNumber(graphContext.startOffset) + 1)
               append(":")
               append(currentFile.fileEntry.getColumnNumber(graphContext.startOffset))

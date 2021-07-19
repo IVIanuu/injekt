@@ -21,66 +21,12 @@ import io.kotest.matchers.*
 import org.junit.*
 
 class SourceKeyTest {
-  @Test fun testSourceKeyInFunction() = codegen(
+  @Test fun testSourceKey() = codegen(
     """
       fun invoke() = sourceKey()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:21"
-  }
-
-  @Test fun testSourceKeyInProperty() = codegen(
-    """
-      val key = sourceKey()
-      fun invoke() = key
-    """
-  ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:17:16"
-  }
-
-  @Test fun testSourceKeyInPropertyGetter() = codegen(
-    """
-      val key get() = sourceKey()
-      fun invoke() = key
-    """
-  ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.key:17:22"
-  }
-
-  @Test fun testSourceKeyInLambda() = codegen(
-    """
-      fun invoke() = { { sourceKey() }() }()
-    """
-  ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:17:25"
-  }
-
-  @Test fun testSourceKeyInClassInitializer() = codegen(
-    """
-      class MyClass {
-        val key: String
-        init {
-          key = sourceKey().value
-        }
-      }
-      fun invoke() = MyClass().key
-    """
-  ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:16"
-  }
-
-  @Test fun testSourceKeyInLambdaInClassInitializer() = codegen(
-    """
-      class MyClass {
-        val key: String
-        init {
-          key = { sourceKey().value }()
-        }
-      }
-      fun invoke() = MyClass().key
-    """
-  ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.MyClass:20:18"
+    invokeSingleFile() shouldBe "File.kt:17:21"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
@@ -90,6 +36,6 @@ class SourceKeyTest {
       fun invoke() = b()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:com.ivianuu.injekt.integrationtests.invoke:19:21"
+    invokeSingleFile() shouldBe "File.kt:19:21"
   }
 }
