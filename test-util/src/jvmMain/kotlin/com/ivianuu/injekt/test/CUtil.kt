@@ -20,8 +20,8 @@ package com.ivianuu.injekt.test
 
 import androidx.compose.compiler.plugins.kotlin.*
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.transform.*
 import com.tschuchort.compiletesting.*
-import io.github.classgraph.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
 import org.intellij.lang.annotations.*
@@ -264,15 +264,19 @@ fun multiPlatformCodegen(
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
   compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
-  commandLineProcessors = listOf(ComposeCommandLineProcessor())
-  classpaths += hostClasspaths
+  commandLineProcessors = listOf(InjektCommandLineProcessor(), ComposeCommandLineProcessor())
   useIR = true
   jvmTarget = "1.8"
   verbose = false
   kotlincArguments += "-XXLanguage:+NewInference"
   block()
-  irDumping()
 }
+  pluginOptions += PluginOption(
+    "com.ivianuu.injekt",
+    "dumpDir",
+    workingDir.resolve("injekt/dump").absolutePath
+  )
+  dumpAllFiles = true
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
 
@@ -350,62 +354,4 @@ fun KotlinCompilationAssertionScope.irShouldNotContain(text: String) {
       "'$text' in source '$it'"
     }
   }
-}
-
-private fun KotlinCompilation.irDumping() {
-  compilerPlugins += object : ComponentRegistrar {
-    override fun registerProjectComponents(
-      project: MockProject,
-      configuration: CompilerConfiguration
-    ) {
-      IrGenerationExtension.registerExtensionWithLoadingOrder(
-        project,
-        LoadingOrder.FIRST,
-        object : IrGenerationExtension {
-          override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-            val dumpDir = workingDir.resolve("injekt/dump")
-            moduleFragment.files
-              .forEach { irFile ->
-                val file = File(irFile.fileEntry.name)
-                val content = try {
-                  irFile.dumpKotlinLike(
-                    KotlinLikeDumpOptions(
-                      useNamedArguments = true,
-                      printFakeOverridesStrategy = FakeOverridesStrategy.NONE
-                    )
-                  )
-                } catch (e: Throwable) {
-                  e.stackTraceToString()
-                }
-                val newFile = dumpDir
-                  .resolve(irFile.fqName.asString().replace(".", "/"))
-                  .also { it.mkdirs() }
-                  .resolve(file.name.removeSuffix(".kt"))
-                try {
-                  newFile.createNewFile()
-                  newFile.writeText(content)
-                  println("Generated $newFile:\n$content")
-                } catch (e: Throwable) {
-                  throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
-                }
-              }
-          }
-        }
-      )
-    }
-  }
-}
-
-private val hostClasspaths by lazy<List<File>> {
-  val classGraph = ClassGraph()
-    .enableSystemJarsAndModules()
-    .removeTemporaryFilesAfterScan()
-
-  val classpaths = classGraph.classpathFiles
-  val modules = classGraph.modules.mapNotNull { it.locationFile }
-
-  (classpaths + modules)
-    // exclude possible old injekt artifacts which are required by the compiler plugin
-    .filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
-    .distinctBy(File::getAbsolutePath)
 }

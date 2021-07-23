@@ -98,6 +98,11 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
       is InjectionGraph.Success -> {
         if (filePath != null && !isIde) {
           context.trace.record(
+            InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
+            filePath,
+            Unit
+          )
+          context.trace.record(
             InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
             SourcePosition(
               filePath,
