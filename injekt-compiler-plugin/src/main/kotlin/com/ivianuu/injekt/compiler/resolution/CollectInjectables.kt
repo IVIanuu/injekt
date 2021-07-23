@@ -423,11 +423,11 @@ private fun TypeRef.collectInjectablesForSingleType(
     .safeAs<ClassDescriptor>()
     ?.let { clazz ->
       if (clazz.kind == ClassKind.OBJECT) {
-        injectables += clazz.injectableReceiver(false)
+        injectables += clazz.injectableReceiver(true)
       } else {
         injectables += clazz.injectableConstructors()
         clazz.companionObjectDescriptor
-          ?.let { injectables += it.injectableReceiver(false) }
+          ?.let { injectables += it.injectableReceiver(true) }
       }
 
       clazz.classifierInfo().tags.forEach { tag ->
