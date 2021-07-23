@@ -22,16 +22,10 @@ import androidx.compose.compiler.plugins.kotlin.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.transform.*
 import com.tschuchort.compiletesting.*
+import io.github.classgraph.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
 import org.intellij.lang.annotations.*
-import org.jetbrains.kotlin.backend.common.extensions.*
-import org.jetbrains.kotlin.com.intellij.mock.*
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
-import org.jetbrains.kotlin.compiler.plugin.*
-import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
 import java.io.*
 import java.net.*
@@ -265,18 +259,19 @@ fun multiPlatformCodegen(
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
   compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
   commandLineProcessors = listOf(InjektCommandLineProcessor(), ComposeCommandLineProcessor())
+  classpaths += hostClasspaths
   useIR = true
   jvmTarget = "1.8"
   verbose = false
   kotlincArguments += "-XXLanguage:+NewInference"
+  dumpAllFiles = true
   block()
-}
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",
     "dumpDir",
     workingDir.resolve("injekt/dump").absolutePath
   )
-  dumpAllFiles = true
+}
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
 
@@ -354,4 +349,18 @@ fun KotlinCompilationAssertionScope.irShouldNotContain(text: String) {
       "'$text' in source '$it'"
     }
   }
+}
+
+private val hostClasspaths by lazy<List<File>> {
+  val classGraph = ClassGraph()
+    .enableSystemJarsAndModules()
+    .removeTemporaryFilesAfterScan()
+
+  val classpaths = classGraph.classpathFiles
+  val modules = classGraph.modules.mapNotNull { it.locationFile }
+
+  (classpaths + modules)
+    // exclude possible old injekt artifacts which are required by the compiler plugin
+    .filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
+    .distinctBy(File::getAbsolutePath)
 }

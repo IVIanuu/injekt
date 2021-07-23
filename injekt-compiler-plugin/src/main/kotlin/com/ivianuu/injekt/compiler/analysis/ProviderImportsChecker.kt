@@ -132,10 +132,12 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
         }
       }
 
-      trace.report(
-        InjektErrors.UNUSED_INJECTABLE_IMPORT
-          .on(element!!)
-      )
+      if (!isIde) {
+        trace.report(
+          InjektErrors.UNUSED_INJECTABLE_IMPORT
+            .on(element!!)
+        )
+      }
     }
   }
 }

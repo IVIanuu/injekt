@@ -37,11 +37,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
     configuration: CompilerConfiguration,
   ) {
     if (isKaptCompilation(configuration)) return
-    registerExtensions(project)
+    registerExtensions(project, configuration)
   }
 }
 
-private fun registerExtensions(project: MockProject) {
+private fun registerExtensions(project: MockProject, configuration: CompilerConfiguration) {
   StorageComponentContainerContributor.registerExtension(
     project,
     InjektStorageComponentContainerContributor()

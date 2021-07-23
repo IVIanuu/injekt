@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.util.slicedMap.*
 object InjektWritableSlices {
   val INJECTION_GRAPH_FOR_POSITION =
     BasicWritableSlice<SourcePosition, InjectionGraph.Success>(RewritePolicy.DO_NOTHING)
+  val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val INJECTION_GRAPH_FOR_CALL =
     BasicWritableSlice<KtElement, InjectionGraph>(RewritePolicy.DO_NOTHING)
   val USED_INJECTABLE = BasicWritableSlice<DeclarationDescriptor, Unit>(RewritePolicy.DO_NOTHING)
