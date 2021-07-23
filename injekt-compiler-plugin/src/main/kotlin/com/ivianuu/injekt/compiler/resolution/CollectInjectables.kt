@@ -62,7 +62,7 @@ fun TypeRef.collectInjectables(
     )
   }
 
-  return classifier.descriptor!!
+  return (classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
     .memberScope
     .collectInjectables(classBodyView)
