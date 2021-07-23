@@ -30,6 +30,8 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
+    if (isIde) return
+
     @Provide val trace = context.trace
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return

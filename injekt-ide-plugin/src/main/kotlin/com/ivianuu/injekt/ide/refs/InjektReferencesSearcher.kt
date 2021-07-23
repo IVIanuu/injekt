@@ -62,14 +62,14 @@ class InjektReferencesSearcher :
                         .forEach { processor.process(it) }
                     }
                   }
-                  isProvideOrInjectDeclaration && expression is KtCallExpression -> {
+                  /*isProvideOrInjectDeclaration && expression is KtCallExpression -> {
                     tasks += {
                       expression.references
                         .filterIsInstance<InjectReference>()
                         .filter { it.isReferenceTo(ktElement) }
                         .forEach { processor.process(it) }
                     }
-                  }
+                  }*/
                 }
               }
             )

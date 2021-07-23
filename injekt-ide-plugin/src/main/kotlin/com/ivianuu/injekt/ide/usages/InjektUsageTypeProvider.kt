@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.psi.*
 
 class InjektUsageTypeProvider : UsageTypeProviderEx {
   override fun getUsageType(element: PsiElement, targets: Array<out UsageTarget>): UsageType? {
+    return null
     if (!element.isInjektEnabled()) return null
     if (element !is KtCallExpression) return null
     val target = (targets.firstOrNull() as? PsiElementUsageTarget)?.element ?: return null

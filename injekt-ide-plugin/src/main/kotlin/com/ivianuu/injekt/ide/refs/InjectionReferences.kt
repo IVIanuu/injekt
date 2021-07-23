@@ -61,6 +61,7 @@ class InjektKotlinReferenceProviderContributor : KotlinReferenceProviderContribu
   override fun registerReferenceProviders(registrar: KotlinPsiReferenceRegistrar) {
     KotlinReferenceContributor()
       .registerReferenceProviders(registrar)
+    return
     registrar.registerProvider<KtCallExpression> {
       if (it.isInjektEnabled()) InjectReference(it) else null
     }
