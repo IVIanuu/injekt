@@ -121,6 +121,8 @@ class IncrementalFixTransformer(
 
         finalHash
           .replace("/", "")
+          .replace("=", "")
+          .replace("_", "")
           .chunked(100)
           .forEachIndexed { index, value ->
             addValueParameter(
