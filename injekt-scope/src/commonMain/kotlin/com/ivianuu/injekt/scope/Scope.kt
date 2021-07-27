@@ -212,8 +212,6 @@ fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): T =
 /**
  * Disposes this disposable once [scope] gets disposed
  * or synchronously if [scope] is already disposed
- *
- * Returns a [Disposable] to unregister for disposables
  */
 @OptIn(InternalScopeApi::class)
 fun <T : Disposable> T.bind(@Inject scope: Scope): T {
