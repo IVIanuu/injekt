@@ -41,6 +41,8 @@ fun TypeRef.collectInjectables(
   import: ResolvedProviderImport?,
   @Inject context: AnalysisContext
 ): List<CallableRef> {
+  if (isStarProjection) return emptyList()
+
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
     return listOf(
