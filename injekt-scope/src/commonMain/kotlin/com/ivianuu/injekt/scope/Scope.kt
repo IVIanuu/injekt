@@ -172,8 +172,6 @@ inline fun <T : Any> scoped(@Inject key: TypeKey<T>, @Inject scope: Scope, compu
 /**
  * Invokes the [action] function once [scope] gets disposed
  * or invokes it synchronously if [scope] is already disposed
- *
- * Returns a [Disposable] to unregister the [action]
  */
 inline fun invokeOnDispose(@Inject scope: Scope, crossinline action: () -> Unit) {
   Disposable { action() }.bind()

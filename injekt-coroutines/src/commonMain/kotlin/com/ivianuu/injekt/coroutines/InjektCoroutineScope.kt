@@ -59,7 +59,6 @@ typealias InjektCoroutineContext<S> = CoroutineContext
 /**
  * The default [InjektCoroutineContext] for scope [S]
  */
-@Provide
-inline fun <S : Scope> injektCoroutineContext(
+@Provide inline fun <S : Scope> injektCoroutineContext(
   dispatcher: DefaultDispatcher
 ): InjektCoroutineContext<S> = dispatcher
