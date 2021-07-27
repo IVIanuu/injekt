@@ -35,7 +35,6 @@ dependencies {
   kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
   api(Deps.AndroidX.Activity.activity)
   api(Deps.AndroidX.Lifecycle.runtime)
-  api(Deps.AndroidX.Lifecycle.process)
   testImplementation(Deps.AndroidX.Test.core)
   testImplementation(Deps.AndroidX.Test.junit)
   testImplementation(Deps.kotestAssertions)

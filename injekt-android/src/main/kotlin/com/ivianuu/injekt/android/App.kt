@@ -18,8 +18,6 @@ package com.ivianuu.injekt.android
 
 import android.app.*
 import android.content.*
-import android.content.res.*
-import androidx.lifecycle.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
@@ -51,13 +49,3 @@ typealias AppContext = Context
 
 @Provide inline val Application.appContext: AppContext
   get() = this
-
-typealias AppResources = Resources
-
-@Provide inline val AppContext.appResources: AppResources
-  get() = resources
-
-typealias AppLifecycleOwner = LifecycleOwner
-
-@Provide inline val appLifecycleOwner: AppLifecycleOwner
-  get() = ProcessLifecycleOwner.get()

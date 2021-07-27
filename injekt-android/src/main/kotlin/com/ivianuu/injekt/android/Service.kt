@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android
 
 import android.app.*
 import android.content.*
-import android.content.res.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
@@ -38,8 +37,3 @@ typealias ServiceContext = Context
 
 @Provide inline val Service.serviceContext: ServiceContext
   get() = this
-
-typealias ServiceResources = Resources
-
-@Provide inline val Service.serviceResources: ServiceResources
-  get() = resources

@@ -46,7 +46,6 @@ object Deps {
 
     object Lifecycle {
       private const val version = "2.3.1"
-      const val process = "androidx.lifecycle:lifecycle-process:$version"
       const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
     }
 

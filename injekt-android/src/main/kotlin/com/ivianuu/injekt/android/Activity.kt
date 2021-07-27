@@ -61,30 +61,4 @@ typealias ActivityContext = Context
 @Provide inline val ComponentActivity.activityContext: ActivityContext
   get() = this
 
-typealias ActivityResources = Resources
-
-@Provide inline val ComponentActivity.activityResources: ActivityResources
-  get() = resources
-
-typealias ActivityLifecycleOwner = LifecycleOwner
-
-@Provide inline val ComponentActivity.activityLifecycleOwner: ActivityLifecycleOwner
-  get() = this
-
-typealias ActivityOnBackPressedDispatcherOwner = OnBackPressedDispatcherOwner
-
-@Provide
-inline val ComponentActivity.activityOnBackPressedDispatcherOwner: ActivityOnBackPressedDispatcherOwner
-  get() = this
-
-typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
-
-@Provide inline val ComponentActivity.activitySavedStateRegistryOwner: ActivitySavedStateRegistryOwner
-  get() = this
-
-typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
-
-@Provide inline val ComponentActivity.activityViewModelStoreOwner: ActivityViewModelStoreOwner
-  get() = this
-
 private val activityScopes = mutableMapOf<ComponentActivity, ActivityScope>()
