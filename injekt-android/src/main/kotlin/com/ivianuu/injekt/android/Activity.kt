@@ -34,12 +34,11 @@ val ComponentActivity.activityScope: ActivityScope
     activityScopes[this]?.let { return it }
     return synchronized(activityScopes) {
       activityScopes[this]?.let { return it }
-      val value = activityRetainedScope
+      val scope = activityRetainedScope
         .element<@ChildScopeFactory (ComponentActivity) -> ActivityScope>()
         .invoke(this)
-      activityScopes[this] = value
-      value
-    }.also { scope ->
+      activityScopes[this] = scope
+
       lifecycle.addObserver(object : LifecycleEventObserver {
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
           if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
@@ -48,6 +47,8 @@ val ComponentActivity.activityScope: ActivityScope
           }
         }
       })
+
+      scope
     }
   }
 

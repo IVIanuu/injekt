@@ -44,9 +44,7 @@ typealias ActivityRetainedScope = Scope
 @Provide val activityRetainedScopeModule =
   ChildScopeModule0<AppScope, ActivityRetainedScope>()
 
-private class ActivityRetainedScopeHolder(
-  val scope: ActivityRetainedScope
-) : ViewModel() {
+private class ActivityRetainedScopeHolder(val scope: ActivityRetainedScope) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
     (scope as DisposableScope).dispose()
