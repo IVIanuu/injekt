@@ -30,10 +30,22 @@ val Application.appScope: AppScope
 
 /**
  * Host of the [AppScope]
+ *
+ * A simple [Application] might look like this:
+ * ```
+ * class App : Application(), AppScopeOwner {
+ *  override lateinit var appScope: AppScope
+ *
+ *  override fun onCreate() {
+ *    appScope = createAppScope()
+ *    super.onCreate()
+ *  }
+ * }
+ * ```
  */
 interface AppScopeOwner {
   /**
-   * The [AppScope] which are typically created via [createAppScope]
+   * The [AppScope] which is typically created via [createAppScope]
    */
   val appScope: AppScope
 }
