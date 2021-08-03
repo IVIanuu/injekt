@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.*
 import android.content.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
@@ -27,7 +26,7 @@ import com.ivianuu.injekt.scope.*
 fun BroadcastReceiver.createReceiverScope(
   context: Context,
   intent: Intent,
-): ReceiverScope = (context.applicationContext as Application)
+): ReceiverScope = context
   .appScope
   .element<@ChildScopeFactory (
     BroadcastReceiver,

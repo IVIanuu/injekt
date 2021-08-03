@@ -24,7 +24,7 @@ import com.ivianuu.injekt.scope.*
 /**
  * Returns a new [Scope] which must be manually stored and disposed
  */
-fun Service.createServiceScope(): ServiceScope = application.appScope
+fun Service.createServiceScope(): ServiceScope = appScope
   .element<@ChildScopeFactory (Service) -> ServiceScope>()
   .invoke(this)
 

@@ -22,10 +22,10 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.scope.*
 
 /**
- * Returns the [AppScope] hosted in this application
+ * Returns the [AppScope] hosted in the application
  */
-val Application.appScope: AppScope
-  get() = (this as? AppScopeOwner)?.appScope
+val Context.appScope: AppScope
+  get() = (applicationContext as? AppScopeOwner)?.appScope
     ?: error("application does not implement AppScopeOwner")
 
 /**

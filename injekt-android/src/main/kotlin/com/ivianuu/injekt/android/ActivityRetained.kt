@@ -32,7 +32,7 @@ val ComponentActivity.activityRetainedScope: ActivityRetainedScope
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T =
         ActivityRetainedScopeHolder(
-          application.appScope
+          appScope
             .element<@ChildScopeFactory () -> ActivityRetainedScope>()
             .invoke()
         ) as T
