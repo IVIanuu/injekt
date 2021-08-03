@@ -23,6 +23,7 @@ import kotlinx.coroutines.sync.*
 
 interface CounterDb {
   val counterState: Flow<Int>
+
   suspend fun updateCounter(transform: Int.() -> Int)
 }
 
