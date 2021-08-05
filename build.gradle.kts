@@ -69,11 +69,14 @@ allprojects {
           )
         }
       }
-      val pluginOptions = compilation.setupForInjekt().get()
-      pluginOptions.forEach {
-        compilation.kotlinOptions.freeCompilerArgs += listOf(
-          "-P", "plugin:com.ivianuu.injekt:${it.key}=${it.value}"
-        )
+
+      if (project.name != "injekt-compiler-plugin") {
+        val pluginOptions = compilation.setupForInjekt().get()
+        pluginOptions.forEach { option ->
+          compilation.kotlinOptions.freeCompilerArgs += listOf(
+            "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
+          )
+        }
       }
     }
     if (pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {

@@ -74,17 +74,17 @@ object Deps {
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
   object Injekt {
-    const val version = "0.0.1-dev575"
+    const val version = "0.0.1-dev595"
     const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
-    const val scope = "com.ivianuu.injekt:injekt-scope:$version"
+    const val scope = "com.ivianuu.injekt:injekt-scope:0.0.1-dev575"
   }
 
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.5.10"
+    const val version = "1.5.21"
     const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
-    const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.21"
+    const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
   }

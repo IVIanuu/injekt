@@ -18,11 +18,13 @@ package com.ivianuu.injekt.compiler.transform
 
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.types.*
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 class IncrementalFixFunctionDescriptor(
   private val containingDeclaration: DeclarationDescriptor
 ) : SimpleFunctionDescriptor {

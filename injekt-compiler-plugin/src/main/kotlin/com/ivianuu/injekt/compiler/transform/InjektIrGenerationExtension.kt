@@ -20,10 +20,12 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.resolve.*
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjektIrGenerationExtension : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, @Provide pluginContext: IrPluginContext) {
     @Provide val context = AnalysisContext(

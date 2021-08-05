@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 class SingletonTransformer(
   @Inject private val pluginContext: IrPluginContext,
   @Inject private val analysisContext: AnalysisContext

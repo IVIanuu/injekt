@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 class IncrementalFixTransformer(
   @Inject private val pluginContext: IrPluginContext,
   @Inject private val analysisContext: AnalysisContext

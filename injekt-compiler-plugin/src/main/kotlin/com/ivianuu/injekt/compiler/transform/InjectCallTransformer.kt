@@ -47,6 +47,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjectCallTransformer(
   @Inject private val analysisContext: AnalysisContext,
   @Inject private val pluginContext: IrPluginContext
@@ -60,6 +61,7 @@ class InjectCallTransformer(
 
     var variableIndex = 0
 
+    @OptIn(ExperimentalStdlibApi::class)
     private val graphContextParents = buildList<InjectablesScope> {
       var current: InjectablesScope? = graph.scope.parent
       while (current != null) {

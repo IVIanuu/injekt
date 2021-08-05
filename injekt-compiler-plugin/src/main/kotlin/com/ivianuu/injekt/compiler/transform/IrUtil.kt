@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
   @Inject pluginContext: IrPluginContext,
   @Inject localClasses: List<IrClass>,
@@ -197,6 +198,7 @@ fun TypeRef.toAbbreviation(@Inject context: AnalysisContext): SimpleType =
     })
     .makeNullableAsSpecified(isMarkedNullable)
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(
   type: IrType,
   startOffset: Int = UNDEFINED_OFFSET,

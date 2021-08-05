@@ -18,12 +18,14 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
 import java.io.*
 
 var dumpAllFiles = false
 
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     moduleFragment.files

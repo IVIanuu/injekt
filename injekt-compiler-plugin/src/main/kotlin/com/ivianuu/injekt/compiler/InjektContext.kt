@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
@@ -33,19 +34,19 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   override fun isDenotable(type: TypeRef): Boolean = true
 
   val setClassifier by lazy {
-    module.builtIns.set.toClassifierRef()
+    module.builtIns.set.toClassifierRef(AnalysisContext(this))
   }
   val collectionClassifier by lazy {
-    module.builtIns.collection.toClassifierRef()
+    module.builtIns.collection.toClassifierRef(AnalysisContext(this))
   }
   val nothingType by lazy {
-    module.builtIns.nothingType.toTypeRef()
+    module.builtIns.nothingType.toTypeRef(context = AnalysisContext(this))
   }
   val nullableNothingType by lazy {
     nothingType.copy(isMarkedNullable = true)
   }
   val anyType by lazy {
-    module.builtIns.anyType.toTypeRef()
+    module.builtIns.anyType.toTypeRef(context = AnalysisContext(this))
   }
   val nullableAnyType by lazy {
     anyType.copy(isMarkedNullable = true)
@@ -53,12 +54,12 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val sourceKeyType by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.SourceKey)
-    )!!.toClassifierRef()
+    )!!.toClassifierRef(AnalysisContext(this))
   }
   val typeKeyType by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.TypeKey)
-    )!!.toClassifierRef()
+    )!!.toClassifierRef(AnalysisContext(this))
   }
 
   val injectableConstructors = mutableMapOf<ClassDescriptor, List<CallableRef>>()

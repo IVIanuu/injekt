@@ -269,6 +269,7 @@ fun CallableRef.collectInjectables(
     }
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 fun List<ProviderImport>.collectImportedInjectables(
   @Inject context: AnalysisContext
 ): List<CallableRef> = flatMap { import ->
