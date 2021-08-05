@@ -632,7 +632,7 @@ class InjectCallTransformer(
               function.allParameters
                 .filter { it != function.dispatchReceiverParameter }
             }
-            .single { it.index == descriptor.index() })
+            .single { it.index == (descriptor as? ValueParameterDescriptor)?.index ?: -1 })
             .symbol
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
