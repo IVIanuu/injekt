@@ -30,10 +30,13 @@ kotlin {
   sourceSets {
     named("jvmMain") {
       dependencies {
+        api(project(":injekt-core"))
+        api(project(":injekt-common"))
         api(project(":injekt-scope"))
+
+        api(project(":injekt-compiler-plugin"))
         configurations.getByName("kotlinCompilerPluginClasspath")
           .dependencies.add(project(":injekt-compiler-plugin"))
-        api(project(":injekt-compiler-plugin"))
 
         api(Deps.AndroidX.Compose.compiler)
 

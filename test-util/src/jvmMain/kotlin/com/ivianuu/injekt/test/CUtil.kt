@@ -361,6 +361,6 @@ private val hostClasspaths by lazy<List<File>> {
 
   (classpaths + modules)
     // exclude possible old injekt artifacts which are required by the compiler plugin
-    .filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
+    //.filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
     .distinctBy(File::getAbsolutePath)
 }

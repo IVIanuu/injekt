@@ -18,7 +18,7 @@ plugins {
   id("java-gradle-plugin")
   kotlin("jvm")
   kotlin("kapt")
-  id("de.fuerstenau.buildconfig")
+  id("com.github.gmazzo.buildconfig") version "3.0.2"
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -34,10 +34,10 @@ gradlePlugin {
 }
 
 buildConfig {
-  clsName = "BuildConfig"
-  packageName = "com.ivianuu.injekt.gradle"
+  className("BuildConfig")
+  packageName("com.ivianuu.injekt.gradle")
 
-  version = property("VERSION_NAME").toString()
+  buildConfigField("String", "VERSION_NAME", property("VERSION_NAME").toString())
   buildConfigField("String", "GROUP_ID", property("GROUP").toString())
   buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
 }

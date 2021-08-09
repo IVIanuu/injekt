@@ -27,7 +27,7 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:4.2.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:7.0.0"
 
   object AndroidX {
     object Activity {
@@ -59,9 +59,6 @@ object Deps {
 
   const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
 
-  const val buildConfigGradlePlugin =
-    "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
-
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Coroutines {
@@ -83,7 +80,7 @@ object Deps {
 
   object Kotlin {
     const val version = "1.5.21"
-    const val compiler = "org.jetbrains.kotlin:kotlin-compiler:$version"
+    const val compiler = "org.jetbrains.kot#lin:kotlin-compiler:$version"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -94,7 +91,7 @@ object Deps {
     const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2"
   }
 
-  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.3.6"
+  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.2"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
