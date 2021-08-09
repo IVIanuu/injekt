@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.intellij.tasks.*
-
 plugins {
   kotlin("jvm")
   id("org.jetbrains.intellij") version "1.1.4"
@@ -42,10 +40,6 @@ tasks {
   buildSearchableOptions {
     jbrVersion.set("11_0_3b360.2")
   }
-}
-
-tasks.withType<RunIdeTask> {
-  jvmArgs("-Xmx3072m")
 }
 
 /*tasks.withType<PublishTask> {
