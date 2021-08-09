@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
+@OptIn(ExperimentalStdlibApi::class)
 fun QuickFixes.addMissingInjectableAsParameter() = register(
   InjektErrors.UNRESOLVED_INJECTION,
   object : KotlinIntentionActionsFactory() {
