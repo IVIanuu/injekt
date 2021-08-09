@@ -14,10 +14,4 @@
   ~ limitations under the License.
   -->
 
-<manifest package="com.ivianuu.injekt.integrationtests"
-    xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <application>
-        <activity android:name="androidx.activity.ContainerActivity" />
-    </application>
-</manifest>
+<manifest package="com.ivianuu.injekt.integrationtests" />
