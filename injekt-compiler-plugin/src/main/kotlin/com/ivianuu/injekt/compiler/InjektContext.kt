@@ -16,15 +16,18 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Suppress("NewApi")
 class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
@@ -50,11 +53,6 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   }
   val nullableAnyType by lazy {
     anyType.copy(isMarkedNullable = true)
-  }
-  val sourceKeyType by lazy {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(InjektFqNames.SourceKey)
-    )!!.toClassifierRef(AnalysisContext(this))
   }
   val typeKeyType by lazy {
     module.findClassAcrossModuleDependencies(

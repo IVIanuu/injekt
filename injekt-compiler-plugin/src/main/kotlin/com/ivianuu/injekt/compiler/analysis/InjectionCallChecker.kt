@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.com.intellij.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.calls.checkers.*
-import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
+import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
+import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
 class InjectionCallChecker(@Provide private val context: InjektContext) : CallChecker {
   override fun check(
@@ -96,7 +99,7 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
 
     when (graph) {
       is InjectionGraph.Success -> {
-        if (filePath != null && !isIde) {
+        if (filePath != null) {
           context.trace.record(
             InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
             filePath,
@@ -115,13 +118,6 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
       }
       is InjectionGraph.Error -> context.trace.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
-      )
-    }
-    if (isIde) {
-      context.trace.record(
-        InjektWritableSlices.INJECTION_GRAPH_FOR_CALL,
-        callExpression,
-        graph
       )
     }
   }

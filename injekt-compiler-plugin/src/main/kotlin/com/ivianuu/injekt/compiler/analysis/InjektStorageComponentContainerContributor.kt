@@ -16,22 +16,20 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.container.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.extensions.*
-import org.jetbrains.kotlin.platform.*
+import com.ivianuu.injekt.compiler.injektContext
+import org.jetbrains.kotlin.container.StorageComponentContainer
+import org.jetbrains.kotlin.container.useImpl
+import org.jetbrains.kotlin.container.useInstance
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageComponentContainerContributor(
-  val isEnabled: (ModuleDescriptor) -> Boolean = { true }
-) : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
   override fun registerModuleComponents(
     container: StorageComponentContainer,
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    if (!isEnabled(moduleDescriptor)) return
-
     val context = moduleDescriptor.injektContext
     if (platform.componentPlatforms.size > 1)
       container.useImpl<InjectSyntheticScopes>()
