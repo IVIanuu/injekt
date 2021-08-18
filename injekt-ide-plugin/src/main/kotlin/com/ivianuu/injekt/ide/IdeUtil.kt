@@ -16,16 +16,22 @@
 
 package com.ivianuu.injekt.ide
 
+import com.intellij.openapi.project.Project
 import com.intellij.psi.*
+import com.intellij.psi.search.GlobalSearchScope
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.asJava.elements.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.idea.caches.project.*
+import org.jetbrains.kotlin.idea.codeInsight.DescriptorToSourceUtilsIde
 import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.facet.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.jvm.KotlinJavaPsiFacade
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun PsiElement.ktElementOrNull() = safeAs<KtDeclaration>()
@@ -50,4 +56,36 @@ fun ModuleInfo.isInjektEnabled(): Boolean {
   return pluginClasspath.any {
     it.contains("injekt-compiler-plugin")
   }
+}
+
+fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
+  if (this is PackageViewDescriptor)
+    return listOf(
+            KotlinJavaPsiFacade.getInstance(project)
+                    .findPackage(fqName.asString(), resolveScope)
+    )
+
+  if (this is InjectFunctionDescriptor)
+    return underlyingDescriptor.findPsiDeclarations(project, resolveScope)
+
+  if (this is ConstructorDescriptor &&
+          constructedClass.kind == ClassKind.OBJECT)
+    return constructedClass.findPsiDeclarations(project, resolveScope)
+
+  if (this is ValueParameterDescriptor &&
+          (containingDeclaration is DeserializedDescriptor ||
+                  containingDeclaration is InjectFunctionDescriptor)) {
+    return listOfNotNull(
+            containingDeclaration.findPsiDeclarations(project, resolveScope)
+                    .firstOrNull()
+                    .safeAs<KtFunction>()
+                    ?.valueParameters
+                    ?.get(index)
+    )
+  }
+
+  if (this is LazyClassReceiverParameterDescriptor)
+    return containingDeclaration.findPsiDeclarations(project, resolveScope)
+
+  return DescriptorToSourceUtilsIde.getAllDeclarations(project, this, resolveScope)
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ide.refs
+package com.ivianuu.injekt.ide
 
 import com.intellij.openapi.application.*
 import com.intellij.psi.*
@@ -52,24 +52,14 @@ class InjektReferencesSearcher :
           for (element in scope.scope) {
             element.accept(
               expressionRecursiveVisitor { expression ->
-                when {
-                  expression is KtStringTemplateExpression &&
-                  expression.isProviderImport() -> {
-                    tasks += {
-                      expression.references
-                        .filterIsInstance<ImportElementReference>()
-                        .filter { it.isReferenceTo(ktElement) }
-                        .forEach { processor.process(it) }
-                    }
+                if (expression is KtStringTemplateExpression &&
+                        expression.isProviderImport()) {
+                  tasks += {
+                    expression.references
+                                .filterIsInstance<ImportElementReference>()
+                                .filter { it.isReferenceTo(ktElement) }
+                                .forEach { processor.process(it) }
                   }
-                  /*isProvideOrInjectDeclaration && expression is KtCallExpression -> {
-                    tasks += {
-                      expression.references
-                        .filterIsInstance<InjectReference>()
-                        .filter { it.isReferenceTo(ktElement) }
-                        .forEach { processor.process(it) }
-                    }
-                  }*/
                 }
               }
             )

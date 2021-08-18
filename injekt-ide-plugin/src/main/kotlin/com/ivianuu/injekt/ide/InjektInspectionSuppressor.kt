@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ide.suppression
+package com.ivianuu.injekt.ide
 
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
@@ -22,7 +22,6 @@ import com.intellij.psi.impl.source.tree.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.injekt.ide.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.bindingContextUtil.*

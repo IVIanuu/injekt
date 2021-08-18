@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.ide.refs
+package com.ivianuu.injekt.ide
 
 import com.intellij.codeInsight.*
 import com.intellij.codeInsight.completion.*
@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.completion.*
+import org.jetbrains.kotlin.idea.references.findPsiDeclarations
 import org.jetbrains.kotlin.idea.util.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
@@ -95,10 +96,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
                 injektContext.memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE)
                   ?.getContributedDescriptors { it == finalFqName.shortName() }
                   ?.firstOrNull()
-                  ?.findPsiDeclarations(
-                    element.project,
-                    element.resolveScope
-                  )
+                  ?.findPsiDeclarations(element.project, element.resolveScope)
                   ?.first()
               },
               finalFqName

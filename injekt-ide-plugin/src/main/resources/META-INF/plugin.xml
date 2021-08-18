@@ -30,51 +30,30 @@
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
-    <actions>
-        <action id="Injekt.ShowInjectedArguments" class="com.ivianuu.injekt.ide.showinjectedarguments.ShowInjectedArgumentsAction">
-        </action>
-        <action id="Injekt.ShowInjectionUsages" class="com.ivianuu.injekt.ide.showinjectedarguments.ShowInjectionUsagesAction">
-            <add-to-group group-id="CodeEditorViewGroup" anchor="last"/>
-        </action>
-        <action id="Injekt.ShowInjectionHints" class="com.ivianuu.injekt.ide.hints.ToggleInjectionHintsAction">
-            <add-to-group group-id="CodeEditorViewGroup" anchor="last"/>
-        </action>
-    </actions>
-
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService
-            serviceInterface="org.jetbrains.kotlin.idea.references.KotlinReferenceProviderContributor"
-            serviceImplementation="com.ivianuu.injekt.ide.refs.InjektKotlinReferenceProviderContributor"
-            overrides="true" />
-
         <referencesSearch
-            implementation="com.ivianuu.injekt.ide.refs.InjektReferencesSearcher"/>
+            implementation="com.ivianuu.injekt.ide.InjektReferencesSearcher"/>
 
         <psi.referenceContributor
-            implementation="com.ivianuu.injekt.ide.refs.ImportReferenceContributor"/>
+            implementation="com.ivianuu.injekt.ide.ImportReferenceContributor"/>
 
         <typedHandler
-            implementation="com.ivianuu.injekt.ide.refs.ImportTypedHandlerDelegate" />
+            implementation="com.ivianuu.injekt.ide.ImportTypedHandlerDelegate" />
 
         <completion.confidence
             language="kotlin"
             order="first"
-            implementationClass="com.ivianuu.injekt.ide.refs.ImportCompletionConfidence"/>
-
-        <usageTypeProvider implementation="com.ivianuu.injekt.ide.usages.InjektUsageTypeProvider"/>
+            implementationClass="com.ivianuu.injekt.ide.ImportCompletionConfidence"/>
 
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
 
         <lang.inspectionSuppressor language="kotlin"
-            implementationClass="com.ivianuu.injekt.ide.suppression.InjektInspectionSuppressor" />
-
-        <highlightingPassFactory
-            implementation="com.ivianuu.injekt.ide.hints.InjectionHintsTextEditorHighlightingPassFactory"/>
+            implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <completionExtension
-            implementation="com.ivianuu.injekt.ide.refs.ImportCompletionExtension"/>
+            implementation="com.ivianuu.injekt.ide.ImportCompletionExtension"/>
     </extensions>
 
 </idea-plugin>

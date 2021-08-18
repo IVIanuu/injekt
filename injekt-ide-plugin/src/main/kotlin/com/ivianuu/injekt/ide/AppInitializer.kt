@@ -46,9 +46,6 @@ class AppInitializer : ApplicationInitializedListener {
               InjectSyntheticScopeProviderExtension { it.isInjektEnabled() }
             )
             @Suppress("DEPRECATION")
-            Extensions.getRootArea().getExtensionPoint(QuickFixContributor.EP_NAME)
-              .registerExtension(InjektQuickFixContributor())
-            @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
               .registerExtension(InjektDiagnosticSuppressor())
           }
