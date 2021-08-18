@@ -16,12 +16,14 @@
 
 package com.ivianuu.injekt.android.work
 
-import android.content.*
+import android.content.Context
 import androidx.work.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.scope.*
-import kotlin.reflect.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.ScopeObserver
+import kotlin.reflect.KClass
 
 /**
  * Installs the injectable [ListenableWorker] in the [InjektWorkerFactory]
@@ -66,7 +68,7 @@ object WorkerInitializerModule {
    * Defines the [ScopeObserver] for work manager initialization in the [AppScope]
    */
   @Provide fun workerInitializer(
-    context: AppContext,
+    context: Context,
     configuration: Configuration? = null,
     defaultConfiguration: () -> @Default Configuration
   ): ScopeObserver<AppScope> = object : ScopeObserver<AppScope> {
@@ -87,7 +89,7 @@ object WorkerInitializerModule {
   @Tag private annotation class Default
 }
 
-@Provide inline val AppContext.workManager: WorkManager
+@Provide inline val Context.workManager: WorkManager
   get() = WorkManager.getInstance(this)
 
 internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
