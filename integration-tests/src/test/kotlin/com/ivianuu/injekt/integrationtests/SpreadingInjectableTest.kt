@@ -218,7 +218,7 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
     """
-      @Tag annotation class ClassSingleton
+      @Tag annotation class SingleInstance
       
       @Provide inline fun <@Spread T : @SingleInstance U, reified U : Any> SingleInstance(
         factory: () -> T
