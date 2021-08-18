@@ -57,9 +57,4 @@ typealias ActivityScope = Scope
 @Provide val activityScopeModule =
   ChildScopeModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
 
-typealias ActivityContext = Context
-
-@Provide inline val ComponentActivity.activityContext: ActivityContext
-  get() = this
-
 private val activityScopes = mutableMapOf<ComponentActivity, ActivityScope>()

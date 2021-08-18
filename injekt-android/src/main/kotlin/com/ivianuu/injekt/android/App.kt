@@ -16,10 +16,11 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.*
-import android.content.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import android.app.Application
+import android.content.Context
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.scope.AppScope
 
 /**
  * Returns the [AppScope] hosted in the application
@@ -56,8 +57,3 @@ interface AppScopeOwner {
 inline fun Application.createAppScope(
   @Inject scopeFactory: (@Provide Application) -> AppScope
 ): AppScope = scopeFactory(this)
-
-typealias AppContext = Context
-
-@Provide inline val Application.appContext: AppContext
-  get() = this

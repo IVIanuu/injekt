@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.*
-import android.content.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import android.app.Service
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.ChildScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeModule1
+import com.ivianuu.injekt.scope.Scope
 
 /**
  * Returns a new [Scope] which must be manually stored and disposed
@@ -32,8 +34,3 @@ typealias ServiceScope = Scope
 
 @Provide val serviceScopeModule =
   ChildScopeModule1<AppScope, Service, ServiceScope>()
-
-typealias ServiceContext = Context
-
-@Provide inline val Service.serviceContext: ServiceContext
-  get() = this
