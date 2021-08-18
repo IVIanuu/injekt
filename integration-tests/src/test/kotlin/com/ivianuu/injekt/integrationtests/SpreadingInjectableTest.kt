@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import io.kotest.matchers.collections.*
-import io.kotest.matchers.types.*
-import org.junit.*
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.Test
 
 class SpreadingInjectableTest {
   @Test fun testSpreadingInjectableFunction() = singleAndMultiCodegen(
@@ -220,7 +220,7 @@ class SpreadingInjectableTest {
     """
       @Tag annotation class ClassSingleton
       
-      @Provide inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
+      @Provide inline fun <@Spread T : @SingleInstance U, reified U : Any> SingleInstance(
         factory: () -> T
       ): U = factory()
   
@@ -229,7 +229,7 @@ class SpreadingInjectableTest {
       }
   
       @Provide fun <@Spread T : @Tag1 S, S> myModule():
-          @ClassSingleton MyModule<T, S> = MyModule()
+          @SingleInstance MyModule<T, S> = MyModule()
   
       @Provide val foo: @Tag1 Foo = Foo()
     """,
@@ -237,14 +237,14 @@ class SpreadingInjectableTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    irShouldContain(1, "classSingleton<@ClassSingleton MyModule")
+    irShouldContain(1, "SingleInstance<@SingleInstance MyModule")
   }
 
   @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
     """
-      @Tag annotation class ClassSingleton
+      @Tag annotation class SingleInstance
       
-      @Provide inline fun <@Spread T : @ClassSingleton U, reified U : Any> classSingleton(
+      @Provide inline fun <@Spread T : @SingleInstance U, reified U : Any> SingleInstance(
         factory: () -> T
       ): U = factory()
       
@@ -253,7 +253,7 @@ class SpreadingInjectableTest {
       }
       
       @Provide fun <@Spread T : @Tag1 S, S> myModule(): 
-        @ClassSingleton MyModule<T, S> = MyModule()
+        @SingleInstance MyModule<T, S> = MyModule()
       
       @Provide val foo: @Tag1 Foo = Foo()
     """,

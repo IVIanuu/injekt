@@ -16,24 +16,30 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.*
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
-import org.jetbrains.kotlin.builtins.functions.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.builtins.functions.FunctionInvokeDescriptor
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.constants.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.lazy.descriptors.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtTypeParameter
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
+import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
+import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
+import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 /**
  * Stores information about a callable which is NOT stored by the kotlin compiler
@@ -216,8 +222,7 @@ class ClassifierInfo(
   val tags: List<TypeRef> = emptyList(),
   val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  val isSpread: Boolean = false,
-  val isSingletonInjectable: Boolean = false
+  val isSpread: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 }
@@ -282,29 +287,11 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
   else hasAnnotation(InjektFqNames.Spread) ||
       findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
 
-  val isSingletonInjectable = !isDeserialized &&
-      this is ClassDescriptor &&
-      kind == ClassKind.CLASS &&
-      constructors
-        .filter {
-          it.hasAnnotation(InjektFqNames.Provide) ||
-              (it.isPrimary && hasAnnotation(InjektFqNames.Provide))
-        }
-        .any { it.valueParameters.isEmpty() } &&
-      unsubstitutedMemberScope.getContributedDescriptors()
-        .none {
-          (it is ClassDescriptor &&
-              it.isInner) ||
-              (it is PropertyDescriptor &&
-                  it.hasBackingField(context.trace?.bindingContext))
-        }
-
   val info = ClassifierInfo(
     tags = tags,
     lazySuperTypes = lazySuperTypes,
     primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-    isSpread = isSpread,
-    isSingletonInjectable = isSingletonInjectable
+    isSpread = isSpread
   )
 
   // import to cache the info before persisting it
@@ -319,8 +306,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
   @SerialName("0") val tags: List<PersistedTypeRef> = emptyList(),
   @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
   @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  @SerialName("3") val isSpread: Boolean = false,
-  @SerialName("5") val isSingletonInjectable: Boolean = false
+  @SerialName("3") val isSpread: Boolean = false
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
@@ -329,8 +315,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  isSpread = isSpread,
-  isSingletonInjectable = isSingletonInjectable
+  isSpread = isSpread
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(
@@ -339,8 +324,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  isSpread = isSpread,
-  isSingletonInjectable = isSingletonInjectable
+  isSpread = isSpread
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
@@ -392,8 +376,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (!visibility.shouldPersistInfo()) return
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
-    if (!info.isSingletonInjectable &&
-      info.tags.isEmpty() &&
+    if (info.tags.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       !hasAnnotation(InjektFqNames.Provide) &&
       (this !is ClassDescriptor ||

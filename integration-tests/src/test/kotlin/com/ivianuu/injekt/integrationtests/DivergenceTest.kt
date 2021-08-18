@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import org.junit.*
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import org.junit.Test
 
 class DivergenceTest {
   @Test fun testUnresolvableDivergence() = singleAndMultiCodegen(
@@ -69,20 +71,6 @@ class DivergenceTest {
     """,
     """
       fun invoke() = inject<B>()
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  // todo @Test
-  fun testDoubleProviderBreaksCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: () -> B)
-      @Provide class B(a: () -> A)
-      @Provide fun pair(a: A, b: B) = a to b
-    """,
-    """
-      fun invoke() = inject<Pair<A, B>>()
     """
   ) {
     invokeSingleFile()

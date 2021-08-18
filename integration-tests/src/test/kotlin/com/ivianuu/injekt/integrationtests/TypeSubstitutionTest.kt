@@ -16,15 +16,14 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.*
-import io.kotest.matchers.*
-import io.kotest.matchers.maps.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
-import org.junit.*
+import io.kotest.matchers.maps.shouldContain
+import io.kotest.matchers.maps.shouldHaveSize
+import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
+import org.junit.Test
 
 class TypeSubstitutionTest {
   @Test fun testGetSubstitutionMap() = withTypeCheckerContext {
@@ -99,62 +98,6 @@ class TypeSubstitutionTest {
     map[scopedU] shouldBe stringType
     map[scopedN] shouldBe namedScope
   }
-
-  // todo @Test
-  fun testGetSubstitutionMapNamedCoroutineScopeLikeScenario() =
-    withTypeCheckerContext {
-      val (installElementModuleT, installElementModuleU, installElementModuleS) =
-        analysisContext.injektContext.classifierDescriptorForFqName(
-          FqName("com.ivianuu.injekt.scope.ScopeElement.Companion.Module"),
-          NoLookupLocation.FROM_BACKEND
-        )!!
-          .cast<ClassDescriptor>()
-          .unsubstitutedPrimaryConstructor!!
-          .toCallableRef()
-          .typeParameters
-
-      val injectableCoroutineScopeElementReturnType =
-        analysisContext.injektContext.memberScopeForFqName(
-          FqName("com.ivianuu.injekt.coroutines"),
-          NoLookupLocation.FROM_BACKEND
-        )!!
-          .getContributedFunctions(
-            "injektCoroutineScopeElement".asNameId(),
-            NoLookupLocation.FROM_BACKEND
-          )
-          .single()
-          .callableInfo()
-          .type
-          .arguments
-          .last()
-
-      val (_, map) = buildContextForSpreadingInjectable(
-        buildBaseContextForSpreadingInjectable(
-          injectableCoroutineScopeElementReturnType,
-          emptyList()
-        ),
-        installElementModuleT.defaultType,
-        injectableCoroutineScopeElementReturnType
-      )
-      val injectableCoroutineScopeElementS = injectableCoroutineScopeElementReturnType.arguments
-        .first()
-        .classifier
-
-      map[installElementModuleT] shouldBe injectableCoroutineScopeElementReturnType
-        .substitute(
-          mapOf(
-            injectableCoroutineScopeElementS to installElementModuleS.defaultType
-          )
-        )
-      map[installElementModuleU] shouldBe
-          injectableCoroutineScopeElementReturnType.arguments.last()
-            .substitute(
-              mapOf(
-                injectableCoroutineScopeElementS to installElementModuleS.defaultType
-              )
-            )
-      map[installElementModuleS] shouldBe installElementModuleS.defaultType
-    }
 
   private fun TypeCheckerTestContext.getSubstitutionMap(
     subType: TypeRef,

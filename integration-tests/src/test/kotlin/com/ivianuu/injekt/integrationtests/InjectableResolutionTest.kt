@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import io.kotest.matchers.types.*
-import org.jetbrains.kotlin.name.*
-import org.junit.*
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import org.jetbrains.kotlin.name.FqName
+import org.junit.Test
 
 class InjectableResolutionTest {
   @Test fun testPrefersInternalInjectableOverExternal() = multiCodegen(
@@ -557,38 +557,5 @@ class InjectableResolutionTest {
     )
   ) {
     invokeSingleFile() shouldBe "explicit"
-  }
-
-  // todo @Test
-  fun testPrefersInjectableInTheSameModuleAsTheRequestedType() = multiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            typealias MyString = String
-            @Provide val internal: MyString = "a"
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            @Provide val external: MyString = "b"
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.MyString>()
-          """,
-          name = "File.kt"
-        )
-      )
-    )
-  ) {
-    invokeSingleFile() shouldBe "a"
   }
 }
