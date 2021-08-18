@@ -35,7 +35,7 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
   ) {
     if (isIde) return
 
-    @Provide val trace = context.trace
+    @Provide val analysisContext = AnalysisContext(trace = context.trace)
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 

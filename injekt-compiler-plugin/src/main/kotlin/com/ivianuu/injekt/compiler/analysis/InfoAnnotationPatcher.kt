@@ -16,19 +16,25 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.checkers.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.classifierInfo
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
+import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class InfoAnnotationPatcher(@Provide private val context: InjektContext) : DeclarationChecker {
+class InfoAnnotationPatcher(@Inject private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    @Provide val trace = context.trace
+    @Provide val analysisContext = AnalysisContext(trace = context.trace)
     // requesting infos triggers saving them
     when (descriptor) {
       is ClassDescriptor -> {

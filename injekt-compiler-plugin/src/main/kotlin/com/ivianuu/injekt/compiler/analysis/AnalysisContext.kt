@@ -16,11 +16,12 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.resolve.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.compiler.InjektContext
+import org.jetbrains.kotlin.resolve.BindingTrace
 
-@Provide class AnalysisContext(
-  @Provide val injektContext: InjektContext,
-  @Provide val trace: BindingTrace? = null
+class AnalysisContext(
+  @Inject @Provide val injektContext: InjektContext,
+  @Inject @Provide val trace: BindingTrace? = null
 )
