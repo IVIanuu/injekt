@@ -17,13 +17,18 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.diagnostics.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.diagnostics.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import org.jetbrains.kotlin.diagnostics.Diagnostic
+import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtTypeParameter
+import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
   override fun isSuppressed(diagnostic: Diagnostic): Boolean =
@@ -76,20 +81,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
           ?.hasAnnotation(InjektFqNames.Tag) == true
       )
         return true
-    }
-
-    if (diagnostic.factory == Errors.UNUSED_PARAMETER ||
-      diagnostic.factory == Errors.UNUSED_VARIABLE
-    ) {
-      val descriptor =
-        (diagnostic.psiElement as KtDeclaration).descriptor<DeclarationDescriptor>(
-          bindingContext
-        )
-          ?: return false
-      try {
-        if (bindingContext[InjektWritableSlices.USED_INJECTABLE, descriptor] != null) return true
-      } catch (e: Throwable) {
-      }
     }
 
     if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {

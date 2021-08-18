@@ -79,11 +79,6 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
       scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
         if (result is ResolutionResult.Success.WithCandidate.Value &&
           result.candidate is CallableInjectable) {
-          context.trace.record(
-            InjektWritableSlices.USED_INJECTABLE,
-            result.candidate.callable.callable,
-            Unit
-          )
           if (filePath != null) {
             result.candidate.callable.import?.element?.let {
               context.trace.record(
