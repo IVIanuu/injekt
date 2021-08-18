@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.types.model.*
-import org.junit.*
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.withArguments
+import com.ivianuu.injekt.compiler.resolution.wrap
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.types.model.TypeVariance
+import org.junit.Test
 
 class SubtypingTest {
   @Test fun testNullableAnyIsSuperTypeOfEveryOtherType() = withTypeCheckerContext {
@@ -226,16 +228,6 @@ class SubtypingTest {
     val typeAlias2 = typeAlias(typeAlias1)
     typeAlias2 shouldBeSubTypeOf typeAlias1
   }
-
-  @Test fun testTypeAliasIsAssignableToTypeParameterWithTypeAliasUpperBound() =
-    withTypeCheckerContext {
-      /*val superTypeAlias = typeAlias(function(0))
-      val typeParameterS = typeParameter(superTypeAlias)
-      val typeParameterT = typeParameter(typeParameterS.tagged(tag1))
-      val subTypeAlias = typeAlias(superTypeAlias)
-      subTypeAlias.tagged(tag1) shouldBeAssignableTo typeParameterT*/
-      // todo
-    }
 
   @Test
   fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() =
