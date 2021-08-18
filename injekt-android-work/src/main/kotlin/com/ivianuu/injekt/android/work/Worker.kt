@@ -17,12 +17,13 @@
 package com.ivianuu.injekt.android.work
 
 import android.content.Context
-import androidx.work.*
+import androidx.work.ListenableWorker
+import androidx.work.WorkManager
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.ScopeObserver
 import kotlin.reflect.KClass
 
 /**
@@ -58,35 +59,6 @@ import kotlin.reflect.KClass
     workerClassName: String,
     workerParameters: WorkerParameters,
   ): ListenableWorker? = workers[workerClassName]?.invoke(workerParameters)
-}
-
-/**
- * Defines providers to initialize the work manager library
- */
-object WorkerInitializerModule {
-  /**
-   * Defines the [ScopeObserver] for work manager initialization in the [AppScope]
-   */
-  @Provide fun workerInitializer(
-    context: Context,
-    configuration: Configuration? = null,
-    defaultConfiguration: () -> @Default Configuration
-  ): ScopeObserver<AppScope> = object : ScopeObserver<AppScope> {
-    override fun onInit() {
-      WorkManager.initialize(context, configuration ?: defaultConfiguration())
-    }
-  }
-
-  /**
-   * Defines the worker configuration which is used by [workerInitializer] to initialize the [WorkManager]
-   */
-  @Provide fun defaultWorkerConfiguration(
-    workerFactory: WorkerFactory
-  ): @Default Configuration = Configuration.Builder()
-    .setWorkerFactory(workerFactory)
-    .build()
-
-  @Tag private annotation class Default
 }
 
 @Provide inline val Context.workManager: WorkManager
