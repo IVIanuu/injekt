@@ -42,6 +42,7 @@ class IncrementalFixTransformer(
   @Inject private val analysisContext: AnalysisContext
 ) : IrElementTransformerVoid() {
   private val injectablesByFile = mutableMapOf<IrFile, MutableSet<CallableRef>>()
+
   override fun visitFile(declaration: IrFile): IrFile {
     super.visitFile(declaration)
     val injectables = injectablesByFile[declaration] ?: return declaration

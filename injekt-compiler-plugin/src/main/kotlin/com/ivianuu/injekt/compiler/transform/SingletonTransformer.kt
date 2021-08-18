@@ -36,6 +36,7 @@ class SingletonTransformer(
   @Inject private val analysisContext: AnalysisContext
 ) : IrElementTransformerVoid() {
   private val ignoredExpressions = mutableListOf<IrExpression>()
+
   override fun visitClass(declaration: IrClass): IrStatement {
     if (declaration.descriptor.classifierInfo().isSingletonInjectable) {
       instanceFieldForDeclaration(declaration)
