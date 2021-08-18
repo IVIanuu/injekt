@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Inject
+import kotlin.jvm.JvmInline
 
 /**
  * A key which is unique for each root call site
  */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class SourceKey(val value: String)
+@JvmInline value class SourceKey(val value: String)
 
 /**
  * Returns the [SourceKey] at this call site

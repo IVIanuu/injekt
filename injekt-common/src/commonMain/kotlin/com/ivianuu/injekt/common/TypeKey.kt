@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Inject
+import kotlin.jvm.JvmInline
 
 /**
  * A key for a injekt type of [T] which can be used as a [Map] key or similar
  */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class TypeKey<out T>(val value: String)
+@JvmInline value class TypeKey<out T>(val value: String)
 
 /**
  * Returns the [TypeKey] of [T]

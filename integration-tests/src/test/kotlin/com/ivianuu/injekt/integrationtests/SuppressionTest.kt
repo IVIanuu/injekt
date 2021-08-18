@@ -90,7 +90,7 @@ class SuppressionTest {
   
       operator fun <T> T.plus(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
   
-      inline class Key(val value: String)
+      @JvmInline value class Key(val value: String)
   
       @Provide object KeyCombine : Combine<Key> {
           override fun plus(a: Key, b: Key) = Key(a.value + b.value)
