@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import org.junit.*
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class SourceKeyTest {
   @Test fun testSourceKey() = codegen(
@@ -26,7 +27,7 @@ class SourceKeyTest {
       fun invoke() = sourceKey()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:17:21"
+    invokeSingleFile() shouldBe "File.kt:16:21"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
@@ -36,6 +37,6 @@ class SourceKeyTest {
       fun invoke() = b()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:19:21"
+    invokeSingleFile() shouldBe "File.kt:18:21"
   }
 }
