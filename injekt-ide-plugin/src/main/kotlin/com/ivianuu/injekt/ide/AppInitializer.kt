@@ -21,9 +21,7 @@ import com.intellij.openapi.application.*
 import com.intellij.openapi.extensions.*
 import com.intellij.openapi.project.*
 import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.ide.quickfixes.*
 import org.jetbrains.kotlin.extensions.*
-import org.jetbrains.kotlin.idea.quickfix.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.synthetic.*
 
