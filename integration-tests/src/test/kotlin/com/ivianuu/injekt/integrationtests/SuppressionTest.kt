@@ -16,9 +16,12 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import org.junit.*
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.shouldNotContainMessage
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class SuppressionTest {
   @Test fun testDoesNotWarnFinalUpperBound() = codegen(
@@ -112,52 +115,4 @@ class SuppressionTest {
       }
     """
   )
-
-  @Test fun testUsedInjectParameterIsNotMarkedAsUnused() = codegen(
-    """
-      fun func1(@Inject foo: Foo) {
-        func2()                
-      }
-  
-      fun func2(@Inject foo: Foo) {
-        foo
-      }
-    """
-  ) {
-    shouldNotContainMessage("Parameter 'foo' is never used")
-  }
-
-  @Test fun testUnusedInjectableParameterIsMarkedAsUnused() = codegen(
-    """
-      fun func1(@Inject foo: Foo) {
-      }
-  
-      fun func2(@Inject foo: Foo) {
-        foo
-      } 
-    """
-  ) {
-    shouldContainMessage("Parameter 'foo' is never used")
-  }
-
-  @Test fun testUsedInjectableVariableIsNotMarkedAsUnused() = codegen(
-    """
-      fun invoke() {
-        @Provide val foo = Foo()
-        inject<Foo>()
-      }
-    """
-  ) {
-    shouldNotContainMessage("Variable 'foo' is never used")
-  }
-
-  @Test fun testUnusedInjectableVariableIsMarkedAsUnused() = codegen(
-    """
-      fun invoke() {
-        @Provide val foo = Foo()
-      }
-    """
-  ) {
-    shouldContainMessage("Variable 'foo' is never used")
-  }
 }
