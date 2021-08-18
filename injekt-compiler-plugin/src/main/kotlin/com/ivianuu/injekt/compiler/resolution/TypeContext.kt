@@ -190,12 +190,6 @@ sealed class ConstraintPosition {
   object Unknown : ConstraintPosition()
 }
 
-fun ConstraintKind.opposite() = when (this) {
-  ConstraintKind.UPPER -> ConstraintKind.LOWER
-  ConstraintKind.LOWER -> ConstraintKind.UPPER
-  ConstraintKind.EQUAL -> ConstraintKind.EQUAL
-}
-
 data class SpreadingInjectableBaseContext(
   val baseContext: TypeContext,
   val candidateTypeParameters: List<ClassifierRef>
