@@ -32,7 +32,6 @@ dependencies {
   implementation(project(":injekt-common"))
   implementation(project(":injekt-core"))
   implementation(project(":injekt-coroutines"))
-  implementation(project(":injekt-ktor"))
   implementation(project(":injekt-scope"))
   implementation(project(":test-util"))
   configurations.getByName("kotlinCompilerPluginClasspath")

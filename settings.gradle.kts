@@ -7,11 +7,10 @@ include(
     ":injekt-coroutines",
     ":injekt-gradle-plugin",
     ":injekt-ide-plugin",
-    ":injekt-ktor",
     ":injekt-scope",
     ":integration-tests",
-    ":samples:type-classes",
     ":test-util",
     "samples:android-app",
-    "samples:coffee-maker"
+    "samples:coffee-maker",
+    ":samples:type-classes"
 )

@@ -46,8 +46,6 @@ dependencies {
   classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
   // optional - androidx work support
   classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
-  // optional - ktor support
-  classpath("com.ivianuu.injekt:injekt-ktor:${latest_version}")
 }
 ```
 It's also required to install the Injekt IDE plugin

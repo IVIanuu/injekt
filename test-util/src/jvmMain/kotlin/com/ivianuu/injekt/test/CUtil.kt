@@ -18,19 +18,25 @@
 
 package com.ivianuu.injekt.test
 
-import androidx.compose.compiler.plugins.kotlin.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.transform.*
-import com.tschuchort.compiletesting.*
-import io.github.classgraph.*
-import io.kotest.matchers.*
-import io.kotest.matchers.string.*
-import org.intellij.lang.annotations.*
-import org.jetbrains.kotlin.name.*
-import java.io.*
-import java.net.*
-import java.nio.file.*
-import kotlin.reflect.*
+import androidx.compose.compiler.plugins.kotlin.ComposeCommandLineProcessor
+import androidx.compose.compiler.plugins.kotlin.ComposeComponentRegistrar
+import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
+import com.ivianuu.injekt.compiler.InjektComponentRegistrar
+import com.ivianuu.injekt.compiler.transform.dumpAllFiles
+import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
+import com.tschuchort.compiletesting.SourceFile
+import com.tschuchort.compiletesting.SourceFileAccessor
+import io.github.classgraph.ClassGraph
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
+import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.name.FqName
+import java.io.File
+import java.net.URLClassLoader
+import java.nio.file.Files
+import kotlin.reflect.KClass
 
 var fileIndex = 0
 
@@ -53,7 +59,6 @@ fun source(
       appendLine("import com.ivianuu.injekt.common.*")
       appendLine("import com.ivianuu.injekt.coroutines.*")
       appendLine("import com.ivianuu.injekt.internal.*")
-      appendLine("import com.ivianuu.injekt.ktor.*")
       appendLine("import com.ivianuu.injekt.scope.*")
       appendLine("import com.ivianuu.injekt.test.*")
       appendLine("import kotlin.reflect.*")
