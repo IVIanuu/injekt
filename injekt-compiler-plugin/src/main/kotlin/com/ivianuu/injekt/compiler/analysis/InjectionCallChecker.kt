@@ -35,7 +35,6 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
   ) {
     if (isIde) return
 
-    @Provide val analysisContext = AnalysisContext(trace = context.trace)
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
@@ -52,6 +51,8 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
     } catch (e: Throwable) {
       null
     }
+
+    @Provide val analysisContext = AnalysisContext(trace = context.trace)
 
     val substitutionMap = resolvedCall.typeArguments
       .mapKeys { it.key.toClassifierRef() }
