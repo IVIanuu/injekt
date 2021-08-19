@@ -40,6 +40,6 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = BuildConfig.GROUP_ID,
     artifactId = BuildConfig.ARTIFACT_ID,
-    version = BuildConfig.VERSION_NAME
+    version = BuildConfig.VERSION
   )
 }
