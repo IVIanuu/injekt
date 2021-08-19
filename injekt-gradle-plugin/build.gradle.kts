@@ -37,9 +37,9 @@ buildConfig {
   className("BuildConfig")
   packageName("com.ivianuu.injekt.gradle")
 
-  buildConfigField("String", "VERSION_NAME", property("VERSION_NAME").toString())
-  buildConfigField("String", "GROUP_ID", property("GROUP").toString())
-  buildConfigField("String", "ARTIFACT_ID", "injekt-compiler-plugin")
+  buildConfigField("String", "VERSION_NAME", "\"${property("VERSION_NAME")}\"")
+  buildConfigField("String", "GROUP_ID", "\"${property("GROUP")}\"")
+  buildConfigField("String", "ARTIFACT_ID", "\"injekt-compiler-plugin\"")
 }
 
 dependencies {

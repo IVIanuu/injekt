@@ -16,10 +16,13 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.google.auto.service.*
-import org.gradle.api.*
-import org.gradle.api.provider.*
-import org.jetbrains.kotlin.gradle.plugin.*
+import com.google.auto.service.AutoService
+import org.gradle.api.Project
+import org.gradle.api.provider.Provider
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
+import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
+import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 @AutoService(KotlinCompilerPluginSupportPlugin::class)
 open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
@@ -37,6 +40,6 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = BuildConfig.GROUP_ID,
     artifactId = BuildConfig.ARTIFACT_ID,
-    version = BuildConfig.VERSION
+    version = BuildConfig.VERSION_NAME
   )
 }
