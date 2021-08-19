@@ -17,11 +17,12 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import io.kotest.matchers.nulls.*
-import io.kotest.matchers.types.*
-import org.jetbrains.kotlin.name.*
-import org.junit.*
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldBeTypeOf
+import org.jetbrains.kotlin.name.FqName
+import org.junit.Test
 
 class InjectableDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
@@ -533,6 +534,19 @@ class InjectableDeclarationTest {
       class Outer(@Provide val _foo: Foo) {
         val foo = Inner().foo
         inner class Inner(@Inject val foo: Foo)
+      }
+      fun invoke(foo: Foo): Foo = Outer(foo).foo
+    """
+  ) {
+    val foo = Foo()
+    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+  }
+
+  @Test fun testProvideNestedClass() = codegen(
+    """
+      class Outer(@Provide val _foo: Foo) {
+        val foo = Inner().foo
+        class Inner(@Inject val foo: Foo)
       }
       fun invoke(foo: Foo): Foo = Outer(foo).foo
     """
