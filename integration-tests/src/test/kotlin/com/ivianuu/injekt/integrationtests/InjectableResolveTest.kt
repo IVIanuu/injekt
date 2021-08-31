@@ -729,7 +729,7 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testCannotResolvePropertyFromWithinInitializer() = codegen(
+  @Test fun testCannotResolveClassPropertyFromWithinInitializer() = codegen(
     """
       class MyClass {
         @Provide private val foo: Foo = inject<Foo>()
@@ -739,18 +739,16 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testCanResolvePropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
+  @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
     """
       class MyClass {
         @Provide val foo: Foo = Foo()
         @Provide val bar: Bar = Bar(inject())
       }
     """
-  ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
-  }
+  )
 
-  @Test fun testCannotResolvePropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
+  @Test fun testCannotResolveClassPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
     """
       class MyClass {
         @Provide val bar: Bar = Bar(inject())
@@ -761,16 +759,82 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
   }
 
-  @Test fun testCanResolveFunctionFromPropertyInitializer() = codegen(
+  @Test fun testCanResolveClassFunctionFromClassPropertyInitializer() = codegen(
     """
       class MyClass {
+        @Provide val bar: Bar = Bar(inject())
         @Provide fun foo() = Foo()
-        @Provide val bar: Bar = Bar(inject())
       }
+    """
+  )
+
+  @Test fun testCanResolveClassPropertyFromClassInitializerIfItsDeclaredBeforeIt() = codegen(
+    """
+      class MyClass {
+        @Provide val foo: Foo = Foo()
+        init {
+          inject<Foo>()
+        }
+      }
+    """
+  )
+
+  @Test fun testCannotResolveClassPropertyFromClassInitializerIfItsDeclaredAfterIt() = codegen(
+    """
+      class MyClass {
+        init {
+          inject<Foo>()
+        }
+        @Provide val foo: Foo = Foo()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCanResolveClassFunctionFromClassInitializer() = codegen(
+    """
+      class MyClass {
+        init {
+          inject<Foo>()
+        }
+        @Provide fun foo() = Foo()
+      }
+    """
+  )
+
+  @Test fun testCannotResolveTopLevelPropertyFromWithinInitializer() = codegen(
+    """
+      @Provide private val foo: Foo = inject<Foo>()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
+    """
+      @Provide val foo: Foo = Foo()
+      @Provide val bar: Bar = Bar(inject())
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
   }
+
+  @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
+    """
+      @Provide val bar: Bar = Bar(inject())
+      @Provide val foo: Foo = Foo()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
+  }
+
+  @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyInitializer() = codegen(
+    """
+      @Provide val bar: Bar = Bar(inject())
+      @Provide fun foo() = Foo()
+    """
+  )
 
   @Test fun testNestedClassCannotResolveOuterClassInjectables() = codegen(
     """
