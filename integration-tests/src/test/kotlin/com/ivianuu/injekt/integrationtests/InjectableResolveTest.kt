@@ -729,6 +729,49 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
+  @Test fun testCannotResolvePropertyFromWithinInitializer() = codegen(
+    """
+      class MyClass {
+        @Provide private val foo: Foo = inject<Foo>()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCanResolvePropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
+    """
+      class MyClass {
+        @Provide val foo: Foo = Foo()
+        @Provide val bar: Bar = Bar(inject())
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
+  }
+
+  @Test fun testCannotResolvePropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
+    """
+      class MyClass {
+        @Provide val bar: Bar = Bar(inject())
+        @Provide val foo: Foo = Foo()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
+  }
+
+  @Test fun testCanResolveFunctionFromPropertyInitializer() = codegen(
+    """
+      class MyClass {
+        @Provide fun foo() = Foo()
+        @Provide val bar: Bar = Bar(inject())
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
+  }
+
   @Test fun testNestedClassCannotResolveOuterClassInjectables() = codegen(
     """
       class Outer(@Provide val foo: Foo = Foo()) {

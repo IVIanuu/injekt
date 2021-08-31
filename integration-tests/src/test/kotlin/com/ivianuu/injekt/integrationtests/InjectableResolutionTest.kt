@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class InjectableResolutionTest {
   @Test fun testPrefersInternalInjectableOverExternal() = multiCodegen(
@@ -557,5 +557,25 @@ class InjectableResolutionTest {
     )
   ) {
     invokeSingleFile() shouldBe "explicit"
+  }
+
+  @Test fun testDoesNotPreferInjectablesInTheSameFile() = codegen(
+    """
+      @Provide val otherFoo = Foo()
+    """,
+    """
+      @Provide val foo = Foo()
+
+      fun invoke() {
+        inject<Foo>()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "ambiguous injectables:\n" +
+          "com.ivianuu.injekt.integrationtests.foo\n" +
+          "com.ivianuu.injekt.integrationtests.otherFoo\n" +
+          "do all match type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject"
+    )
   }
 }
