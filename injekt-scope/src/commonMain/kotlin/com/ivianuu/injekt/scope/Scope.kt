@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.common.TypeKey
 
 interface Scope {
   /**
@@ -127,7 +129,7 @@ class ScopeElementPair<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
  */
 @Tag annotation class ScopeElement<S : Scope> {
   companion object {
-    @Provide class Module<@Spread T : @ScopeElement<S> U, U : Any, S : Scope> {
+    @Provide class Module<@com.ivianuu.injekt.Spread T : @ScopeElement<S> U, U : Any, S : Scope> {
       @Provide inline fun elementPair(
         noinline factory: () -> T,
         key: TypeKey<U>

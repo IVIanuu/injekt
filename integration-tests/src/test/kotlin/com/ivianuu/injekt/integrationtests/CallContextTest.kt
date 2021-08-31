@@ -16,8 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import org.junit.*
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import org.junit.Test
 
 class CallContextTest {
   @Test fun testSuspendCannotBeRequestedFromNonSuspend() = singleAndMultiCodegen(

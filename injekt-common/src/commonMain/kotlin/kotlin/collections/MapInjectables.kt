@@ -16,7 +16,7 @@
 
 package kotlin.collections
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Provide
 
 /**
  * Provides a Map<K, V> for each Set<Pair<K, V>>

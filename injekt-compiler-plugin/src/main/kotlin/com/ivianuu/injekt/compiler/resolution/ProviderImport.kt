@@ -16,13 +16,17 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
-import org.jetbrains.kotlin.backend.common.serialization.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.findAnnotation
+import com.ivianuu.injekt.compiler.lookupLocation
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtAnnotated
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.ValueArgument
 
 data class ProviderImport(val element: KtElement?, val importPath: String?)
 

@@ -16,10 +16,11 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.*
-import io.kotest.matchers.*
-import io.kotest.matchers.booleans.*
-import org.junit.*
+import com.ivianuu.injekt.Provide
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 @OptIn(InternalScopeApi::class)
 class ScopeTest {

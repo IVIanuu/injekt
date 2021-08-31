@@ -16,17 +16,25 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.compiler.transform.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.inline.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.injektIndex
+import com.ivianuu.injekt.compiler.injektName
+import com.ivianuu.injekt.compiler.transform.toKotlinType
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.inline.InlineUtil
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class Injectable {
   abstract val type: TypeRef

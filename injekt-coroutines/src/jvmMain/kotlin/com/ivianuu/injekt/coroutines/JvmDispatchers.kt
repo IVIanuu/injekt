@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
-import kotlinx.coroutines.*
+import com.ivianuu.injekt.Provide
+import kotlinx.coroutines.Dispatchers
 
 @Provide actual inline val ioDispatcher: IODispatcher
   get() = Dispatchers.IO

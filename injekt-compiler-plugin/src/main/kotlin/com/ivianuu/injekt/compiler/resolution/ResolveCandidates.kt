@@ -16,12 +16,15 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.com.intellij.openapi.progress.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.checkCancelled
+import com.ivianuu.injekt.compiler.forEachWith
+import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class InjectionGraph {
   abstract val scope: InjectablesScope

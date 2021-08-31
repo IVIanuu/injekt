@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.common.TypeKey
 
 /**
  * Reuses the same instance within scope [Scope] [S]

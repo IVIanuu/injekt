@@ -16,14 +16,15 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.*
-import android.content.res.*
-import androidx.activity.*
-import androidx.lifecycle.*
-import androidx.savedstate.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
-import kotlin.synchronized
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.scope.ChildScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeModule1
+import com.ivianuu.injekt.scope.DisposableScope
+import com.ivianuu.injekt.scope.Scope
 
 /**
  * Returns the [ActivityScope] of this [ComponentActivity]

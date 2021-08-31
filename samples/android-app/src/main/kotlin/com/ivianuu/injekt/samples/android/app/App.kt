@@ -22,10 +22,11 @@
 
 package com.ivianuu.injekt.samples.android.app
 
-import android.app.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.android.*
-import com.ivianuu.injekt.scope.*
+import android.app.Application
+import com.ivianuu.injekt.Providers
+import com.ivianuu.injekt.android.AppScopeOwner
+import com.ivianuu.injekt.android.createAppScope
+import com.ivianuu.injekt.scope.AppScope
 
 class App : Application(), AppScopeOwner {
   override lateinit var appScope: AppScope

@@ -16,10 +16,17 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.types.*
-import org.jetbrains.kotlin.name.*
-import org.junit.*
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.shouldContainMessage
+import com.ivianuu.injekt.test.shouldNotContainMessage
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.source
+import io.kotest.matchers.types.shouldBeTypeOf
+import org.jetbrains.kotlin.name.FqName
+import org.junit.Test
 
 class InjectablesImportsTest {
   @Test fun testUnresolvedImport() = codegen(

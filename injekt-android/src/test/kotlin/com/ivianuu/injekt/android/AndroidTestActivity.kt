@@ -16,6 +16,6 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.activity.*
+import androidx.activity.ComponentActivity
 
 class AndroidTestActivity : ComponentActivity()

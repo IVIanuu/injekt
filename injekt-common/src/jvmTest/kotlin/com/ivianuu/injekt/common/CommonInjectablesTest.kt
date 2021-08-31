@@ -16,11 +16,12 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
-import io.kotest.matchers.*
-import io.kotest.matchers.nulls.*
-import org.junit.*
-import kotlin.reflect.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.injectOrNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import kotlin.reflect.KClass
+import org.junit.Test
 
 class CommonInjectablesTest {
   @Test fun testCanUseMapForSetOfPairs() {

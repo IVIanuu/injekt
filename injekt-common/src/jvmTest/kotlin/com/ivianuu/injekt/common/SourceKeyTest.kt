@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.common
 
-import io.kotest.matchers.*
-import org.junit.*
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class SourceKeyTest {
   @Test fun testSourceKey() {

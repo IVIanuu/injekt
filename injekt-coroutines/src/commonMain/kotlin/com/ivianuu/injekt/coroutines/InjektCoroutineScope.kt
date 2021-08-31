@@ -16,11 +16,16 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.scope.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.TypeKey
+import com.ivianuu.injekt.scope.Disposable
+import com.ivianuu.injekt.scope.Scope
+import com.ivianuu.injekt.scope.ScopeElement
+import com.ivianuu.injekt.scope.scoped
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S

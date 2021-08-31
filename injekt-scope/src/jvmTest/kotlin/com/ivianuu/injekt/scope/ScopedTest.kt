@@ -16,10 +16,11 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.*
-import io.kotest.matchers.*
-import io.kotest.matchers.types.*
-import org.junit.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.inject
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import org.junit.Test
 
 class ScopedTest {
   @Test fun testScoped() {

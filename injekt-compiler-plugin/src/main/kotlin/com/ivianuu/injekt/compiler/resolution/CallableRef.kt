@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.callableInfo
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 
 data class CallableRef(
   val callable: CallableDescriptor,

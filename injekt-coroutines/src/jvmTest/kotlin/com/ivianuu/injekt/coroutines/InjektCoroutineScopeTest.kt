@@ -16,12 +16,17 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
-import io.kotest.matchers.booleans.*
-import io.kotest.matchers.types.*
-import kotlinx.coroutines.*
-import org.junit.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.DisposableScope
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import org.junit.Test
 
 class InjektCoroutineScopeTest {
   @Test fun testCoroutineScopeElementLifecycle() {

@@ -16,9 +16,14 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.types.*
-import org.junit.*
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.types.shouldBeTypeOf
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
+import org.junit.Test
 
 class TagTest {
   @Test fun testDistinctTag() = singleAndMultiCodegen(

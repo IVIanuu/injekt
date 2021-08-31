@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.scope
 
-import com.ivianuu.injekt.*
-import io.kotest.matchers.*
-import io.kotest.matchers.booleans.*
-import org.junit.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.inject
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class ElementScopeTest {
   @Test fun testGetElement() {

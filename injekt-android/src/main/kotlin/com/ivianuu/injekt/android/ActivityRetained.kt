@@ -16,10 +16,15 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.activity.*
-import androidx.lifecycle.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.ChildScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeModule0
+import com.ivianuu.injekt.scope.DisposableScope
+import com.ivianuu.injekt.scope.Scope
 
 /**
  * Returns the [ActivityRetainedScope] of this [ComponentActivity]

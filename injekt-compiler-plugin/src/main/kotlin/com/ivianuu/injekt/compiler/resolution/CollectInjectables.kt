@@ -16,25 +16,52 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
-import org.jetbrains.kotlin.backend.common.serialization.*
-import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.cfg.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.load.java.lazy.descriptors.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.lazy.descriptors.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.checkCancelled
+import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.generateFrameworkKey
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektIndex
+import com.ivianuu.injekt.compiler.isDeserializedDeclaration
+import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
+import com.ivianuu.injekt.compiler.toMap
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
+import org.jetbrains.kotlin.resolve.descriptorUtil.parents
+import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyPackageDescriptor
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
@@ -463,7 +490,8 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
       injectables += scope.collectInjectables(
         onEach = { declaration ->
           if (declaration is ClassDescriptor &&
-            declaration !is LazyJavaClassDescriptor)
+            declaration !is LazyJavaClassDescriptor
+          )
             collectInjectables(declaration.unsubstitutedMemberScope)
         },
         classBodyView = false

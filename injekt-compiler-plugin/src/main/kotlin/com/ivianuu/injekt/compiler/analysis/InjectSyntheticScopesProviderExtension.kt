@@ -16,18 +16,26 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.sam.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.resolve.scopes.synthetic.*
-import org.jetbrains.kotlin.storage.*
-import org.jetbrains.kotlin.synthetic.*
-import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.injektContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.sam.SamConversionOracle
+import org.jetbrains.kotlin.resolve.sam.SamConversionResolver
+import org.jetbrains.kotlin.resolve.scopes.SyntheticScope
+import org.jetbrains.kotlin.resolve.scopes.SyntheticScopes
+import org.jetbrains.kotlin.resolve.scopes.synthetic.FunInterfaceConstructorsScopeProvider
+import org.jetbrains.kotlin.storage.StorageManager
+import org.jetbrains.kotlin.synthetic.JavaSyntheticPropertiesScope
+import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectSyntheticScopeProviderExtension(
   private val isEnabled: (ModuleDescriptor) -> Boolean = { true }

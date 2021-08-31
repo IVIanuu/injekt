@@ -16,7 +16,7 @@
 
 package kotlin
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Provide
 
 /**
  * Provides a [Lazy] of [T]

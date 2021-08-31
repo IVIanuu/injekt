@@ -16,9 +16,12 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import org.junit.*
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.shouldContainMessage
+import com.ivianuu.injekt.test.shouldNotContainMessage
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class PersistenceTest {
   @Test fun testPrimaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(

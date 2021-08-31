@@ -16,18 +16,11 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
-import org.jetbrains.kotlin.ir.expressions.*
-import org.jetbrains.kotlin.resolve.calls.inference.components.*
-import org.jetbrains.kotlin.resolve.calls.inference.model.*
-import org.jetbrains.kotlin.resolve.constants.*
-import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.checker.*
-import org.jetbrains.kotlin.types.model.*
-import org.jetbrains.kotlin.utils.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import org.jetbrains.kotlin.types.model.TypeVariance
 
 interface TypeCheckerContext {
   val injektContext: InjektContext

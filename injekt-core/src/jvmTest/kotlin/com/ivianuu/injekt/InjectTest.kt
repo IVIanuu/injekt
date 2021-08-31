@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt
 
-import io.kotest.matchers.*
-import io.kotest.matchers.nulls.*
-import org.junit.*
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class InjectTest {
   @Test fun testInject() {

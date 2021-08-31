@@ -16,8 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import org.junit.*
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
+import com.ivianuu.injekt.test.irShouldNotContain
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import org.junit.Test
 
 class ExpressionWrappingTest {
   @Test fun testDoesFunctionWrapInjectableWithMultipleUsages() = singleAndMultiCodegen(

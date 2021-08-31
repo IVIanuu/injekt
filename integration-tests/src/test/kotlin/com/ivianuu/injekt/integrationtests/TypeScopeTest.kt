@@ -16,9 +16,13 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import org.jetbrains.kotlin.name.*
-import org.junit.*
+import com.ivianuu.injekt.test.invokableSource
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.multiPlatformCodegen
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.source
+import org.jetbrains.kotlin.name.FqName
+import org.junit.Test
 
 class TypeScopeTest {
   @Test fun testClassTypeScope() = singleAndMultiCodegen(

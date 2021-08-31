@@ -16,26 +16,24 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.com.intellij.psi.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.diagnostics.*
-import org.jetbrains.kotlin.incremental.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.calls.checkers.*
-import org.jetbrains.kotlin.resolve.calls.model.*
-import org.jetbrains.kotlin.resolve.checkers.*
-import org.jetbrains.kotlin.resolve.constants.*
-import org.jetbrains.kotlin.resolve.constants.evaluate.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.resolve.scopes.utils.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isIde
+import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.resolution.ProviderImport
+import com.ivianuu.injekt.compiler.resolution.getProviderImports
+import com.ivianuu.injekt.compiler.resolution.isValidImport
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
+import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
 class ProviderImportsChecker(private val context: InjektContext) : DeclarationChecker {
   private val checkedFiles = mutableSetOf<KtFile>()

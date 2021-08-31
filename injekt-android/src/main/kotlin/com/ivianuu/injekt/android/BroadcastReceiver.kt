@@ -16,9 +16,14 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.*
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.ChildScopeFactory
+import com.ivianuu.injekt.scope.ChildScopeModule3
+import com.ivianuu.injekt.scope.Scope
 
 /**
  * Returns a new [ReceiverScope] which must be manually stored and disposed

@@ -16,24 +16,30 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.injekt.test.*
-import org.jetbrains.kotlin.analyzer.*
-import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.com.intellij.mock.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
-import org.jetbrains.kotlin.compiler.plugin.*
-import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.jvm.extensions.*
-import org.jetbrains.kotlin.types.model.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.injektContext
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.buildBaseContext
+import com.ivianuu.injekt.compiler.resolution.buildContext
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.test.codegen
+import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.builtins.StandardNames
+import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.types.model.TypeVariance
 
 fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
   codegen(

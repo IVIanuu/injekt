@@ -16,10 +16,13 @@
 
 package com.ivianuu.injekt.samples.android.data
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.scope.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.sync.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.Scoped
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface CounterDb {
   val counterState: Flow<Int>

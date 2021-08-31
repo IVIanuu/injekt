@@ -16,7 +16,8 @@
 
 package com.ivianuu.injekt.samples.typeclasses
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
 
 fun interface Ord<in T> {
   fun compare(a: T, b: T): Int

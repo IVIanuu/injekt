@@ -16,10 +16,14 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.compiler.resolution.*
-import kotlinx.serialization.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Serializable data class PersistedTypeRef(
   @SerialName("0") val classifierKey: String,

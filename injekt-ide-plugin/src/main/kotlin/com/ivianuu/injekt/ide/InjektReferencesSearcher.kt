@@ -16,16 +16,21 @@
 
 package com.ivianuu.injekt.ide
 
-import com.intellij.openapi.application.*
-import com.intellij.psi.*
-import com.intellij.psi.search.*
-import com.intellij.psi.search.searches.*
-import com.intellij.util.*
-import com.ivianuu.injekt.ide.*
-import com.siyeh.ig.psiutils.ConstructionUtils.*
-import org.jetbrains.kotlin.idea.*
-import org.jetbrains.kotlin.idea.util.*
-import org.jetbrains.kotlin.psi.*
+import com.intellij.openapi.application.QueryExecutorBase
+import com.intellij.openapi.application.runReadAction
+import com.intellij.psi.PsiManager
+import com.intellij.psi.PsiReference
+import com.intellij.psi.search.FileTypeIndex
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.LocalSearchScope
+import com.intellij.psi.search.SearchScope
+import com.intellij.psi.search.searches.ReferencesSearch
+import com.intellij.util.Processor
+import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.expressionRecursiveVisitor
 
 class InjektReferencesSearcher :
   QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>() {

@@ -17,7 +17,15 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.buildBaseContext
+import com.ivianuu.injekt.compiler.resolution.buildBaseContextForSpreadingInjectable
+import com.ivianuu.injekt.compiler.resolution.buildContext
+import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.withArguments
+import com.ivianuu.injekt.compiler.resolution.wrap
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.shouldBe

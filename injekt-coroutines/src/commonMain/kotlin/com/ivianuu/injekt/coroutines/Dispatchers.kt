@@ -16,8 +16,9 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
-import kotlinx.coroutines.*
+import com.ivianuu.injekt.Provide
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
 typealias DefaultDispatcher = CoroutineDispatcher
 

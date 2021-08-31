@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.builtins.StandardNames
+import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")

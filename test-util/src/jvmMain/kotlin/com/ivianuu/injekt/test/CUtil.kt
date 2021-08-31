@@ -31,12 +31,12 @@ import io.github.classgraph.ClassGraph
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import org.intellij.lang.annotations.Language
-import org.jetbrains.kotlin.name.FqName
 import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Files
 import kotlin.reflect.KClass
+import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.name.FqName
 
 var fileIndex = 0
 
