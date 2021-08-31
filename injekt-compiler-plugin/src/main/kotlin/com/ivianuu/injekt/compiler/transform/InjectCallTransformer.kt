@@ -579,9 +579,8 @@ class InjectCallTransformer(
     injectable: CallableInjectable,
     descriptor: PropertyDescriptor
   ): IrExpression {
-    val property = pluginContext.referenceProperties(descriptor.fqNameSafe)
-      .single { it.descriptor.uniqueKey() == descriptor.uniqueKey() }
-    val getter = property.owner.getter!!
+    val property = descriptor.irProperty()
+    val getter = property.getter!!
     return DeclarationIrBuilder(pluginContext, symbol)
       .irCall(
         getter.symbol,
@@ -691,7 +690,28 @@ class InjectCallTransformer(
         it.descriptor.uniqueKey() == uniqueKey()
       }
     }
+
+    if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
+        ?.visibility == DescriptorVisibilities.LOCAL) {
+      return localClasses.flatMap { it.declarations }
+        .single { it.descriptor.uniqueKey() == uniqueKey() }
+        .cast()
+    }
+
     return pluginContext.referenceFunctions(fqNameSafe)
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
+      .owner
+  }
+
+  private fun PropertyDescriptor.irProperty(): IrProperty {
+    if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
+        ?.visibility == DescriptorVisibilities.LOCAL) {
+      return localClasses.flatMap { it.declarations }
+        .single { it.descriptor.uniqueKey() == uniqueKey() }
+        .cast()
+    }
+
+    return pluginContext.referenceProperties(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
       .owner
   }

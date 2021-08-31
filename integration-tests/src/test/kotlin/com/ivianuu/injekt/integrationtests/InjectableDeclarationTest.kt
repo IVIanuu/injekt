@@ -17,12 +17,11 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import io.kotest.matchers.types.shouldBeTypeOf
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import io.kotest.matchers.*
+import io.kotest.matchers.nulls.*
+import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class InjectableDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
@@ -583,6 +582,66 @@ class InjectableDeclarationTest {
     """
       @Provide object MySubClass : MySuperClass(Foo())
       fun invoke() = inject<Foo>()
+    """
+  )
+
+  @Test fun testProvideFunctionInLocalClass() = codegen(
+    """
+      fun invoke() {
+        class MyClass {
+          @Provide fun foo() = Foo()
+          
+          override fun equals(other: Any?): Boolean {
+            inject<Foo>()
+            return super.equals(other)
+          }
+        }
+      }
+    """
+  )
+
+  @Test fun testProvidePropertyInLocalClass() = codegen(
+    """
+      fun invoke() {
+        class MyClass {
+          @Provide val foo = Foo()
+          
+          override fun equals(other: Any?): Boolean {
+            inject<Foo>()
+            return super.equals(other)
+          }
+        }
+      }
+    """
+  )
+
+  @Test fun testProvideFunctionInAnonymousObject() = codegen(
+    """
+      fun invoke() {
+        object : Any() {
+          @Provide fun foo() = Foo()
+          
+          override fun equals(other: Any?): Boolean {
+            inject<Foo>()
+            return super.equals(other)
+          }
+        }
+      }
+    """
+  )
+
+  @Test fun testProvidePropertyInAnonymousObject() = codegen(
+    """
+      fun invoke() {
+        object : Any() {
+          @Provide private val foo = Foo()
+          
+          override fun equals(other: Any?): Boolean {
+            inject<Foo>()
+            return super.equals(other)
+          }
+        }
+      }
     """
   )
 }
