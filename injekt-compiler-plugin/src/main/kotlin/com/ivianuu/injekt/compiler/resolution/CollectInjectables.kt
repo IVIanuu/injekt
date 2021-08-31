@@ -503,5 +503,6 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
           .safeAs<LazyPackageDescriptor>()
           ?.declarationProvider
           ?.getPackageFiles()
-          ?.singleOrNull() == scopeFile
+          ?.any { it == scopeFile }
+          ?: false
       })
