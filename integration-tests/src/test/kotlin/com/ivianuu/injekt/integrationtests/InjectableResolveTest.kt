@@ -439,7 +439,6 @@ class InjectableResolveTest {
       } 
     """
   )
-
   @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
     """
       @Provide private val foo = Foo()
@@ -471,6 +470,23 @@ class InjectableResolveTest {
     ) {
       compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
     }
+
+  @Test fun testAnonymousObjectCanResolveInjectablesOfOuterClass() = codegen(
+    """
+      class MyClass {
+        @Provide private val foo = Foo()
+
+        fun function() {
+          object : Any() {
+            override fun equals(other: Any?): Boolean {
+              inject<Foo>()
+              return super.equals(other)
+            }
+          }
+        }
+      }
+    """
+  )
 
   @Test fun testCanResolveExplicitMarkedInjectableConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(

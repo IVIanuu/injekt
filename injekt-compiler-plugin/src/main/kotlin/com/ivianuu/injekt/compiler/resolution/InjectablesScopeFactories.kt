@@ -129,16 +129,18 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
     val nearestClassFromPosition = allClassesBetween.firstOrNull()
       ?: return true
 
-    return nearestClassFromPosition !is KtObjectDeclaration &&
+    return (nearestClassFromPosition !is KtObjectDeclaration ||
+        nearestClassFromPosition.isObjectLiteral()) &&
         allClassesBetween.all {
-          it.hasModifier(KtTokens.INNER_KEYWORD)
+          it.hasModifier(KtTokens.INNER_KEYWORD) ||
+              it.isObjectLiteral()
         }
   }
 
   if (this is KtClassBody && position.parents
       .takeWhile { it != this }
       .none {
-        (it is KtClass && it != this) ||
+        it is KtClass ||
             (it is KtFunction && it.parent == this) ||
             (it is KtPropertyAccessor && it.property.parent == this)
       }) return true
