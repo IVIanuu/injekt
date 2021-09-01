@@ -50,12 +50,12 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
-import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyPackageDescriptor
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.types.KotlinType
@@ -256,7 +256,7 @@ fun CallableRef.collectInjectables(
   checkCancelled()
   if (this in seen) return
   seen += this
-  if (!scope.canSee(this)) return
+  if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
 
   if (origin == null && typeParameters.any { it.isSpread }) {
     addSpreadingInjectable(this)
@@ -526,11 +526,6 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
       callable.callable.containingDeclaration is PackageFragmentDescriptor &&
       run {
         val scopeFile = allScopes.firstNotNullResult { it.file }
-
-        callable.callable.containingDeclaration
-          .safeAs<LazyPackageDescriptor>()
-          ?.declarationProvider
-          ?.getPackageFiles()
-          ?.any { it == scopeFile }
-          ?: false
+        scopeFile == callable.callable.findPsi()
+          ?.containingFile
       })

@@ -467,8 +467,9 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
   }
 }
 
-inline fun <reified T> T.encode(): String = Json.encodeToString(this)
-inline fun <reified T> String.decode(): T = Json.decodeFromString(this)
+val json = Json { ignoreUnknownKeys = true }
+inline fun <reified T> T.encode(): String = json.encodeToString(this)
+inline fun <reified T> String.decode(): T = json.decodeFromString(this)
 
 private fun DescriptorVisibility.shouldPersistInfo() = this ==
     DescriptorVisibilities.PUBLIC ||

@@ -134,6 +134,11 @@ class InjectableResolutionTest {
     classFoo shouldBeSameInstanceAs result
   }
 
+  class myClass(foo: Foo) {
+    val finalFoo = foo
+    val foo = Foo()
+  }
+
   @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
     """
       lateinit var classBodyFoo: Foo

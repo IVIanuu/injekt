@@ -108,7 +108,12 @@ fun ElementInjectablesScope(
     )
     is KtProperty -> {
       when (val descriptor = scopeOwner.descriptor<VariableDescriptor>()!!) {
-        is PropertyDescriptor -> PropertyInjectablesScope(descriptor, parentScope!!)
+        is PropertyDescriptor -> {
+          if (scopeOwner.initializer != null && scopeOwner.initializer!! in element.parentsWithSelf)
+            PropertyInitInjectablesScope(descriptor, parentScope!!, position)
+          else
+            PropertyInjectablesScope(descriptor, parentScope!!)
+        }
         is LocalVariableDescriptor -> LocalVariableInjectablesScope(descriptor, parentScope!!)
         else -> throw AssertionError("Unexpected variable descriptor $descriptor")
       }
@@ -118,7 +123,12 @@ fun ElementInjectablesScope(
       ?.unsubstitutedPrimaryConstructor
       ?.let { ConstructorPreInitInjectablesScope(it, parentScope!!) }
       ?: parentScope!!
-    is KtClassInitializer, is KtClassBody -> scopeOwner.getParentOfType<KtClassOrObject>(false)
+    is KtClassInitializer -> ClassInitInjectablesScope(
+      clazz = scopeOwner.getParentOfType<KtClassOrObject>(false)!!.descriptor()!!,
+      parent = parentScope!!,
+      position = position
+    )
+    is KtClassBody -> scopeOwner.getParentOfType<KtClassOrObject>(false)
       ?.descriptor<ClassDescriptor>()
       ?.unsubstitutedPrimaryConstructor
       ?.let { FunctionInjectablesScope(it, parentScope!!) }
@@ -136,7 +146,6 @@ fun ElementInjectablesScope(
 
 private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   if (this is KtFile ||
-    this is KtObjectDeclaration ||
     this is KtClassInitializer ||
     this is KtProperty ||
     this is KtParameter ||
@@ -145,6 +154,18 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
     return true
 
   if (this is KtFunction && position.parents.none { it in valueParameters })
+    return true
+
+  if (this is KtClassOrObject &&
+    (position.getParentOfType<KtProperty>(false)
+      ?.takeUnless { it.isLocal }
+      ?.initializer
+      ?.let { it in position.parentsWithSelf } == true ||
+        position.getParentOfType<KtClassInitializer>(false)
+          ?.let { it in position.parents } == true)
+  ) return false
+
+  if (this is KtObjectDeclaration)
     return true
 
   if (this is KtAnnotatedExpression && hasAnnotation(InjektFqNames.Providers))
@@ -174,7 +195,9 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   if (this is KtClassBody && position.parents
       .takeWhile { it != this }
       .none {
-        it is KtClass ||
+        it is KtClassInitializer ||
+            (it is KtProperty && it.initializer != null) ||
+            it is KtClass ||
             (it is KtFunction && it.parent == this) ||
             (it is KtPropertyAccessor && it.property.parent == this)
       }) return true
@@ -190,6 +213,31 @@ private fun FileInjectablesScope(
     file = file,
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE ${file.name}",
+    parent = null
+  )
+}
+
+private fun FileInitInjectablesScope(
+  position: KtElement,
+  @Inject context: AnalysisContext
+): InjectablesScope {
+  val file = position.containingKtFile
+
+  val visibleInjectableDeclarations = file
+    .declarations
+    .filter { it.endOffset < position.startOffset }
+    .filterIsInstance<KtNamedDeclaration>()
+    .mapNotNull { it.descriptor() }
+    .filter { it.isProvide() }
+
+  return ImportInjectablesScope(
+    file = file,
+    imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
+    namePrefix = "FILE INIT ${file.name} at ",
+    injectablesPredicate = {
+      val psi = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
+      psi.initializer == null || it.callable in visibleInjectableDeclarations
+    },
     parent = null
   )
 }
@@ -235,6 +283,54 @@ private fun ClassInjectablesScope(
     imports = emptyList(),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
     nesting = finalParent.nesting + 1
+  )
+}
+
+private fun ClassInitInjectablesScope(
+  clazz: ClassDescriptor,
+  parent: InjectablesScope,
+  position: KtElement,
+  @Inject context: AnalysisContext
+): InjectablesScope {
+  val visibleInjectableDeclarations = clazz.findPsi()!!
+    .cast<KtClassOrObject>()
+    .declarations
+    .filter { it.endOffset < position.startOffset }
+    .filterIsInstance<KtNamedDeclaration>()
+    .mapNotNull { it.descriptor() }
+    .filter { it.isProvide() }
+  val finalParent = ClassImportsInjectablesScope(clazz, parent)
+
+  val injectableDeclaration = visibleInjectableDeclarations.lastOrNull()
+
+  val name = if (clazz.isCompanionObject)
+    "COMPANION INIT ${clazz.containingDeclaration.fqNameSafe} at ${injectableDeclaration?.name}"
+  else "CLASS INIT ${clazz.fqNameSafe} at ${injectableDeclaration?.name}"
+
+  val thisInjectable = clazz.injectableReceiver(false)
+
+  val classInitScope = InjectablesScope(
+    name = name,
+    callContext = CallContext.DEFAULT,
+    parent = finalParent,
+    ownerDescriptor = clazz,
+    file = null,
+    initialInjectables = listOf(thisInjectable),
+    injectablesPredicate = {
+      val psi = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
+      psi.initializer == null || it.callable in visibleInjectableDeclarations
+    },
+    imports = emptyList(),
+    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
+    nesting = finalParent.nesting + 1
+  )
+
+  val primaryConstructor = clazz.unsubstitutedPrimaryConstructor
+
+  return if (primaryConstructor == null) classInitScope
+  else FunctionInjectablesScope(
+    function = primaryConstructor,
+    parent = classInitScope
   )
 }
 
@@ -401,6 +497,50 @@ private fun PropertyInjectablesScope(
   )
 }
 
+private fun PropertyInitInjectablesScope(
+  property: PropertyDescriptor,
+  parent: InjectablesScope,
+  position: KtElement,
+  @Inject context: AnalysisContext
+): InjectablesScope {
+  val containingDeclarationScope = if (property.containingDeclaration is ClassDescriptor) {
+    ClassInitInjectablesScope(
+      clazz = property.containingDeclaration.cast(),
+      parent = parent,
+      position = position
+    )
+  } else {
+    FileInitInjectablesScope(position = position)
+  }
+
+  val finalParent = property
+    .findPsi()
+    .safeAs<KtProperty>()
+    ?.getProviderImports()
+    ?.takeIf { it.isNotEmpty() }
+    ?.let {
+      ImportInjectablesScope(
+        file = null,
+        imports = it,
+        namePrefix = "PROPERTY ${property.fqNameSafe}",
+        parent = containingDeclarationScope
+      )
+    }
+    ?: containingDeclarationScope
+
+  return InjectablesScope(
+    name = "PROPERTY INIT ${property.fqNameSafe}",
+    callContext = CallContext.DEFAULT,
+    parent = finalParent,
+    ownerDescriptor = property,
+    file = null,
+    initialInjectables = emptyList(),
+    imports = emptyList(),
+    typeParameters = property.typeParameters.map { it.toClassifierRef() },
+    nesting = finalParent.nesting + 1
+  )
+}
+
 private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
@@ -517,6 +657,7 @@ private fun ImportInjectablesScope(
   imports: List<ProviderImport>,
   namePrefix: String,
   parent: InjectablesScope?,
+  injectablesPredicate: (CallableRef) -> Boolean = { true },
   @Inject context: AnalysisContext
 ): InjectablesScope {
   val resolvedImports = imports.collectImportedInjectables()
@@ -531,6 +672,7 @@ private fun ImportInjectablesScope(
       file = file,
       initialInjectables = resolvedImports
         .filter { it.callable.isExternalDeclaration() },
+      injectablesPredicate = injectablesPredicate,
       imports = emptyList(),
       typeParameters = emptyList(),
       nesting = parent?.nesting?.inc() ?: 0
@@ -539,6 +681,7 @@ private fun ImportInjectablesScope(
     file = file,
     initialInjectables = resolvedImports
       .filterNot { it.callable.isExternalDeclaration() },
+    injectablesPredicate = injectablesPredicate,
     imports = imports.mapNotNull { it.resolve() },
     typeParameters = emptyList(),
     nesting = parent?.nesting?.inc()?.inc() ?: 1

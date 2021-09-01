@@ -731,6 +731,24 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
+  @Test fun testCanResolvePrimaryConstructorInjectableInInit() = codegen(
+    """
+      class MyClass(@Provide foo: Foo) {
+        init {
+          inject<Foo>()
+        }
+      }
+    """
+  )
+
+  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyInitializer() = codegen(
+    """
+      class MyClass(@Provide _foo: Foo) {
+        val foo: Foo = inject()
+      }
+    """
+  )
+
   @Test fun testCannotResolvePrimaryConstructorInjectableInPropertyGetter() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
@@ -778,7 +796,7 @@ class InjectableResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testCanResolveClassFunctionFromClassPropertyInitializer() = codegen(
@@ -786,6 +804,15 @@ class InjectableResolveTest {
       class MyClass {
         @Provide val bar: Bar = Bar(inject())
         @Provide fun foo() = Foo()
+      }
+    """
+  )
+
+  @Test fun testCanResolveClassComputedPropertyFromClassPropertyInitializer() = codegen(
+    """
+      class MyClass {
+        @Provide val bar: Bar = Bar(inject())
+        @Provide val foo get() = Foo()
       }
     """
   )
@@ -825,6 +852,17 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveClassComputedPropertyFromClassInitializer() = codegen(
+    """
+      class MyClass {
+        init {
+          inject<Foo>()
+        }
+        @Provide val foo get() = Foo()
+      }
+    """
+  )
+
   @Test fun testCannotResolveTopLevelPropertyFromWithinInitializer() = codegen(
     """
       @Provide private val foo: Foo = inject<Foo>()
@@ -838,9 +876,7 @@ class InjectableResolveTest {
       @Provide val foo: Foo = Foo()
       @Provide val bar: Bar = Bar(inject())
     """
-  ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
-  }
+  )
 
   @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
     """
@@ -848,7 +884,7 @@ class InjectableResolveTest {
       @Provide val foo: Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.Bar")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyInitializer() = codegen(
