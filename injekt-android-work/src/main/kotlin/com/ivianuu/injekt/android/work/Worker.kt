@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android.work
 
 import android.content.Context
 import androidx.work.ListenableWorker
-import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
@@ -60,8 +59,5 @@ import kotlin.reflect.KClass
     workerParameters: WorkerParameters,
   ): ListenableWorker? = workers[workerClassName]?.invoke(workerParameters)
 }
-
-@Provide inline val Context.workManager: WorkManager
-  get() = WorkManager.getInstance(this)
 
 internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
