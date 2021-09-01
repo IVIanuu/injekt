@@ -28,10 +28,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.isIde
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -189,31 +186,7 @@ class InjectablesScope(
   fun recordLookup(lookupLocation: LookupLocation) {
     if (isIde) return
     parent?.recordLookup(lookupLocation)
-    fun recordLookup(declaration: DeclarationDescriptor) {
-      if (declaration is ConstructorDescriptor) {
-        recordLookup(declaration.constructedClass)
-        return
-      }
-      if (declaration is ReceiverParameterDescriptor &&
-          declaration.value is ImplicitClassReceiver) {
-        recordLookup(declaration.value.cast<ImplicitClassReceiver>().classDescriptor)
-        return
-      }
-      when (val containingDeclaration = declaration.containingDeclaration) {
-        is ClassDescriptor -> containingDeclaration.unsubstitutedMemberScope
-        is PackageFragmentDescriptor -> containingDeclaration.getMemberScope()
-        else -> null
-      }?.recordLookup(declaration.name, lookupLocation)
-    }
-    injectables.forEach {
-      if (it.value.type.frameworkKey == 0)
-        recordLookup(it.value.callable)
-    }
-    spreadingInjectables.forEach {
-      if (it.callable.type.frameworkKey == 0)
-        recordLookup(it.callable.callable)
-    }
-    imports.forEach { import ->
+    for (import in imports) {
       context.injektContext.memberScopeForFqName(import.packageFqName, lookupLocation)
         ?.recordLookup(
           injectablesLookupName(
