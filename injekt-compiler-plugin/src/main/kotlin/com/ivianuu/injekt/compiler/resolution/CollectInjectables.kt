@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
@@ -512,8 +513,7 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          DescriptorVisibilities.INTERNAL.isVisible(null,
-            callable.callable, context.injektContext.module)) ||
+          callable.callable.moduleName() == context.injektContext.module.name.asString()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->

@@ -49,6 +49,7 @@ import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
@@ -61,12 +62,10 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
-import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
@@ -130,7 +129,7 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
 ) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
-  module != context.module
+  moduleName() != context.module.name.asString()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -231,34 +230,30 @@ fun checkCancelled() {
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(): Name {
-  return if (this is ValueParameterDescriptor) {
-    name
-  } else {
-    val callable = containingDeclaration as? CallableDescriptor
-    when {
-      original == callable?.dispatchReceiverParameter?.original ||
-          (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
-      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
-      else -> throw AssertionError()
-    }
+fun ParameterDescriptor.injektName(): Name = if (this is ValueParameterDescriptor) {
+  name
+} else {
+  val callable = containingDeclaration as? CallableDescriptor
+  when {
+    original == callable?.dispatchReceiverParameter?.original ||
+        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
+    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
+    else -> throw AssertionError()
   }
 }
 
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
-fun ParameterDescriptor.injektIndex(): Int {
-  return if (this is ValueParameterDescriptor) {
-    index
-  } else {
-    val callable = containingDeclaration as? CallableDescriptor
-    when {
-      original == callable?.dispatchReceiverParameter?.original ||
-          (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
-      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-      else -> throw AssertionError()
-    }
+fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescriptor) {
+  index
+} else {
+  val callable = containingDeclaration as? CallableDescriptor
+  when {
+    original == callable?.dispatchReceiverParameter?.original ||
+        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
+    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
+    else -> throw AssertionError()
   }
 }
 
@@ -308,12 +303,9 @@ val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
 
-fun <K, V> BindingTrace.getOrRecord(
-  slice: WritableSlice<K, V>,
-  key: K,
-  defaultValue: () -> V
-): V = get(slice, key) ?: defaultValue()
-  .also { record(slice, key, it) }
-
 @Provide fun bindingContext(trace: BindingTrace?): BindingContext =
   trace?.bindingContext ?: error("Wtf")
+
+fun DeclarationDescriptor.moduleName(@Inject context: InjektContext): String =
+  getJvmModuleNameForDeserializedDescriptor(this)
+    ?: context.module.name.asString()

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkCancelled
 import com.ivianuu.injekt.compiler.forEachWith
+import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -461,7 +462,11 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   }
 }
 
-private inline fun <T> InjectablesScope.compareCandidate(
+private enum class TypeScopeOrigin {
+  EXTERNAL, TYPE, INTERNAL
+}
+
+private inline fun <T> InjectablesScope.compareCandidateBase(
   a: T?,
   b: T?,
   requestedType: TypeRef?,
@@ -470,7 +475,8 @@ private inline fun <T> InjectablesScope.compareCandidate(
   scopeNesting: (T) -> Int,
   owner: (T) -> ClassifierRef?,
   subClassNesting: (T) -> Int,
-  importPath: (T) -> String?
+  importPath: (T) -> String?,
+  moduleName: (T) -> String?
 ): Int {
   if (a === b) return 0
 
@@ -514,10 +520,32 @@ private inline fun <T> InjectablesScope.compareCandidate(
         importPathA.endsWith("*")) return 1
   }
 
+  if (requestedType != null && aIsFromTypeScope && bIsFromTypeScope) {
+    val thisModuleName = context.injektContext.module.name.asString()
+    val aModuleName = moduleName(a)
+    val bModuleName = moduleName(b)
+    val typeModuleName = requestedType.classifier.descriptor!!.moduleName()
+
+    val aOrigin = when (aModuleName) {
+      thisModuleName -> TypeScopeOrigin.INTERNAL
+      typeModuleName -> TypeScopeOrigin.TYPE
+      else -> TypeScopeOrigin.EXTERNAL
+    }
+
+    val bOrigin = when (bModuleName) {
+      thisModuleName -> TypeScopeOrigin.INTERNAL
+      typeModuleName -> TypeScopeOrigin.TYPE
+      else -> TypeScopeOrigin.EXTERNAL
+    }
+
+    if (aOrigin.ordinal > bOrigin.ordinal) return -1
+    if (bOrigin.ordinal > aOrigin.ordinal) return 1
+  }
+
   return 0
 }
 
-private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int = compareCandidate(
+private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int = compareCandidateBase(
   a = a,
   b = b,
   requestedType = a?.type ?: b?.type,
@@ -526,7 +554,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   scopeNesting = { it.ownerScope.nesting },
   owner = { (it as? CallableInjectable)?.callable?.owner },
   subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 },
-  importPath = { (it as? CallableInjectable)?.callable?.import?.importPath }
+  importPath = { (it as? CallableInjectable)?.callable?.import?.importPath },
+  moduleName = { it.safeAs<CallableInjectable>()?.callable?.callable?.moduleName() }
 )
 
 fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
@@ -585,7 +614,7 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
 }
 
 fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
-  var diff = compareCandidate(
+  var diff = compareCandidateBase(
     a = a,
     b = b,
     requestedType = null,
@@ -594,7 +623,8 @@ fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     scopeNesting = { -1 },
     owner = { it.owner },
     subClassNesting = { it.overriddenDepth },
-    importPath = { it.import?.importPath }
+    importPath = { it.import?.importPath },
+    moduleName = { it.callable.moduleName() }
   )
   if (diff < 0) return -1
   if (diff > 0) return 1

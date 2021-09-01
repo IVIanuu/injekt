@@ -134,11 +134,6 @@ class InjectableResolutionTest {
     classFoo shouldBeSameInstanceAs result
   }
 
-  class myClass(foo: Foo) {
-    val finalFoo = foo
-    val foo = Foo()
-  }
-
   @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
     """
       lateinit var classBodyFoo: Foo
@@ -589,5 +584,101 @@ class InjectableResolutionTest {
           "com.ivianuu.injekt.integrationtests.otherFoo\n" +
           "do all match type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject"
     )
+  }
+
+  @Test fun testPrefersInternalTypeScopeInjectableOverExternal() = multiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            typealias MyType = String
+          """,
+          packageFqName = FqName("typescope")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide val externalMyType: MyType = "external"
+          """,
+          packageFqName = FqName("typescope")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide val internalMyType: MyType = "internal"
+          """,
+          packageFqName = FqName("typescope")
+        ),
+        invokableSource(
+          """
+            fun invoke() = inject<typescope.MyType>()  
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "internal"
+  }
+
+  @Test fun testPrefersSameCompilationAsTypeTypeScopeInjectableOverExternal() = multiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            typealias MyType = String
+            @Provide val typeMyType: MyType = "type"
+          """,
+          packageFqName = FqName("typescope")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide val externalMyType: MyType = "external"
+          """,
+          packageFqName = FqName("typescope")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<typescope.MyType>()  
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "type"
+  }
+
+  @Test fun testPrefersInternalTypeScopeInjectableOverSameCompilationAsType() = multiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            typealias MyType = String
+            @Provide val typeMyType: MyType = "type"
+          """,
+          packageFqName = FqName("typescope")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide val internalMyType: MyType = "internal"
+          """,
+          packageFqName = FqName("typescope")
+        ),
+        invokableSource(
+          """
+            fun invoke() = inject<typescope.MyType>()  
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "internal"
   }
 }

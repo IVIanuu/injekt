@@ -379,8 +379,7 @@ class InjectableResolveTest {
     """
   )
 
-  // todo @Test works in production but this test fails
-  fun testCannotResolveExternalInternalInjectable() = multiCodegen(
+  @Test fun testCannotResolveExternalInternalInjectable() = multiCodegen(
     """
       @Provide internal val foo = Foo()
     """,
