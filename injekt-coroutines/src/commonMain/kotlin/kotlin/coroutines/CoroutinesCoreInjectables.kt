@@ -18,12 +18,8 @@ package kotlin.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.scope.Disposer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 
 @Provide val coroutineContextDisposer = Disposer<CoroutineContext> { it.cancel() }
-@Provide val coroutineScopeDisposer = Disposer<CoroutineScope> { it.cancel() }
-@Provide val jobDisposer = Disposer<Job> { it.cancel() }
 
 @Provide suspend fun currentCoroutineContext(): CoroutineContext = coroutineContext
