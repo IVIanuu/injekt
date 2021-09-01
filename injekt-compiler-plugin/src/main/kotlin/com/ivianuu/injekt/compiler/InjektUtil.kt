@@ -290,14 +290,16 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name = fqName.asString()
-  .removePrefix(packageFqName.asString())
-  .replace(".", "_")
-  .removePrefix("_")
-  .takeIf { it.isNotEmpty() }
-  ?.plus("_injectables")
-  ?.asNameId()
-  ?: "injectables".asNameId()
+fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name {
+  if (fqName == packageFqName) return "_injectables".asNameId()
+  if (fqName.parent() == packageFqName) return "_injectables".asNameId()
+  return fqName.parent().asString()
+    .removePrefix(packageFqName.asString())
+    .replace(".", "_")
+    .removePrefix("_")
+    .let { "_${it}_injectables" }
+    .asNameId()
+}
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND

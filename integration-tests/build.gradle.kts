@@ -17,6 +17,7 @@
 plugins {
   id("com.android.library")
   kotlin("android")
+  id("com.google.devtools.ksp") version Deps.Ksp.version
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
