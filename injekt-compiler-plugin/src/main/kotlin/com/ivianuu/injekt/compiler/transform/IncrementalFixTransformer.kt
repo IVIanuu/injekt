@@ -36,9 +36,11 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.declarations.DescriptorMetadataSource
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -50,8 +52,10 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -80,9 +84,29 @@ class IncrementalFixTransformer(
           .substringAfterLast(".")
           .substringAfterLast("/")
       }_ProvidersMarker".asNameId()
-      visibility = DescriptorVisibilities.PRIVATE
-    }.apply {
+      visibility = DescriptorVisibilities.PUBLIC
+    }.apply clazz@ {
+      superTypes += pluginContext.irBuiltIns.anyType
       createImplicitParameterDeclarationWithWrappedDescriptor()
+
+      addConstructor {
+        returnType = defaultType
+        isPrimary = true
+        visibility = DescriptorVisibilities.PUBLIC
+      }.apply {
+        body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+          +irDelegatingConstructorCall(
+            context.irBuiltIns.anyClass.constructors.single().owner
+          )
+          +IrInstanceInitializerCallImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            this@clazz.symbol,
+            context.irBuiltIns.unitType
+          )
+        }
+      }
+
       parent = declaration
       declaration.addChild(this)
     }
@@ -147,7 +171,7 @@ class IncrementalFixTransformer(
           .replace("/", "")
           .replace("=", "")
           .replace("_", "")
-          .chunked(100)
+          .chunked(256)
           .forEachIndexed { index, value ->
             addValueParameter(
               "hash_${index}_$value",
@@ -161,7 +185,7 @@ class IncrementalFixTransformer(
 
     declaration.metadata = DescriptorMetadataSource.File(
       declaration.metadata.cast<DescriptorMetadataSource.File>()
-        .descriptors + functions.map { it.descriptor }
+        .descriptors + clazz.descriptor + functions.map { it.descriptor }
     )
 
     return declaration
