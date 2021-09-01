@@ -59,12 +59,13 @@ class ClassifierRef(
   val variance: TypeVariance = TypeVariance.INV
 ) {
   val superTypes by lazySuperTypes
-  val untaggedType: TypeRef
-    get() = TypeRef(
-      this,
-      arguments = typeParameters.map { it.defaultType },
-      variance = variance
-    )
+
+  val untaggedType: TypeRef = TypeRef(
+    classifier = this,
+    arguments = typeParameters.map { it.defaultType },
+    variance = variance
+  )
+  val defaultType = tags.wrap(untaggedType)
 
   fun copy(
     key: String = this.key,
@@ -85,8 +86,6 @@ class ClassifierRef(
     isTypeAlias, isTag, descriptor, tags, isSpread,
     primaryConstructorPropertyParameters, variance
   )
-
-  val defaultType: TypeRef get() = tags.wrap(untaggedType)
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
   override fun hashCode(): Int = key.hashCode()
