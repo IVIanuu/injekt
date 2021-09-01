@@ -27,7 +27,7 @@ intellij {
   pluginName.set("Injekt ide plugin")
   updateSinceUntilBuild.set(false)
   plugins.addAll("org.jetbrains.kotlin:203-1.5.21-release-328-AS7717.8", "gradle", "gradle-java", "java")
-  //localPath.set("/home/manu/android-studio")
+  localPath.set("/home/manu/android-studio")
 }
 
 tasks {

@@ -58,7 +58,11 @@ fun KtAnnotated.isProvideOrInjectDeclaration(): Boolean = hasAnnotation(InjektFq
 fun ModuleDescriptor.isInjektEnabled(): Boolean = getCapability(ModuleInfo.Capability)
   ?.isInjektEnabled() ?: false
 
-fun PsiElement.isInjektEnabled(): Boolean = getModuleInfo().isInjektEnabled()
+fun PsiElement.isInjektEnabled(): Boolean = try {
+  getModuleInfo().isInjektEnabled()
+} catch (e: Throwable) {
+  false
+}
 
 fun ModuleInfo.isInjektEnabled(): Boolean {
   val module = unwrapModuleSourceInfo()?.module ?: return false
