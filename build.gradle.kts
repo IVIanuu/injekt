@@ -52,26 +52,22 @@ allprojects {
     project.name == "injekt-symbol-processor")
       return@allprojects
 
-  if (project.name != "injekt-common") {
-    if (!plugins.hasPlugin("com.google.devtools.ksp"))
-      plugins.apply("com.google.devtools.ksp")
+  if (!plugins.hasPlugin("com.google.devtools.ksp"))
+    plugins.apply("com.google.devtools.ksp")
 
-    configurations["ksp"]
-      .dependencies.add(dependencies.project(":injekt-symbol-processor"))
-  }
+  configurations["ksp"]
+    .dependencies.add(dependencies.project(":injekt-symbol-processor"))
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
+    configurations["kotlinCompilerPluginClasspath"]
+      .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
+
     val sourceSetName = name
 
     val project = compilation.compileKotlinTask.project
 
     val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
       .also { it.mkdirs() }
-
-    if (project.name != "injekt-common") {
-      configurations["kotlinCompilerPluginClasspath"]
-        .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
-    }
 
     val pluginOptions = listOf(
       SubpluginOption(
@@ -87,29 +83,31 @@ allprojects {
     }
   }
 
-  when {
-    pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform") -> {
-      extensions.getByType(KotlinMultiplatformExtension::class.java).run {
-        project.afterEvaluate {
-          targets
-            .flatMap { it.compilations }
-            .forEach { setupCompilation(it) }
+  afterEvaluate {
+    when {
+      pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform") -> {
+        extensions.getByType(KotlinMultiplatformExtension::class.java).run {
+          project.afterEvaluate {
+            targets
+              .flatMap { it.compilations }
+              .forEach { setupCompilation(it) }
+          }
         }
       }
-    }
-    pluginManager.hasPlugin("org.jetbrains.kotlin.android") -> {
-      extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
-        project.afterEvaluate {
-          target.compilations
-            .forEach { setupCompilation(it) }
+      pluginManager.hasPlugin("org.jetbrains.kotlin.android") -> {
+        extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
+          project.afterEvaluate {
+            target.compilations
+              .forEach { setupCompilation(it) }
+          }
         }
       }
-    }
-    pluginManager.hasPlugin("org.jetbrains.kotlin.jvm") -> {
-      extensions.getByType(KotlinJvmProjectExtension::class.java).run {
-        project.afterEvaluate {
-          target.compilations
-            .forEach { setupCompilation(it) }
+      pluginManager.hasPlugin("org.jetbrains.kotlin.jvm") -> {
+        extensions.getByType(KotlinJvmProjectExtension::class.java).run {
+          project.afterEvaluate {
+            target.compilations
+              .forEach { setupCompilation(it) }
+          }
         }
       }
     }

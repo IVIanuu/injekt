@@ -44,7 +44,8 @@ class InjektCommandLineProcessor : CommandLineProcessor {
 val DumpDirOption = CliOption(
   optionName = "dumpDir",
   valueDescription = "dumpDir",
-  description = "dumpDir"
+  description = "dumpDir",
+  required = false
 )
 
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")

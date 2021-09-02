@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import java.io.File
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
@@ -41,7 +42,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration,
   ) {
-    if (isKaptCompilation(configuration)) return
+    configuration.put(CLIConfigurationKeys.ALLOW_KOTLIN_PACKAGE, true)
+
+    if (isKaptCompilation(configuration) ||
+      configuration.get(DumpDirKey) == null) return
+
     registerExtensions(project, configuration)
   }
 }

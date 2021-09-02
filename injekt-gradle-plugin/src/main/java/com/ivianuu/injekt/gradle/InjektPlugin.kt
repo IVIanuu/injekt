@@ -37,15 +37,20 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       target.plugins.apply("com.google.devtools.ksp")
       target.configurations.getByName("ksp")
         .dependencies
-        .add(target.dependencies.project(mapOf("path" to ":injekt-symbol-processor")))
+        .add(
+          target
+            .dependencies
+            .create("com.ivianuu.injekt:injekt-symbol-processor:${BuildConfig.VERSION}"
+            )
+        )
     }
   }
 
   override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = BuildConfig.GROUP_ID,
-    artifactId = BuildConfig.ARTIFACT_ID,
+    groupId = "com.ivianuu.injekt",
+    artifactId = "injekt-compiler-plugin",
     version = BuildConfig.VERSION
   )
 }

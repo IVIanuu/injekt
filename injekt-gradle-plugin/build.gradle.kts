@@ -36,9 +36,6 @@ gradlePlugin {
 buildConfig {
   className("BuildConfig")
   packageName("com.ivianuu.injekt.gradle")
-
-  buildConfigField("String", "GROUP_ID", "\"${property("GROUP")}\"")
-  buildConfigField("String", "ARTIFACT_ID", "\"injekt-compiler-plugin\"")
   buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
 }
 
