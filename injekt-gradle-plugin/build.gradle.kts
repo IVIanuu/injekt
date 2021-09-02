@@ -48,7 +48,7 @@ dependencies {
   implementation(Deps.androidGradlePlugin)
   implementation(Deps.Kotlin.gradlePlugin)
   implementation(Deps.Kotlin.gradlePluginApi)
-  implementation(Deps.Ksp.gradlePlugin)
+  implementation(Deps.Kotlin.compilerEmbeddable)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

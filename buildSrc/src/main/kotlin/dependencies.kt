@@ -72,8 +72,10 @@ object Deps {
 
   object Injekt {
     const val version = "0.0.1-dev596"
-    const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:$version"
-    const val scope = "com.ivianuu.injekt:injekt-scope:$version"
+    const val versionForCompiler = "0.0.1-dev596"
+    const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plguin:$version"
+    const val gradlePluginForCompiler = "com.ivianuu.injekt:injekt-gradle-plugin:$versionForCompiler"
+    const val scope = "com.ivianuu.injekt:injekt-scope:$versionForCompiler"
   }
 
   const val junit = "junit:junit:4.12"
@@ -94,13 +96,6 @@ object Deps {
   const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.2"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
-
-  object Ksp {
-    const val version = "1.5.21-1.0.0-beta07"
-    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
-    const val processingApi = "com.google.devtools.ksp:symbol-processing-api:$version"
-    const val processingImpl = "com.google.devtools.ksp:symbol-processing:$version"
-  }
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
 

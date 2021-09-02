@@ -21,6 +21,7 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
+import com.ivianuu.injekt.compiler.incremental.InjektIncrementalDeclarationGenerationExtension
 import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import java.io.File
@@ -28,12 +29,62 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
+import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOption
+import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
+
+@AutoService(CommandLineProcessor::class)
+class InjektCommandLineProcessor : CommandLineProcessor {
+  override val pluginId = "com.ivianuu.injekt"
+
+  override val pluginOptions = listOf(
+    CacheDirOption,
+    DumpDirOption,
+    OutputDirOption
+  )
+
+  override fun processOption(
+    option: AbstractCliOption,
+    value: String,
+    configuration: CompilerConfiguration,
+  ) {
+    when (option.optionName) {
+      CacheDirOption.optionName -> configuration.put(CacheDirKey, value)
+      DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
+      OutputDirOption.optionName -> configuration.put(OutputDirKey, value)
+    }
+  }
+}
+
+val CacheDirOption = CliOption("cacheDir")
+val CacheDirKey = CompilerConfigurationKey<String>(CacheDirOption.optionName)
+fun cacheDir(configuration: CompilerConfiguration): File =
+  File(configuration.getNotNull(CacheDirKey))
+    .also { it.mkdirs() }
+
+val DumpDirOption = CliOption("dumpDir")
+val DumpDirKey = CompilerConfigurationKey<String>(DumpDirOption.optionName)
+fun dumpDir(configuration: CompilerConfiguration): File =
+  File(configuration.getNotNull(DumpDirKey))
+    .also { it.mkdirs() }
+
+val OutputDirOption = CliOption("outputDir", false)
+val OutputDirKey = CompilerConfigurationKey<String>(OutputDirOption.optionName)
+fun outputDir(configuration: CompilerConfiguration): File? =
+  configuration.get(OutputDirKey)
+    ?.let { File(it) }
+    ?.also { it.mkdirs() }
+
+private fun CliOption(optionName: String, required: Boolean = true) =
+  CliOption(optionName, "<${optionName}>", optionName, required)
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -47,6 +98,15 @@ class InjektComponentRegistrar : ComponentRegistrar {
 }
 
 private fun registerExtensions(project: MockProject, configuration: CompilerConfiguration) {
+  val outputDir = outputDir(configuration)
+  if (outputDir != null) {
+    AnalysisHandlerExtension.registerExtension(
+      project,
+      InjektIncrementalDeclarationGenerationExtension(outputDir)
+    )
+    return
+  }
+
   StorageComponentContainerContributor.registerExtension(
     project,
     InjektStorageComponentContainerContributor()
@@ -85,7 +145,7 @@ private fun isKaptCompilation(configuration: CompilerConfiguration): Boolean {
   return kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
 }
 
-fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
+private fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
   @Inject project: MockProject,
   loadingOrder: LoadingOrder,
   extension: IrGenerationExtension,

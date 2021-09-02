@@ -1,32 +1,33 @@
-package com.ivianuu.injekt.symbolprocessor
+package com.ivianuu.injekt.compiler.incremental
 
-import com.google.auto.service.AutoService
-import com.google.devtools.ksp.getVisibility
-import com.google.devtools.ksp.processing.CodeGenerator
-import com.google.devtools.ksp.processing.Dependencies
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSDeclaration
-import com.google.devtools.ksp.symbol.Visibility
-import com.google.devtools.ksp.symbol.impl.kotlin.KSClassDeclarationImpl
-import com.google.devtools.ksp.symbol.impl.kotlin.KSFunctionDeclarationImpl
-import com.google.devtools.ksp.symbol.impl.kotlin.KSPropertyDeclarationImpl
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.injectablesLookupName
-import java.util.Base64
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import java.io.File
+import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 
-// todo do not depend on impl
-@AutoService(SymbolProcessorProvider::class)
-class InjektSymbolProcessorProvider : SymbolProcessorProvider {
-  override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor =
-    InjektSymbolProcessor(environment.codeGenerator)
+class InjektIncrementalDeclarationGenerationExtension(
+  private val outputDir: File
+) : AnalysisHandlerExtension {
+  override fun doAnalysis(
+    project: Project,
+    module: ModuleDescriptor,
+    projectContext: ProjectContext,
+    files: Collection<KtFile>,
+    bindingTrace: BindingTrace,
+    componentProvider: ComponentProvider
+  ): AnalysisResult {
+    error("Hello world")
+    return AnalysisResult.success(BindingContext.EMPTY, module, shouldGenerateCode = false)
+  }
 }
 
+/*
 class InjektSymbolProcessor(
   private val codeGenerator: CodeGenerator
 ) : SymbolProcessor {
@@ -124,4 +125,4 @@ class InjektSymbolProcessor(
 
     return emptyList()
   }
-}
+}*/

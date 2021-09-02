@@ -16,7 +16,6 @@
 
 plugins {
   kotlin("multiplatform")
-  id("com.google.devtools.ksp")
 }
 
 kotlin {
@@ -39,12 +38,6 @@ kotlin {
     commonMain {
       dependencies {
         api(project(":injekt-core"))
-        configurations["kotlinCompilerPluginClasspath"]
-          .dependencies
-          .add(project(":injekt-compiler-plugin"))
-        configurations["ksp"]
-          .dependencies
-          .add(project(":injekt-symbol-processor"))
       }
     }
     named("jvmTest") {
