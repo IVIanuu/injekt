@@ -72,7 +72,7 @@ class InjektSymbolProcessor(
 
           appendLine("fun $functionName(")
           appendLine("  marker: $markerName,")
-          repeat(i) {
+          repeat(i + 1) {
             appendLine("  index$it: Byte,")
           }
 
