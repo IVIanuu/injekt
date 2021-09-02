@@ -33,7 +33,6 @@ class App : Application(), AppScopeOwner {
 
   override fun onCreate() {
     appScope = createAppScope()
-
     super.onCreate()
   }
 }
