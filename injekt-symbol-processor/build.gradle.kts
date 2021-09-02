@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -15,27 +15,19 @@
  */
 
 plugins {
-  kotlin("multiplatform")
+  kotlin("jvm")
+  kotlin("kapt")
 }
 
-kotlin {
-  jvm {
-    withJava()
-    compilations.forEach {
-      it.kotlinOptions {
-        jvmTarget = "1.8"
-      }
-    }
-  }
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
-  sourceSets {
-    named("jvmTest") {
-      dependencies {
-        implementation(Deps.junit)
-        implementation(Deps.kotestAssertions)
-      }
-    }
-  }
+dependencies {
+  implementation(Deps.Ksp.processingApi)
+  implementation(Deps.Ksp.processingImpl)
+  implementation(Deps.autoService)
+  kapt(Deps.autoService)
+  implementation(project(":injekt-compiler-plugin"))
 }
 
 plugins.apply("com.vanniktech.maven.publish")

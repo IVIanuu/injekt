@@ -16,7 +16,7 @@
 
 plugins {
   kotlin("multiplatform")
-  id("com.google.devtools.ksp") version Deps.Ksp.version
+  id("com.google.devtools.ksp")
 }
 
 kotlin {
@@ -40,8 +40,10 @@ kotlin {
       dependencies {
         api(project(":injekt-core"))
         configurations["kotlinCompilerPluginClasspath"]
-          .dependencies.add(project(":injekt-compiler-plugin"))
-        configurations["ksp"].dependencies
+          .dependencies
+          .add(project(":injekt-compiler-plugin"))
+        configurations["ksp"]
+          .dependencies
           .add(project(":injekt-symbol-processor"))
       }
     }

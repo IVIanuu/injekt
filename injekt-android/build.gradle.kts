@@ -17,7 +17,6 @@
 plugins {
   id("com.android.library")
   kotlin("android")
-  id("com.google.devtools.ksp") version Deps.Ksp.version
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
@@ -33,8 +32,6 @@ android {
 
 dependencies {
   api(project(":injekt-coroutines"))
-  kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
-  ksp(project(":injekt-symbol-processor"))
   api(Deps.AndroidX.Activity.activity)
   api(Deps.AndroidX.Lifecycle.runtime)
   testImplementation(Deps.AndroidX.Test.core)

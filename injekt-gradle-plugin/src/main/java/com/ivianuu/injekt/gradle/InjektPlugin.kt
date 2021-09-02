@@ -33,6 +33,12 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     kotlinCompilation.setupForInjekt()
 
   override fun apply(target: Project) {
+    if (!target.plugins.hasPlugin("com.google.devtools.ksp")) {
+      target.plugins.apply("com.google.devtools.ksp")
+      target.configurations.getByName("ksp")
+        .dependencies
+        .add(target.dependencies.project(mapOf("path" to ":injekt-symbol-processor")))
+    }
   }
 
   override fun getCompilerPluginId(): String = "com.ivianuu.injekt"

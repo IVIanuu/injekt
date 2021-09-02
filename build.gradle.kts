@@ -31,6 +31,7 @@ buildscript {
     classpath(Deps.Injekt.gradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
+    classpath(Deps.Ksp.gradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)
     classpath(Deps.shadowGradlePlugin)
   }
@@ -46,39 +47,48 @@ allprojects {
     maven("https://plugins.gradle.org/m2")
   }
 
-  afterEvaluate {
-    fun setupCompilation(compilation: KotlinCompilation<*>) {
-      fun KotlinCompilation<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
-        (compileKotlinTask as? org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
-          ?.usePreciseJavaTracking = false
+  if (project.name == "injekt-compiler-plugin" ||
+    project.name == "injekt-gradle-plugin" ||
+    project.name == "injekt-symbol-processor")
+      return@allprojects
 
-        val sourceSetName = name
+  if (project.name != "injekt-common") {
+    if (!plugins.hasPlugin("com.google.devtools.ksp"))
+      plugins.apply("com.google.devtools.ksp")
 
-        val project = compileKotlinTask.project
+    configurations["ksp"]
+      .dependencies.add(dependencies.project(":injekt-symbol-processor"))
+  }
 
-        val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
-          .also { it.mkdirs() }
+  fun setupCompilation(compilation: KotlinCompilation<*>) {
+    val sourceSetName = name
 
-        return project.provider {
-          listOf(
-            SubpluginOption(
-              key = "dumpDir",
-              value = dumpDir.absolutePath
-            )
-          )
-        }
-      }
+    val project = compilation.compileKotlinTask.project
 
-      if (project.name != "injekt-compiler-plugin") {
-        val pluginOptions = compilation.setupForInjekt().get()
-        pluginOptions.forEach { option ->
-          compilation.kotlinOptions.freeCompilerArgs += listOf(
-            "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
-          )
-        }
-      }
+    val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
+      .also { it.mkdirs() }
+
+    if (project.name != "injekt-common") {
+      configurations["kotlinCompilerPluginClasspath"]
+        .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
     }
-    if (pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+
+    val pluginOptions = listOf(
+      SubpluginOption(
+        key = "dumpDir",
+        value = dumpDir.absolutePath
+      )
+    )
+
+    pluginOptions.forEach { option ->
+      compilation.kotlinOptions.freeCompilerArgs += listOf(
+        "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
+      )
+    }
+  }
+
+  when {
+    pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform") -> {
       extensions.getByType(KotlinMultiplatformExtension::class.java).run {
         project.afterEvaluate {
           targets
@@ -86,14 +96,16 @@ allprojects {
             .forEach { setupCompilation(it) }
         }
       }
-    } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
+    }
+    pluginManager.hasPlugin("org.jetbrains.kotlin.android") -> {
       extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
         project.afterEvaluate {
           target.compilations
             .forEach { setupCompilation(it) }
         }
       }
-    } else if (pluginManager.hasPlugin("org.jetbrains.kotlin.jvm")) {
+    }
+    pluginManager.hasPlugin("org.jetbrains.kotlin.jvm") -> {
       extensions.getByType(KotlinJvmProjectExtension::class.java).run {
         project.afterEvaluate {
           target.compilations

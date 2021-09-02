@@ -16,7 +16,6 @@
 
 plugins {
   kotlin("multiplatform")
-  id("com.google.devtools.ksp") version Deps.Ksp.version
 }
 
 kotlin {
@@ -36,10 +35,6 @@ kotlin {
         api(project(":injekt-scope"))
 
         api(project(":injekt-compiler-plugin"))
-        configurations["kotlinCompilerPluginClasspath"]
-          .dependencies.add(project(":injekt-compiler-plugin"))
-        configurations["ksp"]
-          .dependencies.add(project(":injekt-symbol-processor"))
 
         api(Deps.AndroidX.Compose.compiler)
 

@@ -97,8 +97,9 @@ object Deps {
 
   object Ksp {
     const val version = "1.5.21-1.0.0-beta07"
-    const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
-    const val impl = "com.google.devtools.ksp:symbol-processing:$version"
+    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
+    const val processingApi = "com.google.devtools.ksp:symbol-processing-api:$version"
+    const val processingImpl = "com.google.devtools.ksp:symbol-processing:$version"
   }
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"

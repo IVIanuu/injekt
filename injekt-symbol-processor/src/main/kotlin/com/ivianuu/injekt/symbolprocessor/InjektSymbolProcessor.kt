@@ -20,7 +20,7 @@ import java.util.Base64
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 
-// todo do not depenc on impl
+// todo do not depend on impl
 @AutoService(SymbolProcessorProvider::class)
 class InjektSymbolProcessorProvider : SymbolProcessorProvider {
   override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor =
