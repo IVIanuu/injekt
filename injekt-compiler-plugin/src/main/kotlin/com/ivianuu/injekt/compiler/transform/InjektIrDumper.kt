@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 
-var dumpAllFiles = false
+var dumpAllFiles = true
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {

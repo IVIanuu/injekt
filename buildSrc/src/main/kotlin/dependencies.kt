@@ -95,13 +95,6 @@ object Deps {
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
-  object Ksp {
-    const val version = "1.5.21-1.0.0-beta07"
-    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
-    const val processingApi = "com.google.devtools.ksp:symbol-processing-api:$version"
-    const val processingImpl = "com.google.devtools.ksp:symbol-processing:$version"
-  }
-
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
 
   const val mockk = "io.mockk:mockk:1.11.0"

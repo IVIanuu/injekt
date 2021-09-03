@@ -8,7 +8,6 @@ include(
     ":injekt-gradle-plugin",
     ":injekt-ide-plugin",
     ":injekt-scope",
-    ":injekt-symbol-processor",
     ":integration-tests",
     ":test-util",
     "samples:android-app",

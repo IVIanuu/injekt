@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.compiler.analysis.IncrementalFixAnalysisHandlerExtension
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
@@ -34,6 +35,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
 
 @AutoService(ComponentRegistrar::class)
@@ -52,6 +54,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
 }
 
 private fun registerExtensions(project: MockProject, configuration: CompilerConfiguration) {
+  AnalysisHandlerExtension.registerExtension(
+    project,
+    IncrementalFixAnalysisHandlerExtension()
+  )
+
   StorageComponentContainerContributor.registerExtension(
     project,
     InjektStorageComponentContainerContributor()

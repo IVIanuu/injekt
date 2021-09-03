@@ -31,7 +31,6 @@ buildscript {
     classpath(Deps.Injekt.gradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
-    classpath(Deps.Ksp.gradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)
     classpath(Deps.shadowGradlePlugin)
   }
@@ -51,12 +50,6 @@ allprojects {
     project.name == "injekt-gradle-plugin" ||
     project.name == "injekt-symbol-processor")
       return@allprojects
-
-  if (!plugins.hasPlugin("com.google.devtools.ksp"))
-    plugins.apply("com.google.devtools.ksp")
-
-  configurations["ksp"]
-    .dependencies.add(dependencies.project(":injekt-symbol-processor"))
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
