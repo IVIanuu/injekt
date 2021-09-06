@@ -21,6 +21,9 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 fun KotlinCompilation<*>.setupForInjekt(): Provider<List<SubpluginOption>> {
+  (compileKotlinTask as? org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
+    ?.usePreciseJavaTracking = false
+
   val sourceSetName = name
 
   val project = compileKotlinTask.project
