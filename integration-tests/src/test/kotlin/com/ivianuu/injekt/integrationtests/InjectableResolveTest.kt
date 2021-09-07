@@ -748,6 +748,30 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyInitializerLambda() = codegen(
+    """
+      class MyClass(@Provide _foo: Foo) {
+        val foo: Foo = run { inject() }
+      }
+    """
+  )
+
+  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyDelegateInitializer() = codegen(
+    """
+      class MyClass(@Provide _foo: Foo) {
+        val foo: Foo by lazy(inject<Foo>()) { Foo() }
+      }
+    """
+  )
+
+  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyDelegateInitializerLambda() = codegen(
+    """
+      class MyClass(@Provide _foo: Foo) {
+        val foo: Foo by lazy { inject<Foo>() }
+      }
+    """
+  )
+
   @Test fun testCannotResolvePrimaryConstructorInjectableInPropertyGetter() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
@@ -768,10 +792,30 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
+  @Test fun testCannotResolveLocalVariableFromWithinDelegateInitializer() = codegen(
+    """
+      fun invoke() {
+        @Provide val foo: Foo by lazy(inject<Foo>()) { Foo() }
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
   @Test fun testCannotResolveClassPropertyFromWithinInitializer() = codegen(
     """
       class MyClass {
         @Provide private val foo: Foo = inject<Foo>()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCannotResolveClassPropertyFromWithinDelegateInitializer() = codegen(
+    """
+      class MyClass {
+        @Provide private val foo: Foo by lazy(inject<Foo>()) { Foo() }
       }
     """
   ) {
@@ -787,10 +831,39 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveClassPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredBeforeIt() = codegen(
+    """
+      class MyClass {
+        @Provide val foo: Foo = Foo()
+        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+      }
+    """
+  )
+
   @Test fun testCannotResolveClassPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
     """
       class MyClass {
         @Provide val bar: Bar = Bar(inject())
+        @Provide val foo: Foo = Foo()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
+    """
+      class MyClass {
+        @Provide val bar: Bar = run { Bar(inject()) }
+        @Provide val foo: Foo = Foo()
+      }
+    """
+  )
+
+  @Test fun testCannotResolveClassPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredAfterIt() = codegen(
+    """
+      class MyClass {
+        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
         @Provide val foo: Foo = Foo()
       }
     """
@@ -807,10 +880,28 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveClassFunctionFromClassPropertyDelegateInitializer() = codegen(
+    """
+      class MyClass {
+        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo()) }
+        @Provide fun foo() = Foo()
+      }
+    """
+  )
+
   @Test fun testCanResolveClassComputedPropertyFromClassPropertyInitializer() = codegen(
     """
       class MyClass {
         @Provide val bar: Bar = Bar(inject())
+        @Provide val foo get() = Foo()
+      }
+    """
+  )
+
+  @Test fun testCanResolveClassComputedPropertyFromClassPropertyDelegateInitializer() = codegen(
+    """
+      class MyClass {
+        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
         @Provide val foo get() = Foo()
       }
     """
@@ -877,6 +968,13 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveTopLevelPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredBeforeIt() = codegen(
+    """
+      @Provide val foo: Foo = Foo()
+      @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+    """
+  )
+
   @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
     """
       @Provide val bar: Bar = Bar(inject())
@@ -886,9 +984,32 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
   }
 
+  @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
+    """
+      @Provide val bar: Bar = run { Bar(inject()) }
+      @Provide val foo: Foo = Foo()
+    """
+  )
+
+  @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredAfterIt() = codegen(
+    """
+      @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+      @Provide val foo: Foo = Foo()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
   @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyInitializer() = codegen(
     """
       @Provide val bar: Bar = Bar(inject())
+      @Provide fun foo() = Foo()
+    """
+  )
+
+  @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyDelegateInitializer() = codegen(
+    """
+      @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(inject()) }
       @Provide fun foo() = Foo()
     """
   )
@@ -958,4 +1079,17 @@ class InjectableResolveTest {
       "no injectable found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
     )
   }
+
+  @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(
+    """
+      @Provide class HaloState(val foo: Foo) {
+        val pointerInput = object : Any() {
+          override fun equals(other: Any?): Boolean {
+            inject<Foo>()
+            return true
+          }
+        }
+      }
+    """
+  )
 }

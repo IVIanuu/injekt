@@ -49,6 +49,7 @@ import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
@@ -109,7 +110,8 @@ fun ElementInjectablesScope(
     is KtProperty -> {
       when (val descriptor = scopeOwner.descriptor<VariableDescriptor>()!!) {
         is PropertyDescriptor -> {
-          if (scopeOwner.initializer != null && scopeOwner.initializer!! in element.parentsWithSelf)
+          if (scopeOwner.delegateExpressionOrInitializer != null &&
+            scopeOwner.delegateExpressionOrInitializer!! in element.parentsWithSelf)
             PropertyInitInjectablesScope(descriptor, parentScope!!, position)
           else
             PropertyInjectablesScope(descriptor, parentScope!!)
@@ -156,14 +158,33 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   if (this is KtFunction && position.parents.none { it in valueParameters })
     return true
 
-  if (this is KtClassOrObject &&
-    (position.getParentOfType<KtProperty>(false)
+  if (this is KtClassOrObject) {
+    val propertyInitializerOrDelegateExpression = position.getParentOfType<KtProperty>(false)
       ?.takeUnless { it.isLocal }
-      ?.initializer
-      ?.let { it in position.parentsWithSelf } == true ||
-        position.getParentOfType<KtClassInitializer>(false)
-          ?.let { it in position.parents } == true)
-  ) return false
+      ?.delegateExpressionOrInitializer
+
+    if (propertyInitializerOrDelegateExpression != null) {
+      val parentsBetweenInitializerAndPosition = position.parentsWithSelf
+        .takeWhile { it != propertyInitializerOrDelegateExpression }
+        .toList()
+      if (parentsBetweenInitializerAndPosition.none {
+          it is KtNamedDeclaration || it is KtClassOrObject || it is KtFunctionLiteral
+        })
+          return false
+    }
+
+    val classInitializer = position.getParentOfType<KtClassInitializer>(false)
+
+    if (classInitializer != null) {
+      val parentsBetweenInitializerAndPosition = position.parents
+        .takeWhile { it != classInitializer }
+        .toList()
+      if (parentsBetweenInitializerAndPosition.none {
+          it is KtNamedDeclaration || it is KtClassOrObject || it is KtFunctionLiteral
+      })
+        return false
+    }
+  }
 
   if (this is KtObjectDeclaration)
     return true
@@ -193,14 +214,15 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   }
 
   if (this is KtClassBody && position.parents
-      .takeWhile { it != this }
+      .takeWhile { it !is KtFunctionLiteral && it != this }
       .none {
         it is KtClassInitializer ||
-            (it is KtProperty && it.initializer != null) ||
+            (it is KtProperty && it.delegateExpressionOrInitializer != null) ||
             it is KtClass ||
             (it is KtFunction && it.parent == this) ||
             (it is KtPropertyAccessor && it.property.parent == this)
-      }) return true
+      })
+        return true
 
   return false
 }
@@ -235,8 +257,8 @@ private fun FileInitInjectablesScope(
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE INIT ${file.name} at ",
     injectablesPredicate = {
-      val psi = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
-      psi.initializer == null || it.callable in visibleInjectableDeclarations
+      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
+      psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
     },
     parent = null
   )
@@ -317,8 +339,9 @@ private fun ClassInitInjectablesScope(
     file = null,
     initialInjectables = listOf(thisInjectable),
     injectablesPredicate = {
-      val psi = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
-      psi.initializer == null || it.callable in visibleInjectableDeclarations
+      println()
+      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
+      psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
     },
     imports = emptyList(),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
@@ -328,10 +351,7 @@ private fun ClassInitInjectablesScope(
   val primaryConstructor = clazz.unsubstitutedPrimaryConstructor
 
   return if (primaryConstructor == null) classInitScope
-  else FunctionInjectablesScope(
-    function = primaryConstructor,
-    parent = classInitScope
-  )
+  else FunctionInjectablesScope(primaryConstructor, classInitScope)
 }
 
 private fun ConstructorPreInitInjectablesScope(
