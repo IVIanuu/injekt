@@ -44,7 +44,6 @@ import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInlineParameter
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 
-
 enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
 }
@@ -129,7 +128,7 @@ val TypeRef.callContext: CallContext
     else -> CallContext.DEFAULT
   }
 
-val composeCompilerInClasspath = try {
+private val composeCompilerInClasspath = try {
   Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
   true
 } catch (e: ClassNotFoundException) {
