@@ -71,6 +71,8 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
 
     file.accept(
       namedDeclarationRecursiveVisitor { declaration ->
+        if (declaration.fqName == null) return@namedDeclarationRecursiveVisitor
+
         val visibility =
           declaration.visibilityModifierTypeOrDefault().toVisibility()
 
@@ -79,7 +81,7 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
             visibility == DescriptorVisibilities.PROTECTED) {
           when (declaration) {
             is KtClassOrObject -> {
-              if (declaration.hasAnnotation(InjektFqNames.Provide) ||
+              if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide) ||
                 declaration.primaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true ||
                 declaration.secondaryConstructors.any {
                   it.hasAnnotation(InjektFqNames.Provide)
@@ -87,7 +89,7 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
                   injectables += declaration
             }
             is KtNamedFunction -> {
-              if (declaration.hasAnnotation(InjektFqNames.Provide))
+              if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
                 injectables += declaration
             }
             is KtProperty -> {
