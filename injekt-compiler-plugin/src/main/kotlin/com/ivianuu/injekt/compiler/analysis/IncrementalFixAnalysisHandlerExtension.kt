@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.toVisibility
@@ -85,7 +86,7 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
                 })
                   injectables += declaration
             }
-            is KtFunction -> {
+            is KtNamedFunction -> {
               if (declaration.hasAnnotation(InjektFqNames.Provide))
                 injectables += declaration
             }
