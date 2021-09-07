@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.invokableSource
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.multiPlatformCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -491,4 +492,28 @@ class TypeScopeTest {
       )
     )
   )
+
+  @Test fun testTypeScopeRequestWithObjectImpl() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            interface MyType
+
+            @Provide object MyTypeImpl : MyType
+          """,
+          packageFqName = FqName("package1")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<package1.MyType>()
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile()
+  }
 }
