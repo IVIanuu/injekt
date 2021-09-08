@@ -174,8 +174,6 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
       }
     }
 
-    println("replaced\n${file.text}\nWith\n$code")
-
     return KtFile(
       viewProvider = object : SingleRootFileViewProvider(
         PsiManager.getInstance(project),
