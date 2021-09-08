@@ -772,6 +772,18 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCannotResolvePrimaryConstructorParameterInFunctionWithMultipleNestedBlocks() = codegen(
+    """
+      class MyClass(@Provide val _foo: Foo) {
+        fun foo(): Foo = runBlocking {
+          run {
+            inject()
+          }
+        }
+      }
+    """
+  )
+
   @Test fun testCannotResolvePrimaryConstructorInjectableInPropertyGetter() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {

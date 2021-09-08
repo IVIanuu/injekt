@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
@@ -214,13 +215,15 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   }
 
   if (this is KtClassBody && position.parents
-      .takeWhile { it !is KtFunctionLiteral && it != this }
-      .none {
-        it is KtClassInitializer ||
-            (it is KtProperty && it.delegateExpressionOrInitializer != null) ||
-            it is KtClass ||
-            (it is KtFunction && it.parent == this) ||
-            (it is KtPropertyAccessor && it.property.parent == this)
+      .takeWhile { it != this }
+      .none { parent ->
+        parent is KtClassInitializer ||
+            (parent is KtProperty && parent.delegateExpressionOrInitializer != null &&
+                parent.delegateExpressionOrInitializer!! in position.parents
+              .takeWhile { it !is KtFunctionLiteral }) ||
+            parent is KtClass ||
+            (parent is KtNamedFunction && parent.parent == this) ||
+            (parent is KtPropertyAccessor && parent.property.parent == this)
       })
         return true
 
