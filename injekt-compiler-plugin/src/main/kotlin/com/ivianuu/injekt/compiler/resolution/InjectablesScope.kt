@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.checkCancelled
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -357,10 +356,8 @@ class InjectablesScope(
   }
 
   private fun spreadInjectables(candidate: SpreadingInjectableCandidate) {
-    for (spreadingInjectable in spreadingInjectables.toList()) {
-      checkCancelled()
+    for (spreadingInjectable in spreadingInjectables.toList())
       spreadInjectables(spreadingInjectable, candidate)
-    }
   }
 
   private fun spreadInjectables(

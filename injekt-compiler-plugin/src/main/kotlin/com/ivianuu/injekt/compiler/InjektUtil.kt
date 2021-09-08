@@ -23,10 +23,8 @@ import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
-import java.util.concurrent.CancellationException
 import kotlin.collections.set
 import kotlin.reflect.KClass
-import org.jetbrains.kotlin.com.intellij.openapi.progress.ProgressManager
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -217,15 +215,6 @@ private val KotlinType.fullyAbbreviatedType: KotlinType
     val abbreviatedType = getAbbreviatedType()
     return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
   }
-
-fun checkCancelled() {
-  try {
-    ProgressManager.checkCanceled()
-  } catch (e: CancellationException) {
-    e.printStackTrace()
-    throw e
-  }
-}
 
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")

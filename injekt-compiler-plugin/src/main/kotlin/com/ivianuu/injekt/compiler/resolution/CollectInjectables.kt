@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.checkCancelled
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -130,7 +129,6 @@ fun ResolutionScope.collectInjectables(
   onEach: (DeclarationDescriptor) -> Unit = {}
 ): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
-    checkCancelled()
     onEach(declaration)
     when (declaration) {
       is ClassDescriptor -> declaration
@@ -254,7 +252,6 @@ fun CallableRef.collectInjectables(
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
-  checkCancelled()
   if (this in seen) return
   seen += this
   if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
@@ -303,7 +300,6 @@ fun List<ProviderImport>.collectImportedInjectables(
 ): List<CallableRef> = flatMap { import ->
   buildList<CallableRef> {
     if (!import.isValidImport()) return@buildList
-    checkCancelled()
 
     fun importObjectIfExists(
       fqName: FqName,

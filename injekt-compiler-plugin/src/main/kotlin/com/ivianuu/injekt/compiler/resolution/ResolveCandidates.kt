@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkCancelled
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -220,7 +219,6 @@ private fun InjectablesScope.resolveRequest(
   lookupLocation: LookupLocation,
   fromTypeScope: Boolean
 ): ResolutionResult {
-  checkCancelled()
   resultsByType[request.type]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request, lookupLocation)
@@ -275,7 +273,6 @@ private fun InjectablesScope.computeForCandidate(
   candidate: Injectable,
   compute: () -> ResolutionResult,
 ): ResolutionResult {
-  checkCancelled()
   resultsByCandidate[candidate]?.let { return it }
   if (candidate.dependencies.isEmpty())
     return compute().also { resultsByCandidate[candidate] = it }
