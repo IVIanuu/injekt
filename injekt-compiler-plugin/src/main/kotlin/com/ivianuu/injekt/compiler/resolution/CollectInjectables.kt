@@ -370,50 +370,46 @@ fun List<ProviderImport>.collectImportedInjectables(
 
 fun TypeRef.collectTypeScopeInjectables(
   @Inject context: AnalysisContext
-): InjectablesWithLookups {
-  val finalType = withNullability(false)
+): InjectablesWithLookups = context.injektContext.typeScopeInjectables.getOrPut(key) {
+  val injectables = mutableListOf<CallableRef>()
+  val lookedUpPackages = mutableSetOf<FqName>()
 
-  return context.injektContext.typeScopeInjectables.getOrPut(finalType) {
-    val injectables = mutableListOf<CallableRef>()
-    val lookedUpPackages = mutableSetOf<FqName>()
+  val processedTypes = mutableSetOf<TypeRef>()
+  val nextTypes = allTypes.toMutableList()
 
-    val processedTypes = mutableSetOf<TypeRef>()
-    val nextTypes = finalType.allTypes.toMutableList()
+  while (nextTypes.isNotEmpty()) {
+    val currentType = nextTypes.removeFirst()
+    if (currentType.isStarProjection) continue
+    if (currentType in processedTypes) continue
+    processedTypes += currentType
 
-    while (nextTypes.isNotEmpty()) {
-      val currentType = nextTypes.removeFirst()
-      if (currentType.isStarProjection) continue
-      if (currentType in processedTypes) continue
-      processedTypes += currentType
+    val resultForType = currentType.collectInjectablesForSingleType()
 
-      val resultForType = currentType.collectInjectablesForSingleType()
+    injectables += resultForType.injectables
+    lookedUpPackages += resultForType.lookedUpPackages
 
-      injectables += resultForType.injectables
-      lookedUpPackages += resultForType.lookedUpPackages
-
-      nextTypes += resultForType.injectables
-        .toList()
-        .flatMap { it.type.allTypes }
-    }
-
-    injectables.removeAll { callable ->
-      if (callable.callable !is CallableMemberDescriptor) return@removeAll false
-      val containingObjectClassifier = callable.callable.containingDeclaration
-        .safeAs<ClassDescriptor>()
-        ?.takeIf { it.kind == ClassKind.OBJECT }
-        ?.toClassifierRef()
-
-      containingObjectClassifier != null && injectables.any { other ->
-        other.callable is LazyClassReceiverParameterDescriptor &&
-            other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
-      }
-    }
-
-    InjectablesWithLookups(
-      injectables = injectables.distinct(),
-      lookedUpPackages = lookedUpPackages
-    )
+    nextTypes += resultForType.injectables
+      .toList()
+      .flatMap { it.type.allTypes }
   }
+
+  injectables.removeAll { callable ->
+    if (callable.callable !is CallableMemberDescriptor) return@removeAll false
+    val containingObjectClassifier = callable.callable.containingDeclaration
+      .safeAs<ClassDescriptor>()
+      ?.takeIf { it.kind == ClassKind.OBJECT }
+      ?.toClassifierRef()
+
+    containingObjectClassifier != null && injectables.any { other ->
+      other.callable is LazyClassReceiverParameterDescriptor &&
+          other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
+    }
+  }
+
+  InjectablesWithLookups(
+    injectables = injectables.distinct(),
+    lookedUpPackages = lookedUpPackages
+  )
 }
 
 data class InjectablesWithLookups(
@@ -430,9 +426,7 @@ private fun TypeRef.collectInjectablesForSingleType(
 ): InjectablesWithLookups {
   if (classifier.isTypeParameter) return InjectablesWithLookups.Empty
 
-  val finalType = withNullability(false)
-
-  context.injektContext.typeScopeInjectablesForSingleType[finalType]?.let { return it }
+  context.injektContext.typeScopeInjectablesForSingleType[key]?.let { return it }
 
   val injectables = mutableListOf<CallableRef>()
   val lookedUpPackages = mutableSetOf<FqName>()
@@ -440,7 +434,7 @@ private fun TypeRef.collectInjectablesForSingleType(
   val result = InjectablesWithLookups(injectables, lookedUpPackages)
 
   // we might recursively call our self so we make sure that we do not end up in a endless loop
-  context.injektContext.typeScopeInjectablesForSingleType[finalType] = result
+  context.injektContext.typeScopeInjectablesForSingleType[key] = result
 
   val packageResult = collectPackageTypeScopeInjectables()
   injectables += packageResult.injectables

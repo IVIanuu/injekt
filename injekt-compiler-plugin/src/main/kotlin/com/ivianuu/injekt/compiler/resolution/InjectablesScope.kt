@@ -51,7 +51,7 @@ class InjectablesScope(
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
-  val typeScopes = mutableMapOf<TypeRef, InjectablesScope>()
+  val typeScopes = mutableMapOf<TypeRefKey, InjectablesScope>()
 
   private data class InjectableKey(
     val type: TypeRef,

@@ -656,23 +656,20 @@ fun TypeInjectablesScope(
   type: TypeRef,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope {
-  val finalType = type.withNullability(false)
-  return parent.typeScopes.getOrPut(finalType) {
-    val injectablesWithLookups = finalType.collectTypeScopeInjectables()
-    InjectablesScope(
-      name = "TYPE ${finalType.renderToString()}",
-      parent = parent,
-      callContext = CallContext.DEFAULT,
-      ownerDescriptor = finalType.classifier.descriptor,
-      file = null,
-      initialInjectables = injectablesWithLookups.injectables,
-      imports = injectablesWithLookups.lookedUpPackages
-        .map { ResolvedProviderImport(null, "$it.*", it) },
-      typeParameters = emptyList(),
-      nesting = parent.nesting
-    )
-  }
+): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
+  val injectablesWithLookups = type.collectTypeScopeInjectables()
+  InjectablesScope(
+    name = "TYPE ${type.renderToString()}",
+    parent = parent,
+    callContext = CallContext.DEFAULT,
+    ownerDescriptor = type.classifier.descriptor,
+    file = null,
+    initialInjectables = injectablesWithLookups.injectables,
+    imports = injectablesWithLookups.lookedUpPackages
+      .map { ResolvedProviderImport(null, "$it.*", it) },
+    typeParameters = emptyList(),
+    nesting = parent.nesting
+  )
 }
 
 private fun ImportInjectablesScope(

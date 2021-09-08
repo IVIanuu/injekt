@@ -242,6 +242,14 @@ class TypeRef(
     }
   }
 
+  private var _key: TypeRefKey? = null
+  val key: TypeRefKey get() {
+    if (_key == null) {
+      _key = TypeRefKey(classifier, arguments.map { it.key })
+    }
+    return _key!!
+  }
+
   private var _superTypes: List<TypeRef>? = null
   val superTypes: List<TypeRef> get() {
     if (_superTypes == null) {
@@ -312,6 +320,11 @@ class TypeRef(
     return _hashCode
   }
 }
+
+data class TypeRefKey(
+  val classifier: ClassifierRef,
+  val arguments: List<TypeRefKey>
+)
 
 fun TypeRef.withArguments(arguments: List<TypeRef>): TypeRef =
   if (this.arguments == arguments) this

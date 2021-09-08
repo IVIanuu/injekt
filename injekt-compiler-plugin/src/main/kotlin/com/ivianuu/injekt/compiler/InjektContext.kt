@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesWithLookups
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.TypeRefKey
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -88,8 +89,8 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val classifierInfos = mutableMapOf<ClassifierDescriptor, ClassifierInfo>()
   val elementScopes = mutableMapOf<KtElement, InjectablesScope>()
   val declarationScopes = mutableMapOf<DeclarationDescriptor, InjectablesScope>()
-  val typeScopeInjectables = mutableMapOf<TypeRef, InjectablesWithLookups>()
-  val typeScopeInjectablesForSingleType = mutableMapOf<TypeRef, InjectablesWithLookups>()
+  val typeScopeInjectables = mutableMapOf<TypeRefKey, InjectablesWithLookups>()
+  val typeScopeInjectablesForSingleType = mutableMapOf<TypeRefKey, InjectablesWithLookups>()
   val packageTypeScopeInjectables = mutableMapOf<FqName, InjectablesWithLookups>()
 
   fun classifierDescriptorForFqName(
@@ -156,7 +157,6 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
 
   fun packageFragmentsForFqName(fqName: FqName): List<PackageFragmentDescriptor> =
     module.getPackage(fqName).fragments
-
 }
 
 val InjektContextModuleCapability = ModuleCapability<InjektContext>("InjektContext")
