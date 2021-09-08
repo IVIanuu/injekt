@@ -506,10 +506,6 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
     if (bSubClassNesting < aSubClassNesting) return 1
   }
 
-  val diff = compareType(type(a), type(b), requestedType)
-  if (diff < 0) return -1
-  if (diff > 0) return 1
-
   val importPathA = importPath(a)
   val importPathB = importPath(b)
 
@@ -517,7 +513,7 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
     if (!importPathA.endsWith("*")
       && importPathB.endsWith("*")) return -1
     if (!importPathB.endsWith("*") &&
-        importPathA.endsWith("*")) return 1
+      importPathA.endsWith("*")) return 1
   }
 
   if (requestedType != null && aIsFromTypeScope && bIsFromTypeScope) {
@@ -541,6 +537,10 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
     if (aOrigin.ordinal > bOrigin.ordinal) return -1
     if (bOrigin.ordinal > aOrigin.ordinal) return 1
   }
+
+  val diff = compareType(type(a), type(b), requestedType)
+  if (diff < 0) return -1
+  if (diff > 0) return 1
 
   return 0
 }

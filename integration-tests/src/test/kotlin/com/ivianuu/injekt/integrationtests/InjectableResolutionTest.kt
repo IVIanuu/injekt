@@ -566,6 +566,47 @@ class InjectableResolutionTest {
     invokeSingleFile() shouldBe "explicit"
   }
 
+  @Test fun testPrefersExplicitImportOverStarImport2() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            interface Logger
+
+            @Provide object NoopLogger : Logger
+
+            @Provide class PrintingLogger : Logger
+          """,
+          packageFqName = FqName("injectables")
+        ),
+        source(
+          """
+            @Provide @Scoped<AppScope> class AndroidLogger : Logger {
+              companion object {
+                @Provide inline fun logger(
+                  android: () -> AndroidLogger,
+                  noop: () -> NoopLogger
+                ): Logger = android()
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.*", "injectables.AndroidLogger.Companion.logger")
+            fun invoke() = inject<injectables.Logger>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile()!!.javaClass.name shouldBe "injectables.AndroidLogger"
+  }
+
   @Test fun testDoesNotPreferInjectablesInTheSameFile() = codegen(
     """
       @Provide val otherFoo = Foo()
