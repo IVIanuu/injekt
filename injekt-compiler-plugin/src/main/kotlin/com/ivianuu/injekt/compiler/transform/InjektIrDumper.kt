@@ -56,6 +56,7 @@ class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
         try {
           newFile.createNewFile()
           newFile.writeText(content)
+          println("Generated $newFile:\n$content")
         } catch (e: Throwable) {
           throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
         }
