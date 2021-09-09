@@ -294,7 +294,9 @@ private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(clazz, parent)) {
+): InjectablesScope = context.injektContext.declarationScopes.getOrPut(
+  DescriptorWithParentScope(clazz, parent.name)
+) {
   val finalParent = ClassImportsInjectablesScope(clazz, parent)
   val name = if (clazz.isCompanionObject)
     "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
@@ -427,7 +429,9 @@ private fun FunctionInjectablesScope(
   parent: InjectablesScope,
   @Inject context: AnalysisContext
 ): InjectablesScope =
-  context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(function, parent)) {
+  context.injektContext.declarationScopes.getOrPut(
+    DescriptorWithParentScope(function, parent.name)
+  ) {
       val finalParent = FunctionImportsInjectablesScope(function, parent)
       val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null)
       val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
@@ -496,7 +500,9 @@ private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(property, parent)) {
+): InjectablesScope = context.injektContext.declarationScopes.getOrPut(
+  DescriptorWithParentScope(property, parent.name)
+) {
   val finalParent = property
     .findPsi()
     .safeAs<KtProperty>()
@@ -570,7 +576,7 @@ private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(variable, parent)) {
+): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(variable, parent.name)) {
   val finalParent = variable
     .findPsi()
     .safeAs<KtProperty>()
@@ -712,5 +718,5 @@ private fun ImportInjectablesScope(
 
 data class DescriptorWithParentScope(
   val declaration: DeclarationDescriptor,
-  val parent: InjectablesScope?
+  val parentName: String?
 )
