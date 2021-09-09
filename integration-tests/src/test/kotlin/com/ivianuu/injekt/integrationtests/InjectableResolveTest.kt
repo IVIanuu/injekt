@@ -1104,4 +1104,18 @@ class InjectableResolveTest {
       }
     """
   )
+
+  @Test fun testPropertyDelegateExpressionWithVarParameterFollowedByMultipleInjectParameter() = codegen(
+    """
+      fun <T> produceState(
+        vararg keys: Any?,
+        @Inject scope: Scope,
+        @Inject key: SourceKey
+      ): State<T> = TODO()
+
+      fun invoke(@Inject scope: Scope) {
+        val scope by produceState<Int>()
+      }
+    """
+  )
 }

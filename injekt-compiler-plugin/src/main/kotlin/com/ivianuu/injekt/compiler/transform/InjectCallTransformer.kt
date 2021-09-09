@@ -94,7 +94,6 @@ import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
@@ -830,14 +829,16 @@ class InjectCallTransformer(
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
-    // ignore safe calls
-    if (result.origin == IrStatementOrigin.EQEQ)
-      return result
 
     val graph = pluginContext.bindingContext[
         InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
         SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
+
+    // some ir transformations reuse the start and end offsets
+    // we ensure that were not transforming wrong calls
+    if (graph.callee.callable.uniqueKey() != result.symbol.owner.descriptor.uniqueKey())
+      return result
 
     return DeclarationIrBuilder(pluginContext, result.symbol)
       .irBlock {
