@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -293,7 +294,7 @@ private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(clazz) {
+): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(clazz, parent)) {
   val finalParent = ClassImportsInjectablesScope(clazz, parent)
   val name = if (clazz.isCompanionObject)
     "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
@@ -425,26 +426,27 @@ private fun FunctionInjectablesScope(
   function: FunctionDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(function) {
-  val finalParent = FunctionImportsInjectablesScope(function, parent)
-  val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null)
-  val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is ConstructorDescriptor)
-    function.constructedClass.declaredTypeParameters
-  else function.typeParameters)
-    .map { it.toClassifierRef() }
-  InjectablesScope(
-    name = "$baseName ${function.fqNameSafe}",
-    parent = parameterScopes,
-    callContext = function.callContext(),
-    ownerDescriptor = function,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
-    typeParameters = typeParameters,
-    nesting = parameterScopes.nesting
-  )
-}
+): InjectablesScope =
+  context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(function, parent)) {
+      val finalParent = FunctionImportsInjectablesScope(function, parent)
+      val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null)
+      val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
+      val typeParameters = (if (function is ConstructorDescriptor)
+        function.constructedClass.declaredTypeParameters
+      else function.typeParameters)
+        .map { it.toClassifierRef() }
+      InjectablesScope(
+        name = "$baseName ${function.fqNameSafe}",
+        parent = parameterScopes,
+        callContext = function.callContext(),
+        ownerDescriptor = function,
+        file = null,
+        initialInjectables = emptyList(),
+        imports = emptyList(),
+        typeParameters = typeParameters,
+        nesting = parameterScopes.nesting
+      )
+    }
 
 private fun FunctionParameterInjectablesScopes(
   parent: InjectablesScope,
@@ -494,7 +496,7 @@ private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(property) {
+): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(property, parent)) {
   val finalParent = property
     .findPsi()
     .safeAs<KtProperty>()
@@ -568,7 +570,7 @@ private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(variable) {
+): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(variable, parent)) {
   val finalParent = variable
     .findPsi()
     .safeAs<KtProperty>()
@@ -707,3 +709,8 @@ private fun ImportInjectablesScope(
     nesting = parent?.nesting?.inc()?.inc() ?: 1
   )
 }
+
+data class DescriptorWithParentScope(
+  val declaration: DeclarationDescriptor,
+  val parent: InjectablesScope?
+)

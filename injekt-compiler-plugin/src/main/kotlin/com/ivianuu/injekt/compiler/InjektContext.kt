@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.DescriptorWithParentScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesWithLookups
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
@@ -88,7 +89,7 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val callableInfos = mutableMapOf<CallableDescriptor, CallableInfo>()
   val classifierInfos = mutableMapOf<ClassifierDescriptor, ClassifierInfo>()
   val elementScopes = mutableMapOf<KtElement, InjectablesScope>()
-  val declarationScopes = mutableMapOf<DeclarationDescriptor, InjectablesScope>()
+  val declarationScopes = mutableMapOf<DescriptorWithParentScope, InjectablesScope>()
   val typeScopeInjectables = mutableMapOf<TypeRefKey, InjectablesWithLookups>()
   val typeScopeInjectablesForSingleType = mutableMapOf<TypeRefKey, InjectablesWithLookups>()
   val packageTypeScopeInjectables = mutableMapOf<FqName, InjectablesWithLookups>()
