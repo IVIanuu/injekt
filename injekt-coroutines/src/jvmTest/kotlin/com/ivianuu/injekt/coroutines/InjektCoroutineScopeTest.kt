@@ -20,7 +20,10 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.scope.AppScope
 import com.ivianuu.injekt.scope.DisposableScope
+import com.ivianuu.injekt.scope.Framework
+import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.requireElement
+import com.ivianuu.injekt.scope.scopeOf
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -30,8 +33,16 @@ import kotlinx.coroutines.isActive
 import org.junit.Test
 
 class InjektCoroutineScopeTest {
+  @Test fun testScopedCoroutineScopeLifecycle() {
+    @Provide val scope = scopeOf()
+    val coroutineScope = scopedCoroutineScope()
+    coroutineScope.isActive.shouldBeTrue()
+    scope.dispose()
+    coroutineScope.isActive.shouldBeFalse()
+  }
+
   @Test fun testCoroutineScopeElementLifecycle() {
-    @Provide val scope = inject<AppScope>()
+    @Provide val scope: Scope = inject<@Framework AppScope>()
     val coroutineScope = requireElement<InjektCoroutineScope<AppScope>>()
     coroutineScope.isActive.shouldBeTrue()
     (scope as DisposableScope).dispose()
@@ -41,7 +52,7 @@ class InjektCoroutineScopeTest {
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val customContext: InjektCoroutineContext<AppScope> = Dispatchers.Main
-    @Provide val scope = inject<AppScope>()
+    @Provide val scope: Scope = inject<@Framework AppScope>()
     val coroutineScope = requireElement<InjektCoroutineScope<AppScope>>()
     coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
