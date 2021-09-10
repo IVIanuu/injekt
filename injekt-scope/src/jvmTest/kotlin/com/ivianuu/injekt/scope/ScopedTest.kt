@@ -33,7 +33,7 @@ class ScopedTest {
       return Foo()
     }
 
-    @Provide val scope: TestScope = DisposableScope()
+    @Provide val scope: TestScope = scopeOf()
     callCount shouldBe 0
     val a = inject<Foo>()
     callCount shouldBe 1

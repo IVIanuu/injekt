@@ -25,19 +25,20 @@ import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildScopeModule1
 import com.ivianuu.injekt.scope.DisposableScope
 import com.ivianuu.injekt.scope.Scope
+import com.ivianuu.injekt.scope.requireElement
 
 /**
  * Returns the [ActivityScope] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
-val ComponentActivity.activityScope: ActivityScope
+@Provide val ComponentActivity.activityScope: ActivityScope
   get() {
     activityScopes[this]?.let { return it }
     return synchronized(activityScopes) {
       activityScopes[this]?.let { return it }
-      val scope = activityRetainedScope
-        .element<@ChildScopeFactory (ComponentActivity) -> ActivityScope>()
-        .invoke(this)
+      val scope = requireElement<@ChildScopeFactory (ComponentActivity) -> ActivityScope>(
+        activityRetainedScope
+      ).invoke(this)
       activityScopes[this] = scope
 
       lifecycle.addObserver(object : LifecycleEventObserver {

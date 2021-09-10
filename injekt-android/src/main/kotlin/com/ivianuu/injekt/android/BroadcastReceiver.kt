@@ -24,6 +24,7 @@ import com.ivianuu.injekt.scope.AppScope
 import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildScopeModule3
 import com.ivianuu.injekt.scope.Scope
+import com.ivianuu.injekt.scope.requireElement
 
 /**
  * Returns a new [ReceiverScope] which must be manually stored and disposed
@@ -31,13 +32,11 @@ import com.ivianuu.injekt.scope.Scope
 fun BroadcastReceiver.createReceiverScope(
   context: Context,
   intent: Intent,
-): ReceiverScope = context
-  .appScope
-  .element<@ChildScopeFactory (
+): ReceiverScope = requireElement<@ChildScopeFactory (
     BroadcastReceiver,
     ReceiverContext,
     ReceiverIntent
-  ) -> ReceiverScope>()
+  ) -> ReceiverScope>(context.appScope)
   .invoke(this, context, intent)
 
 

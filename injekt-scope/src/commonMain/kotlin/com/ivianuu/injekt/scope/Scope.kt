@@ -30,14 +30,14 @@ interface Scope {
   /**
    * Returns the scoped value [T] for [key] or null
    */
-  @InternalScopeApi fun <T : Any> getScopedValueOrNull(key: Any): T?
+  @InternalScopeApi fun <T> getScopedValueOrNull(key: Any): T?
 
   /**
    * Store's [value] for [key]
    *
    * If [value] is a [Disposable] [Disposable.dispose] will be invoked once this scope gets disposed
    */
-  @InternalScopeApi fun <T : Any> setScopedValue(key: Any, value: T)
+  @InternalScopeApi fun <T> setScopedValue(key: Any, value: T)
 
   /**
    * Removes the scoped value for [key]
@@ -45,108 +45,103 @@ interface Scope {
   @InternalScopeApi fun removeScopedValue(key: Any)
 
   /**
-   * Returns the element for [key] or throws if it doesn't exist
+   * All elements of this scope
    */
-  fun <T> element(@Inject key: TypeKey<T>): T
+  @InternalScopeApi val elements: Map<String, () -> Any?>
+}
 
-  companion object {
-    @Tag private annotation class Parent
+/**
+ * Returns the element of [T] for [key] in [scope] if exists or null
+ */
+@OptIn(InternalScopeApi::class)
+fun <T> elementOrNull(@Inject scope: Scope, @Inject key: TypeKey<T>): T? =
+  scope.elements[key.value]?.invoke() as? T
 
-    @OptIn(InternalScopeApi::class)
-    @Provide
-    fun <S : Scope> default(
-      key: TypeKey<S>,
-      parent: @Parent Scope? = null,
-      elementsFactory: (
-        @Provide S,
-        @Provide @Parent Scope?
-      ) -> Set<ScopeElementPair<S>> = { _, _ -> emptySet() },
-      observersFactory: (
-        @Provide S,
-        @Provide @Parent Scope?
-      ) -> Set<ScopeObserver<S>> = { _, _ -> emptySet() }
-    ): S {
-      val scope = ElementScopeImpl(key, parent as? ElementScopeImpl)
-      @Suppress("UNCHECKED_CAST")
-      scope as S
+@Tag annotation class DefaultElementValue
 
-      if (parent != null)
-        ParentScopeDisposable(scope).bind(parent)
+/**
+ * Returns the element of [T] for [key] in [scope] if exists or the result [defaultValue]
+ */
+inline fun <T> element(
+  @Inject scope: Scope,
+  @Inject key: TypeKey<T>,
+  @Inject defaultValue: () -> @DefaultElementValue T
+): T = elementOrNull(scope, key) ?: defaultValue()
 
-      val elements = elementsFactory(scope, scope)
+/**
+ * Returns the element of [T] for [key] in [scope] if exists or throws
+ */
+@OptIn(InternalScopeApi::class)
+fun <T> requireElement(@Inject scope: Scope, @Inject key: TypeKey<T>): T {
+  val factory = scope.elements[key.value]
+  checkNotNull(factory) { "No element provided for $key" }
+  return factory() as T
+}
 
-      scope.elements = if (elements.isEmpty()) emptyMap()
-      else HashMap<String, () -> Any>(elements.size).apply {
-        for (elementPair in elements)
-          this[elementPair.key.value] = elementPair.factory
+class ProvidedElement<T> internal constructor(
+  @Inject val key: TypeKey<T>,
+  @Inject val merge: MergeElement<T>,
+  val factory: () -> T
+)
+
+fun <T> provideElement(
+  @Inject key: TypeKey<T>,
+  @Inject merge: MergeElement<T>,
+  factory: () -> T
+) = ProvidedElement(key, merge, factory)
+
+fun <T> provideDefaultElement(
+  @Inject key: TypeKey<T>,
+  factory: () -> T
+) = ProvidedElement(key, { old, new -> old?.invoke() ?: new() }, factory)
+
+typealias MergeElement<T> = ((() -> T)?, () -> T) -> T
+
+private val OverrideMergeElement: MergeElement<Any?> = { _, new -> new }
+
+@Provide fun <T> mergeElement(): MergeElement<T> = OverrideMergeElement as MergeElement<T>
+
+private fun mergeElements(
+  oldElements: Map<String, () -> Any?>,
+  newElements: Array<out ProvidedElement<*>>
+): Map<String, () -> Any?> {
+  if (newElements.isEmpty()) return oldElements
+
+  val newMap = oldElements.toMutableMap()
+
+  for (newValue in newElements) {
+    val oldFactory = newMap[newValue.key.value]
+    newMap[newValue.key.value] = when {
+      newValue.merge === OverrideMergeElement -> newValue.factory
+      else -> {
+        {
+          (newValue.merge as MergeElement<Any?>)
+            .invoke(oldFactory, newValue.factory)
+        }
       }
-
-      val observers = observersFactory(scope, scope)
-
-      for (observer in observers)
-        invokeOnDispose(scope) { observer.onDispose() }
-
-      for (observer in observers)
-        observer.onInit()
-
-      return scope
     }
   }
-}
 
-/**
- * Lifecycle observer for [Scope] of [S]
- */
-interface ScopeObserver<S : Scope> {
-  /**
-   * Will be called when the scope gets initialized
-   */
-  fun onInit() {
-  }
-
-  /**
-   * Will be called when the scope gets disposed
-   */
-  fun onDispose() {
-  }
-}
-
-class ScopeElementPair<S : Scope>(val key: TypeKey<*>, val factory: () -> Any)
-
-/**
- * Registers the declaration in the scope [S]
- *
- * Example:
- * ```
- * @Provide
- * @ScopeElement<AppScope>
- * class MyAppDeps(val api: Api, val database: Database)
- *
- * fun runApp(@Inject appScope: AppScope) {
- *   val deps = appScope.element<MyAppDeps>()
- * }
- * ```
- */
-@Tag annotation class ScopeElement<S : Scope> {
-  companion object {
-    @Provide class Module<@com.ivianuu.injekt.Spread T : @ScopeElement<S> U, U : Any, S : Scope> {
-      @Provide inline fun elementPair(
-        noinline factory: () -> T,
-        key: TypeKey<U>
-      ): ScopeElementPair<S> = ScopeElementPair(key, factory)
-
-      @Provide inline fun elementAccessor(scope: S, key: TypeKey<U>): U = scope.element(key)
-    }
-  }
+  return newMap
 }
 
 @RequiresOptIn annotation class InternalScopeApi
 
+@OptIn(InternalScopeApi::class)
+operator fun childScope(
+  vararg elements: ProvidedElement<*>,
+  @Inject parentScope: Scope
+): DisposableScope = ScopeImpl(mergeElements(parentScope.elements, elements))
+  .also { ParentScopeDisposable(it).bind(parentScope) }
+
 /**
  * Runs the [block] with a fresh [Scope] which will be disposed after the execution
  */
-inline fun <R> withScope(block: (@Inject Scope) -> R): R {
-  @Provide val scope = DisposableScope()
+inline fun <R> withScope(
+  vararg elements: ProvidedElement<*>,
+  block: (@Inject Scope) -> R
+): R {
+  @Provide val scope = scopeOf(*elements)
   return try {
     block()
   } finally {
@@ -158,9 +153,9 @@ inline fun <R> withScope(block: (@Inject Scope) -> R): R {
  * Returns an existing instance of [T] for key [key] or creates and caches a new instance by calling function [computation]
  */
 @OptIn(InternalScopeApi::class)
-inline fun <T : Any> scoped(key: Any, @Inject scope: Scope, computation: () -> T): T {
+inline fun <T> scoped(key: Any, @Inject scope: Scope, computation: () -> T): T {
   scope.getScopedValueOrNull<T>(key)?.let { return it }
-  scope.withLock {
+  synchronized(scope) {
     scope.getScopedValueOrNull<T>(key)?.let { return it }
     val value = computation()
     scope.setScopedValue(key, value)
@@ -168,15 +163,65 @@ inline fun <T : Any> scoped(key: Any, @Inject scope: Scope, computation: () -> T
   }
 }
 
-inline fun <T : Any> scoped(@Inject key: TypeKey<T>, @Inject scope: Scope, computation: () -> T): T =
+inline fun <T> scoped(@Inject key: TypeKey<T>, @Inject scope: Scope, computation: () -> T): T =
   scoped(key = key.value, computation = computation)
+
+@OptIn(InternalScopeApi::class)
+inline fun <T> scoped(
+  key: Any,
+  vararg args: Any?,
+  @Inject scope: Scope,
+  computation: () -> T
+): T {
+  val holder = scoped(key) { ScopedValueHolder() }
+
+  synchronized(holder) {
+    if (!args.contentEquals(holder.args)) {
+      (holder.value as? Disposable)?.dispose()
+      holder.value = computation()
+      holder.args = args
+      (holder.value as? ScopeObserver)?.init()
+    }
+  }
+
+  return holder.value as T
+}
+
+@PublishedApi internal class ScopedValueHolder : Disposable {
+  var value: Any? = null
+  var args: Array<out Any?>? = null
+
+  override fun dispose() {
+    args = null
+    (value as? Disposable)?.dispose()
+    value = null
+  }
+}
+
+/**
+ * Invokes the [action] function if once for [key] in [scope]
+ */
+fun onInit(key: Any, @Inject scope: Scope, action: () -> Unit) {
+  data class OnInitKey(val key: Any)
+  scoped(OnInitKey(key)) { action() }
+}
 
 /**
  * Invokes the [action] function once [scope] gets disposed
  * or invokes it synchronously if [scope] is already disposed
  */
-inline fun invokeOnDispose(@Inject scope: Scope, crossinline action: () -> Unit) {
+inline fun onDispose(@Inject scope: Scope, crossinline action: () -> Unit): Disposable =
   Disposable { action() }.bind()
+
+/**
+ * Lifecycle observer for [Scope]
+ */
+interface ScopeObserver : Disposable {
+  /**
+   * Will be called once the observer is attached to a [Scope]
+   */
+  fun init() {
+  }
 }
 
 /**
@@ -187,6 +232,11 @@ fun interface Disposable {
    * Will be called when the hosting [Scope] gets disposed
    */
   fun dispose()
+}
+
+private object NoopDisposable : Disposable {
+  override fun dispose() {
+  }
 }
 
 /**
@@ -208,34 +258,42 @@ fun <T> T.asDisposable(@Inject disposer: Disposer<T>): Disposable =
 /**
  * Disposes this value with [scope] using [disposer]
  */
-fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): T =
-  apply { asDisposable().bind() }
+fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): Disposable =
+  asDisposable().bind()
 
 /**
  * Disposes this disposable once [scope] gets disposed
  * or synchronously if [scope] is already disposed
  */
 @OptIn(InternalScopeApi::class)
-fun <T : Disposable> T.bind(@Inject scope: Scope): T {
+fun <T : Disposable> T.bind(@Inject scope: Scope): Disposable {
   if (scope.isDisposed) {
     dispose()
-    return this
+    return NoopDisposable
   }
-  scope.withLock {
+
+  synchronized(scope) {
     if (scope.isDisposed) {
       dispose()
-      return this
+      return NoopDisposable
     }
 
-    val disposable = Disposable { dispose() }
+    var callDispose = true
+    val disposable = Disposable {
+      if (callDispose) {
+        callDispose = false
+        dispose()
+      }
+    }
+
     scope.setScopedValue(disposable, disposable)
+    val innerDisposable = Disposable {
+      callDispose = false
+      scope.removeScopedValue(disposable)
+    }
+    return innerDisposable
   }
-
-  return this
 }
-
-@OptIn(InternalScopeApi::class)
-inline fun <R> Scope.withLock(block: () -> R): R = synchronized(this, block)
 
 /**
  * A mutable version of [Scope] which is also a [Disposable]
@@ -246,30 +304,18 @@ interface DisposableScope : Scope, Disposable
  * Returns a new [DisposableScope]
  */
 @OptIn(InternalScopeApi::class)
-fun DisposableScope(): DisposableScope = DisposableScopeImpl()
+fun scopeOf(): DisposableScope = ScopeImpl(emptyMap())
 
-@InternalScopeApi expect inline fun <T> synchronized(lock: Any, block: () -> T): T
+/**
+ * Returns a new [DisposableScope] with [elements]
+ */
+@OptIn(InternalScopeApi::class)
+fun scopeOf(vararg elements: ProvidedElement<*>): DisposableScope =
+  ScopeImpl(mergeElements(emptyMap(), elements))
 
-@InternalScopeApi
-private class ElementScopeImpl(
-  private val key: TypeKey<*>,
-  private val parent: ElementScopeImpl?
-) : DisposableScopeImpl() {
-  lateinit var elements: Map<String, () -> Any>
-
-  override fun <T> element(@Inject key: TypeKey<T>): T =
-    elementOrNull() ?: error("No element for ${key.value} in ${this.key.value}")
-
-  @Suppress("UNCHECKED_CAST")
-  private fun <T> elementOrNull(@Inject key: TypeKey<T>): T? =
-    elements[key.value]?.invoke() as? T ?: parent?.elementOrNull(key)
-}
-
-@InternalScopeApi
-private open class DisposableScopeImpl : DisposableScope {
-  override fun <T> element(@Inject key: TypeKey<T>): T =
-    throw UnsupportedOperationException("Not support")
-
+@InternalScopeApi internal class ScopeImpl(
+  override val elements: Map<String, () -> Any?>
+) : DisposableScope {
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() {
@@ -277,29 +323,32 @@ private open class DisposableScopeImpl : DisposableScope {
       return synchronized(this) { _isDisposed }
     }
 
-  private val values = hashMapOf<Any, Any>()
+  private val scopedValues = hashMapOf<Any, Any?>()
 
   @Suppress("UNCHECKED_CAST")
-  override fun <T : Any> getScopedValueOrNull(key: Any): T? = values[key] as? T
+  override fun <T> getScopedValueOrNull(key: Any): T? = scopedValues[key] as? T
 
-  override fun <T : Any> setScopedValue(key: Any, value: T) {
+  override fun <T> setScopedValue(key: Any, value: T) {
     synchronizedWithDisposedCheck {
       removeAndDispose(key)
-      values[key] = value
+      scopedValues[key] = value
+      (value as? ScopeObserver)?.init()
+      Unit
     } ?: kotlin.run {
       (value as? Disposable)?.dispose()
     }
   }
 
   override fun removeScopedValue(key: Any) {
-    synchronizedWithDisposedCheck { removeAndDispose(key) }
+    synchronizedWithDisposedCheck { scopedValues.remove(key) }
+      ?.let { (it as? Disposable)?.dispose() }
   }
 
   override fun dispose() {
     synchronizedWithDisposedCheck {
       _isDisposed = true
-      if (values.isNotEmpty()) {
-        values.keys
+      if (scopedValues.isNotEmpty()) {
+        scopedValues.keys
           .toList()
           .forEach { removeAndDispose(it) }
       }
@@ -307,7 +356,7 @@ private open class DisposableScopeImpl : DisposableScope {
   }
 
   private fun removeAndDispose(key: Any) {
-    (values.remove(key) as? Disposable)?.dispose()
+    (scopedValues.remove(key) as? Disposable)?.dispose()
   }
 
   private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {
@@ -316,19 +365,5 @@ private open class DisposableScopeImpl : DisposableScope {
       if (_isDisposed) return null
       return block()
     }
-  }
-}
-
-private class ParentScopeDisposable(scope: DisposableScope) : Disposable {
-  private var scope: DisposableScope? = scope
-
-  init {
-    // do not leak a reference to the child scope
-    invokeOnDispose(scope) { this.scope = null }
-  }
-
-  override fun dispose() {
-    scope?.dispose()
-    scope = null
   }
 }

@@ -27,18 +27,18 @@ abstract class AbstractChildScopeModule<P : Scope, T, S : T> {
 }
 
 class ChildScopeModule0<P : Scope, C : Scope> :
-  AbstractChildScopeModule<P, () -> C, () -> C>()
+  AbstractChildScopeModule<P, () -> C, () -> @Framework C>()
 
 class ChildScopeModule1<P : Scope, P1, C : Scope> : AbstractChildScopeModule<P,
       (P1) -> C,
-      (@Provide @ScopeElement<C> P1) -> C>()
+      (@Provide @ScopeElement<C> P1) -> @Framework C>()
 
 class ChildScopeModule2<P : Scope, P1, P2, C : Scope> : AbstractChildScopeModule<P,
       (P1, P2) -> C,
       (
   @Provide @ScopeElement<C> P1,
   @Provide @ScopeElement<C> P2
-) -> C>()
+) -> @Framework C>()
 
 class ChildScopeModule3<P : Scope, P1, P2, P3, C : Scope> : AbstractChildScopeModule<P,
       (P1, P2, P3) -> C,
@@ -46,7 +46,7 @@ class ChildScopeModule3<P : Scope, P1, P2, P3, C : Scope> : AbstractChildScopeMo
   @Provide @ScopeElement<C> P1,
   @Provide @ScopeElement<C> P2,
   @Provide @ScopeElement<C> P3
-) -> C>()
+) -> @Framework C>()
 
 class ChildScopeModule4<P : Scope, P1, P2, P3, P4, C : Scope> :
   AbstractChildScopeModule<P,
@@ -56,7 +56,7 @@ class ChildScopeModule4<P : Scope, P1, P2, P3, P4, C : Scope> :
     @Provide @ScopeElement<C> P2,
     @Provide @ScopeElement<C> P3,
     @Provide @ScopeElement<C> P4
-  ) -> C>()
+  ) -> @Framework C>()
 
 class ChildScopeModule5<P : Scope, P1, P2, P3, P4, P5, C : Scope> :
   AbstractChildScopeModule<P,
@@ -67,4 +67,4 @@ class ChildScopeModule5<P : Scope, P1, P2, P3, P4, P5, C : Scope> :
     @Provide @ScopeElement<C> P3,
     @Provide @ScopeElement<C> P4,
     @Provide @ScopeElement<C> P5
-  ) -> C>()
+  ) -> @Framework C>()

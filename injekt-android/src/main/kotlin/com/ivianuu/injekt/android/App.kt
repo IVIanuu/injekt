@@ -21,11 +21,12 @@ import android.content.Context
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.scope.Framework
 
 /**
  * Returns the [AppScope] hosted in the application
  */
-val Context.appScope: AppScope
+@Provide val Context.appScope: AppScope
   get() = (applicationContext as? AppScopeOwner)?.appScope
     ?: error("application does not implement AppScopeOwner")
 
@@ -55,5 +56,5 @@ interface AppScopeOwner {
  * Creates the [AppScope] which must be manually stored
  */
 inline fun Application.createAppScope(
-  @Inject scopeFactory: (@Provide Application) -> AppScope
+  @Inject scopeFactory: (@Provide Application) -> @Framework AppScope
 ): AppScope = scopeFactory(this)

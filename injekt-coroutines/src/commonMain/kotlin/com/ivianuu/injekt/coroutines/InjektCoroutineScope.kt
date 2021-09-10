@@ -16,16 +16,60 @@
 
 package com.ivianuu.injekt.coroutines
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.TypeKey
+import com.ivianuu.injekt.common.typeKeyOf
+import com.ivianuu.injekt.scope.DefaultSourceKey
 import com.ivianuu.injekt.scope.Disposable
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.ScopeElement
+import com.ivianuu.injekt.scope.ScopeObserver
 import com.ivianuu.injekt.scope.scoped
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+
+fun launch(
+  @Inject scope: Scope,
+  block: suspend CoroutineScope.() -> Unit
+): Job = scopedCoroutineScope().launch(block = block)
+
+fun launchedEffect(
+  vararg args: Any?,
+  @Inject key: @DefaultSourceKey Any,
+  @Inject scope: Scope,
+  block: suspend CoroutineScope.() -> Unit
+): Disposable = scoped(key, *args) {
+  LaunchedEffectImpl(block = block)
+}
+
+private class LaunchedEffectImpl(
+  @Inject private val scope: Scope,
+  private val block: suspend CoroutineScope.() -> Unit
+) : ScopeObserver {
+  private var job: Job? = null
+
+  override fun init() {
+    job?.cancel()
+    job = scopedCoroutineScope().launch(block = block)
+  }
+
+  override fun dispose() {
+    job?.cancel()
+    job = null
+  }
+}
+
+inline fun scopedCoroutineScope(
+  key: Any = typeKeyOf<CoroutineScope>(),
+  @Inject scope: Scope,
+  context: () -> CoroutineContext = { EmptyCoroutineContext }
+): CoroutineScope = scoped(key) { DisposableCoroutineScope(context()) }
 
 /**
  * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
@@ -38,15 +82,15 @@ typealias InjektCoroutineScope<S> = CoroutineScope
 /**
  * Installs a [InjektCoroutineScope] for scope [S]
  */
-@Provide fun <S : Scope> injektCoroutineScopeElement(
-  context: InjektCoroutineContext<S>,
+@Provide inline fun <S : Scope> injektCoroutineScopeElement(
+  scope: S,
   nameKey: TypeKey<S>,
-  scope: S
-): @ScopeElement<S> InjektCoroutineScope<S> = scoped<InjektCoroutineScope<S>> {
-  DisposableCoroutineScope(context)
-}
+  context: () -> InjektCoroutineContext<S>
+): @ScopeElement<S> InjektCoroutineScope<S> = scopedCoroutineScope(
+  typeKeyOf<InjektCoroutineScope<S>>()
+) { context() }
 
-private class DisposableCoroutineScope(
+@PublishedApi internal class DisposableCoroutineScope(
   context: CoroutineContext
 ) : CoroutineScope, Disposable {
   override val coroutineContext: CoroutineContext = context + SupervisorJob()

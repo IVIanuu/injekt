@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.scope.AppScope
 import com.ivianuu.injekt.scope.DisposableScope
+import com.ivianuu.injekt.scope.requireElement
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -31,7 +32,7 @@ import org.junit.Test
 class InjektCoroutineScopeTest {
   @Test fun testCoroutineScopeElementLifecycle() {
     @Provide val scope = inject<AppScope>()
-    val coroutineScope = scope.element<InjektCoroutineScope<AppScope>>()
+    val coroutineScope = requireElement<InjektCoroutineScope<AppScope>>()
     coroutineScope.isActive.shouldBeTrue()
     (scope as DisposableScope).dispose()
     coroutineScope.isActive.shouldBeFalse()
@@ -41,7 +42,7 @@ class InjektCoroutineScopeTest {
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val customContext: InjektCoroutineContext<AppScope> = Dispatchers.Main
     @Provide val scope = inject<AppScope>()
-    val coroutineScope = scope.element<InjektCoroutineScope<AppScope>>()
+    val coroutineScope = requireElement<InjektCoroutineScope<AppScope>>()
     coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
 }

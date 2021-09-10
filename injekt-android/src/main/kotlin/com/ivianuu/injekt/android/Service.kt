@@ -22,13 +22,14 @@ import com.ivianuu.injekt.scope.AppScope
 import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildScopeModule1
 import com.ivianuu.injekt.scope.Scope
+import com.ivianuu.injekt.scope.requireElement
 
 /**
  * Returns a new [Scope] which must be manually stored and disposed
  */
-fun Service.createServiceScope(): ServiceScope = appScope
-  .element<@ChildScopeFactory (Service) -> ServiceScope>()
-  .invoke(this)
+fun Service.createServiceScope(): ServiceScope =
+  requireElement<@ChildScopeFactory (Service) -> ServiceScope>(appScope)
+    .invoke(this)
 
 typealias ServiceScope = Scope
 

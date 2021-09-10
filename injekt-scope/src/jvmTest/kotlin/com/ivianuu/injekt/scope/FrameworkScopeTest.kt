@@ -26,24 +26,24 @@ import org.junit.Test
 class ElementScopeTest {
   @Test fun testGetElement() {
     @Provide val element: @ScopeElement<TestScope1> String = "value"
-    val scope = inject<TestScope1>()
-    scope.element<String>() shouldBe "value"
+    val scope = inject<@Framework TestScope1>()
+    requireElement<String>(scope) shouldBe "value"
   }
 
-  @Test fun testScopeObserver() {
+  @Test fun testNamedScopeObserver() {
     var initCalls = 0
     var disposeCalls = 0
-    @Provide val observer = object : ScopeObserver<TestScope1> {
-      override fun onInit() {
+    @Provide val observer = object : NamedScopeObserver<TestScope1> {
+      override fun init() {
         initCalls++
       }
 
-      override fun onDispose() {
+      override fun dispose() {
         disposeCalls++
       }
     }
 
-    val scope = inject<TestScope1>()
+    val scope = inject<@Framework TestScope1>()
 
     initCalls shouldBe 1
     disposeCalls shouldBe 0
@@ -56,24 +56,24 @@ class ElementScopeTest {
 
   @Test fun testChildScopeModule() {
     @Provide val childScopeModule = ChildScopeModule1<TestScope1, String, TestScope2>()
-    val parentScope = inject<TestScope1>()
-    val childScope = parentScope.element<@ChildScopeFactory (String) -> TestScope2>()("42")
-    childScope.element<String>() shouldBe "42"
+    val parentScope = inject<@Framework TestScope1>()
+    val childScope = requireElement<@ChildScopeFactory (String) -> TestScope2>(parentScope)("42")
+    requireElement<String>(childScope) shouldBe "42"
   }
 
   @Test fun testChildReturnsParentElement() {
     @Provide val parentElement: @ScopeElement<TestScope1> String = "value"
     @Provide val childScopeModule = ChildScopeModule0<TestScope1, TestScope2>()
-    val parentScope = inject<TestScope1>()
-    val childScope = parentScope.element<@ChildScopeFactory () -> TestScope2>()
+    val parentScope = inject<@Framework TestScope1>()
+    val childScope = requireElement<@ChildScopeFactory () -> TestScope2>(parentScope)
       .invoke()
-    childScope.element<String>() shouldBe "value"
+    requireElement<String>(childScope) shouldBe "value"
   }
 
   @Test fun testDisposingParentDisposesChild() {
     @Provide val childScopeModule = ChildScopeModule0<TestScope1, TestScope2>()
-    val parentScope = inject<TestScope1>()
-    val childScope = parentScope.element<@ChildScopeFactory () -> TestScope2>()
+    val parentScope = inject<@Framework TestScope1>()
+    val childScope = requireElement<@ChildScopeFactory () -> TestScope2>(parentScope)
       .invoke()
     childScope.isDisposed.shouldBeFalse()
     (parentScope as DisposableScope).dispose()

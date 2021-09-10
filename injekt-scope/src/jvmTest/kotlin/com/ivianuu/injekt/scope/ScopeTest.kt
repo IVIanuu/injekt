@@ -25,14 +25,14 @@ import org.junit.Test
 @OptIn(InternalScopeApi::class)
 class ScopeTest {
   @Test fun testGetSet() {
-    val scope = DisposableScope()
+    val scope = scopeOf()
     scope.getScopedValueOrNull<String>(0) shouldBe null
     scope.setScopedValue(0, "value")
     scope.getScopedValueOrNull<String>(0) shouldBe "value"
   }
 
   @Test fun testRemoveDisposesValue() {
-    val scope = DisposableScope()
+    val scope = scopeOf()
     var disposed = false
     scope.setScopedValue(0, Disposable { disposed = true })
 
@@ -42,7 +42,7 @@ class ScopeTest {
   }
 
   @Test fun testSetDisposesOldValue() {
-    val scope = DisposableScope()
+    val scope = scopeOf()
     var disposed = false
     scope.setScopedValue(0, Disposable { disposed = true })
 
@@ -52,7 +52,7 @@ class ScopeTest {
   }
 
   @Test fun testDisposeDisposesValues() {
-    val scope = DisposableScope()
+    val scope = scopeOf()
     var disposed = false
     scope.setScopedValue(0, Disposable { disposed = true })
 
@@ -62,7 +62,7 @@ class ScopeTest {
   }
 
   @Test fun testScoped() {
-    @Provide val scope = DisposableScope()
+    @Provide val scope = scopeOf()
     var calls = 0
     scoped(0) { calls++ }
     scoped(0) { calls++ }
@@ -70,15 +70,101 @@ class ScopeTest {
     calls shouldBe 2
   }
 
-  @Test fun testDispose() {
-    val scope = DisposableScope()
+  @Test fun testScopedValueGetsDisposed() {
+    @Provide val scope = scopeOf()
+    var disposed = false
+    scoped(0) { Disposable { disposed = true } }
+    disposed.shouldBeFalse()
+    scope.dispose()
+    disposed.shouldBeTrue()
+  }
+
+  @Test fun testScopedValueScopeObserver() {
+    @Provide val scope = scopeOf()
+    var initialized = false
+    var disposed = false
+    scoped(0) {
+      object : ScopeObserver {
+        override fun init() {
+          initialized = true
+        }
+
+        override fun dispose() {
+          disposed = true
+        }
+      }
+    }
+    initialized.shouldBeTrue()
+    disposed.shouldBeFalse()
+    scope.dispose()
+    initialized.shouldBeTrue()
+    disposed.shouldBeTrue()
+  }
+
+  @Test fun testScopedWithArgs() {
+    @Provide val scope = scopeOf()
+    var calls = 0
+    scoped(0, "a") { calls++ }
+    scoped(0, "a") { calls++ }
+    scoped(0, "b") { calls++ }
+    scoped(1) { calls++ }
+    calls shouldBe 3
+  }
+
+  @Test fun testScopedWithArgsValueGetsDisposed() {
+    @Provide val scope = scopeOf()
+    var disposeCalls = 0
+    scoped(0, "a") { Disposable { disposeCalls++ } }
+    disposeCalls shouldBe 0
+    scoped(0, "b") { Disposable { disposeCalls++ } }
+    disposeCalls shouldBe 1
+    scope.dispose()
+    disposeCalls shouldBe 2
+  }
+
+  @Test fun testScopedWithArgsScopeObserver() {
+    @Provide val scope = scopeOf()
+    var initCalls = 0
+    var disposeCalls = 0
+    scoped(0, "a") {
+      object : ScopeObserver {
+        override fun init() {
+          initCalls++
+        }
+
+        override fun dispose() {
+          disposeCalls++
+        }
+      }
+    }
+    initCalls shouldBe 1
+    disposeCalls shouldBe 0
+    scoped(0, "b") {
+      object : ScopeObserver {
+        override fun init() {
+          initCalls++
+        }
+
+        override fun dispose() {
+          disposeCalls++
+        }
+      }
+    }
+    initCalls shouldBe 2
+    disposeCalls shouldBe 1
+    scope.dispose()
+    disposeCalls shouldBe 2
+  }
+
+  @Test fun testScopeDispose() {
+    val scope = scopeOf()
     scope.isDisposed.shouldBeFalse()
     scope.dispose()
     scope.isDisposed.shouldBeTrue()
   }
 
   @Test fun testDisposableBind() {
-    @Provide val scope = DisposableScope()
+    @Provide val scope = scopeOf()
     var called = false
     Disposable { called = true }.bind()
     called.shouldBeFalse()
@@ -106,17 +192,17 @@ class ScopeTest {
   }
 
   @Test fun testDisposeWithOnDisposeOnDisposedScope() {
-    @Provide val scope = DisposableScope()
+    @Provide val scope = scopeOf()
     var called = false
     scope.dispose()
     Disposable { called = true }.bind()
     called.shouldBeTrue()
   }
 
-  @Test fun testInvokeOnDispose() {
-    @Provide val scope = DisposableScope()
+  @Test fun testOnDispose() {
+    @Provide val scope = scopeOf()
     var called = false
-    invokeOnDispose { called = true }
+    onDispose { called = true }
     called.shouldBeFalse()
     scope.dispose()
     called.shouldBeTrue()
@@ -125,9 +211,36 @@ class ScopeTest {
   @Test fun testWithScope() {
     var open = true
     withScope {
-      invokeOnDispose { open = false }
+      onDispose { open = false }
       open.shouldBeTrue()
     }
     open.shouldBeFalse()
+  }
+
+  @Test fun testScopeObserver() {
+    var initCalled = false
+    var disposeCalled = false
+
+    val observer = object : ScopeObserver {
+      override fun init() {
+        initCalled = true
+      }
+
+      override fun dispose() {
+        disposeCalled = true
+      }
+    }
+
+    @Provide val scope = scopeOf()
+    initCalled.shouldBeFalse()
+    disposeCalled.shouldBeFalse()
+
+    scope.setScopedValue(Unit, observer)
+    initCalled.shouldBeTrue()
+    disposeCalled.shouldBeFalse()
+
+    scope.removeScopedValue(Unit)
+    initCalled.shouldBeTrue()
+    disposeCalled.shouldBeTrue()
   }
 }

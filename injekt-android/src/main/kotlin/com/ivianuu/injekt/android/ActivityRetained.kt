@@ -25,20 +25,21 @@ import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildScopeModule0
 import com.ivianuu.injekt.scope.DisposableScope
 import com.ivianuu.injekt.scope.Scope
+import com.ivianuu.injekt.scope.requireElement
 
 /**
  * Returns the [ActivityRetainedScope] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
 @Suppress("UNCHECKED_CAST")
+@Provide
 val ComponentActivity.activityRetainedScope: ActivityRetainedScope
   get() = ViewModelProvider(
     this,
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T =
         ActivityRetainedScopeHolder(
-          appScope
-            .element<@ChildScopeFactory () -> ActivityRetainedScope>()
+          requireElement<@ChildScopeFactory () -> ActivityRetainedScope>(appScope)
             .invoke()
         ) as T
     }

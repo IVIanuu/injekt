@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
+@file:Providers("com.ivianuu.injekt.android.activityScope")
+
 package com.ivianuu.injekt.samples.android.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Providers
 import com.ivianuu.injekt.android.ActivityScope
-import com.ivianuu.injekt.android.activityScope
 import com.ivianuu.injekt.samples.android.ui.AppTheme
 import com.ivianuu.injekt.samples.android.ui.AppUi
 import com.ivianuu.injekt.scope.ScopeElement
+import com.ivianuu.injekt.scope.requireElement
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = activityScope.element<MainActivityDependencies>()
+    val dependencies = requireElement<MainActivityDependencies>()
     // display ui
     setContent {
       dependencies.theme {
