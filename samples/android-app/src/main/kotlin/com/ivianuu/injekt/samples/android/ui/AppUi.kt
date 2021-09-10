@@ -34,7 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.android.ActivityRetainedScope
-import com.ivianuu.injekt.coroutines.InjektCoroutineScope
+import com.ivianuu.injekt.coroutines.NamedCoroutineScope
 import com.ivianuu.injekt.samples.android.domain.CounterFlow
 import com.ivianuu.injekt.samples.android.domain.DecCounterUseCase
 import com.ivianuu.injekt.samples.android.domain.IncCounterUseCase
@@ -76,7 +76,7 @@ class CounterViewModel(
   private val incCounter: IncCounterUseCase,
   private val decCounter: DecCounterUseCase,
   val state: CounterFlow,
-  private val scope: InjektCoroutineScope<ActivityRetainedScope>
+  private val scope: NamedCoroutineScope<ActivityRetainedScope>
 ) {
   fun inc() {
     scope.launch { incCounter() }

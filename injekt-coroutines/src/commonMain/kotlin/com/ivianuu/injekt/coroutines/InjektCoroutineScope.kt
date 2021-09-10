@@ -36,25 +36,6 @@ inline fun scopedCoroutineScope(
   context: () -> CoroutineContext = { EmptyCoroutineContext }
 ): CoroutineScope = scoped(key) { DisposableCoroutineScope(context()) }
 
-/**
- * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
- *
- * [CoroutineContext] of the scope can be specified with a injectable [InjektCoroutineContext]<S> and
- * defaults to [DefaultDispatcher]
- */
-typealias InjektCoroutineScope<S> = CoroutineScope
-
-/**
- * Installs a [InjektCoroutineScope] for scope [S]
- */
-@Provide inline fun <S : Scope> injektCoroutineScopeElement(
-  scope: S,
-  nameKey: TypeKey<S>,
-  context: () -> InjektCoroutineContext<S>
-): @ScopeElement<S> InjektCoroutineScope<S> = scopedCoroutineScope(
-  typeKeyOf<InjektCoroutineScope<S>>()
-) { context() }
-
 @PublishedApi internal class DisposableCoroutineScope(
   context: CoroutineContext
 ) : CoroutineScope, Disposable {
@@ -66,13 +47,30 @@ typealias InjektCoroutineScope<S> = CoroutineScope
 }
 
 /**
- * [CoroutineContext] of a [InjektCoroutineScope]
+ * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
+ *
+ * [CoroutineContext] of the scope can be specified with a injectable [NamedCoroutineContext]<S> and
+ * defaults to [DefaultDispatcher]
  */
-typealias InjektCoroutineContext<S> = CoroutineContext
+typealias NamedCoroutineScope<S> = CoroutineScope
 
 /**
- * The default [InjektCoroutineContext] for scope [S]
+ * Installs a [NamedCoroutineScope] for scope [S]
+ */
+@Provide inline fun <S : Scope> namedCoroutineScopeElement(
+  scope: S,
+  nameKey: TypeKey<S>,
+  context: () -> NamedCoroutineContext<S>
+): @ScopeElement<S> NamedCoroutineScope<S> = scopedCoroutineScope { context() }
+
+/**
+ * [CoroutineContext] of a [NamedCoroutineScope]
+ */
+typealias NamedCoroutineContext<S> = CoroutineContext
+
+/**
+ * The default [NamedCoroutineContext] for scope [S]
  */
 @Provide inline fun <S : Scope> injektCoroutineContext(
   dispatcher: DefaultDispatcher
-): InjektCoroutineContext<S> = dispatcher
+): NamedCoroutineContext<S> = dispatcher

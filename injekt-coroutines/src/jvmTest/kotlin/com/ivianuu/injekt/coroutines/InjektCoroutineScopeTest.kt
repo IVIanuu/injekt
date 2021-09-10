@@ -43,7 +43,7 @@ class InjektCoroutineScopeTest {
 
   @Test fun testCoroutineScopeElementLifecycle() {
     @Provide val scope: Scope = inject<@Framework AppScope>()
-    val coroutineScope = requireElement<InjektCoroutineScope<AppScope>>()
+    val coroutineScope = requireElement<NamedCoroutineScope<AppScope>>()
     coroutineScope.isActive.shouldBeTrue()
     (scope as DisposableScope).dispose()
     coroutineScope.isActive.shouldBeFalse()
@@ -51,9 +51,9 @@ class InjektCoroutineScopeTest {
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: InjektCoroutineContext<AppScope> = Dispatchers.Main
+    @Provide val customContext: NamedCoroutineContext<AppScope> = Dispatchers.Main
     @Provide val scope: Scope = inject<@Framework AppScope>()
-    val coroutineScope = requireElement<InjektCoroutineScope<AppScope>>()
+    val coroutineScope = requireElement<NamedCoroutineScope<AppScope>>()
     coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
 }
