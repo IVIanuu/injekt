@@ -142,6 +142,106 @@ class CallContextTest {
       """
     )
 
+  @Test fun testSuspendCanBeRequestFromLocalVariableInitializerInSuspendContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide suspend fun suspendFoo() = Foo()
+      """,
+      """
+        suspend fun invoke() {
+          val foo = inject<Foo>()
+        }
+      """
+    )
+
+  @Test fun testSuspendCanBeRequestFromLocalVariableDelegateInitializerInSuspendContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide suspend fun suspendFoo() = Foo()
+      """,
+      """
+        suspend fun invoke() {
+          val foo = lazy(inject<Foo>()) {  }
+        }
+      """
+    )
+
+  @Test fun testComposableCanBeRequestFromLocalVariableInitializerInComposableContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide @Composable fun composableFoo() = Foo()
+      """,
+      """
+        @Composable fun invoke() {
+          val foo = inject<Foo>()
+        }
+      """
+    )
+
+  @Test fun testComposableCanBeRequestFromLocalVariableDelegateInitializerInComposableContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide @Composable fun composableFoo() = Foo()
+      """,
+      """
+        @Composable fun invoke() {
+          val foo = lazy(inject<Foo>()) {  }
+        }
+      """
+    )
+
+  @Test fun testSuspendCanBeRequestFromInlineLambdaInLocalVariableInitializerInSuspendContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide suspend fun suspendFoo() = Foo()
+      """,
+      """
+        typealias MySuspend = suspend () -> Unit       
+        fun invoke(): MySuspend = {
+          val foo = scoped { inject<Foo>() }
+        }
+      """
+    )
+
+  @Test fun testSuspendCanBeRequestFromInlineLambdaInLocalVariableDelegateInitializerInSuspendContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide suspend fun suspendFoo() = Foo()
+      """,
+      """
+        typealias MySuspend = suspend () -> Unit       
+        fun invoke(): MySuspend = {
+          val foo by lazy(scoped { inject<Foo>() }) {  }
+        }
+      """
+    )
+
+  @Test fun testComposableCanBeRequestFromInlineLambdaInLocalVariableInitializerInComposableContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide @Composable fun composableFoo() = Foo()
+      """,
+      """
+        typealias MyComposable = @Composable () -> Unit       
+        fun invoke(): MyComposable = {
+          val foo = scoped { inject<Foo>() }
+        }
+      """
+    )
+
+  @Test fun testComposableCanBeRequestFromInlineLambdaInLocalVariableDelegateInitializerInComposableContext() =
+    singleAndMultiCodegen(
+      """
+        @Provide @Composable fun composableFoo() = Foo()
+      """,
+      """
+        typealias MyComposable = @Composable () -> Unit       
+        fun invoke(): MyComposable = {
+          val foo by lazy(scoped { inject<Foo>() }) {  }
+        }
+      """
+    )
+
   @Test fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun suspendFoo() = Foo()

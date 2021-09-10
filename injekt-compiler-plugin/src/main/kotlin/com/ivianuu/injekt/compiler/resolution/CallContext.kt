@@ -55,15 +55,20 @@ fun CallableDescriptor.callContext(@Inject bindingContext: BindingContext? = nul
   if (this !is FunctionDescriptor && this !is PropertyDescriptor)
     return CallContext.DEFAULT
 
-  if (this is ConstructorDescriptor) return CallContext.DEFAULT
+  if (this is ConstructorDescriptor)
+    return CallContext.DEFAULT
 
-  if (bindingContext == null) return callContextOfThis
+  if (bindingContext == null)
+    return callContextOfThis
 
   if (composeCompilerInClasspath && isComposableCallable(bindingContext))
     return CallContext.COMPOSABLE
 
-  var node: PsiElement? = findPsi()
-  if (node == null) return callContextOfThis
+  val initialNode = findPsi() ?: return callContextOfThis
+
+  var node: PsiElement? = initialNode
+  if (node == null)
+    return callContextOfThis
   try {
     loop@ while (node != null) {
       when (node) {
@@ -87,14 +92,17 @@ fun CallableDescriptor.callContext(@Inject bindingContext: BindingContext? = nul
           return descriptor?.callContextOfThis ?: CallContext.DEFAULT
         }
         is KtProperty -> {
-          val descriptor =
-            bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
-          return descriptor?.callContextOfThis ?: CallContext.DEFAULT
+          if (!node.isLocal) {
+            val descriptor =
+              bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
+            return descriptor?.callContextOfThis ?: CallContext.DEFAULT
+          }
         }
       }
       node = node.parent as? KtElement
     }
   } catch (e: Throwable) {
+    e.printStackTrace()
   }
 
   return callContextOfThis
