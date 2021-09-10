@@ -222,6 +222,9 @@ interface ScopeObserver : Disposable {
    */
   fun init() {
   }
+
+  override fun dispose() {
+  }
 }
 
 /**
