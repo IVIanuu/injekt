@@ -198,7 +198,7 @@ class CallContextTest {
       """
         typealias MySuspend = suspend () -> Unit       
         fun invoke(): MySuspend = {
-          val foo = scoped { inject<Foo>() }
+          val foo = run { inject<Foo>() }
         }
       """
     )
@@ -211,7 +211,7 @@ class CallContextTest {
       """
         typealias MySuspend = suspend () -> Unit       
         fun invoke(): MySuspend = {
-          val foo by lazy(scoped { inject<Foo>() }) {  }
+          val foo by lazy(run { inject<Foo>() }) {  }
         }
       """
     )
@@ -224,7 +224,7 @@ class CallContextTest {
       """
         typealias MyComposable = @Composable () -> Unit       
         fun invoke(): MyComposable = {
-          val foo = scoped { inject<Foo>() }
+          val foo = run { inject<Foo>() }
         }
       """
     )
@@ -237,7 +237,7 @@ class CallContextTest {
       """
         typealias MyComposable = @Composable () -> Unit       
         fun invoke(): MyComposable = {
-          val foo by lazy(scoped { inject<Foo>() }) {  }
+          val foo by lazy(run { inject<Foo>() }) {  }
         }
       """
     )
