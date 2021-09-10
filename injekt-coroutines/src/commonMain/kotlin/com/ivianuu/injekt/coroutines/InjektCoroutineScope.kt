@@ -20,50 +20,15 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.TypeKey
 import com.ivianuu.injekt.common.typeKeyOf
-import com.ivianuu.injekt.scope.DefaultSourceKey
 import com.ivianuu.injekt.scope.Disposable
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.ScopeElement
-import com.ivianuu.injekt.scope.ScopeObserver
 import com.ivianuu.injekt.scope.scoped
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-
-fun launch(
-  @Inject scope: Scope,
-  block: suspend CoroutineScope.() -> Unit
-): Job = scopedCoroutineScope().launch(block = block)
-
-fun launchedEffect(
-  vararg args: Any?,
-  @Inject key: @DefaultSourceKey Any,
-  @Inject scope: Scope,
-  block: suspend CoroutineScope.() -> Unit
-): Disposable = scoped(key, *args) {
-  LaunchedEffectImpl(block = block)
-}
-
-private class LaunchedEffectImpl(
-  @Inject private val scope: Scope,
-  private val block: suspend CoroutineScope.() -> Unit
-) : ScopeObserver {
-  private var job: Job? = null
-
-  override fun init() {
-    job?.cancel()
-    job = scopedCoroutineScope().launch(block = block)
-  }
-
-  override fun dispose() {
-    job?.cancel()
-    job = null
-  }
-}
 
 inline fun scopedCoroutineScope(
   key: Any = typeKeyOf<CoroutineScope>(),
