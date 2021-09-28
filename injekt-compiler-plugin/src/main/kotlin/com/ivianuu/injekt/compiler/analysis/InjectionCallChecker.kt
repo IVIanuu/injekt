@@ -90,19 +90,17 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
 
     if (requests.isEmpty()) return
 
-    val graph = synchronized(context) {
-      val scope = ElementInjectablesScope(callExpression)
-      scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
-        if (result is ResolutionResult.Success.WithCandidate.Value &&
-          result.candidate is CallableInjectable) {
-          if (filePath != null) {
-            result.candidate.callable.import?.element?.let {
-              context.trace.record(
-                InjektWritableSlices.USED_IMPORT,
-                SourcePosition(filePath, it.startOffset, it.endOffset),
-                Unit
-              )
-            }
+    val scope = ElementInjectablesScope(callExpression)
+    val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
+      if (result is ResolutionResult.Success.WithCandidate.Value &&
+        result.candidate is CallableInjectable) {
+        if (filePath != null) {
+          result.candidate.callable.import?.element?.let {
+            context.trace.record(
+              InjektWritableSlices.USED_IMPORT,
+              SourcePosition(filePath, it.startOffset, it.endOffset),
+              Unit
+            )
           }
         }
       }

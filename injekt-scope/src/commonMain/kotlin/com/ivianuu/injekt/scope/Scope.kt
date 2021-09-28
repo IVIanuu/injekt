@@ -150,7 +150,6 @@ inline fun <R> withScope(
  */
 @OptIn(InternalScopeApi::class)
 inline fun <T> scoped(key: Any, @Inject scope: Scope, computation: () -> T): T {
-  scope.getScopedValueOrNull<T>(key)?.let { return it }
   synchronized(scope) {
     scope.getScopedValueOrNull<T>(key)?.let { return it }
     val value = computation()
@@ -271,11 +270,6 @@ fun <T> T.asDisposable(@Inject disposer: Disposer<T>): Disposable =
  */
 @OptIn(InternalScopeApi::class)
 fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): Disposable {
-  if (scope.isDisposed) {
-    disposer.dispose(this)
-    return NoopDisposable
-  }
-
   synchronized(scope) {
     if (scope.isDisposed) {
       disposer.dispose(this)
@@ -361,7 +355,6 @@ fun scopeOf(vararg elements: ProvidedElement<*>): Scope =
   }
 
   private inline fun <R> synchronizedWithDisposedCheck(block: () -> R): R? {
-    if (_isDisposed) return null
     synchronized(this) {
       if (_isDisposed) return null
       return block()

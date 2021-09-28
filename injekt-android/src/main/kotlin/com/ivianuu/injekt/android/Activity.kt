@@ -31,26 +31,23 @@ import com.ivianuu.injekt.scope.requireElement
  * whose lifecycle is bound to the activity
  */
 @Provide val ComponentActivity.activityScope: ActivityScope
-  get() {
+  get() = synchronized(activityScopes) {
     activityScopes[this]?.let { return it }
-    return synchronized(activityScopes) {
-      activityScopes[this]?.let { return it }
-      val scope = requireElement<@ChildScopeFactory (ComponentActivity) -> ActivityScope>(
-        activityRetainedScope
-      ).invoke(this)
-      activityScopes[this] = scope
+    val scope = requireElement<@ChildScopeFactory (ComponentActivity) -> ActivityScope>(
+      activityRetainedScope
+    ).invoke(this)
+    activityScopes[this] = scope
 
-      lifecycle.addObserver(object : LifecycleEventObserver {
-        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-          if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-            synchronized(activityScopes) { activityScopes.remove(this@activityScope) }
-            scope.dispose()
-          }
+    lifecycle.addObserver(object : LifecycleEventObserver {
+      override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+          synchronized(activityScopes) { activityScopes.remove(this@activityScope) }
+          scope.dispose()
         }
-      })
+      }
+    })
 
-      scope
-    }
+    scope
   }
 
 typealias ActivityScope = Scope
