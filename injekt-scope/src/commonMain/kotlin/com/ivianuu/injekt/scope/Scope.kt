@@ -21,7 +21,7 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.common.TypeKey
 
-interface Scope {
+interface Scope : Disposable {
   /**
    * Whether or not this scope is disposed
    */
@@ -128,10 +128,10 @@ private fun mergeElements(
 @RequiresOptIn annotation class InternalScopeApi
 
 @OptIn(InternalScopeApi::class)
-operator fun childScope(
+fun childScope(
   vararg elements: ProvidedElement<*>,
   @Inject parentScope: Scope
-): DisposableScope = ScopeImpl(mergeElements(parentScope.elements, elements))
+): Scope = ScopeImpl(mergeElements(parentScope.elements, elements))
   .also { ParentScopeDisposable(it).bind(parentScope) }
 
 /**
@@ -142,11 +142,7 @@ inline fun <R> withScope(
   block: (@Inject Scope) -> R
 ): R {
   @Provide val scope = scopeOf(*elements)
-  return try {
-    block()
-  } finally {
-    scope.dispose()
-  }
+  return scope.use { block() }
 }
 
 /**
@@ -214,6 +210,16 @@ inline fun onDispose(@Inject scope: Scope, crossinline action: () -> Unit): Disp
   Disposable { action() }.bind()
 
 /**
+ * Runs the [block] and disposes [this] afterwards using [disposer]
+ */
+inline fun <T, R> T.use(@Inject disposer: Disposer<T>, block: () -> R): R = try {
+  block()
+} finally {
+  disposer.dispose(this)
+}
+
+
+/**
  * Lifecycle observer for [Scope]
  */
 interface ScopeObserver : Disposable {
@@ -252,6 +258,8 @@ fun interface Disposer<in T> {
   fun dispose(value: T)
 }
 
+@Provide fun <T : Disposable> disposableDisposer() = Disposer<T> { it.dispose() }
+
 /**
  * Returns a [Disposable] which disposes [this] using [disposer]
  */
@@ -261,23 +269,16 @@ fun <T> T.asDisposable(@Inject disposer: Disposer<T>): Disposable =
 /**
  * Disposes this value with [scope] using [disposer]
  */
-fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): Disposable =
-  asDisposable().bind()
-
-/**
- * Disposes this disposable once [scope] gets disposed
- * or synchronously if [scope] is already disposed
- */
 @OptIn(InternalScopeApi::class)
-fun <T : Disposable> T.bind(@Inject scope: Scope): Disposable {
+fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): Disposable {
   if (scope.isDisposed) {
-    dispose()
+    disposer.dispose(this)
     return NoopDisposable
   }
 
   synchronized(scope) {
     if (scope.isDisposed) {
-      dispose()
+      disposer.dispose(this)
       return NoopDisposable
     }
 
@@ -285,7 +286,7 @@ fun <T : Disposable> T.bind(@Inject scope: Scope): Disposable {
     val disposable = Disposable {
       if (callDispose) {
         callDispose = false
-        dispose()
+        disposer.dispose(this)
       }
     }
 
@@ -299,26 +300,21 @@ fun <T : Disposable> T.bind(@Inject scope: Scope): Disposable {
 }
 
 /**
- * A mutable version of [Scope] which is also a [Disposable]
- */
-interface DisposableScope : Scope, Disposable
-
-/**
- * Returns a new [DisposableScope]
+ * Returns a new [Scope]
  */
 @OptIn(InternalScopeApi::class)
-fun scopeOf(): DisposableScope = ScopeImpl(emptyMap())
+fun scopeOf(): Scope = ScopeImpl(emptyMap())
 
 /**
- * Returns a new [DisposableScope] with [elements]
+ * Returns a new [Scope] with [elements]
  */
 @OptIn(InternalScopeApi::class)
-fun scopeOf(vararg elements: ProvidedElement<*>): DisposableScope =
+fun scopeOf(vararg elements: ProvidedElement<*>): Scope =
   ScopeImpl(mergeElements(emptyMap(), elements))
 
 @InternalScopeApi internal class ScopeImpl(
   override val elements: Map<String, () -> Any?>
-) : DisposableScope {
+) : Scope {
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() {

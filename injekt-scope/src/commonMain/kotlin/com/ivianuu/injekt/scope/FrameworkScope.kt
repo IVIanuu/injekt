@@ -73,8 +73,8 @@ typealias NamedProvidedElement<N> = ProvidedElement<*>
   }
 }
 
-internal class ParentScopeDisposable(scope: DisposableScope) : Disposable {
-  private var scope: DisposableScope? = scope
+internal class ParentScopeDisposable(scope: Scope) : Disposable {
+  private var scope: Scope? = scope
 
   init {
     // do not leak a reference to the child scope

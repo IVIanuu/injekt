@@ -48,7 +48,7 @@ class ElementScopeTest {
     initCalls shouldBe 1
     disposeCalls shouldBe 0
 
-    (scope as DisposableScope).dispose()
+    scope.dispose()
 
     initCalls shouldBe 1
     disposeCalls shouldBe 1
@@ -76,7 +76,7 @@ class ElementScopeTest {
     val childScope = requireElement<@ChildScopeFactory () -> TestScope2>(parentScope)
       .invoke()
     childScope.isDisposed.shouldBeFalse()
-    (parentScope as DisposableScope).dispose()
+    parentScope.dispose()
     childScope.isDisposed.shouldBeTrue()
   }
 }

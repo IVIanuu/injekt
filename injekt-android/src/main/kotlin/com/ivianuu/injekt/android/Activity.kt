@@ -23,7 +23,6 @@ import androidx.lifecycle.LifecycleOwner
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildScopeModule1
-import com.ivianuu.injekt.scope.DisposableScope
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.requireElement
 
@@ -45,7 +44,7 @@ import com.ivianuu.injekt.scope.requireElement
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
           if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
             synchronized(activityScopes) { activityScopes.remove(this@activityScope) }
-            (scope as DisposableScope).dispose()
+            scope.dispose()
           }
         }
       })

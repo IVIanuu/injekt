@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.scope.AppScope
 import com.ivianuu.injekt.scope.ChildScopeFactory
 import com.ivianuu.injekt.scope.ChildScopeModule0
-import com.ivianuu.injekt.scope.DisposableScope
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.requireElement
 
@@ -53,6 +52,6 @@ typealias ActivityRetainedScope = Scope
 private class ActivityRetainedScopeHolder(val scope: ActivityRetainedScope) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
-    (scope as DisposableScope).dispose()
+    scope.dispose()
   }
 }

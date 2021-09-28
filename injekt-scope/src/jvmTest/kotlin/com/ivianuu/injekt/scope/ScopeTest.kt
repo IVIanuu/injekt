@@ -163,15 +163,6 @@ class ScopeTest {
     scope.isDisposed.shouldBeTrue()
   }
 
-  @Test fun testDisposableBind() {
-    @Provide val scope = scopeOf()
-    var called = false
-    Disposable { called = true }.bind()
-    called.shouldBeFalse()
-    scope.dispose()
-    called.shouldBeTrue()
-  }
-
   @Test fun testDisposerAsDisposable() {
     var called = false
     @Provide val disposer = Disposer<Unit> { called = true }
@@ -242,5 +233,31 @@ class ScopeTest {
     scope.removeScopedValue(Unit)
     initCalled.shouldBeTrue()
     disposeCalled.shouldBeTrue()
+  }
+
+  @Test fun testDisposable() {
+    var called = false
+    @Provide val disposer = Disposer<Unit> { called = true }
+    withScope {
+      Unit.bind()
+      called.shouldBeFalse()
+    }
+    called.shouldBeTrue()
+  }
+
+  @Test fun testDisposerUse() {
+    var called = false
+    @Provide val disposer = Disposer<Unit> { called = true }
+    Unit.use { called.shouldBeFalse() }
+    called.shouldBeTrue()
+  }
+
+  @Test fun testDisposableDisposer() {
+    @Provide val scope = scopeOf()
+    var called = false
+    Disposable { called = true }.bind()
+    called.shouldBeFalse()
+    scope.dispose()
+    called.shouldBeTrue()
   }
 }
