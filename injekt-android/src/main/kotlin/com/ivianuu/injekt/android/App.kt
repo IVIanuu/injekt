@@ -33,7 +33,7 @@ import com.ivianuu.injekt.scope.Framework
 /**
  * Host of the [AppScope]
  *
- * A simple [Application] might look like this:
+ * A simple [Application] implementation might look like this:
  * ```
  * class App : Application(), AppScopeOwner {
  *  override lateinit var appScope: AppScope
