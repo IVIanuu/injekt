@@ -291,10 +291,12 @@ fun <T> T.bind(@Inject scope: Scope, @Inject disposer: Disposer<T>): Disposable 
     }
 
     scope.setScopedValue(disposable, disposable)
+
     val innerDisposable = Disposable {
       callDispose = false
       scope.removeScopedValue(disposable)
     }
+
     return innerDisposable
   }
 }
