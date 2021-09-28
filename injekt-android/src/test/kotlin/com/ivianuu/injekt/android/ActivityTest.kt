@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
+import com.ivianuu.injekt.scope.requireElement
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import org.junit.Test
@@ -31,7 +32,7 @@ class ActivityTest {
   @Test fun testActivityScopeLifecycle() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     lateinit var disposable: TestDisposable<ActivityScope>
-    scenario.onActivity { disposable = it.activityScope.element() }
+    scenario.onActivity { disposable = requireElement(it.activityScope) }
     disposable.disposed.shouldBeFalse()
     scenario.moveToState(Lifecycle.State.DESTROYED)
     disposable.disposed.shouldBeTrue()
