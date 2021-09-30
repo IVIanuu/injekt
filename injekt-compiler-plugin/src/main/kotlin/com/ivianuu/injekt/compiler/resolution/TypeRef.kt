@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.model.TypeVariance
 import org.jetbrains.kotlin.types.model.convertVariance
-import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ClassifierRef(
@@ -296,7 +295,7 @@ class TypeRef(
     fun TypeRef.inner(): TypeRef? {
       if (this.classifier == classifier) return this
       return superTypes
-        .firstNotNullResult { it.subtypeView(classifier) }
+        .firstNotNullOfOrNull { it.subtypeView(classifier) }
         ?.let { return it }
     }
     inner()
@@ -376,7 +375,7 @@ fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
   action(this) || superTypes.any { it.anySuperType(action) }
 
 fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
-  takeIf(action) ?: superTypes.firstNotNullResult { it.firstSuperTypeOrNull(action) }
+  takeIf(action) ?: superTypes.firstNotNullOfOrNull { it.firstSuperTypeOrNull(action) }
 
 fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
   if (map.isEmpty()) return this

@@ -123,6 +123,8 @@ interface InjektErrors {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
             "injectable variable must be initialized, delegated or marked with lateinit"
+
+          override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
         })
       }
 
@@ -175,6 +177,8 @@ interface InjektErrors {
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
                 "cannot read injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+
+              override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
             }
           )
         }
@@ -188,6 +192,8 @@ interface InjektErrors {
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
                 "unresolved injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+
+              override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
             }
           )
         }
@@ -201,6 +207,8 @@ interface InjektErrors {
             object : DiagnosticRenderer<Diagnostic> {
               override fun render(diagnostic: Diagnostic): String =
                 "duplicated injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+
+              override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
             }
           )
         }
@@ -211,6 +219,8 @@ interface InjektErrors {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
             "unused injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+
+          override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
         })
       }
 
@@ -222,6 +232,8 @@ interface InjektErrors {
             "injectables of the same package are automatically imported: '${
               diagnostic.psiElement.text.removeSurrounding("\"")
             }'"
+
+          override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
         })
       }
 

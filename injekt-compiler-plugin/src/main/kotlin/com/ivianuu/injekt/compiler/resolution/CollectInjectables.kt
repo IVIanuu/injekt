@@ -60,7 +60,6 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun TypeRef.collectInjectables(
@@ -515,7 +514,7 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
       } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&
       callable.callable.containingDeclaration is PackageFragmentDescriptor &&
       run {
-        val scopeFile = allScopes.firstNotNullResult { it.file }
+        val scopeFile = allScopes.firstNotNullOfOrNull { it.file }
         scopeFile == callable.callable.findPsi()
           ?.containingFile
       })

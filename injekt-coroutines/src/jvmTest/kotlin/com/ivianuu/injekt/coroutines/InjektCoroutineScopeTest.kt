@@ -19,7 +19,6 @@ package com.ivianuu.injekt.coroutines
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.DisposableScope
 import com.ivianuu.injekt.scope.Framework
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.requireElement
@@ -45,7 +44,7 @@ class InjektCoroutineScopeTest {
     @Provide val scope: Scope = inject<@Framework AppScope>()
     val coroutineScope = requireElement<NamedCoroutineScope<AppScope>>()
     coroutineScope.isActive.shouldBeTrue()
-    (scope as DisposableScope).dispose()
+    scope.dispose()
     coroutineScope.isActive.shouldBeFalse()
   }
 

@@ -37,7 +37,7 @@ object Deps {
     }
 
     object Compose {
-      const val version = "1.0.1"
+      const val version = "1.0.3"
       const val compiler = "androidx.compose.compiler:compiler:$version"
       const val material = "androidx.compose.material:material:$version"
       const val runtime = "androidx.compose.runtime:runtime:$version"
@@ -62,7 +62,7 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Coroutines {
-    private const val version = "1.5.1"
+    private const val version = "1.5.2"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
     const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
@@ -79,7 +79,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.5.21"
+    const val version = "1.5.30"
     const val compiler = "org.jetbrains.kot#lin:kotlin-compiler:$version"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
@@ -88,10 +88,10 @@ object Deps {
 
   object KotlinSerialization {
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0"
   }
 
-  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.2"
+  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.4"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
