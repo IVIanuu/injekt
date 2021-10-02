@@ -34,6 +34,7 @@ import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -72,7 +73,17 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
     val substitutionMap = resolvedCall.typeArguments
       .mapKeys { it.key.toClassifierRef() }
       .mapValues { it.value.toTypeRef() }
-      .filter { it.key != it.value.classifier }
+      .filter { it.key != it.value.classifier } +
+        (resolvedCall.dispatchReceiver?.type?.toTypeRef()?.let {
+          it.classifier.typeParameters
+            .toMap(it.arguments)
+            .filter { it.key != it.value.classifier }
+        } ?: emptyMap()) +
+        (resolvedCall.extensionReceiver?.type?.toTypeRef()?.let {
+          it.classifier.typeParameters
+            .toMap(it.arguments)
+            .filter { it.key != it.value.classifier }
+        } ?: emptyMap())
 
     val callee = resultingDescriptor
       .toCallableRef()
