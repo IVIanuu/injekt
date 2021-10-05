@@ -20,27 +20,31 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class InjectionGraph {
   abstract val scope: InjectablesScope
-  abstract val callee: CallableRef
+  abstract val callee: CallableDescriptor
 
   data class Success(
     override val scope: InjectablesScope,
-    override val callee: CallableRef,
+    override val callee: CallableDescriptor,
     val results: Map<InjectableRequest, ResolutionResult.Success>,
     val usages: Map<UsageKey, List<InjectableRequest>>
   ) : InjectionGraph()
 
   data class Error(
     override val scope: InjectablesScope,
-    override val callee: CallableRef,
+    override val callee: CallableDescriptor,
     val failureRequest: InjectableRequest,
     val failure: ResolutionResult.Failure
   ) : InjectionGraph()
@@ -81,7 +85,6 @@ sealed class ResolutionResult {
               }
               dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
               allOuterMostScopes
-                .asSequence()
                 .sortedBy { it.nesting }
                 .filter { outerMostScope ->
                   outerMostScope.nesting <
@@ -139,8 +142,8 @@ sealed class ResolutionResult {
       }
 
       data class ReifiedTypeArgumentMismatch(
-        val parameter: ClassifierRef,
-        val argument: ClassifierRef,
+        val parameter: ClassifierDescriptor,
+        val argument: ClassifierDescriptor,
         override val candidate: Injectable
       ) : WithCandidate() {
         override val failureOrdering: Int
@@ -176,10 +179,10 @@ sealed class ResolutionResult {
   }
 }
 
-data class UsageKey(val type: TypeRef, val outerMostScope: InjectablesScope)
+data class UsageKey(val type: KotlinType, val outerMostScope: InjectablesScope)
 
 fun InjectablesScope.resolveRequests(
-  callee: CallableRef,
+  callee: CallableDescriptor,
   requests: List<InjectableRequest>,
   lookupLocation: LookupLocation,
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit
@@ -248,9 +251,9 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
 ): ResolutionResult? {
   // try the type scope if the requested type is not a framework type
   return if (!request.type.isProviderFunctionType &&
-    request.type.classifier != context.injektContext.setClassifier &&
-    request.type.classifier.fqName != InjektFqNames.TypeKey &&
-    request.type.classifier.fqName != InjektFqNames.SourceKey)
+    request.type.constructor.declarationDescriptor!!.fqNameSafe != InjektFqNames.Set &&
+    request.type.constructor.declarationDescriptor!!.fqNameSafe != InjektFqNames.TypeKey &&
+    request.type.constructor.declarationDescriptor!!.fqNameSafe != InjektFqNames.SourceKey)
     with(TypeInjectablesScope(request.type, this)) {
       recordLookup(lookupLocation)
       resolveRequest(request, lookupLocation, true)
@@ -319,7 +322,6 @@ private fun InjectablesScope.resolveCandidates(
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
-    .asSequence()
     .sortedWith { a, b -> compareCandidate(a, b) }
     .toMutableList()
   while (remaining.isNotEmpty()) {
@@ -359,7 +361,6 @@ private fun InjectablesScope.resolveCandidates(
             .candidate
             .cast<CallableInjectable>()
             .callable
-            .callable
             .uniqueKey()
         }.let {
           it.singleOrNull()
@@ -378,7 +379,7 @@ private fun InjectablesScope.resolveCandidate(
   }
 
   if (candidate is CallableInjectable) {
-    for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
+    /*for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
         ?: continue
       val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
@@ -389,7 +390,8 @@ private fun InjectablesScope.resolveCandidate(
           candidate
         )
       }
-    }
+    }*/
+    // todo null
   }
 
   if (candidate.dependencies.isEmpty())
@@ -468,11 +470,11 @@ private enum class TypeScopeOrigin {
 private inline fun <T> InjectablesScope.compareCandidateBase(
   a: T?,
   b: T?,
-  requestedType: TypeRef?,
-  type: (T) -> TypeRef,
+  requestedType: KotlinType?,
+  type: (T) -> KotlinType,
   isFromTypeScope: (T) -> Boolean,
   scopeNesting: (T) -> Int,
-  owner: (T) -> ClassifierRef?,
+  owner: (T) -> ClassifierDescriptor?,
   subClassNesting: (T) -> Int,
   importPath: (T) -> String?,
   moduleName: (T) -> String?
@@ -519,7 +521,7 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
     val thisModuleName = context.injektContext.module.name.asString()
     val aModuleName = moduleName(a)
     val bModuleName = moduleName(b)
-    val typeModuleName = requestedType.classifier.descriptor!!.moduleName()
+    val typeModuleName = requestedType.constructor.declarationDescriptor!!.moduleName()
 
     val aOrigin = when (aModuleName) {
       thisModuleName -> TypeScopeOrigin.INTERNAL
@@ -551,16 +553,22 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   type = { it.originalType },
   isFromTypeScope = { it.ownerScope.isTypeScope },
   scopeNesting = { it.ownerScope.nesting },
-  owner = { it.safeAs<CallableInjectable>()?.callable?.owner },
+  owner = {
+    // todo it.safeAs<CallableInjectable>()?.callable?.owner
+          null
+          },
   subClassNesting = {
-    it.safeAs<CallableInjectable>()?.callable?.callable
+    it.safeAs<CallableInjectable>()?.callable
       ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
   },
-  importPath = { (it as? CallableInjectable)?.callable?.import?.importPath },
-  moduleName = { it.safeAs<CallableInjectable>()?.callable?.callable?.moduleName() }
+  importPath = {
+    // todo (it as? CallableInjectable)?.callable?.import?.importPath
+               null
+   },
+  moduleName = { it.safeAs<CallableInjectable>()?.callable?.moduleName() }
 )
 
-fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
+fun InjectablesScope.compareType(a: KotlinType?, b: KotlinType?, requestedType: KotlinType?): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
@@ -568,16 +576,17 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
   a!!
   b!!
 
-  if (!a.isStarProjection && b.isStarProjection) return -1
-  if (a.isStarProjection && !b.isStarProjection) return 1
+  // todo
+  //if (!a.isStarProjection && b.isStarProjection) return -1
+  //if (a.isStarProjection && !b.isStarProjection) return 1
 
   if (!a.isMarkedNullable && b.isMarkedNullable) return -1
   if (!b.isMarkedNullable && a.isMarkedNullable) return 1
 
-  if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
-  if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
+  if (!a.isTypeParameter() && b.isTypeParameter()) return -1
+  if (a.isTypeParameter() && !b.isTypeParameter()) return 1
 
-  fun compareSameClassifier(a: TypeRef?, b: TypeRef?): Int {
+  fun compareSameClassifier(a: KotlinType?, b: KotlinType?): Int {
     if (a == b) return 0
 
     if (a != null && b == null) return -1
@@ -587,14 +596,14 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
 
     var diff = 0
     a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
-      diff += compareType(aTypeArgument, bTypeArgument, null)
+      diff += compareType(aTypeArgument.type, bTypeArgument.type, null)
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
     return 0
   }
 
-  if (a.classifier != b.classifier) {
+  /*if (a.constructor != b.constructor) {
     val aSubTypeOfB = a.isSubTypeOf(b)
     val bSubTypeOfA = b.isSubTypeOf(a)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
@@ -610,33 +619,39 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
     val diff = compareSameClassifier(a, b)
     if (diff < 0) return -1
     if (diff > 0) return 1
-  }
+  }*/
+  // todo
 
   return 0
 }
 
-fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
+fun InjectablesScope.compareCallable(a: CallableDescriptor?, b: CallableDescriptor?): Int {
   var diff = compareCandidateBase(
     a = a,
     b = b,
     requestedType = null,
-    type = { it.originalType },
+    type = { it.original.returnType!! },
     isFromTypeScope = { false },
     scopeNesting = { -1 },
-    owner = { it.owner },
-    subClassNesting = { it.callable.overriddenTreeUniqueAsSequence(false).count() - 1 },
-    importPath = { it.import?.importPath },
-    moduleName = { it.callable.moduleName() }
+    owner = {
+      // todo it.owner
+        null    },
+    subClassNesting = { it.overriddenTreeUniqueAsSequence(false).count() - 1 },
+    importPath = {
+      // todo it.import?.importPath
+              null   },
+    moduleName = { it.moduleName() }
   )
   if (diff < 0) return -1
   if (diff > 0) return 1
 
   if (a == null || b == null) return 0
 
-  val aDependencies = a.parameterTypes.values
+  /*val aDependencies = a.parameterTypes.values
   val bDependencies = b.parameterTypes.values
   if (aDependencies.size < bDependencies.size) return -1
   if (bDependencies.size < aDependencies.size) return 1
+  // todo
 
   diff = 0
   for (aDependency in aDependencies) {
@@ -645,7 +660,7 @@ fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     }
   }
   if (diff < 0) return -1
-  if (diff > 0) return 1
+  if (diff > 0) return 1*/
 
   return 0
 }

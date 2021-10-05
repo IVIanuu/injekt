@@ -43,4 +43,5 @@ object InjektFqNames {
 
   val Any = StandardNames.FqNames.any.toSafe()
   val Nothing = StandardNames.FqNames.nothing.toSafe()
+  val Set = StandardNames.FqNames.set
 }

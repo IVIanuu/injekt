@@ -16,12 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
-import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
@@ -40,34 +34,11 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Suppress("NewApi")
-class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
-  override val injektContext: InjektContext
-    get() = this
-
-  override fun isDenotable(type: TypeRef): Boolean = true
-
-  val setClassifier by lazy {
-    module.builtIns.set.toClassifierRef(AnalysisContext(this))
-  }
-  val collectionClassifier by lazy {
-    module.builtIns.collection.toClassifierRef(AnalysisContext(this))
-  }
-  val nothingType by lazy {
-    module.builtIns.nothingType.toTypeRef(context = AnalysisContext(this))
-  }
-  val nullableNothingType by lazy {
-    nothingType.copy(isMarkedNullable = true)
-  }
-  val anyType by lazy {
-    module.builtIns.anyType.toTypeRef(context = AnalysisContext(this))
-  }
-  val nullableAnyType by lazy {
-    anyType.copy(isMarkedNullable = true)
-  }
-  val typeKeyType by lazy {
+class InjektContext(val module: ModuleDescriptor) {
+  val typeKey by lazy {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(InjektFqNames.TypeKey)
-    )!!.toClassifierRef(AnalysisContext(this))
+    )!!
   }
 
   fun classifierDescriptorForFqName(

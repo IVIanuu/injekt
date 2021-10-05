@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -73,12 +72,12 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   .map { it.containingDeclaration }
   .filterIsInstance<ClassDescriptor>()
   .mapNotNull { clazz ->
-    val clazzClassifier = clazz.toClassifierRef()
+    val info = clazz.classifierInfo()
     clazz.unsubstitutedPrimaryConstructor
       ?.valueParameters
       ?.firstOrNull {
         it.name == name &&
-            it.name in clazzClassifier.primaryConstructorPropertyParameters
+            it.name.asString() in info.primaryConstructorPropertyParameters
       }
   }
   .firstOrNull()

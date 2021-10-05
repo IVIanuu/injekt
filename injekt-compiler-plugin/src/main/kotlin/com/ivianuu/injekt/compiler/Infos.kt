@@ -19,16 +19,10 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
 import com.ivianuu.injekt.compiler.resolution.isProvide
-import com.ivianuu.injekt.compiler.resolution.isSuspendFunctionType
 import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.resolution.wrap
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -65,6 +59,8 @@ import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -73,13 +69,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  * but is critical to injekt
  */
 data class CallableInfo(
-  val type: TypeRef,
-  val parameterTypes: Map<Int, TypeRef> = emptyMap(),
+  val type: KotlinType,
+  val parameterTypes: Map<Int, KotlinType> = emptyMap(),
   val injectParameters: Set<Int> = emptySet(),
   val defaultOnAllErrorsParameters: Set<Int> = emptySet()
 ) {
   companion object {
-    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
+    val Empty = CallableInfo(TypeUtils.DONT_CARE, emptyMap(), emptySet(), emptySet())
   }
 }
 
@@ -100,10 +96,8 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
           val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
           val rootClassifier = rootOverriddenCallable.containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef()
           val classifierInfo = containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef()
           val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
             it.classifier == rootClassifier
           }!!
@@ -131,7 +125,6 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
     val type = run {
       val tags = if (this is ConstructorDescriptor)
         getAnnotatedAnnotations(InjektFqNames.Tag)
-          .map { it.type.toTypeRef() }
       else emptyList()
       tags.wrap(returnType!!.toTypeRef())
     }
@@ -231,9 +224,9 @@ fun CallableInfo.toPersistedCallableInfo(@Inject context: AnalysisContext) = Per
 )
 
 fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = CallableInfo(
-  type = type.toTypeRef(),
+  type = type.toKotlinType(),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toTypeRef() },
+    .mapValues { it.value.toKotlinType() },
   injectParameters = injectParameters,
   defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
 )
@@ -243,8 +236,8 @@ fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = Cal
  * but is critical to injekt
  */
 class ClassifierInfo(
-  val tags: List<TypeRef> = emptyList(),
-  val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
+  val tags: List<KotlinType> = emptyList(),
+  val lazySuperTypes: Lazy<List<KotlinType>> = lazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false
 ) {
@@ -277,7 +270,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
     }
 
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
-      ?.toTypeRef()
 
     val isTag = hasAnnotation(InjektFqNames.Tag)
 
@@ -292,7 +284,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
     val isDeserialized = isDeserializedDeclaration()
 
     val tags = getAnnotatedAnnotations(InjektFqNames.Tag)
-      .map { it.type.toTypeRef() }
+      .map { it.type }
 
     val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
     else safeAs<ClassDescriptor>()
@@ -333,8 +325,8 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
 fun PersistedClassifierInfo.toClassifierInfo(
   @Inject context: AnalysisContext
 ): ClassifierInfo = ClassifierInfo(
-  tags = tags.map { it.toTypeRef() },
-  lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
+  tags = tags.map { it.toKotlinType() },
+  lazySuperTypes = lazy { superTypes.map { it.toKotlinType() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread
 )
@@ -434,9 +426,10 @@ private fun String.toChunkedAnnotationArguments() = chunked(65535 / 2)
   .mapIndexed { index, chunk -> "value$index".asNameId() to StringValue(chunk) }
   .toMap()
 
-private fun TypeRef.shouldBePersisted() = anyType {
-  (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      (it.classifier.isTypeAlias && it.isSuspendFunctionType)
+private fun KotlinType.shouldBePersisted() = anyType {
+  /*(it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
+      (it.classifier.isTypeAlias && it.isSuspendFunctionType)// todo */
+  false
 }
 
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {

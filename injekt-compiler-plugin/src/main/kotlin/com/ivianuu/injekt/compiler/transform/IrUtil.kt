@@ -17,27 +17,16 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
@@ -46,178 +35,15 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
-import org.jetbrains.kotlin.ir.types.IrTypeArgument
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
-import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
-import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
-import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.TypeProjectionImpl
-import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.withAbbreviation
-import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.types.KotlinType
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-fun TypeRef.toIrType(
-  @Inject pluginContext: IrPluginContext,
-  @Inject localClasses: List<IrClass>,
-  @Inject context: InjektContext
-): IrTypeArgument {
-  if (isStarProjection) return IrStarProjectionImpl
-  return when {
-    classifier.isTypeAlias -> superTypes.single()
-      .toIrType()
-      .let {
-        it as IrSimpleType
-        IrSimpleTypeImpl(
-          it.classifier,
-          it.hasQuestionMark,
-          it.arguments,
-          it.annotations,
-          toIrAbbreviation()
-        )
-      }
-    classifier.isTag -> arguments.last().toIrType()
-      .typeOrNull!!
-      .cast<IrSimpleType>()
-      .let { type ->
-        val tagConstructor = pluginContext.referenceClass(classifier.fqName)!!
-          .constructors.single()
-        IrSimpleTypeImpl(
-          type.originalKotlinType,
-          type.classifier,
-          type.hasQuestionMark,
-          type.arguments,
-          listOf(
-            DeclarationIrBuilder(pluginContext, tagConstructor)
-              .irCall(
-                tagConstructor,
-                tagConstructor.owner.returnType
-                  .classifierOrFail
-                  .typeWith(
-                    arguments.dropLast(1)
-                      .map { it.toIrType().typeOrNull!! }
-                  )
-              ).apply {
-                tagConstructor.owner.typeParameters.indices
-                  .forEach { index ->
-                    putTypeArgument(
-                      index,
-                      arguments[index].toIrType().typeOrNull!!
-                    )
-                  }
-              }
-          ) + type.annotations,
-          type.abbreviation
-        )
-      }
-    else -> {
-      val key = classifier.descriptor!!.uniqueKey()
-      val fqName = FqName(key.split(":")[1])
-      val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
-        ?.symbol
-        ?: pluginContext.referenceClass(fqName)
-        ?: pluginContext.referenceFunctions(fqName.parent())
-          .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
-          ?.symbol
-        ?: pluginContext.referenceProperties(fqName.parent())
-          .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
-          ?.symbol
-        ?: (pluginContext.referenceClass(fqName.parent())
-          ?: pluginContext.referenceTypeAlias(fqName.parent()))
-          ?.owner
-          ?.typeParameters
-          ?.singleOrNull { it.descriptor.uniqueKey() == key }
-          ?.symbol
-        ?: error("Could not get for $fqName $key")
-      IrSimpleTypeImpl(
-        irClassifier,
-        isMarkedNullable,
-        arguments.map { it.toIrType() },
-        if (isMarkedComposable) {
-          val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
-            .single()
-          listOf(
-            DeclarationIrBuilder(pluginContext, composableConstructor)
-              .irCall(composableConstructor)
-          )
-        } else emptyList()
-      )
-    }
-  }
-}
-
-private fun TypeRef.toIrAbbreviation(
-  @Inject pluginContext: IrPluginContext,
-  @Inject localClasses: List<IrClass>,
-  @Inject context: InjektContext
-): IrTypeAbbreviation {
-  val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
-  return IrTypeAbbreviationImpl(
-    typeAlias,
-    isMarkedNullable,
-    arguments.map { it.toIrType() },
-    emptyList()
-  )
-}
-
-fun TypeRef.toKotlinType(@Inject context: AnalysisContext): SimpleType {
-  if (isStarProjection) return context.injektContext.module.builtIns.anyType
-  return when {
-    classifier.isTypeAlias -> superTypes.single().toKotlinType()
-      .withAbbreviation(toAbbreviation())
-    // todo add this tag to type
-    classifier.isTag -> arguments.last().toKotlinType()
-    else -> classifier.descriptor!!.original.defaultType
-      .replace(
-        newArguments = arguments.map {
-          TypeProjectionImpl(
-            Variance.INVARIANT,
-            it.toKotlinType()
-          )
-        },
-        newAnnotations = if (isMarkedComposable) {
-          Annotations.create(
-            listOf(
-              AnnotationDescriptorImpl(
-                context.injektContext.classifierDescriptorForFqName(
-                  InjektFqNames.Composable,
-                  NoLookupLocation.FROM_BACKEND
-                )!!.defaultType,
-                emptyMap(),
-                SourceElement.NO_SOURCE
-              )
-            )
-          )
-        } else {
-          Annotations.EMPTY
-        }
-      )
-      .makeNullableAsSpecified(isMarkedNullable)
-  }
-}
-
-fun TypeRef.toAbbreviation(@Inject context: AnalysisContext): SimpleType =
-  classifier.descriptor!!.defaultType
-    .replace(newArguments = arguments.map {
-      TypeProjectionImpl(
-        Variance.INVARIANT,
-        it.toKotlinType()
-      )
-    })
-    .makeNullableAsSpecified(isMarkedNullable)
+fun KotlinType.toIrType(@Inject pluginContext: IrPluginContext) =
+  pluginContext.typeTranslator.translateType(this)
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(

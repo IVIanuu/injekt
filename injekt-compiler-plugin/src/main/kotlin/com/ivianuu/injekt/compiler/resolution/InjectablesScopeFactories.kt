@@ -67,6 +67,7 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -264,8 +265,8 @@ private fun FileInitInjectablesScope(
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE INIT ${file.name} at ",
     injectablesPredicate = {
-      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
-      psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
+      val psiProperty = it.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
+      psiProperty.delegateExpressionOrInitializer == null || it in visibleInjectableDeclarations
     },
     parent = null
   )
@@ -313,7 +314,7 @@ private fun ClassInjectablesScope(
     file = null,
     initialInjectables = listOf(clazz.injectableReceiver(false)),
     imports = emptyList(),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
+    typeParameters = clazz.declaredTypeParameters,
     nesting = finalParent.nesting + 1
   )
 }
@@ -350,11 +351,11 @@ private fun ClassInitInjectablesScope(
     initialInjectables = listOf(thisInjectable),
     injectablesPredicate = {
       println()
-      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
-      psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
+      val psiProperty = it.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
+      psiProperty.delegateExpressionOrInitializer == null || it in visibleInjectableDeclarations
     },
     imports = emptyList(),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
+    typeParameters = clazz.declaredTypeParameters,
     nesting = finalParent.nesting + 1
   )
 
@@ -374,9 +375,7 @@ private fun ConstructorPreInitInjectablesScope(
     FunctionImportsInjectablesScope(constructor, parent)
   )
   val parameterScopes = FunctionParameterInjectablesScopes(finalParent, constructor, null)
-  val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
-    it.toClassifierRef()
-  }
+  val typeParameters = constructor.constructedClass.declaredTypeParameters
   return InjectablesScope(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
     parent = parameterScopes,
@@ -423,7 +422,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
     file = null,
     initialInjectables = emptyList(),
     imports = emptyList(),
-    typeParameters = function.typeParameters.map { it.toClassifierRef() },
+    typeParameters = function.typeParameters,
     nesting = finalParent.nesting + 1
   )
 }
@@ -439,10 +438,9 @@ private fun FunctionInjectablesScope(
   val finalParent = FunctionImportsInjectablesScope(function, parent)
   val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null)
   val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is ConstructorDescriptor)
+  val typeParameters = if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
-  else function.typeParameters)
-    .map { it.toClassifierRef() }
+  else function.typeParameters
   InjectablesScope(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
@@ -464,12 +462,10 @@ private fun FunctionParameterInjectablesScopes(
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
   return function.allParameters
-    .asSequence()
     .filter {
       (maxIndex == null || it.injektIndex() < maxIndex) &&
           (it.isProvide() || it === function.extensionReceiverParameter)
     }
-    .map { it.toCallableRef().makeProvide() }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
         parent = acc,
@@ -482,12 +478,11 @@ private fun FunctionParameterInjectablesScopes(
 private fun FunctionParameterInjectablesScope(
   parent: InjectablesScope,
   function: FunctionDescriptor,
-  parameter: CallableRef,
+  parameter: ParameterDescriptor,
   @Inject context: AnalysisContext
 ): InjectablesScope {
-  parameter.callable as ParameterDescriptor
   return InjectablesScope(
-    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
+    name = "FUNCTION PARAMETER ${parameter.fqNameSafe.parent()}.${parameter.injektName()}",
     callContext = CallContext.DEFAULT,
     parent = parent,
     ownerDescriptor = function,
@@ -522,13 +517,9 @@ private fun PropertyInjectablesScope(
     parent = finalParent,
     ownerDescriptor = property,
     file = null,
-    initialInjectables = listOfNotNull(
-      property.extensionReceiverParameter
-        ?.toCallableRef()
-        ?.makeProvide()
-    ),
+    initialInjectables = listOfNotNull(property.extensionReceiverParameter),
     imports = emptyList(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef() },
+    typeParameters = property.typeParameters,
     nesting = finalParent.nesting + 1
   )
 }
@@ -572,7 +563,7 @@ private fun PropertyInitInjectablesScope(
     file = null,
     initialInjectables = emptyList(),
     imports = emptyList(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef() },
+    typeParameters = property.typeParameters,
     nesting = finalParent.nesting + 1
   )
 }
@@ -657,7 +648,7 @@ private fun BlockExpressionInjectablesScope(
       file = null,
       initialInjectables = when (injectableDeclaration) {
         is ClassDescriptor -> injectableDeclaration.injectableConstructors()
-        is CallableDescriptor -> listOf(injectableDeclaration.toCallableRef())
+        is CallableDescriptor -> listOf(injectableDeclaration)
         else -> throw AssertionError("Unexpected injectable $injectableDeclaration")
       },
       imports = emptyList(),
@@ -669,16 +660,16 @@ private fun BlockExpressionInjectablesScope(
 }
 
 fun TypeInjectablesScope(
-  type: TypeRef,
+  type: KotlinType,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
+): InjectablesScope = parent.typeScopes.getOrPut(type) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
   InjectablesScope(
     name = "TYPE ${type.renderToString()}",
     parent = parent,
     callContext = CallContext.DEFAULT,
-    ownerDescriptor = type.classifier.descriptor,
+    ownerDescriptor = type.constructor.declarationDescriptor,
     file = null,
     initialInjectables = injectablesWithLookups.injectables,
     imports = injectablesWithLookups.lookedUpPackages
@@ -693,7 +684,7 @@ private fun ImportInjectablesScope(
   imports: List<ProviderImport>,
   namePrefix: String,
   parent: InjectablesScope?,
-  injectablesPredicate: (CallableRef) -> Boolean = { true },
+  injectablesPredicate: (CallableDescriptor) -> Boolean = { true },
   @Inject context: AnalysisContext
 ): InjectablesScope {
   val resolvedImports = imports.collectImportedInjectables()
@@ -707,7 +698,7 @@ private fun ImportInjectablesScope(
       ownerDescriptor = null,
       file = file,
       initialInjectables = resolvedImports
-        .filter { it.callable.isExternalDeclaration() },
+        .filter { it.isExternalDeclaration() },
       injectablesPredicate = injectablesPredicate,
       imports = emptyList(),
       typeParameters = emptyList(),
@@ -716,7 +707,7 @@ private fun ImportInjectablesScope(
     ownerDescriptor = null,
     file = file,
     initialInjectables = resolvedImports
-      .filterNot { it.callable.isExternalDeclaration() },
+      .filterNot { it.isExternalDeclaration() },
     injectablesPredicate = injectablesPredicate,
     imports = imports.mapNotNull { it.resolve() },
     typeParameters = emptyList(),

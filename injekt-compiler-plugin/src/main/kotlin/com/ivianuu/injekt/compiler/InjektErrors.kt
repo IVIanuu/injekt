@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 interface InjektErrors {
   companion object {
@@ -280,11 +281,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
+          "type parameter ${unwrappedFailure.parameter.name} " +
               "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is reified but type argument " +
-              "${unwrappedFailure.argument.fqName} is not reified"
+              "${unwrappedFailure.argument.fqNameSafe} is not reified"
         )
       } else {
         appendLine("type argument kind mismatch")
@@ -358,7 +359,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
               append("${failure.candidate.callContext.name.toLowerCase()} call:")
             }
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-              append("${failure.parameter.fqName.shortName()} is reified: ")
+              append("${failure.parameter.name} is reified: ")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
@@ -408,7 +409,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
+        appendLine("but type argument ${unwrappedFailure.argument.fqNameSafe} is not reified")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(

@@ -18,12 +18,9 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.jetbrains.kotlin.types.KotlinType
 
 @Serializable data class PersistedTypeRef(
   @SerialName("0") val classifierKey: String,
@@ -37,8 +34,8 @@ import kotlinx.serialization.Serializable
   @SerialName("8") val ignoreElementsWithErrors: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeRef =
-  PersistedTypeRef(
+fun KotlinType.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeRef =
+  /*PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey() ?: "",
     arguments = arguments.map { it.toPersistedTypeRef() },
     isStarProjection = isStarProjection,
@@ -48,21 +45,22 @@ fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeR
     isInject = isInject,
     defaultOnAllErrors = defaultOnAllErrors,
     ignoreElementsWithErrors = ignoreElementsWithErrors
-  )
+  )*/
+  TODO()
 
-fun PersistedTypeRef.toTypeRef(@Inject context: AnalysisContext): TypeRef {
-  if (isStarProjection) return STAR_PROJECTION_TYPE
+fun PersistedTypeRef.toKotlinType(@Inject context: AnalysisContext): KotlinType {
+  /*if (isStarProjection) return STAR_PROJECTION_TYPE
   val classifier = context.injektContext.classifierDescriptorForKey(classifierKey)
     .toClassifierRef()
   val arguments = if (classifier.isTag) {
     arguments
-      .map { it.toTypeRef() } +
+      .map { it.toKotlinType() } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
             context.injektContext.nullableAnyType
           else null
         )
-  } else arguments.map { it.toTypeRef() }
+  } else arguments.map { it.toKotlinType() }
   return classifier.untaggedType
     .copy(
       arguments = arguments,
@@ -72,5 +70,6 @@ fun PersistedTypeRef.toTypeRef(@Inject context: AnalysisContext): TypeRef {
       isInject = isInject,
       defaultOnAllErrors = defaultOnAllErrors,
       ignoreElementsWithErrors = ignoreElementsWithErrors
-    )
+    )*/
+  TODO()
 }

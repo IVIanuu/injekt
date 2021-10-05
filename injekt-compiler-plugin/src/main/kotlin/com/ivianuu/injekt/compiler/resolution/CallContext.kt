@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
+import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -46,6 +47,7 @@ import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInline
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInlineParameter
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.types.KotlinType
 
 enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
@@ -130,10 +132,9 @@ private val CallableDescriptor.callContextOfThis: CallContext
     else -> CallContext.DEFAULT
   }
 
-val TypeRef.callContext: CallContext
+val KotlinType.callContext: CallContext
   get() = when {
-    classifier.fqName.asString()
-      .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
+    isSuspendFunctionType -> CallContext.SUSPEND
     isComposableType -> CallContext.COMPOSABLE
     else -> CallContext.DEFAULT
   }

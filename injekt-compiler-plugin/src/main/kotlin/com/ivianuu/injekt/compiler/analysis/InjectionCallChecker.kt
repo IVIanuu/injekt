@@ -29,12 +29,7 @@ import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -70,49 +65,31 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
 
     @Provide val analysisContext = AnalysisContext(trace = context.trace)
 
-    val substitutionMap = resolvedCall.typeArguments
-      .mapKeys { it.key.toClassifierRef() }
-      .mapValues { it.value.toTypeRef() }
-      .filter { it.key != it.value.classifier } +
-        (resolvedCall.dispatchReceiver?.type?.toTypeRef()?.let {
-          it.classifier.typeParameters
-            .toMap(it.arguments)
-            .filter { it.key != it.value.classifier }
-        } ?: emptyMap()) +
-        (resolvedCall.extensionReceiver?.type?.toTypeRef()?.let {
-          it.classifier.typeParameters
-            .toMap(it.arguments)
-            .filter { it.key != it.value.classifier }
-        } ?: emptyMap())
-
-    val callee = resultingDescriptor
-      .toCallableRef()
-      .substitute(substitutionMap)
-
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.index }
 
-    val requests = callee.callable.valueParameters
+    val requests = resultingDescriptor.valueParameters
       .filter {
         valueArgumentsByIndex[it.index] is DefaultValueArgument && it.isInject()
       }
-      .map { it.toInjectableRequest(callee) }
+      .map { it.toInjectableRequest(resultingDescriptor) }
       .toList()
 
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(callExpression)
-    val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
+    val graph = scope.resolveRequests(resultingDescriptor, requests, callExpression.lookupLocation) { _, result ->
       if (result is ResolutionResult.Success.WithCandidate.Value &&
         result.candidate is CallableInjectable) {
         if (filePath != null) {
-          result.candidate.callable.import?.element?.let {
+          /*result.candidate.callable.import?.element?.let {
             context.trace.record(
               InjektWritableSlices.USED_IMPORT,
               SourcePosition(filePath, it.startOffset, it.endOffset),
               Unit
             )
-          }
+          }*/
+          // todo
         }
       }
     }

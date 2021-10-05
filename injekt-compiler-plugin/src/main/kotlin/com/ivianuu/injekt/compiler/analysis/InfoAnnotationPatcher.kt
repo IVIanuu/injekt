@@ -17,12 +17,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.classifierInfo
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -34,7 +29,7 @@ class InfoAnnotationPatcher(@Inject private val context: InjektContext) : Declar
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    // requesting infos triggers saving them
+    /*// requesting infos triggers saving them
     @Provide val analysisContext = AnalysisContext(trace = context.trace)
     when (descriptor) {
       is ClassDescriptor -> {
@@ -49,6 +44,6 @@ class InfoAnnotationPatcher(@Inject private val context: InjektContext) : Declar
         descriptor.typeParameters
           .forEach { it.classifierInfo() }
       }
-    }
+    }*/
   }
 }
