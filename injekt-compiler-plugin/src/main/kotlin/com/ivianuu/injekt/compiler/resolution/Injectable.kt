@@ -57,7 +57,7 @@ class CallableInjectable(
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val callContext: CallContext
-    get() = callable.callContext
+    get() = callable.callable.callContext()
   override val dependencyScope: InjectablesScope?
     get() = null
   override val originalType: TypeRef

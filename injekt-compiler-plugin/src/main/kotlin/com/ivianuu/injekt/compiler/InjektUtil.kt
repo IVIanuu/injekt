@@ -21,10 +21,6 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import java.lang.reflect.Field
-import java.lang.reflect.Modifier
-import kotlin.collections.set
-import kotlin.reflect.KClass
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -64,7 +60,12 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequenc
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
+import kotlin.collections.set
+import kotlin.reflect.KClass
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   @Inject context: AnalysisContext
@@ -292,3 +293,13 @@ val KtElement?.lookupLocation: LookupLocation
 fun DeclarationDescriptor.moduleName(@Inject context: InjektContext): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?: context.module.name.asString()
+
+inline fun <K, V> BindingTrace?.getOrPut(
+  slice: WritableSlice<K, V>,
+  key: K,
+  computation: () -> V
+): V {
+  this?.get(slice, key)?.let { return it }
+  return computation()
+    .also { this?.record(slice, key, it) }
+}

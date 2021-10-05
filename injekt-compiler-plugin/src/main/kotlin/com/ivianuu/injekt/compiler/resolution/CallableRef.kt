@@ -20,7 +20,6 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.callableInfo
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -33,9 +32,7 @@ data class CallableRef(
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
   val origin: CallableRef?,
-  val callContext: CallContext,
   val owner: ClassifierRef?,
-  val overriddenDepth: Int,
   val doNotIncludeChildren: Boolean,
   val import: ResolvedProviderImport?
 )
@@ -83,9 +80,7 @@ fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): Callable
         .toMap(),
       isProvide = isProvide(),
       origin = null,
-      callContext = callContext(),
       owner = null,
-      overriddenDepth = overriddenTreeUniqueAsSequence(false).count() - 1,
       doNotIncludeChildren = false,
       import = null
     )

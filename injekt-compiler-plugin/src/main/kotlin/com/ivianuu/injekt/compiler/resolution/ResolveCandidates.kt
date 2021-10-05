@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -550,8 +551,11 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   type = { it.originalType },
   isFromTypeScope = { it.ownerScope.isTypeScope },
   scopeNesting = { it.ownerScope.nesting },
-  owner = { (it as? CallableInjectable)?.callable?.owner },
-  subClassNesting = { (it as? CallableInjectable)?.callable?.overriddenDepth ?: 0 },
+  owner = { it.safeAs<CallableInjectable>()?.callable?.owner },
+  subClassNesting = {
+    it.safeAs<CallableInjectable>()?.callable?.callable
+      ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
+  },
   importPath = { (it as? CallableInjectable)?.callable?.import?.importPath },
   moduleName = { it.safeAs<CallableInjectable>()?.callable?.callable?.moduleName() }
 )
@@ -620,7 +624,7 @@ fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
     isFromTypeScope = { false },
     scopeNesting = { -1 },
     owner = { it.owner },
-    subClassNesting = { it.overriddenDepth },
+    subClassNesting = { it.callable.overriddenTreeUniqueAsSequence(false).count() - 1 },
     importPath = { it.import?.importPath },
     moduleName = { it.callable.moduleName() }
   )
