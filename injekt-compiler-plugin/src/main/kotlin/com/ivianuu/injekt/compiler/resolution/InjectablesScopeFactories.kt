@@ -21,8 +21,10 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Providers
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.descriptor
+import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
@@ -78,7 +80,8 @@ fun ElementInjectablesScope(
     .cast<KtElement>()
 
   if (scopeOwner !is KtBlockExpression)
-    context.injektContext.elementScopes[scopeOwner]?.let { return it }
+    context.trace?.bindingContext?.get(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner)
+      ?.let { return it }
 
   val parentScope = scopeOwner.parents
     .firstOrNull { (it as KtElement).isScopeOwner(position) }
@@ -143,7 +146,7 @@ fun ElementInjectablesScope(
   }
 
   if (scopeOwner !is KtBlockExpression)
-    context.injektContext.elementScopes[scopeOwner] = scope
+    context.trace?.record(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner, scope)
 
   return scope
 }
@@ -234,7 +237,7 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
 private fun FileInjectablesScope(
   file: KtFile,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.elementScopes.getOrPut(file) {
+): InjectablesScope = context.trace.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
   ImportInjectablesScope(
     file = file,
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
@@ -294,7 +297,8 @@ private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(
+): InjectablesScope = context.trace.getOrPut(
+  InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(clazz, parent.name)
 ) {
   val finalParent = ClassImportsInjectablesScope(clazz, parent)
@@ -428,29 +432,29 @@ private fun FunctionInjectablesScope(
   function: FunctionDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope =
-  context.injektContext.declarationScopes.getOrPut(
-    DescriptorWithParentScope(function, parent.name)
-  ) {
-      val finalParent = FunctionImportsInjectablesScope(function, parent)
-      val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null)
-      val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-      val typeParameters = (if (function is ConstructorDescriptor)
-        function.constructedClass.declaredTypeParameters
-      else function.typeParameters)
-        .map { it.toClassifierRef() }
-      InjectablesScope(
-        name = "$baseName ${function.fqNameSafe}",
-        parent = parameterScopes,
-        callContext = function.callContext(),
-        ownerDescriptor = function,
-        file = null,
-        initialInjectables = emptyList(),
-        imports = emptyList(),
-        typeParameters = typeParameters,
-        nesting = parameterScopes.nesting
-      )
-    }
+): InjectablesScope = context.trace.getOrPut(
+  InjektWritableSlices.DECLARATION_SCOPE,
+  DescriptorWithParentScope(function, parent.name)
+) {
+  val finalParent = FunctionImportsInjectablesScope(function, parent)
+  val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null)
+  val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
+  val typeParameters = (if (function is ConstructorDescriptor)
+    function.constructedClass.declaredTypeParameters
+  else function.typeParameters)
+    .map { it.toClassifierRef() }
+  InjectablesScope(
+    name = "$baseName ${function.fqNameSafe}",
+    parent = parameterScopes,
+    callContext = function.callContext(),
+    ownerDescriptor = function,
+    file = null,
+    initialInjectables = emptyList(),
+    imports = emptyList(),
+    typeParameters = typeParameters,
+    nesting = parameterScopes.nesting
+  )
+}
 
 private fun FunctionParameterInjectablesScopes(
   parent: InjectablesScope,
@@ -500,7 +504,8 @@ private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(
+): InjectablesScope = context.trace.getOrPut(
+  InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(property, parent.name)
 ) {
   val finalParent = property
@@ -576,7 +581,10 @@ private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.declarationScopes.getOrPut(DescriptorWithParentScope(variable, parent.name)) {
+): InjectablesScope = context.trace.getOrPut(
+  InjektWritableSlices.DECLARATION_SCOPE,
+  DescriptorWithParentScope(variable, parent.name)
+) {
   val finalParent = variable
     .findPsi()
     .safeAs<KtProperty>()
@@ -602,7 +610,7 @@ private fun ExpressionInjectablesScope(
   expression: KtAnnotatedExpression,
   parent: InjectablesScope,
   @Inject context: AnalysisContext
-): InjectablesScope = context.injektContext.elementScopes.getOrPut(expression) {
+): InjectablesScope = context.trace.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
   val finalParent = expression
     .getProviderImports()
     .takeIf { it.isNotEmpty() }
@@ -636,7 +644,7 @@ private fun BlockExpressionInjectablesScope(
   if (visibleInjectableDeclarations.isEmpty()) return parent
   val injectableDeclaration = visibleInjectableDeclarations.last()
   val key = block to injectableDeclaration
-  return context.injektContext.blockScopes.getOrPut(key) {
+  return context.trace.getOrPut(InjektWritableSlices.BLOCK_SCOPE, key) {
     val finalParent = if (visibleInjectableDeclarations.size > 1)
       BlockExpressionInjectablesScope(block, injectableDeclaration.findPsi().cast(), parent)
     else parent

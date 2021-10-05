@@ -17,22 +17,14 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.DescriptorWithParentScope
-import com.ivianuu.injekt.compiler.resolution.InjectablesScope
-import com.ivianuu.injekt.compiler.resolution.InjectablesWithLookups
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.TypeRefKey
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleCapability
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -44,8 +36,6 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtBlockExpression
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -79,20 +69,6 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
       ClassId.topLevel(InjektFqNames.TypeKey)
     )!!.toClassifierRef(AnalysisContext(this))
   }
-
-  val injectableConstructors = mutableMapOf<ClassDescriptor, List<CallableRef>>()
-  val isProvide = mutableMapOf<Any, Boolean>()
-  val isInject = mutableMapOf<Any, Boolean>()
-  val blockScopes = mutableMapOf<Pair<KtBlockExpression, DeclarationDescriptor>, InjectablesScope>()
-  val classifierRefs = mutableMapOf<ClassifierDescriptor, ClassifierRef>()
-  val callableRefs = mutableMapOf<CallableDescriptor, CallableRef>()
-  val callableInfos = mutableMapOf<CallableDescriptor, CallableInfo>()
-  val classifierInfos = mutableMapOf<ClassifierDescriptor, ClassifierInfo>()
-  val elementScopes = mutableMapOf<KtElement, InjectablesScope>()
-  val declarationScopes = mutableMapOf<DescriptorWithParentScope, InjectablesScope>()
-  val typeScopeInjectables = mutableMapOf<TypeRefKey, InjectablesWithLookups>()
-  val typeScopeInjectablesForSingleType = mutableMapOf<TypeRefKey, InjectablesWithLookups>()
-  val packageTypeScopeInjectables = mutableMapOf<FqName, InjectablesWithLookups>()
 
   fun classifierDescriptorForFqName(
     fqName: FqName,

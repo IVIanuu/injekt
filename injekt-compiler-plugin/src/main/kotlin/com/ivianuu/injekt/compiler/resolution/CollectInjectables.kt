@@ -19,11 +19,13 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.generateFrameworkKey
+import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
@@ -163,7 +165,7 @@ fun ResolutionScope.collectInjectables(
 fun Annotated.isProvide(@Inject context: AnalysisContext): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return context.injektContext.isProvide.getOrPut(key) {
+  return context.trace.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
     var isProvide = hasAnnotation(InjektFqNames.Provide) ||
         hasAnnotation(InjektFqNames.Inject)
 
@@ -192,7 +194,7 @@ fun Annotated.isProvide(@Inject context: AnalysisContext): Boolean {
 fun Annotated.isInject(@Inject context: AnalysisContext): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return context.injektContext.isInject.getOrPut(key) {
+  return context.trace.getOrPut(InjektWritableSlices.IS_INJECT, key) {
     var isInject = hasAnnotation(InjektFqNames.Inject)
     if (!isInject && this is PropertyDescriptor) {
       isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
@@ -215,7 +217,7 @@ fun Annotated.isInject(@Inject context: AnalysisContext): Boolean {
 
 fun ClassDescriptor.injectableConstructors(
   @Inject context: AnalysisContext
-): List<CallableRef> = context.injektContext.injectableConstructors.getOrPut(this) {
+): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
   constructors
     .filter { constructor ->
       constructor.hasAnnotation(InjektFqNames.Provide) ||
@@ -369,7 +371,7 @@ fun List<ProviderImport>.collectImportedInjectables(
 
 fun TypeRef.collectTypeScopeInjectables(
   @Inject context: AnalysisContext
-): InjectablesWithLookups = context.injektContext.typeScopeInjectables.getOrPut(key) {
+): InjectablesWithLookups = context.trace.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
   val injectables = mutableListOf<CallableRef>()
   val lookedUpPackages = mutableSetOf<FqName>()
 
@@ -425,7 +427,8 @@ private fun TypeRef.collectInjectablesForSingleType(
 ): InjectablesWithLookups {
   if (classifier.isTypeParameter) return InjectablesWithLookups.Empty
 
-  context.injektContext.typeScopeInjectablesForSingleType[key]?.let { return it }
+  context.trace?.bindingContext?.get(InjektWritableSlices.TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE, key)
+    ?.let { return it }
 
   val injectables = mutableListOf<CallableRef>()
   val lookedUpPackages = mutableSetOf<FqName>()
@@ -433,7 +436,7 @@ private fun TypeRef.collectInjectablesForSingleType(
   val result = InjectablesWithLookups(injectables, lookedUpPackages)
 
   // we might recursively call our self so we make sure that we do not end up in a endless loop
-  context.injektContext.typeScopeInjectablesForSingleType[key] = result
+  context.trace?.record(InjektWritableSlices.TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE, key, result)
 
   val packageResult = collectPackageTypeScopeInjectables()
   injectables += packageResult.injectables
@@ -465,7 +468,7 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
 ): InjectablesWithLookups {
   val packageFqName = classifier.descriptor!!.findPackage().fqName
 
-  return context.injektContext.packageTypeScopeInjectables.getOrPut(packageFqName) {
+  return context.trace.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
     val lookedUpPackages = setOf(packageFqName)
 
     val packageFragments = context.injektContext.packageFragmentsForFqName(packageFqName)

@@ -18,10 +18,12 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -104,47 +106,44 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): ClassifierRef {
-  context.injektContext.classifierRefs[this]?.let { return it }
+fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): ClassifierRef =
+  context.trace.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
+    val info = classifierInfo()
 
-  val info = classifierInfo()
+    val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
+      ?.declaredTypeParameters
+      ?.map { it.toClassifierRef() }
+      ?.toMutableList()
 
-  val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
-    ?.declaredTypeParameters
-    ?.map { it.toClassifierRef() }
-    ?.toMutableList()
+    val isTag = hasAnnotation(InjektFqNames.Tag)
 
-  val isTag = hasAnnotation(InjektFqNames.Tag)
+    if (isTag) {
+      typeParameters!! += ClassifierRef(
+        key = "${uniqueKey()}.\$TT",
+        fqName = fqNameSafe.child("\$TT".asNameId()),
+        isTypeParameter = true,
+        lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
+        variance = TypeVariance.OUT
+      )
+    }
 
-  if (isTag) {
-    typeParameters!! += ClassifierRef(
-      key = "${uniqueKey()}.\$TT",
-      fqName = fqNameSafe.child("\$TT".asNameId()),
-      isTypeParameter = true,
-      lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
-      variance = TypeVariance.OUT
+    ClassifierRef(
+      key = original.uniqueKey(),
+      fqName = original.fqNameSafe,
+      typeParameters = typeParameters ?: emptyList(),
+      lazySuperTypes = info.lazySuperTypes,
+      isTypeParameter = this is TypeParameterDescriptor,
+      isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+      isTag = isTag,
+      isTypeAlias = this is TypeAliasDescriptor,
+      descriptor = this,
+      tags = info.tags,
+      isSpread = info.isSpread,
+      primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
+        .map { it.asNameId() },
+      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
-
-  return ClassifierRef(
-    key = original.uniqueKey(),
-    fqName = original.fqNameSafe,
-    typeParameters = typeParameters ?: emptyList(),
-    lazySuperTypes = info.lazySuperTypes,
-    isTypeParameter = this is TypeParameterDescriptor,
-    isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-    isTag = isTag,
-    isTypeAlias = this is TypeAliasDescriptor,
-    descriptor = this,
-    tags = info.tags,
-    isSpread = info.isSpread,
-    primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
-      .map { it.asNameId() },
-    variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
-  ).also {
-    context.injektContext.classifierRefs[this] = it
-  }
-}
 
 fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
