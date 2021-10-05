@@ -123,8 +123,6 @@ class InjectablesScope(
   private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
-  private var shouldDelegateToParent = false
-
   val isTypeScope = name.startsWith("TYPE ")
 
   init {
@@ -174,12 +172,6 @@ class InjectablesScope(
         .toList()
         .forEach { spreadInjectables(it) }
     }
-
-    shouldDelegateToParent = parent != null &&
-        !hasSpreadingInjectableCandidates &&
-        !hasSpreadingInjectables &&
-        callContext == parent.callContext &&
-        typeParameters.isEmpty()
   }
 
   fun recordLookup(lookupLocation: LookupLocation) {
@@ -201,9 +193,6 @@ class InjectablesScope(
     request: InjectableRequest,
     requestingScope: InjectablesScope
   ): List<Injectable> {
-    if (shouldDelegateToParent)
-      return parent?.injectablesForRequest(request, requestingScope) ?: emptyList()
-
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
       request.type.classifier == context.injektContext.setClassifier
@@ -214,7 +203,7 @@ class InjectablesScope(
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
-    if (shouldDelegateToParent || injectables.isEmpty())
+    if (injectables.isEmpty())
       return parent?.injectablesForType(key) ?: emptyList()
     return injectablesByRequest.getOrPut(key) {
       val thisInjectables = injectables
@@ -240,7 +229,6 @@ class InjectablesScope(
   }
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
-    if (shouldDelegateToParent) return parent?.frameworkInjectableForRequest(request)
     if (request.type.frameworkKey != 0) return null
     when {
       request.type.isProviderFunctionType -> {
@@ -323,7 +311,7 @@ class InjectablesScope(
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef> {
-    if (shouldDelegateToParent || injectables.isEmpty())
+    if (injectables.isEmpty())
       return parent?.setElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
     return setElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef> = injectables
