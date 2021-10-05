@@ -183,47 +183,33 @@ sealed class ConstraintPosition {
   object Unknown : ConstraintPosition()
 }
 
-data class SpreadingInjectableBaseContext(
-  val baseContext: TypeContext,
-  val candidateTypeParameters: List<ClassifierRef>
-)
-
-fun buildBaseContextForSpreadingInjectable(
+fun buildContextForSpreadingInjectable(
+  constraintType: TypeRef,
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
   @Inject context: AnalysisContext
-): SpreadingInjectableBaseContext {
+  ): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
   val candidateTypeParameters = mutableListOf<ClassifierRef>()
   candidateType.allTypes.forEach {
     if (it.classifier.isTypeParameter)
       candidateTypeParameters += it.classifier
   }
-  val spreadingInjectableContext = candidateType.buildBaseContext(
-    candidateTypeParameters + staticTypeParameters
-  )
-  return SpreadingInjectableBaseContext(spreadingInjectableContext, candidateTypeParameters)
-}
-
-fun buildContextForSpreadingInjectable(
-  baseContext: SpreadingInjectableBaseContext,
-  constraintType: TypeRef,
-  candidateType: TypeRef
-): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
   val context = candidateType.buildContext(
-    baseContext.baseContext,
     constraintType,
+    candidateTypeParameters + staticTypeParameters,
     true
   )
+
   val map = if (context.isOk) {
     val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
     val rawMap = context.fixedTypeVariables
     rawMap.forEach { (key, value) ->
-      if (value.classifier in baseContext.candidateTypeParameters) {
+      if (value.classifier in candidateTypeParameters) {
         swapMap[value.classifier] = key.defaultType
       }
     }
     rawMap
-      .filterKeys { it !in baseContext.candidateTypeParameters }
+      .filterKeys { it !in candidateTypeParameters }
       .mapValues { it.value.substitute(swapMap) }
   } else emptyMap()
   return context to map
@@ -235,41 +221,33 @@ fun CallableRef.buildContext(
   collectSuperTypeVariables: Boolean = false,
   @Inject context: AnalysisContext
 ): TypeContext = type.buildContext(
-  contextsByStaticTypeParameters.getOrPut(staticTypeParameters) {
-    type.buildBaseContext(staticTypeParameters)
-  },
   superType,
+  staticTypeParameters,
   collectSuperTypeVariables
 )
 
-fun TypeRef.buildBaseContext(
+fun TypeRef.buildContext(
+  superType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
+  collectSuperTypeVariables: Boolean = false,
   @Inject context: AnalysisContext
 ): TypeContext {
-  val baseContext = TypeContext(context.injektContext)
-  staticTypeParameters.forEach { baseContext.addStaticTypeParameter(it) }
+  val context = TypeContext(context.injektContext)
+  staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
   allTypes.forEach {
     if (it.classifier.isTypeParameter)
-      baseContext.addTypeVariable(it.classifier)
+      context.addTypeVariable(it.classifier)
   }
-  return baseContext
-}
 
-fun TypeRef.buildContext(
-  baseContext: TypeContext,
-  superType: TypeRef,
-  collectSuperTypeVariables: Boolean = false
-): TypeContext {
-  val copied = baseContext.copy()
   if (collectSuperTypeVariables) {
     superType.allTypes.forEach {
       if (it.classifier.isTypeParameter)
-        copied.addTypeVariable(it.classifier)
+        context.addTypeVariable(it.classifier)
     }
   }
-  copied.addInitialSubTypeConstraint(this, superType)
-  copied.fixTypeVariables()
-  return copied
+  context.addInitialSubTypeConstraint(this, superType)
+  context.fixTypeVariables()
+  return context
 }
 
 class TypeContext(override val injektContext: InjektContext) : TypeCheckerContext {
@@ -282,12 +260,6 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
   val isOk: Boolean get() = errors.isEmpty()
 
   private var possibleNewConstraints: MutableList<Constraint>? = null
-
-  fun copy() = TypeContext(injektContext).apply {
-    this.staticTypeParameters += this@TypeContext.staticTypeParameters
-    this.typeVariables += this@TypeContext.typeVariables
-      .mapValues { it.value.copy() }
-  }
 
   private fun addPossibleNewConstraint(constraint: Constraint) {
     (possibleNewConstraints ?: mutableListOf<Constraint>()

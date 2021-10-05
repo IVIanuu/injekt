@@ -38,9 +38,7 @@ data class CallableRef(
   val overriddenDepth: Int,
   val doNotIncludeChildren: Boolean,
   val import: ResolvedProviderImport?
-) {
-  val contextsByStaticTypeParameters = mutableMapOf<List<ClassifierRef>, TypeContext>()
-}
+)
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   if (map.isEmpty()) return this

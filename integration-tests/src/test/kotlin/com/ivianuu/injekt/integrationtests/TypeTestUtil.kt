@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.injektContext
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.buildBaseContext
 import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
@@ -176,8 +175,8 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(staticTypeParameters),
       other,
+      staticTypeParameters,
       true
     )
     if (!context.isOk) {
@@ -194,8 +193,8 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
     val context = buildContext(
-      buildBaseContext(staticTypeParameters),
       other,
+      staticTypeParameters,
       true
     )
     if (context.isOk) {

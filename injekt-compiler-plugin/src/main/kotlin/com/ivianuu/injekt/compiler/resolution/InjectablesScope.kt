@@ -100,10 +100,7 @@ class InjectablesScope(
     val type: TypeRef,
     val rawType: TypeRef,
     val origin: CallableRef?
-  ) {
-    val contextsByStaticTypeParameters =
-      mutableMapOf<List<ClassifierRef>, SpreadingInjectableBaseContext>()
-  }
+  )
 
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
@@ -355,16 +352,10 @@ class InjectablesScope(
     if (candidate.type.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
     if (candidate.type in spreadingInjectable.processedCandidateTypes) return
     spreadingInjectable.processedCandidateTypes += candidate.type
-    val baseContext = candidate.contextsByStaticTypeParameters.getOrPut(allStaticTypeParameters) {
-      buildBaseContextForSpreadingInjectable(
-        candidate.type,
-        allStaticTypeParameters
-      )
-    }
     val (context, substitutionMap) = buildContextForSpreadingInjectable(
-      baseContext,
       spreadingInjectable.constraintType,
-      candidate.type
+      candidate.type,
+      allStaticTypeParameters
     )
     if (!context.isOk) return
 

@@ -19,8 +19,6 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.buildBaseContext
-import com.ivianuu.injekt.compiler.resolution.buildBaseContextForSpreadingInjectable
 import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -98,9 +96,9 @@ class TypeSubstitutionTest {
         it.withArguments(listOf(namedScope) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
-      buildBaseContextForSpreadingInjectable(substitutionType, emptyList()),
       scopedT.defaultType,
-      substitutionType
+      substitutionType,
+      emptyList()
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
@@ -113,8 +111,8 @@ class TypeSubstitutionTest {
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ): Map<ClassifierRef, TypeRef> {
     val context = subType.buildContext(
-      subType.buildBaseContext(staticTypeParameters),
       superType,
+      staticTypeParameters,
       true
     )
     return context.fixedTypeVariables
