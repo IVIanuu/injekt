@@ -25,7 +25,10 @@ import com.intellij.openapi.project.ProjectManagerListener
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
+import org.jetbrains.kotlin.analyzer.moduleInfo
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.idea.core.unwrapModuleSourceInfo
+import org.jetbrains.kotlin.idea.facet.KotlinFacet
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
 
@@ -45,7 +48,17 @@ class AppInitializer : ApplicationInitializedListener {
             )
             SyntheticScopeProviderExtension.registerExtension(
               project,
-              InjectSyntheticScopeProviderExtension { it.isInjektEnabled() }
+              InjectSyntheticScopeProviderExtension {
+                val module = it.moduleInfo?.unwrapModuleSourceInfo()?.module
+                  ?: return@InjectSyntheticScopeProviderExtension false
+                val facet = KotlinFacet.get(module)
+                  ?: return@InjectSyntheticScopeProviderExtension false
+                val pluginClasspath = facet.configuration.settings.compilerArguments?.pluginClasspaths
+                  ?: return@InjectSyntheticScopeProviderExtension false
+                return@InjectSyntheticScopeProviderExtension pluginClasspath.any {
+                  it.contains("injekt-compiler-plugin")
+                }
+              }
             )
             @Suppress("DEPRECATION")
             Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
