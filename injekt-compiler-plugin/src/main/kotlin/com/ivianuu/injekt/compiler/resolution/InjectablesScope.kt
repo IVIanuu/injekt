@@ -62,15 +62,9 @@ class InjectablesScope(
   private val CallableRef.injectableKey: InjectableKey
     get() = InjectableKey(type, callable, origin)
 
-  /**
-   * There should be only one injectable for a type + callable combination
-   * If there are duplicates we choose the best version
-   */
-  private fun addInjectableIfAbsentOrBetter(callable: CallableRef) {
+  private fun addInjectable(callable: CallableRef) {
     val key = callable.injectableKey
-    val existing = injectables[key]
-    if (compareCallable(callable, existing) < 0)
-      injectables[key] = callable
+    injectables[key] = callable
   }
 
   private val imports = imports.toMutableList()
@@ -135,10 +129,10 @@ class InjectablesScope(
             )
           },
           addInjectable = { callable ->
-            addInjectableIfAbsentOrBetter(callable.copy(origin = injectable))
+            addInjectable(callable.copy(origin = injectable))
             val typeWithFrameworkKey = callable.type
               .copy(frameworkKey = generateFrameworkKey())
-            addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey, origin = injectable))
+            addInjectable(callable.copy(type = typeWithFrameworkKey, origin = injectable))
             spreadingInjectableCandidates += SpreadingInjectableCandidate(
               type = typeWithFrameworkKey,
               rawType = callable.type,
@@ -328,7 +322,7 @@ class InjectablesScope(
           val typeWithFrameworkKey = callable.type.copy(
             frameworkKey = generateFrameworkKey()
           )
-          addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
+          addInjectable(callable.copy(type = typeWithFrameworkKey))
           typeWithFrameworkKey
         }
       val parentElements = parent?.setElementsForType(singleElementType, collectionElementType, key)
@@ -386,14 +380,14 @@ class InjectablesScope(
             origin = candidate.origin,
             originalType = newInnerInjectable.type
           )
-        addInjectableIfAbsentOrBetter(finalNewInnerInjectable)
+        addInjectable(finalNewInnerInjectable)
         val newInnerInjectableWithFrameworkKey = finalNewInnerInjectable.copy(
           type = finalNewInnerInjectable.type.copy(
             frameworkKey = generateFrameworkKey()
               .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
-        addInjectableIfAbsentOrBetter(newInnerInjectableWithFrameworkKey)
+        addInjectable(newInnerInjectableWithFrameworkKey)
         val newCandidate = SpreadingInjectableCandidate(
           type = newInnerInjectableWithFrameworkKey.type,
           rawType = finalNewInnerInjectable.type,

@@ -463,18 +463,7 @@ private enum class TypeScopeOrigin {
   EXTERNAL, TYPE, INTERNAL
 }
 
-private inline fun <T> InjectablesScope.compareCandidateBase(
-  a: T?,
-  b: T?,
-  requestedType: TypeRef?,
-  type: (T) -> TypeRef,
-  isFromTypeScope: (T) -> Boolean,
-  scopeNesting: (T) -> Int,
-  owner: (T) -> ClassifierRef?,
-  subClassNesting: (T) -> Int,
-  importPath: (T) -> String?,
-  moduleName: (T) -> String?
-): Int {
+private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int {
   if (a === b) return 0
 
   if (a != null && b == null) return -1
@@ -483,28 +472,30 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
   a!!
   b!!
 
-  val aIsFromTypeScope = isFromTypeScope(a)
-  val bIsFromTypeScope = isFromTypeScope(b)
+  val aIsFromTypeScope = a.ownerScope.isTypeScope
+  val bIsFromTypeScope = b.ownerScope.isTypeScope
   if (!aIsFromTypeScope && bIsFromTypeScope) return -1
   if (!bIsFromTypeScope && aIsFromTypeScope) return 1
 
-  val aScopeNesting = scopeNesting(a)
-  val bScopeNesting = scopeNesting(b)
+  val aScopeNesting = a.ownerScope.nesting
+  val bScopeNesting = b.ownerScope.nesting
   if (aScopeNesting > bScopeNesting) return -1
   if (bScopeNesting > aScopeNesting) return 1
 
-  val ownerA = owner(a)
-  val ownerB = owner(b)
+  val ownerA = a.safeAs<CallableInjectable>()?.callable?.owner
+  val ownerB = b.safeAs<CallableInjectable>()?.callable?.owner
   if (ownerA != null && ownerA == ownerB) {
-    val aSubClassNesting = subClassNesting(a)
-    val bSubClassNesting = subClassNesting(b)
+    val aSubClassNesting = a.safeAs<CallableInjectable>()?.callable?.callable
+      ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
+    val bSubClassNesting = b.safeAs<CallableInjectable>()?.callable?.callable
+      ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
 
     if (aSubClassNesting < bSubClassNesting) return -1
     if (bSubClassNesting < aSubClassNesting) return 1
   }
 
-  val importPathA = importPath(a)
-  val importPathB = importPath(b)
+  val importPathA = a.safeAs<CallableInjectable>()?.callable?.import?.importPath
+  val importPathB = b.safeAs<CallableInjectable>()?.callable?.import?.importPath
 
   if (importPathA != null && importPathB != null) {
     if (!importPathA.endsWith("*")
@@ -513,10 +504,11 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
       importPathA.endsWith("*")) return 1
   }
 
-  if (requestedType != null && aIsFromTypeScope && bIsFromTypeScope) {
+  val requestedType = a.type
+  if (aIsFromTypeScope && bIsFromTypeScope) {
     val thisModuleName = context.injektContext.module.name.asString()
-    val aModuleName = moduleName(a)
-    val bModuleName = moduleName(b)
+    val aModuleName = a.safeAs<CallableInjectable>()?.callable?.callable?.moduleName()
+    val bModuleName = b.safeAs<CallableInjectable>()?.callable?.callable?.moduleName()
     val typeModuleName = requestedType.classifier.descriptor!!.moduleName()
 
     val aOrigin = when (aModuleName) {
@@ -535,28 +527,12 @@ private inline fun <T> InjectablesScope.compareCandidateBase(
     if (bOrigin.ordinal > aOrigin.ordinal) return 1
   }
 
-  val diff = compareType(type(a), type(b), requestedType)
+  val diff = compareType(a.originalType, b.originalType, requestedType)
   if (diff < 0) return -1
   if (diff > 0) return 1
 
   return 0
 }
-
-private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int = compareCandidateBase(
-  a = a,
-  b = b,
-  requestedType = a?.type ?: b?.type,
-  type = { it.originalType },
-  isFromTypeScope = { it.ownerScope.isTypeScope },
-  scopeNesting = { it.ownerScope.nesting },
-  owner = { it.safeAs<CallableInjectable>()?.callable?.owner },
-  subClassNesting = {
-    it.safeAs<CallableInjectable>()?.callable?.callable
-      ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
-  },
-  importPath = { (it as? CallableInjectable)?.callable?.import?.importPath },
-  moduleName = { it.safeAs<CallableInjectable>()?.callable?.callable?.moduleName() }
-)
 
 fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
   if (a == b) return 0
@@ -609,41 +585,6 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
     if (diff < 0) return -1
     if (diff > 0) return 1
   }
-
-  return 0
-}
-
-fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
-  var diff = compareCandidateBase(
-    a = a,
-    b = b,
-    requestedType = null,
-    type = { it.originalType },
-    isFromTypeScope = { false },
-    scopeNesting = { -1 },
-    owner = { it.owner },
-    subClassNesting = { it.callable.overriddenTreeUniqueAsSequence(false).count() - 1 },
-    importPath = { it.import?.importPath },
-    moduleName = { it.callable.moduleName() }
-  )
-  if (diff < 0) return -1
-  if (diff > 0) return 1
-
-  if (a == null || b == null) return 0
-
-  val aDependencies = a.parameterTypes.values
-  val bDependencies = b.parameterTypes.values
-  if (aDependencies.size < bDependencies.size) return -1
-  if (bDependencies.size < aDependencies.size) return 1
-
-  diff = 0
-  for (aDependency in aDependencies) {
-    for (bDependency in bDependencies) {
-      diff += compareType(aDependency, bDependency, null)
-    }
-  }
-  if (diff < 0) return -1
-  if (diff > 0) return 1
 
   return 0
 }
