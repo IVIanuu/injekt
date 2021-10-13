@@ -482,7 +482,7 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideInTheMiddleOfABlock() = codegen(
     """
-      fun <T> injectOrNull(@Inject x: T? = null): T = x
+      fun <T> injectOrNull(@Inject x: T? = null): T? = x
       fun invoke(foo: Foo): Pair<Foo?, Foo?> {
         val a = injectOrNull<Foo>()
         @Provide val provided = foo
