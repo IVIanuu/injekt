@@ -44,7 +44,6 @@ sealed class Injectable {
   abstract val callableFqName: FqName
   abstract val callContext: CallContext
   abstract val ownerScope: InjectablesScope
-  abstract val cacheExpressionResultIfPossible: Boolean
 }
 
 class CallableInjectable(
@@ -62,8 +61,6 @@ class CallableInjectable(
     get() = null
   override val originalType: TypeRef
     get() = callable.originalType
-  override val cacheExpressionResultIfPossible: Boolean
-    get() = false
 }
 
 class SetInjectable(
@@ -81,8 +78,6 @@ class SetInjectable(
     get() = null
   override val originalType: TypeRef
     get() = type.classifier.defaultType
-  override val cacheExpressionResultIfPossible: Boolean
-    get() = false
 }
 
 class ProviderInjectable(
@@ -142,8 +137,6 @@ class ProviderInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type.classifier.defaultType
-  override val cacheExpressionResultIfPossible: Boolean
-    get() = true
 }
 
 class SourceKeyInjectable(
@@ -158,8 +151,6 @@ class SourceKeyInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type
-  override val cacheExpressionResultIfPossible: Boolean
-    get() = false
 }
 
 class TypeKeyInjectable(
@@ -194,8 +185,6 @@ class TypeKeyInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type
-  override val cacheExpressionResultIfPossible: Boolean
-    get() = false
 }
 
 fun CallableRef.getInjectableRequests(

@@ -288,7 +288,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     context: GraphContext
-  ): Boolean = !candidate.cacheExpressionResultIfPossible &&
+  ): Boolean = candidate !is ProviderInjectable &&
       dependencyResults.isNotEmpty() &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
@@ -338,7 +338,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
     context: GraphContext
-  ): Boolean = candidate.cacheExpressionResultIfPossible &&
+  ): Boolean = candidate is ProviderInjectable &&
       context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
       !context.isInBetweenCircularDependency(this)
 
