@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -560,7 +559,7 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
     b!!
 
     var diff = 0
-    a.arguments.forEachWith(b.arguments) { aTypeArgument, bTypeArgument ->
+    a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
       diff += compareType(aTypeArgument, bTypeArgument, null)
     }
     if (diff < 0) return -1

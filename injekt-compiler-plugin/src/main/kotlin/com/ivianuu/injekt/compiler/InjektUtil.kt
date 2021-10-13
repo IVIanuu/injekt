@@ -64,7 +64,6 @@ import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
-import kotlin.collections.set
 import kotlin.reflect.KClass
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
@@ -244,23 +243,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
     else -> throw AssertionError()
   }
-}
-
-inline fun <A, B> List<A>.forEachWith(
-  other: List<B>,
-  action: (A, B) -> Unit
-) {
-  check(size == other.size) {
-    "Size not equal this: $this other: $other"
-  }
-  for (i in indices) action(this[i], other[i])
-}
-
-fun <K, V> List<K>.toMap(values: List<V>): Map<K, V> {
-  if (this.isEmpty()) return emptyMap()
-  val map = mutableMapOf<K, V>()
-  forEachWith(values) { key, value -> map[key] = value }
-  return map
 }
 
 private var currentFrameworkKey = 0

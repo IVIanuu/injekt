@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
-import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
@@ -306,7 +305,8 @@ class InjectableChecker(@Provide private val injektContext: InjektContext) : Dec
 
     if (descriptor is CallableMemberDescriptor) {
       overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters
-        .forEachWith(descriptor.valueParameters) { overriddenValueParameter, valueParameter ->
+        .zip(descriptor.valueParameters)
+        .forEach { (overriddenValueParameter, valueParameter) ->
           if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
             valueParameter.hasAnnotation(InjektFqNames.Inject)) {
             return false
@@ -325,7 +325,8 @@ class InjectableChecker(@Provide private val injektContext: InjektContext) : Dec
     }
 
     overriddenTypeParameters
-      .forEachWith(typeParameters) { overriddenTypeParameter, typeParameter ->
+      .zip(typeParameters)
+      .forEach  { (overriddenTypeParameter, typeParameter) ->
         if (typeParameter.classifierInfo().isSpread !=
           overriddenTypeParameter.classifierInfo().isSpread) {
           return false

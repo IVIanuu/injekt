@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.forEachWith
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
@@ -384,7 +383,8 @@ class InjectCallTransformer(
           val expression = with(dependencyScopeContext) {
             val previousParametersMap = parameterMap.toMap()
             injectable.parameterDescriptors
-              .forEachWith(function.valueParameters) { a, b -> parameterMap[a] = b }
+              .zip(function.valueParameters)
+              .forEach { (a, b) -> parameterMap[a] = b }
             expressionFor(dependencyResult)
               .also {
                 parameterMap.clear()

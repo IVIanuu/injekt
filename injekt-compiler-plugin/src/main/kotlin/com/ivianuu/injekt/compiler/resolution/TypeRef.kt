@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.toMap
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -251,7 +250,8 @@ class TypeRef(
   val superTypes: List<TypeRef> get() {
     if (_superTypes == null) {
       val substitutionMap = classifier.typeParameters
-        .toMap(arguments)
+        .zip(arguments)
+        .toMap()
       _superTypes = if (substitutionMap.isEmpty()) classifier.superTypes
       else classifier.superTypes.map { it.substitute(substitutionMap) }
     }
@@ -389,7 +389,7 @@ fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<Class
   val newClassifiers = mapIndexed { index, classifier ->
     classifier.copy(lazySuperTypes = lazy { allNewSuperTypes[index] })
   }
-  val combinedMap = map + toMap(newClassifiers.map { it.defaultType })
+  val combinedMap = map + zip(newClassifiers.map { it.defaultType })
   for (i in indices) {
     val newSuperTypes = allNewSuperTypes[i]
     val oldClassifier = this[i]

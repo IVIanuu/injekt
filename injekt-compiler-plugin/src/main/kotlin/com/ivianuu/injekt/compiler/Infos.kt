@@ -108,10 +108,11 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
             it.classifier == rootClassifier
           }!!
           val substitutionMap = rootClassifier.typeParameters
-            .toMap(superType.arguments) + rootOverriddenCallable
+            .zip(superType.arguments)
+            .toMap() + rootOverriddenCallable
             .typeParameters
             .map { it.toClassifierRef() }
-            .toMap(typeParameters.map { it.defaultType.toTypeRef() })
+            .zip(typeParameters.map { it.defaultType.toTypeRef() })
           info.copy(
             type = info.type.substitute(substitutionMap),
             parameterTypes = info.parameterTypes.mapValues {

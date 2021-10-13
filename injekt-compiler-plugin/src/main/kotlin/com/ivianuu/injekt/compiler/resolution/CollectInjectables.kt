@@ -32,7 +32,6 @@ import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
-import com.ivianuu.injekt.compiler.toMap
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
@@ -85,7 +84,7 @@ fun TypeRef.collectInjectables(
             parameterTypes = callable.parameterTypes.toMutableMap()
               .also { it[DISPATCH_RECEIVER_INDEX] = this },
             import = import
-          ).substitute(classifier.typeParameters.toMap(arguments))
+          ).substitute(classifier.typeParameters.zip(arguments).toMap())
         }
     )
   }
@@ -103,9 +102,9 @@ fun TypeRef.collectInjectables(
           .containingDeclaration
           .cast<ClassDescriptor>()
           .toClassifierRef()
-        classifier.typeParameters.toMap(arguments) + originalClassifier.typeParameters
-          .toMap(subtypeView(originalClassifier)!!.arguments)
-      } else classifier.typeParameters.toMap(arguments)
+        classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
+          .zip(subtypeView(originalClassifier)!!.arguments)
+      } else classifier.typeParameters.zip(arguments).toMap()
       it.substitute(substitutionMap)
     }
     .map { callable ->
