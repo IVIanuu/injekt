@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import java.util.Locale
 
 interface InjektErrors {
   companion object {
@@ -270,8 +271,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine(
           "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
-              "is a ${unwrappedFailure.candidate.callContext.name.toLowerCase()} function " +
-              "but current call context is ${unwrappedFailure.actualCallContext.name.toLowerCase()}"
+              "is a ${unwrappedFailure.candidate.callContext.name.lowercase(Locale.getDefault())} function " +
+              "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase(
+                Locale.getDefault()
+              )}"
         )
       } else {
         appendLine("call context mismatch")
@@ -340,7 +343,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       withIndent {
         if (isProvider &&
           unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-          appendLine("${indent()}/* ${callContext.name.toLowerCase()} call context */")
+          appendLine("${indent()}/* ${callContext.name.lowercase(Locale.getDefault())} call context */")
         }
         append(indent())
         if (!isProvider) {
@@ -355,7 +358,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           append("/* ")
           when (failure) {
             is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-              append("${failure.candidate.callContext.name.toLowerCase()} call:")
+              append("${failure.candidate.callContext.name.lowercase(Locale.getDefault())} call:")
             }
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
@@ -391,7 +394,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
 
     withIndent {
       if (unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-        appendLine("${indent()}/* ${scope.callContext.name.toLowerCase()} call context */")
+        appendLine("${indent()}/* ${scope.callContext.name.lowercase(Locale.getDefault())} call context */")
       }
       append(indent())
       printCall(
@@ -405,7 +408,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
 
     when (unwrappedFailure) {
       is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.toLowerCase()}")
+        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}")
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")

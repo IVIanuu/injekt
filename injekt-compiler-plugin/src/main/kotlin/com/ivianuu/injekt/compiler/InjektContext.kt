@@ -52,11 +52,8 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   val collectionClassifier by lazy {
     module.builtIns.collection.toClassifierRef(AnalysisContext(this))
   }
-  val nothingType by lazy {
-    module.builtIns.nothingType.toTypeRef(context = AnalysisContext(this))
-  }
   val nullableNothingType by lazy {
-    nothingType.copy(isMarkedNullable = true)
+    module.builtIns.nullableNothingType.toTypeRef(context = AnalysisContext(this))
   }
   val anyType by lazy {
     module.builtIns.anyType.toTypeRef(context = AnalysisContext(this))

@@ -93,9 +93,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     val parameter = superType.arguments[i]
     if (argument.isStarProjection || parameter.isStarProjection) continue
     val originalParameter = superType.classifier.defaultType.arguments[i]
-    val variance =
-      effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)
-    val argumentOk = when (variance) {
+    val argumentOk = when (effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)) {
       TypeVariance.IN -> parameter.isSubTypeOf(argument)
       TypeVariance.OUT -> argument.isSubTypeOf(parameter)
       TypeVariance.INV -> argument.isEqualTo(parameter)
@@ -285,7 +283,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     processConstraints()
   }
 
-  fun addInitialEqualityConstraint(a: TypeRef, b: TypeRef) {
+  private fun addInitialEqualityConstraint(a: TypeRef, b: TypeRef) {
     val (typeVariable, equalType) = when {
       a.classifier.isTypeParameter -> a to b
       b.classifier.isTypeParameter -> b to a

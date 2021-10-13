@@ -77,7 +77,7 @@ class InjectablesScope(
 
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
-  val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
+  private val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
   data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
 
