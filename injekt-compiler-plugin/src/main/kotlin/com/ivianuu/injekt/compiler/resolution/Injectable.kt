@@ -23,9 +23,9 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
-import com.ivianuu.injekt.compiler.transform.toKotlinType
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class Injectable {
@@ -104,7 +105,14 @@ class ProviderInjectable(
     )
   )
 
-  val parameterDescriptors = mutableListOf<ParameterDescriptor>()
+  val parameterDescriptors = type
+    .classifier
+    .descriptor!!
+    .cast<ClassDescriptor>()
+    .unsubstitutedMemberScope
+    .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+    .first()
+    .valueParameters
 
   override val dependencyScope = InjectablesScope(
     name = "PROVIDER $type",
@@ -113,13 +121,7 @@ class ProviderInjectable(
     callContext = dependencyCallContext,
     ownerDescriptor = ownerScope.ownerDescriptor,
     file = null,
-    initialInjectables = type
-      .toKotlinType()
-      .memberScope
-      .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-      .first()
-      .valueParameters
-      .onEach { parameterDescriptors += it }
+    initialInjectables = parameterDescriptors
       .mapIndexed { index, parameter ->
         parameter
           .toCallableRef()

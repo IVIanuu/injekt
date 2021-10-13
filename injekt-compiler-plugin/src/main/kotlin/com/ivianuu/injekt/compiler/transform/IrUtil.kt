@@ -19,16 +19,11 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -60,11 +55,6 @@ import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.TypeProjectionImpl
-import org.jetbrains.kotlin.types.Variance
-import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.withAbbreviation
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -172,52 +162,6 @@ private fun TypeRef.toIrAbbreviation(
     emptyList()
   )
 }
-
-fun TypeRef.toKotlinType(@Inject context: AnalysisContext): SimpleType {
-  if (isStarProjection) return context.injektContext.module.builtIns.anyType
-  return when {
-    classifier.isTypeAlias -> superTypes.single().toKotlinType()
-      .withAbbreviation(toAbbreviation())
-    // todo add this tag to type
-    classifier.isTag -> arguments.last().toKotlinType()
-    else -> classifier.descriptor!!.original.defaultType
-      .replace(
-        newArguments = arguments.map {
-          TypeProjectionImpl(
-            Variance.INVARIANT,
-            it.toKotlinType()
-          )
-        },
-        newAnnotations = if (isMarkedComposable) {
-          Annotations.create(
-            listOf(
-              AnnotationDescriptorImpl(
-                context.injektContext.classifierDescriptorForFqName(
-                  InjektFqNames.Composable,
-                  NoLookupLocation.FROM_BACKEND
-                )!!.defaultType,
-                emptyMap(),
-                SourceElement.NO_SOURCE
-              )
-            )
-          )
-        } else {
-          Annotations.EMPTY
-        }
-      )
-      .makeNullableAsSpecified(isMarkedNullable)
-  }
-}
-
-fun TypeRef.toAbbreviation(@Inject context: AnalysisContext): SimpleType =
-  classifier.descriptor!!.defaultType
-    .replace(newArguments = arguments.map {
-      TypeProjectionImpl(
-        Variance.INVARIANT,
-        it.toKotlinType()
-      )
-    })
-    .makeNullableAsSpecified(isMarkedNullable)
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(
