@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
@@ -50,31 +49,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.count { !it.hasAnnotation(InjektFqNames.Inject) }
         ?.let { it <= 1 } == true
 
-    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
-      return true
-
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
     if (diagnostic.factory == Errors.UPPER_BOUND_IS_EXTENSION_FUNCTION_TYPE)
       return true
 
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
-      return true
-
-    if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
-      val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-      if (function?.hasAnnotation(InjektFqNames.Provide) == true)
-        return true
-    }
-
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true) return true
-    }
-
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND) {
-      val typeParameter = diagnostic.psiElement.parent as? KtTypeParameter
       if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true) return true
     }
 

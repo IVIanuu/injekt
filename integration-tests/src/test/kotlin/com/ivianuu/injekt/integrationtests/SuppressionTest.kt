@@ -16,31 +16,12 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class SuppressionTest {
-  @Test fun testDoesNotWarnFinalUpperBound() = codegen(
-    """
-      fun <T : Int> func() {
-      }
-    """
-  ) {
-    shouldNotContainMessage("'Int' is a final type, and thus a value of the type parameter is predetermined")
-  }
-
-  @Test fun testTypeAliasTypeParameter() = codegen(
-    """
-      typealias Alias<T> = String
-    """
-  ) {
-    shouldNotContainMessage("Type alias parameter T is not used in the expanded type String and does not affect type checking")
-  }
-
   @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
     """
       typealias MyBuilder = StringBuilder.() -> Unit
@@ -52,15 +33,6 @@ class SuppressionTest {
     """
   ) {
     invokeSingleFile() shouldBe "42"
-  }
-
-  @Test fun testDoesNotWarnInlineOnInjectableDeclaration() = codegen(
-    """
-      @Provide inline fun func() {
-      }
-    """
-  ) {
-    shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
   }
 
   @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
