@@ -44,11 +44,7 @@ import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import com.ivianuu.injekt.compiler.uniqueKey
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.set
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -108,6 +104,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.set
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjectCallTransformer(
@@ -116,7 +115,6 @@ class InjectCallTransformer(
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
-    val scope: ScopeWithIr,
     val startOffset: Int
   ) {
     val statements = mutableListOf<IrStatement>()
@@ -842,7 +840,7 @@ class InjectCallTransformer(
 
     return DeclarationIrBuilder(pluginContext, result.symbol)
       .irBlock {
-        val graphContext = GraphContext(graph, currentScope!!, result.startOffset)
+        val graphContext = GraphContext(graph, result.startOffset)
         try {
           ScopeContext(
             parent = null,

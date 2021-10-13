@@ -349,7 +349,6 @@ private fun ClassInitInjectablesScope(
     file = null,
     initialInjectables = listOf(thisInjectable),
     injectablesPredicate = {
-      println()
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
       psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
     },
