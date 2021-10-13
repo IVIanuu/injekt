@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class InjectionGraph {
@@ -181,8 +180,7 @@ fun InjectablesScope.resolveRequests(
   requests: List<InjectableRequest>,
   lookupLocation: LookupLocation,
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit
-): InjectionGraph = measureTimeMillisWithResult {
-  println("resolve requests $requests in $name")
+): InjectionGraph {
   recordLookup(lookupLocation)
   val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   var failureRequest: InjectableRequest? = null
@@ -199,7 +197,7 @@ fun InjectablesScope.resolveRequests(
     }
   }
   val usages = mutableMapOf<UsageKey, MutableList<InjectableRequest>>()
-  return@measureTimeMillisWithResult if (failure == null) InjectionGraph.Success(
+  return if (failure == null) InjectionGraph.Success(
     this,
     callee,
     successes,
@@ -207,9 +205,7 @@ fun InjectablesScope.resolveRequests(
   )
     .also { it.postProcess(onEachResult, usages) }
   else InjectionGraph.Error(this, callee, failureRequest!!, failure)
-}.also {
-  println("resolving requests $requests in $name took ${it.first} ms")
-}.second
+}
 
 private fun InjectablesScope.resolveRequest(
   request: InjectableRequest,
