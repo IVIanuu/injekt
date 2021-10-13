@@ -482,8 +482,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (aScopeNesting > bScopeNesting) return -1
   if (bScopeNesting > aScopeNesting) return 1
 
-  val ownerA = a.safeAs<CallableInjectable>()?.callable?.owner
-  val ownerB = b.safeAs<CallableInjectable>()?.callable?.owner
+  val ownerA = a.safeAs<CallableInjectable>()?.callable?.callable?.containingDeclaration
+  val ownerB = b.safeAs<CallableInjectable>()?.callable?.callable?.containingDeclaration
   if (ownerA != null && ownerA == ownerB) {
     val aSubClassNesting = a.safeAs<CallableInjectable>()?.callable?.callable
       ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0

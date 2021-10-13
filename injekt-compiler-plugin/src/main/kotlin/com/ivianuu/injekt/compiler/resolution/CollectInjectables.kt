@@ -110,7 +110,6 @@ fun TypeRef.collectInjectables(
     }
     .map { callable ->
       callable.copy(
-        owner = classifier,
         isProvide = true,
         parameterTypes = if (callable.callable.dispatchReceiverParameter != null &&
           callable.parameterTypes.isNotEmpty()) {
@@ -473,11 +472,7 @@ private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->
-        allScopes.any {
-          it.ownerDescriptor == callableParent ||
-              (it.ownerDescriptor is ClassDescriptor &&
-                  it.ownerDescriptor.toClassifierRef() == callable.owner)
-        }
+        allScopes.any { it.ownerDescriptor == callableParent }
       } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&
       callable.callable.containingDeclaration is PackageFragmentDescriptor &&
       run {
