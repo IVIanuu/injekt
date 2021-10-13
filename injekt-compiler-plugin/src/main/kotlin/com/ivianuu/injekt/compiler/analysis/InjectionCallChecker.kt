@@ -97,7 +97,6 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
         valueArgumentsByIndex[it.index] is DefaultValueArgument && it.isInject()
       }
       .map { it.toInjectableRequest(callee) }
-      .toList()
 
     if (requests.isEmpty()) return
 

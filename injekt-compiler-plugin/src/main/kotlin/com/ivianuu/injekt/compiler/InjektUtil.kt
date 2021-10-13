@@ -112,7 +112,6 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
   // Look for star imports and make a guess.
   val hasStarImport = importPaths
-    .asSequence()
     .filter { it.isAllUnder }
     .any { fqName.asString().startsWith(it.fqName.asString()) }
   if (hasStarImport) return annotationEntryShort

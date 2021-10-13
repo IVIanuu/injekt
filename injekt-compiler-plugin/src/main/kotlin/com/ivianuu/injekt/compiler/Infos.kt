@@ -151,7 +151,6 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
     val defaultOnAllErrorsParameters = valueParameters
-      .asSequence()
       .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
@@ -298,10 +297,8 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
     else safeAs<ClassDescriptor>()
       ?.unsubstitutedPrimaryConstructor
       ?.valueParameters
-      ?.asSequence()
       ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
       ?.map { it.name.asString() }
-      ?.toList()
       ?: emptyList()
 
     val isSpread = if (isDeserialized) false

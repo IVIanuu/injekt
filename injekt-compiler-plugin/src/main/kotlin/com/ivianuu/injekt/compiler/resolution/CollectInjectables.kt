@@ -390,7 +390,6 @@ fun TypeRef.collectTypeScopeInjectables(
     lookedUpPackages += resultForType.lookedUpPackages
 
     nextTypes += resultForType.injectables
-      .toList()
       .flatMap { it.type.allTypes }
   }
 

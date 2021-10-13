@@ -341,7 +341,6 @@ class InjectableChecker(@Provide private val injektContext: InjektContext) : Dec
   ) {
     if (typeParameters.isEmpty()) return
     typeParameters
-      .asSequence()
       .filter { it.classifierInfo().isSpread }
       .forEach { typeParameter ->
         context.trace!!.report(

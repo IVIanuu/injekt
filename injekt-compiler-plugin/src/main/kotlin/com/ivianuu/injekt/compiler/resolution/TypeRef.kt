@@ -166,7 +166,6 @@ fun KotlinType.toTypeRef(
       classifier = classifier,
       isMarkedNullable = kotlinType.isMarkedNullable,
       arguments = kotlinType.arguments
-        .asSequence()
         // we use take here because an inner class also contains the type parameters
         // of it's parent class which is irrelevant for us
         .take(classifier.typeParameters.size)

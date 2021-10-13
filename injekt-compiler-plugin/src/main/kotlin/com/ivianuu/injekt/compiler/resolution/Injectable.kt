@@ -128,14 +128,12 @@ class ProviderInjectable(
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
       .first()
       .valueParameters
-      .asSequence()
       .onEach { parameterDescriptors += it }
       .mapIndexed { index, parameter ->
         parameter
           .toCallableRef()
           .copy(isProvide = true, type = type.arguments[index])
-      }
-      .toList(),
+      },
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = ownerScope.nesting + 1
@@ -203,7 +201,6 @@ class TypeKeyInjectable(
 fun CallableRef.getInjectableRequests(
   @Inject context: AnalysisContext
 ): List<InjectableRequest> = callable.allParameters
-  .asSequence()
   .filter {
     callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
   }
@@ -214,7 +211,6 @@ fun CallableRef.getInjectableRequests(
         parameterTypes[it.injektIndex()]!!.isProvide
   }
   .map { it.toInjectableRequest(this) }
-  .toList()
 
 data class InjectableRequest(
   val type: TypeRef,

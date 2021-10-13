@@ -106,15 +106,15 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
     return classifier
   }
 
-  private fun functionDescriptorsForFqName(fqName: FqName): List<FunctionDescriptor> =
+  private fun functionDescriptorsForFqName(fqName: FqName): Collection<FunctionDescriptor> =
     memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedFunctions(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
-    )?.toList() ?: emptyList()
+    ) ?: emptyList()
 
-  private fun propertyDescriptorsForFqName(fqName: FqName): List<PropertyDescriptor> =
+  private fun propertyDescriptorsForFqName(fqName: FqName): Collection<PropertyDescriptor> =
     memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedVariables(
       fqName.shortName(), NoLookupLocation.FROM_BACKEND
-    )?.toList() ?: emptyList()
+    ) ?: emptyList()
 
   fun memberScopeForFqName(fqName: FqName, lookupLocation: LookupLocation): MemberScope? {
     val pkg = module.getPackage(fqName)

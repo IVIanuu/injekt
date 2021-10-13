@@ -312,8 +312,6 @@ class InjectablesScope(
       return parent?.setElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
     return setElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef> = injectables
-        .toList()
-        .asSequence()
         .mapNotNull { (_, candidate) ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
@@ -333,7 +331,6 @@ class InjectablesScope(
           addInjectableIfAbsentOrBetter(callable.copy(type = typeWithFrameworkKey))
           typeWithFrameworkKey
         }
-        .toList()
       val parentElements = parent?.setElementsForType(singleElementType, collectionElementType, key)
       if (parentElements != null) parentElements + thisElements
       else thisElements

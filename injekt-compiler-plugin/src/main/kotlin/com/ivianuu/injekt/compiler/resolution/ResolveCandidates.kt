@@ -81,7 +81,6 @@ sealed class ResolutionResult {
               }
               dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
               allOuterMostScopes
-                .asSequence()
                 .sortedBy { it.nesting }
                 .filter { outerMostScope ->
                   outerMostScope.nesting <
@@ -319,7 +318,6 @@ private fun InjectablesScope.resolveCandidates(
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
-    .asSequence()
     .sortedWith { a, b -> compareCandidate(a, b) }
     .toMutableList()
   while (remaining.isNotEmpty()) {

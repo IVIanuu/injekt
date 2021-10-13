@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import java.io.File
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
@@ -25,6 +24,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
+import java.io.File
 
 var dumpAllFiles = true
 
@@ -32,7 +32,6 @@ var dumpAllFiles = true
 class InjektIrDumper(private val dumpDir: File) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     moduleFragment.files
-      .asSequence()
       .filter {
         dumpAllFiles || pluginContext.bindingContext[InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
             it.fileEntry.name] != null

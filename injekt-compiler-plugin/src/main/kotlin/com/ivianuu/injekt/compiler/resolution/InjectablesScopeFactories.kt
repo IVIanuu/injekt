@@ -464,7 +464,6 @@ private fun FunctionParameterInjectablesScopes(
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
   return function.allParameters
-    .asSequence()
     .filter {
       (maxIndex == null || it.injektIndex() < maxIndex) &&
           (it.isProvide() || it === function.extensionReceiverParameter)
