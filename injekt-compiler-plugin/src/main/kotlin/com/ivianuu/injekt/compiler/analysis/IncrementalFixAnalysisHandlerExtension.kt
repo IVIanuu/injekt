@@ -4,7 +4,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.updatePrivateFinalField
-import java.util.Base64
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
 import org.jetbrains.kotlin.com.intellij.openapi.editor.impl.DocumentImpl
@@ -27,6 +26,7 @@ import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import java.util.Base64
 
 class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
   private var appliedFix = false
@@ -148,7 +148,8 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
               .map {
                 it.valueParameters
                   .joinToString(it.text)
-              }
+              } + injectable.superTypeListEntries
+              .joinToString { it.text }
           is KtFunction ->
             injectable.receiverTypeReference?.text.orEmpty() +
                 injectable.valueParameters
