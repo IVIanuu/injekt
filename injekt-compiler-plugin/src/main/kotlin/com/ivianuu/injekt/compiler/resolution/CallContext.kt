@@ -51,8 +51,7 @@ enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
 }
 
-fun CallContext.canCall(other: CallContext) =
-  this == other || other == CallContext.DEFAULT
+fun CallContext.canCall(other: CallContext) = this == other || other == CallContext.DEFAULT
 
 fun CallableDescriptor.callContext(@Inject trace: BindingTrace? = null): CallContext {
   if (this !is FunctionDescriptor && this !is PropertyDescriptor) return CallContext.DEFAULT
