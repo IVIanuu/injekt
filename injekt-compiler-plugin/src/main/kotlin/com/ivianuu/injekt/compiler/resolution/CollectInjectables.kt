@@ -47,7 +47,6 @@ import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
@@ -55,7 +54,6 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -354,17 +352,6 @@ fun List<ProviderImport>.collectImportedInjectables(
 
       // additionally add the object if the package is a object
       importObjectIfExists(parentFqName, true)
-
-      // include injectables from the module object of a type alias with the fq name
-      context.injektContext.classifierDescriptorForFqName(fqName, import.element.lookupLocation)
-        ?.safeAs<TypeAliasDescriptor>()
-        ?.let { typeAlias ->
-          importObjectIfExists(
-            typeAlias.fqNameSafe.parent()
-              .child("${typeAlias.fqNameSafe.shortName()}Module".asNameId()),
-            false
-          )
-        }
     }
   }
 }
