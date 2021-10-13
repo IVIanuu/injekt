@@ -34,7 +34,6 @@ data class CallableRef(
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
   val owner: ClassifierRef?,
-  val doNotIncludeChildren: Boolean,
   val import: ResolvedProviderImport?
 )
 
@@ -81,7 +80,6 @@ fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): Callable
         .toMap(),
       isProvide = isProvide(),
       owner = null,
-      doNotIncludeChildren = false,
       import = null
     )
   }

@@ -266,8 +266,6 @@ fun CallableRef.collectInjectables(
   } else this
   addInjectable(nextCallable)
 
-  if (doNotIncludeChildren) return
-
   nextCallable
     .type
     .also { type ->
@@ -300,20 +298,6 @@ fun List<ProviderImport>.collectImportedInjectables(
   buildList<CallableRef> {
     if (!import.isValidImport()) return@buildList
 
-    fun importObjectIfExists(
-      fqName: FqName,
-      doNotIncludeChildren: Boolean
-    ) = context.injektContext.classifierDescriptorForFqName(fqName, import.element.lookupLocation)
-      ?.safeAs<ClassDescriptor>()
-      ?.takeIf { it.kind == ClassKind.OBJECT }
-      ?.let { clazz ->
-        this += clazz.injectableReceiver(false)
-          .copy(
-            doNotIncludeChildren = doNotIncludeChildren,
-            import = import.toResolvedImport(clazz.findPackage().fqName)
-          )
-      }
-
     if (import.importPath!!.endsWith("*")) {
       val packageFqName = FqName(import.importPath.removeSuffix(".*"))
 
@@ -322,9 +306,6 @@ fun List<ProviderImport>.collectImportedInjectables(
         ?.collectInjectables(false)
         ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
         ?.let { this += it }
-
-      // additionally add the object if the package is a object
-      importObjectIfExists(packageFqName, true)
     } else {
       val fqName = FqName(import.importPath)
       val parentFqName = fqName.parent()
@@ -349,9 +330,6 @@ fun List<ProviderImport>.collectImportedInjectables(
         }
         ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
         ?.let { this += it }
-
-      // additionally add the object if the package is a object
-      importObjectIfExists(parentFqName, true)
     }
   }
 }
