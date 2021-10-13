@@ -196,5 +196,4 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
   }
 }
 
-private const val FILE_MARKER_COMMENT =
-  "// injekt incremental " + "supporting declarations"
+private const val FILE_MARKER_COMMENT = "// injekt incremental " + "supporting declarations"

@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
@@ -48,8 +47,6 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
-    if (isIde) return
-
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.injektContext
+import com.ivianuu.injekt.compiler.isIde
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useImpl
 import org.jetbrains.kotlin.container.useInstance
@@ -36,7 +37,8 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     container.useInstance(InjectableChecker(context))
     container.useInstance(TagChecker())
     container.useInstance(ProviderImportsChecker(context))
-    container.useInstance(InjectionCallChecker(context))
+    if (!isIde)
+      container.useInstance(InjectionCallChecker(context))
     container.useInstance(InfoAnnotationPatcher(context))
   }
 }
