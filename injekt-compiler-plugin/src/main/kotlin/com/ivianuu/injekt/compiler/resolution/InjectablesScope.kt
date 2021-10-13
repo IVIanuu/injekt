@@ -26,7 +26,6 @@ import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.isIde
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -53,23 +52,9 @@ class InjectablesScope(
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
   val typeScopes = mutableMapOf<TypeRefKey, InjectablesScope>()
 
-  private data class InjectableKey(
-    val type: TypeRef,
-    val callable: CallableDescriptor,
-    val source: CallableRef?
-  )
-
-  private val CallableRef.injectableKey: InjectableKey
-    get() = InjectableKey(type, callable, origin)
-
-  private fun addInjectable(callable: CallableRef) {
-    val key = callable.injectableKey
-    injectables[key] = callable
-  }
-
   private val imports = imports.toMutableList()
 
-  private val injectables = mutableMapOf<InjectableKey, CallableRef>()
+  private val injectables = mutableListOf<CallableRef>()
 
   private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
   private val spreadingInjectableCandidates = mutableListOf<SpreadingInjectableCandidate>()
@@ -129,10 +114,10 @@ class InjectablesScope(
             )
           },
           addInjectable = { callable ->
-            addInjectable(callable.copy(origin = injectable))
+            injectables += callable
             val typeWithFrameworkKey = callable.type
               .copy(frameworkKey = generateFrameworkKey())
-            addInjectable(callable.copy(type = typeWithFrameworkKey, origin = injectable))
+            injectables += callable.copy(type = typeWithFrameworkKey)
             spreadingInjectableCandidates += SpreadingInjectableCandidate(
               type = typeWithFrameworkKey,
               rawType = callable.type,
@@ -198,7 +183,7 @@ class InjectablesScope(
       return parent?.injectablesForType(key) ?: emptyList()
     return injectablesByRequest.getOrPut(key) {
       val thisInjectables = injectables
-        .mapNotNull { (_, candidate) ->
+        .mapNotNull { candidate ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           val context = candidate.buildContext(key.staticTypeParameters, key.type)
@@ -306,7 +291,7 @@ class InjectablesScope(
       return parent?.setElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
     return setElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef> = injectables
-        .mapNotNull { (_, candidate) ->
+        .mapNotNull { candidate ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           var context =
@@ -322,7 +307,7 @@ class InjectablesScope(
           val typeWithFrameworkKey = callable.type.copy(
             frameworkKey = generateFrameworkKey()
           )
-          addInjectable(callable.copy(type = typeWithFrameworkKey))
+          injectables += callable.copy(type = typeWithFrameworkKey)
           typeWithFrameworkKey
         }
       val parentElements = parent?.setElementsForType(singleElementType, collectionElementType, key)
@@ -361,8 +346,7 @@ class InjectablesScope(
           .mapValues { it.value.substitute(substitutionMap) },
         typeArguments = spreadingInjectable.callable
           .typeArguments
-          .mapValues { it.value.substitute(substitutionMap) },
-        origin = candidate.origin
+          .mapValues { it.value.substitute(substitutionMap) }
       )
 
     newInjectable.collectInjectables(
@@ -376,18 +360,15 @@ class InjectablesScope(
       },
       addInjectable = { newInnerInjectable ->
         val finalNewInnerInjectable = newInnerInjectable
-          .copy(
-            origin = candidate.origin,
-            originalType = newInnerInjectable.type
-          )
-        addInjectable(finalNewInnerInjectable)
+          .copy(originalType = newInnerInjectable.type)
+        injectables += finalNewInnerInjectable
         val newInnerInjectableWithFrameworkKey = finalNewInnerInjectable.copy(
           type = finalNewInnerInjectable.type.copy(
             frameworkKey = generateFrameworkKey()
               .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
-        addInjectable(newInnerInjectableWithFrameworkKey)
+        injectables += newInnerInjectableWithFrameworkKey
         val newCandidate = SpreadingInjectableCandidate(
           type = newInnerInjectableWithFrameworkKey.type,
           rawType = finalNewInnerInjectable.type,
@@ -398,17 +379,12 @@ class InjectablesScope(
       },
       addSpreadingInjectable = { newInnerInjectable ->
         val finalNewInnerInjectable = newInnerInjectable
-          .copy(
-            origin = candidate.origin,
-            originalType = newInnerInjectable.type
-          )
+          .copy(originalType = newInnerInjectable.type)
         val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
         spreadingInjectables += newSpreadingInjectable
         spreadingInjectableCandidates
           .toList()
-          .forEach {
-            spreadInjectables(newSpreadingInjectable, it)
-          }
+          .forEach { spreadInjectables(newSpreadingInjectable, it) }
       }
     )
   }

@@ -257,7 +257,7 @@ fun CallableRef.collectInjectables(
   seen += this
   if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
 
-  if (origin == null && typeParameters.any { it.isSpread }) {
+  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
     return
   }

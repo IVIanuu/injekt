@@ -33,7 +33,6 @@ data class CallableRef(
   val defaultOnAllErrorParameters: Set<Int>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
-  val origin: CallableRef?,
   val owner: ClassifierRef?,
   val doNotIncludeChildren: Boolean,
   val import: ResolvedProviderImport?
@@ -81,7 +80,6 @@ fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): Callable
         .map { it to it.defaultType }
         .toMap(),
       isProvide = isProvide(),
-      origin = null,
       owner = null,
       doNotIncludeChildren = false,
       import = null
