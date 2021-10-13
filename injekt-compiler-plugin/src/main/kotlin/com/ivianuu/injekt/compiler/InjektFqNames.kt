@@ -22,8 +22,6 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
 
-  val DefaultOnAllErrors = InjektPackage.child("DefaultOnAllErrors".asNameId())
-  val IgnoreElementsWithErrors = InjektPackage.child("IgnoreElementsWithErrors".asNameId())
   val Inject = InjektPackage.child("Inject".asNameId())
   val Provide = InjektPackage.child("Provide".asNameId())
   val Providers = InjektPackage.child("Providers".asNameId())

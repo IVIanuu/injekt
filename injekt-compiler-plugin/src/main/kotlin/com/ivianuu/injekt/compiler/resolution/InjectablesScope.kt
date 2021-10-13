@@ -57,7 +57,7 @@ class InjectablesScope(
   private val injectables = mutableListOf<CallableRef>()
 
   private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
-  private val spreadingInjectableCandidates = mutableListOf<SpreadingInjectableCandidate>()
+  private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
 
   private data class SpreadingInjectable(
     val callable: CallableRef,
@@ -75,20 +75,11 @@ class InjectablesScope(
     )
   }
 
-  private data class SpreadingInjectableCandidate(
-    val type: TypeRef,
-    val rawType: TypeRef,
-    val origin: CallableRef?
-  )
-
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(
-    val type: TypeRef,
-    val staticTypeParameters: List<ClassifierRef>
-  )
+  data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
 
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
@@ -118,11 +109,7 @@ class InjectablesScope(
             val typeWithFrameworkKey = callable.type
               .copy(frameworkKey = generateFrameworkKey())
             injectables += callable.copy(type = typeWithFrameworkKey)
-            spreadingInjectableCandidates += SpreadingInjectableCandidate(
-              type = typeWithFrameworkKey,
-              rawType = callable.type,
-              origin = injectable
-            )
+            spreadingInjectableCandidateTypes += typeWithFrameworkKey
           },
           addSpreadingInjectable = { callable ->
             spreadingInjectables += SpreadingInjectable(callable)
@@ -131,20 +118,20 @@ class InjectablesScope(
       }
 
     val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
-    val hasSpreadingInjectableCandidates = spreadingInjectableCandidates.isNotEmpty()
+    val hasSpreadingInjectableCandidates = spreadingInjectableCandidateTypes.isNotEmpty()
     if (parent != null) {
       spreadingInjectables.addAll(
         0,
         parent.spreadingInjectables
           .map { if (hasSpreadingInjectableCandidates) it.copy() else it }
       )
-      spreadingInjectableCandidates.addAll(0, parent.spreadingInjectableCandidates)
+      spreadingInjectableCandidateTypes.addAll(0, parent.spreadingInjectableCandidateTypes)
     }
 
-    if ((hasSpreadingInjectables && spreadingInjectableCandidates.isNotEmpty()) ||
+    if ((hasSpreadingInjectables && spreadingInjectableCandidateTypes.isNotEmpty()) ||
       (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
     ) {
-      spreadingInjectableCandidates
+      spreadingInjectableCandidateTypes
         .toList()
         .forEach { spreadInjectables(it) }
     }
@@ -251,9 +238,7 @@ class InjectablesScope(
               .mapIndexed { index, element ->
                 InjectableRequest(
                   type = element,
-                  defaultStrategy = if (request.type.ignoreElementsWithErrors)
-                    InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-                  else InjectableRequest.DefaultStrategy.NONE,
+                  isRequired = true,
                   callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].renderToString()}>"),
                   parameterName = "element$index".asNameId(),
                   parameterIndex = index,
@@ -316,21 +301,21 @@ class InjectablesScope(
     }
   }
 
-  private fun spreadInjectables(candidate: SpreadingInjectableCandidate) {
+  private fun spreadInjectables(candidateType: TypeRef) {
     for (spreadingInjectable in spreadingInjectables.toList())
-      spreadInjectables(spreadingInjectable, candidate)
+      spreadInjectables(spreadingInjectable, candidateType)
   }
 
   private fun spreadInjectables(
     spreadingInjectable: SpreadingInjectable,
-    candidate: SpreadingInjectableCandidate
+    candidateType: TypeRef
   ) {
-    if (candidate.type.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
-    if (candidate.type in spreadingInjectable.processedCandidateTypes) return
-    spreadingInjectable.processedCandidateTypes += candidate.type
+    if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
+    if (candidateType in spreadingInjectable.processedCandidateTypes) return
+    spreadingInjectable.processedCandidateTypes += candidateType
     val (context, substitutionMap) = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
-      candidate.type,
+      candidateType,
       allStaticTypeParameters
     )
     if (!context.isOk) return
@@ -369,20 +354,15 @@ class InjectablesScope(
           )
         )
         injectables += newInnerInjectableWithFrameworkKey
-        val newCandidate = SpreadingInjectableCandidate(
-          type = newInnerInjectableWithFrameworkKey.type,
-          rawType = finalNewInnerInjectable.type,
-          origin = candidate.origin
-        )
-        spreadingInjectableCandidates += newCandidate
-        spreadInjectables(newCandidate)
+        spreadingInjectableCandidateTypes += newInnerInjectableWithFrameworkKey.type
+        spreadInjectables(newInnerInjectableWithFrameworkKey.type)
       },
       addSpreadingInjectable = { newInnerInjectable ->
         val finalNewInnerInjectable = newInnerInjectable
           .copy(originalType = newInnerInjectable.type)
         val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
         spreadingInjectables += newSpreadingInjectable
-        spreadingInjectableCandidates
+        spreadingInjectableCandidateTypes
           .toList()
           .forEach { spreadInjectables(newSpreadingInjectable, it) }
       }

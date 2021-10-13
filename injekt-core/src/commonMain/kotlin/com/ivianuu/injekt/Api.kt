@@ -74,11 +74,6 @@ annotation class Providers(vararg val importPaths: String)
 inline fun <T> inject(@Inject value: T): T = value
 
 /**
- * Returns a provided instance of [T] or null
- */
-inline fun <T> injectOrNull(@Inject @DefaultOnAllErrors value: T? = null): T? = value
-
-/**
  * Marks an annotation as an tag which can then be used
  * to distinct types
  *
@@ -109,29 +104,3 @@ annotation class Tag
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
-
-/**
- * Falls back to the default value if a injectable exists but has an error.
- * Normally the default value will only be used if no injectable was found but not if it has errors
- */
-@Target(
-  // value parameters
-  // fun func(@Inject @DefaultOnAllErrors p: String = "default")
-  AnnotationTarget.VALUE_PARAMETER,
-
-  // nullable providers
-  // val elements = inject<@DefaultOnAllErrors () -> Bar?>()
-  AnnotationTarget.TYPE
-)
-annotation class DefaultOnAllErrors
-
-/**
- * Only includes successful elements in the [Set] and ignores elements with errors
- *
- * Should be used like so:
- * ```
- * val interceptors = inject<@IgnoreElementsWithErrors Set<Interceptor>>()
- * ```
- */
-@Target(AnnotationTarget.TYPE)
-annotation class IgnoreElementsWithErrors

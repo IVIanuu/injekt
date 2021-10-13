@@ -22,7 +22,6 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
-import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
@@ -142,22 +141,5 @@ class ProviderTest {
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
-  }
-
-  @Test fun testProviderWithNullableReturnTypeUsesNullAsDefault() = codegen(
-    """
-      fun invoke() = inject<() -> Foo?>()()
-    """
-  ) {
-    invokeSingleFile().shouldBeNull()
-  }
-
-  @Test fun testProviderWithNullableReturnTypeAndDefaultOnAllErrors() = codegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-      fun invoke() = inject<@DefaultOnAllErrors () -> Bar?>()()
-    """
-  ) {
-    invokeSingleFile().shouldBeNull()
   }
 }

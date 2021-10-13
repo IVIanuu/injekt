@@ -186,8 +186,6 @@ fun KotlinType.toTypeRef(
       isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
       isStarProjection = false,
       frameworkKey = 0,
-      defaultOnAllErrors = kotlinType.hasAnnotation(InjektFqNames.DefaultOnAllErrors),
-      ignoreElementsWithErrors = kotlinType.hasAnnotation(InjektFqNames.IgnoreElementsWithErrors),
       variance = variance
     )
 
@@ -200,8 +198,6 @@ fun KotlinType.toTypeRef(
             arguments = it.arguments,
             isMarkedNullable = rawType.isMarkedNullable,
             isProvide = rawType.isProvide,
-            defaultOnAllErrors = rawType.defaultOnAllErrors,
-            ignoreElementsWithErrors = rawType.ignoreElementsWithErrors,
             variance = rawType.variance
           )
         }
@@ -219,8 +215,6 @@ class TypeRef(
   val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
-  val defaultOnAllErrors: Boolean = false,
-  val ignoreElementsWithErrors: Boolean = false,
   val variance: TypeVariance = TypeVariance.INV
 ) {
   override fun toString(): String = renderToString()
@@ -309,8 +303,6 @@ class TypeRef(
       result = 31 * result + isInject.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
-      result = 31 * result + defaultOnAllErrors.hashCode()
-      result = 31 * result + ignoreElementsWithErrors.hashCode()
       result = 31 * result + variance.hashCode()
       _hashCode = result
     }
@@ -344,8 +336,6 @@ fun TypeRef.copy(
   isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
-  defaultOnAllErrors: Boolean = this.defaultOnAllErrors,
-  ignoreElementsWithErrors: Boolean = this.ignoreElementsWithErrors,
   variance: TypeVariance = this.variance
 ) = TypeRef(
   classifier,
@@ -356,8 +346,6 @@ fun TypeRef.copy(
   isInject,
   isStarProjection,
   frameworkKey,
-  defaultOnAllErrors,
-  ignoreElementsWithErrors,
   variance
 )
 
@@ -409,15 +397,10 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     val newIsInject = isInject || substitution.isInject
     val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
     else variance
-    val newDefaultOnAllErrors = substitution.defaultOnAllErrors || defaultOnAllErrors
-    val newIgnoreElementsWithErrors = substitution.ignoreElementsWithErrors ||
-        ignoreElementsWithErrors
     return if (newNullability != substitution.isMarkedNullable ||
       newIsProvide != substitution.isProvide ||
       newIsInject != substitution.isInject ||
-      newVariance != substitution.variance ||
-      newDefaultOnAllErrors != substitution.defaultOnAllErrors ||
-      newIgnoreElementsWithErrors != substitution.ignoreElementsWithErrors
+      newVariance != substitution.variance
     ) {
       substitution.copy(
         // we copy nullability to support T : Any? -> String
@@ -426,9 +409,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         // fallback to substitution injectable
         isProvide = newIsProvide,
         isInject = newIsInject,
-        variance = newVariance,
-        defaultOnAllErrors = newDefaultOnAllErrors,
-        ignoreElementsWithErrors = newIgnoreElementsWithErrors
+        variance = newVariance
       )
     } else substitution
   }

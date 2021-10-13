@@ -17,33 +17,31 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.injectOrNull
-import io.kotest.matchers.nulls.shouldNotBeNull
+import com.ivianuu.injekt.inject
 import io.kotest.matchers.shouldBe
-import kotlin.reflect.KClass
 import org.junit.Test
+import kotlin.reflect.KClass
 
 class CommonInjectablesTest {
   @Test fun testCanUseMapForSetOfPairs() {
     @Provide val elementsA = setOf("a" to "a")
     @Provide val elementB = setOf("b" to "b")
-    val map = injectOrNull<Map<String, String>>()
-    map.shouldNotBeNull()
+    val map = inject<Map<String, String>>()
     map.size shouldBe 2
     map["a"] shouldBe "a"
     map["b"] shouldBe "b"
   }
 
   @Test fun testCanUseLazy() {
-    injectOrNull<Lazy<Foo>>().shouldNotBeNull()
+    inject<Lazy<Foo>>()
   }
 
   @Test fun testCanUseKClass() {
-    injectOrNull<KClass<Foo>>().shouldNotBeNull()
+    inject<KClass<Foo>>()
   }
 
   @Test fun testCanUseType() {
-    injectOrNull<TypeKey<Foo>>().shouldNotBeNull()
+    inject<TypeKey<Foo>>()
   }
 
   @Provide private class Foo

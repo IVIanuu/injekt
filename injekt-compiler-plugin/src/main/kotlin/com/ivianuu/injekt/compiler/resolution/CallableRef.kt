@@ -30,7 +30,6 @@ data class CallableRef(
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
   val injectParameters: Set<Int>,
-  val defaultOnAllErrorParameters: Set<Int>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
   val import: ResolvedProviderImport?
@@ -73,7 +72,6 @@ fun CallableDescriptor.toCallableRef(@Inject context: AnalysisContext): Callable
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
       injectParameters = info.injectParameters,
-      defaultOnAllErrorParameters = info.defaultOnAllErrorsParameters,
       typeArguments = typeParameters
         .map { it to it.defaultType }
         .toMap(),

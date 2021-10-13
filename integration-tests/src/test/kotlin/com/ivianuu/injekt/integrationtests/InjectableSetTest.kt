@@ -162,18 +162,4 @@ class InjectableSetTest {
     set[0] shouldBe "a"
     set[1] shouldBe "b"
   }
-
-  @Test fun testSetWithIgnoreElementsWithErrors() = singleAndMultiCodegen(
-    """
-      @Provide val a = "a"
-      @Provide fun b(foo: Foo) = "b"
-    """,
-    """
-      fun invoke(): @IgnoreElementsWithErrors Set<String> = inject() 
-    """
-  ) {
-    val set = invokeSingleFile<Set<Any>>().toList()
-    set.shouldHaveSize(1)
-    set[0] shouldBe "a"
-  }
 }

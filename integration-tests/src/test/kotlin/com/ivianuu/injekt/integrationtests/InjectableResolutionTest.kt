@@ -432,20 +432,6 @@ class InjectableResolutionTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testDoesUseDefaultValueIfCandidateHasFailuresButHasUseDefaultValueOnAllError() =
-    codegen(
-      """
-        @Provide fun bar(foo: Foo) = Bar(foo)
-        fun invoke(foo: Foo): Foo {
-          fun inner(@Provide @DefaultOnAllErrors bar: Bar = Bar(foo)) = bar
-          return inner().foo
-        }
-    """
-    ) {
-      val foo = Foo()
-      foo shouldBeSameInstanceAs invokeSingleFile(foo)
-    }
-
   @Test fun testSpreadingInjectableWithTheSameOrigin() = singleAndMultiCodegen(
     """
       @Provide @MyTag class FooModule {

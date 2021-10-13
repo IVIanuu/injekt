@@ -75,11 +75,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 data class CallableInfo(
   val type: TypeRef,
   val parameterTypes: Map<Int, TypeRef> = emptyMap(),
-  val injectParameters: Set<Int> = emptySet(),
-  val defaultOnAllErrorsParameters: Set<Int> = emptySet()
+  val injectParameters: Set<Int> = emptySet()
 ) {
   companion object {
-    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), emptySet())
+    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet())
   }
 }
 
@@ -151,15 +150,10 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
       }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
-    val defaultOnAllErrorsParameters = valueParameters
-      .filter { it.annotations.hasAnnotation(InjektFqNames.DefaultOnAllErrors) }
-      .mapTo(mutableSetOf()) { it.injektIndex() }
-
     val info = CallableInfo(
       type = type,
       parameterTypes = parameterTypes,
-      injectParameters = injectParameters,
-      defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+      injectParameters = injectParameters
     )
 
     // important to cache the info before persisting it
@@ -218,24 +212,21 @@ private fun CallableDescriptor.persistInfoIfNeeded(
 @Serializable data class PersistedCallableInfo(
   @SerialName("0") val type: PersistedTypeRef,
   @SerialName("1") val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
-  @SerialName("2") val injectParameters: Set<Int> = emptySet(),
-  @SerialName("3") val defaultOnAllErrorsParameters: Set<Int> = emptySet()
+  @SerialName("2") val injectParameters: Set<Int> = emptySet()
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject context: AnalysisContext) = PersistedCallableInfo(
   type = type.toPersistedTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
-  injectParameters = injectParameters,
-  defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+  injectParameters = injectParameters
 )
 
 fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = CallableInfo(
   type = type.toTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef() },
-  injectParameters = injectParameters,
-  defaultOnAllErrorsParameters = defaultOnAllErrorsParameters
+  injectParameters = injectParameters
 )
 
 /**

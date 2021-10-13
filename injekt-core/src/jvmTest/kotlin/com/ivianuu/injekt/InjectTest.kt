@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
@@ -24,14 +23,5 @@ class InjectTest {
   @Test fun testInject() {
     @Provide val value = "42"
     inject<String>() shouldBe "42"
-  }
-
-  @Test fun testInjectOrNullReturnsProvidedInstance() {
-    @Provide val value = "42"
-    injectOrNull<String>() shouldBe "42"
-  }
-
-  @Test fun testInjectOrNullReturnsNullForNotProvidedInstance() {
-    injectOrNull<String>().shouldBeNull()
   }
 }

@@ -190,14 +190,12 @@ fun InjectablesScope.resolveRequests(
   for (request in requests) {
     when (val result = resolveRequest(request, lookupLocation, false)) {
       is ResolutionResult.Success -> successes[request] = result
-      is ResolutionResult.Failure -> if ((request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE ||
-            (request.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
-                result !is ResolutionResult.Failure.NoCandidates)) &&
-        compareResult(result, failure) < 0
-      ) {
-        failureRequest = request
-        failure = result
-      }
+      is ResolutionResult.Failure ->
+        if ((request.isRequired || result !is ResolutionResult.Failure.NoCandidates) &&
+          compareResult(result, failure) < 0) {
+          failureRequest = request
+          failure = result
+        }
     }
   }
   val usages = mutableMapOf<UsageKey, MutableList<InjectableRequest>>()
@@ -262,7 +260,7 @@ private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   val frameworkCandidate = frameworkInjectableForRequest(request)
   return when {
     frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
-    request.defaultStrategy == InjectableRequest.DefaultStrategy.NONE -> ResolutionResult.Failure.NoCandidates
+    request.isRequired -> ResolutionResult.Failure.NoCandidates
     else -> ResolutionResult.Success.DefaultValue
   }
 }
@@ -405,9 +403,7 @@ private fun InjectablesScope.resolveCandidate(
         when {
           candidate is ProviderInjectable && dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates
-          dependency.defaultStrategy == InjectableRequest.DefaultStrategy.NONE ||
-              (dependency.defaultStrategy == InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED &&
-                  dependencyResult !is ResolutionResult.Failure.NoCandidates) ->
+          dependency.isRequired || dependencyResult !is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
               dependency,
               dependencyResult

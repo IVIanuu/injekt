@@ -32,9 +32,7 @@ import kotlinx.serialization.Serializable
   @SerialName("3") val isMarkedNullable: Boolean,
   @SerialName("4") val isMarkedComposable: Boolean,
   @SerialName("5") val isProvide: Boolean,
-  @SerialName("6") val isInject: Boolean,
-  @SerialName("7") val defaultOnAllErrors: Boolean,
-  @SerialName("8") val ignoreElementsWithErrors: Boolean
+  @SerialName("6") val isInject: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeRef =
@@ -45,9 +43,7 @@ fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeR
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
-    isInject = isInject,
-    defaultOnAllErrors = defaultOnAllErrors,
-    ignoreElementsWithErrors = ignoreElementsWithErrors
+    isInject = isInject
   )
 
 fun PersistedTypeRef.toTypeRef(@Inject context: AnalysisContext): TypeRef {
@@ -69,8 +65,6 @@ fun PersistedTypeRef.toTypeRef(@Inject context: AnalysisContext): TypeRef {
       isMarkedNullable = isMarkedNullable,
       isMarkedComposable = isMarkedComposable,
       isProvide = isProvide,
-      isInject = isInject,
-      defaultOnAllErrors = defaultOnAllErrors,
-      ignoreElementsWithErrors = ignoreElementsWithErrors
+      isInject = isInject
     )
 }

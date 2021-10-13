@@ -94,11 +94,7 @@ class ProviderInjectable(
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
       type = type.arguments.last(),
-      defaultStrategy = if (type.arguments.last().isNullableType)
-        if (type.defaultOnAllErrors)
-          InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-        else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
-      else InjectableRequest.DefaultStrategy.NONE,
+      isRequired = true,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
@@ -169,7 +165,7 @@ class TypeKeyInjectable(
         InjectableRequest(
           type = ownerScope.context.injektContext.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
-          defaultStrategy = InjectableRequest.DefaultStrategy.NONE,
+          isRequired = true,
           callableFqName = callableFqName,
           parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
           parameterIndex = index,
@@ -203,32 +199,24 @@ fun CallableRef.getInjectableRequests(
 
 data class InjectableRequest(
   val type: TypeRef,
-  val defaultStrategy: DefaultStrategy,
   val callableFqName: FqName,
   val parameterName: Name,
   val parameterIndex: Int,
   val parameterDescriptor: ParameterDescriptor?,
+  val isRequired: Boolean,
   val isInline: Boolean,
   val isLazy: Boolean
-) {
-  enum class DefaultStrategy {
-    NONE, DEFAULT_IF_NOT_PROVIDED, DEFAULT_ON_ALL_ERRORS
-  }
-}
+)
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
   val index = injektIndex()
   return InjectableRequest(
     type = callable.parameterTypes[index]!!,
-    defaultStrategy = if (this is ValueParameterDescriptor && hasDefaultValueIgnoringInject) {
-      if (index in callable.defaultOnAllErrorParameters)
-        InjectableRequest.DefaultStrategy.DEFAULT_ON_ALL_ERRORS
-      else InjectableRequest.DefaultStrategy.DEFAULT_IF_NOT_PROVIDED
-    } else InjectableRequest.DefaultStrategy.NONE,
     callableFqName = containingDeclaration.fqNameSafe,
     parameterName = injektName(),
     parameterIndex = injektIndex(),
     parameterDescriptor = this,
+    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this),
     isLazy = false
