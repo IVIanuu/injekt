@@ -99,7 +99,6 @@ class ProviderInjectable(
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
-      parameterDescriptor = null,
       isInline = isInline,
       isLazy = !isInline
     )
@@ -171,7 +170,6 @@ class TypeKeyInjectable(
           callableFqName = callableFqName,
           parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
           parameterIndex = index,
-          parameterDescriptor = null,
           isInline = false,
           isLazy = false
         )
@@ -204,7 +202,6 @@ data class InjectableRequest(
   val callableFqName: FqName,
   val parameterName: Name,
   val parameterIndex: Int,
-  val parameterDescriptor: ParameterDescriptor?,
   val isRequired: Boolean,
   val isInline: Boolean,
   val isLazy: Boolean
@@ -217,7 +214,6 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRe
     callableFqName = containingDeclaration.fqNameSafe,
     parameterName = injektName(),
     parameterIndex = injektIndex(),
-    parameterDescriptor = this,
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this),

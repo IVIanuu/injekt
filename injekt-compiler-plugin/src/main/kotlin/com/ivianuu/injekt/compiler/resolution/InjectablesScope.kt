@@ -242,7 +242,6 @@ class InjectablesScope(
                   callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].renderToString()}>"),
                   parameterName = "element$index".asNameId(),
                   parameterIndex = index,
-                  parameterDescriptor = null,
                   isInline = false,
                   isLazy = false
                 )
