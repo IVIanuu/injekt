@@ -420,8 +420,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
     if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
-    val filteredConstraints =
-      variableWithConstraints.constraints//.filter { isProperTypeForFixation(it.type) }
+    val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))
         return false

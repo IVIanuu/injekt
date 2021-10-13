@@ -84,9 +84,9 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   fun classifierDescriptorForKey(key: String): ClassifierDescriptor {
     classifierForKey[key]?.let { return it }
     val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedClassifier(
-      fqName.shortName(), NoLookupLocation.FROM_BACKEND
-    )?.takeIf { it.uniqueKey(this) == key }
+    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+    ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+      ?.takeIf { it.uniqueKey(this) == key }
       ?: functionDescriptorsForFqName(fqName.parent())
         .flatMap { it.typeParameters }
         .firstOrNull {
