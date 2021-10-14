@@ -150,6 +150,7 @@ class ComponentInjectable(
         context = ownerScope.context,
         callContext = requestCallable.callable.callContext(),
         ownerDescriptor = null,
+        componentType = type,
         file = null,
         initialInjectables = requestCallable.callable.allParameters
           .filter { it != requestCallable.callable.dispatchReceiverParameter }

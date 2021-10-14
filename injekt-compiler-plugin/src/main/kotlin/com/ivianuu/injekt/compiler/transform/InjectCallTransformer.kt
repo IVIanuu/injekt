@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -69,10 +70,12 @@ import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBlockBuilder
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addDispatchReceiver
 import org.jetbrains.kotlin.ir.builders.declarations.addExtensionReceiver
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addGetter
 import org.jetbrains.kotlin.ir.builders.declarations.addProperty
@@ -84,11 +87,16 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irEqeqeq
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irIfThenElse
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -110,6 +118,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -187,11 +196,14 @@ class InjectCallTransformer(
     val parent: ScopeContext?,
     val graphContext: GraphContext,
     val scope: InjectablesScope,
-    val irScope: Scope
+    val irScope: Scope,
+    val component: IrClass?,
+    val componentExpression: (IrBlockBuilder.() -> IrExpression)?
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val cachedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
+    val scopedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
     val initializingExpressions: MutableMap<Injectable, InjectableExpression> =
@@ -279,13 +291,15 @@ class InjectCallTransformer(
 
       val rawExpression = cacheExpressionIfNeeded(result) {
         wrapExpressionInFunctionIfNeeded(result) {
-          when (result.candidate) {
-            is CallableInjectable -> callableExpression(result, result.candidate.cast())
-            is ComponentInjectable -> componentExpression(result, result.candidate.cast())
-            is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-            is SetInjectable -> setExpression(result, result.candidate.cast())
-            is SourceKeyInjectable -> sourceKeyExpression()
-            is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
+          scopeExpressionIfNeeded(result) {
+            when (result.candidate) {
+              is CallableInjectable -> callableExpression(result, result.candidate.cast())
+              is ComponentInjectable -> componentExpression(result, result.candidate.cast())
+              is ProviderInjectable -> providerExpression(result, result.candidate.cast())
+              is SetInjectable -> setExpression(result, result.candidate.cast())
+              is SourceKeyInjectable -> sourceKeyExpression()
+              is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
+            }
           }
         }
       }
@@ -310,6 +324,80 @@ class InjectCallTransformer(
       dependencyResults.isNotEmpty() &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
+
+  private fun ScopeContext.scopeExpressionIfNeeded(
+    result: ResolutionResult.Success.WithCandidate.Value,
+    rawExpressionProvider: () -> IrExpression
+  ): IrExpression {
+    val scopeComponent = result.candidate.originalType.scopeComponent
+      ?: return rawExpressionProvider()
+    val scope = scope.allScopes.last { it.componentType == scopeComponent }
+    return with(findScopeContext(scope)) {
+      scopedExpressions.getOrPut(result.candidate.type) {
+        val index = graphContext.variableIndex++
+        val lockField = component!!.addField("_${index}Lock", pluginContext.irBuiltIns.anyType).apply {
+          initializer = DeclarationIrBuilder(pluginContext, symbol).run {
+            irExprBody(irCall(pluginContext.irBuiltIns.anyClass.constructors.single()))
+          }
+        }
+        val instanceField = component.addField("_${index}Instance", pluginContext.irBuiltIns.anyNType).apply {
+          initializer = DeclarationIrBuilder(pluginContext, symbol).run {
+            irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
+          }
+        }
+
+        val expression: ScopeContext.() -> IrExpression = {
+          DeclarationIrBuilder(pluginContext, symbol).run {
+            irBlock {
+              val tmp = irTemporary(
+                value = irGetField(componentExpression!!(), instanceField),
+                nameHint = "${graphContext.variableIndex++}",
+                isMutable = true
+              )
+
+              +irIfThenElse(
+                result.candidate.type.toIrType().typeOrNull!!,
+                irEqeqeq(irGet(tmp), irGetField(componentExpression!!(), lockField)),
+                irCall(
+                  pluginContext.referenceFunctions(
+                    injektFqNames().commonPackage.child("synchronized".asNameId())
+                  ).single()
+                ).apply {
+                  putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
+                  putValueArgument(0, irGetField(componentExpression!!(), lockField))
+                  putValueArgument(
+                    1,
+                    irLambda(
+                      pluginContext.irBuiltIns.function(0)
+                        .typeWith(result.candidate.type.toIrType().typeOrNull!!),
+                      parameterNameProvider = { "p${graphContext.variableIndex++}" }
+                    ) {
+                      irBlock {
+                        +irSet(tmp.symbol, irGetField(componentExpression!!(), instanceField))
+
+                        +irIfThen(
+                          irEqeqeq(irGet(tmp), irGetField(componentExpression!!(), lockField)),
+                          irBlock {
+                            +irSet(tmp.symbol, rawExpressionProvider())
+                            +irSetField(componentExpression!!(), instanceField, irGet(tmp))
+                          }
+                        )
+
+                        +irGet(tmp)
+                      }
+                    }
+                  )
+                },
+                irGet(tmp)
+              )
+            }
+          }
+        }
+
+        expression
+      }
+    }.invoke(this)
+  }
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
@@ -428,7 +516,6 @@ class InjectCallTransformer(
           }
 
           addDispatchReceiver { type = defaultType }
-
           if (requestCallable.callable.extensionReceiverParameter != null) {
             addExtensionReceiver(
               requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX]!!
@@ -447,7 +534,9 @@ class InjectCallTransformer(
           body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
             val dependencyScopeContext = ScopeContext(
               this@componentExpression,
-              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope)
+              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz) {
+              irGet(dispatchReceiverParameter!!)
+            }
             val expression = with(dependencyScopeContext) {
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
@@ -535,7 +624,7 @@ class InjectCallTransformer(
         is ResolutionResult.Success.WithCandidate -> {
           val dependencyScopeContext = ScopeContext(
             this@providerExpression, graphContext,
-            injectable.dependencyScopes.values.single(), scope
+            injectable.dependencyScopes.values.single(), scope, null, null
           )
           val expression = with(dependencyScopeContext) {
             val previousParametersMap = parameterMap.toMap()
@@ -1003,7 +1092,9 @@ class InjectCallTransformer(
             parent = null,
             graphContext = graphContext,
             scope = graph.scope,
-            irScope = scope
+            irScope = scope,
+            component = null,
+            componentExpression = null
           ).run { result.inject(this, graph.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)

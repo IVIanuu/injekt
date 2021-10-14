@@ -16,6 +16,4 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Provide
-
-@Provide @Component interface AppComponent
+@Component interface AppComponent

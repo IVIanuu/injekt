@@ -187,6 +187,8 @@ fun KotlinType.toTypeRef(
       isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
       isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
       isInject = kotlinType.hasAnnotation(injektFqNames().inject),
+      scopeComponent = kotlinType.annotations.findAnnotation(injektFqNames().scoped)
+        ?.type?.arguments?.single()?.type?.toTypeRef(),
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance

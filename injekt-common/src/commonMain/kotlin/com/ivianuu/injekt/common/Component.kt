@@ -27,5 +27,13 @@ interface ComponentObserver<C : @Component Any> {
   }
 }
 
+interface ComponentSlot<C : @Component Any, T> {
+  fun get(): T?
+  fun set(value: T)
+}
+
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Scoped<C : @Component Any>
+
+@Target(AnnotationTarget.CLASS)
+annotation class EntryPoint<C : @Component Any>

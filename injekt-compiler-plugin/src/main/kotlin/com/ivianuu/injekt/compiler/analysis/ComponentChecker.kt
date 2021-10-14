@@ -34,9 +34,6 @@ class ComponentChecker(@Inject private val context: InjektContext) : Declaration
     if (descriptor.kind != ClassKind.INTERFACE)
       context.trace.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
 
-    if (!descriptor.hasAnnotation(injektFqNames().provide))
-      context.trace.report(InjektErrors.COMPONENT_WITHOUT_PROVIDE.on(declaration))
-
     descriptor.unsubstitutedMemberScope
       .getContributedDescriptors()
       .filterIsInstance<CallableMemberDescriptor>()

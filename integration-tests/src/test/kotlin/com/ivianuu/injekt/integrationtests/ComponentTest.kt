@@ -12,7 +12,7 @@ class ComponentTest {
     """
       @Provide val foo = Foo()      
       
-      @Provide @Component interface FooComponent {
+      @Component interface FooComponent {
         val foo: Foo
       }
     """,
@@ -27,7 +27,7 @@ class ComponentTest {
     """
       @Provide val foo = Foo()      
       
-      @Provide @Component interface FooComponent {
+      @Component interface FooComponent {
         fun foo(): Foo
       }
     """,
@@ -40,7 +40,7 @@ class ComponentTest {
 
   @Test fun testComponentWithVar() = codegen(
     """
-      @Provide @Component interface MyComponent {
+      @Component interface MyComponent {
         var foo: Foo
       }
     """
@@ -52,7 +52,7 @@ class ComponentTest {
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      @Provide @Component interface BarComponent {
+      @Component interface BarComponent {
         fun bar(foo: Foo): Bar
       } 
     """,
@@ -65,7 +65,7 @@ class ComponentTest {
 
   @Test fun testComponentWithUnexistingRequestButDefaultImplementationIsNoError() = singleAndMultiCodegen(
     """
-      @Provide @Component interface BarComponent {
+      @Component interface BarComponent {
         fun bar(foo: Foo): Bar = Bar(foo)
       }
   
@@ -80,7 +80,7 @@ class ComponentTest {
 
   @Test fun testComponentWithErrorRequestButDefaultImplementationIsNoError() = singleAndMultiCodegen(
     """
-      @Provide @Component interface FooComponent {
+      @Component interface FooComponent {
         fun foo(): Foo = Foo()
       }
     """,
@@ -93,7 +93,7 @@ class ComponentTest {
 
   @Test fun testComponentWithTypeParameters() = singleAndMultiCodegen(
     """
-      @Provide @Component interface ParameterizedComponent<T> {
+      @Component interface ParameterizedComponent<T> {
         val value: T
       }
   
@@ -108,7 +108,7 @@ class ComponentTest {
 
   @Test fun testComponentWithSuspendFunction() = singleAndMultiCodegen(
     """
-      @Provide @Component interface FooComponent {
+      @Component interface FooComponent {
         suspend fun foo(): Foo
       }
   
@@ -123,7 +123,7 @@ class ComponentTest {
 
   @Test fun testComponentWithComposableProperty() = singleAndMultiCodegen(
     """
-      @Provide @Component interface FooComponent {
+      @Component interface FooComponent {
         @Composable fun foo(): Foo
       }
   
@@ -136,7 +136,7 @@ class ComponentTest {
 
   @Test fun testComponentIsCreatedOnTheFly() = singleAndMultiCodegen(
     """
-      @Provide @Component interface MyComponent { 
+      @Component interface MyComponent { 
         val foo: Foo
       }
     """,
@@ -149,11 +149,11 @@ class ComponentTest {
 
   @Test fun testScoped() = singleAndMultiCodegen(
     """
-        @Provide @Component interface ScopeComponent {
-          val foo: Foo
-        } 
+      @Component interface ScopeComponent {
+        val foo: Foo
+      } 
 
-        @Provide val foo: @Scoped<ScopeComponent> Foo = Foo() 
+      @Provide val foo: @Scoped<ScopeComponent> Foo get() = Foo() 
     """,
     """
       val component = inject<ScopeComponent>()
@@ -165,10 +165,13 @@ class ComponentTest {
 
   @Test fun testCannotResolveScopedInjectableWithoutEnclosingComponent() = singleAndMultiCodegen(
     """
+      interface ScopeComponent
       @Provide val foo: @Scoped<ScopeComponent> Foo = Foo() 
     """,
     """
       fun invoke() = inject<Foo>()
     """
-  )
+  ) {
+    compilationShouldHaveFailed("no enclosing component matches com.ivianuu.injekt.integrationtests.ScopeComponent")
+  }
 }

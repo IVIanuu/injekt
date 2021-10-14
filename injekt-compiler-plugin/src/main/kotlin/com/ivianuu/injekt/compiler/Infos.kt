@@ -386,6 +386,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (info.tags.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       !hasAnnotation(injektFqNames().provide) &&
+      !hasAnnotation(injektFqNames().component) &&
       (this !is ClassDescriptor ||
           constructors.none { it.hasAnnotation(injektFqNames().provide) }) &&
       info.superTypes.none { it.shouldBePersisted() }

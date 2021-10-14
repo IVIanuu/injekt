@@ -120,8 +120,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     }
 
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(injektFqNames().provide) &&
-      !descriptor.hasAnnotation(injektFqNames().component)) {
+      descriptor.hasAnnotation(injektFqNames().provide)) {
       context.trace!!.report(
         InjektErrors.PROVIDE_INTERFACE
           .on(
