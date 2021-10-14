@@ -204,8 +204,6 @@ class InjectablesScope(
   }
 
   fun frameworkInjectablesForRequest(request: InjectableRequest): List<Injectable> {
-    if (request.type.frameworkKey != 0) return emptyList()
-
     when {
       request.type.isProviderFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
@@ -239,8 +237,9 @@ class InjectablesScope(
 
             elements = (setElementsForType(
               providerReturnType, context.injektContext.collectionClassifier
-                .defaultType.withArguments(listOf(providerReturnType)),
-              key) + frameworkSetElementsForType(singleElementType, collectionElementType, key))
+                .defaultType.withArguments(listOf(providerReturnType)), key) +
+                frameworkSetElementsForType(providerReturnType, context.injektContext.collectionClassifier
+                  .defaultType.withArguments(listOf(providerReturnType)), key))
               .map { elementType ->
                 singleElementType.copy(
                   arguments = singleElementType.arguments
@@ -419,9 +418,8 @@ class InjectablesScope(
           .forEach { spreadInjectables(newSpreadingInjectable, it) }
       },
       addComponent = { newInnerComponentType ->
-        val finalNewInnerComponentType = newInnerComponentType
-        componentTypes += finalNewInnerComponentType
-        val newInnerComponentTypeWithFrameworkKey = finalNewInnerComponentType.copy(
+        componentTypes += newInnerComponentType
+        val newInnerComponentTypeWithFrameworkKey = newInnerComponentType.copy(
           frameworkKey = generateFrameworkKey()
             .also { spreadingInjectable.resultingFrameworkKeys += it }
         )
