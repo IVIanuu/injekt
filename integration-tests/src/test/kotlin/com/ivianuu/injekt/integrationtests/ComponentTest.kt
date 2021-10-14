@@ -315,31 +315,5 @@ class ComponentTest {
     observer.disposeCalls shouldBe 1
   }
 
-  @Test fun testSetWithComponent() = singleAndMultiCodegen(
-    """
-      @Component interface MyComponent {
-        val foo: Foo
-      }
-
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke(): Set<MyComponent> = inject()
-    """
-  )
-
-  @Test fun testProviderSetWithComponent() = singleAndMultiCodegen(
-    """
-      @Component interface MyComponent {
-        val foo: Foo
-      }
-
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke(): Set<() -> MyComponent> = inject()
-    """
-  )
-
   // todo component with spread??
 }
