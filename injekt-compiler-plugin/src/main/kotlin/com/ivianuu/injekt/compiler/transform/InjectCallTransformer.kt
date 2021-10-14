@@ -504,9 +504,19 @@ class InjectCallTransformer(
       superTypes += this@InjectCallTransformer.context.disposableType.defaultType
         .toIrType().typeOrNull!!
 
-      receiverAccessors.push(
-        superTypes.first().classOrNull!!.owner to { irGet(thisReceiver!!) }
-      )
+      fun pushReceivers(expression: () -> IrExpression) {
+        superTypes.dropLast(1).forEach {
+          receiverAccessors.push(it.classOrNull!!.owner to expression)
+        }
+      }
+
+      fun popReceivers() {
+        repeat(superTypes.size - 1) {
+          receiverAccessors.pop()
+        }
+      }
+
+      pushReceivers { irGet(thisReceiver!!) }
 
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
@@ -540,10 +550,7 @@ class InjectCallTransformer(
               this@componentExpression,
               graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz
             )
-            receiverAccessors.push(
-              superTypes.first().classOrNull!!.owner to
-                  { irGet(dispatchReceiverParameter!!) }
-            )
+            pushReceivers { irGet(dispatchReceiverParameter!!) }
             val expression = with(dependencyScopeContext) {
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
@@ -574,7 +581,7 @@ class InjectCallTransformer(
                 }
               }
             }
-            receiverAccessors.pop()
+            popReceivers()
             dependencyScopeContext.statements.forEach { +it }
             +irReturn(expression)
           }
@@ -749,7 +756,7 @@ class InjectCallTransformer(
         }
       }
 
-      receiverAccessors.pop()
+      popReceivers()
     }
 
     +clazz

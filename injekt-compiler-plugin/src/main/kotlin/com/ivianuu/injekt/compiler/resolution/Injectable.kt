@@ -109,6 +109,11 @@ class ComponentInjectable(
     isLazy = true
   )
 
+  val componentAndEntryPointInjectables = entryPoints
+    .map {
+      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+
   val componentObserversScope = InjectablesScope(
     name = componentObserversRequest.callableFqName.asString(),
     parent = ownerScope,
@@ -117,9 +122,7 @@ class ComponentInjectable(
     ownerDescriptor = null,
     componentType = type,
     file = null,
-    initialInjectables = listOf(
-      type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
-    ),
+    initialInjectables = componentAndEntryPointInjectables,
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = ownerScope.nesting + 1
@@ -155,10 +158,10 @@ class ComponentInjectable(
         ownerDescriptor = null,
         componentType = type,
         file = null,
-        initialInjectables = requestCallable.callable.allParameters
-          .filter { it != requestCallable.callable.dispatchReceiverParameter }
-          .map { it.toCallableRef(ownerScope.context) } +
-            type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true),
+        initialInjectables = componentAndEntryPointInjectables +
+            requestCallable.callable.allParameters
+              .filter { it != requestCallable.callable.dispatchReceiverParameter }
+              .map { it.toCallableRef(ownerScope.context) },
         imports = emptyList(),
         typeParameters = emptyList(),
         nesting = ownerScope.nesting + 1

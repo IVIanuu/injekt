@@ -329,4 +329,21 @@ class ComponentTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testCanInjectEntryPoint() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent {
+        val dep: Dep
+      }
+
+      @EntryPoint<MyComponent> interface MyEntryPoint
+
+      @Provide class Dep(val entryPoint: MyEntryPoint)
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    invokeSingleFile()
+  }
 }
