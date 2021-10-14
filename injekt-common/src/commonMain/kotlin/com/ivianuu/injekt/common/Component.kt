@@ -34,8 +34,13 @@ fun interface Disposable {
 interface ComponentObserver<C : @Component Any> : Disposable {
   fun init() {
   }
+
+  override fun dispose() {
+  }
 }
 
 fun <C : @Component Any> C.dispose() {
   (this as Disposable).dispose()
 }
+
+@Component interface AppComponent
