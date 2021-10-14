@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -117,6 +118,19 @@ class DivergenceTest {
     """,
     """
       fun invoke() = inject<C>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testComponentBreaksCircularDependency() = codegen(
+    """
+      @Provide class A(b: B)
+      @Provide class B(aComponent: AComponent)
+      @Component interface AComponent {
+        val a: A
+      }
+      fun invoke() = inject<B>()
     """
   ) {
     invokeSingleFile()
