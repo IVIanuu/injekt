@@ -342,11 +342,15 @@ class InjectablesScope(
 
   fun entryPointsForType(componentType: TypeRef): List<TypeRef> = entryPointTypes
     .mapNotNull { candidate ->
-      val context = candidate.classifier.entryPointComponentType!!
-        .buildContext(componentType, allStaticTypeParameters)
-      if (!context.isOk) return@mapNotNull null
-      val substitutionMap = context.fixedTypeVariables
-      candidate.substitute(substitutionMap)
+      if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
+        candidate.copy(arguments = listOf(componentType))
+      } else {
+        val context = candidate.classifier.entryPointComponentType
+          .buildContext(componentType, allStaticTypeParameters)
+        if (!context.isOk) return@mapNotNull null
+        val substitutionMap = context.fixedTypeVariables
+        candidate.substitute(substitutionMap)
+      }
     }
 
   private fun spreadInjectables(candidateType: TypeRef) {

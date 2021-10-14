@@ -193,4 +193,34 @@ class ComponentTest {
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
+
+  @Test fun testWildcardEntryPoint() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
+
+      @EntryPoint<Any> interface MyEntryPoint<C> {
+        val foo: Foo
+      }
+
+      @Provide val foo = Foo() 
+    """,
+    """
+      fun invoke() = (inject<MyComponent>() as MyEntryPoint<MyComponent>).foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testGenericScopeCallable() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
+
+      @EntryPoint<Any> interface CoroutineScopeComponent<C : @Component Any> {
+        val coroutineScope: ComponentScope<C>
+      }
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  )
 }

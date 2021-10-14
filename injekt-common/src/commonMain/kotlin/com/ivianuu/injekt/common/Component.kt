@@ -16,16 +16,13 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Component
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class EntryPoint<C : @Component Any>
 
-inline fun <E : @EntryPoint<C> Any, C : @Component Any> entryPoint(@Inject component: C): E =
-  component as E
+inline fun <E> entryPoint(component: @Component Any): E = component as E
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Scoped<C : @Component Any>

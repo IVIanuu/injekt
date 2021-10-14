@@ -474,26 +474,26 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject context: Inje
 
 fun TypeRef.collectComponentCallables(
   @Inject context: InjektContext
-) = classifier.descriptor!!.defaultType.memberScope
-  .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
-  .filterIsInstance<CallableMemberDescriptor>()
-  .filter {
-    it.overriddenTreeAsSequence(false).none {
-      it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true
+): List<CallableRef> = classifier.descriptor!!.defaultType.memberScope
+    .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
+    .filterIsInstance<CallableMemberDescriptor>()
+    .filter {
+      it.overriddenTreeAsSequence(false).none {
+        it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true
+      }
     }
-  }
-  .map { it.toCallableRef() }
-  .map {
-    val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-      CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-      val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
-        .overriddenTreeAsSequence(false)
-        .last()
-        .containingDeclaration
-        .cast<ClassDescriptor>()
-        .toClassifierRef()
-      classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
-        .zip(subtypeView(originalClassifier)!!.arguments)
-    } else classifier.typeParameters.zip(arguments).toMap()
-    it.substitute(substitutionMap)
-  }
+    .map { it.toCallableRef() }
+    .map {
+      val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+        CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+        val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
+          .overriddenTreeAsSequence(false)
+          .last()
+          .containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef()
+        classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
+          .zip(subtypeView(originalClassifier)!!.arguments)
+      } else classifier.typeParameters.zip(arguments).toMap()
+      it.substitute(substitutionMap)
+    }

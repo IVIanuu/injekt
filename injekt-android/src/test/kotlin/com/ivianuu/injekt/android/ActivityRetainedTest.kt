@@ -29,10 +29,10 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class ActivityRetainedTest {
-  @Test fun testActivityRetainedScopeLifecycle() {
+  @Test fun testActivityRetainedComponentLifecycle() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     lateinit var disposable: TestDisposable<ActivityRetainedScope>
-    scenario.onActivity { disposable = requireElement(it.activityRetainedScope) }
+    scenario.onActivity { disposable = requireElement(it.activityRetainedComponent) }
     disposable.disposed.shouldBeFalse()
     scenario.recreate()
     disposable.disposed.shouldBeFalse()

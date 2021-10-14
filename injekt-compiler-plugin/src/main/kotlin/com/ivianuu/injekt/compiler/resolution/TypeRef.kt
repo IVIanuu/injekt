@@ -53,6 +53,7 @@ class ClassifierRef(
   val isTypeAlias: Boolean = false,
   val isTag: Boolean = false,
   val isComponent: Boolean = false,
+  val scopeComponentType: TypeRef? = null,
   val entryPointComponentType: TypeRef? = null,
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
@@ -79,6 +80,7 @@ class ClassifierRef(
     isTypeAlias: Boolean = this.isTypeAlias,
     isTag: Boolean = this.isTag,
     isComponent: Boolean = this.isComponent,
+    scopeComponentType: TypeRef? = this.scopeComponentType,
     entryPointComponentType: TypeRef? = this.entryPointComponentType,
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
@@ -87,8 +89,8 @@ class ClassifierRef(
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isTag, isComponent, entryPointComponentType, descriptor, tags, isSpread,
-    primaryConstructorPropertyParameters, variance
+    isTypeAlias, isTag, isComponent, scopeComponentType, entryPointComponentType, descriptor,
+    tags, isSpread, primaryConstructorPropertyParameters, variance
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -139,6 +141,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
       isComponent = hasAnnotation(injektFqNames().component),
+      scopeComponentType = info.scopeComponentType,
       entryPointComponentType = info.entryPointComponentType,
       isTypeAlias = this is TypeAliasDescriptor,
       descriptor = this,
@@ -190,8 +193,6 @@ fun KotlinType.toTypeRef(
       isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
       isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
       isInject = kotlinType.hasAnnotation(injektFqNames().inject),
-      scopeComponent = kotlinType.annotations.findAnnotation(injektFqNames().scoped)
-        ?.type?.arguments?.single()?.type?.toTypeRef(),
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance
@@ -221,7 +222,6 @@ class TypeRef(
   val isMarkedComposable: Boolean = false,
   val isProvide: Boolean = false,
   val isInject: Boolean = false,
-  val scopeComponent: TypeRef? = null,
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV
@@ -310,7 +310,6 @@ class TypeRef(
       result = 31 * result + isMarkedComposable.hashCode()
       result = 31 * result + isProvide.hashCode()
       result = 31 * result + isInject.hashCode()
-      result = 31 * result + scopeComponent.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
@@ -344,7 +343,6 @@ fun TypeRef.copy(
   isMarkedComposable: Boolean = this.isMarkedComposable,
   isProvide: Boolean = this.isProvide,
   isInject: Boolean = this.isInject,
-  scopeComponent: TypeRef? = this.scopeComponent,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance
@@ -355,7 +353,6 @@ fun TypeRef.copy(
   isMarkedComposable,
   isProvide,
   isInject,
-  scopeComponent,
   isStarProjection,
   frameworkKey,
   variance
@@ -374,15 +371,6 @@ fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
 
 fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
   takeIf(action) ?: superTypes.firstNotNullOfOrNull { it.firstSuperTypeOrNull(action) }
-
-fun ClassifierRef.substitute(map: Map<ClassifierRef, TypeRef>): ClassifierRef {
-  if (map.isEmpty()) return this
-  return copy(
-    lazySuperTypes = lazy { superTypes.map { it.substitute(map) } },
-    typeParameters = typeParameters.substitute(map),
-    tags = tags.map { it.substitute(map) }
-  )
-}
 
 fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<ClassifierRef> {
   val allNewSuperTypes = map { mutableListOf<TypeRef>() }

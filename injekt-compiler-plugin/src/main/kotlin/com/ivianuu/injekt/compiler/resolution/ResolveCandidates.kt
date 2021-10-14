@@ -375,10 +375,10 @@ private fun InjectablesScope.resolveCandidate(
   if (!callContext.canCall(candidate.callContext))
     return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
 
-  if (candidate.originalType.scopeComponent != null &&
-      allScopes.none { it.componentType == candidate.originalType.scopeComponent })
+  if (candidate.scopeComponentType != null &&
+      allScopes.none { it.componentType == candidate.scopeComponentType })
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
-          candidate, candidate.originalType.scopeComponent!!)
+          candidate, candidate.scopeComponentType!!)
 
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {

@@ -38,7 +38,7 @@ import com.ivianuu.injekt.common.AppComponent
  *  override lateinit var appComponent: AppComponent
  *
  *  override fun onCreate() {
- *    appScope = createAppComponent()
+ *    appComponent = createAppComponent()
  *    super.onCreate()
  *  }
  * }

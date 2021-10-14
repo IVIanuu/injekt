@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 sealed class Injectable {
   abstract val type: TypeRef
   abstract val originalType: TypeRef
+  abstract val scopeComponentType: TypeRef?
   abstract val dependencies: List<InjectableRequest>
   abstract val dependencyScopes: Map<InjectableRequest, InjectablesScope>
   abstract val callableFqName: FqName
@@ -61,16 +62,19 @@ class CallableInjectable(
   override val callContext: CallContext
     get() = callable.callable.callContext(ownerScope.context)
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> by lazy {
-    if (callable.originalType.scopeComponent == null) emptyMap()
+    if (scopeComponentType == null) emptyMap()
     else {
-      val componentScope = ownerScope.allScopes.last {
-        it.componentType == callable.originalType.scopeComponent
+      val componentScope = ownerScope.allScopes.lastOrNull {
+        it.componentType == callable.scopeComponentType
       }
+        ?: error("Wtf")
       dependencies.associateWith { componentScope }
     }
   }
   override val originalType: TypeRef
     get() = callable.originalType
+  override val scopeComponentType: TypeRef?
+    get() = callable.scopeComponentType
 }
 
 class ComponentInjectable(
@@ -145,6 +149,8 @@ class ComponentInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type
+  override val scopeComponentType: TypeRef?
+    get() = null
 }
 
 class SetInjectable(
@@ -162,6 +168,8 @@ class SetInjectable(
     get() = emptyMap()
   override val originalType: TypeRef
     get() = type.classifier.defaultType
+  override val scopeComponentType: TypeRef?
+    get() = null
 }
 
 class ProviderInjectable(
@@ -219,6 +227,8 @@ class ProviderInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type.classifier.defaultType
+  override val scopeComponentType: TypeRef?
+    get() = null
 }
 
 class SourceKeyInjectable(
@@ -233,6 +243,8 @@ class SourceKeyInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type
+  override val scopeComponentType: TypeRef?
+    get() = null
 }
 
 class TypeKeyInjectable(
@@ -266,6 +278,8 @@ class TypeKeyInjectable(
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type
+  override val scopeComponentType: TypeRef?
+    get() = null
 }
 
 fun CallableRef.getInjectableRequests(

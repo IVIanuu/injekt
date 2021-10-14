@@ -329,7 +329,7 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
   ): IrExpression {
-    val scopeComponent = result.candidate.originalType.scopeComponent
+    val scopeComponent = result.candidate.scopeComponentType
       ?: return rawExpressionProvider()
     val scope = scope.allScopes.last { it.componentType == scopeComponent }
     return with(findScopeContext(scope)) {
