@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
+import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

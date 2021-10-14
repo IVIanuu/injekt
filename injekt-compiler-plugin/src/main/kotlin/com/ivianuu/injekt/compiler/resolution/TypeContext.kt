@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.types.model.TypeVariance
 
 interface TypeCheckerContext {

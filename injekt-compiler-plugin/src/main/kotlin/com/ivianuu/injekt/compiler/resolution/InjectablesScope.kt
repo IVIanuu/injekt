@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.asNameId
@@ -26,6 +24,8 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
+import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation

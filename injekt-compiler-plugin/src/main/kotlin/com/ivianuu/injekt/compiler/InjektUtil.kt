@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

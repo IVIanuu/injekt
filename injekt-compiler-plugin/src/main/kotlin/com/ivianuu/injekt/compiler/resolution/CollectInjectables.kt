@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
@@ -30,6 +29,7 @@ import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor

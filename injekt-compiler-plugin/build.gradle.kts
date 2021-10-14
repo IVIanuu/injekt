@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.*
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 plugins {
   kotlin("jvm")
   kotlin("kapt")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
-  id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -41,6 +41,36 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
   }
 }
 
+kotlin {
+  target {
+    compilations.forEach { compilation ->
+      val sourceSetName = name
+
+      val project = compilation.compileKotlinTask.project
+
+      val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
+        .also { it.mkdirs() }
+
+      val pluginOptions = listOf(
+        SubpluginOption(
+          key = "dumpDir",
+          value = dumpDir.absolutePath
+        ),
+        SubpluginOption(
+          key = "rootPackage",
+          value = "com.ivianuu.injekt_shaded"
+        )
+      )
+
+      pluginOptions.forEach { option ->
+        compilation.kotlinOptions.freeCompilerArgs += listOf(
+          "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
+        )
+      }
+    }
+  }
+}
+
 artifacts {
   archives(shadowJar)
 }
@@ -51,7 +81,7 @@ dependencies {
   api(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.AndroidX.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
-  implementation(Deps.Injekt.scope)
+  kotlinCompilerPluginClasspath(Deps.injektCompilerPlugin)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

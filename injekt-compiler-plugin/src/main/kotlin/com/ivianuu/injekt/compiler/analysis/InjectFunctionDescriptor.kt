@@ -16,10 +16,10 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.isInject
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor

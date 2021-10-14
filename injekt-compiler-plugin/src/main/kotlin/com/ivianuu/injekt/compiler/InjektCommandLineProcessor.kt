@@ -47,7 +47,7 @@ val RootPackageOption = CliOption(
   optionName = "rootPackage",
   valueDescription = "rootPackage",
   description = "rootPackage",
-  required = false
+  required = true
 )
 
 val RootPackageKey = CompilerConfigurationKey<FqName>("rootPackage")
@@ -56,7 +56,7 @@ val DumpDirOption = CliOption(
   optionName = "dumpDir",
   valueDescription = "dumpDir",
   description = "dumpDir",
-  required = false
+  required = true
 )
 
 val DumpDirKey = CompilerConfigurationKey<String>("dumpDir")

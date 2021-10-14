@@ -27,13 +27,11 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.SourceFileAccessor
-import io.github.classgraph.ClassGraph
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
-import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Files
 import kotlin.reflect.KClass
@@ -264,7 +262,7 @@ fun multiPlatformCodegen(
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
   compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
   commandLineProcessors = listOf(InjektCommandLineProcessor(), ComposeCommandLineProcessor())
-  classpaths += hostClasspaths
+  inheritClassPath = true
   useIR = true
   jvmTarget = "1.8"
   verbose = false
@@ -359,18 +357,4 @@ fun KotlinCompilationAssertionScope.irShouldNotContain(text: String) {
       "'$text' in source '$it'"
     }
   }
-}
-
-private val hostClasspaths by lazy<List<File>> {
-  val classGraph = ClassGraph()
-    .enableSystemJarsAndModules()
-    .removeTemporaryFilesAfterScan()
-
-  val classpaths = classGraph.classpathFiles
-  val modules = classGraph.modules.mapNotNull { it.locationFile }
-
-  (classpaths + modules)
-    // exclude possible old injekt artifacts which are required by the compiler plugin
-    //.filter { !it.absolutePath.contains("com/ivianuu/injekt/") }
-    .distinctBy(File::getAbsolutePath)
 }

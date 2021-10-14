@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -26,6 +25,7 @@ import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.ProviderImport
 import com.ivianuu.injekt.compiler.resolution.getProviderImports
 import com.ivianuu.injekt.compiler.resolution.isValidImport
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
