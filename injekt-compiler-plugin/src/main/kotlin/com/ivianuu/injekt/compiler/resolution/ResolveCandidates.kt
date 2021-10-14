@@ -69,7 +69,7 @@ sealed class ResolutionResult {
               it.nesting >= candidate.ownerScope.nesting &&
                   it.callContext.canCall(candidate.callContext)
             }
-            candidate.dependencyScope != null -> {
+            candidate.dependencyScopes.isNotEmpty() -> {
               val allOuterMostScopes = mutableListOf<InjectablesScope>()
               fun Value.visit() {
                 allOuterMostScopes += outerMostScope
@@ -81,8 +81,8 @@ sealed class ResolutionResult {
               allOuterMostScopes
                 .sortedBy { it.nesting }
                 .filter { outerMostScope ->
-                  outerMostScope.nesting <
-                      candidate.dependencyScope!!.nesting
+                  candidate.dependencyScopes.values
+                    .all { outerMostScope.allScopes.size < it.allScopes.size }
                 }
                 .lastOrNull {
                   it.callContext.canCall(candidate.callContext)
@@ -135,6 +135,11 @@ sealed class ResolutionResult {
           get() = 1
       }
 
+      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
+
       data class ReifiedTypeArgumentMismatch(
         val parameter: ClassifierRef,
         val argument: ClassifierRef,
@@ -144,7 +149,10 @@ sealed class ResolutionResult {
           get() = 1
       }
 
-      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
+      data class ScopeNotFound(
+        override val candidate: Injectable,
+        val scopeComponent: TypeRef
+      ) : WithCandidate() {
         override val failureOrdering: Int
           get() = 1
       }
@@ -253,9 +261,9 @@ private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
   lookupLocation: LookupLocation
 ): ResolutionResult {
-  val frameworkCandidate = frameworkInjectableForRequest(request)
+  val frameworkCandidates = frameworkInjectablesForRequest(request)
   return when {
-    frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
+    frameworkCandidates.isNotEmpty() -> resolveCandidates(request, frameworkCandidates, lookupLocation)
     request.isRequired -> ResolutionResult.Failure.NoCandidates
     else -> ResolutionResult.Success.DefaultValue
   }
@@ -364,9 +372,13 @@ private fun InjectablesScope.resolveCandidate(
   candidate: Injectable,
   lookupLocation: LookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
-  if (!callContext.canCall(candidate.callContext)) {
+  if (!callContext.canCall(candidate.callContext))
     return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
-  }
+
+  if (candidate.scopeComponentType != null &&
+      allScopes.none { it.componentType == candidate.scopeComponentType })
+        return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
+          candidate, candidate.scopeComponentType!!)
 
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
@@ -392,7 +404,10 @@ private fun InjectablesScope.resolveCandidate(
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
-    val dependencyScope = candidate.dependencyScope ?: this
+    val dependencyScope = candidate.dependencyScopes[dependency] ?:
+      candidate.scopeComponentType?.let {
+        allScopes.last { it.componentType == candidate.scopeComponentType }
+      } ?: this
     when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {

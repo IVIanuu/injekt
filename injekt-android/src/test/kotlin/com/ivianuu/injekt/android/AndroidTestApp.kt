@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-@file:Providers("com.ivianuu.injekt.scope.*")
-
 package com.ivianuu.injekt.android
 
 import android.app.Application
-import com.ivianuu.injekt.Providers
 
-class AndroidTestApp : Application(), AppScopeOwner {
-  override val appScope by lazy { createAppScope() }
+class AndroidTestApp : Application(), AppComponentOwner {
+  override val appComponent by lazy { createAppComponent() }
 }

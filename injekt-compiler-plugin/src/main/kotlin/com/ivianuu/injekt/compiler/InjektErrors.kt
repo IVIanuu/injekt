@@ -238,6 +238,26 @@ interface InjektErrors {
         })
       }
 
+    @JvmField
+    val COMPONENT_WITHOUT_INTERFACE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "only interfaces can be marked with @Component") }
+
+    @JvmField
+    val COMPONENT_MEMBER_VAR =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "component cannot contain a abstract var property") }
+
+    @JvmField
+    val ENTRY_POINT_WITHOUT_INTERFACE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "only interfaces can be marked with @EntryPoint") }
+
+    @JvmField
+    val ENTRY_POINT_MEMBER_VAR =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "entry point cannot contain a abstract var property") }
+
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,
@@ -291,6 +311,15 @@ private fun InjectionGraph.Error.render(): String = buildString {
         )
       } else {
         appendLine("type argument kind mismatch")
+      }
+    }
+    is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
+      if (failure == unwrappedFailure) {
+        appendLine(
+          "no enclosing component matches ${unwrappedFailure.scopeComponent.renderToString()}"
+        )
+      } else {
+        appendLine("component not found")
       }
     }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
@@ -363,6 +392,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
             }
+            is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
+              append("${failure.candidate.callableFqName} is scoped to ${failure.scopeComponent.renderToString()}")
+            }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
                 "ambiguous: ${
@@ -412,6 +444,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
+      }
+      is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
+        appendLine("but no enclosing component matches type ${unwrappedFailure.scopeComponent.renderToString()}")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(

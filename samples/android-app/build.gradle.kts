@@ -30,7 +30,6 @@ dependencies {
   implementation(Deps.AndroidX.Activity.compose)
   implementation(project(":injekt-android"))
   implementation(project(":injekt-android-work"))
-  implementation(project(":injekt-core"))
   implementation(Deps.AndroidX.Compose.runtime)
   kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
   implementation(Deps.AndroidX.Compose.material)

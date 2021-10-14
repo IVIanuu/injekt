@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.AppScope
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
@@ -567,7 +568,7 @@ class InjectableResolutionTest {
         ),
         source(
           """
-            @Provide @Scoped<AppScope> class AndroidLogger : Logger {
+            @Provide @FakeScoped<AppScope> class AndroidLogger : Logger {
               companion object {
                 @Provide inline fun logger(
                   android: () -> AndroidLogger,
@@ -583,14 +584,14 @@ class InjectableResolutionTest {
         source(
           """
             @Providers("injectables.*", "injectables.AndroidLogger.Companion.logger")
-            fun invoke() = inject<injectables.Logger>()
+            fun invoke(@Inject scope: AppScope) = inject<injectables.Logger>()
           """,
           name = "File.kt"
         )
       )
     )
   ) {
-    invokeSingleFile()!!.javaClass.name shouldBe "injectables.AndroidLogger"
+    invokeSingleFile(AppScope)!!.javaClass.name shouldBe "injectables.AndroidLogger"
   }
 
   @Test fun testDoesNotPreferInjectablesInTheSameFile() = codegen(

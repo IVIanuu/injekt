@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.irShouldNotContain
@@ -120,5 +121,21 @@ class ExpressionWrappingTest {
     """
   ) {
     invokeSingleFile()
+  }
+
+  @Test fun testDoesFunctionWrapComponentWithMultipleUsages() = codegen(
+    """
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+      @Component interface BarComponent {
+        val bar: Bar
+      }
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+      fun invoke() {
+        inject<Pair<BarComponent, BarComponent>>()
+      }
+    """
+  ) {
+    irShouldContain(1, "local class BarComponentImpl")
   }
 }

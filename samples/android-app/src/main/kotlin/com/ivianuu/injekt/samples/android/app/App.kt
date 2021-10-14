@@ -17,22 +17,21 @@
 @file:Providers(
   "com.ivianuu.injekt.coroutines.*",
   "com.ivianuu.injekt.android.*",
-  "com.ivianuu.injekt.scope.*"
 )
 
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
 import com.ivianuu.injekt.Providers
-import com.ivianuu.injekt.android.AppScopeOwner
-import com.ivianuu.injekt.android.createAppScope
-import com.ivianuu.injekt.scope.AppScope
+import com.ivianuu.injekt.android.AppComponentOwner
+import com.ivianuu.injekt.android.createAppComponent
+import com.ivianuu.injekt.common.AppComponent
 
-class App : Application(), AppScopeOwner {
-  override lateinit var appScope: AppScope
+class App : Application(), AppComponentOwner {
+  override lateinit var appComponent: AppComponent
 
   override fun onCreate() {
-    appScope = createAppScope()
+    appComponent = createAppComponent()
     super.onCreate()
   }
 }

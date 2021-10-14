@@ -178,7 +178,8 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     val context = buildContext(
       other,
       staticTypeParameters,
-      true
+      true,
+      injektContext
     )
     if (!context.isOk) {
       throw AssertionError("'$this' is not assignable to '$other'")
@@ -196,7 +197,8 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     val context = buildContext(
       other,
       staticTypeParameters,
-      true
+      true,
+      injektContext
     )
     if (context.isOk) {
       throw AssertionError("'$this' is assignable to '$other'")
@@ -204,13 +206,13 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   }
 
   infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-    if (!isSubTypeOf(other)) {
+    if (!isSubTypeOf(other, injektContext)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }
 
   infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-    if (isSubTypeOf(other)) {
+    if (isSubTypeOf(other, injektContext)) {
       throw AssertionError("'$this' is sub type of '$other'")
     }
   }

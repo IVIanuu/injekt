@@ -37,7 +37,7 @@ kotlin {
   sourceSets {
     commonMain {
       dependencies {
-        api(project(":injekt-scope"))
+        api(project(":injekt-common"))
         api(Deps.Coroutines.core)
       }
     }

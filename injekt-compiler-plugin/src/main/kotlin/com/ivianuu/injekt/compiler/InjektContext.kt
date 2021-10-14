@@ -62,6 +62,16 @@ class InjektContext(
       ClassId.topLevel(injektFqNames().typeKey)
     )!!.toClassifierRef()
   }
+  val componentObserverType by lazy {
+    module.findClassAcrossModuleDependencies(
+      ClassId.topLevel(injektFqNames().componentObserver)
+    )!!.toClassifierRef()
+  }
+  val disposableType by lazy {
+    module.findClassAcrossModuleDependencies(
+      ClassId.topLevel(injektFqNames().disposable)
+    )!!.toClassifierRef()
+  }
 
   fun classifierDescriptorForFqName(
     fqName: FqName,

@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.CallableRef
+import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
@@ -37,6 +38,7 @@ import com.ivianuu.injekt.compiler.resolution.SetInjectable
 import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
@@ -44,11 +46,15 @@ import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -64,17 +70,35 @@ import org.jetbrains.kotlin.descriptors.impl.LocalVariableAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addDispatchReceiver
+import org.jetbrains.kotlin.ir.builders.declarations.addExtensionReceiver
+import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irEqeqeq
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irIfThenElse
+import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -82,6 +106,7 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
@@ -89,12 +114,20 @@ import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.isVararg
@@ -169,11 +202,13 @@ class InjectCallTransformer(
     val parent: ScopeContext?,
     val graphContext: GraphContext,
     val scope: InjectablesScope,
-    val irScope: Scope
+    val irScope: Scope,
+    val component: IrClass?
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val cachedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
+    val scopedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
     val initializingExpressions: MutableMap<Injectable, InjectableExpression> =
@@ -261,12 +296,15 @@ class InjectCallTransformer(
 
       val rawExpression = cacheExpressionIfNeeded(result) {
         wrapExpressionInFunctionIfNeeded(result) {
-          when (result.candidate) {
-            is CallableInjectable -> callableExpression(result, result.candidate.cast())
-            is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-            is SetInjectable -> setExpression(result, result.candidate.cast())
-            is SourceKeyInjectable -> sourceKeyExpression()
-            is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
+          scopeExpressionIfNeeded(result) {
+            when (result.candidate) {
+              is CallableInjectable -> callableExpression(result, result.candidate.cast())
+              is ComponentInjectable -> componentExpression(result, result.candidate.cast())
+              is ProviderInjectable -> providerExpression(result, result.candidate.cast())
+              is SetInjectable -> setExpression(result, result.candidate.cast())
+              is SourceKeyInjectable -> sourceKeyExpression()
+              is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
+            }
           }
         }
       }
@@ -291,6 +329,91 @@ class InjectCallTransformer(
       dependencyResults.isNotEmpty() &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
+
+  private fun ScopeContext.scopeExpressionIfNeeded(
+    result: ResolutionResult.Success.WithCandidate.Value,
+    rawExpressionProvider: () -> IrExpression
+  ): IrExpression {
+    val scopeComponent = result.candidate.scopeComponentType
+      ?: return rawExpressionProvider()
+    val scope = scope.allScopes.last { it.componentType == scopeComponent }
+    return with(findScopeContext(scope)) {
+      scopedExpressions.getOrPut(result.candidate.type) {
+        val index = graphContext.variableIndex++
+        val lockField = component!!.addField(
+          "_${index}Lock",
+          pluginContext.irBuiltIns.anyType,
+          DescriptorVisibilities.PRIVATE
+        ).apply {
+          initializer = DeclarationIrBuilder(pluginContext, symbol).run {
+            irExprBody(irCall(pluginContext.irBuiltIns.anyClass.constructors.single()))
+          }
+        }
+        val instanceField = component.addField(
+          "_${index}Instance",
+          pluginContext.irBuiltIns.anyNType,
+          DescriptorVisibilities.PRIVATE
+        ).apply {
+          initializer = DeclarationIrBuilder(pluginContext, symbol).run {
+            irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
+          }
+        }
+
+        val scopeReceiverParameter =
+          scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
+
+        val expression: ScopeContext.() -> IrExpression = {
+          DeclarationIrBuilder(pluginContext, symbol).run {
+            irBlock {
+              val tmp = irTemporary(
+                value = irGetField(receiverExpression(scopeReceiverParameter), instanceField),
+                nameHint = "${graphContext.variableIndex++}",
+                isMutable = true
+              )
+
+              +irIfThenElse(
+                result.candidate.type.toIrType().typeOrNull!!,
+                irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                irCall(
+                  pluginContext.referenceFunctions(
+                    injektFqNames().commonPackage.child("synchronized".asNameId())
+                  ).single()
+                ).apply {
+                  putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
+                  putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
+                  putValueArgument(
+                    1,
+                    irLambda(
+                      pluginContext.irBuiltIns.function(0)
+                        .typeWith(result.candidate.type.toIrType().typeOrNull!!),
+                      parameterNameProvider = { "p${graphContext.variableIndex++}" }
+                    ) {
+                      irBlock {
+                        +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
+
+                        +irIfThen(
+                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                          irBlock {
+                            +irSet(tmp.symbol, rawExpressionProvider())
+                            +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
+                          }
+                        )
+
+                        +irGet(tmp)
+                      }
+                    }
+                  )
+                },
+                irGet(tmp)
+              )
+            }
+          }
+        }
+
+        expression
+      }
+    }.invoke(this)
+  }
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
@@ -366,6 +489,280 @@ class InjectCallTransformer(
     DeclarationIrBuilder(pluginContext, symbol)
       .irGetObject(pluginContext.referenceClass(type.classifier.fqName)!!)
 
+  private fun ScopeContext.componentExpression(
+    result: ResolutionResult.Success.WithCandidate.Value,
+    injectable: ComponentInjectable
+  ): IrExpression = DeclarationIrBuilder(pluginContext, symbol).irBlock {
+    val clazz = IrFactoryImpl.buildClass {
+      name = injectable.callableFqName.shortName()
+      visibility = DescriptorVisibilities.LOCAL
+    }.apply clazz@{
+      parent = scope.getLocalDeclarationParent()
+      createImplicitParameterDeclarationWithWrappedDescriptor()
+      superTypes += injectable.type.toIrType().typeOrNull!!
+      superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
+      superTypes += this@InjectCallTransformer.context.disposableType.defaultType
+        .toIrType().typeOrNull!!
+
+      fun pushReceivers(expression: () -> IrExpression) {
+        superTypes.dropLast(1).forEach {
+          receiverAccessors.push(it.classOrNull!!.owner to expression)
+        }
+      }
+
+      fun popReceivers() {
+        repeat(superTypes.size - 1) {
+          receiverAccessors.pop()
+        }
+      }
+
+      pushReceivers { irGet(thisReceiver!!) }
+
+      injectable.requestCallables.forEach { requestCallable ->
+        fun IrSimpleFunction.setupFunction() {
+          if (requestCallable.callable.callContext() == CallContext.COMPOSABLE) {
+            annotations += DeclarationIrBuilder(pluginContext, symbol)
+              .irCallConstructor(
+                pluginContext.referenceConstructors(injektFqNames().composable)
+                  .single(),
+                emptyList()
+              )
+          }
+
+          addDispatchReceiver { type = defaultType }
+          if (requestCallable.callable.extensionReceiverParameter != null) {
+            addExtensionReceiver(
+              requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX]!!
+                .toIrType().typeOrNull!!
+            )
+          }
+
+          requestCallable.callable.valueParameters.forEach { parameter ->
+            addValueParameter(
+              parameter.name.asString(),
+              requestCallable.parameterTypes[parameter.injektIndex()]!!
+                .toIrType().typeOrNull!!
+            )
+          }
+
+          body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+            val dependencyScopeContext = ScopeContext(
+              this@componentExpression,
+              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz
+            )
+            pushReceivers { irGet(dispatchReceiverParameter!!) }
+            val expression = with(dependencyScopeContext) {
+              val request = injectable.requestsByRequestCallables[requestCallable]!!
+              val requestResult = result.dependencyResults[request]!!
+              if (requestResult is ResolutionResult.Success.WithCandidate.Value) {
+                val previousParametersMap = parameterMap.toMap()
+                requestCallable.callable.allParameters
+                  .filter { it != requestCallable.callable.dispatchReceiverParameter }
+                  .zip(valueParameters)
+                  .forEach { (a, b) -> parameterMap[a] = b }
+                expressionFor(requestResult)
+                  .also {
+                    parameterMap.clear()
+                    parameterMap.putAll(previousParametersMap)
+                  }
+              } else {
+                irCall(
+                  overriddenSymbols.single().owner,
+                  null,
+                  superTypes.first().classOrNull!!
+                ).apply {
+                  dispatchReceiver = irGet(dispatchReceiverParameter!!)
+                  extensionReceiverParameter?.let {
+                    extensionReceiver = irGet(it)
+                  }
+                  valueParameters.forEach {
+                    putValueArgument(it.index, irGet(it))
+                  }
+                }
+              }
+            }
+            popReceivers()
+            dependencyScopeContext.statements.forEach { +it }
+            +irReturn(expression)
+          }
+        }
+
+        if (requestCallable.callable is PropertyDescriptor) {
+          addProperty {
+            name = requestCallable.callable.name
+            visibility = requestCallable.callable.visibility
+          }.apply {
+            addGetter {
+              returnType = requestCallable.type.toIrType().typeOrNull!!
+              visibility = requestCallable.callable.getter!!.visibility
+            }.apply {
+              overriddenSymbols = overriddenSymbols + requestCallable.callable.cast<PropertyDescriptor>()
+                .irProperty()
+                .getter!!
+                .symbol
+                .cast<IrSimpleFunctionSymbol>()
+              setupFunction()
+            }
+          }
+        } else {
+          addFunction {
+            returnType = requestCallable.type.toIrType().typeOrNull!!
+            name = requestCallable.callable.name
+            isSuspend = requestCallable.callable.callContext() == CallContext.SUSPEND
+            visibility = requestCallable.callable.visibility
+          }.apply {
+            overriddenSymbols = overriddenSymbols + requestCallable.callable.cast<FunctionDescriptor>()
+              .irFunction()
+              .symbol
+              .cast<IrSimpleFunctionSymbol>()
+            setupFunction()
+          }
+        }
+      }
+
+      val observersResult = result.dependencyResults[injectable.componentObserversRequest]
+        .safeAs<ResolutionResult.Success.WithCandidate>()
+
+      val observersField = if (observersResult == null) null
+      else addField(
+        "${injectable.componentObserversRequest.parameterName}${graphContext.variableIndex++}",
+        injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
+        DescriptorVisibilities.PRIVATE
+      ).apply {
+        initializer = DeclarationIrBuilder(pluginContext, symbol).run {
+          val componentObserversScope = ScopeContext(
+            this@componentExpression,
+            graphContext, injectable.componentObserversScope, scope, this@clazz
+          )
+          irExprBody(
+            with(componentObserversScope) {
+              expressionFor(observersResult)
+            }
+          )
+        }
+      }
+      fun forEachObserver(
+        observerFunctionName: String,
+        thisExpression: () -> IrExpression
+      ): IrExpression = irCall(
+        pluginContext.referenceFunctions(
+          FqName("kotlin.collections.forEach")
+        ).first {
+          it.owner.extensionReceiverParameter?.type?.classFqName ==
+              StandardNames.FqNames.iterable
+        }
+      ).apply {
+        putTypeArgument(
+          0,
+          observersField!!.type.cast<IrSimpleType>().arguments.single().typeOrNull
+        )
+
+        extensionReceiver = irGetField(thisExpression(), observersField)
+
+        putValueArgument(
+          0,
+          irLambda(
+            pluginContext.irBuiltIns.function(1)
+              .typeWith(
+                observersField.type.cast<IrSimpleType>().arguments.single().typeOrNull!!,
+                pluginContext.irBuiltIns.unitType
+              ),
+            parameterNameProvider = { "p${graphContext.variableIndex++}" }
+          ) {
+            irCall(
+              observersField.type.cast<IrSimpleType>().arguments.single().typeOrNull!!
+                .classOrNull!!
+                .functions
+                .single { it.owner.name.asString() == observerFunctionName }
+            ).apply {
+              dispatchReceiver = irGet(it.valueParameters.single())
+            }
+          }
+        )
+      }
+
+      addConstructor {
+        returnType = defaultType
+        isPrimary = true
+        visibility = DescriptorVisibilities.PUBLIC
+      }.apply {
+        body = DeclarationIrBuilder(
+          pluginContext,
+          symbol
+        ).irBlockBody {
+          +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+          +IrInstanceInitializerCallImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            this@clazz.symbol,
+            context.irBuiltIns.unitType
+          )
+
+          if (observersField != null) {
+            +forEachObserver(
+              observerFunctionName = "init",
+              thisExpression = { irGet(thisReceiver!!) }
+            )
+          }
+        }
+      }
+
+      addFunction {
+        returnType = pluginContext.irBuiltIns.unitType
+        name = "dispose".asNameId()
+      }.apply {
+        addDispatchReceiver { type = defaultType }
+        overriddenSymbols = overriddenSymbols + this@InjectCallTransformer.context.disposableType
+          .defaultType.toIrType().typeOrNull!!.classOrNull!!
+          .functions
+          .single { it.owner.name == name }
+        body = DeclarationIrBuilder(pluginContext, symbol).run {
+          irBlockBody {
+            if (observersField != null) {
+              +forEachObserver(
+                observerFunctionName = "dispose",
+                thisExpression = { irGet(dispatchReceiverParameter!!) }
+              )
+              irSetField(irGet(dispatchReceiverParameter!!), observersField, irNull())
+            }
+
+            val disposableClass = pluginContext.referenceClass(injektFqNames().disposable)!!
+            fields
+              .filter { it.name.asString().endsWith("Instance") }
+              .forEach { field ->
+                +irIfThen(
+                  irIs(
+                    irGetField(irGet(dispatchReceiverParameter!!), field),
+                    disposableClass.defaultType
+                  ),
+                  irCall(
+                    disposableClass
+                      .functions
+                      .single { it.owner.name.asString() == "dispose" }
+                  ).apply {
+                    dispatchReceiver = irAs(
+                      irGetField(irGet(dispatchReceiverParameter!!), field),
+                      disposableClass.defaultType
+                    )
+                  }
+                )
+                +irSetField(irGet(dispatchReceiverParameter!!), field, irNull())
+              }
+
+            fields
+              .filter { it.name.asString().endsWith("Lock") }
+              .forEach { +irSetField(irGet(dispatchReceiverParameter!!), it, irNull()) }
+          }
+        }
+      }
+
+      popReceivers()
+    }
+
+    +clazz
+    +irCall(clazz.constructors.single())
+  }
+
   private fun ScopeContext.providerExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
     injectable: ProviderInjectable
@@ -378,7 +775,8 @@ class InjectCallTransformer(
         is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
         is ResolutionResult.Success.WithCandidate -> {
           val dependencyScopeContext = ScopeContext(
-            this@providerExpression, graphContext, injectable.dependencyScope, scope
+            this@providerExpression, graphContext,
+            injectable.dependencyScopes.values.single(), scope, null
           )
           val expression = with(dependencyScopeContext) {
             val previousParametersMap = parameterMap.toMap()
@@ -669,14 +1067,18 @@ class InjectCallTransformer(
       }
   }
 
+  private fun ScopeContext.receiverExpression(
+    descriptor: ParameterDescriptor
+  ) = receiverAccessors.last {
+    descriptor.type.constructor.declarationDescriptor == it.first.descriptor
+  }.second()
+
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
     injectable: CallableInjectable
   ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
-      is ClassDescriptor -> receiverAccessors.last {
-        descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-      }.second()
+      is ClassDescriptor -> receiverExpression(descriptor)
       is ClassConstructorDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
@@ -846,7 +1248,8 @@ class InjectCallTransformer(
             parent = null,
             graphContext = graphContext,
             scope = graph.scope,
-            irScope = scope
+            irScope = scope,
+            component = null
           ).run { result.inject(this, graph.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)

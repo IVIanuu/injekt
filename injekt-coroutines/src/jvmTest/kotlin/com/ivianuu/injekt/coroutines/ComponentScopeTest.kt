@@ -17,12 +17,9 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.dispose
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.Framework
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.requireElement
-import com.ivianuu.injekt.scope.scopeOf
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -31,28 +28,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import org.junit.Test
 
-class InjektCoroutineScopeTest {
-  @Test fun testScopedCoroutineScopeLifecycle() {
-    @Provide val scope = scopeOf()
-    val coroutineScope = scopedCoroutineScope()
-    coroutineScope.isActive.shouldBeTrue()
-    scope.dispose()
-    coroutineScope.isActive.shouldBeFalse()
-  }
+@Component interface CoroutinesComponent {
+  val scope: ComponentScope<CoroutinesComponent>
+}
 
-  @Test fun testCoroutineScopeElementLifecycle() {
-    @Provide val scope: Scope = inject<@Framework AppScope>()
-    val coroutineScope = requireElement<NamedCoroutineScope<AppScope>>()
-    coroutineScope.isActive.shouldBeTrue()
-    scope.dispose()
-    coroutineScope.isActive.shouldBeFalse()
+class ComponentScopeTest {
+  @Test fun testComponentScopeLifecycle() {
+    val component = inject<CoroutinesComponent>()
+    val scope = component.scope
+    scope.isActive.shouldBeTrue()
+    component.dispose()
+    scope.isActive.shouldBeFalse()
   }
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: NamedCoroutineContext<AppScope> = Dispatchers.Main
-    @Provide val scope: Scope = inject<@Framework AppScope>()
-    val coroutineScope = requireElement<NamedCoroutineScope<AppScope>>()
-    coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
+    @Provide val customContext: ComponentCoroutineContext<CoroutinesComponent> = Dispatchers.Main
+    val component = inject<CoroutinesComponent>()
+    val scope = component.scope
+    scope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
 }

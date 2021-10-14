@@ -19,6 +19,8 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
+import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
@@ -52,9 +54,11 @@ import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -190,18 +194,24 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
 fun ClassDescriptor.injectableConstructors(
   @Inject context: InjektContext
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
-  constructors
-    .filter { constructor ->
-      constructor.hasAnnotation(injektFqNames().provide) ||
-          (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
-    }
+  (if (hasAnnotation(injektFqNames().component))
+    listOf(ComponentConstructorDescriptor(this))
+  else if (hasAnnotation(injektFqNames().entryPoint))
+    listOf(EntryPointConstructorDescriptor(this))
+  else
+    constructors
+      .filter { constructor ->
+        constructor.hasAnnotation(injektFqNames().provide) ||
+            (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
+      })
     .map { constructor ->
       val callable = constructor.toCallableRef()
       val taggedType = callable.type.classifier.tags.wrap(callable.type)
       callable.copy(
         isProvide = true,
         type = taggedType,
-        originalType = taggedType
+        originalType = taggedType,
+        scopeComponentType = callable.scopeComponentType ?: callable.type.classifier.scopeComponentType
       )
     }
 }
@@ -218,12 +228,14 @@ fun ClassDescriptor.injectableReceiver(
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
-  @Inject context: InjektContext,
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
+  addComponent: (TypeRef) -> Unit,
+  addEntryPoint: (TypeRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
-  seen: MutableSet<CallableRef> = mutableSetOf()
+  seen: MutableSet<CallableRef> = mutableSetOf(),
+  @Inject context: InjektContext
 ) {
   if (this in seen) return
   seen += this
@@ -231,6 +243,16 @@ fun CallableRef.collectInjectables(
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
+    return
+  }
+
+  if (callable is ComponentConstructorDescriptor) {
+    addComponent(callable.returnType!!.toTypeRef())
+    return
+  }
+
+  if (callable is EntryPointConstructorDescriptor) {
+    addEntryPoint(callable.returnType!!.toTypeRef())
     return
   }
 
@@ -252,6 +274,8 @@ fun CallableRef.collectInjectables(
         addImport = addImport,
         addInjectable = addInjectable,
         addSpreadingInjectable = addSpreadingInjectable,
+        addComponent = addComponent,
+        addEntryPoint = addEntryPoint,
         import = import,
         seen = seen
       )
@@ -448,3 +472,29 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject context: Inje
         scopeFile == callable.callable.findPsi()
           ?.containingFile
       })
+
+fun TypeRef.collectComponentCallables(
+  @Inject context: InjektContext
+): List<CallableRef> = classifier.descriptor!!.defaultType.memberScope
+    .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
+    .filterIsInstance<CallableMemberDescriptor>()
+    .filter {
+      it.overriddenTreeAsSequence(false).none {
+        it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true
+      }
+    }
+    .map { it.toCallableRef() }
+    .map {
+      val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+        CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+        val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
+          .overriddenTreeAsSequence(false)
+          .last()
+          .containingDeclaration
+          .cast<ClassDescriptor>()
+          .toClassifierRef()
+        classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
+          .zip(subtypeView(originalClassifier)!!.arguments)
+      } else classifier.typeParameters.zip(arguments).toMap()
+      it.substitute(substitutionMap)
+    }

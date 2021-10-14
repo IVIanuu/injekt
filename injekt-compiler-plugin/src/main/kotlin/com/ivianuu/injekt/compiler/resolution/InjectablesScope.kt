@@ -41,6 +41,7 @@ class InjectablesScope(
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
   val file: KtFile?,
+  val componentType: TypeRef? = null,
   val initialInjectables: List<CallableRef>,
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   imports: List<ResolvedProviderImport>,
@@ -90,6 +91,11 @@ class InjectablesScope(
   private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
+  private val componentTypes: MutableList<TypeRef> =
+    parent?.componentTypes?.toMutableList() ?: mutableListOf()
+  private val entryPointTypes: MutableList<TypeRef> =
+    parent?.entryPointTypes?.toMutableList() ?: mutableListOf()
+
   val isTypeScope = name.startsWith("TYPE ")
 
   init {
@@ -113,7 +119,13 @@ class InjectablesScope(
           },
           addSpreadingInjectable = { callable ->
             spreadingInjectables += SpreadingInjectable(callable)
-          }
+          },
+          addComponent = { componentType ->
+            componentTypes += componentType
+            val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
+            spreadingInjectableCandidateTypes += typeWithFrameworkKey
+          },
+          addEntryPoint = { entryPointTypes += it }
         )
       }
 
@@ -191,40 +203,43 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
-    if (request.type.frameworkKey != 0) return null
+  fun frameworkInjectablesForRequest(request: InjectableRequest): List<Injectable> {
     when {
       request.type.isProviderFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext
-        return providerInjectablesByRequest.getOrPut(
-          ProviderRequestKey(request.type, finalCallContext)
-        ) {
-          ProviderInjectable(
-            type = request.type,
-            ownerScope = this,
-            dependencyCallContext = finalCallContext,
-            isInline = request.isInline
-          )
-        }
+        return listOf(
+          providerInjectablesByRequest.getOrPut(
+            ProviderRequestKey(request.type, finalCallContext)
+          ) {
+            ProviderInjectable(
+              type = request.type,
+              ownerScope = this,
+              dependencyCallContext = finalCallContext,
+              isInline = request.isInline
+            )
+          }
+        )
       }
-      request.type.classifier == context.injektContext.setClassifier -> {
-        return setInjectablesByType.getOrPut(request.type) {
+      request.type.classifier == context.injektContext.setClassifier -> return listOfNotNull(
+        setInjectablesByType.getOrPut(request.type) {
           val singleElementType = request.type.arguments[0]
           val collectionElementType = context.injektContext.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
 
-          var elements = setElementsForType(
-            singleElementType, collectionElementType,
-            CallableRequestKey(request.type, allStaticTypeParameters)
-          )
+          var key = CallableRequestKey(request.type, allStaticTypeParameters)
+
+          var elements = setElementsForType(singleElementType, collectionElementType, key) +
+              frameworkSetElementsForType(singleElementType, collectionElementType, key)
           if (elements.isEmpty() && singleElementType.isProviderFunctionType) {
             val providerReturnType = singleElementType.arguments.last()
-            elements = setElementsForType(
+            key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
+
+            elements = (setElementsForType(
               providerReturnType, context.injektContext.collectionClassifier
-                .defaultType.withArguments(listOf(providerReturnType)),
-              CallableRequestKey(providerReturnType, allStaticTypeParameters)
-            )
+                .defaultType.withArguments(listOf(providerReturnType)), key) +
+                frameworkSetElementsForType(providerReturnType, context.injektContext.collectionClassifier
+                  .defaultType.withArguments(listOf(providerReturnType)), key))
               .map { elementType ->
                 singleElementType.copy(
                   arguments = singleElementType.arguments
@@ -255,14 +270,14 @@ class InjectablesScope(
             )
           } else null
         }
-      }
-      request.type.classifier.fqName == injektFqNames().typeKey -> {
-        return TypeKeyInjectable(request.type, this)
-      }
-      request.type.classifier.fqName == injektFqNames().sourceKey -> {
-        return SourceKeyInjectable(request.type, this)
-      }
-      else -> return null
+      )
+      request.type.classifier.fqName == injektFqNames().typeKey ->
+        return listOf(TypeKeyInjectable(request.type, this))
+      request.type.classifier.fqName == injektFqNames().sourceKey ->
+        return listOf(SourceKeyInjectable(request.type, this))
+      request.type.classifier.isComponent ->
+        return listOf(ComponentInjectable(request.type, this))
+      else -> return emptyList()
     }
   }
 
@@ -299,6 +314,43 @@ class InjectablesScope(
       else thisElements
     }
   }
+
+  private fun frameworkSetElementsForType(
+    singleElementType: TypeRef,
+    collectionElementType: TypeRef,
+    key: CallableRequestKey
+  ): List<TypeRef> {
+    if (componentTypes.isEmpty()) return emptyList()
+    return componentTypes
+      .mapNotNull { candidate ->
+        var context =
+          candidate.buildContext(singleElementType, key.staticTypeParameters)
+        if (!context.isOk) {
+          context = candidate.buildContext(collectionElementType, key.staticTypeParameters)
+        }
+        if (!context.isOk) return@mapNotNull null
+        val substitutionMap = context.fixedTypeVariables
+        candidate.substitute(substitutionMap)
+      }
+      .map { componentType ->
+        val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
+        componentTypes += typeWithFrameworkKey
+        typeWithFrameworkKey
+      }
+  }
+
+  fun entryPointsForType(componentType: TypeRef): List<TypeRef> = entryPointTypes
+    .mapNotNull { candidate ->
+      if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
+        candidate.copy(arguments = listOf(componentType))
+      } else {
+        val context = candidate.classifier.entryPointComponentType
+          .buildContext(componentType, allStaticTypeParameters)
+        if (!context.isOk) return@mapNotNull null
+        val substitutionMap = context.fixedTypeVariables
+        candidate.substitute(substitutionMap)
+      }
+    }
 
   private fun spreadInjectables(candidateType: TypeRef) {
     for (spreadingInjectable in spreadingInjectables.toList())
@@ -364,7 +416,18 @@ class InjectablesScope(
         spreadingInjectableCandidateTypes
           .toList()
           .forEach { spreadInjectables(newSpreadingInjectable, it) }
-      }
+      },
+      addComponent = { newInnerComponentType ->
+        componentTypes += newInnerComponentType
+        val newInnerComponentTypeWithFrameworkKey = newInnerComponentType.copy(
+          frameworkKey = generateFrameworkKey()
+            .also { spreadingInjectable.resultingFrameworkKeys += it }
+        )
+        componentTypes += newInnerComponentTypeWithFrameworkKey
+        spreadingInjectableCandidateTypes += newInnerComponentTypeWithFrameworkKey
+        spreadInjectables(newInnerComponentTypeWithFrameworkKey)
+      },
+      addEntryPoint = { TODO() }
     )
   }
 

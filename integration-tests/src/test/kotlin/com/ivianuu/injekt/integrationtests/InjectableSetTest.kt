@@ -162,4 +162,30 @@ class InjectableSetTest {
     set[0] shouldBe "a"
     set[1] shouldBe "b"
   }
+
+  @Test fun testSetWithComponent() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent {
+        val foo: Foo
+      }
+
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke(): Set<MyComponent> = inject()
+    """
+  )
+
+  @Test fun testProviderSetWithComponent() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent {
+        val foo: Foo
+      }
+
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke(): Set<() -> MyComponent> = inject()
+    """
+  )
 }

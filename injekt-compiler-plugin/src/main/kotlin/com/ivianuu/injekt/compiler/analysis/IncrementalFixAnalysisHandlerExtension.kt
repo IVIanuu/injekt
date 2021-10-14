@@ -127,8 +127,7 @@ class IncrementalFixAnalysisHandlerExtension(
 
       for ((i, injectable) in injectables.withIndex()) {
         val functionName = injectablesLookupName(
-          injectable.fqName
-            ?: error("Wtf ${injectable.text}"),
+          injectable.fqName ?: error("Wtf ${injectable.text}"),
           file.packageFqName
         )
 

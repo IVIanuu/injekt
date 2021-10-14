@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.scope
+package com.ivianuu.injekt.common
 
-actual inline fun <T> synchronized(lock: Any, block: () -> T): T =
+actual inline fun <R> synchronized(lock: Any, block: () -> R): R =
   kotlin.synchronized(lock, block)

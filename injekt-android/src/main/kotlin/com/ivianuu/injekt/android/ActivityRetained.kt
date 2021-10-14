@@ -19,39 +19,38 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildScopeModule0
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.requireElement
+import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.dispose
+import com.ivianuu.injekt.common.entryPoint
 
 /**
- * Returns the [ActivityRetainedScope] of this [ComponentActivity]
+ * Returns the [ActivityRetainedComponent] of this [ComponentActivity]
  * whose lifecycle is bound the retained lifecycle of the activity
  */
 @Suppress("UNCHECKED_CAST")
-@Provide
-val ComponentActivity.activityRetainedScope: ActivityRetainedScope
+val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
   get() = ViewModelProvider(
     this,
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        ActivityRetainedScopeHolder(
-          requireElement<@ChildScopeFactory () -> ActivityRetainedScope>(appScope)
-            .invoke()
+        ActivityRetainedComponentHolder(
+          entryPoint<ActivityRetainedComponentFactory>(appComponent)
+            .activityRetainedComponent()
         ) as T
     }
-  )[ActivityRetainedScopeHolder::class.java].scope
+  )[ActivityRetainedComponentHolder::class.java].component
 
-typealias ActivityRetainedScope = Scope
+@Component interface ActivityRetainedComponent
 
-@Provide val activityRetainedScopeModule =
-  ChildScopeModule0<AppScope, ActivityRetainedScope>()
+@EntryPoint<AppComponent> interface ActivityRetainedComponentFactory {
+  fun activityRetainedComponent(): ActivityRetainedComponent
+}
 
-private class ActivityRetainedScopeHolder(val scope: ActivityRetainedScope) : ViewModel() {
+private class ActivityRetainedComponentHolder(val component: ActivityRetainedComponent) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
-    scope.dispose()
+    component.dispose()
   }
 }
