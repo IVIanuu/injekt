@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package kotlin.coroutines
+package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.scope.Disposer
-import kotlinx.coroutines.cancel
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+annotation class Component
 
-@Provide val coroutineContextDisposer = Disposer<CoroutineContext> { it.cancel() }
+interface ComponentObserver<C : @Component Any> {
+  fun onInit(component: C) {
+  }
 
-@Provide suspend fun currentCoroutineContext(): CoroutineContext = coroutineContext
+  fun onDispose(component: C) {
+  }
+}
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+annotation class Scoped<C : @Component Any>
+

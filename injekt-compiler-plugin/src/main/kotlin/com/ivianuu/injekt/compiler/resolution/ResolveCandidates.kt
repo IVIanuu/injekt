@@ -69,7 +69,7 @@ sealed class ResolutionResult {
               it.nesting >= candidate.ownerScope.nesting &&
                   it.callContext.canCall(candidate.callContext)
             }
-            candidate.dependencyScope != null -> {
+            candidate.dependencyScopes.isNotEmpty() -> {
               val allOuterMostScopes = mutableListOf<InjectablesScope>()
               fun Value.visit() {
                 allOuterMostScopes += outerMostScope
@@ -81,8 +81,8 @@ sealed class ResolutionResult {
               allOuterMostScopes
                 .sortedBy { it.nesting }
                 .filter { outerMostScope ->
-                  outerMostScope.nesting <
-                      candidate.dependencyScope!!.nesting
+                  candidate.dependencyScopes.values
+                    .all { outerMostScope.allScopes.size < it.allScopes.size }
                 }
                 .lastOrNull {
                   it.callContext.canCall(candidate.callContext)
@@ -253,9 +253,9 @@ private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
   lookupLocation: LookupLocation
 ): ResolutionResult {
-  val frameworkCandidate = frameworkInjectableForRequest(request)
+  val frameworkCandidates = frameworkInjectablesForRequest(request)
   return when {
-    frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
+    frameworkCandidates.isNotEmpty() -> resolveCandidates(request, frameworkCandidates, lookupLocation)
     request.isRequired -> ResolutionResult.Failure.NoCandidates
     else -> ResolutionResult.Success.DefaultValue
   }
@@ -392,7 +392,7 @@ private fun InjectablesScope.resolveCandidate(
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
-    val dependencyScope = candidate.dependencyScope ?: this
+    val dependencyScope = candidate.dependencyScopes[dependency] ?: this
     when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {

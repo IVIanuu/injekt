@@ -238,6 +238,21 @@ interface InjektErrors {
         })
       }
 
+    @JvmField
+    val COMPONENT_WITHOUT_PROVIDE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "component must be marked with @Provide") }
+
+    @JvmField
+    val COMPONENT_WITHOUT_INTERFACE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "only interface can be marked with @Component") }
+
+    @JvmField
+    val COMPONENT_MEMBER_VAR =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "component cannot contain a abstract var property") }
+
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,

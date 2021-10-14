@@ -120,6 +120,9 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     }
 
     if (descriptor.kind == ClassKind.INTERFACE && descriptor.hasAnnotation(injektFqNames().provide)) {
+    if (descriptor.kind == ClassKind.INTERFACE &&
+      descriptor.hasAnnotation(InjektFqNames.Provide) &&
+      !descriptor.hasAnnotation(InjektFqNames.Component)) {
       context.trace!!.report(
         InjektErrors.PROVIDE_INTERFACE
           .on(
@@ -129,7 +132,8 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
       )
     }
 
-    if (isProvider && descriptor.modality == Modality.ABSTRACT) {
+    if (isProvider && descriptor.modality == Modality.ABSTRACT &&
+        !descriptor.hasAnnotation(InjektFqNames.Component)) {
       context.trace!!.report(
         InjektErrors.PROVIDE_ABSTRACT_CLASS
           .on(

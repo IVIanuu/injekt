@@ -7,7 +7,6 @@ include(
     ":injekt-coroutines",
     ":injekt-gradle-plugin",
     ":injekt-ide-plugin",
-    ":injekt-scope",
     ":integration-tests",
     ":test-util",
     "samples:android-app",

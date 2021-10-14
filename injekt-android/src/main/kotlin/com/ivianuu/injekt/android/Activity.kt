@@ -16,16 +16,7 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.activity.ComponentActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildScopeModule1
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.requireElement
-
+/**
 /**
  * Returns the [ActivityScope] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
@@ -56,3 +47,4 @@ typealias ActivityScope = Scope
   ChildScopeModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
 
 private val activityScopes = mutableMapOf<ComponentActivity, ActivityScope>()
+*/

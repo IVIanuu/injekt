@@ -57,7 +57,6 @@ fun source(
       appendLine("import com.ivianuu.injekt.common.*")
       appendLine("import com.ivianuu.injekt.coroutines.*")
       appendLine("import com.ivianuu.injekt.internal.*")
-      appendLine("import com.ivianuu.injekt.scope.*")
       appendLine("import com.ivianuu.injekt.test.*")
       appendLine("import kotlin.reflect.*")
       appendLine("import kotlinx.coroutines.*")

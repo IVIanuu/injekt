@@ -40,6 +40,7 @@ class InjektStorageComponentContainerContributor(
     container.useInstance(context)
     if (platform.componentPlatforms.size > 1)
       container.useImpl<InjectSyntheticScopes>()
+    container.useInstance(ComponentChecker())
     container.useInstance(InjectableChecker())
     container.useInstance(TagChecker())
     container.useInstance(ProviderImportsChecker())

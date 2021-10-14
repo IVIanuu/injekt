@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.app.Service
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.scope.AppScope
@@ -35,3 +36,4 @@ typealias ServiceScope = Scope
 
 @Provide val serviceScopeModule =
   ChildScopeModule1<AppScope, Service, ServiceScope>()
+*/

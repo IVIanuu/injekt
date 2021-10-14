@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -48,3 +49,4 @@ typealias ReceiverScope = Scope
 typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
+*/

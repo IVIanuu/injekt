@@ -169,16 +169,16 @@ private fun CallableDescriptor.persistInfoIfNeeded(
 ) {
   if (isExternalDeclaration() || isDeserializedDeclaration()) return
 
-  if ((this !is ConstructorDescriptor &&
-        !visibility.shouldPersistInfo()) ||
-    (this is ConstructorDescriptor &&
-        !constructedClass.visibility.shouldPersistInfo())
-  ) return
+  if ((this !is ConstructorDescriptor && !visibility.shouldPersistInfo()) ||
+    (this is ConstructorDescriptor && !constructedClass.visibility.shouldPersistInfo()))
+      return
 
   if (hasAnnotation(injektFqNames().callableInfo))
     return
 
   val shouldPersistInfo = hasAnnotation(injektFqNames().provide) ||
+  val shouldPersistInfo = hasAnnotation(InjektFqNames.Provide) ||
+      containingDeclaration.hasAnnotation(InjektFqNames.Component) ||
       (this is ConstructorDescriptor &&
           constructedClass.hasAnnotation(injektFqNames().provide)) ||
       (this is PropertyDescriptor &&

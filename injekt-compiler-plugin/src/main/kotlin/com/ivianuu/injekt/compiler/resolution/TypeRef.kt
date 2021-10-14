@@ -52,6 +52,7 @@ class ClassifierRef(
   val isObject: Boolean = false,
   val isTypeAlias: Boolean = false,
   val isTag: Boolean = false,
+  val isComponent: Boolean = false,
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
@@ -76,6 +77,7 @@ class ClassifierRef(
     isObject: Boolean = this.isObject,
     isTypeAlias: Boolean = this.isTypeAlias,
     isTag: Boolean = this.isTag,
+    isComponent: Boolean = this.isComponent,
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
@@ -83,7 +85,7 @@ class ClassifierRef(
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isTag, descriptor, tags, isSpread,
+    isTypeAlias, isTag, isComponent, descriptor, tags, isSpread,
     primaryConstructorPropertyParameters, variance
   )
 
@@ -134,6 +136,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
+      isComponent = hasAnnotation(InjektFqNames.Component),
       isTypeAlias = this is TypeAliasDescriptor,
       descriptor = this,
       tags = info.tags,

@@ -32,6 +32,7 @@ class InjektFqNames(val injektPackage: FqName) {
   val typeParameterInfos = internalPackage.child("TypeParameterInfos".asNameId())
 
   val commonPackage = injektPackage.child("common".asNameId())
+  val component = commonPackage.child("Component".asNameId())
   val sourceKey = commonPackage.child("SourceKey".asNameId())
   val typeKey = commonPackage.child("TypeKey".asNameId())
 

@@ -16,61 +16,39 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.TypeKey
-import com.ivianuu.injekt.common.typeKeyOf
-import com.ivianuu.injekt.scope.Disposable
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.ScopeElement
-import com.ivianuu.injekt.scope.scoped
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.ComponentObserver
+import com.ivianuu.injekt.common.Scoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlin.coroutines.CoroutineContext
 
-inline fun scopedCoroutineScope(
-  key: Any = typeKeyOf<CoroutineScope>(),
-  @Inject scope: Scope,
-  context: () -> CoroutineContext = { EmptyCoroutineContext }
-): CoroutineScope = scoped(key) { DisposableCoroutineScope(context()) }
+typealias ComponentScope<C> = CoroutineScope
 
-@PublishedApi internal class DisposableCoroutineScope(
+@Provide fun <C : @Component Any> componentScope(
+  context: ComponentCoroutineContext<C>
+): @Scoped<C> ComponentScope<C> = DisposableCoroutineScope<C>(context)
+
+class DisposableCoroutineScope<C : @Component Any>(
   context: CoroutineContext
-) : CoroutineScope, Disposable {
+) : CoroutineScope, ComponentObserver<C> {
   override val coroutineContext: CoroutineContext = context + SupervisorJob()
 
-  override fun dispose() {
+  override fun onDispose(component: C) {
     coroutineContext.cancel()
   }
 }
 
 /**
- * A [CoroutineScope] which is bound to the lifecycle of the [Scope] S
- *
- * [CoroutineContext] of the scope can be specified with a injectable [NamedCoroutineContext]<S> and
- * defaults to [DefaultDispatcher]
+ * [CoroutineContext] of a [ComponentScope]
  */
-typealias NamedCoroutineScope<S> = CoroutineScope
+typealias ComponentCoroutineContext<C> = CoroutineContext
 
 /**
- * Installs a [NamedCoroutineScope] for scope [S]
+ * The default [ComponentCoroutineContext] for component [C]
  */
-@Provide inline fun <S : Scope> namedCoroutineScopeElement(
-  scope: S,
-  nameKey: TypeKey<S>,
-  context: () -> NamedCoroutineContext<S>
-): @ScopeElement<S> NamedCoroutineScope<S> = scopedCoroutineScope { context() }
-
-/**
- * [CoroutineContext] of a [NamedCoroutineScope]
- */
-typealias NamedCoroutineContext<S> = CoroutineContext
-
-/**
- * The default [NamedCoroutineContext] for scope [S]
- */
-@Provide inline fun <S : Scope> injektCoroutineContext(
+@Provide inline fun <C : @Component Any> componentCoroutineScope(
   dispatcher: DefaultDispatcher
-): NamedCoroutineContext<S> = dispatcher
+): ComponentCoroutineContext<C> = dispatcher

@@ -23,12 +23,8 @@ import com.ivianuu.injekt.scope.Framework
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.requireElement
 import com.ivianuu.injekt.scope.scopeOf
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
 import org.junit.Test
 
 class InjektCoroutineScopeTest {
@@ -50,7 +46,7 @@ class InjektCoroutineScopeTest {
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: NamedCoroutineContext<AppScope> = Dispatchers.Main
+    @Provide val customContext: ComponentCoroutineContext<AppScope> = Dispatchers.Main
     @Provide val scope: Scope = inject<@Framework AppScope>()
     val coroutineScope = requireElement<NamedCoroutineScope<AppScope>>()
     coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext

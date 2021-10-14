@@ -32,8 +32,6 @@ kotlin {
       dependencies {
         api(project(":injekt-core"))
         api(project(":injekt-common"))
-        api(project(":injekt-scope"))
-
         api(project(":injekt-compiler-plugin"))
 
         api(Deps.AndroidX.Compose.compiler)

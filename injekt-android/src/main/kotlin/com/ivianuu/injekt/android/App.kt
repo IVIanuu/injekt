@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.Inject
@@ -58,3 +59,4 @@ interface AppScopeOwner {
 inline fun Application.createAppScope(
   @Inject scopeFactory: (@Provide Application) -> @Framework AppScope
 ): AppScope = scopeFactory(this)
+*/

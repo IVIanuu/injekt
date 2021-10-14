@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.scope.Disposable
 import com.ivianuu.injekt.scope.Scope
 import com.ivianuu.injekt.scope.ScopeElement
-import com.ivianuu.injekt.scope.Scoped
 
 class TestDisposable<S : Scope> : Disposable {
   var disposed = false

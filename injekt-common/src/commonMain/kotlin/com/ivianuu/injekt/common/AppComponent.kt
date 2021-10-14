@@ -16,11 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import io.kotest.matchers.shouldBe
-import org.junit.Test
+import com.ivianuu.injekt.Provide
 
-class TypeKeyTest {
-  @Test fun testTypeKeyOf() {
-    typeKeyOf<String>().value shouldBe "kotlin.String"
-  }
-}
+@Provide @Component interface AppComponent

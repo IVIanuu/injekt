@@ -24,16 +24,21 @@ import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -41,7 +46,7 @@ sealed class Injectable {
   abstract val type: TypeRef
   abstract val originalType: TypeRef
   abstract val dependencies: List<InjectableRequest>
-  abstract val dependencyScope: InjectablesScope?
+  abstract val dependencyScopes: Map<InjectableRequest, InjectablesScope>
   abstract val callableFqName: FqName
   abstract val callContext: CallContext
   abstract val ownerScope: InjectablesScope
@@ -60,8 +65,109 @@ class CallableInjectable(
     get() = callable.callable.callContext(ownerScope.context)
   override val dependencyScope: InjectablesScope?
     get() = null
+    get() = callable.callable.callContext()
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope>
+    get() = emptyMap()
   override val originalType: TypeRef
     get() = callable.originalType
+}
+
+class ComponentInjectable(
+  override val type: TypeRef,
+  override val ownerScope: InjectablesScope
+) : Injectable() {
+  override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
+
+  @OptIn(ExperimentalStdlibApi::class)
+  val requestCallables: List<CallableRef> = buildList<CallableRef> {
+    val seen = mutableListOf<TypeRef>()
+    fun visit(type: TypeRef) {
+      if (type in seen) return
+      seen += type
+
+      this += type.classifier
+        .descriptor!!
+        .defaultType
+        .memberScope
+        .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
+        .filterIsInstance<CallableMemberDescriptor>()
+        .filter {
+          it.overriddenTreeAsSequence(false).none {
+            it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true
+          }
+        }
+        .map { it.toCallableRef(ownerScope.context) }
+        .map {
+          val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+            CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+            val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
+              .overriddenTreeAsSequence(false)
+              .last()
+              .containingDeclaration
+              .cast<ClassDescriptor>()
+              .toClassifierRef(ownerScope.context)
+            type.classifier.typeParameters.zip(type.arguments).toMap() + originalClassifier.typeParameters
+              .zip(type.subtypeView(originalClassifier)!!.arguments)
+          } else type.classifier.typeParameters.zip(type.arguments).toMap()
+          it.substitute(substitutionMap)
+        }
+
+      type.superTypes.forEach { visit(it) }
+    }
+
+    visit(type)
+    println()
+  }
+
+  val requestsByRequestCallables = requestCallables
+    .withIndex()
+    .associateWith { (index, requestCallable) ->
+      InjectableRequest(
+        type = requestCallable.type,
+        callableFqName = callableFqName,
+        parameterName = requestCallable.callable.name,
+        parameterIndex = index,
+        isRequired = requestCallable.callable
+          .cast<CallableMemberDescriptor>()
+          .modality == Modality.ABSTRACT,
+        isInline = false,
+        isLazy = true
+      )
+    }
+    .mapKeys { it.key.value }
+    .mapValues { it.value }
+
+  override val dependencies = requestsByRequestCallables.values.toList()
+
+  val dependencyScopesByRequestCallable = requestCallables
+    .associateWith { requestCallable ->
+      InjectablesScope(
+        name = callableFqName.child(requestCallable.callable.name).asString(),
+        parent = ownerScope,
+        context = ownerScope.context,
+        callContext = requestCallable.callable.callContext(),
+        ownerDescriptor = null,
+        file = null,
+        initialInjectables = requestCallable.callable.allParameters
+          .filter { it != requestCallable.callable.dispatchReceiverParameter }
+          .map { it.toCallableRef(ownerScope.context) }
+          .toList(),
+        imports = emptyList(),
+        typeParameters = emptyList(),
+        nesting = ownerScope.nesting + 1
+      )
+    }
+
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = dependencyScopesByRequestCallable
+    .mapKeys {
+      val index = requestCallables.indexOf(it.key)
+      dependencies[index]
+    }
+
+  override val callContext: CallContext
+    get() = CallContext.DEFAULT
+  override val originalType: TypeRef
+    get() = type
 }
 
 class SetInjectable(
@@ -75,8 +181,8 @@ class SetInjectable(
     FqName("com.ivianuu.injekt.injectSetOf<${type.arguments[0].renderToString()}>")
   override val callContext: CallContext
     get() = CallContext.DEFAULT
-  override val dependencyScope: InjectablesScope?
-    get() = null
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope>
+    get() = emptyMap()
   override val originalType: TypeRef
     get() = type.classifier.defaultType
 }
@@ -113,22 +219,24 @@ class ProviderInjectable(
     .first()
     .valueParameters
 
-  override val dependencyScope = InjectablesScope(
-    name = "PROVIDER $type",
-    parent = ownerScope,
-    context = ownerScope.context,
-    callContext = dependencyCallContext,
-    ownerDescriptor = ownerScope.ownerDescriptor,
-    file = null,
-    initialInjectables = parameterDescriptors
-      .mapIndexed { index, parameter ->
-        parameter
-          .toCallableRef()
-          .copy(isProvide = true, type = type.arguments[index])
-      },
-    imports = emptyList(),
-    typeParameters = emptyList(),
-    nesting = ownerScope.nesting + 1
+  override val dependencyScopes = mapOf(
+    dependencies.single() to InjectablesScope(
+      name = "PROVIDER $type",
+      parent = ownerScope,
+      context = ownerScope.context,
+      callContext = dependencyCallContext,
+      ownerDescriptor = null,
+      file = null,
+      initialInjectables = parameterDescriptors
+        .mapIndexed { index, parameter ->
+          parameter
+            .toCallableRef()
+            .copy(isProvide = true, type = type.arguments[index])
+        },
+      imports = emptyList(),
+      typeParameters = emptyList(),
+      nesting = ownerScope.nesting + 1
+    )
   )
   override val callContext: CallContext
     get() = CallContext.DEFAULT
@@ -142,8 +250,8 @@ class SourceKeyInjectable(
 ) : Injectable() {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
   override val dependencies: List<InjectableRequest> = emptyList()
-  override val dependencyScope: InjectablesScope
-    get() = ownerScope
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope>
+    get() = emptyMap()
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
@@ -175,8 +283,8 @@ class TypeKeyInjectable(
         )
       }
   }
-  override val dependencyScope: InjectablesScope
-    get() = ownerScope
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> =
+    dependencies.associateWith { ownerScope }
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val originalType: TypeRef

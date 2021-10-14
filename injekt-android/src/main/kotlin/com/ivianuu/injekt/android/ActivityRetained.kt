@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -55,3 +56,4 @@ private class ActivityRetainedScopeHolder(val scope: ActivityRetainedScope) : Vi
     scope.dispose()
   }
 }
+*/

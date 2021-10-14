@@ -18,8 +18,15 @@ package com.ivianuu.injekt.samples.coffeemaker
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.inject
+
+@Provide @Component interface CoffeeComponent {
+  val heater: Heater
+}
 
 fun main() {
+  inject<CoffeeComponent>()
   // make coffee with automatically injected parameters
   makeCoffee()
 }

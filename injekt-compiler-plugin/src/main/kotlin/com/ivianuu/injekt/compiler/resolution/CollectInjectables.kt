@@ -18,7 +18,9 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
@@ -190,11 +192,14 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
 fun ClassDescriptor.injectableConstructors(
   @Inject context: InjektContext
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
-  constructors
-    .filter { constructor ->
-      constructor.hasAnnotation(injektFqNames().provide) ||
-          (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
-    }
+  (if (hasAnnotation(InjektFqNames.Component))
+    listOf(ComponentConstructorDescriptor(this))
+  else
+    constructors
+      .filter { constructor ->
+        constructor.hasAnnotation(injektFqNames().Provide) ||
+            (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide))
+      })
     .map { constructor ->
       val callable = constructor.toCallableRef()
       val taggedType = callable.type.classifier.tags.wrap(callable.type)
@@ -222,6 +227,7 @@ fun CallableRef.collectInjectables(
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
+  addComponentInjectable: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf()
 ) {
@@ -231,6 +237,11 @@ fun CallableRef.collectInjectables(
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
+    return
+  }
+
+  if (callable is ComponentConstructorDescriptor) {
+    addComponentInjectable(this)
     return
   }
 
@@ -252,6 +263,7 @@ fun CallableRef.collectInjectables(
         addImport = addImport,
         addInjectable = addInjectable,
         addSpreadingInjectable = addSpreadingInjectable,
+        addComponentInjectable = addComponentInjectable,
         import = import,
         seen = seen
       )
