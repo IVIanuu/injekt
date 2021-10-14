@@ -211,7 +211,7 @@ fun ClassDescriptor.injectableConstructors(
         isProvide = true,
         type = taggedType,
         originalType = taggedType,
-        scopeComponentType = callable.type.classifier.scopeComponentType
+        scopeComponentType = callable.scopeComponentType ?: callable.type.classifier.scopeComponentType
       )
     }
 }

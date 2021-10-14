@@ -18,7 +18,7 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
-import com.ivianuu.injekt.scope.requireElement
+import com.ivianuu.injekt.common.entryPoint
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import org.junit.Test
@@ -29,10 +29,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class ActivityTest {
-  @Test fun testActivityScopeLifecycle() {
+  @Test fun testActivityComponentLifecycle() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-    lateinit var disposable: TestDisposable<ActivityScope>
-    scenario.onActivity { disposable = requireElement(it.activityComponent) }
+    lateinit var disposable: TestDisposable<ActivityComponent>
+    scenario.onActivity {
+      disposable = entryPoint<TestDisposableComponent<ActivityComponent>>(it.activityComponent)
+        .disposable
+    }
     disposable.disposed.shouldBeFalse()
     scenario.moveToState(Lifecycle.State.DESTROYED)
     disposable.disposed.shouldBeTrue()

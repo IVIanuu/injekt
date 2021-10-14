@@ -24,7 +24,7 @@ annotation class EntryPoint<C : @Component Any>
 
 inline fun <E> entryPoint(component: @Component Any): E = component as E
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class Scoped<C : @Component Any>
 
 fun interface Disposable {

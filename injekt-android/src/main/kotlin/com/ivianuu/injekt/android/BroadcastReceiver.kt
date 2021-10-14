@@ -16,37 +16,33 @@
 
 package com.ivianuu.injekt.android
 
-/**
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildScopeModule3
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.requireElement
+import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.entryPoint
 
 /**
- * Returns a new [ReceiverScope] which must be manually stored and disposed
+ * Returns a new [ReceiverComponent] which must be manually stored and disposed
  */
 fun BroadcastReceiver.createReceiverScope(
   context: Context,
   intent: Intent,
-): ReceiverScope = requireElement<@ChildScopeFactory (
-    BroadcastReceiver,
-    ReceiverContext,
-    ReceiverIntent
-  ) -> ReceiverScope>(context.appScope)
-  .invoke(this, context, intent)
+): ReceiverComponent = entryPoint<ReceiverComponentFactory>(context.appComponent)
+  .receiverComponent(this, context, intent)
 
+@Component interface ReceiverComponent
 
-typealias ReceiverScope = Scope
-
-@Provide val receiverScopeModule = ChildScopeModule3<AppScope,
-    BroadcastReceiver, ReceiverContext, ReceiverIntent, ReceiverScope>()
+@EntryPoint<AppComponent> interface ReceiverComponentFactory {
+  fun receiverComponent(
+    receiver: BroadcastReceiver,
+    context: ReceiverContext,
+    intent: ReceiverIntent
+  ): ReceiverComponent
+}
 
 typealias ReceiverContext = Context
 
 typealias ReceiverIntent = Intent
-*/

@@ -151,7 +151,8 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
       }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
-    val scopeComponentType = returnType!!.annotations.findAnnotation(injektFqNames().scoped)
+    val scopeComponentType = (returnType!!.annotations.findAnnotation(injektFqNames().scoped)
+      ?: safeAs<ConstructorDescriptor>()?.annotations?.findAnnotation(injektFqNames().scoped))
       ?.type?.arguments?.single()?.type?.toTypeRef()
 
     val info = CallableInfo(

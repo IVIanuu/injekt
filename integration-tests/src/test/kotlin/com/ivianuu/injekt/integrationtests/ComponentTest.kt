@@ -185,6 +185,40 @@ class ComponentTest {
     invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
   }
 
+  @Test fun testScopedConstructor() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent {
+        val dep: Dep
+      } 
+
+      class Dep @Provide @Scoped<ScopeComponent> constructor()
+    """,
+    """
+      val component = inject<ScopeComponent>()
+      fun invoke() = component.dep
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
+  @Test fun testScopedGenericConstructor() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent
+
+      @EntryPoint<Any> interface GenericEntryPoint<C : @Component Any> {
+        val dep: Dep<C>
+      }
+
+      class Dep<C : @Component Any> @Provide @Scoped<C> constructor()
+    """,
+    """
+      val component = entryPoint<GenericEntryPoint<ScopeComponent>>(inject<ScopeComponent>())
+      fun invoke() = component.dep
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
   @Test fun testAccessScopedInjectableFromNestedScoped() = singleAndMultiCodegen(
     """
       @Component interface ParentComponent {

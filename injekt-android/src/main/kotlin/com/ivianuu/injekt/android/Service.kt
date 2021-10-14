@@ -16,24 +16,20 @@
 
 package com.ivianuu.injekt.android
 
-/**
 import android.app.Service
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.ChildScopeFactory
-import com.ivianuu.injekt.scope.ChildScopeModule1
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.requireElement
+import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.entryPoint
 
 /**
- * Returns a new [Scope] which must be manually stored and disposed
+ * Returns a new [ServiceComponent] which must be manually stored and disposed
  */
-fun Service.createServiceScope(): ServiceScope =
-  requireElement<@ChildScopeFactory (Service) -> ServiceScope>(appScope)
-    .invoke(this)
+fun Service.createServiceComponent(): ServiceComponent =
+  entryPoint<ServiceComponentFactory>(appComponent).serviceComponent(this)
 
-typealias ServiceScope = Scope
+@Component interface ServiceComponent
 
-@Provide val serviceScopeModule =
-  ChildScopeModule1<AppScope, Service, ServiceScope>()
-*/
+@EntryPoint<AppComponent> interface ServiceComponentFactory {
+  fun serviceComponent(service: Service): ServiceComponent
+}
