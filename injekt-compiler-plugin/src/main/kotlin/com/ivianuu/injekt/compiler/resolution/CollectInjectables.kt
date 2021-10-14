@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
@@ -192,13 +191,13 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
 fun ClassDescriptor.injectableConstructors(
   @Inject context: InjektContext
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
-  (if (hasAnnotation(InjektFqNames.Component))
+  (if (hasAnnotation(injektFqNames().component))
     listOf(ComponentConstructorDescriptor(this))
   else
     constructors
       .filter { constructor ->
-        constructor.hasAnnotation(injektFqNames().Provide) ||
-            (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide))
+        constructor.hasAnnotation(injektFqNames().provide) ||
+            (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
       })
     .map { constructor ->
       val callable = constructor.toCallableRef()

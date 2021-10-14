@@ -119,10 +119,9 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
       )
     }
 
-    if (descriptor.kind == ClassKind.INTERFACE && descriptor.hasAnnotation(injektFqNames().provide)) {
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(InjektFqNames.Provide) &&
-      !descriptor.hasAnnotation(InjektFqNames.Component)) {
+      descriptor.hasAnnotation(injektFqNames().provide) &&
+      !descriptor.hasAnnotation(injektFqNames().component)) {
       context.trace!!.report(
         InjektErrors.PROVIDE_INTERFACE
           .on(
@@ -133,7 +132,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     }
 
     if (isProvider && descriptor.modality == Modality.ABSTRACT &&
-        !descriptor.hasAnnotation(InjektFqNames.Component)) {
+        !descriptor.hasAnnotation(injektFqNames().component)) {
       context.trace!!.report(
         InjektErrors.PROVIDE_ABSTRACT_CLASS
           .on(
@@ -369,7 +368,8 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
           )
         }
         if (parameter.hasAnnotation(injektFqNames().provide) &&
-          parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true) {
+          parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
+        ) {
           context.trace!!.report(
             InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
               .on(parameter.findPsi() ?: declaration)

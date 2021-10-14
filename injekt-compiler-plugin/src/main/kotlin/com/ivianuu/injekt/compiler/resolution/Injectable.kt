@@ -63,9 +63,6 @@ class CallableInjectable(
   else callable.callable.fqNameSafe
   override val callContext: CallContext
     get() = callable.callable.callContext(ownerScope.context)
-  override val dependencyScope: InjectablesScope?
-    get() = null
-    get() = callable.callable.callContext()
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> by lazy {
     if (callable.originalType.scopeComponent == null) emptyMap()
     else {
@@ -81,7 +78,7 @@ class CallableInjectable(
 
 class ComponentInjectable(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope
+  @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
   override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
 

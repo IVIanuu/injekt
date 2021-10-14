@@ -421,7 +421,7 @@ class InjectCallTransformer(
           if (requestCallable.callable.callContext() == CallContext.COMPOSABLE) {
             annotations += DeclarationIrBuilder(pluginContext, symbol)
               .irCallConstructor(
-                pluginContext.referenceConstructors(InjektFqNames.Composable)
+                pluginContext.referenceConstructors(injektFqNames().composable)
                   .single(),
                 emptyList()
               )

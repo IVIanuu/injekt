@@ -1,8 +1,11 @@
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -16,19 +19,22 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 
-class ComponentChecker : DeclarationChecker {
+class ComponentChecker(@Inject private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
     if (descriptor !is ClassDescriptor) return
-    if (!descriptor.hasAnnotation(InjektFqNames.Component)) return
+
+    @Provide val injektContext = this.context.withTrace(context.trace)
+
+    if (!descriptor.hasAnnotation(injektFqNames().component)) return
 
     if (descriptor.kind != ClassKind.INTERFACE)
       context.trace.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
 
-    if (!descriptor.hasAnnotation(InjektFqNames.Provide))
+    if (!descriptor.hasAnnotation(injektFqNames().provide))
       context.trace.report(InjektErrors.COMPONENT_WITHOUT_PROVIDE.on(declaration))
 
     descriptor.unsubstitutedMemberScope

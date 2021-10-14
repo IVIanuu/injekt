@@ -177,8 +177,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
     return
 
   val shouldPersistInfo = hasAnnotation(injektFqNames().provide) ||
-  val shouldPersistInfo = hasAnnotation(InjektFqNames.Provide) ||
-      containingDeclaration.hasAnnotation(InjektFqNames.Component) ||
+      containingDeclaration.hasAnnotation(injektFqNames().component) ||
       (this is ConstructorDescriptor &&
           constructedClass.hasAnnotation(injektFqNames().provide)) ||
       (this is PropertyDescriptor &&

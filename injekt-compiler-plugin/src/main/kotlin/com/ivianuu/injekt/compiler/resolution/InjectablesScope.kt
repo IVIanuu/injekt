@@ -270,18 +270,10 @@ class InjectablesScope(
             )
           } else null
         }
-      }
-      request.type.classifier.fqName == injektFqNames().typeKey -> {
-        return TypeKeyInjectable(request.type, this)
-      }
-      request.type.classifier.fqName == injektFqNames().sourceKey -> {
-        return SourceKeyInjectable(request.type, this)
-      }
-      else -> return null
       )
-      request.type.classifier.fqName == InjektFqNames.TypeKey ->
+      request.type.classifier.fqName == injektFqNames().typeKey ->
         return listOf(TypeKeyInjectable(request.type, this))
-      request.type.classifier.fqName == InjektFqNames.SourceKey ->
+      request.type.classifier.fqName == injektFqNames().sourceKey ->
         return listOf(SourceKeyInjectable(request.type, this))
       request.type.classifier.isComponent ->
         return listOf(ComponentInjectable(request.type, this))

@@ -89,7 +89,7 @@ class TypeSubstitutionTest {
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef() }
+      .map { it.toClassifierRef(injektContext) }
     val namedScope = typeFor(FqName("com.ivianuu.injekt.scope.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {
@@ -98,7 +98,8 @@ class TypeSubstitutionTest {
     val (_, map) = buildContextForSpreadingInjectable(
       scopedT.defaultType,
       substitutionType,
-      emptyList()
+      emptyList(),
+      injektContext
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
@@ -113,7 +114,8 @@ class TypeSubstitutionTest {
     val context = subType.buildContext(
       superType,
       staticTypeParameters,
-      true
+      true,
+      injektContext
     )
     return context.fixedTypeVariables
   }

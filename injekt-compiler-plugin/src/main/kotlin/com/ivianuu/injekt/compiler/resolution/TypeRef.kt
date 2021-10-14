@@ -136,7 +136,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
-      isComponent = hasAnnotation(InjektFqNames.Component),
+      isComponent = hasAnnotation(injektFqNames().component),
       isTypeAlias = this is TypeAliasDescriptor,
       descriptor = this,
       tags = info.tags,
