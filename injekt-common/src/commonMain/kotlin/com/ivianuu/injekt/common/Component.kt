@@ -31,16 +31,7 @@ fun interface Disposable {
   fun dispose()
 }
 
-interface ComponentObserver<C : @Component Any> {
-  fun onInit(component: C) {
+interface ComponentObserver<C : @Component Any> : Disposable {
+  fun init() {
   }
-
-  fun onDispose(component: C) {
-  }
-}
-
-interface ComponentSlot<C : @Component Any, T> {
-  fun get(): T?
-
-  fun set(value: T)
 }

@@ -18,7 +18,7 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.ComponentObserver
+import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.Scoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -33,10 +33,9 @@ typealias ComponentScope<C> = CoroutineScope
 
 class DisposableCoroutineScope<C : @Component Any>(
   context: CoroutineContext
-) : CoroutineScope, ComponentObserver<C> {
+) : CoroutineScope, Disposable {
   override val coroutineContext: CoroutineContext = context + SupervisorJob()
-
-  override fun onDispose(component: C) {
+  override fun dispose() {
     coroutineContext.cancel()
   }
 }
@@ -49,6 +48,6 @@ typealias ComponentCoroutineContext<C> = CoroutineContext
 /**
  * The default [ComponentCoroutineContext] for component [C]
  */
-@Provide inline fun <C : @Component Any> componentCoroutineScope(
+@Provide inline fun <C : @Component Any> componentCoroutineContext(
   dispatcher: DefaultDispatcher
 ): ComponentCoroutineContext<C> = dispatcher

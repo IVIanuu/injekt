@@ -54,6 +54,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -114,6 +115,8 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
@@ -335,12 +338,20 @@ class InjectCallTransformer(
     return with(findScopeContext(scope)) {
       scopedExpressions.getOrPut(result.candidate.type) {
         val index = graphContext.variableIndex++
-        val lockField = component!!.addField("_${index}Lock", pluginContext.irBuiltIns.anyType).apply {
+        val lockField = component!!.addField(
+          "_${index}Lock",
+          pluginContext.irBuiltIns.anyType,
+          DescriptorVisibilities.PRIVATE
+        ).apply {
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
             irExprBody(irCall(pluginContext.irBuiltIns.anyClass.constructors.single()))
           }
         }
-        val instanceField = component.addField("_${index}Instance", pluginContext.irBuiltIns.anyNType).apply {
+        val instanceField = component.addField(
+          "_${index}Instance",
+          pluginContext.irBuiltIns.anyNType,
+          DescriptorVisibilities.PRIVATE
+        ).apply {
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
             irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
           }
@@ -485,25 +496,8 @@ class InjectCallTransformer(
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
       superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
-
-      addConstructor {
-        returnType = defaultType
-        isPrimary = true
-        visibility = DescriptorVisibilities.PUBLIC
-      }.apply {
-        body = DeclarationIrBuilder(
-          pluginContext,
-          symbol
-        ).irBlockBody {
-          +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
-          +IrInstanceInitializerCallImpl(
-            UNDEFINED_OFFSET,
-            UNDEFINED_OFFSET,
-            this@clazz.symbol,
-            context.irBuiltIns.unitType
-          )
-        }
-      }
+      superTypes += this@InjectCallTransformer.context.disposableType.defaultType
+        .toIrType().typeOrNull!!
 
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
@@ -556,7 +550,7 @@ class InjectCallTransformer(
                 irCall(
                   overriddenSymbols.single().owner,
                   null,
-                  superTypes.single().classOrNull!!
+                  superTypes.first().classOrNull!!
                 ).apply {
                   dispatchReceiver = irGet(dispatchReceiverParameter!!)
                   extensionReceiverParameter?.let {
@@ -592,8 +586,7 @@ class InjectCallTransformer(
           }
         } else {
           addFunction {
-            returnType = requestCallable.type.toIrType().typeOrNull
-              ?: error("Wtf ${requestCallable.type}")
+            returnType = requestCallable.type.toIrType().typeOrNull!!
             name = requestCallable.callable.name
             isSuspend = requestCallable.callable.callContext() == CallContext.SUSPEND
             visibility = requestCallable.callable.visibility
@@ -603,6 +596,116 @@ class InjectCallTransformer(
               .symbol
               .cast<IrSimpleFunctionSymbol>()
             setupFunction()
+          }
+        }
+      }
+
+      val observersResult = result.dependencyResults[injectable.componentObserversRequest]
+        .safeAs<ResolutionResult.Success.WithCandidate>()
+
+      val observersField = if (observersResult == null) null
+      else addField(
+        "${injectable.componentObserversRequest.parameterName}${graphContext.variableIndex++}",
+        injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
+        DescriptorVisibilities.PRIVATE
+      ).apply {
+        initializer = DeclarationIrBuilder(pluginContext, symbol).run {
+          val componentObserversScope = ScopeContext(
+            this@componentExpression,
+            graphContext, injectable.componentObserversScope, scope, this@clazz) {
+            irGet(thisReceiver!!)
+          }
+          irExprBody(
+            with(componentObserversScope) {
+              expressionFor(observersResult)
+            }
+          )
+        }
+      }
+      fun forEachObserver(
+        observerFunctionName: String,
+        thisExpression: () -> IrExpression
+      ): IrExpression = irCall(
+        pluginContext.referenceFunctions(
+          FqName("kotlin.collections.forEach")
+        ).first {
+          it.owner.extensionReceiverParameter?.type?.classFqName ==
+              StandardNames.FqNames.iterable
+        }
+      ).apply {
+        putTypeArgument(
+          0,
+          observersField!!.type.cast<IrSimpleType>().arguments.single().typeOrNull
+        )
+
+        extensionReceiver = irGetField(thisExpression(), observersField)
+
+        putValueArgument(
+          0,
+          irLambda(
+            pluginContext.irBuiltIns.function(1)
+              .typeWith(
+                observersField.type.cast<IrSimpleType>().arguments.single().typeOrNull!!,
+                pluginContext.irBuiltIns.unitType
+              ),
+            parameterNameProvider = { "p${graphContext.variableIndex++}" }
+          ) {
+            irCall(
+              observersField.type.cast<IrSimpleType>().arguments.single().typeOrNull!!
+                .classOrNull!!
+                .functions
+                .single { it.owner.name.asString() == observerFunctionName }
+            ).apply {
+              dispatchReceiver = irGet(it.valueParameters.single())
+            }
+          }
+        )
+      }
+
+      addConstructor {
+        returnType = defaultType
+        isPrimary = true
+        visibility = DescriptorVisibilities.PUBLIC
+      }.apply {
+        body = DeclarationIrBuilder(
+          pluginContext,
+          symbol
+        ).irBlockBody {
+          +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+          +IrInstanceInitializerCallImpl(
+            UNDEFINED_OFFSET,
+            UNDEFINED_OFFSET,
+            this@clazz.symbol,
+            context.irBuiltIns.unitType
+          )
+
+          if (observersField != null) {
+            +forEachObserver(
+              observerFunctionName = "init",
+              thisExpression = { irGet(thisReceiver!!) }
+            )
+          }
+        }
+      }
+
+      addFunction {
+        returnType = pluginContext.irBuiltIns.unitType
+        name = "dispose".asNameId()
+      }.apply {
+        addDispatchReceiver { type = defaultType }
+        overriddenSymbols = overriddenSymbols + this@InjectCallTransformer.context.disposableType
+          .defaultType.toIrType().typeOrNull!!.classOrNull!!
+          .functions
+          .single { it.owner.name == name }
+        body = DeclarationIrBuilder(pluginContext, symbol).run {
+          irBlockBody {
+            if (observersField != null) {
+              +forEachObserver(
+                observerFunctionName = "dispose",
+                thisExpression = { irGet(dispatchReceiverParameter!!) }
+              )
+              irSetField(irGet(dispatchReceiverParameter!!), observersField, irNull())
+            }
           }
         }
       }

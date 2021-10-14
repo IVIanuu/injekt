@@ -1,10 +1,13 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.TestComponentObserver
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
@@ -216,11 +219,56 @@ class ComponentTest {
       @Component interface MyComponent
 
       @EntryPoint<Any> interface CoroutineScopeComponent<C : @Component Any> {
-        val coroutineScope: ComponentScope<C>
+        val coroutineScope: com.ivianuu.injekt.coroutines.ComponentScope<C>
       }
+    """,
+    """
+      @Providers("com.ivianuu.injekt.coroutines.*")
+      fun invoke() = inject<MyComponent>()
+    """
+  )
+
+  @Test fun testComponentIsDisposable() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
     """,
     """
       fun invoke() = inject<MyComponent>()
     """
-  )
+  ) {
+    invokeSingleFile<Disposable>().dispose()
+  }
+
+  @Test fun testScopedValueWillBeDisposed() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    invokeSingleFile<Disposable>().dispose()
+  }
+
+  @Test fun testComponentObserver() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
+    """,
+    """
+      fun invoke(@Inject observer: ComponentObserver<MyComponent>): () -> MyComponent = {
+        inject<MyComponent>()
+      }
+    """
+  ) {
+    val observer = TestComponentObserver<Any>()
+    val componentFactory = invokeSingleFile<() -> Disposable>(observer)
+    observer.initCalls shouldBe 0
+    observer.disposeCalls shouldBe 0
+    val component = componentFactory()
+    observer.initCalls shouldBe 1
+    observer.disposeCalls shouldBe 0
+    component.dispose()
+    observer.initCalls shouldBe 1
+    observer.disposeCalls shouldBe 1
+  }
 }

@@ -61,16 +61,7 @@ class CallableInjectable(
   else callable.callable.fqNameSafe
   override val callContext: CallContext
     get() = callable.callable.callContext(ownerScope.context)
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> by lazy {
-    if (scopeComponentType == null) emptyMap()
-    else {
-      val componentScope = ownerScope.allScopes.lastOrNull {
-        it.componentType == callable.scopeComponentType
-      }
-        ?: error("Wtf")
-      dependencies.associateWith { componentScope }
-    }
-  }
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = emptyMap()
   override val originalType: TypeRef
     get() = callable.originalType
   override val scopeComponentType: TypeRef?
@@ -102,6 +93,36 @@ class ComponentInjectable(
     entryPoints.forEach { visit(it) }
   }
 
+  val componentObserversRequest = InjectableRequest(
+    type = ownerScope.context.setClassifier.defaultType.copy(
+      arguments = listOf(
+        ownerScope.context.componentObserverType.defaultType.copy(
+          arguments = listOf(type)
+        )
+      )
+    ),
+    callableFqName = callableFqName.child("observers".asNameId()),
+    parameterName = "observers".asNameId(),
+    parameterIndex = -1,
+    isRequired = false,
+    isInline = false,
+    isLazy = true
+  )
+
+  val componentObserversScope = InjectablesScope(
+    name = componentObserversRequest.callableFqName.asString(),
+    parent = ownerScope,
+    context = ownerScope.context,
+    callContext = CallContext.DEFAULT,
+    ownerDescriptor = null,
+    componentType = type,
+    file = null,
+    initialInjectables = emptyList(),
+    imports = emptyList(),
+    typeParameters = emptyList(),
+    nesting = ownerScope.nesting + 1
+  )
+
   val requestsByRequestCallables = requestCallables
     .withIndex()
     .associateWith { (index, requestCallable) ->
@@ -120,7 +141,7 @@ class ComponentInjectable(
     .mapKeys { it.key.value }
     .mapValues { it.value }
 
-  override val dependencies = requestsByRequestCallables.values.toList()
+  override val dependencies = requestsByRequestCallables.values + componentObserversRequest
 
   val dependencyScopesByRequestCallable = requestCallables
     .associateWith { requestCallable ->
@@ -142,8 +163,13 @@ class ComponentInjectable(
       )
     }
 
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = dependencyScopesByRequestCallable
-    .mapKeys { dependencies[requestCallables.indexOf(it.key)] }
+  @OptIn(ExperimentalStdlibApi::class)
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = buildMap {
+    dependencyScopesByRequestCallable.forEach {
+      this[requestsByRequestCallables[it.key]!!] = it.value
+    }
+    this[componentObserversRequest] = componentObserversScope
+  }
 
   override val callContext: CallContext
     get() = CallContext.DEFAULT
