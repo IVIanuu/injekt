@@ -314,4 +314,19 @@ class ComponentTest {
     observer.initCalls shouldBe 1
     observer.disposeCalls shouldBe 1
   }
+
+  @Test fun testCanInjectComponent() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent {
+        val dep: Dep
+      }
+
+      @Provide class Dep(val component: MyComponent)
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    invokeSingleFile()
+  }
 }

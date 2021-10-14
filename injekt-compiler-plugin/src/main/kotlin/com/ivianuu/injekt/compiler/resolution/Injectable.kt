@@ -117,7 +117,9 @@ class ComponentInjectable(
     ownerDescriptor = null,
     componentType = type,
     file = null,
-    initialInjectables = emptyList(),
+    initialInjectables = listOf(
+      type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+    ),
     imports = emptyList(),
     typeParameters = emptyList(),
     nesting = ownerScope.nesting + 1
@@ -155,8 +157,8 @@ class ComponentInjectable(
         file = null,
         initialInjectables = requestCallable.callable.allParameters
           .filter { it != requestCallable.callable.dispatchReceiverParameter }
-          .map { it.toCallableRef(ownerScope.context) }
-          .toList(),
+          .map { it.toCallableRef(ownerScope.context) } +
+            type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true),
         imports = emptyList(),
         typeParameters = emptyList(),
         nesting = ownerScope.nesting + 1

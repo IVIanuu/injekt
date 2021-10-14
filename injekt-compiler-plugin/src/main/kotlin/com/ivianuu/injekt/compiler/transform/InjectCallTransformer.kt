@@ -119,7 +119,6 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.makeNullable
@@ -360,25 +359,28 @@ class InjectCallTransformer(
           }
         }
 
+        val scopeReceiverParameter =
+          scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
+
         val expression: ScopeContext.() -> IrExpression = {
           DeclarationIrBuilder(pluginContext, symbol).run {
             irBlock {
               val tmp = irTemporary(
-                value = irGetField(componentReceiverExpression(scopeComponent), instanceField),
+                value = irGetField(receiverExpression(scopeReceiverParameter), instanceField),
                 nameHint = "${graphContext.variableIndex++}",
                 isMutable = true
               )
 
               +irIfThenElse(
                 result.candidate.type.toIrType().typeOrNull!!,
-                irEqeqeq(irGet(tmp), irGetField(componentReceiverExpression(scopeComponent), lockField)),
+                irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
                 irCall(
                   pluginContext.referenceFunctions(
                     injektFqNames().commonPackage.child("synchronized".asNameId())
                   ).single()
                 ).apply {
                   putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
-                  putValueArgument(0, irGetField(componentReceiverExpression(scopeComponent), lockField))
+                  putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
                   putValueArgument(
                     1,
                     irLambda(
@@ -387,13 +389,13 @@ class InjectCallTransformer(
                       parameterNameProvider = { "p${graphContext.variableIndex++}" }
                     ) {
                       irBlock {
-                        +irSet(tmp.symbol, irGetField(componentReceiverExpression(scopeComponent), instanceField))
+                        +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
 
                         +irIfThen(
-                          irEqeqeq(irGet(tmp), irGetField(componentReceiverExpression(scopeComponent), lockField)),
+                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
                           irBlock {
                             +irSet(tmp.symbol, rawExpressionProvider())
-                            +irSetField(componentReceiverExpression(scopeComponent), instanceField, irGet(tmp))
+                            +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
                           }
                         )
 
@@ -502,7 +504,9 @@ class InjectCallTransformer(
       superTypes += this@InjectCallTransformer.context.disposableType.defaultType
         .toIrType().typeOrNull!!
 
-      receiverAccessors.push(this to { irGet(thisReceiver!!) })
+      receiverAccessors.push(
+        superTypes.first().classOrNull!!.owner to { irGet(thisReceiver!!) }
+      )
 
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
@@ -536,7 +540,10 @@ class InjectCallTransformer(
               this@componentExpression,
               graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz
             )
-            receiverAccessors.push(this@clazz to { irGet(dispatchReceiverParameter!!) })
+            receiverAccessors.push(
+              superTypes.first().classOrNull!!.owner to
+                  { irGet(dispatchReceiverParameter!!) }
+            )
             val expression = with(dependencyScopeContext) {
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
@@ -1053,19 +1060,18 @@ class InjectCallTransformer(
       }
   }
 
-  private fun ScopeContext.componentReceiverExpression(type: TypeRef) =
-    receiverAccessors.last {
-      type.classifier.descriptor == it.first.superTypes.first().classifierOrFail.descriptor
-    }.second()
+  private fun ScopeContext.receiverExpression(
+    descriptor: ParameterDescriptor
+  ) = receiverAccessors.last {
+    descriptor.type.constructor.declarationDescriptor == it.first.descriptor
+  }.second()
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
     injectable: CallableInjectable
   ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
-      is ClassDescriptor -> receiverAccessors.last {
-        descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-      }.second()
+      is ClassDescriptor -> receiverExpression(descriptor)
       is ClassConstructorDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
