@@ -314,6 +314,4 @@ class ComponentTest {
     observer.initCalls shouldBe 1
     observer.disposeCalls shouldBe 1
   }
-
-  // todo component with spread??
 }
