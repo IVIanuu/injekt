@@ -71,7 +71,6 @@ import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.IrBlockBuilder
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addDispatchReceiver
@@ -120,6 +119,7 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.makeNullable
@@ -204,8 +204,7 @@ class InjectCallTransformer(
     val graphContext: GraphContext,
     val scope: InjectablesScope,
     val irScope: Scope,
-    val component: IrClass?,
-    val componentExpression: (IrBlockBuilder.() -> IrExpression)?
+    val component: IrClass?
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
@@ -365,21 +364,21 @@ class InjectCallTransformer(
           DeclarationIrBuilder(pluginContext, symbol).run {
             irBlock {
               val tmp = irTemporary(
-                value = irGetField(componentExpression!!(), instanceField),
+                value = irGetField(componentReceiverExpression(scopeComponent), instanceField),
                 nameHint = "${graphContext.variableIndex++}",
                 isMutable = true
               )
 
               +irIfThenElse(
                 result.candidate.type.toIrType().typeOrNull!!,
-                irEqeqeq(irGet(tmp), irGetField(componentExpression!!(), lockField)),
+                irEqeqeq(irGet(tmp), irGetField(componentReceiverExpression(scopeComponent), lockField)),
                 irCall(
                   pluginContext.referenceFunctions(
                     injektFqNames().commonPackage.child("synchronized".asNameId())
                   ).single()
                 ).apply {
                   putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
-                  putValueArgument(0, irGetField(componentExpression!!(), lockField))
+                  putValueArgument(0, irGetField(componentReceiverExpression(scopeComponent), lockField))
                   putValueArgument(
                     1,
                     irLambda(
@@ -388,13 +387,13 @@ class InjectCallTransformer(
                       parameterNameProvider = { "p${graphContext.variableIndex++}" }
                     ) {
                       irBlock {
-                        +irSet(tmp.symbol, irGetField(componentExpression!!(), instanceField))
+                        +irSet(tmp.symbol, irGetField(componentReceiverExpression(scopeComponent), instanceField))
 
                         +irIfThen(
-                          irEqeqeq(irGet(tmp), irGetField(componentExpression!!(), lockField)),
+                          irEqeqeq(irGet(tmp), irGetField(componentReceiverExpression(scopeComponent), lockField)),
                           irBlock {
                             +irSet(tmp.symbol, rawExpressionProvider())
-                            +irSetField(componentExpression!!(), instanceField, irGet(tmp))
+                            +irSetField(componentReceiverExpression(scopeComponent), instanceField, irGet(tmp))
                           }
                         )
 
@@ -503,6 +502,8 @@ class InjectCallTransformer(
       superTypes += this@InjectCallTransformer.context.disposableType.defaultType
         .toIrType().typeOrNull!!
 
+      receiverAccessors.push(this to { irGet(thisReceiver!!) })
+
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
           if (requestCallable.callable.callContext() == CallContext.COMPOSABLE) {
@@ -533,9 +534,9 @@ class InjectCallTransformer(
           body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
             val dependencyScopeContext = ScopeContext(
               this@componentExpression,
-              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz) {
-              irGet(dispatchReceiverParameter!!)
-            }
+              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz
+            )
+            receiverAccessors.push(this@clazz to { irGet(dispatchReceiverParameter!!) })
             val expression = with(dependencyScopeContext) {
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
@@ -566,6 +567,7 @@ class InjectCallTransformer(
                 }
               }
             }
+            receiverAccessors.pop()
             dependencyScopeContext.statements.forEach { +it }
             +irReturn(expression)
           }
@@ -616,9 +618,8 @@ class InjectCallTransformer(
         initializer = DeclarationIrBuilder(pluginContext, symbol).run {
           val componentObserversScope = ScopeContext(
             this@componentExpression,
-            graphContext, injectable.componentObserversScope, scope, this@clazz) {
-            irGet(thisReceiver!!)
-          }
+            graphContext, injectable.componentObserversScope, scope, this@clazz
+          )
           irExprBody(
             with(componentObserversScope) {
               expressionFor(observersResult)
@@ -740,6 +741,8 @@ class InjectCallTransformer(
           }
         }
       }
+
+      receiverAccessors.pop()
     }
 
     +clazz
@@ -759,7 +762,7 @@ class InjectCallTransformer(
         is ResolutionResult.Success.WithCandidate -> {
           val dependencyScopeContext = ScopeContext(
             this@providerExpression, graphContext,
-            injectable.dependencyScopes.values.single(), scope, null, null
+            injectable.dependencyScopes.values.single(), scope, null
           )
           val expression = with(dependencyScopeContext) {
             val previousParametersMap = parameterMap.toMap()
@@ -1050,6 +1053,11 @@ class InjectCallTransformer(
       }
   }
 
+  private fun ScopeContext.componentReceiverExpression(type: TypeRef) =
+    receiverAccessors.last {
+      type.classifier.descriptor == it.first.superTypes.first().classifierOrFail.descriptor
+    }.second()
+
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
     injectable: CallableInjectable
@@ -1228,8 +1236,7 @@ class InjectCallTransformer(
             graphContext = graphContext,
             scope = graph.scope,
             irScope = scope,
-            component = null,
-            componentExpression = null
+            component = null
           ).run { result.inject(this, graph.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)

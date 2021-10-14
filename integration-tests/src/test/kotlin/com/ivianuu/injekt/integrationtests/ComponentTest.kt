@@ -185,6 +185,25 @@ class ComponentTest {
     invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
   }
 
+  @Test fun testAccessScopedInjectableFromNestedScoped() = singleAndMultiCodegen(
+    """
+      @Component interface ParentComponent {
+        fun childComponent(): ChildComponent
+      }
+      @Component interface ChildComponent {
+        val dep: Dep
+      }
+
+      @Provide @Scoped<ChildComponent> class Dep
+    """,
+    """
+      val component = inject<ParentComponent>().childComponent()
+      fun invoke() = component.dep
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
   @Test fun testCannotResolveScopedInjectableWithoutEnclosingComponent() = singleAndMultiCodegen(
     """
       interface ScopeComponent
@@ -295,4 +314,7 @@ class ComponentTest {
     observer.initCalls shouldBe 1
     observer.disposeCalls shouldBe 1
   }
+
+  // todo component in Set<T>
+  // todo component with spread??
 }
