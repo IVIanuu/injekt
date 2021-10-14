@@ -27,7 +27,7 @@ class SourceKeyTest {
       fun invoke() = sourceKey()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:16:21"
+    invokeSingleFile() shouldBe "File.kt:15:21"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
@@ -37,6 +37,6 @@ class SourceKeyTest {
       fun invoke() = b()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:18:21"
+    invokeSingleFile() shouldBe "File.kt:17:21"
   }
 }
