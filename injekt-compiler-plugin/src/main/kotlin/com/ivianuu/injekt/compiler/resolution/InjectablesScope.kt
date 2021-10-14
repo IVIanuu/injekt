@@ -41,6 +41,7 @@ class InjectablesScope(
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
   val file: KtFile?,
+  val componentType: TypeRef? = null,
   val initialInjectables: List<CallableRef>,
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   imports: List<ResolvedProviderImport>,

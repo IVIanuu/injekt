@@ -216,6 +216,7 @@ class TypeRef(
   val isMarkedComposable: Boolean = false,
   val isProvide: Boolean = false,
   val isInject: Boolean = false,
+  val scopeComponent: TypeRef? = null,
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV
@@ -304,6 +305,7 @@ class TypeRef(
       result = 31 * result + isMarkedComposable.hashCode()
       result = 31 * result + isProvide.hashCode()
       result = 31 * result + isInject.hashCode()
+      result = 31 * result + scopeComponent.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
@@ -337,6 +339,7 @@ fun TypeRef.copy(
   isMarkedComposable: Boolean = this.isMarkedComposable,
   isProvide: Boolean = this.isProvide,
   isInject: Boolean = this.isInject,
+  scopeComponent: TypeRef? = this.scopeComponent,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance
@@ -347,6 +350,7 @@ fun TypeRef.copy(
   isMarkedComposable,
   isProvide,
   isInject,
+  scopeComponent,
   isStarProjection,
   frameworkKey,
   variance

@@ -308,6 +308,15 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine("type argument kind mismatch")
       }
     }
+    is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
+      if (failure == unwrappedFailure) {
+        appendLine(
+          "no enclosing component matches ${unwrappedFailure.scopeComponent.renderToString()}"
+        )
+      } else {
+        appendLine("component not found")
+      }
+    }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
       if (failure == unwrappedFailure) {
         appendLine(
@@ -378,6 +387,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
             }
+            is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
+              append("${failure.candidate.callableFqName} is scoped to ${failure.scopeComponent.renderToString()}")
+            }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
                 "ambiguous: ${
@@ -427,6 +439,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
+      }
+      is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
+        appendLine("but no enclosing component matches type ${unwrappedFailure.scopeComponent.renderToString()}")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(

@@ -29,4 +29,3 @@ interface ComponentObserver<C : @Component Any> {
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Scoped<C : @Component Any>
-

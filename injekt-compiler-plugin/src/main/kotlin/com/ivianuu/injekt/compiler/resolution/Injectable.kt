@@ -66,8 +66,15 @@ class CallableInjectable(
   override val dependencyScope: InjectablesScope?
     get() = null
     get() = callable.callable.callContext()
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope>
-    get() = emptyMap()
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> by lazy {
+    if (callable.originalType.scopeComponent == null) emptyMap()
+    else {
+      val componentScope = ownerScope.allScopes.last {
+        it.componentType == callable.originalType.scopeComponent
+      }
+      dependencies.associateWith { componentScope }
+    }
+  }
   override val originalType: TypeRef
     get() = callable.originalType
 }
@@ -116,7 +123,6 @@ class ComponentInjectable(
     }
 
     visit(type)
-    println()
   }
 
   val requestsByRequestCallables = requestCallables
@@ -159,10 +165,7 @@ class ComponentInjectable(
     }
 
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = dependencyScopesByRequestCallable
-    .mapKeys {
-      val index = requestCallables.indexOf(it.key)
-      dependencies[index]
-    }
+    .mapKeys { dependencies[requestCallables.indexOf(it.key)] }
 
   override val callContext: CallContext
     get() = CallContext.DEFAULT

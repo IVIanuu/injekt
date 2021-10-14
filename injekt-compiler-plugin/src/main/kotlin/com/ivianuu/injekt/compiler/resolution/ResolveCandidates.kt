@@ -135,6 +135,11 @@ sealed class ResolutionResult {
           get() = 1
       }
 
+      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
+
       data class ReifiedTypeArgumentMismatch(
         val parameter: ClassifierRef,
         val argument: ClassifierRef,
@@ -144,7 +149,10 @@ sealed class ResolutionResult {
           get() = 1
       }
 
-      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
+      data class ScopeNotFound(
+        override val candidate: Injectable,
+        val scopeComponent: TypeRef
+      ) : WithCandidate() {
         override val failureOrdering: Int
           get() = 1
       }
@@ -364,9 +372,13 @@ private fun InjectablesScope.resolveCandidate(
   candidate: Injectable,
   lookupLocation: LookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
-  if (!callContext.canCall(candidate.callContext)) {
+  if (!callContext.canCall(candidate.callContext))
     return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
-  }
+
+  if (candidate.originalType.scopeComponent != null &&
+      allScopes.none { it.componentType == candidate.originalType.scopeComponent })
+        return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
+          candidate, candidate.originalType.scopeComponent!!)
 
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
