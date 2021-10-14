@@ -18,8 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.injektFqNames
 import org.jetbrains.kotlin.types.model.TypeVariance
 
 interface TypeCheckerContext {
@@ -66,11 +65,11 @@ fun TypeRef.isSubTypeOf(
   context.addSubTypeConstraint(this, superType)
     ?.let { return it }
 
-  if (classifier.fqName == InjektFqNames.Nothing &&
+  if (classifier.fqName == injektFqNames(context.injektContext).nothing &&
     (!isMarkedNullable || superType.isNullableType)
   ) return true
 
-  if (superType.classifier.fqName == InjektFqNames.Any &&
+  if (superType.classifier.fqName == injektFqNames(context.injektContext).any &&
     (superType.isMarkedNullable || !isNullableType)
   ) return true
 
@@ -185,7 +184,7 @@ fun buildContextForSpreadingInjectable(
   constraintType: TypeRef,
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
-  @Inject context: AnalysisContext
+  @Inject context: TypeCheckerContext
   ): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
   val candidateTypeParameters = mutableListOf<ClassifierRef>()
   candidateType.allTypes.forEach {
@@ -217,7 +216,7 @@ fun CallableRef.buildContext(
   staticTypeParameters: List<ClassifierRef>,
   superType: TypeRef,
   collectSuperTypeVariables: Boolean = false,
-  @Inject context: AnalysisContext
+  @Inject context: TypeCheckerContext
 ): TypeContext = type.buildContext(
   superType,
   staticTypeParameters,
@@ -228,7 +227,7 @@ fun TypeRef.buildContext(
   superType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
   collectSuperTypeVariables: Boolean = false,
-  @Inject context: AnalysisContext
+  @Inject context: TypeCheckerContext
 ): TypeContext {
   val context = TypeContext(context.injektContext)
   staticTypeParameters.forEach { context.addStaticTypeParameter(it) }
@@ -417,7 +416,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     resultType: TypeRef,
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
-    if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
+    if (resultType.classifier.fqName == injektFqNames(injektContext).nothing) return false
     val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))

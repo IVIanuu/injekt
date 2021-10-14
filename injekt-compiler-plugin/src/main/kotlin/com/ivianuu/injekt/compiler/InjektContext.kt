@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
@@ -26,45 +25,42 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleCapability
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Suppress("NewApi")
-class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
+class InjektContext(
+  val module: ModuleDescriptor,
+  val injektFqNames: InjektFqNames,
+  val trace: BindingTrace?
+) : TypeCheckerContext {
+  fun withTrace(trace: BindingTrace?) = InjektContext(module, injektFqNames, trace)
+
   override val injektContext: InjektContext
     get() = this
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val setClassifier by lazy {
-    module.builtIns.set.toClassifierRef(AnalysisContext(this))
-  }
-  val collectionClassifier by lazy {
-    module.builtIns.collection.toClassifierRef(AnalysisContext(this))
-  }
-  val nullableNothingType by lazy {
-    module.builtIns.nullableNothingType.toTypeRef(context = AnalysisContext(this))
-  }
-  val anyType by lazy {
-    module.builtIns.anyType.toTypeRef(context = AnalysisContext(this))
-  }
+  val setClassifier by lazy { module.builtIns.set.toClassifierRef() }
+  val collectionClassifier by lazy { module.builtIns.collection.toClassifierRef() }
+  val nullableNothingType by lazy { module.builtIns.nullableNothingType.toTypeRef() }
+  val anyType by lazy { module.builtIns.anyType.toTypeRef() }
   val nullableAnyType by lazy {
     anyType.copy(isMarkedNullable = true)
   }
   val typeKeyType by lazy {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(InjektFqNames.TypeKey)
-    )!!.toClassifierRef(AnalysisContext(this))
+      ClassId.topLevel(injektFqNames().typeKey)
+    )!!.toClassifierRef()
   }
 
   fun classifierDescriptorForFqName(
@@ -132,18 +128,3 @@ class InjektContext(val module: ModuleDescriptor) : TypeCheckerContext {
   fun packageFragmentsForFqName(fqName: FqName): List<PackageFragmentDescriptor> =
     module.getPackage(fqName).fragments
 }
-
-val InjektContextModuleCapability = ModuleCapability<InjektContext>("InjektContext")
-
-val ModuleDescriptor.injektContext
-  get() = getCapability(InjektContextModuleCapability)
-    ?: InjektContext(this)
-      .also { newContext ->
-        updatePrivateFinalField<Map<ModuleCapability<*>, Any?>>(
-          ModuleDescriptorImpl::class,
-          "capabilities"
-        ) {
-          toMutableMap()
-            .also { it[InjektContextModuleCapability] = newContext }
-        }
-      }

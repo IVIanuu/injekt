@@ -16,11 +16,14 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -28,13 +31,15 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class TagChecker : DeclarationChecker {
+class TagChecker(@Inject private val context: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    if (descriptor.hasAnnotation(InjektFqNames.Tag) && descriptor is ClassDescriptor) {
+    @Provide val injektContext = this.context.withTrace(context.trace)
+
+    if (descriptor.hasAnnotation(injektFqNames().tag) && descriptor is ClassDescriptor) {
       if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {
         context.trace.report(
           InjektErrors.TAG_WITH_VALUE_PARAMETERS
@@ -42,7 +47,7 @@ class TagChecker : DeclarationChecker {
         )
       }
     } else {
-      val tags = descriptor.getAnnotatedAnnotations(InjektFqNames.Tag)
+      val tags = descriptor.getAnnotatedAnnotations(injektFqNames().tag)
       if (tags.isNotEmpty() && descriptor !is ClassDescriptor &&
         descriptor !is ConstructorDescriptor
       ) {

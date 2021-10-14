@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -241,8 +241,8 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   // try the type scope if the requested type is not a framework type
   return if (!request.type.isProviderFunctionType &&
     request.type.classifier != context.injektContext.setClassifier &&
-    request.type.classifier.fqName != InjektFqNames.TypeKey &&
-    request.type.classifier.fqName != InjektFqNames.SourceKey)
+    request.type.classifier.fqName != injektFqNames().typeKey &&
+    request.type.classifier.fqName != injektFqNames().sourceKey)
     with(TypeInjectablesScope(request.type, this)) {
       recordLookup(lookupLocation)
       resolveRequest(request, lookupLocation, true)

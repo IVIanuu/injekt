@@ -17,7 +17,8 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.compiler.injektContext
+import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -38,6 +39,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectSyntheticScopeProviderExtension(
+  @Inject private val injektFqNames: InjektFqNames,
   private val isEnabled: (ModuleDescriptor) -> Boolean = { true }
 ) : SyntheticScopeProviderExtension {
   override fun getScopes(
@@ -45,25 +47,25 @@ class InjectSyntheticScopeProviderExtension(
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
   ): List<SyntheticScope> =
     if (isEnabled(moduleDescriptor))
-      listOf(InjectSyntheticScope(AnalysisContext(moduleDescriptor.injektContext, null)))
+      listOf(InjectSyntheticScope(InjektContext(moduleDescriptor, injektFqNames, null)))
     else emptyList()
 }
 
 class InjectSyntheticScopes(
+  @Inject private val injektContext: InjektContext,
   storageManager: StorageManager,
   lookupTracker: LookupTracker,
   samResolver: SamConversionResolver,
-  samConversionOracle: SamConversionOracle,
-  moduleDescriptor: ModuleDescriptor
+  samConversionOracle: SamConversionOracle
 ) : SyntheticScopes {
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
   override val scopes: Collection<SyntheticScope> = delegate.scopes +
-      InjectSyntheticScope(AnalysisContext(moduleDescriptor.injektContext, null))
+      InjectSyntheticScope()
 }
 
 private class InjectSyntheticScope(
-  @Inject private val context: AnalysisContext
+  @Inject private val context: InjektContext
 ) : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
     constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor

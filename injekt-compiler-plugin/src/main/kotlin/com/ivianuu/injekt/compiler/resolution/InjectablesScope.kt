@@ -19,12 +19,12 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  @Inject @Provide val context: AnalysisContext,
+  @Inject @Provide val context: InjektContext,
   val callContext: CallContext,
   val ownerDescriptor: DeclarationDescriptor?,
   val file: KtFile?,
@@ -256,10 +256,10 @@ class InjectablesScope(
           } else null
         }
       }
-      request.type.classifier.fqName == InjektFqNames.TypeKey -> {
+      request.type.classifier.fqName == injektFqNames().typeKey -> {
         return TypeKeyInjectable(request.type, this)
       }
-      request.type.classifier.fqName == InjektFqNames.SourceKey -> {
+      request.type.classifier.fqName == injektFqNames().sourceKey -> {
         return SourceKeyInjectable(request.type, this)
       }
       else -> return null
@@ -381,7 +381,7 @@ class InjectablesScope(
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
+            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames().provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

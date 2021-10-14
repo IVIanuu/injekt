@@ -16,7 +16,10 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.injektContext
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useImpl
@@ -25,20 +28,23 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor(
+  @Inject private val injektFqNames: InjektFqNames
+) : StorageComponentContainerContributor {
   override fun registerModuleComponents(
     container: StorageComponentContainer,
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    val context = moduleDescriptor.injektContext
+    @Provide val context = InjektContext(moduleDescriptor, injektFqNames, null)
+    container.useInstance(context)
     if (platform.componentPlatforms.size > 1)
       container.useImpl<InjectSyntheticScopes>()
-    container.useInstance(InjectableChecker(context))
+    container.useInstance(InjectableChecker())
     container.useInstance(TagChecker())
-    container.useInstance(ProviderImportsChecker(context))
+    container.useInstance(ProviderImportsChecker())
     if (!isIde)
-      container.useInstance(InjectionCallChecker(context))
-    container.useInstance(InfoAnnotationPatcher(context))
+      container.useInstance(InjectionCallChecker())
+    container.useInstance(InfoAnnotationPatcher())
   }
 }

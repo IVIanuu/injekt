@@ -66,6 +66,10 @@ allprojects {
       SubpluginOption(
         key = "dumpDir",
         value = dumpDir.absolutePath
+      ),
+      SubpluginOption(
+        key = "rootPackage",
+        value = "com.ivianuu.injekt"
       )
     )
 

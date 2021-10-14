@@ -20,11 +20,11 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
@@ -109,7 +109,7 @@ import kotlin.collections.set
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjectCallTransformer(
-  @Inject private val analysisContext: AnalysisContext,
+  @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
@@ -311,7 +311,7 @@ class InjectCallTransformer(
         if (result.candidate.callContext == CallContext.COMPOSABLE) {
           annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
             .irCallConstructor(
-              pluginContext.referenceConstructors(InjektFqNames.Composable)
+              pluginContext.referenceConstructors(injektFqNames().composable)
                 .single(),
               emptyList()
             )
@@ -496,7 +496,7 @@ class InjectCallTransformer(
     }
   }
 
-  private val sourceKeyConstructor = pluginContext.referenceClass(InjektFqNames.SourceKey)
+  private val sourceKeyConstructor = pluginContext.referenceClass(injektFqNames().sourceKey)
     ?.constructors?.single()
 
   private fun ScopeContext.sourceKeyExpression(): IrExpression =
@@ -517,7 +517,7 @@ class InjectCallTransformer(
       }
     }
 
-  private val typeKey = pluginContext.referenceClass(InjektFqNames.TypeKey)
+  private val typeKey = pluginContext.referenceClass(injektFqNames().typeKey)
   private val typeKeyValue = typeKey?.owner?.properties
     ?.single { it.name.asString() == "value" }
   private val typeKeyConstructor = typeKey?.constructors?.single()

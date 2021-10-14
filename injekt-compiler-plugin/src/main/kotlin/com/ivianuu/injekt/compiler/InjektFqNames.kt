@@ -19,26 +19,24 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.name.FqName
 
-object InjektFqNames {
-  val InjektPackage = FqName("com.ivianuu.injekt")
+class InjektFqNames(val injektPackage: FqName) {
+  val inject = injektPackage.child("Inject".asNameId())
+  val provide = injektPackage.child("Provide".asNameId())
+  val providers = injektPackage.child("Providers".asNameId())
+  val tag = injektPackage.child("Tag".asNameId())
+  val spread = injektPackage.child("Spread".asNameId())
 
-  val Inject = InjektPackage.child("Inject".asNameId())
-  val Provide = InjektPackage.child("Provide".asNameId())
-  val Providers = InjektPackage.child("Providers".asNameId())
-  val Tag = InjektPackage.child("Tag".asNameId())
-  val Spread = InjektPackage.child("Spread".asNameId())
+  val internalPackage = injektPackage.child("internal".asNameId())
+  val callableInfo = internalPackage.child("CallableInfo".asNameId())
+  val classifierInfo = internalPackage.child("ClassifierInfo".asNameId())
+  val typeParameterInfos = internalPackage.child("TypeParameterInfos".asNameId())
 
-  val InternalPackage = InjektPackage.child("internal".asNameId())
-  val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
-  val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
-  val TypeParameterInfos = InternalPackage.child("TypeParameterInfos".asNameId())
+  val commonPackage = injektPackage.child("common".asNameId())
+  val sourceKey = commonPackage.child("SourceKey".asNameId())
+  val typeKey = commonPackage.child("TypeKey".asNameId())
 
-  val CommonPackage = InjektPackage.child("common".asNameId())
-  val SourceKey = CommonPackage.child("SourceKey".asNameId())
-  val TypeKey = CommonPackage.child("TypeKey".asNameId())
+  val composable = FqName("androidx.compose.runtime.Composable")
 
-  val Composable = FqName("androidx.compose.runtime.Composable")
-
-  val Any = StandardNames.FqNames.any.toSafe()
-  val Nothing = StandardNames.FqNames.nothing.toSafe()
+  val any = StandardNames.FqNames.any.toSafe()
+  val nothing = StandardNames.FqNames.nothing.toSafe()
 }

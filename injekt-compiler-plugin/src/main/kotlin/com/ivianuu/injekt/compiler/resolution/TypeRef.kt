@@ -17,14 +17,14 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -105,7 +105,7 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): ClassifierRef =
+fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): ClassifierRef =
   context.trace.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
     val info = classifierInfo()
 
@@ -114,7 +114,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): Clas
       ?.map { it.toClassifierRef() }
       ?.toMutableList()
 
-    val isTag = hasAnnotation(InjektFqNames.Tag)
+    val isTag = hasAnnotation(injektFqNames().tag)
 
     if (isTag) {
       typeParameters!! += ClassifierRef(
@@ -147,7 +147,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: AnalysisContext): Clas
 fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV,
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this
@@ -181,15 +181,15 @@ fun KotlinType.toTypeRef(
           )
             it += context.injektContext.nullableAnyType
         },
-      isMarkedComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
-      isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
-      isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
+      isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
+      isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
+      isInject = kotlinType.hasAnnotation(injektFqNames().inject),
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance
     )
 
-    val tagAnnotations = unwrapped.getAnnotatedAnnotations(InjektFqNames.Tag)
+    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
     if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }

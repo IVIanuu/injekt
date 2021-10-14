@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
@@ -33,7 +34,9 @@ import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class InjektDiagnosticSuppressor : DiagnosticSuppressor {
+class InjektDiagnosticSuppressor(
+  @Inject private val injektFqNames: InjektFqNames
+) : DiagnosticSuppressor {
   override fun isSuppressed(diagnostic: Diagnostic): Boolean =
     isSuppressed(diagnostic, null)
 
@@ -46,7 +49,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     )
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
         ?.valueParameters
-        ?.count { !it.hasAnnotation(InjektFqNames.Inject) }
+        ?.count { !it.hasAnnotation(injektFqNames.inject) }
         ?.let { it <= 1 } == true
 
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
@@ -57,14 +60,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true) return true
+      if (typeParameter?.hasAnnotation(injektFqNames.spread) == true) return true
     }
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
       if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(InjektFqNames.Tag) == true
+          ?.hasAnnotation(injektFqNames.tag) == true
       )
         return true
     }

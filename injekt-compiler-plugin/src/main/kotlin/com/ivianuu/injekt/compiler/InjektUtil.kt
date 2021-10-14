@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -67,7 +65,7 @@ import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
   .map { it.containingDeclaration }
   .filterIsInstance<ClassDescriptor>()
@@ -122,8 +120,8 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 }
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
-  @Inject bindingContext: BindingContext,
-) = bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
+  @Inject context: InjektContext
+) = context.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
   moduleName() != context.module.name.asString()
@@ -264,12 +262,11 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
 fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name =
   "_injectables".asNameId()
 
+inline fun injektFqNames(@Inject context: InjektContext) = context.injektFqNames
+
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
-
-@Provide fun bindingContext(trace: BindingTrace?): BindingContext =
-  trace?.bindingContext ?: error("Wtf")
 
 fun DeclarationDescriptor.moduleName(@Inject context: InjektContext): String =
   getJvmModuleNameForDeserializedDescriptor(this)

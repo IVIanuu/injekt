@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
@@ -41,7 +42,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
-class InjectionCallChecker(@Provide private val context: InjektContext) : CallChecker {
+class InjectionCallChecker(@Inject private val context: InjektContext) : CallChecker {
   override fun check(
     resolvedCall: ResolvedCall<*>,
     reportOn: PsiElement,
@@ -64,7 +65,7 @@ class InjectionCallChecker(@Provide private val context: InjektContext) : CallCh
       null
     }
 
-    @Provide val analysisContext = AnalysisContext(trace = context.trace)
+    @Provide val injektContext = this.context.withTrace(context.trace)
 
     val substitutionMap = resolvedCall.typeArguments
       .mapKeys { it.key.toClassifierRef() }

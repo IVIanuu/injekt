@@ -18,13 +18,13 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
@@ -61,7 +61,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
   import: ResolvedProviderImport?,
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): List<CallableRef> {
   if (isStarProjection) return emptyList()
 
@@ -98,7 +98,7 @@ fun TypeRef.collectInjectables(
 
 fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
-  @Inject context: AnalysisContext,
+  @Inject context: InjektContext,
   onEach: (DeclarationDescriptor) -> Unit = {}
 ): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
@@ -113,9 +113,9 @@ fun ResolutionScope.collectInjectables(
         if (declaration.isProvide() &&
           (declaration !is PropertyDescriptor ||
               classBodyView ||
-              declaration.hasAnnotation(InjektFqNames.Provide) ||
+              declaration.hasAnnotation(injektFqNames().provide) ||
               declaration.primaryConstructorPropertyValueParameter()
-                ?.hasAnnotation(InjektFqNames.Provide) == true)) {
+                ?.hasAnnotation(injektFqNames().provide) == true)) {
           listOf(
             declaration.toCallableRef()
               .let { callable ->
@@ -134,12 +134,12 @@ fun ResolutionScope.collectInjectables(
     }
   }
 
-fun Annotated.isProvide(@Inject context: AnalysisContext): Boolean {
+fun Annotated.isProvide(@Inject context: InjektContext): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return context.trace.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
-    var isProvide = hasAnnotation(InjektFqNames.Provide) ||
-        hasAnnotation(InjektFqNames.Inject)
+    var isProvide = hasAnnotation(injektFqNames().provide) ||
+        hasAnnotation(injektFqNames().inject)
 
     if (!isProvide && this is PropertyDescriptor) {
       isProvide = primaryConstructorPropertyValueParameter()?.isProvide() == true
@@ -163,11 +163,11 @@ fun Annotated.isProvide(@Inject context: AnalysisContext): Boolean {
   }
 }
 
-fun Annotated.isInject(@Inject context: AnalysisContext): Boolean {
+fun Annotated.isInject(@Inject context: InjektContext): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return context.trace.getOrPut(InjektWritableSlices.IS_INJECT, key) {
-    var isInject = hasAnnotation(InjektFqNames.Inject)
+    var isInject = hasAnnotation(injektFqNames().inject)
     if (!isInject && this is PropertyDescriptor) {
       isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
     }
@@ -188,12 +188,12 @@ fun Annotated.isInject(@Inject context: AnalysisContext): Boolean {
 }
 
 fun ClassDescriptor.injectableConstructors(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
   constructors
     .filter { constructor ->
-      constructor.hasAnnotation(InjektFqNames.Provide) ||
-          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide))
+      constructor.hasAnnotation(injektFqNames().provide) ||
+          (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
     }
     .map { constructor ->
       val callable = constructor.toCallableRef()
@@ -208,7 +208,7 @@ fun ClassDescriptor.injectableConstructors(
 
 fun ClassDescriptor.injectableReceiver(
   tagged: Boolean,
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef()
   val finalType = if (tagged) callable.type.classifier.tags.wrap(callable.type)
@@ -218,7 +218,7 @@ fun ClassDescriptor.injectableReceiver(
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
-  @Inject context: AnalysisContext,
+  @Inject context: InjektContext,
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
@@ -260,7 +260,7 @@ fun CallableRef.collectInjectables(
 
 @OptIn(ExperimentalStdlibApi::class)
 fun List<ProviderImport>.collectImportedInjectables(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): List<CallableRef> = flatMap { import ->
   buildList<CallableRef> {
     if (!import.isValidImport()) return@buildList
@@ -302,7 +302,7 @@ fun List<ProviderImport>.collectImportedInjectables(
 }
 
 fun TypeRef.collectTypeScopeInjectables(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): InjectablesWithLookups = context.trace.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
   val injectables = mutableListOf<CallableRef>()
   val lookedUpPackages = mutableSetOf<FqName>()
@@ -354,7 +354,7 @@ data class InjectablesWithLookups(
 }
 
 private fun TypeRef.collectInjectablesForSingleType(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): InjectablesWithLookups {
   if (classifier.isTypeParameter) return InjectablesWithLookups.Empty
 
@@ -395,7 +395,7 @@ private fun TypeRef.collectInjectablesForSingleType(
 }
 
 private fun TypeRef.collectPackageTypeScopeInjectables(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): InjectablesWithLookups {
   val packageFqName = classifier.descriptor!!.findPackage().fqName
 
@@ -432,7 +432,7 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
   }
 }
 
-private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
+private fun InjectablesScope.canSee(callable: CallableRef, @Inject context: InjektContext): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&

@@ -16,10 +16,11 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.ProviderImport
@@ -35,7 +36,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class ProviderImportsChecker(private val context: InjektContext) : DeclarationChecker {
+class ProviderImportsChecker(@Inject private val context: InjektContext) : DeclarationChecker {
   private val checkedFiles = mutableSetOf<KtFile>()
 
   override fun check(
@@ -45,7 +46,7 @@ class ProviderImportsChecker(private val context: InjektContext) : DeclarationCh
   ) {
     val file = declaration.containingKtFile
     checkFile(file, context.trace)
-    if (!declaration.hasAnnotation(InjektFqNames.Providers)) return
+    if (!declaration.hasAnnotation(injektFqNames().providers)) return
     checkImports(file.packageFqName, declaration.getProviderImports(), context.trace)
   }
 

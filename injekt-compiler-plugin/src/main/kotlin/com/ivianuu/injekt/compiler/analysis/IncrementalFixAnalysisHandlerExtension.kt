@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -28,7 +29,9 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import java.util.Base64
 
-class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
+class IncrementalFixAnalysisHandlerExtension(
+  @Inject private val injektFqNames: InjektFqNames
+) : AnalysisHandlerExtension {
   private var appliedFix = false
 
   override fun doAnalysis(
@@ -81,19 +84,17 @@ class IncrementalFixAnalysisHandlerExtension : AnalysisHandlerExtension {
             visibility == DescriptorVisibilities.PROTECTED) {
           when (declaration) {
             is KtClassOrObject -> {
-              if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide) ||
-                declaration.primaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true ||
-                declaration.secondaryConstructors.any {
-                  it.hasAnnotation(InjektFqNames.Provide)
-                })
+              if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide) ||
+                declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
+                declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) })
                   injectables += declaration
             }
             is KtNamedFunction -> {
-              if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
+              if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide))
                 injectables += declaration
             }
             is KtProperty -> {
-              if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
+              if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide))
                 injectables += declaration
             }
           }

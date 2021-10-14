@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
@@ -50,14 +50,14 @@ sealed class Injectable {
 class CallableInjectable(
   override val type: TypeRef,
   override val dependencies: List<InjectableRequest>,
-  override val ownerScope: InjectablesScope,
+  @Provide override val ownerScope: InjectablesScope,
   val callable: CallableRef,
 ) : Injectable() {
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val callContext: CallContext
-    get() = callable.callable.callContext()
+    get() = callable.callable.callContext(ownerScope.context)
   override val dependencyScope: InjectablesScope?
     get() = null
   override val originalType: TypeRef
@@ -184,7 +184,7 @@ class TypeKeyInjectable(
 }
 
 fun CallableRef.getInjectableRequests(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): List<InjectableRequest> = callable.allParameters
   .filter {
     callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"

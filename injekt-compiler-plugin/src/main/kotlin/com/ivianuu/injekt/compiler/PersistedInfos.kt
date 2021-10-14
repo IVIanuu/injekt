@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
@@ -35,7 +34,7 @@ import kotlinx.serialization.Serializable
   @SerialName("6") val isInject: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeRef =
+fun TypeRef.toPersistedTypeRef(@Inject context: InjektContext): PersistedTypeRef =
   PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey() ?: "",
     arguments = arguments.map { it.toPersistedTypeRef() },
@@ -46,7 +45,7 @@ fun TypeRef.toPersistedTypeRef(@Inject context: AnalysisContext): PersistedTypeR
     isInject = isInject
   )
 
-fun PersistedTypeRef.toTypeRef(@Inject context: AnalysisContext): TypeRef {
+fun PersistedTypeRef.toTypeRef(@Inject context: InjektContext): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
   val classifier = context.injektContext.classifierDescriptorForKey(classifierKey)
     .toClassifierRef()

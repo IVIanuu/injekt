@@ -18,10 +18,11 @@ package com.ivianuu.injekt.compiler.resolution
 
 import androidx.compose.compiler.plugins.kotlin.isComposableCallable
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -37,7 +38,6 @@ import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getValueArgumentForExpression
 import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
@@ -53,22 +53,22 @@ enum class CallContext {
 
 fun CallContext.canCall(other: CallContext) = this == other || other == CallContext.DEFAULT
 
-fun CallableDescriptor.callContext(@Inject trace: BindingTrace? = null): CallContext {
+fun CallableDescriptor.callContext(@Inject context: InjektContext): CallContext {
   if (this !is FunctionDescriptor && this !is PropertyDescriptor) return CallContext.DEFAULT
 
   if (this is ConstructorDescriptor) return CallContext.DEFAULT
 
-  if (trace == null) return callContextOfThis
+  if (context.trace == null) return callContextOfThis()
 
-  return trace.getOrPut(InjektWritableSlices.CALL_CONTEXT, this) {
-    if (composeCompilerInClasspath && isComposableCallable(trace.bindingContext))
+  return context.trace.getOrPut(InjektWritableSlices.CALL_CONTEXT, this) {
+    if (composeCompilerInClasspath && isComposableCallable(context.trace.bindingContext))
       return@getOrPut CallContext.COMPOSABLE
 
-    val initialNode = findPsi() ?: return@getOrPut callContextOfThis
+    val initialNode = findPsi() ?: return@getOrPut callContextOfThis()
 
     var node: PsiElement? = initialNode
     if (node == null)
-      return@getOrPut callContextOfThis
+      return@getOrPut callContextOfThis()
     try {
       loop@ while (node != null) {
         when (node) {
@@ -77,25 +77,25 @@ fun CallableDescriptor.callContext(@Inject trace: BindingTrace? = null): CallCon
             // KtLambdaExpression
           }
           is KtLambdaExpression -> {
-            val descriptor = trace.bindingContext[BindingContext.FUNCTION, node.functionLiteral]
-              ?: return@getOrPut callContextOfThis
-            val arg = getArgumentDescriptor(node.functionLiteral, trace.bindingContext)
+            val descriptor = context.trace.bindingContext[BindingContext.FUNCTION, node.functionLiteral]
+              ?: return@getOrPut callContextOfThis()
+            val arg = getArgumentDescriptor(node.functionLiteral, context.trace.bindingContext)
             val inlined = arg != null &&
                 canBeInlineArgument(node.functionLiteral) &&
                 isInline(arg.containingDeclaration) &&
                 isInlineParameter(arg)
             if (!inlined)
-              return@getOrPut descriptor.callContextOfThis
+              return@getOrPut descriptor.callContextOfThis()
           }
           is KtFunction -> {
-            val descriptor = trace.bindingContext[BindingContext.FUNCTION, node]
-            return@getOrPut descriptor?.callContextOfThis ?: CallContext.DEFAULT
+            val descriptor = context.trace.bindingContext[BindingContext.FUNCTION, node]
+            return@getOrPut descriptor?.callContextOfThis() ?: CallContext.DEFAULT
           }
           is KtProperty -> {
             if (!node.isLocal) {
               val descriptor =
-                trace.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
-              return@getOrPut descriptor?.callContextOfThis ?: CallContext.DEFAULT
+                context.trace.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
+              return@getOrPut descriptor?.callContextOfThis() ?: CallContext.DEFAULT
             }
           }
         }
@@ -105,7 +105,7 @@ fun CallableDescriptor.callContext(@Inject trace: BindingTrace? = null): CallCon
       e.printStackTrace()
     }
 
-    return@getOrPut callContextOfThis
+    return@getOrPut callContextOfThis()
   }
 }
 
@@ -120,14 +120,13 @@ private fun getArgumentDescriptor(
   return mapping.valueParameter
 }
 
-private val CallableDescriptor.callContextOfThis: CallContext
-  get() = when {
-    isSuspend -> CallContext.SUSPEND
-    (hasAnnotation(InjektFqNames.Composable) ||
-        (this is PropertyDescriptor &&
-            getter?.hasAnnotation(InjektFqNames.Composable) == true)) -> CallContext.COMPOSABLE
-    else -> CallContext.DEFAULT
-  }
+private fun CallableDescriptor.callContextOfThis(@Inject context: InjektContext): CallContext = when {
+  isSuspend -> CallContext.SUSPEND
+  (hasAnnotation(injektFqNames().composable) ||
+      (this is PropertyDescriptor &&
+          getter?.hasAnnotation(injektFqNames().composable) == true)) -> CallContext.COMPOSABLE
+  else -> CallContext.DEFAULT
+}
 
 val TypeRef.callContext: CallContext
   get() = when {
@@ -144,10 +143,10 @@ private val composeCompilerInClasspath = try {
   false
 }
 
-fun HierarchicalScope.callContext(trace: BindingTrace): CallContext =
+fun HierarchicalScope.callContext(@Inject context: InjektContext): CallContext =
   generateSequence(this) { it.parent }
     .filterIsInstance<LexicalScope>()
     .mapNotNull { it.ownerDescriptor as? FunctionDescriptor }
     .firstOrNull()
-    ?.callContext(trace)
+    ?.callContext(context)
     ?: CallContext.DEFAULT

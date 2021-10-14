@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -137,7 +137,7 @@ fun TypeRef.toIrType(
         isMarkedNullable,
         arguments.map { it.toIrType() },
         if (isMarkedComposable) {
-          val composableConstructor = pluginContext.referenceConstructors(InjektFqNames.Composable)
+          val composableConstructor = pluginContext.referenceConstructors(injektFqNames().composable)
             .single()
           listOf(
             DeclarationIrBuilder(pluginContext, composableConstructor)

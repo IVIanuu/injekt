@@ -17,18 +17,19 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import java.io.File
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import org.jetbrains.kotlin.name.FqName
+import java.io.File
 
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
   override val pluginId = "com.ivianuu.injekt"
 
-  override val pluginOptions = listOf(DumpDirOption)
+  override val pluginOptions = listOf(DumpDirOption, RootPackageOption)
 
   override fun processOption(
     option: AbstractCliOption,
@@ -37,9 +38,19 @@ class InjektCommandLineProcessor : CommandLineProcessor {
   ) {
     when (option.optionName) {
       DumpDirOption.optionName -> configuration.put(DumpDirKey, value)
+      RootPackageOption.optionName -> configuration.put(RootPackageKey, FqName(value))
     }
   }
 }
+
+val RootPackageOption = CliOption(
+  optionName = "rootPackage",
+  valueDescription = "rootPackage",
+  description = "rootPackage",
+  required = false
+)
+
+val RootPackageKey = CompilerConfigurationKey<FqName>("rootPackage")
 
 val DumpDirOption = CliOption(
   optionName = "dumpDir",

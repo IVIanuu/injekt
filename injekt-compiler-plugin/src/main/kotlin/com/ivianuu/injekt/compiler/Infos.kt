@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
@@ -82,11 +81,11 @@ data class CallableInfo(
   }
 }
 
-fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableInfo =
+fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInfo =
   context.trace.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
     if (isDeserializedDeclaration()) {
       val info = annotations
-        .findAnnotation(InjektFqNames.CallableInfo)
+        .findAnnotation(injektFqNames().callableInfo)
         ?.readChunkedValue()
         ?.decode<PersistedCallableInfo>()
         ?.toCallableInfo()
@@ -130,7 +129,7 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
 
     val type = run {
       val tags = if (this is ConstructorDescriptor)
-        getAnnotatedAnnotations(InjektFqNames.Tag)
+        getAnnotatedAnnotations(injektFqNames().tag)
           .map { it.type.toTypeRef() }
       else emptyList()
       tags.wrap(returnType!!.toTypeRef())
@@ -142,11 +141,11 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
 
     val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
       .filter {
-        it.hasAnnotation(InjektFqNames.Inject) ||
+        it.hasAnnotation(injektFqNames().inject) ||
             ((this is FunctionInvokeDescriptor ||
                 (this is InjectFunctionDescriptor &&
                     underlyingDescriptor is FunctionInvokeDescriptor)) &&
-                it.type.hasAnnotation(InjektFqNames.Inject))
+                it.type.hasAnnotation(injektFqNames().inject))
       }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
@@ -166,7 +165,7 @@ fun CallableDescriptor.callableInfo(@Inject context: AnalysisContext): CallableI
 
 private fun CallableDescriptor.persistInfoIfNeeded(
   info: CallableInfo,
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ) {
   if (isExternalDeclaration() || isDeserializedDeclaration()) return
 
@@ -176,17 +175,17 @@ private fun CallableDescriptor.persistInfoIfNeeded(
         !constructedClass.visibility.shouldPersistInfo())
   ) return
 
-  if (hasAnnotation(InjektFqNames.CallableInfo))
+  if (hasAnnotation(injektFqNames().callableInfo))
     return
 
-  val shouldPersistInfo = hasAnnotation(InjektFqNames.Provide) ||
+  val shouldPersistInfo = hasAnnotation(injektFqNames().provide) ||
       (this is ConstructorDescriptor &&
-          constructedClass.hasAnnotation(InjektFqNames.Provide)) ||
+          constructedClass.hasAnnotation(injektFqNames().provide)) ||
       (this is PropertyDescriptor &&
           primaryConstructorPropertyValueParameter()?.isProvide() == true) ||
       safeAs<FunctionDescriptor>()
         ?.valueParameters
-        ?.any { it.hasAnnotation(InjektFqNames.Inject) } == true ||
+        ?.any { it.hasAnnotation(injektFqNames().inject) } == true ||
       info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
@@ -199,9 +198,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   updateAnnotation(
     AnnotationDescriptorImpl(
       context.injektContext.module.findClassAcrossModuleDependencies(
-        ClassId.topLevel(
-          InjektFqNames.CallableInfo
-        )
+        ClassId.topLevel(injektFqNames().callableInfo)
       )?.defaultType ?: return,
       serializedInfo.toChunkedAnnotationArguments(),
       SourceElement.NO_SOURCE
@@ -215,14 +212,14 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   @SerialName("2") val injectParameters: Set<Int> = emptySet()
 )
 
-fun CallableInfo.toPersistedCallableInfo(@Inject context: AnalysisContext) = PersistedCallableInfo(
+fun CallableInfo.toPersistedCallableInfo(@Inject context: InjektContext) = PersistedCallableInfo(
   type = type.toPersistedTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
   injectParameters = injectParameters
 )
 
-fun PersistedCallableInfo.toCallableInfo(@Inject context: AnalysisContext) = CallableInfo(
+fun PersistedCallableInfo.toCallableInfo(@Inject context: InjektContext) = CallableInfo(
   type = type.toTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef() },
@@ -242,13 +239,13 @@ class ClassifierInfo(
   val superTypes by lazySuperTypes
 }
 
-fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): ClassifierInfo =
+fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): ClassifierInfo =
   context.trace.getOrPut(InjektWritableSlices.CLASSIFIER_INFO, this) {
     if (isDeserializedDeclaration()) {
       (if (this is TypeParameterDescriptor) {
         containingDeclaration
           .annotations
-          .findAnnotation(InjektFqNames.TypeParameterInfos)
+          .findAnnotation(injektFqNames().typeParameterInfos)
           ?.readChunkedValue()
           ?.split("=:=")
           ?.get(cast<TypeParameterDescriptor>().index)
@@ -257,7 +254,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
           ?.toClassifierInfo()
       } else {
         annotations
-          .findAnnotation(InjektFqNames.ClassifierInfo)
+          .findAnnotation(injektFqNames().classifierInfo)
           ?.readChunkedValue()
           ?.cast<String>()
           ?.decode<PersistedClassifierInfo>()
@@ -270,7 +267,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
       ?.toTypeRef()
 
-    val isTag = hasAnnotation(InjektFqNames.Tag)
+    val isTag = hasAnnotation(injektFqNames().tag)
 
     val lazySuperTypes = lazy {
       when {
@@ -282,7 +279,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
 
     val isDeserialized = isDeserializedDeclaration()
 
-    val tags = getAnnotatedAnnotations(InjektFqNames.Tag)
+    val tags = getAnnotatedAnnotations(injektFqNames().tag)
       .map { it.type.toTypeRef() }
 
     val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
@@ -294,8 +291,9 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
       ?: emptyList()
 
     val isSpread = if (isDeserialized) false
-    else hasAnnotation(InjektFqNames.Spread) ||
-        findPsi()?.safeAs<KtTypeParameter>()?.hasAnnotation(InjektFqNames.Spread) == true
+    else hasAnnotation(injektFqNames().spread) ||
+        findPsi()?.safeAs<KtTypeParameter>()
+          ?.hasAnnotation(injektFqNames().spread) == true
 
     val info = ClassifierInfo(
       tags = tags,
@@ -320,7 +318,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: AnalysisContext): Class
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): ClassifierInfo = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
@@ -329,7 +327,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ): PersistedClassifierInfo = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
   superTypes = superTypes.map { it.toPersistedTypeRef() },
@@ -339,7 +337,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
   info: ClassifierInfo,
-  @Inject context: AnalysisContext
+  @Inject context: InjektContext
 ) {
   if (isExternalDeclaration() || isDeserializedDeclaration()) return
 
@@ -350,7 +348,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (!info.isSpread && info.superTypes.none { it.shouldBePersisted() }) return
 
     fun loadTypeParameterInfos() = (container.annotations
-      .findAnnotation(InjektFqNames.TypeParameterInfos)
+      .findAnnotation(injektFqNames().typeParameterInfos)
       ?.readChunkedValue()
       ?.split("=:=")
       ?: run {
@@ -362,20 +360,20 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       }).toMutableList()
 
     val initialInfosAnnotation = container.annotations
-      .findAnnotation(InjektFqNames.TypeParameterInfos)
+      .findAnnotation(injektFqNames().typeParameterInfos)
     val initialTypeParameterInfos = loadTypeParameterInfos()
     if (initialTypeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo().encode()
       // load again if the annotation has changed
       val finalTypeParameterInfos =
-        if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfos) !=
+        if (container.annotations.findAnnotation(injektFqNames().typeParameterInfos) !=
           initialInfosAnnotation) loadTypeParameterInfos()
       else initialTypeParameterInfos
       finalTypeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           context.injektContext.module.findClassAcrossModuleDependencies(
-            ClassId.topLevel(InjektFqNames.TypeParameterInfos)
+            ClassId.topLevel(injektFqNames().typeParameterInfos)
           )?.defaultType ?: return,
           finalTypeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
           SourceElement.NO_SOURCE
@@ -384,13 +382,13 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     }
   } else if (this is DeclarationDescriptorWithVisibility) {
     if (!visibility.shouldPersistInfo()) return
-    if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
+    if (hasAnnotation(injektFqNames().classifierInfo)) return
 
     if (info.tags.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
-      !hasAnnotation(InjektFqNames.Provide) &&
+      !hasAnnotation(injektFqNames().provide) &&
       (this !is ClassDescriptor ||
-          constructors.none { it.hasAnnotation(InjektFqNames.Provide) }) &&
+          constructors.none { it.hasAnnotation(injektFqNames().provide) }) &&
       info.superTypes.none { it.shouldBePersisted() }
     ) return
 
@@ -399,9 +397,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     updateAnnotation(
       AnnotationDescriptorImpl(
         context.injektContext.module.findClassAcrossModuleDependencies(
-          ClassId.topLevel(
-            InjektFqNames.ClassifierInfo
-          )
+          ClassId.topLevel(injektFqNames().classifierInfo)
         )?.defaultType ?: return,
         serializedInfo.toChunkedAnnotationArguments(),
         SourceElement.NO_SOURCE
