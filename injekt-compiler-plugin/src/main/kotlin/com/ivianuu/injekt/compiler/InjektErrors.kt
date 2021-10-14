@@ -241,12 +241,22 @@ interface InjektErrors {
     @JvmField
     val COMPONENT_WITHOUT_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "only interface can be marked with @Component") }
+        .also { MAP.put(it, "only interfaces can be marked with @Component") }
 
     @JvmField
     val COMPONENT_MEMBER_VAR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "component cannot contain a abstract var property") }
+
+    @JvmField
+    val ENTRY_POINT_WITHOUT_INTERFACE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "only interfaces can be marked with @EntryPoint") }
+
+    @JvmField
+    val ENTRY_POINT_MEMBER_VAR =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "entry point cannot contain a abstract var property") }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

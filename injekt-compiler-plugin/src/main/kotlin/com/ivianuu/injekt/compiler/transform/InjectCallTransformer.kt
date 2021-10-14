@@ -484,6 +484,7 @@ class InjectCallTransformer(
       parent = scope.getLocalDeclarationParent()
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
+      superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
 
       addConstructor {
         returnType = defaultType

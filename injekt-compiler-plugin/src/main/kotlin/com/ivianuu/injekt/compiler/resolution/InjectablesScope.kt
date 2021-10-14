@@ -91,8 +91,10 @@ class InjectablesScope(
   private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
   private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
 
-  private val componentInjectables: MutableList<CallableRef> =
-    parent?.componentInjectables?.toMutableList() ?: mutableListOf()
+  private val componentTypes: MutableList<TypeRef> =
+    parent?.componentTypes?.toMutableList() ?: mutableListOf()
+  private val entryPointTypes: MutableList<TypeRef> =
+    parent?.entryPointTypes?.toMutableList() ?: mutableListOf()
 
   val isTypeScope = name.startsWith("TYPE ")
 
@@ -118,13 +120,12 @@ class InjectablesScope(
           addSpreadingInjectable = { callable ->
             spreadingInjectables += SpreadingInjectable(callable)
           },
-          addComponentInjectable = { callable ->
-            componentInjectables += callable
-            val typeWithFrameworkKey = callable.type
-              .copy(frameworkKey = generateFrameworkKey())
-            injectables += callable.copy(type = typeWithFrameworkKey)
+          addComponent = { componentType ->
+            componentTypes += componentType
+            val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
             spreadingInjectableCandidateTypes += typeWithFrameworkKey
-          }
+          },
+          addEntryPoint = { entryPointTypes += it }
         )
       }
 
@@ -320,26 +321,33 @@ class InjectablesScope(
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef> {
-    if (componentInjectables.isEmpty()) return emptyList()
-    return componentInjectables
+    if (componentTypes.isEmpty()) return emptyList()
+    return componentTypes
       .mapNotNull { candidate ->
         var context =
-          candidate.buildContext(key.staticTypeParameters, singleElementType)
+          candidate.buildContext(singleElementType, key.staticTypeParameters)
         if (!context.isOk) {
-          context = candidate.buildContext(key.staticTypeParameters, collectionElementType)
+          context = candidate.buildContext(collectionElementType, key.staticTypeParameters)
         }
         if (!context.isOk) return@mapNotNull null
         val substitutionMap = context.fixedTypeVariables
         candidate.substitute(substitutionMap)
       }
-      .map { callable ->
-        val typeWithFrameworkKey = callable.type.copy(
-          frameworkKey = generateFrameworkKey()
-        )
-        componentInjectables += callable.copy(type = typeWithFrameworkKey)
+      .map { componentType ->
+        val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
+        componentTypes += typeWithFrameworkKey
         typeWithFrameworkKey
       }
   }
+
+  fun entryPointsForType(componentType: TypeRef): List<TypeRef> = entryPointTypes
+    .mapNotNull { candidate ->
+      val context = candidate.classifier.entryPointComponentType!!
+        .buildContext(componentType, allStaticTypeParameters)
+      if (!context.isOk) return@mapNotNull null
+      val substitutionMap = context.fixedTypeVariables
+      candidate.substitute(substitutionMap)
+    }
 
   private fun spreadInjectables(candidateType: TypeRef) {
     for (spreadingInjectable in spreadingInjectables.toList())
@@ -406,20 +414,18 @@ class InjectablesScope(
           .toList()
           .forEach { spreadInjectables(newSpreadingInjectable, it) }
       },
-      addComponentInjectable = { newInnerInjectable ->
-        val finalNewInnerAbstractGiven = newInnerInjectable
-          .copy(originalType = newInnerInjectable.type)
-        componentInjectables += finalNewInnerAbstractGiven
-        val newInnerGivenWithFrameworkKey = finalNewInnerAbstractGiven.copy(
-          type = finalNewInnerAbstractGiven.type.copy(
-            frameworkKey = generateFrameworkKey()
-              .also { spreadingInjectable.resultingFrameworkKeys += it }
-          )
+      addComponent = { newInnerComponentType ->
+        val finalNewInnerComponentType = newInnerComponentType
+        componentTypes += finalNewInnerComponentType
+        val newInnerComponentTypeWithFrameworkKey = finalNewInnerComponentType.copy(
+          frameworkKey = generateFrameworkKey()
+            .also { spreadingInjectable.resultingFrameworkKeys += it }
         )
-        componentInjectables += newInnerGivenWithFrameworkKey
-        spreadingInjectableCandidateTypes += newInnerGivenWithFrameworkKey.type
-        spreadInjectables(newInnerGivenWithFrameworkKey.type)
-      }
+        componentTypes += newInnerComponentTypeWithFrameworkKey
+        spreadingInjectableCandidateTypes += newInnerComponentTypeWithFrameworkKey
+        spreadInjectables(newInnerComponentTypeWithFrameworkKey)
+      },
+      addEntryPoint = { TODO() }
     )
   }
 

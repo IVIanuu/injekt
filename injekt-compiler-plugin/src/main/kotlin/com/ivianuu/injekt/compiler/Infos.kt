@@ -178,6 +178,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(
 
   val shouldPersistInfo = hasAnnotation(injektFqNames().provide) ||
       containingDeclaration.hasAnnotation(injektFqNames().component) ||
+      containingDeclaration.hasAnnotation(injektFqNames().entryPoint) ||
       (this is ConstructorDescriptor &&
           constructedClass.hasAnnotation(injektFqNames().provide)) ||
       (this is PropertyDescriptor &&
@@ -231,6 +232,7 @@ fun PersistedCallableInfo.toCallableInfo(@Inject context: InjektContext) = Calla
  */
 class ClassifierInfo(
   val tags: List<TypeRef> = emptyList(),
+  val entryPointComponentType: TypeRef? = null,
   val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false
@@ -281,6 +283,9 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
     val tags = getAnnotatedAnnotations(injektFqNames().tag)
       .map { it.type.toTypeRef() }
 
+    val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
+    ?.type?.arguments?.single()?.type?.toTypeRef()
+
     val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
     else safeAs<ClassDescriptor>()
       ?.unsubstitutedPrimaryConstructor
@@ -296,6 +301,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
 
     val info = ClassifierInfo(
       tags = tags,
+      entryPointComponentType = entryPointComponentType,
       lazySuperTypes = lazySuperTypes,
       primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
       isSpread = isSpread
@@ -311,15 +317,17 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
 
 @Serializable data class PersistedClassifierInfo(
   @SerialName("0") val tags: List<PersistedTypeRef> = emptyList(),
-  @SerialName("1") val superTypes: List<PersistedTypeRef> = emptyList(),
-  @SerialName("2") val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  @SerialName("3") val isSpread: Boolean = false
+  @SerialName("1") val entryPointComponentType: PersistedTypeRef? = null,
+  @SerialName("2") val superTypes: List<PersistedTypeRef> = emptyList(),
+  @SerialName("3") val primaryConstructorPropertyParameters: List<String> = emptyList(),
+  @SerialName("4") val isSpread: Boolean = false
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
   @Inject context: InjektContext
 ): ClassifierInfo = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
+  entryPointComponentType = entryPointComponentType?.toTypeRef(),
   lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread
@@ -329,6 +337,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(
   @Inject context: InjektContext
 ): PersistedClassifierInfo = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
+  entryPointComponentType = entryPointComponentType?.toPersistedTypeRef(),
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread

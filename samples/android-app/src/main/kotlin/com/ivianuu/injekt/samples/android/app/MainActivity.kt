@@ -21,19 +21,18 @@ package com.ivianuu.injekt.samples.android.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Providers
-import com.ivianuu.injekt.android.ActivityScope
+import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.entryPoint
 import com.ivianuu.injekt.samples.android.ui.AppTheme
 import com.ivianuu.injekt.samples.android.ui.AppUi
-import com.ivianuu.injekt.scope.ScopeElement
-import com.ivianuu.injekt.scope.requireElement
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = requireElement<MainActivityDependencies>()
+    val dependencies: MainActivityDependencies = entryPoint<MainActivityDependencies, AppComponent>()
     // display ui
     setContent {
       dependencies.theme {
@@ -43,6 +42,7 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-// Declare dependencies we want to retrieve in our activity
-@Provide @ScopeElement<ActivityScope>
-class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)
+@EntryPoint<AppComponent> interface MainActivityDependencies {
+  val theme: AppTheme
+  val appUi: AppUi
+}

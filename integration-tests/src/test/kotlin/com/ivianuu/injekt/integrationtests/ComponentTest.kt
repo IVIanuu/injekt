@@ -1,10 +1,12 @@
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class ComponentTest {
@@ -173,5 +175,22 @@ class ComponentTest {
     """
   ) {
     compilationShouldHaveFailed("no enclosing component matches com.ivianuu.injekt.integrationtests.ScopeComponent")
+  }
+
+  @Test fun testEntryPoint() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
+
+      @EntryPoint<MyComponent> interface MyEntryPoint {
+        val foo: Foo
+      } 
+
+      @Provide val foo = Foo() 
+    """,
+    """
+      fun invoke() = (inject<MyComponent>() as MyEntryPoint).foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 }

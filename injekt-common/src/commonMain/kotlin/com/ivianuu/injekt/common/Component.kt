@@ -16,8 +16,23 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Inject
+
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Component
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+annotation class EntryPoint<C : @Component Any>
+
+inline fun <E : @EntryPoint<C> Any, C : @Component Any> entryPoint(@Inject component: C): E =
+  component as E
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+annotation class Scoped<C : @Component Any>
+
+fun interface Disposable {
+  fun dispose()
+}
 
 interface ComponentObserver<C : @Component Any> {
   fun onInit(component: C) {
@@ -29,11 +44,6 @@ interface ComponentObserver<C : @Component Any> {
 
 interface ComponentSlot<C : @Component Any, T> {
   fun get(): T?
+
   fun set(value: T)
 }
-
-@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
-annotation class Scoped<C : @Component Any>
-
-@Target(AnnotationTarget.CLASS)
-annotation class EntryPoint<C : @Component Any>

@@ -96,6 +96,10 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     @Inject context: InjektContext
   ) {
     val provideConstructors = descriptor.injectableConstructors()
+      .filterNot {
+        it.callable is ComponentConstructorDescriptor ||
+            it.callable is EntryPointConstructorDescriptor
+      }
     val isProvider = provideConstructors.isNotEmpty() ||
         descriptor.hasAnnotation(injektFqNames().provide)
 

@@ -16,47 +16,44 @@
 
 package com.ivianuu.injekt.android
 
-/**
 import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.Framework
+import com.ivianuu.injekt.common.AppComponent
 
 /**
- * Returns the [AppScope] hosted in the application
+ * Returns the [AppComponent] hosted in the application
  */
-@Provide val Context.appScope: AppScope
-  get() = (applicationContext as? AppScopeOwner)?.appScope
-    ?: error("application does not implement AppScopeOwner")
+@Provide val Context.appComponent: AppComponent
+  get() = (applicationContext as? AppComponentOwner)?.appComponent
+    ?: error("application does not implement AppComponentOwner")
 
 /**
- * Host of the [AppScope]
+ * Host of the [AppComponent]
  *
  * A simple [Application] implementation might look like this:
  * ```
- * class App : Application(), AppScopeOwner {
- *  override lateinit var appScope: AppScope
+ * class App : Application(), AppComponentOwner {
+ *  override lateinit var appComponent: AppComponent
  *
  *  override fun onCreate() {
- *    appScope = createAppScope()
+ *    appScope = createAppComponent()
  *    super.onCreate()
  *  }
  * }
  * ```
  */
-interface AppScopeOwner {
+interface AppComponentOwner {
   /**
-   * The [AppScope] which is typically created via [createAppScope]
+   * The [AppComponent] which is typically created via [createAppComponent]
    */
-  val appScope: AppScope
+  val appComponent: AppComponent
 }
 
 /**
- * Creates the [AppScope] which must be manually stored
+ * Creates the [AppComponent] which must be manually stored
  */
-inline fun Application.createAppScope(
-  @Inject scopeFactory: (@Provide Application) -> @Framework AppScope
-): AppScope = scopeFactory(this)
-*/
+inline fun Application.createAppComponent(
+  @Inject componentFactory: (@Provide Application) -> AppComponent
+): AppComponent = componentFactory(this)

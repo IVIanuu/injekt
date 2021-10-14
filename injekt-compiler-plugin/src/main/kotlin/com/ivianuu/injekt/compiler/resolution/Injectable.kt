@@ -35,10 +35,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
-import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -82,6 +79,8 @@ class ComponentInjectable(
 ) : Injectable() {
   override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
 
+  val entryPoints = ownerScope.entryPointsForType(type)
+
   @OptIn(ExperimentalStdlibApi::class)
   val requestCallables: List<CallableRef> = buildList<CallableRef> {
     val seen = mutableListOf<TypeRef>()
@@ -89,37 +88,14 @@ class ComponentInjectable(
       if (type in seen) return
       seen += type
 
-      this += type.classifier
-        .descriptor!!
-        .defaultType
-        .memberScope
-        .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
-        .filterIsInstance<CallableMemberDescriptor>()
-        .filter {
-          it.overriddenTreeAsSequence(false).none {
-            it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true
-          }
-        }
-        .map { it.toCallableRef(ownerScope.context) }
-        .map {
-          val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-            CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-            val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
-              .overriddenTreeAsSequence(false)
-              .last()
-              .containingDeclaration
-              .cast<ClassDescriptor>()
-              .toClassifierRef(ownerScope.context)
-            type.classifier.typeParameters.zip(type.arguments).toMap() + originalClassifier.typeParameters
-              .zip(type.subtypeView(originalClassifier)!!.arguments)
-          } else type.classifier.typeParameters.zip(type.arguments).toMap()
-          it.substitute(substitutionMap)
-        }
+      this += type.collectComponentCallables()
 
       type.superTypes.forEach { visit(it) }
     }
 
     visit(type)
+
+    entryPoints.forEach { visit(it) }
   }
 
   val requestsByRequestCallables = requestCallables
