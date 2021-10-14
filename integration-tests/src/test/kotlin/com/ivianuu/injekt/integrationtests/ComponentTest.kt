@@ -3,6 +3,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.TestComponentObserver
+import com.ivianuu.injekt.test.TestDisposable
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -241,13 +242,20 @@ class ComponentTest {
 
   @Test fun testScopedValueWillBeDisposed() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Component interface MyComponent {
+        val disposable: Disposable
+      }
     """,
     """
-      fun invoke() = inject<MyComponent>()
+      fun invoke(@Inject disposable: @Scoped<MyComponent> Disposable) = inject<MyComponent>()
+        .also { it.disposable }
     """
   ) {
-    invokeSingleFile<Disposable>().dispose()
+    val disposable = TestDisposable()
+    val component = invokeSingleFile<Disposable>(disposable)
+    disposable.disposeCalls shouldBe 0
+    component.dispose()
+    disposable.disposeCalls shouldBe 1
   }
 
   @Test fun testComponentObserver() = singleAndMultiCodegen(

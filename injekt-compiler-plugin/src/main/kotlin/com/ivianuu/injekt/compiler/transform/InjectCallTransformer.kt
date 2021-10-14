@@ -83,6 +83,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -94,6 +95,7 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irIfThenElse
+import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
@@ -119,12 +121,14 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isLocal
 import org.jetbrains.kotlin.ir.util.isVararg
@@ -706,6 +710,33 @@ class InjectCallTransformer(
               )
               irSetField(irGet(dispatchReceiverParameter!!), observersField, irNull())
             }
+
+            val disposableClass = pluginContext.referenceClass(injektFqNames().disposable)!!
+            fields
+              .filter { it.name.asString().endsWith("Instance") }
+              .forEach { field ->
+                +irIfThen(
+                  irIs(
+                    irGetField(irGet(dispatchReceiverParameter!!), field),
+                    disposableClass.defaultType
+                  ),
+                  irCall(
+                    disposableClass
+                      .functions
+                      .single { it.owner.name.asString() == "dispose" }
+                  ).apply {
+                    dispatchReceiver = irAs(
+                      irGetField(irGet(dispatchReceiverParameter!!), field),
+                      disposableClass.defaultType
+                    )
+                  }
+                )
+                +irSetField(irGet(dispatchReceiverParameter!!), field, irNull())
+              }
+
+            fields
+              .filter { it.name.asString().endsWith("Lock") }
+              .forEach { +irSetField(irGet(dispatchReceiverParameter!!), it, irNull()) }
           }
         }
       }

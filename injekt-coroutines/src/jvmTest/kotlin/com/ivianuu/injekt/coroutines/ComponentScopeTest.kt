@@ -18,17 +18,12 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
-import com.ivianuu.injekt.scope.AppScope
-import com.ivianuu.injekt.scope.Framework
-import com.ivianuu.injekt.scope.Scope
-import com.ivianuu.injekt.scope.requireElement
-import com.ivianuu.injekt.scope.scopeOf
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.junit.Test
 
-class InjektCoroutineScopeTest {
-  @Test fun testScopedCoroutineScopeLifecycle() {
+class ComponentScopeTest {
+  @Test fun testComponentScopeLifecycle() {
     @Provide val scope = scopeOf()
     val coroutineScope = scopedCoroutineScope()
     coroutineScope.isActive.shouldBeTrue()
