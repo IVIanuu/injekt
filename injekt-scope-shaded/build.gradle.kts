@@ -1,5 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 /*
  * Copyright 2021 Manuel Wrage
  *
@@ -16,36 +14,37 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
  * limitations under the License.
  */
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
   kotlin("jvm")
-  kotlin("kapt")
-  kotlin("plugin.serialization")
+  id("com.vanniktech.maven.publish")
   id("com.github.johnrengelman.shadow")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
-val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
-  configurations = listOf(project.configurations.getByName("compileOnly"))
-  relocate("org.jetbrains.kotlin.com.intellij", "com.intellij")
-  dependencies {
-    exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
-    exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib-common"))
-    exclude(dependency("org.jetbrains:annotations"))
+val shade = configurations.maybeCreate("compileShaded")
+configurations.getByName("compileOnly").extendsFrom(shade)
+dependencies {
+  shade(project(":injekt-scope"))
+}
 
-    exclude(dependency("com.intellij:openapi"))
-    exclude(dependency("com.intellij:extensions"))
-    exclude(dependency("com.intellij:annotations"))
-  }
+val relocateShadowJar = tasks.register<ConfigureShadowRelocation>("relocateShadowJar") {
+  target = tasks.shadowJar.get()
+}
+
+val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
+  dependsOn(relocateShadowJar)
+  archiveClassifier.set("")
+  configurations = listOf(shade)
+  relocate("com.ivianuu.injekt", "com.ivianuu.injekt_shaded")
 }
 
 artifacts {
+  runtimeOnly(shadowJar)
   archives(shadowJar)
 }
 
-dependencies {
-  api(project(":injekt-compiler-plugin-base"))
-}
-
-plugins.apply("com.vanniktech.maven.publish")

@@ -30,6 +30,10 @@ gradlePlugin {
       id = "com.ivianuu.injekt"
       implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
     }
+    create("injektShadedPlugin") {
+      id = "com.ivianuu.injekt_shaded"
+      implementationClass = "com.ivianuu.injekt.gradle.InjektShadedPlugin"
+    }
   }
 }
 

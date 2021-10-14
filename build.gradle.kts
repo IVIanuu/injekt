@@ -47,6 +47,8 @@ allprojects {
   }
 
   if (project.name == "injekt-compiler-plugin" ||
+    project.name == "injekt-compiler-plugin-base" ||
+    project.name == "injekt-compiler-plugin-shaded" ||
     project.name == "injekt-gradle-plugin" ||
     project.name == "injekt-symbol-processor")
       return@allprojects

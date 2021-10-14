@@ -20,7 +20,9 @@ import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
-  val InjektPackage = FqName("com.ivianuu.injekt")
+  val InjektPackage = Class.forName("InjektPackageFqNameHolder")
+    .getDeclaredMethod("basePackage")
+    .invoke(null) as FqName
 
   val Inject = InjektPackage.child("Inject".asNameId())
   val Provide = InjektPackage.child("Provide".asNameId())

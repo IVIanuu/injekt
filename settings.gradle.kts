@@ -3,14 +3,17 @@ include(
     ":injekt-android-work",
     ":injekt-common",
     ":injekt-compiler-plugin",
+    ":injekt-compiler-plugin-base",
+    ":injekt-compiler-plugin-shaded",
     ":injekt-core",
     ":injekt-coroutines",
     ":injekt-gradle-plugin",
     ":injekt-ide-plugin",
     ":injekt-scope",
+    ":injekt-scope-shaded",
     ":integration-tests",
+    ":samples:type-classes",
     ":test-util",
     "samples:android-app",
-    "samples:coffee-maker",
-    ":samples:type-classes"
+    "samples:coffee-maker"
 )
