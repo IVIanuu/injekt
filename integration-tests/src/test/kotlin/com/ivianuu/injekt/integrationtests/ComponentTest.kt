@@ -153,7 +153,7 @@ class ComponentTest {
     invokeSingleFile()
   }
 
-  @Test fun testScoped() = singleAndMultiCodegen(
+  @Test fun testScopedFunction() = singleAndMultiCodegen(
     """
       @Component interface ScopeComponent {
         val foo: Foo
@@ -164,6 +164,22 @@ class ComponentTest {
     """
       val component = inject<ScopeComponent>()
       fun invoke() = component.foo
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
+  @Test fun testScopedClass() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent {
+        val dep: Dep
+      } 
+
+      @Provide @Scoped<ScopeComponent> class Dep
+    """,
+    """
+      val component = inject<ScopeComponent>()
+      fun invoke() = component.dep
     """
   ) {
     invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()

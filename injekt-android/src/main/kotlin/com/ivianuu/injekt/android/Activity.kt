@@ -16,35 +16,42 @@
 
 package com.ivianuu.injekt.android
 
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.dispose
+import com.ivianuu.injekt.common.entryPoint
+
 /**
-/**
- * Returns the [ActivityScope] of this [ComponentActivity]
+ * Returns the [ActivityComponent] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
-@Provide val ComponentActivity.activityScope: ActivityScope
-  get() = synchronized(activityScopes) {
-    activityScopes[this]?.let { return it }
-    val scope = requireElement<@ChildScopeFactory (ComponentActivity) -> ActivityScope>(
-      activityRetainedScope
-    ).invoke(this)
-    activityScopes[this] = scope
+val ComponentActivity.activityComponent: ActivityComponent
+  get() = synchronized(activityComponents) {
+    activityComponents[this]?.let { return it }
+    val component = entryPoint<ActivityComponentFactory>(activityRetainedComponent)
+      .activityComponent(this)
+    activityComponents[this] = component
 
     lifecycle.addObserver(object : LifecycleEventObserver {
       override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
         if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-          synchronized(activityScopes) { activityScopes.remove(this@activityScope) }
-          scope.dispose()
+          synchronized(activityComponents) { activityComponents.remove(this@activityComponent) }
+          component.dispose()
         }
       }
     })
 
-    scope
+    component
   }
 
-typealias ActivityScope = Scope
+@Component interface ActivityComponent
 
-@Provide val activityScopeModule =
-  ChildScopeModule1<ActivityRetainedScope, ComponentActivity, ActivityScope>()
+@EntryPoint<ActivityRetainedComponent> interface ActivityComponentFactory {
+  fun activityComponent(activity: ComponentActivity): ActivityComponent
+}
 
-private val activityScopes = mutableMapOf<ComponentActivity, ActivityScope>()
-*/
+private val activityComponents = mutableMapOf<ComponentActivity, ActivityComponent>()

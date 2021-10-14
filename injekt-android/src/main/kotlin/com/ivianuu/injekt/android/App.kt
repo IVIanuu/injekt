@@ -25,7 +25,7 @@ import com.ivianuu.injekt.common.AppComponent
 /**
  * Returns the [AppComponent] hosted in the application
  */
-@Provide val Context.appComponent: AppComponent
+val Context.appComponent: AppComponent
   get() = (applicationContext as? AppComponentOwner)?.appComponent
     ?: error("application does not implement AppComponentOwner")
 

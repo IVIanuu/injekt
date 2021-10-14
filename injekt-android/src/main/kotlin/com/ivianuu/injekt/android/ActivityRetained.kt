@@ -19,10 +19,10 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.dispose
 import com.ivianuu.injekt.common.entryPoint
 
 /**
@@ -30,14 +30,13 @@ import com.ivianuu.injekt.common.entryPoint
  * whose lifecycle is bound the retained lifecycle of the activity
  */
 @Suppress("UNCHECKED_CAST")
-@Provide
 val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
   get() = ViewModelProvider(
     this,
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T =
         ActivityRetainedComponentHolder(
-          entryPoint<ActivityRetainedComponentFactoryProvider>(appComponent)
+          entryPoint<ActivityRetainedComponentFactory>(appComponent)
             .activityRetainedComponent()
         ) as T
     }
@@ -45,13 +44,13 @@ val ComponentActivity.activityRetainedComponent: ActivityRetainedComponent
 
 @Component interface ActivityRetainedComponent
 
-@EntryPoint<AppComponent> interface ActivityRetainedComponentFactoryProvider {
+@EntryPoint<AppComponent> interface ActivityRetainedComponentFactory {
   fun activityRetainedComponent(): ActivityRetainedComponent
 }
 
 private class ActivityRetainedComponentHolder(val component: ActivityRetainedComponent) : ViewModel() {
   override fun onCleared() {
     super.onCleared()
-    //component.dispose()
+    component.dispose()
   }
 }

@@ -32,7 +32,7 @@ class ActivityTest {
   @Test fun testActivityScopeLifecycle() {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     lateinit var disposable: TestDisposable<ActivityScope>
-    scenario.onActivity { disposable = requireElement(it.activityScope) }
+    scenario.onActivity { disposable = requireElement(it.activityComponent) }
     disposable.disposed.shouldBeFalse()
     scenario.moveToState(Lifecycle.State.DESTROYED)
     disposable.disposed.shouldBeTrue()

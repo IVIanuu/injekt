@@ -210,7 +210,8 @@ fun ClassDescriptor.injectableConstructors(
       callable.copy(
         isProvide = true,
         type = taggedType,
-        originalType = taggedType
+        originalType = taggedType,
+        scopeComponentType = callable.type.classifier.scopeComponentType
       )
     }
 }

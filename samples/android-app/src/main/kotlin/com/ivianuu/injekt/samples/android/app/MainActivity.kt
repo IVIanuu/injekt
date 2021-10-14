@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-@file:Providers("com.ivianuu.injekt.android.activityScope")
-
 package com.ivianuu.injekt.samples.android.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.ivianuu.injekt.Providers
-import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.android.ActivityComponent
+import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
 import com.ivianuu.injekt.samples.android.ui.AppTheme
@@ -32,7 +30,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies: MainActivityDependencies = entryPoint<MainActivityDependencies, AppComponent>()
+    val dependencies: MainActivityDependencies = entryPoint(activityComponent)
     // display ui
     setContent {
       dependencies.theme {
@@ -42,7 +40,7 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@EntryPoint<AppComponent> interface MainActivityDependencies {
+@EntryPoint<ActivityComponent> interface MainActivityDependencies {
   val theme: AppTheme
   val appUi: AppUi
 }

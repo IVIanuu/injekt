@@ -35,3 +35,7 @@ interface ComponentObserver<C : @Component Any> : Disposable {
   fun init() {
   }
 }
+
+fun <C : @Component Any> C.dispose() {
+  (this as Disposable).dispose()
+}
