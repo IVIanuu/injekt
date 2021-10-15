@@ -27,7 +27,7 @@ import com.ivianuu.injekt.common.entryPoint
 /**
  * Returns a new [ReceiverComponent] which must be manually stored and disposed
  */
-fun BroadcastReceiver.createReceiverScope(
+fun BroadcastReceiver.createReceiverComponent(
   context: Context,
   intent: Intent,
 ): ReceiverComponent = entryPoint<ReceiverComponentFactory>(context.appComponent)
