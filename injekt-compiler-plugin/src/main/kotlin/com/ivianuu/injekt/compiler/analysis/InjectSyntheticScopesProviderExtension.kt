@@ -64,7 +64,7 @@ class InjectSyntheticScopes(
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
   override val scopes: Collection<SyntheticScope> = delegate.scopes +
-      InjectSyntheticScope(injektContext) // todo remove explicit arg once fixed
+      InjectSyntheticScope(context) // todo remove explicit arg once fixed
 }
 
 private class InjectSyntheticScope(
