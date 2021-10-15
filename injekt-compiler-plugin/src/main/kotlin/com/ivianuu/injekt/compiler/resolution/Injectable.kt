@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -93,7 +94,12 @@ class ComponentInjectable(
 
     entryPoints.forEach { visit(it) }
   }.distinctBy {
-    it.type to it.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX }
+    listOf(
+      it.callable.name,
+      it.callable is PropertyDescriptor,
+      it.type,
+      it.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX }
+    )
   }
 
   val componentObserversRequest = InjectableRequest(
@@ -117,8 +123,8 @@ class ComponentInjectable(
       it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
     } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
 
-  val componentObserversScope = InjectablesScope(
-    name = componentObserversRequest.callableFqName.asString(),
+  val componentScope = InjectablesScope(
+    name = "COMPONENT $callableFqName",
     parent = ownerScope,
     context = ownerScope.context,
     componentType = type,
@@ -148,15 +154,14 @@ class ComponentInjectable(
   val dependencyScopesByRequestCallable = requestCallables
     .associateWith { requestCallable ->
       InjectablesScope(
-        name = callableFqName.child(requestCallable.callable.name).asString(),
-        parent = ownerScope,
-        context = ownerScope.context,
+        name = "COMPONENT FUNCTION ${callableFqName.child(requestCallable.callable.name)}",
+        parent = componentScope,
+        context = componentScope.context,
         callContext = requestCallable.callable.callContext(),
-        componentType = type,
         initialInjectables = componentAndEntryPointInjectables +
             requestCallable.callable.allParameters
               .filter { it != requestCallable.callable.dispatchReceiverParameter }
-              .map { it.toCallableRef(ownerScope.context) }
+              .map { it.toCallableRef(componentScope.context) }
       )
     }
 
@@ -165,7 +170,7 @@ class ComponentInjectable(
     dependencyScopesByRequestCallable.forEach {
       this[requestsByRequestCallables[it.key]!!] = it.value
     }
-    this[componentObserversRequest] = componentObserversScope
+    this[componentObserversRequest] = componentScope
   }
 
   override val callContext: CallContext

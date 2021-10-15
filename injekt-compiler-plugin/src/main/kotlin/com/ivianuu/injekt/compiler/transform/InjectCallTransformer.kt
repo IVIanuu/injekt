@@ -236,6 +236,18 @@ class InjectCallTransformer(
       initializingExpressions -= result.candidate
       return irExpression
     }
+
+    fun pushComponentReceivers(expression: () -> IrExpression) {
+      component!!.superTypes.dropLast(1).forEach {
+        receiverAccessors.push(it.classOrNull!!.owner to expression)
+      }
+    }
+
+    fun popComponentReceivers() {
+      repeat(component!!.superTypes.size - 1) {
+        receiverAccessors.pop()
+      }
+    }
   }
 
   private fun IrFunctionAccessExpression.inject(
@@ -414,7 +426,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     context: GraphContext
-  ): Boolean = false && candidate !is ProviderInjectable &&
+  ): Boolean = candidate !is ProviderInjectable &&
       dependencyResults.isNotEmpty() &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
@@ -428,13 +440,15 @@ class InjectCallTransformer(
     functionWrappedExpressions.getOrPut(result.candidate.type) {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
-        name = "local${graphContext.variableIndex++}".asNameId()
+        name = "function${graphContext.variableIndex++}".asNameId()
         returnType = result.candidate.type.toIrType()
           .typeOrNull!!
-        visibility = DescriptorVisibilities.LOCAL
+        visibility = if (component != null) DescriptorVisibilities.PUBLIC
+        else DescriptorVisibilities.LOCAL
         isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
-        parent = irScope.getLocalDeclarationParent()
+        parent = component ?: irScope.getLocalDeclarationParent()
+
         if (result.candidate.callContext == CallContext.COMPOSABLE) {
           annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
             .irCallConstructor(
@@ -443,12 +457,22 @@ class InjectCallTransformer(
               emptyList()
             )
         }
+
+        if (component != null)
+          addDispatchReceiver { type = component.defaultType }
+
         this.body = DeclarationIrBuilder(pluginContext, symbol).run {
           irBlockBody {
+            if (dispatchReceiverParameter != null)
+              pushComponentReceivers { irGet(dispatchReceiverParameter!!) }
             +irReturn(rawExpressionProvider())
+            if (dispatchReceiverParameter != null)
+              popComponentReceivers()
           }
         }
-        statements += this
+
+        if (component != null) component.declarations += this
+        else statements += this
       }
 
       val expression: ScopeContext.() -> IrExpression = {
@@ -456,23 +480,30 @@ class InjectCallTransformer(
           .irCall(
             function.symbol,
             result.candidate.type.toIrType().typeOrNull!!
-          )
+          ).apply {
+            if (this@with.component != null)
+              dispatchReceiver = receiverExpression(
+                this@with.scope.componentType!!.classifier.descriptor!!
+                  .cast<ClassDescriptor>().thisAsReceiverParameter
+              )
+          }
       }
       expression
     }
   }.invoke(this)
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
-    context: GraphContext
-  ): Boolean = false && candidate is ProviderInjectable &&
-      context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
-      !context.isInBetweenCircularDependency(this)
+    context: ScopeContext
+  ): Boolean = candidate is ProviderInjectable &&
+      context.graphContext.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
+      !context.graphContext.isInBetweenCircularDependency(this) &&
+      context.findScopeContext(highestScope).component == null
 
   private fun ScopeContext.cacheExpressionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
   ): IrExpression {
-    if (!result.shouldCache(graphContext)) return rawExpressionProvider()
+    if (!result.shouldCache(this)) return rawExpressionProvider()
     return with(findScopeContext(result.highestScope)) {
       cachedExpressions.getOrPut(result.candidate.type) {
         val variable = irScope.createTemporaryVariable(
@@ -508,19 +539,12 @@ class InjectCallTransformer(
       superTypes += this@InjectCallTransformer.context.disposableType.defaultType
         .toIrType().typeOrNull!!
 
-      fun pushReceivers(expression: () -> IrExpression) {
-        superTypes.dropLast(1).forEach {
-          receiverAccessors.push(it.classOrNull!!.owner to expression)
-        }
-      }
+      val componentScope = ScopeContext(
+        this@componentExpression,
+        graphContext, injectable.componentScope, scope, this@clazz
+      )
 
-      fun popReceivers() {
-        repeat(superTypes.size - 1) {
-          receiverAccessors.pop()
-        }
-      }
-
-      pushReceivers { irGet(thisReceiver!!) }
+      componentScope.pushComponentReceivers { irGet(thisReceiver!!) }
 
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
@@ -551,10 +575,11 @@ class InjectCallTransformer(
 
           body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
             val dependencyScopeContext = ScopeContext(
-              this@componentExpression,
-              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope, this@clazz
+              componentScope,
+              graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope,
+              null
             )
-            pushReceivers { irGet(dispatchReceiverParameter!!) }
+            componentScope.pushComponentReceivers { irGet(dispatchReceiverParameter!!) }
             val expression = with(dependencyScopeContext) {
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
@@ -585,7 +610,7 @@ class InjectCallTransformer(
                 }
               }
             }
-            popReceivers()
+            componentScope.popComponentReceivers()
             dependencyScopeContext.statements.forEach { +it }
             +irReturn(expression)
           }
@@ -634,12 +659,9 @@ class InjectCallTransformer(
         DescriptorVisibilities.PRIVATE
       ).apply {
         initializer = DeclarationIrBuilder(pluginContext, symbol).run {
-          val componentObserversScope = ScopeContext(
-            this@componentExpression,
-            graphContext, injectable.componentObserversScope, scope, this@clazz
-          )
+
           irExprBody(
-            with(componentObserversScope) {
+            with(componentScope) {
               expressionFor(observersResult)
             }
           )
@@ -760,7 +782,7 @@ class InjectCallTransformer(
         }
       }
 
-      popReceivers()
+      componentScope.popComponentReceivers()
     }
 
     +clazz

@@ -145,14 +145,15 @@ class ExpressionWrappingTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
 
       @Component interface MyComponent {
-        val bar: Pair<Bar, Bar>
+        val bar: Bar
+        val bar2: Bar
       }
-
-      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
 
       fun invoke() {
-        inject<() -> MyComponent>()
+        inject<MyComponent>()
       }
     """
-  )
+  ) {
+    irShouldContain(1, "fun function0(): Bar {")
+  }
 }
