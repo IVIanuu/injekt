@@ -75,6 +75,7 @@ sealed class ResolutionResult {
           // injectables without dependencies can be lifted up to the highest scope which
           // 1. contains the injectable
           // 2. can call the injectable
+          // 3. is callable by the current scope
           if (dependencyResults.isEmpty())
             return@run scope.allScopes
               .firstOrNull { candidateScope ->
@@ -87,6 +88,7 @@ sealed class ResolutionResult {
           // for injectables with dependencies we pick the highest scope which
           // 1. is a common ancestor of all other scopes
           // 2. can call the injectable
+          // 3. is callable by the current scope
 
           val allScopes = mutableSetOf<InjectablesScope>()
 
