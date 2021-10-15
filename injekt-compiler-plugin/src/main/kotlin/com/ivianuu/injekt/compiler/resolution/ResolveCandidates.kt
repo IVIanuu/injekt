@@ -604,7 +604,6 @@ private fun InjectionGraph.Success.postProcess(
   usages: MutableMap<UsageKey, MutableSet<InjectableRequest>>
 ) {
   visitRecursive { request, result ->
-    println("visit $request $result")
     if (result is ResolutionResult.Success.WithCandidate.Value)
       usages.getOrPut(result.usageKey) { mutableSetOf() } += request
     onEachResult(request, result)

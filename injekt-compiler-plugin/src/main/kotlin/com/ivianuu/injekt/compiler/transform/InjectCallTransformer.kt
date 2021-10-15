@@ -338,6 +338,9 @@ class InjectCallTransformer(
           pluginContext.irBuiltIns.anyType,
           DescriptorVisibilities.PRIVATE
         ).apply {
+          component.declarations.remove(this)
+          component.declarations.add(0, this)
+
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
             irExprBody(irCall(pluginContext.irBuiltIns.anyClass.constructors.single()))
           }
@@ -347,6 +350,9 @@ class InjectCallTransformer(
           pluginContext.irBuiltIns.anyNType,
           DescriptorVisibilities.PRIVATE
         ).apply {
+          component.declarations.remove(this)
+          component.declarations.add(0, this)
+
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
             irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
           }
