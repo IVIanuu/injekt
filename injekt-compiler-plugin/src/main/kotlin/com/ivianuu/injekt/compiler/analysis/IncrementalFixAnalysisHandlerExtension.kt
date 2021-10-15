@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
 
 class IncrementalFixAnalysisHandlerExtension(
@@ -92,11 +94,15 @@ class IncrementalFixAnalysisHandlerExtension(
                   injectables += declaration
             }
             is KtNamedFunction -> {
-              if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide))
+              if (!declaration.isLocal && (declaration.hasAnnotation(injektFqNames.provide) ||
+                    declaration.parent.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.component) == true ||
+                    declaration.parent.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.entryPoint) == true))
                 injectables += declaration
             }
             is KtProperty -> {
-              if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide))
+              if (!declaration.isLocal && (declaration.hasAnnotation(injektFqNames.provide) ||
+                    declaration.parent.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.component) == true ||
+                    declaration.parent.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.entryPoint) == true))
                 injectables += declaration
             }
           }
