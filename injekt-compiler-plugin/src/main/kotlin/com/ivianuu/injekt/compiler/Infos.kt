@@ -84,6 +84,7 @@ data class CallableInfo(
 
 fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInfo =
   context.trace.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
+    context.trace!!
     if (isDeserializedDeclaration()) {
       val info = annotations
         .findAnnotation(injektFqNames().callableInfo)
@@ -254,6 +255,7 @@ class ClassifierInfo(
 
 fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): ClassifierInfo =
   context.trace.getOrPut(InjektWritableSlices.CLASSIFIER_INFO, this) {
+    context.trace!!
     if (isDeserializedDeclaration()) {
       (if (this is TypeParameterDescriptor) {
         containingDeclaration

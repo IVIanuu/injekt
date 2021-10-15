@@ -19,6 +19,8 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
+import org.jetbrains.kotlin.cli.jvm.compiler.CliBindingTrace
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -47,17 +49,18 @@ class InjectSyntheticScopeProviderExtension(
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
   ): List<SyntheticScope> =
     if (isEnabled(moduleDescriptor))
-      listOf(InjectSyntheticScope(InjektContext(moduleDescriptor, injektFqNames, null)))
+      listOf(InjectSyntheticScope(InjektContext(moduleDescriptor, injektFqNames, CliBindingTrace())))
     else emptyList()
 }
 
 class InjectSyntheticScopes(
-  @Inject private val injektContext: InjektContext,
+  @Inject injektContext: InjektContext,
   storageManager: StorageManager,
   lookupTracker: LookupTracker,
   samResolver: SamConversionResolver,
   samConversionOracle: SamConversionOracle
 ) : SyntheticScopes {
+  @Provide private val context = injektContext.withTrace(CliBindingTrace())
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
   override val scopes: Collection<SyntheticScope> = delegate.scopes +
