@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
@@ -76,11 +75,7 @@ data class CallableInfo(
   val parameterTypes: Map<Int, TypeRef> = emptyMap(),
   val injectParameters: Set<Int> = emptySet(),
   val scopeComponentType: TypeRef? = null
-) {
-  companion object {
-    val Empty = CallableInfo(STAR_PROJECTION_TYPE, emptyMap(), emptySet(), null)
-  }
-}
+)
 
 fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInfo =
   context.trace.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
@@ -124,10 +119,6 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
 
         return@getOrPut finalInfo
       }
-
-      // if this is a deserialized declaration and no info was persisted
-      // we can return a dummy object because this callable is not relevant for injekt
-      return@getOrPut CallableInfo.Empty
     }
 
     val type = run {
@@ -164,7 +155,7 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
     )
 
     // important to cache the info before persisting it
-    context.trace?.record(InjektWritableSlices.CALLABLE_INFO, this, info)
+    context.trace.record(InjektWritableSlices.CALLABLE_INFO, this, info)
 
     persistInfoIfNeeded(info)
 
@@ -326,7 +317,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
     )
 
     // important to cache the info before persisting it
-    context.trace?.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
+    context.trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
 
     persistInfoIfNeeded(info)
 

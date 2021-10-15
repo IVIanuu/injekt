@@ -23,6 +23,7 @@ import com.ivianuu.injekt.test.TestDisposable
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -395,5 +396,25 @@ class ComponentTest {
     """
   ) {
     invokeSingleFile()
+  }
+
+  @Test fun testComponentDoesIncludeDuplicates() = singleAndMultiCodegen(
+    """
+      interface BaseComponent1 {
+        val foo: Foo
+      }
+      interface BaseComponent2 {
+        val foo: Foo
+      }
+
+      @Component interface MyComponent : BaseComponent1, BaseComponent2
+
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    irShouldContain(1, "override val foo")
   }
 }

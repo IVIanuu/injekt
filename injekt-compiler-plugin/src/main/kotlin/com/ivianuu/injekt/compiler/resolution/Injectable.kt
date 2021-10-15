@@ -85,7 +85,16 @@ class ComponentInjectable(
       if (type in seen) return
       seen += type
 
-      this += type.collectComponentCallables()
+      type.collectComponentCallables()
+        .forEach { callable ->
+          if (none {
+              it.callable.name == callable.callable.name &&
+                  it.callable is PropertyDescriptor == callable.callable is PropertyDescriptor &&
+                  it.type == callable.type &&
+                  it.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX } ==
+                  callable.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX }
+            }) this += callable
+        }
 
       type.superTypes.forEach { visit(it) }
     }
@@ -93,13 +102,6 @@ class ComponentInjectable(
     visit(type)
 
     entryPoints.forEach { visit(it) }
-  }.distinctBy {
-    listOf(
-      it.callable.name,
-      it.callable is PropertyDescriptor,
-      it.type,
-      it.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX }
-    )
   }
 
   val componentObserversRequest = InjectableRequest(
