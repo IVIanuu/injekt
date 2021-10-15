@@ -68,7 +68,7 @@ sealed class ResolutionResult {
             return@run scope.allScopes.lastOrNull { candidateScope ->
               candidateScope.isDeclarationContainer &&
                   candidateScope in scope.allScopes &&
-                  candidate.ownerScope in candidateScope.allScopes
+                  candidate.ownerScope in candidateScope.allScopes &&
                   candidateScope.componentType == candidate.scopeComponentType
             } ?: scope
 
