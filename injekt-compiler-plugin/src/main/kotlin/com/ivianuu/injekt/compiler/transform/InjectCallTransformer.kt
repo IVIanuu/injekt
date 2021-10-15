@@ -208,7 +208,7 @@ class InjectCallTransformer(
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val cachedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
-    val scopedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
+    val scopedExpressions = mutableMapOf<Any, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
     val initializingExpressions: MutableMap<Injectable, InjectableExpression> =
@@ -343,7 +343,7 @@ class InjectCallTransformer(
       ?: return rawExpressionProvider()
     val scope = scope.allScopes.last { it.componentType == scopeComponent }
     return with(findScopeContext(scope)) {
-      scopedExpressions.getOrPut(result.candidate.type) {
+      scopedExpressions.getOrPut(result.candidate.usageKey) {
         val index = graphContext.variableIndex++
         val lockField = component!!.addField(
           "_${index}Lock",

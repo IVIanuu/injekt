@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import kotlin.reflect.KClass
 
 sealed class InjectionGraph {
   abstract val scope: InjectablesScope
@@ -114,11 +115,7 @@ sealed class ResolutionResult {
             } ?: scope
         }
 
-        val usageKey = UsageKey(
-          candidate.type,
-          candidate::class,
-          highestScope
-        )
+        val usageKey = UsageKey(candidate.usageKey, candidate::class, highestScope)
       }
     }
   }
@@ -189,8 +186,8 @@ private fun Injectable.scopeComponentOrNull(scope: InjectablesScope): Injectable
   }
 
 data class UsageKey(
-  val type: TypeRef,
   val key: Any,
+  val type: KClass<out Injectable>,
   val outerMostScope: InjectablesScope
 )
 

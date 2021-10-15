@@ -267,6 +267,25 @@ class ComponentTest {
     compilationShouldHaveFailed("no enclosing component matches com.ivianuu.injekt.integrationtests.ScopeComponent")
   }
 
+  @Test fun testScopedValueAccessedBySubType() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent {
+        val dep: Dep
+        val subType: SubType
+      } 
+
+      interface SubType
+      @Provide @Scoped<ScopeComponent> class Dep : SubType
+    """,
+    """
+      val component = inject<ScopeComponent>()
+      fun invoke() = component.dep to component.subType
+    """
+  ) {
+    val (a, b) = invokeSingleFile<Pair<Any, Any>>()
+    a shouldBeSameInstanceAs b
+  }
+
   @Test fun testEntryPoint() = singleAndMultiCodegen(
     """
       @Component interface MyComponent

@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
+import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -50,6 +51,7 @@ sealed class Injectable {
   abstract val callableFqName: FqName
   abstract val callContext: CallContext
   abstract val ownerScope: InjectablesScope
+  abstract val usageKey: Any
 }
 
 class CallableInjectable(
@@ -68,6 +70,8 @@ class CallableInjectable(
     get() = callable.originalType
   override val scopeComponentType: TypeRef?
     get() = callable.scopeComponentType
+  override val usageKey: Any
+    get() = listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
 }
 
 class ComponentInjectable(
@@ -160,10 +164,9 @@ class ComponentInjectable(
         parent = componentScope,
         context = componentScope.context,
         callContext = requestCallable.callable.callContext(),
-        initialInjectables = componentAndEntryPointInjectables +
-            requestCallable.callable.allParameters
-              .filter { it != requestCallable.callable.dispatchReceiverParameter }
-              .map { it.toCallableRef(componentScope.context) }
+        initialInjectables = requestCallable.callable.allParameters
+          .filter { it != requestCallable.callable.dispatchReceiverParameter }
+          .map { it.toCallableRef(componentScope.context) }
       )
     }
 
@@ -181,6 +184,9 @@ class ComponentInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
+
+  override val usageKey: Any
+    get() = type
 }
 
 class SetInjectable(
@@ -200,6 +206,8 @@ class SetInjectable(
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
+  override val usageKey: Any
+    get() = type
 }
 
 class ProviderInjectable(
@@ -260,6 +268,9 @@ class ProviderInjectable(
   class ProviderValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
     ) : ValueParameterDescriptor by delegate
+
+  override val usageKey: Any
+    get() = type
 }
 
 class SourceKeyInjectable(
@@ -276,6 +287,8 @@ class SourceKeyInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
+  override val usageKey: Any
+    get() = type
 }
 
 class TypeKeyInjectable(
@@ -311,6 +324,8 @@ class TypeKeyInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
+  override val usageKey: Any
+    get() = type
 }
 
 fun CallableRef.getInjectableRequests(
