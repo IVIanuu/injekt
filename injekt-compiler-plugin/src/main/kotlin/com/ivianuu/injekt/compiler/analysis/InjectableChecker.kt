@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -62,6 +63,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext,
   ) {
+    context.trace.record(InjektWritableSlices.INJEKT_FQ_NAMES, Unit, this.context.injektFqNames)
     @Provide val injektContext = this.context.withTrace(context.trace)
     when (descriptor) {
       is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor)

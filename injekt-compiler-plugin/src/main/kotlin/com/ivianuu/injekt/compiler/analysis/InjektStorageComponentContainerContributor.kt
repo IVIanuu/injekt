@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isIde
-import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useImpl
@@ -29,14 +28,14 @@ import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
 class InjektStorageComponentContainerContributor(
-  @Inject private val injektFqNames: InjektFqNames
+  private val injektFqNames: (ModuleDescriptor) -> InjektFqNames
 ) : StorageComponentContainerContributor {
   override fun registerModuleComponents(
     container: StorageComponentContainer,
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    @Provide val context = InjektContext(moduleDescriptor, injektFqNames, null)
+    @Provide val context = InjektContext(moduleDescriptor, injektFqNames(moduleDescriptor), null)
     container.useInstance(context)
     if (platform.componentPlatforms.size > 1)
       container.useImpl<InjectSyntheticScopes>()

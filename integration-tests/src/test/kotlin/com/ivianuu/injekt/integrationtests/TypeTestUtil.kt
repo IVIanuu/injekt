@@ -72,7 +72,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
   @Provide val injektContext =
-    InjektContext(module, InjektFqNames(FqName("com.ivianuu.injekt")), null)
+    InjektContext(module, InjektFqNames.Default, null)
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())

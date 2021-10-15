@@ -44,4 +44,8 @@ class InjektFqNames(val injektPackage: FqName) {
 
   val any = StandardNames.FqNames.any.toSafe()
   val nothing = StandardNames.FqNames.nothing.toSafe()
+
+  companion object {
+    val Default = InjektFqNames(FqName("com.ivianuu.injekt"))
+  }
 }

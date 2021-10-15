@@ -63,7 +63,7 @@ private fun registerExtensions(project: MockProject, configuration: CompilerConf
 
   StorageComponentContainerContributor.registerExtension(
     project,
-    InjektStorageComponentContainerContributor()
+    InjektStorageComponentContainerContributor { injektFqNames }
   )
   IrGenerationExtension.registerExtensionWithLoadingOrder(
     project,
@@ -81,7 +81,7 @@ private fun registerExtensions(project: MockProject, configuration: CompilerConf
   SyntheticScopeProviderExtension.registerExtensionPoint(project)
   SyntheticScopeProviderExtension.registerExtension(
     project,
-    InjectSyntheticScopeProviderExtension()
+    InjectSyntheticScopeProviderExtension({ injektFqNames })
   )
 
   @Suppress("DEPRECATION")

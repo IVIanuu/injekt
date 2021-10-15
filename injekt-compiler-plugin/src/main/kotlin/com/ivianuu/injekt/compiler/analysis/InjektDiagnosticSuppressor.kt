@@ -17,11 +17,9 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
@@ -34,15 +32,16 @@ import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class InjektDiagnosticSuppressor(
-  @Inject private val injektFqNames: InjektFqNames
-) : DiagnosticSuppressor {
+class InjektDiagnosticSuppressor : DiagnosticSuppressor {
   override fun isSuppressed(diagnostic: Diagnostic): Boolean =
     isSuppressed(diagnostic, null)
 
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
     if (bindingContext == null)
       return false
+
+    val injektFqNames = bindingContext[InjektWritableSlices.INJEKT_FQ_NAMES, Unit]
+      ?: return false
 
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER

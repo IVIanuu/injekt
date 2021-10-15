@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
-import org.jetbrains.kotlin.cli.jvm.compiler.CliBindingTrace
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -29,6 +28,8 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.sam.SamConversionOracle
 import org.jetbrains.kotlin.resolve.sam.SamConversionResolver
 import org.jetbrains.kotlin.resolve.scopes.SyntheticScope
@@ -41,7 +42,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectSyntheticScopeProviderExtension(
-  @Inject private val injektFqNames: InjektFqNames,
+  private val injektFqNames: (ModuleDescriptor) -> InjektFqNames,
   private val isEnabled: (ModuleDescriptor) -> Boolean = { true }
 ) : SyntheticScopeProviderExtension {
   override fun getScopes(
@@ -49,7 +50,7 @@ class InjectSyntheticScopeProviderExtension(
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
   ): List<SyntheticScope> =
     if (isEnabled(moduleDescriptor))
-      listOf(InjectSyntheticScope(InjektContext(moduleDescriptor, injektFqNames, CliBindingTrace())))
+      listOf(InjectSyntheticScope(InjektContext(moduleDescriptor, injektFqNames(moduleDescriptor), DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))))
     else emptyList()
 }
 
@@ -60,7 +61,7 @@ class InjectSyntheticScopes(
   samResolver: SamConversionResolver,
   samConversionOracle: SamConversionOracle
 ) : SyntheticScopes {
-  @Provide private val context = injektContext.withTrace(CliBindingTrace())
+  @Provide private val context = injektContext.withTrace(DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
   override val scopes: Collection<SyntheticScope> = delegate.scopes +
