@@ -156,4 +156,21 @@ class ExpressionWrappingTest {
   ) {
     irShouldContain(1, "fun function0(): Bar {")
   }
+
+  @Test fun testFunctionWrapScopedInjectableWithoutDependencies() = codegen(
+    """
+      @Provide val foo: @Scoped<MyComponent> Foo = Foo()
+
+      @Component interface MyComponent {
+        val foo: Foo
+        val foo2: Foo
+      }
+
+      fun invoke() {
+        inject<MyComponent>()
+      }
+    """
+  ) {
+    irShouldContain(1, "fun function0(): Foo {")
+  }
 }

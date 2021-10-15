@@ -427,7 +427,7 @@ class InjectCallTransformer(
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     context: GraphContext
   ): Boolean = candidate !is ProviderInjectable &&
-      dependencyResults.isNotEmpty() &&
+      (dependencyResults.isNotEmpty() || candidate.scopeComponentType != null) &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
 
