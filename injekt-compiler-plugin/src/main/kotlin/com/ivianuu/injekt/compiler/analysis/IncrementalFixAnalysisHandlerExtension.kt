@@ -86,7 +86,9 @@ class IncrementalFixAnalysisHandlerExtension(
             is KtClassOrObject -> {
               if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide) ||
                 declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
-                declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) })
+                declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) } ||
+                declaration.hasAnnotation(injektFqNames.component) ||
+                declaration.hasAnnotation(injektFqNames.entryPoint))
                   injectables += declaration
             }
             is KtNamedFunction -> {
