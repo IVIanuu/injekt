@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
@@ -91,6 +92,8 @@ class ComponentInjectable(
     visit(type)
 
     entryPoints.forEach { visit(it) }
+  }.distinctBy {
+    it.type to it.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX }
   }
 
   val componentObserversRequest = InjectableRequest(
