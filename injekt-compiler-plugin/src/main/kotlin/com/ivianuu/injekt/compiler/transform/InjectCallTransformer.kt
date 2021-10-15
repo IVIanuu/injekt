@@ -220,7 +220,7 @@ class InjectCallTransformer(
       val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
       if (finalScope == scope) return this@ScopeContext
       return parent?.findScopeContext(finalScope)
-        ?: error("wtf")
+        ?: error("wtf 1")
     }
 
     fun expressionFor(result: ResolutionResult.Success.WithCandidate): IrExpression {
@@ -410,7 +410,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     context: GraphContext
-  ): Boolean = candidate !is ProviderInjectable &&
+  ): Boolean = false && candidate !is ProviderInjectable &&
       dependencyResults.isNotEmpty() &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
@@ -420,7 +420,7 @@ class InjectCallTransformer(
     rawExpressionProvider: () -> IrExpression
   ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
   else with(result.safeAs<ResolutionResult.Success.WithCandidate.Value>()
-    ?.outerMostScope?.let { findScopeContext(it) } ?: this) {
+    ?.highestScope?.let { findScopeContext(it) } ?: this) {
     functionWrappedExpressions.getOrPut(result.candidate.type) {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
@@ -460,7 +460,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
     context: GraphContext
-  ): Boolean = candidate is ProviderInjectable &&
+  ): Boolean = false && candidate is ProviderInjectable &&
       context.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
       !context.isInBetweenCircularDependency(this)
 
@@ -469,7 +469,7 @@ class InjectCallTransformer(
     rawExpressionProvider: () -> IrExpression
   ): IrExpression {
     if (!result.shouldCache(graphContext)) return rawExpressionProvider()
-    return with(findScopeContext(result.outerMostScope)) {
+    return with(findScopeContext(result.highestScope)) {
       cachedExpressions.getOrPut(result.candidate.type) {
         val variable = irScope.createTemporaryVariable(
           rawExpressionProvider(),

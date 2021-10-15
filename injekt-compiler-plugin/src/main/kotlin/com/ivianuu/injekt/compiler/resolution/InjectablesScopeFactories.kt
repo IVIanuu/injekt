@@ -306,14 +306,10 @@ private fun ClassInjectablesScope(
   else "CLASS ${clazz.fqNameSafe}"
   InjectablesScope(
     name = name,
-    callContext = CallContext.DEFAULT,
     parent = finalParent,
     ownerDescriptor = clazz,
-    file = null,
     initialInjectables = listOf(clazz.injectableReceiver(false)),
-    imports = emptyList(),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
-    nesting = finalParent.nesting + 1
+    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() }
   )
 }
 
@@ -342,18 +338,14 @@ private fun ClassInitInjectablesScope(
 
   val classInitScope = InjectablesScope(
     name = name,
-    callContext = CallContext.DEFAULT,
     parent = finalParent,
     ownerDescriptor = clazz,
-    file = null,
     initialInjectables = listOf(thisInjectable),
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
       psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
     },
-    imports = emptyList(),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() },
-    nesting = finalParent.nesting + 1
+    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() }
   )
 
   val primaryConstructor = clazz.unsubstitutedPrimaryConstructor
@@ -378,11 +370,7 @@ private fun ConstructorPreInitInjectablesScope(
   return InjectablesScope(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
     parent = parameterScopes,
-    callContext = CallContext.DEFAULT,
     ownerDescriptor = constructor,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting
   )
@@ -418,11 +406,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
       // suspend functions cannot be called from a default value context
       .takeIf { it != CallContext.SUSPEND } ?: CallContext.DEFAULT,
     ownerDescriptor = function,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
-    typeParameters = function.typeParameters.map { it.toClassifierRef() },
-    nesting = finalParent.nesting + 1
+    typeParameters = function.typeParameters.map { it.toClassifierRef() }
   )
 }
 
@@ -446,9 +430,6 @@ private fun FunctionInjectablesScope(
     parent = parameterScopes,
     callContext = function.callContext(),
     ownerDescriptor = function,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting
   )
@@ -485,13 +466,9 @@ private fun FunctionParameterInjectablesScope(
   parameter.callable as ParameterDescriptor
   return InjectablesScope(
     name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
-    callContext = CallContext.DEFAULT,
     parent = parent,
     ownerDescriptor = function,
-    file = null,
     initialInjectables = listOf(parameter),
-    imports = emptyList(),
-    typeParameters = emptyList(),
     nesting = if (parent.name.startsWith("FUNCTION_PARAMETER")) parent.nesting
     else parent.nesting + 1
   )
@@ -518,15 +495,12 @@ private fun PropertyInjectablesScope(
     callContext = property.callContext(),
     parent = finalParent,
     ownerDescriptor = property,
-    file = null,
     initialInjectables = listOfNotNull(
       property.extensionReceiverParameter
         ?.toCallableRef()
         ?.makeProvide()
     ),
-    imports = emptyList(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef() },
-    nesting = finalParent.nesting + 1
+    typeParameters = property.typeParameters.map { it.toClassifierRef() }
   )
 }
 
@@ -563,14 +537,9 @@ private fun PropertyInitInjectablesScope(
 
   return InjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
-    callContext = CallContext.DEFAULT,
     parent = finalParent,
     ownerDescriptor = property,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef() },
-    nesting = finalParent.nesting + 1
+    typeParameters = property.typeParameters.map { it.toClassifierRef() }
   )
 }
 
@@ -595,10 +564,6 @@ private fun LocalVariableInjectablesScope(
     callContext = parent.callContext,
     parent = finalParent,
     ownerDescriptor = variable,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
-    typeParameters = emptyList(),
     nesting = finalParent.nesting
   )
 }
@@ -618,11 +583,6 @@ private fun ExpressionInjectablesScope(
     name = "EXPRESSION ${expression.startOffset}",
     callContext = finalParent.callContext,
     parent = finalParent,
-    ownerDescriptor = null,
-    file = null,
-    initialInjectables = emptyList(),
-    imports = emptyList(),
-    typeParameters = emptyList(),
     nesting = finalParent.nesting
   )
 }
@@ -650,15 +610,11 @@ private fun BlockExpressionInjectablesScope(
       name = "BLOCK AT ${injectableDeclaration.name}",
       callContext = finalParent.callContext,
       parent = finalParent,
-      ownerDescriptor = null,
-      file = null,
       initialInjectables = when (injectableDeclaration) {
         is ClassDescriptor -> injectableDeclaration.injectableConstructors()
         is CallableDescriptor -> listOf(injectableDeclaration.toCallableRef())
         else -> throw AssertionError("Unexpected injectable $injectableDeclaration")
       },
-      imports = emptyList(),
-      typeParameters = emptyList(),
       nesting = if (visibleInjectableDeclarations.size > 1) finalParent.nesting
       else finalParent.nesting + 1
     )
@@ -674,13 +630,12 @@ fun TypeInjectablesScope(
   InjectablesScope(
     name = "TYPE ${type.renderToString()}",
     parent = parent,
-    callContext = CallContext.DEFAULT,
     ownerDescriptor = type.classifier.descriptor,
-    file = null,
     initialInjectables = injectablesWithLookups.injectables,
     imports = injectablesWithLookups.lookedUpPackages
       .map { ResolvedProviderImport(null, "$it.*", it) },
-    typeParameters = emptyList(),
+    isTypeScope = true,
+    isDeclarationContainer = false,
     nesting = parent.nesting
   )
 }
@@ -696,27 +651,22 @@ private fun ImportInjectablesScope(
   val resolvedImports = imports.collectImportedInjectables()
   return InjectablesScope(
     name = "$namePrefix INTERNAL IMPORTS",
-    callContext = CallContext.DEFAULT,
     parent = InjectablesScope(
       name = "$namePrefix EXTERNAL IMPORTS",
-      callContext = CallContext.DEFAULT,
       parent = parent,
-      ownerDescriptor = null,
       file = file,
       initialInjectables = resolvedImports
         .filter { it.callable.isExternalDeclaration() },
-      injectablesPredicate = injectablesPredicate,
-      imports = emptyList(),
-      typeParameters = emptyList(),
-      nesting = parent?.nesting?.inc() ?: 0
+      isDeclarationContainer = false,
+      injectablesPredicate = injectablesPredicate
     ),
     ownerDescriptor = null,
     file = file,
     initialInjectables = resolvedImports
       .filterNot { it.callable.isExternalDeclaration() },
+    isDeclarationContainer = false,
     injectablesPredicate = injectablesPredicate,
     imports = imports.mapNotNull { it.resolve() },
-    typeParameters = emptyList(),
     nesting = parent?.nesting?.inc()?.inc() ?: 1
   )
 }

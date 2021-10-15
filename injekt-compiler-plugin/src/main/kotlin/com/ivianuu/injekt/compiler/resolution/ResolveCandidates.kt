@@ -33,7 +33,7 @@ sealed class InjectionGraph {
     override val scope: InjectablesScope,
     override val callee: CallableRef,
     val results: Map<InjectableRequest, ResolutionResult.Success>,
-    val usages: Map<UsageKey, List<InjectableRequest>>
+    val usages: Map<UsageKey, MutableSet<InjectableRequest>>
   ) : InjectionGraph()
 
   data class Error(
@@ -62,59 +62,56 @@ sealed class ResolutionResult {
         override val scope: InjectablesScope,
         val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
-        val outerMostScope: InjectablesScope = when {
+        val highestScope: InjectablesScope = run {
+          // scoped injectables can only be resolved inside their component
+          if (candidate.scopeComponentType != null)
+            return@run scope.allScopes.lastOrNull {
+              it.isDeclarationContainer &&
+                  candidate.ownerScope in it.allScopes
+                  it.componentType == candidate.scopeComponentType
+            } ?: scope
 
-          dependencyResults.isEmpty() -> scope.allScopes.first {
-            it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
-                it.callContext.canCall(candidate.callContext)
+          // injectables without dependencies can be lifted up to the highest scope which
+          // 1. contains the injectable
+          // 2. can call the injectable
+          if (dependencyResults.isEmpty())
+            return@run scope.allScopes
+              .firstOrNull { candidateScope ->
+                candidateScope.isDeclarationContainer &&
+                    candidate.ownerScope.allScopes.all { it in candidateScope.allScopes } &&
+                    candidateScope.callContext.canCall(candidate.callContext)
+              } ?: scope
+
+          // for injectables with dependencies we pick the highest scope which
+          // 1. is a common ancestor of all other scopes
+          // 2. can call the injectable
+
+          val allScopes = mutableSetOf<InjectablesScope>()
+
+          fun collectScopesRecursive(result: Value) {
+            allScopes += result.candidate.ownerScope
+            result.candidate.scopeComponentOrNull(result.scope)?.let { allScopes += it }
+            result.dependencyResults.values
+              .filterIsInstance<Value>()
+              .forEach { collectScopesRecursive(it) }
           }
-          candidate.dependencyScopes.isNotEmpty() -> {
-            val allOuterMostScopes = mutableListOf<InjectablesScope>()
-            fun Value.visit() {
-              allOuterMostScopes += outerMostScope
-              dependencyResults.forEach {
-                (it.value as? Value)?.visit()
-              }
-            }
-            dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
-            allOuterMostScopes
-              .sortedBy { it.nesting }
-              .filter { outerMostScope ->
-                candidate.dependencyScopes.values
-                  .all { outerMostScope.allScopes.size < it.allScopes.size }
-              }
-              .lastOrNull {
-                it.callContext.canCall(candidate.callContext)
-              } ?: scope.allScopes.first()
-          }
-          else -> {
-            val dependencyScope = dependencyResults
-              .filterValues { it is Value }
-              .mapValues { it.value as Value }
-              .maxByOrNull { it.value.outerMostScope.nesting }
-              ?.value?.outerMostScope
-            if (dependencyScope != null) {
-              when {
-                dependencyScope.nesting <
-                    candidate.scopeComponentOrOwnerScope(scope).nesting -> scope.allScopes.first {
-                  it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
-                      it.callContext.canCall(scope.callContext)
-                }
-                dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
-                else -> scope.allScopes.first {
-                  it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
-                      it.callContext.canCall(scope.callContext)
-                }
-              }
-            } else {
-              scope.allScopes.first {
-                it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
-                    it.callContext.canCall(scope.callContext)
-              }
-            }
-          }
+
+          collectScopesRecursive(this)
+
+          allScopes
+            .sortedBy { it.nesting }
+            .firstOrNull { candidateScope ->
+              candidateScope.isDeclarationContainer &&
+                  allScopes.all { it in candidateScope.allScopes } &&
+                  candidateScope.callContext.canCall(candidate.callContext)
+            } ?: scope
         }
-        val usageKey = UsageKey(candidate.type, outerMostScope)
+
+        val usageKey = UsageKey(
+          candidate.type,
+          candidate::class,
+          highestScope
+        )
       }
     }
   }
@@ -179,12 +176,16 @@ sealed class ResolutionResult {
   }
 }
 
-private fun Injectable.scopeComponentOrOwnerScope(scope: InjectablesScope): InjectablesScope =
+private fun Injectable.scopeComponentOrNull(scope: InjectablesScope): InjectablesScope? =
   scopeComponentType?.let {
     scope.allScopes.last { it.componentType == scopeComponentType }
-  } ?: ownerScope
+  }
 
-data class UsageKey(val type: TypeRef, val outerMostScope: InjectablesScope)
+data class UsageKey(
+  val type: TypeRef,
+  val key: Any,
+  val outerMostScope: InjectablesScope
+)
 
 fun InjectablesScope.resolveRequests(
   callee: CallableRef,
@@ -207,7 +208,7 @@ fun InjectablesScope.resolveRequests(
         }
     }
   }
-  val usages = mutableMapOf<UsageKey, MutableList<InjectableRequest>>()
+  val usages = mutableMapOf<UsageKey, MutableSet<InjectableRequest>>()
   return if (failure == null) InjectionGraph.Success(
     this,
     callee,
@@ -600,11 +601,12 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
 
 private fun InjectionGraph.Success.postProcess(
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit,
-  usages: MutableMap<UsageKey, MutableList<InjectableRequest>>
+  usages: MutableMap<UsageKey, MutableSet<InjectableRequest>>
 ) {
   visitRecursive { request, result ->
+    println("visit $request $result")
     if (result is ResolutionResult.Success.WithCandidate.Value)
-      usages.getOrPut(result.usageKey) { mutableListOf() } += request
+      usages.getOrPut(result.usageKey) { mutableSetOf() } += request
     onEachResult(request, result)
   }
 }

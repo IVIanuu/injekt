@@ -118,14 +118,8 @@ class ComponentInjectable(
     name = componentObserversRequest.callableFqName.asString(),
     parent = ownerScope,
     context = ownerScope.context,
-    callContext = CallContext.DEFAULT,
-    ownerDescriptor = null,
     componentType = type,
-    file = null,
-    initialInjectables = componentAndEntryPointInjectables,
-    imports = emptyList(),
-    typeParameters = emptyList(),
-    nesting = ownerScope.nesting + 1
+    initialInjectables = componentAndEntryPointInjectables
   )
 
   val requestsByRequestCallables = requestCallables
@@ -155,16 +149,11 @@ class ComponentInjectable(
         parent = ownerScope,
         context = ownerScope.context,
         callContext = requestCallable.callable.callContext(),
-        ownerDescriptor = null,
         componentType = type,
-        file = null,
         initialInjectables = componentAndEntryPointInjectables +
             requestCallable.callable.allParameters
               .filter { it != requestCallable.callable.dispatchReceiverParameter }
-              .map { it.toCallableRef(ownerScope.context) },
-        imports = emptyList(),
-        typeParameters = emptyList(),
-        nesting = ownerScope.nesting + 1
+              .map { it.toCallableRef(ownerScope.context) }
       )
     }
 
@@ -241,17 +230,12 @@ class ProviderInjectable(
       parent = ownerScope,
       context = ownerScope.context,
       callContext = dependencyCallContext,
-      ownerDescriptor = null,
-      file = null,
       initialInjectables = parameterDescriptors
         .mapIndexed { index, parameter ->
           parameter
             .toCallableRef()
             .copy(isProvide = true, type = type.arguments[index])
-        },
-      imports = emptyList(),
-      typeParameters = emptyList(),
-      nesting = ownerScope.nesting + 1
+        }
     )
   )
   override val callContext: CallContext

@@ -38,15 +38,17 @@ class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   @Inject @Provide val context: InjektContext,
-  val callContext: CallContext,
-  val ownerDescriptor: DeclarationDescriptor?,
-  val file: KtFile?,
+  val callContext: CallContext = CallContext.DEFAULT,
+  val ownerDescriptor: DeclarationDescriptor? = null,
+  val file: KtFile? = null,
   val componentType: TypeRef? = null,
-  val initialInjectables: List<CallableRef>,
+  val isTypeScope: Boolean = false,
+  val isDeclarationContainer: Boolean = true,
+  val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  imports: List<ResolvedProviderImport>,
-  val typeParameters: List<ClassifierRef>,
-  val nesting: Int
+  imports: List<ResolvedProviderImport> = emptyList(),
+  val typeParameters: List<ClassifierRef> = emptyList(),
+  val nesting: Int = parent?.nesting?.inc() ?: 0
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -95,8 +97,6 @@ class InjectablesScope(
     parent?.componentTypes?.toMutableList() ?: mutableListOf()
   private val entryPointTypes: MutableList<TypeRef> =
     parent?.entryPointTypes?.toMutableList() ?: mutableListOf()
-
-  val isTypeScope = name.startsWith("TYPE ")
 
   init {
     initialInjectables
