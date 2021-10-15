@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android.app
+package com.ivianuu.injekt.samples.android.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,8 +23,6 @@ import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
-import com.ivianuu.injekt.samples.android.ui.AppTheme
-import com.ivianuu.injekt.samples.android.ui.AppUi
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {

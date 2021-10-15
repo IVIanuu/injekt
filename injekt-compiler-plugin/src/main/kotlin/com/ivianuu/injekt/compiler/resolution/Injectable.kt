@@ -233,6 +233,7 @@ class ProviderInjectable(
     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
     .first()
     .valueParameters
+    .map { ProviderValueParameterDescriptor(it) }
 
   override val dependencyScopes = mapOf(
     dependencies.single() to InjectablesScope(
@@ -254,6 +255,11 @@ class ProviderInjectable(
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
+
+  // required to distinct between individual providers in codegen
+  class ProviderValueParameterDescriptor(
+    private val delegate: ValueParameterDescriptor
+    ) : ValueParameterDescriptor by delegate
 }
 
 class SourceKeyInjectable(
