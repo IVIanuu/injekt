@@ -78,10 +78,11 @@ sealed class ResolutionResult {
           // 3. is callable by the current scope
           if (dependencyResults.isEmpty())
             return@run scope.allScopes
+              .sortedBy { it.nesting }
               .firstOrNull { candidateScope ->
                 candidateScope.isDeclarationContainer &&
                     candidateScope in scope.allScopes &&
-                    candidate.ownerScope.allScopes.all { it in candidateScope.allScopes } &&
+                    candidateScope in candidate.ownerScope.allScopes &&
                     candidateScope.callContext.canCall(candidate.callContext)
               } ?: scope
 
@@ -107,6 +108,7 @@ sealed class ResolutionResult {
             .firstOrNull { candidateScope ->
               candidateScope.isDeclarationContainer &&
                   candidateScope in scope.allScopes &&
+                  candidate.ownerScope in candidateScope.allScopes &&
                   allScopes.all { it in candidateScope.allScopes } &&
                   candidateScope.callContext.canCall(candidate.callContext)
             } ?: scope
