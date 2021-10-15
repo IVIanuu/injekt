@@ -65,10 +65,11 @@ sealed class ResolutionResult {
         val highestScope: InjectablesScope = run {
           // scoped injectables can only be resolved inside their component
           if (candidate.scopeComponentType != null)
-            return@run scope.allScopes.lastOrNull {
-              it.isDeclarationContainer &&
-                  candidate.ownerScope in it.allScopes
-                  it.componentType == candidate.scopeComponentType
+            return@run scope.allScopes.lastOrNull { candidateScope ->
+              candidateScope.isDeclarationContainer &&
+                  candidateScope in scope.allScopes &&
+                  candidate.ownerScope in candidateScope.allScopes
+                  candidateScope.componentType == candidate.scopeComponentType
             } ?: scope
 
           // injectables without dependencies can be lifted up to the highest scope which
@@ -78,6 +79,7 @@ sealed class ResolutionResult {
             return@run scope.allScopes
               .firstOrNull { candidateScope ->
                 candidateScope.isDeclarationContainer &&
+                    candidateScope in scope.allScopes &&
                     candidate.ownerScope.allScopes.all { it in candidateScope.allScopes } &&
                     candidateScope.callContext.canCall(candidate.callContext)
               } ?: scope
@@ -102,6 +104,7 @@ sealed class ResolutionResult {
             .sortedBy { it.nesting }
             .firstOrNull { candidateScope ->
               candidateScope.isDeclarationContainer &&
+                  candidateScope in scope.allScopes &&
                   allScopes.all { it in candidateScope.allScopes } &&
                   candidateScope.callContext.canCall(candidate.callContext)
             } ?: scope
