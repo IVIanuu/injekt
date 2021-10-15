@@ -1003,6 +1003,15 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerInDifferentFile() = codegen(
+    """
+      @Provide val bar: Bar = Bar(inject())
+    """,
+    """
+      @Provide val foo: Foo = Foo()
+    """
+  )
+
   @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredAfterIt() = codegen(
     """
       @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }

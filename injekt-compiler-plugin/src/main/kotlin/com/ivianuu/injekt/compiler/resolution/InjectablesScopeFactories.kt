@@ -262,7 +262,9 @@ private fun FileInitInjectablesScope(
     namePrefix = "FILE INIT ${file.name} at ",
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
-      psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
+      psiProperty.containingFile != file ||
+          psiProperty.delegateExpressionOrInitializer == null ||
+          it.callable in visibleInjectableDeclarations
     },
     parent = null
   )
