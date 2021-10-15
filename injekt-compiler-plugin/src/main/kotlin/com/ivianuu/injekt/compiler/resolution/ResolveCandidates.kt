@@ -62,61 +62,59 @@ sealed class ResolutionResult {
         override val scope: InjectablesScope,
         val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
-        val usageKey by lazy { UsageKey(candidate.type, outerMostScope) }
-        val outerMostScope: InjectablesScope by lazy {
-          when {
-            dependencyResults.isEmpty() -> scope.allScopes.first {
-              it.nesting >= candidate.ownerScope.nesting &&
-                  it.callContext.canCall(candidate.callContext)
-            }
-            candidate.dependencyScopes.isNotEmpty() -> {
-              val allOuterMostScopes = mutableListOf<InjectablesScope>()
-              fun Value.visit() {
-                allOuterMostScopes += outerMostScope
-                dependencyResults.forEach {
-                  (it.value as? Value)?.visit()
-                }
+        val outerMostScope: InjectablesScope = when {
+
+          dependencyResults.isEmpty() -> scope.allScopes.first {
+            it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
+                it.callContext.canCall(candidate.callContext)
+          }
+          candidate.dependencyScopes.isNotEmpty() -> {
+            val allOuterMostScopes = mutableListOf<InjectablesScope>()
+            fun Value.visit() {
+              allOuterMostScopes += outerMostScope
+              dependencyResults.forEach {
+                (it.value as? Value)?.visit()
               }
-              dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
-              allOuterMostScopes
-                .sortedBy { it.nesting }
-                .filter { outerMostScope ->
-                  candidate.dependencyScopes.values
-                    .all { outerMostScope.allScopes.size < it.allScopes.size }
-                }
-                .lastOrNull {
-                  it.callContext.canCall(candidate.callContext)
-                } ?: scope.allScopes.first()
             }
-            else -> {
-              val dependencyScope = dependencyResults
-                .filterValues { it is Value }
-                .mapValues { it.value as Value }
-                .maxByOrNull {
-                  it.value.outerMostScope.nesting
-                }?.value?.outerMostScope
-              if (dependencyScope != null) {
-                when {
-                  dependencyScope.nesting <
-                      candidate.ownerScope.nesting -> scope.allScopes.first {
-                    it.nesting >= candidate.ownerScope.nesting &&
-                        it.callContext.canCall(scope.callContext)
-                  }
-                  dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
-                  else -> scope.allScopes.first {
-                    it.nesting >= candidate.ownerScope.nesting &&
-                        it.callContext.canCall(scope.callContext)
-                  }
-                }
-              } else {
-                scope.allScopes.first {
-                  it.nesting >= candidate.ownerScope.nesting &&
+            dependencyResults.values.forEach { it.safeAs<Value>()?.visit() }
+            allOuterMostScopes
+              .sortedBy { it.nesting }
+              .filter { outerMostScope ->
+                candidate.dependencyScopes.values
+                  .all { outerMostScope.allScopes.size < it.allScopes.size }
+              }
+              .lastOrNull {
+                it.callContext.canCall(candidate.callContext)
+              } ?: scope.allScopes.first()
+          }
+          else -> {
+            val dependencyScope = dependencyResults
+              .filterValues { it is Value }
+              .mapValues { it.value as Value }
+              .maxByOrNull { it.value.outerMostScope.nesting }
+              ?.value?.outerMostScope
+            if (dependencyScope != null) {
+              when {
+                dependencyScope.nesting <
+                    candidate.scopeComponentOrOwnerScope(scope).nesting -> scope.allScopes.first {
+                  it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
                       it.callContext.canCall(scope.callContext)
                 }
+                dependencyScope.callContext.canCall(scope.callContext) -> dependencyScope
+                else -> scope.allScopes.first {
+                  it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
+                      it.callContext.canCall(scope.callContext)
+                }
+              }
+            } else {
+              scope.allScopes.first {
+                it.nesting >= candidate.scopeComponentOrOwnerScope(scope).nesting &&
+                    it.callContext.canCall(scope.callContext)
               }
             }
           }
         }
+        val usageKey = UsageKey(candidate.type, outerMostScope)
       }
     }
   }
@@ -180,6 +178,11 @@ sealed class ResolutionResult {
     }
   }
 }
+
+private fun Injectable.scopeComponentOrOwnerScope(scope: InjectablesScope): InjectablesScope =
+  scopeComponentType?.let {
+    scope.allScopes.last { it.componentType == scopeComponentType }
+  } ?: ownerScope
 
 data class UsageKey(val type: TypeRef, val outerMostScope: InjectablesScope)
 

@@ -246,7 +246,7 @@ class ClassifierInfo(
   val tags: List<TypeRef> = emptyList(),
   val scopeComponentType: TypeRef? = null,
   val entryPointComponentType: TypeRef? = null,
-  val lazySuperTypes: Lazy<List<TypeRef>> = lazy { emptyList() },
+  val lazySuperTypes: Lazy<List<TypeRef>> = lazy(LazyThreadSafetyMode.NONE) { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false
 ) {
@@ -284,7 +284,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
 
     val isTag = hasAnnotation(injektFqNames().tag)
 
-    val lazySuperTypes = lazy {
+    val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
         expandedType != null -> listOf(expandedType)
         isTag -> listOf(context.injektContext.anyType)
@@ -348,7 +348,7 @@ fun PersistedClassifierInfo.toClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   scopeComponentType = scopeComponentType?.toTypeRef(),
   entryPointComponentType = entryPointComponentType?.toTypeRef(),
-  lazySuperTypes = lazy { superTypes.map { it.toTypeRef() } },
+  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread
 )

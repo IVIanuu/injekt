@@ -138,4 +138,21 @@ class ExpressionWrappingTest {
   ) {
     irShouldContain(1, "local class BarComponentImpl")
   }
+
+  @Test fun testFunctionWrapScopedInjectable() = codegen(
+    """
+      @Provide val foo: @Scoped<MyComponent> Foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+
+      @Component interface MyComponent {
+        val bar: Pair<Bar, Bar>
+      }
+
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+
+      fun invoke() {
+        inject<() -> MyComponent>()
+      }
+    """
+  )
 }

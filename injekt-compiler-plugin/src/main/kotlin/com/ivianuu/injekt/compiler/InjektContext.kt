@@ -50,24 +50,24 @@ class InjektContext(
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val setClassifier by lazy { module.builtIns.set.toClassifierRef() }
-  val collectionClassifier by lazy { module.builtIns.collection.toClassifierRef() }
-  val nullableNothingType by lazy { module.builtIns.nullableNothingType.toTypeRef() }
-  val anyType by lazy { module.builtIns.anyType.toTypeRef() }
-  val nullableAnyType by lazy {
+  val setClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.set.toClassifierRef() }
+  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }
+  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef() }
+  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef() }
+  val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
-  val typeKeyType by lazy {
+  val typeKeyType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().typeKey)
     )!!.toClassifierRef()
   }
-  val componentObserverType by lazy {
+  val componentObserverType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().componentObserver)
     )!!.toClassifierRef()
   }
-  val disposableType by lazy {
+  val disposableType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().disposable)
     )!!.toClassifierRef()

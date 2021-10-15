@@ -127,7 +127,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
         key = "${uniqueKey()}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
-        lazySuperTypes = lazy { listOf(context.injektContext.nullableAnyType) },
+        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(context.injektContext.nullableAnyType) },
         variance = TypeVariance.OUT
       )
     }
@@ -375,7 +375,7 @@ fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
 fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<ClassifierRef> {
   val allNewSuperTypes = map { mutableListOf<TypeRef>() }
   val newClassifiers = mapIndexed { index, classifier ->
-    classifier.copy(lazySuperTypes = lazy { allNewSuperTypes[index] })
+    classifier.copy(lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { allNewSuperTypes[index] })
   }
   val combinedMap = map + zip(newClassifiers.map { it.defaultType })
   for (i in indices) {

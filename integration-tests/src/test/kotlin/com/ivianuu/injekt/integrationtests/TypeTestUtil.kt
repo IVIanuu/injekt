@@ -108,7 +108,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = lazy {
+    lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
     },
   ).defaultType
@@ -119,7 +119,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = lazy { listOf(expandedType) },
+    lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(expandedType) },
     isTypeAlias = true
   ).defaultType
 
@@ -130,7 +130,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = lazy {
+    lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
     },
     typeParameters = typeParameters
@@ -156,7 +156,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ) = ClassifierRef(
     key = fqName.asString(),
     fqName = fqName,
-    lazySuperTypes = lazy {
+    lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (upperBounds.isNotEmpty()) upperBounds.toList() else
         listOf(any.copy(isMarkedNullable = nullable))
     },

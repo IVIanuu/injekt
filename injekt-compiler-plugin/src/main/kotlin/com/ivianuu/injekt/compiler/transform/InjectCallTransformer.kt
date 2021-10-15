@@ -323,13 +323,6 @@ class InjectCallTransformer(
     }
   }
 
-  private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
-    context: GraphContext
-  ): Boolean = candidate !is ProviderInjectable &&
-      dependencyResults.isNotEmpty() &&
-      context.graph.usages[this.usageKey]!!.size > 1 &&
-      !context.isInBetweenCircularDependency(this)
-
   private fun ScopeContext.scopeExpressionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
@@ -414,6 +407,13 @@ class InjectCallTransformer(
       }
     }.invoke(this)
   }
+
+  private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
+    context: GraphContext
+  ): Boolean = candidate !is ProviderInjectable &&
+      dependencyResults.isNotEmpty() &&
+      context.graph.usages[this.usageKey]!!.size > 1 &&
+      !context.isInBetweenCircularDependency(this)
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
