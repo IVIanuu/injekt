@@ -463,9 +463,7 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
     ) { newAnnotations }
     is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
-    else -> {
-      //throw AssertionError("Cannot add annotation to $this $javaClass")
-    }
+    else -> throw AssertionError("Cannot add annotation to $this $javaClass")
   }
 }
 
