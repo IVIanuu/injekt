@@ -417,17 +417,8 @@ class InjectablesScope(
           .toList()
           .forEach { spreadInjectables(newSpreadingInjectable, it) }
       },
-      addComponent = { newInnerComponentType ->
-        componentTypes += newInnerComponentType
-        val newInnerComponentTypeWithFrameworkKey = newInnerComponentType.copy(
-          frameworkKey = generateFrameworkKey()
-            .also { spreadingInjectable.resultingFrameworkKeys += it }
-        )
-        componentTypes += newInnerComponentTypeWithFrameworkKey
-        spreadingInjectableCandidateTypes += newInnerComponentTypeWithFrameworkKey
-        spreadInjectables(newInnerComponentTypeWithFrameworkKey)
-      },
-      addEntryPoint = { TODO() }
+      addComponent = { throw AssertionError("Wtf") },
+      addEntryPoint = { throw AssertionError("Wtf") }
     )
   }
 
