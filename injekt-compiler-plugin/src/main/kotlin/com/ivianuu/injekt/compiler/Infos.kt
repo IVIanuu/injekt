@@ -411,8 +411,8 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       (this !is ClassDescriptor ||
           constructors.none { it.hasAnnotation(injektFqNames().provide) }) &&
       info.superTypes.none { it.shouldBePersisted() } &&
-          info.entryPointComponentType == null &&
-          info.scopeComponentType == null
+      info.entryPointComponentType == null &&
+      info.scopeComponentType == null
     ) return
 
     val serializedInfo = info.toPersistedClassifierInfo().encode()
