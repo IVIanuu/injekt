@@ -173,4 +173,24 @@ class ExpressionWrappingTest {
   ) {
     irShouldContain(1, "fun function0(): Foo {")
   }
+
+  @Test fun testSearchBetterName() = codegen(
+    """
+      interface Logger
+
+      @Provide object AndroidLogger : Logger
+
+      @Provide fun androidLogger(factory: () -> AndroidLogger): @Scoped<MyComponent> Logger =
+        factory()
+
+      @Component interface MyComponent {
+        val loggerFactory: () -> Logger
+        val loggerFactory2: () -> Logger
+      }
+
+      fun invoke() {
+        inject<MyComponent>()
+      }
+    """
+  )
 }
