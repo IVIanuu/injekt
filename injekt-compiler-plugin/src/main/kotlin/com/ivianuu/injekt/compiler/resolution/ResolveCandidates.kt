@@ -171,7 +171,7 @@ private fun Injectable.scopeComponentOrNull(scope: InjectablesScope): Injectable
 data class UsageKey(
   val key: Any,
   val type: KClass<out Injectable>,
-  val outerMostScope: InjectablesScope
+  val highestScope: InjectablesScope
 )
 
 fun InjectablesScope.resolveRequests(
