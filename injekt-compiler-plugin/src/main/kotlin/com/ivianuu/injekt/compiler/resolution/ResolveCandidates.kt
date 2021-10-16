@@ -64,39 +64,18 @@ sealed class ResolutionResult {
         val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
         val highestScope: InjectablesScope = run {
-          // scoped injectables can only be resolved inside their component
           if (candidate.scopeComponentType != null)
             return@run scope.allScopes.lastOrNull { candidateScope ->
               candidateScope.isDeclarationContainer &&
-                  candidateScope in scope.allScopes &&
-                  candidate.ownerScope in candidateScope.allScopes &&
+                  candidateScope.canSeeInjectablesOf(candidate.ownerScope) &&
                   candidateScope.componentType == candidate.scopeComponentType
             } ?: scope
 
-          // injectables without dependencies can be lifted up to the highest scope which
-          // 1. contains the injectable
-          // 2. can call the injectable
-          // 3. is callable by the current scope
-          if (dependencyResults.isEmpty())
-            return@run scope.allScopes
-              .sortedBy { it.nesting }
-              .firstOrNull { candidateScope ->
-                candidateScope.isDeclarationContainer &&
-                    candidateScope in scope.allScopes &&
-                    candidateScope in candidate.ownerScope.allScopes &&
-                    candidateScope.callContext.canCall(candidate.callContext)
-              } ?: scope
-
-          // for injectables with dependencies we pick the highest scope which
-          // 1. is a common ancestor of all other scopes
-          // 2. can call the injectable
-          // 3. is callable by the current scope
-
-          val allScopes = mutableSetOf<InjectablesScope>()
+          val anchorScopes = mutableSetOf<InjectablesScope>()
 
           fun collectScopesRecursive(result: Value) {
-            allScopes += result.candidate.ownerScope
-            result.candidate.scopeComponentOrNull(result.scope)?.let { allScopes += it }
+            anchorScopes += result.candidate.ownerScope
+            result.candidate.scopeComponentOrNull(result.scope)?.let { anchorScopes += it }
             result.dependencyResults.values
               .filterIsInstance<Value>()
               .forEach { collectScopesRecursive(it) }
@@ -104,13 +83,14 @@ sealed class ResolutionResult {
 
           collectScopesRecursive(this)
 
-          allScopes
+          scope.allScopes
             .sortedBy { it.nesting }
             .firstOrNull { candidateScope ->
               candidateScope.isDeclarationContainer &&
-                  candidateScope in scope.allScopes &&
-                  candidate.ownerScope in candidateScope.allScopes &&
-                  allScopes.all { it in candidateScope.allScopes } &&
+                  anchorScopes.all {
+                    (candidateScope.canSeeInjectablesOf(it) ||
+                        candidateScope.canSeeInjectablesOf(scope))
+                  } &&
                   candidateScope.callContext.canCall(candidate.callContext)
             } ?: scope
         }
@@ -180,6 +160,9 @@ sealed class ResolutionResult {
   }
 }
 
+private fun InjectablesScope.canSeeInjectablesOf(other: InjectablesScope): Boolean =
+  other in allScopes
+
 private fun Injectable.scopeComponentOrNull(scope: InjectablesScope): InjectablesScope? =
   scopeComponentType?.let {
     scope.allScopes.last { it.componentType == scopeComponentType }
@@ -218,8 +201,7 @@ fun InjectablesScope.resolveRequests(
     callee,
     successes,
     usages
-  )
-    .also { it.postProcess(onEachResult, usages) }
+  ).also { it.postProcess(onEachResult, usages) }
   else InjectionGraph.Error(this, callee, failureRequest!!, failure)
 }
 
