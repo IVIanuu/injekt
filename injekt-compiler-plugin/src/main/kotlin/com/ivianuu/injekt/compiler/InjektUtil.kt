@@ -124,7 +124,7 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
 ) = context.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
-  moduleName() != context.module.name.asString()
+  moduleName().removeSurrounding("<", ">") != context.module.name.asString().removeSurrounding("<", ">")
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
