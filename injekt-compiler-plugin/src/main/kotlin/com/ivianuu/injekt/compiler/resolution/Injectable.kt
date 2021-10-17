@@ -335,8 +335,7 @@ fun CallableRef.getInjectableRequests(
   .filter {
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isProvide() ||
-        parameterTypes[it.injektIndex()]!!.isProvide
+        it.isProvide()
   }
   .map { it.toInjectableRequest(this) }
 
