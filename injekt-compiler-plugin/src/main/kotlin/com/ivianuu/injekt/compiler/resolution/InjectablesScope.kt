@@ -118,9 +118,7 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.frameworkKey == 0 &&
-      request.type.classifier == context.injektContext.setClassifier
-    ) return emptyList()
+    if (request.type.classifier == context.injektContext.setClassifier) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { it.isValidObjectRequest(request) }
@@ -282,9 +280,8 @@ class InjectablesScope(
         candidate.substitute(substitutionMap)
       }
       .map { componentType ->
-        val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
-        componentTypes += typeWithFrameworkKey
-        typeWithFrameworkKey
+        componentType.copy(frameworkKey = generateFrameworkKey())
+          .also { componentTypes += it }
       }
   }
 
