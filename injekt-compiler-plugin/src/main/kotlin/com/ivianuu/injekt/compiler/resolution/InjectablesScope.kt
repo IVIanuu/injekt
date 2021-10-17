@@ -196,17 +196,15 @@ class InjectablesScope(
               }
           }
 
-          if (elements.isNotEmpty()) {
+          if (elements.isEmpty()) null
+          else {
             val elementRequests = elements
               .mapIndexed { index, element ->
                 InjectableRequest(
                   type = element,
-                  isRequired = true,
                   callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].renderToString()}>"),
                   parameterName = "element$index".asNameId(),
-                  parameterIndex = index,
-                  isInline = false,
-                  isLazy = false
+                  parameterIndex = index
                 )
               }
             SetInjectable(
@@ -216,7 +214,7 @@ class InjectablesScope(
               singleElementType = singleElementType,
               collectionElementType = collectionElementType
             )
-          } else null
+          }
         }
       )
       request.type.classifier.fqName == injektFqNames().typeKey ->

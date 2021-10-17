@@ -120,7 +120,6 @@ class ComponentInjectable(
     parameterName = "observers".asNameId(),
     parameterIndex = -1,
     isRequired = false,
-    isInline = false,
     isLazy = true
   )
 
@@ -148,7 +147,6 @@ class ComponentInjectable(
         isRequired = requestCallable.callable
           .cast<CallableMemberDescriptor>()
           .modality == Modality.ABSTRACT,
-        isInline = false,
         isLazy = true
       )
     }
@@ -223,7 +221,6 @@ class ProviderInjectable(
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
       type = type.arguments.last(),
-      isRequired = true,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
@@ -305,12 +302,9 @@ class TypeKeyInjectable(
         InjectableRequest(
           type = ownerScope.context.injektContext.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
-          isRequired = true,
           callableFqName = callableFqName,
           parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
-          parameterIndex = index,
-          isInline = false,
-          isLazy = false
+          parameterIndex = index
         )
       }
   }
@@ -344,9 +338,9 @@ data class InjectableRequest(
   val callableFqName: FqName,
   val parameterName: Name,
   val parameterIndex: Int,
-  val isRequired: Boolean,
-  val isInline: Boolean,
-  val isLazy: Boolean
+  val isRequired: Boolean = true,
+  val isInline: Boolean = false,
+  val isLazy: Boolean = false
 )
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
@@ -358,7 +352,6 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRe
     parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-        InlineUtil.isInlineParameter(this),
-    isLazy = false
+        InlineUtil.isInlineParameter(this)
   )
 }
