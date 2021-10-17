@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -61,11 +60,11 @@ class InjectSyntheticScopes(
   samResolver: SamConversionResolver,
   samConversionOracle: SamConversionOracle
 ) : SyntheticScopes {
-  @Provide private val context = injektContext.withTrace(DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
-  override val scopes: Collection<SyntheticScope> = delegate.scopes +
-      InjectSyntheticScope(context) // todo remove explicit arg once fixed
+  override val scopes: Collection<SyntheticScope> = delegate.scopes + InjectSyntheticScope(
+    injektContext.withTrace(DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))
+  )
 }
 
 private class InjectSyntheticScope(

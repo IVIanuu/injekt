@@ -52,9 +52,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.count { !it.hasAnnotation(injektFqNames.inject) }
         ?.let { it <= 1 } == true
 
-    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
-      return true
-
     if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
       val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath
       if (filePath != null) {
