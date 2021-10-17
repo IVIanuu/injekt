@@ -62,15 +62,12 @@ class PersistenceTest {
       fun invoke() = inject<String>() 
     """
   ) {
-    "42" shouldBe invokeSingleFile()
+    invokeSingleFile() shouldBe "42"
   }
 
-  @Test fun testFunctionTypeParameterClassifier() = singleAndMultiCodegen(
+  @Test fun testTypeParameterWithAliasedFunctionUpperbound() = singleAndMultiCodegen(
     """
-      var callCount = 0
-      @Tag annotation class MyTag
-      @Tag annotation class MyOtherTag
-      @Provide fun <@Spread T : @MyTag S, S : FuncA> impl(instance: T): @MyOtherTag S =
+      @Provide fun <T : @MyTag S, S : FuncA> impl(instance: T): @MyOtherTag S =
         instance
   
       typealias FuncA = suspend () -> Unit

@@ -58,19 +58,6 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProviderWithTaggedInjectableArgs() = singleAndMultiCodegen(
-    """
-      @Tag annotation class MyTag
-      @Provide fun bar(foo: @MyTag Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() = inject<(@Provide @MyTag Foo) -> Bar>()(Foo()) 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Bar>()
-  }
-
   @Test fun testProviderModule() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)

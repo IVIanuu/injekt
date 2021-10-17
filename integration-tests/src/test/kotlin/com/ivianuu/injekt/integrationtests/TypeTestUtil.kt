@@ -96,10 +96,6 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     FqName("kotlin.Function$parameterCount")
   )
 
-  val tag1 = typeFor(FqName("com.ivianuu.injekt.test.Tag1"))
-
-  val tag2 = typeFor(FqName("com.ivianuu.injekt.test.Tag2"))
-
   private var id = 0
 
   fun subType(

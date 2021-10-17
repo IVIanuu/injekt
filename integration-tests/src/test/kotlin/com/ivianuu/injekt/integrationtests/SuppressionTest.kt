@@ -16,25 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
-import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class SuppressionTest {
-  @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
-    """
-      typealias MyBuilder = StringBuilder.() -> Unit
-      @Provide fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
-      @Provide val myBuilder: MyBuilder = { append("42") }
-    """,
-    """
-      fun invoke() = inject<String>() 
-    """
-  ) {
-    invokeSingleFile() shouldBe "42"
-  }
-
   @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
@@ -85,6 +70,19 @@ class SuppressionTest {
       fun invoke() = buildString {
         +42
       }
+    """
+  )
+
+  @Test fun testCanCreateTypeAliasSelfType() = singleAndMultiCodegen(
+    """
+      typealias Marker<C> = C
+      
+      @Provide fun <C> unwrapMarker(marker: Marker<C>): C = marker
+    """,
+    """
+      @Provide val markedFoo: Marker<Foo> = Foo()
+      
+      fun invoke() = inject<Foo>()
     """
   )
 }

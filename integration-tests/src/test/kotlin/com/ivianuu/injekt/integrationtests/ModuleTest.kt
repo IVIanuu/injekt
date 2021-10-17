@@ -77,21 +77,6 @@ class ModuleTest {
     """
   )
 
-  @Test fun testGenericModuleTagged() = singleAndMultiCodegen(
-    """
-      @Tag annotation class MyTag<T>
-      class MyModule<T>(private val instance: T) {
-          @Provide fun provide(): @MyTag<Int> Pair<T, T> = instance to instance
-      }
-  
-      @Provide val fooModule = MyModule(Foo())
-      @Provide val stringModule = MyModule("__")
-    """,
-    """
-      fun invoke() = inject<@MyTag<Int> Pair<Foo, Foo>>() 
-    """
-  )
-
   @Test fun testGenericModuleClass() = singleAndMultiCodegen(
     """
       @Provide class MyModule<T> {

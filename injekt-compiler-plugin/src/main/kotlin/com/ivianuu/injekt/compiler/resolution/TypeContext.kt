@@ -180,38 +180,6 @@ sealed class ConstraintPosition {
   object Unknown : ConstraintPosition()
 }
 
-fun buildContextForSpreadingInjectable(
-  constraintType: TypeRef,
-  candidateType: TypeRef,
-  staticTypeParameters: List<ClassifierRef>,
-  @Inject context: TypeCheckerContext
-  ): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
-  val candidateTypeParameters = mutableListOf<ClassifierRef>()
-  candidateType.allTypes.forEach {
-    if (it.classifier.isTypeParameter)
-      candidateTypeParameters += it.classifier
-  }
-  val context = candidateType.buildContext(
-    constraintType,
-    candidateTypeParameters + staticTypeParameters,
-    true
-  )
-
-  val map = if (context.isOk) {
-    val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
-    val rawMap = context.fixedTypeVariables
-    rawMap.forEach { (key, value) ->
-      if (value.classifier in candidateTypeParameters) {
-        swapMap[value.classifier] = key.defaultType
-      }
-    }
-    rawMap
-      .filterKeys { it !in candidateTypeParameters }
-      .mapValues { it.value.substitute(swapMap) }
-  } else emptyMap()
-  return context to map
-}
-
 fun CallableRef.buildContext(
   staticTypeParameters: List<ClassifierRef>,
   superType: TypeRef,

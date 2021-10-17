@@ -126,8 +126,8 @@ class ComponentInjectable(
 
   val componentAndEntryPointInjectables = entryPoints
     .map {
-      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
-    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver()
+    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver()
 
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",

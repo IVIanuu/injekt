@@ -343,7 +343,7 @@ class InjectableResolutionTest {
       fun invoke() = inject<List<String>>() 
     """
   ) {
-    listOf("a", "b", "c") shouldBe invokeSingleFile()
+    invokeSingleFile() shouldBe listOf("a", "b", "c")
   }
 
   @Test fun testPrefersMoreSpecificType2() = singleAndMultiCodegen(
@@ -432,40 +432,6 @@ class InjectableResolutionTest {
   ) {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
-
-  @Test fun testSpreadingInjectableWithTheSameOrigin() = singleAndMultiCodegen(
-    """
-      @Provide @MyTag class FooModule {
-        @Provide val foo = Foo()
-      }
-
-      @Tag annotation class MyTag
-
-      @Provide fun <@Spread T : @MyTag S, S> myTag(instance: T): S = instance
-    """,
-    """
-      fun invoke() = inject<Foo>() 
-    """
-  )
-
-  @Test fun testSpreadingInjectableWithTheSameOrigin2() = singleAndMultiCodegen(
-    """
-      abstract class FooModule {
-        @Provide val foo = Foo()
-        companion object {
-          @Provide fun create(): @MyTag FooModule = object : FooModule() {
-          }
-        }
-      }
-
-      @Tag annotation class MyTag
-
-      @Provide fun <@Spread T : @MyTag S, S> myTag(instance: T): S = instance
-    """,
-    """
-      fun invoke() = inject<Foo>() 
-    """
-  )
 
   @Test fun testPrefersNearerImport() = singleAndMultiCodegen(
     listOf(
@@ -568,7 +534,7 @@ class InjectableResolutionTest {
         ),
         source(
           """
-            @Provide @FakeScoped<AppScope> class AndroidLogger : Logger {
+            @Provide class AndroidLogger : Logger {
               companion object {
                 @Provide inline fun logger(
                   android: () -> AndroidLogger,
