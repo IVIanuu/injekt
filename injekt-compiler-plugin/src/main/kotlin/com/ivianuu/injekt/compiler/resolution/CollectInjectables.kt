@@ -144,23 +144,19 @@ fun Annotated.isProvide(@Inject context: InjektContext): Boolean {
     var isProvide = hasAnnotation(injektFqNames().provide) ||
         hasAnnotation(injektFqNames().inject)
 
-    if (!isProvide && this is PropertyDescriptor) {
+    if (!isProvide && this is PropertyDescriptor)
       isProvide = primaryConstructorPropertyValueParameter()?.isProvide() == true
-    }
 
-    if (!isProvide && this is ParameterDescriptor) {
-      isProvide = type.isProvide() ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide() ||
-                  containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo().injectParameters
-            } == true
-    }
+    if (!isProvide && this is ParameterDescriptor)
+      isProvide = containingDeclaration.safeAs<FunctionDescriptor>()
+        ?.let { containingFunction ->
+          containingFunction.isProvide() ||
+              (containingFunction.isDeserializedDeclaration() &&
+                  injektIndex() in containingFunction.callableInfo().injectParameters)
+        } == true
 
-    if (!isProvide && this is ClassConstructorDescriptor && isPrimary) {
+    if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
       isProvide = constructedClass.isProvide()
-    }
 
     isProvide
   }
@@ -171,21 +167,20 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return context.trace.getOrPut(InjektWritableSlices.IS_INJECT, key) {
     var isInject = hasAnnotation(injektFqNames().inject)
-    if (!isInject && this is PropertyDescriptor) {
+    if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
-    }
-    if (!isInject && this is ParameterDescriptor) {
-      isInject = type.isProvide() ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide() ||
-                  containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo().injectParameters
-            } == true
-    }
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary) {
+
+    if (!isInject && this is ParameterDescriptor)
+      isInject = containingDeclaration.safeAs<FunctionDescriptor>()
+        ?.let { containingFunction ->
+          containingFunction.isProvide() ||
+              (containingFunction.isDeserializedDeclaration() &&
+                  injektIndex() in containingFunction.callableInfo().injectParameters)
+        } == true
+
+    if (!isInject && this is ClassConstructorDescriptor && isPrimary)
       isInject = constructedClass.isProvide()
-    }
+
     isInject
   }
 }
