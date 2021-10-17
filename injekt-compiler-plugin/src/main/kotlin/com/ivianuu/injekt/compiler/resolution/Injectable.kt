@@ -184,7 +184,6 @@ class ComponentInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
-
   override val usageKey: Any
     get() = type
 }
@@ -263,14 +262,13 @@ class ProviderInjectable(
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
+  override val usageKey: Any
+    get() = type
 
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
     ) : ValueParameterDescriptor by delegate
-
-  override val usageKey: Any
-    get() = type
 }
 
 class SourceKeyInjectable(
