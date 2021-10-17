@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 
 object InjektWritableSlices {
   val INJEKT_FQ_NAMES = BasicWritableSlice<Unit, InjektFqNames>(RewritePolicy.DO_NOTHING)
-  val INJECTION_GRAPH_FOR_POSITION =
+  val INJECTION_GRAPH =
     BasicWritableSlice<SourcePosition, InjectionGraph.Success>(RewritePolicy.DO_NOTHING)
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)

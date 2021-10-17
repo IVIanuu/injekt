@@ -1256,7 +1256,7 @@ class InjectCallTransformer(
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
     val graph = pluginContext.bindingContext[
-        InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
+        InjektWritableSlices.INJECTION_GRAPH,
         SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
 

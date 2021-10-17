@@ -124,7 +124,7 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
             Unit
           )
           context.trace.record(
-            InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
+            InjektWritableSlices.INJECTION_GRAPH,
             SourcePosition(
               filePath,
               callExpression.startOffset,
