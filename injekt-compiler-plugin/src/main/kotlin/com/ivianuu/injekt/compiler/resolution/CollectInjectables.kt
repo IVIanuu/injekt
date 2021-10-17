@@ -148,12 +148,13 @@ fun Annotated.isProvide(@Inject context: InjektContext): Boolean {
       isProvide = primaryConstructorPropertyValueParameter()?.isProvide() == true
 
     if (!isProvide && this is ParameterDescriptor)
-      isProvide = containingDeclaration.safeAs<FunctionDescriptor>()
-        ?.let { containingFunction ->
-          containingFunction.isProvide() ||
-              (containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo().injectParameters)
-        } == true
+      isProvide = type.isProvide() ||
+          containingDeclaration.safeAs<FunctionDescriptor>()
+            ?.let { containingFunction ->
+              containingFunction.isProvide() ||
+                  (containingFunction.isDeserializedDeclaration() &&
+                      injektIndex() in containingFunction.callableInfo().injectParameters)
+            } == true
 
     if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
       isProvide = constructedClass.isProvide()
@@ -171,12 +172,13 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
       isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
 
     if (!isInject && this is ParameterDescriptor)
-      isInject = containingDeclaration.safeAs<FunctionDescriptor>()
-        ?.let { containingFunction ->
-          containingFunction.isProvide() ||
-              (containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo().injectParameters)
-        } == true
+      isInject = type.isInject() ||
+          containingDeclaration.safeAs<FunctionDescriptor>()
+            ?.let { containingFunction ->
+              containingFunction.isProvide() ||
+                  (containingFunction.isDeserializedDeclaration() &&
+                      injektIndex() in containingFunction.callableInfo().injectParameters)
+            } == true
 
     if (!isInject && this is ClassConstructorDescriptor && isPrimary)
       isInject = constructedClass.isProvide()
