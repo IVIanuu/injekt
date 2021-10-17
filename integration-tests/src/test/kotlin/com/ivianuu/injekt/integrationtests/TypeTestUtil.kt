@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
@@ -219,5 +220,5 @@ fun TypeRef.nullable() = copy(isMarkedNullable = true)
 
 fun TypeRef.nonNull() = copy(isMarkedNullable = false)
 
-fun TypeRef.typeWith(vararg typeArguments: TypeRef) =
-  copy(arguments = typeArguments.toList())
+fun TypeRef.withArguments(vararg arguments: TypeRef) =
+  withArguments(arguments.toList())

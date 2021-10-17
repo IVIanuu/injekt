@@ -34,9 +34,9 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapWithExtraTypeParameter() = withTypeCheckerContext {
     val typeParameterU = typeParameter(fqName = FqName("U"))
-    val typeParameterS = typeParameter(listType.typeWith(typeParameterU), fqName = FqName("S"))
+    val typeParameterS = typeParameter(listType.withArguments(typeParameterU), fqName = FqName("S"))
     val typeParameterT = typeParameter(typeParameterS, fqName = FqName("T"))
-    val substitutionType = listType.typeWith(stringType)
+    val substitutionType = listType.withArguments(stringType)
     val map = getSubstitutionMap(substitutionType, typeParameterT)
     map[typeParameterT.classifier] shouldBe substitutionType
     map[typeParameterS.classifier] shouldBe substitutionType
@@ -45,14 +45,14 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapWithNestedGenerics() = withTypeCheckerContext {
     val superType = typeParameter()
-    val map = getSubstitutionMap(listType.typeWith(stringType), listType.typeWith(superType))
+    val map = getSubstitutionMap(listType.withArguments(stringType), listType.withArguments(superType))
     map[superType.classifier] shouldBe stringType
   }
 
   @Test fun testGetSubstitutionMapWithSubClass() = withTypeCheckerContext {
-    val classType = classType(listType.typeWith(stringType))
+    val classType = classType(listType.withArguments(stringType))
     val typeParameter = typeParameter()
-    val map = getSubstitutionMap(classType, listType.typeWith(typeParameter))
+    val map = getSubstitutionMap(classType, listType.withArguments(typeParameter))
     map.shouldHaveSize(1)
     map.shouldContain(typeParameter.classifier, stringType)
   }

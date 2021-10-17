@@ -291,7 +291,7 @@ class InjectablesScope(
   fun entryPointsForType(componentType: TypeRef): List<TypeRef> = entryPointTypes
     .mapNotNull { candidate ->
       if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
-        candidate.copy(arguments = listOf(componentType))
+        candidate.withArguments(listOf(componentType))
       } else {
         val context = candidate.classifier.entryPointComponentType
           .buildContext(componentType, allStaticTypeParameters)

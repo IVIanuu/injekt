@@ -137,7 +137,7 @@ fun KotlinType.toTypeRef(
       classifier = classifier,
       isMarkedNullable = kotlinType.isMarkedNullable,
       arguments = kotlinType.arguments
-        // we use take here because an inner class also contains the type parameters
+        // we use "take" here because an inner class also contains the type parameters
         // of it's parent class which is irrelevant for us
         .take(classifier.typeParameters.size)
         .map {
@@ -261,10 +261,7 @@ class TypeRef(
   }
 }
 
-data class TypeRefKey(
-  val classifier: ClassifierRef,
-  val arguments: List<TypeRefKey>
-)
+data class TypeRefKey(val classifier: ClassifierRef, val arguments: List<TypeRefKey>)
 
 fun TypeRef.withArguments(arguments: List<TypeRef>): TypeRef =
   if (this.arguments == arguments) this
@@ -360,7 +357,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
 
   val newArguments = arguments.map { it.substitute(map) }
   if (arguments != newArguments)
-    return copy(arguments = newArguments)
+    return withArguments(newArguments)
 
   return this
 }
