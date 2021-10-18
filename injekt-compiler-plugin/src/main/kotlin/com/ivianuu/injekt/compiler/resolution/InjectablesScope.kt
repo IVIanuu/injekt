@@ -284,18 +284,21 @@ class InjectablesScope(
       }
   }
 
-  fun entryPointsForType(componentType: TypeRef): List<TypeRef> = entryPointTypes
-    .mapNotNull { candidate ->
-      if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
-        candidate.withArguments(listOf(componentType))
-      } else {
-        val context = candidate.classifier.entryPointComponentType
-          .buildContext(componentType, allStaticTypeParameters)
-        if (!context.isOk) return@mapNotNull null
-        val substitutionMap = context.fixedTypeVariables
-        candidate.substitute(substitutionMap)
+  fun entryPointsForType(componentType: TypeRef): List<TypeRef> {
+    if (entryPointTypes.isEmpty()) return emptyList()
+    return entryPointTypes
+      .mapNotNull { candidate ->
+        if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
+          candidate.withArguments(listOf(componentType))
+        } else {
+          val context = candidate.classifier.entryPointComponentType
+            .buildContext(componentType, allStaticTypeParameters)
+          if (!context.isOk) return@mapNotNull null
+          val substitutionMap = context.fixedTypeVariables
+          candidate.substitute(substitutionMap)
+        }
       }
-    }
+  }
 
   /**
    * We add implicit injectables for objects under some circumstances to allow
