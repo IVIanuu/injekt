@@ -665,8 +665,7 @@ private fun ImportInjectablesScope(
       .filterNot { it.callable.isExternalDeclaration() },
     isDeclarationContainer = false,
     injectablesPredicate = injectablesPredicate,
-    imports = imports.mapNotNull { it.resolve() },
-    nesting = parent?.nesting?.inc()?.inc() ?: 1
+    imports = imports.mapNotNull { it.resolve() }
   )
 }
 
