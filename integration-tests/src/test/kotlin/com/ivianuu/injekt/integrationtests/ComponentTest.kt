@@ -208,6 +208,18 @@ class ComponentTest {
     invokeSingleFile()
   }
 
+  @Test fun testGenericComponent() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent<T> {
+        val value: T
+      }
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke() = inject<MyComponent<Foo>>()
+    """
+  )
+
   @Test fun testScopedFunction() = singleAndMultiCodegen(
     """
       @Component interface ScopeComponent {

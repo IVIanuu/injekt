@@ -136,8 +136,7 @@ class InjectablesScope(
           val context = candidate.type.buildContext(key.type, key.staticTypeParameters)
           if (!context.isOk)
             return@mapNotNull null
-          val substitutionMap = context.fixedTypeVariables
-          val finalCandidate = candidate.substitute(substitutionMap)
+          val finalCandidate = candidate.substitute(context.fixedTypeVariables)
           CallableInjectable(
             key.type,
             finalCandidate.getInjectableRequests(),
@@ -245,8 +244,7 @@ class InjectablesScope(
             context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
           }
           if (!context.isOk) return@mapNotNull null
-          val substitutionMap = context.fixedTypeVariables
-          candidate.substitute(substitutionMap)
+          candidate.substitute(context.fixedTypeVariables)
         }
         .map { callable ->
           val typeWithFrameworkKey = callable.type.copy(
@@ -275,8 +273,7 @@ class InjectablesScope(
           context = candidate.buildContext(collectionElementType, key.staticTypeParameters)
         }
         if (!context.isOk) return@mapNotNull null
-        val substitutionMap = context.fixedTypeVariables
-        candidate.substitute(substitutionMap)
+        candidate.substitute(context.fixedTypeVariables)
       }
       .map { componentType ->
         componentType.copy(frameworkKey = generateFrameworkKey())
@@ -294,8 +291,7 @@ class InjectablesScope(
           val context = candidate.classifier.entryPointComponentType
             .buildContext(componentType, allStaticTypeParameters)
           if (!context.isOk) return@mapNotNull null
-          val substitutionMap = context.fixedTypeVariables
-          candidate.substitute(substitutionMap)
+          candidate.substitute(context.fixedTypeVariables)
         }
       }
   }
