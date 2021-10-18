@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
@@ -345,14 +344,7 @@ private fun InjectablesScope.resolveCandidates(
   return if (successes.isNotEmpty()) {
     successes.singleOrNull()
       ?: successes
-        .distinctBy {
-          it.cast<ResolutionResult.Success.WithCandidate>()
-            .candidate
-            .cast<CallableInjectable>()
-            .callable
-            .callable
-            .uniqueKey()
-        }.let {
+        .let {
           it.singleOrNull()
             ?: ResolutionResult.Failure.CandidateAmbiguity(request, it.cast())
         }
