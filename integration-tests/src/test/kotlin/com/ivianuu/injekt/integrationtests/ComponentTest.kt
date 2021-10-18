@@ -86,6 +86,44 @@ class ComponentTest {
     invokeSingleFile()
   }
 
+  @Test fun testComponentFunctionWithExtensionReceiver() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo) = Bar(foo)
+
+      @Component interface BarComponent {
+        fun Foo.bar(): Bar
+      } 
+    """,
+    """
+      fun invoke() = with(inject<BarComponent>()) {
+        with(Foo()) {
+          bar()
+        }
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testComponentPropertyWithExtensionReceiver() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo) = Bar(foo)
+
+      @Component interface BarComponent {
+        val Foo.bar: Bar
+      } 
+    """,
+    """
+      fun invoke() = with(inject<BarComponent>()) {
+        with(Foo()) {
+          bar
+        }
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testComponentWithUnexistingRequestButDefaultImplementationIsNoError() = singleAndMultiCodegen(
     """
       @Component interface BarComponent {

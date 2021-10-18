@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -164,6 +165,12 @@ class ComponentInjectable(
         callContext = requestCallable.callable.callContext(),
         initialInjectables = requestCallable.callable.allParameters
           .filter { it != requestCallable.callable.dispatchReceiverParameter }
+          .map {
+            if (it is ReceiverParameterDescriptor)
+              ComponentReceiverParameterDescriptor(it)
+            else
+              ComponentValueParameterDescriptor(it.cast())
+          }
           .map { it.toCallableRef(componentScope.context) }
       )
     }
@@ -184,6 +191,14 @@ class ComponentInjectable(
     get() = null
   override val usageKey: Any
     get() = type
+
+  // required to distinct between individual components in codegen
+  class ComponentReceiverParameterDescriptor(
+    private val delegate: ReceiverParameterDescriptor
+  ) : ReceiverParameterDescriptor by delegate
+  class ComponentValueParameterDescriptor(
+    private val delegate: ValueParameterDescriptor
+  ) : ValueParameterDescriptor by delegate
 }
 
 class SetInjectable(
@@ -265,7 +280,7 @@ class ProviderInjectable(
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
-    ) : ValueParameterDescriptor by delegate
+  ) : ValueParameterDescriptor by delegate
 }
 
 class SourceKeyInjectable(

@@ -45,7 +45,6 @@ import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -583,15 +582,15 @@ class InjectCallTransformer(
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
               if (requestResult is ResolutionResult.Success.WithCandidate.Value) {
-                val previousParametersMap = parameterMap.toMap()
-                requestCallable.callable.allParameters
-                  .filter { it != requestCallable.callable.dispatchReceiverParameter }
-                  .zip(valueParameters)
+                dependencyScopeContext.scope.initialInjectables
+                  .map { it.callable as ParameterDescriptor }
+                  .zip(listOfNotNull(extensionReceiverParameter) + valueParameters)
                   .forEach { (a, b) -> parameterMap[a] = b }
                 expressionFor(requestResult)
                   .also {
-                    parameterMap.clear()
-                    parameterMap.putAll(previousParametersMap)
+                    dependencyScopeContext.scope.initialInjectables.forEach {
+                      parameterMap -= it.callable.cast<ParameterDescriptor>()
+                    }
                   }
               } else {
                 irCall(
@@ -800,14 +799,14 @@ class InjectCallTransformer(
             injectable.dependencyScopes.values.single(), scope, null
           )
           val expression = with(dependencyScopeContext) {
-            val previousParametersMap = parameterMap.toMap()
             injectable.parameterDescriptors
               .zip(function.valueParameters)
               .forEach { (a, b) -> parameterMap[a] = b }
             expressionFor(dependencyResult)
               .also {
-                parameterMap.clear()
-                parameterMap.putAll(previousParametersMap)
+                injectable.parameterDescriptors.forEach {
+                  parameterMap -= it
+                }
               }
           }
           if (dependencyScopeContext.statements.isEmpty()) expression
@@ -1118,6 +1117,12 @@ class InjectCallTransformer(
             }
             .single { it.index == (descriptor as? ValueParameterDescriptor)?.index ?: -1 })
             .symbol
+        )
+      is PropertyDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
+        .irGet(
+          injectable.type.toIrType().typeOrNull!!,
+          parameterMap[descriptor]?.symbol ?: containingDeclaration.irProperty()
+            .getter!!.extensionReceiverParameter!!.symbol
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
