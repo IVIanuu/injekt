@@ -44,7 +44,7 @@ class WorkerModule<T : ListenableWorker> {
 }
 
 /**
- * Factory which is able to create [ListenableWorker]s installed via [InjektWorker]
+ * Factory which is able to create [ListenableWorker]s installed via [WorkerModule]
  */
 @Provide class InjektWorkerFactory(
   private val workers: Map<String, SingleWorkerFactory>
@@ -56,4 +56,4 @@ class WorkerModule<T : ListenableWorker> {
   ): ListenableWorker? = workers[workerClassName]?.invoke(workerParameters)
 }
 
-internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
+typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
