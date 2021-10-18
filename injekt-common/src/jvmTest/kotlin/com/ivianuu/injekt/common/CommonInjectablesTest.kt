@@ -24,8 +24,8 @@ import kotlin.reflect.KClass
 
 class CommonInjectablesTest {
   @Test fun testCanUseMapForSetOfPairs() {
-    @Provide val elementsA = setOf("a" to "a")
-    @Provide val elementB = setOf("b" to "b")
+    @Provide val elementsA = listOf("a" to "a")
+    @Provide val elementB = "b" to "b"
     val map = inject<Map<String, String>>()
     map.size shouldBe 2
     map["a"] shouldBe "a"
