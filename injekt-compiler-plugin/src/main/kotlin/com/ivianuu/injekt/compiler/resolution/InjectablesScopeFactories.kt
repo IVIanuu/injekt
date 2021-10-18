@@ -660,7 +660,6 @@ private fun ImportInjectablesScope(
       isDeclarationContainer = false,
       injectablesPredicate = injectablesPredicate
     ),
-    ownerDescriptor = null,
     file = file,
     initialInjectables = resolvedImports
       .filterNot { it.callable.isExternalDeclaration() },
