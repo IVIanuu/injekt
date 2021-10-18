@@ -60,7 +60,7 @@ class SpreadingInjectableTest {
       fun invoke() = inject<List<@Final Foo>>() 
     """
   ) {
-    invokeSingleFile<Set<Foo>>().size shouldBe 1
+    invokeSingleFile<List<Foo>>().size shouldBe 1
   }
 
   @Test fun testSpreadingNonInjectableClass() = codegen(
@@ -268,7 +268,7 @@ class SpreadingInjectableTest {
       fun invoke() = inject<List<Foo>>()
     """
   ) {
-    irShouldContain(1, "setOf")
+    irShouldContain(1, "listOf")
   }
 
   @Test fun testNestedSpreadingInjectablesWithGenerics() = singleAndMultiCodegen(
