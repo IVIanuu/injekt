@@ -130,46 +130,6 @@ interface InjektErrors {
       }
 
     @JvmField
-    val MULTIPLE_SPREADS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "a declaration may have only one @Spread type parameter"
-          )
-        }
-
-    @JvmField
-    val SPREAD_ON_NON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
-          )
-        }
-
-    @JvmField
-    val TAG_WITH_VALUE_PARAMETERS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "tag cannot have value parameters"
-          )
-        }
-
-    @JvmField
-    val TAG_ON_NON_CLASS_AND_NON_TYPE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "only types, classes and class constructors can be annotated with a tag"
-          )
-        }
-
-    @JvmField
     val MALFORMED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {

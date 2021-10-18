@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -31,7 +30,6 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -40,8 +38,6 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -71,7 +67,6 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
       is ClassDescriptor -> checkClass(declaration, descriptor)
       is LocalVariableDescriptor -> checkLocalVariable(declaration, descriptor)
       is PropertyDescriptor -> checkProperty(declaration, descriptor)
-      is TypeAliasDescriptor -> checkTypeAlias(descriptor)
     }
   }
 
@@ -80,13 +75,9 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     descriptor: FunctionDescriptor,
     @Inject context: InjektContext
   ) {
-    if (descriptor.isProvide()) {
+    if (descriptor.isProvide())
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
-      checkSpreadingInjectable(declaration, descriptor.typeParameters)
-    } else {
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
-    }
     checkOverrides(declaration, descriptor)
     checkExceptActual(declaration, descriptor)
     checkReceiver(descriptor, declaration)
@@ -171,12 +162,6 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
       )
     }
 
-    if (isProvider) {
-      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters)
-    } else {
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters)
-    }
-
     checkExceptActual(declaration, descriptor)
   }
 
@@ -198,7 +183,6 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     descriptor: PropertyDescriptor,
     @Inject context: InjektContext
   ) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
     checkReceiver(descriptor, declaration)
     checkOverrides(declaration, descriptor)
     checkExceptActual(declaration, descriptor)
@@ -216,10 +200,6 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
       context.trace!!.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED
         .on(declaration))
     }
-  }
-
-  private fun checkTypeAlias(descriptor: TypeAliasDescriptor, @Inject context: InjektContext) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters)
   }
 
   private fun checkReceiver(
@@ -247,26 +227,6 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
               ?.receiverTypeReference ?: declaration
           )
       )
-    }
-  }
-
-  private fun checkSpreadingInjectable(
-    declaration: KtDeclaration,
-    typeParameters: List<TypeParameterDescriptor>,
-    @Inject context: InjektContext
-  ) {
-    val spreadParameters = typeParameters.filter {
-      it.classifierInfo().isSpread
-    }
-    if (spreadParameters.size > 1) {
-      spreadParameters
-        .drop(1)
-        .forEach {
-          context.trace!!.report(
-            InjektErrors.MULTIPLE_SPREADS
-              .on(it.findPsi() ?: declaration)
-          )
-        }
     }
   }
 
@@ -322,41 +282,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
         }
     }
 
-    val (typeParameters, overriddenTypeParameters) = when (descriptor) {
-      is CallableMemberDescriptor ->
-        descriptor.typeParameters to overriddenDescriptor.cast<CallableMemberDescriptor>()
-          .typeParameters
-      is ClassifierDescriptorWithTypeParameters ->
-        descriptor.declaredTypeParameters to overriddenDescriptor.cast<ClassifierDescriptorWithTypeParameters>()
-          .declaredTypeParameters
-      else -> emptyList<TypeParameterDescriptor>() to emptyList()
-    }
-
-    overriddenTypeParameters
-      .zip(typeParameters)
-      .forEach  { (overriddenTypeParameter, typeParameter) ->
-        if (typeParameter.classifierInfo().isSpread !=
-          overriddenTypeParameter.classifierInfo().isSpread) {
-          return false
-        }
-      }
-
     return true
-  }
-
-  private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
-    typeParameters: List<TypeParameterDescriptor>,
-    @Inject context: InjektContext
-  ) {
-    if (typeParameters.isEmpty()) return
-    typeParameters
-      .filter { it.classifierInfo().isSpread }
-      .forEach { typeParameter ->
-        context.trace!!.report(
-          InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
-            .on(typeParameter.findPsi()!!)
-        )
-      }
   }
 
   private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(

@@ -21,8 +21,6 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Spread
-import com.ivianuu.injekt.Tag
 import kotlin.reflect.KClass
 
 /**
@@ -38,13 +36,11 @@ import kotlin.reflect.KClass
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
-@Tag annotation class InjektWorker {
-  companion object {
-    @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
-      noinline factory: (@Provide WorkerParameters) -> T,
-      workerClass: KClass<S>
-    ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
-  }
+class WorkerModule<T : ListenableWorker> {
+  @Provide fun workerFactory(
+    factory: (@Provide WorkerParameters) -> T,
+    workerClass: KClass<T>
+  ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
 }
 
 /**

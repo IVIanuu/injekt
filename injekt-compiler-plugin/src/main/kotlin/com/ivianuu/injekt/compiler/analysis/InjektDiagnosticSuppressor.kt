@@ -24,12 +24,10 @@ import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
@@ -43,6 +41,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     val injektFqNames = bindingContext[InjektWritableSlices.INJEKT_FQ_NAMES, Unit]
       ?: return false
 
+    if (diagnostic.factory == Errors.TYPEALIAS_SHOULD_EXPAND_TO_CLASS)
+      return true
+
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
     )
@@ -50,26 +51,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.valueParameters
         ?.count { !it.hasAnnotation(injektFqNames.inject) }
         ?.let { it <= 1 } == true
-
-    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
-      return true
-
-    if (diagnostic.factory == Errors.UPPER_BOUND_IS_EXTENSION_FUNCTION_TYPE)
-      return true
-
-    if (diagnostic.factory == Errors.UNSUPPORTED) {
-      val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(injektFqNames.spread) == true) return true
-    }
-
-    if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
-      val annotationDescriptor =
-        bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
-      if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(injektFqNames.tag) == true
-      )
-        return true
-    }
 
     if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
       val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath

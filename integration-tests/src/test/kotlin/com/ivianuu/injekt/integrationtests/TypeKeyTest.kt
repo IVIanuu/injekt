@@ -94,32 +94,6 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
-  @Test fun testTypeKeyWithTags() = codegen(
-    """
-      fun invoke() = inject<TypeKey<@Tag2 String>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Tag2<kotlin.String>"
-  }
-
-  @Test fun testTypeKeyWithTypeAliasWithTaggedExpandedType() = codegen(
-    """
-      typealias MyAlias = @Tag2 String
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
-  }
-
-  @Test fun testTypeKeyWithParameterizedTags() = codegen(
-    """
-      @Tag annotation class MyTag<T>
-      fun invoke() = inject<TypeKey<@MyTag<String> String>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyTag<kotlin.String, kotlin.String>"
-  }
-
   @Test fun testTypeKeyWithStar() = codegen(
     """
       fun invoke() = inject<TypeKey<List<*>>>()

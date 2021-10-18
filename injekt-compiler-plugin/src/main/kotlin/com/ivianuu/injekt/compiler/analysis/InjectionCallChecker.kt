@@ -116,23 +116,21 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     }
 
     when (graph) {
-      is InjectionGraph.Success -> {
-        if (filePath != null) {
-          context.trace.record(
-            InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
+      is InjectionGraph.Success -> if (filePath != null) {
+        context.trace.record(
+          InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
+          filePath,
+          Unit
+        )
+        context.trace.record(
+          InjektWritableSlices.INJECTION_GRAPH,
+          SourcePosition(
             filePath,
-            Unit
-          )
-          context.trace.record(
-            InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
-            SourcePosition(
-              filePath,
-              callExpression.startOffset,
-              callExpression.endOffset
-            ),
-            graph
-          )
-        }
+            callExpression.startOffset,
+            callExpression.endOffset
+          ),
+          graph
+        )
       }
       is InjectionGraph.Error -> context.trace.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)

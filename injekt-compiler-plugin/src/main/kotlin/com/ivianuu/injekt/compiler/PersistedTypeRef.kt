@@ -49,16 +49,8 @@ fun PersistedTypeRef.toTypeRef(@Inject context: InjektContext): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
   val classifier = context.injektContext.classifierDescriptorForKey(classifierKey)
     .toClassifierRef()
-  val arguments = if (classifier.isTag) {
-    arguments
-      .map { it.toTypeRef() } +
-        listOfNotNull(
-          if (arguments.size < classifier.typeParameters.size)
-            context.injektContext.nullableAnyType
-          else null
-        )
-  } else arguments.map { it.toTypeRef() }
-  return classifier.untaggedType
+  val arguments = arguments.map { it.toTypeRef() }
+  return classifier.defaultType
     .copy(
       arguments = arguments,
       isMarkedNullable = isMarkedNullable,

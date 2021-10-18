@@ -43,19 +43,14 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
 import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
-import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
@@ -64,8 +59,8 @@ fun TypeRef.toIrType(
   @Inject context: InjektContext
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
-  return when {
-    classifier.isTypeAlias -> superTypes.single()
+  return if (classifier.isTypeAlias) {
+    superTypes.single()
       .toIrType()
       .let {
         it as IrSimpleType
@@ -77,75 +72,40 @@ fun TypeRef.toIrType(
           toIrAbbreviation()
         )
       }
-    classifier.isTag -> arguments.last().toIrType()
-      .typeOrNull!!
-      .cast<IrSimpleType>()
-      .let { type ->
-        val tagConstructor = pluginContext.referenceClass(classifier.fqName)!!
-          .constructors.single()
-        IrSimpleTypeImpl(
-          type.originalKotlinType,
-          type.classifier,
-          type.hasQuestionMark,
-          type.arguments,
-          listOf(
-            DeclarationIrBuilder(pluginContext, tagConstructor)
-              .irCall(
-                tagConstructor,
-                tagConstructor.owner.returnType
-                  .classifierOrFail
-                  .typeWith(
-                    arguments.dropLast(1)
-                      .map { it.toIrType().typeOrNull!! }
-                  )
-              ).apply {
-                tagConstructor.owner.typeParameters.indices
-                  .forEach { index ->
-                    putTypeArgument(
-                      index,
-                      arguments[index].toIrType().typeOrNull!!
-                    )
-                  }
-              }
-          ) + type.annotations,
-          type.abbreviation
-        )
-      }
-    else -> {
-      val key = classifier.descriptor!!.uniqueKey()
-      val fqName = FqName(key.split(":")[1])
-      val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
+  } else {
+    val key = classifier.descriptor!!.uniqueKey()
+    val fqName = FqName(key.split(":")[1])
+    val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
+      ?.symbol
+      ?: pluginContext.referenceClass(fqName)
+      ?: pluginContext.referenceFunctions(fqName.parent())
+        .flatMap { it.owner.typeParameters }
+        .singleOrNull { it.descriptor.uniqueKey() == key }
         ?.symbol
-        ?: pluginContext.referenceClass(fqName)
-        ?: pluginContext.referenceFunctions(fqName.parent())
-          .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
-          ?.symbol
-        ?: pluginContext.referenceProperties(fqName.parent())
-          .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
-          ?.symbol
-        ?: (pluginContext.referenceClass(fqName.parent())
-          ?: pluginContext.referenceTypeAlias(fqName.parent()))
-          ?.owner
-          ?.typeParameters
-          ?.singleOrNull { it.descriptor.uniqueKey() == key }
-          ?.symbol
-        ?: error("Could not get for $fqName $key")
-      IrSimpleTypeImpl(
-        irClassifier,
-        isMarkedNullable,
-        arguments.map { it.toIrType() },
-        if (isMarkedComposable) {
-          val composableConstructor = pluginContext.referenceConstructors(injektFqNames().composable)
-            .single()
-          listOf(
-            DeclarationIrBuilder(pluginContext, composableConstructor)
-              .irCall(composableConstructor)
-          )
-        } else emptyList()
-      )
-    }
+      ?: pluginContext.referenceProperties(fqName.parent())
+        .flatMap { it.owner.getter!!.typeParameters }
+        .singleOrNull { it.descriptor.uniqueKey() == key }
+        ?.symbol
+      ?: (pluginContext.referenceClass(fqName.parent())
+        ?: pluginContext.referenceTypeAlias(fqName.parent()))
+        ?.owner
+        ?.typeParameters
+        ?.singleOrNull { it.descriptor.uniqueKey() == key }
+        ?.symbol
+      ?: error("Could not get for $fqName $key")
+    IrSimpleTypeImpl(
+      irClassifier,
+      isMarkedNullable,
+      arguments.map { it.toIrType() },
+      if (isMarkedComposable) {
+        val composableConstructor = pluginContext.referenceConstructors(injektFqNames().composable)
+          .single()
+        listOf(
+          DeclarationIrBuilder(pluginContext, composableConstructor)
+            .irCall(composableConstructor)
+        )
+      } else emptyList()
+    )
   }
 }
 

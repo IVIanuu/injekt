@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.analysis.IncrementalFixAnalysisHandlerExtensi
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.transform.InjektIrDumper
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
@@ -68,12 +67,7 @@ private fun registerExtensions(project: MockProject, configuration: CompilerConf
   IrGenerationExtension.registerExtensionWithLoadingOrder(
     project,
     LoadingOrder.FIRST,
-    InjektIrGenerationExtension()
-  )
-  IrGenerationExtension.registerExtensionWithLoadingOrder(
-    project,
-    LoadingOrder.LAST,
-    InjektIrDumper(dumpDir(configuration))
+    InjektIrGenerationExtension(dumpDir(configuration))
   )
 
   // extension point does not exist CLI for some reason

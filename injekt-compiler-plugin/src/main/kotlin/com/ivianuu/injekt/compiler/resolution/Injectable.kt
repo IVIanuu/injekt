@@ -120,14 +120,13 @@ class ComponentInjectable(
     parameterName = "observers".asNameId(),
     parameterIndex = -1,
     isRequired = false,
-    isInline = false,
     isLazy = true
   )
 
   val componentAndEntryPointInjectables = entryPoints
     .map {
-      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
-    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver()
+    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver()
 
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
@@ -148,7 +147,6 @@ class ComponentInjectable(
         isRequired = requestCallable.callable
           .cast<CallableMemberDescriptor>()
           .modality == Modality.ABSTRACT,
-        isInline = false,
         isLazy = true
       )
     }
@@ -184,7 +182,6 @@ class ComponentInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
-
   override val usageKey: Any
     get() = type
 }
@@ -224,7 +221,6 @@ class ProviderInjectable(
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
       type = type.arguments.last(),
-      isRequired = true,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
@@ -263,14 +259,13 @@ class ProviderInjectable(
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
+  override val usageKey: Any
+    get() = type
 
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
     ) : ValueParameterDescriptor by delegate
-
-  override val usageKey: Any
-    get() = type
 }
 
 class SourceKeyInjectable(
@@ -307,12 +302,9 @@ class TypeKeyInjectable(
         InjectableRequest(
           type = ownerScope.context.injektContext.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
-          isRequired = true,
           callableFqName = callableFqName,
           parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
-          parameterIndex = index,
-          isInline = false,
-          isLazy = false
+          parameterIndex = index
         )
       }
   }
@@ -337,8 +329,7 @@ fun CallableRef.getInjectableRequests(
   .filter {
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isProvide() ||
-        parameterTypes[it.injektIndex()]!!.isProvide
+        it.isProvide()
   }
   .map { it.toInjectableRequest(this) }
 
@@ -347,9 +338,9 @@ data class InjectableRequest(
   val callableFqName: FqName,
   val parameterName: Name,
   val parameterIndex: Int,
-  val isRequired: Boolean,
-  val isInline: Boolean,
-  val isLazy: Boolean
+  val isRequired: Boolean = true,
+  val isInline: Boolean = false,
+  val isLazy: Boolean = false
 )
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
@@ -361,7 +352,6 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRe
     parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-        InlineUtil.isInlineParameter(this),
-    isLazy = false
+        InlineUtil.isInlineParameter(this)
   )
 }

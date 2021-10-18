@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -88,7 +87,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   val annotationEntries = annotationEntries
   if (annotationEntries.isEmpty()) return null
 
-  // Check if the fully tagged name is used, e.g. `@dagger.Module`.
+  // Check if the fully qualified name is used, e.g. `@dagger.Module`.
   val annotationEntry = annotationEntries.firstOrNull {
     it.text.startsWith("@${fqName.asString()}")
   }
@@ -124,7 +123,8 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
 ) = context.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
-  moduleName().removeSurrounding("<", ">") != context.module.name.asString().removeSurrounding("<", ">")
+  moduleName().removeSurrounding("<", ">") !=
+      context.module.name.asString().removeSurrounding("<", ">")
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -135,12 +135,6 @@ fun String.asNameId() = Name.identifier(this)
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
-
-fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
-  annotations.filter {
-    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(annotation)
-  }
 
 fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
   when (val original = this.original) {

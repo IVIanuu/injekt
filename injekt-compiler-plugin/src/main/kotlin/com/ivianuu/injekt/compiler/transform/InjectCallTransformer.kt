@@ -41,7 +41,6 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
-import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
@@ -774,10 +773,6 @@ class InjectCallTransformer(
                 )
                 +irSetField(irGet(dispatchReceiverParameter!!), field, irNull())
               }
-
-            fields
-              .filter { it.name.asString().endsWith("Lock") }
-              .forEach { +irSetField(irGet(dispatchReceiverParameter!!), it, irNull()) }
           }
         }
       }
@@ -1029,8 +1024,8 @@ class InjectCallTransformer(
       injectable,
       injectable.callable.callable
     )
-    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapTags().classifier.isObject)
-      objectExpression(injectable.callable.type.unwrapTags())
+    is ReceiverParameterDescriptor -> if (injectable.callable.type.classifier.isObject)
+      objectExpression(injectable.callable.type)
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is VariableDescriptor -> variableExpression(injectable.callable.callable, injectable)
@@ -1257,7 +1252,7 @@ class InjectCallTransformer(
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
     val graph = pluginContext.bindingContext[
-        InjektWritableSlices.INJECTION_GRAPH_FOR_POSITION,
+        InjektWritableSlices.INJECTION_GRAPH,
         SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
 

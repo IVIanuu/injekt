@@ -18,7 +18,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.withArguments
-import com.ivianuu.injekt.compiler.resolution.wrap
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.model.TypeVariance
 import org.junit.Test
@@ -27,7 +26,6 @@ class SubtypingTest {
   @Test fun testNullableAnyIsSuperTypeOfEveryOtherType() = withTypeCheckerContext {
     stringType shouldBeSubTypeOf nullableAny
     stringType.nullable() shouldBeSubTypeOf nullableAny
-    tag1.wrap(stringType) shouldBeSubTypeOf nullableAny
     stringType.copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
     stringType.nullable().copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
   }
@@ -70,13 +68,13 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable() = withTypeCheckerContext {
-    listType.typeWith(typeParameter()) shouldBeAssignableTo
+    listType.withArguments(typeParameter()) shouldBeAssignableTo
         listType.withArguments(listOf(stringType))
   }
 
   @Test fun testMatchingGenericTypeIsAssignable8() = withTypeCheckerContext {
-    listType.typeWith(tag1.wrap(typeParameter())) shouldBeAssignableTo
-        listType.withArguments(listOf(tag1.wrap(stringType)))
+    listType.withArguments(typeParameter()) shouldBeAssignableTo
+        listType.withArguments(listOf(stringType))
   }
 
   @Test fun testMatchingGenericTypeIsAssignable2() = withTypeCheckerContext {
@@ -87,15 +85,15 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable3() = withTypeCheckerContext {
-    val tpB = typeParameter(tag1.wrap(charSequenceType), fqName = FqName("B"))
+    val tpB = typeParameter(charSequenceType, fqName = FqName("B"))
     val tpA = typeParameter(tpB, fqName = FqName("A"))
-    tag1.wrap(stringType) shouldBeAssignableTo tpA
+    stringType shouldBeAssignableTo tpA
   }
 
   @Test fun testMatchingGenericTypeIsAssignable5() = withTypeCheckerContext {
     val tpB = typeParameter(stringType, fqName = FqName("B"))
-    val tpA = typeParameter(listType.typeWith(tpB), fqName = FqName("A"))
-    listType.typeWith(intType) shouldNotBeAssignableTo tpA
+    val tpA = typeParameter(listType.withArguments(tpB), fqName = FqName("A"))
+    listType.withArguments(intType) shouldNotBeAssignableTo tpA
   }
 
   @Test fun testMatchingGenericTypeIsAssignable6() = withTypeCheckerContext {
@@ -105,15 +103,15 @@ class SubtypingTest {
   }
 
   @Test fun testNotMatchingGenericTypeIsNotAssignable() = withTypeCheckerContext {
-    listType.typeWith(stringType) shouldNotBeAssignableTo listType.typeWith(intType)
+    listType.withArguments(stringType) shouldNotBeAssignableTo listType.withArguments(intType)
   }
 
   @Test fun testInvariant() = withTypeCheckerContext {
     val typeClass = classType(
       typeParameters = listOf(typeParameter(variance = TypeVariance.IN).classifier)
     )
-    val charSequenceTypeClass = classType(typeClass.typeWith(charSequenceType))
-    val stringTypeClass = typeClass.typeWith(stringType)
+    val charSequenceTypeClass = classType(typeClass.withArguments(charSequenceType))
+    val stringTypeClass = typeClass.withArguments(stringType)
     charSequenceTypeClass shouldBeAssignableTo stringTypeClass
   }
 
@@ -143,26 +141,6 @@ class SubtypingTest {
     withTypeCheckerContext {
       typeAlias(composableFunction(0)) shouldBeAssignableTo typeParameter(composableFunction(0))
     }
-
-  @Test fun testSameTagsIsAssignable() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldBeAssignableTo tag1.wrap(stringType)
-  }
-
-  @Test fun testDifferentTagsIsNotAssignable() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldNotBeAssignableTo tag2.wrap(stringType)
-  }
-
-  @Test fun testTaggedIsNotSubTypeOfUntagged() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldNotBeSubTypeOf stringType
-  }
-
-  @Test fun testTaggedIsNotAssignableToUntagged() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldNotBeAssignableTo stringType
-  }
-
-  @Test fun testUntaggedTypeParameterIsNotAssignableToTaggedType() = withTypeCheckerContext {
-    typeParameter(stringType) shouldNotBeAssignableTo tag1.wrap(stringType)
-  }
 
   @Test fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
     stringType shouldBeAssignableTo typeParameter()
@@ -210,21 +188,16 @@ class SubtypingTest {
     subType(stringType) shouldBeAssignableTo typeParameter(stringType.nullable())
   }
 
-  @Test fun testNestedTaggedSubTypeOfNestedTaggedTypeParameter() = withTypeCheckerContext {
-    listType.typeWith(tag1.wrap(stringType)) shouldBeAssignableTo
-        listType.typeWith(tag1.wrap(typeParameter(nullable = false)))
-  }
-
   @Test fun testTypeAliasIsNotSubTypeOfTypeParameterWithOtherTypeAliasUpperBound() =
     withTypeCheckerContext {
-      val typeAlias1 = typeAlias(function(0).typeWith(stringType))
-      val typeAlias2 = typeAlias(function(0).typeWith(intType))
+      val typeAlias1 = typeAlias(function(0).withArguments(stringType))
+      val typeAlias2 = typeAlias(function(0).withArguments(intType))
       val typeParameter = typeParameter(typeAlias1)
       typeAlias2 shouldNotBeSubTypeOf typeParameter
     }
 
   @Test fun testTypeAliasIsSubTypeOfOtherTypeAlias() = withTypeCheckerContext {
-    val typeAlias1 = typeAlias(function(0).typeWith(stringType))
+    val typeAlias1 = typeAlias(function(0).withArguments(stringType))
     val typeAlias2 = typeAlias(typeAlias1)
     typeAlias2 shouldBeSubTypeOf typeAlias1
   }
@@ -232,10 +205,10 @@ class SubtypingTest {
   @Test
   fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() =
     withTypeCheckerContext {
-      mutableListType.typeWith(typeParameter()) shouldBeAssignableTo listType.typeWith(typeParameter())
+      mutableListType.withArguments(typeParameter()) shouldBeAssignableTo listType.withArguments(typeParameter())
     }
 
   @Test fun testComparableStackOverflowBug() = withTypeCheckerContext {
-    floatType shouldNotBeSubTypeOf comparable.typeWith(intType)
+    floatType shouldNotBeSubTypeOf comparable.withArguments(intType)
   }
 }

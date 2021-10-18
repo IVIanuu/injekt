@@ -19,38 +19,17 @@
 package com.ivianuu.injekt_shaded
 
 @Target(
-  // @Provide class MyClass
   AnnotationTarget.CLASS,
-
-  // class MyClass @Provide constructor()
   AnnotationTarget.CONSTRUCTOR,
-
-  // @Provide myFunction(): Foo = ...
   AnnotationTarget.FUNCTION,
-
-  // @Provide val myProperty: Foo get() = ...
   AnnotationTarget.PROPERTY,
-
-  // @Provide val myVariable: Foo = ...
   AnnotationTarget.LOCAL_VARIABLE,
-
-  // fun func(@Provide foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
-
-  // Lambda
-  // val func: (Foo) -> Bar = { foo: @Provide Foo -> bar() }
   AnnotationTarget.TYPE
 )
 annotation class Provide
 
-@Target(
-  // fun func(@Inject foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
-
-  // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
-)
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.TYPE)
 annotation class Inject
 
 @Target(

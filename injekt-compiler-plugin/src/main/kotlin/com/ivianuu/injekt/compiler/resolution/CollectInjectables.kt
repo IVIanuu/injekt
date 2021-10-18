@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -111,7 +110,7 @@ fun ResolutionScope.collectInjectables(
       is ClassDescriptor -> declaration
         .injectableConstructors() + listOfNotNull(
         declaration.companionObjectDescriptor
-          ?.injectableReceiver(false)
+          ?.injectableReceiver()
       )
       is CallableMemberDescriptor -> {
         if (declaration.isProvide() &&
@@ -145,23 +144,20 @@ fun Annotated.isProvide(@Inject context: InjektContext): Boolean {
     var isProvide = hasAnnotation(injektFqNames().provide) ||
         hasAnnotation(injektFqNames().inject)
 
-    if (!isProvide && this is PropertyDescriptor) {
+    if (!isProvide && this is PropertyDescriptor)
       isProvide = primaryConstructorPropertyValueParameter()?.isProvide() == true
-    }
 
-    if (!isProvide && this is ParameterDescriptor) {
+    if (!isProvide && this is ParameterDescriptor)
       isProvide = type.isProvide() ||
           containingDeclaration.safeAs<FunctionDescriptor>()
             ?.let { containingFunction ->
               containingFunction.isProvide() ||
-                  containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo().injectParameters
+                  (containingFunction.isDeserializedDeclaration() &&
+                      injektIndex() in containingFunction.callableInfo().injectParameters)
             } == true
-    }
 
-    if (!isProvide && this is ClassConstructorDescriptor && isPrimary) {
+    if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
       isProvide = constructedClass.isProvide()
-    }
 
     isProvide
   }
@@ -172,21 +168,21 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return context.trace.getOrPut(InjektWritableSlices.IS_INJECT, key) {
     var isInject = hasAnnotation(injektFqNames().inject)
-    if (!isInject && this is PropertyDescriptor) {
+    if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
-    }
-    if (!isInject && this is ParameterDescriptor) {
-      isInject = type.isProvide() ||
+
+    if (!isInject && this is ParameterDescriptor)
+      isInject = type.isInject() ||
           containingDeclaration.safeAs<FunctionDescriptor>()
             ?.let { containingFunction ->
               containingFunction.isProvide() ||
-                  containingFunction.isDeserializedDeclaration() &&
-                  injektIndex() in containingFunction.callableInfo().injectParameters
+                  (containingFunction.isDeserializedDeclaration() &&
+                      injektIndex() in containingFunction.callableInfo().injectParameters)
             } == true
-    }
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary) {
+
+    if (!isInject && this is ClassConstructorDescriptor && isPrimary)
       isInject = constructedClass.isProvide()
-    }
+
     isInject
   }
 }
@@ -206,31 +202,22 @@ fun ClassDescriptor.injectableConstructors(
       })
     .map { constructor ->
       val callable = constructor.toCallableRef()
-      val taggedType = callable.type.classifier.tags.wrap(callable.type)
       callable.copy(
         isProvide = true,
-        type = taggedType,
-        originalType = taggedType,
         scopeComponentType = callable.scopeComponentType ?: callable.type.classifier.scopeComponentType
       )
     }
 }
 
-fun ClassDescriptor.injectableReceiver(
-  tagged: Boolean,
-  @Inject context: InjektContext
-): CallableRef {
+fun ClassDescriptor.injectableReceiver(@Inject context: InjektContext): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef()
-  val finalType = if (tagged) callable.type.classifier.tags.wrap(callable.type)
-  else callable.type
-  return callable.copy(isProvide = true, type = finalType, originalType = finalType)
+  return callable.copy(isProvide = true)
 }
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
-  addSpreadingInjectable: (CallableRef) -> Unit,
   addComponent: (TypeRef) -> Unit,
   addEntryPoint: (TypeRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
@@ -240,11 +227,6 @@ fun CallableRef.collectInjectables(
   if (this in seen) return
   seen += this
   if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
-
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
-    addSpreadingInjectable(this)
-    return
-  }
 
   if (callable is ComponentConstructorDescriptor) {
     addComponent(callable.returnType!!.toTypeRef())
@@ -273,7 +255,6 @@ fun CallableRef.collectInjectables(
         scope = scope,
         addImport = addImport,
         addInjectable = addInjectable,
-        addSpreadingInjectable = addSpreadingInjectable,
         addComponent = addComponent,
         addEntryPoint = addEntryPoint,
         import = import,
@@ -358,7 +339,7 @@ fun TypeRef.collectTypeScopeInjectables(
 
     containingObjectClassifier != null && injectables.any { other ->
       other.callable is LazyClassReceiverParameterDescriptor &&
-          other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
+          other.type.buildContext(containingObjectClassifier.defaultType, emptyList()).isOk
     }
   }
 
@@ -401,17 +382,11 @@ private fun TypeRef.collectInjectablesForSingleType(
     .safeAs<ClassDescriptor>()
     ?.let { clazz ->
       if (clazz.kind == ClassKind.OBJECT) {
-        injectables += clazz.injectableReceiver(true)
+        injectables += clazz.injectableReceiver()
       } else {
         injectables += clazz.injectableConstructors()
         clazz.companionObjectDescriptor
-          ?.let { injectables += it.injectableReceiver(true) }
-      }
-
-      clazz.classifierInfo().tags.forEach { tag ->
-        val resultForTag = tag.classifier.defaultType.collectTypeScopeInjectables()
-        injectables += resultForTag.injectables
-        lookedUpPackages += resultForTag.lookedUpPackages
+          ?.let { injectables += it.injectableReceiver() }
       }
     }
 
@@ -461,8 +436,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject context: Inje
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName() == context.injektContext.module.name.asString()) ||
-      (callable.callable is ClassConstructorDescriptor &&
-          callable.type.unwrapTags().classifier.isObject) ||
+      (callable.callable is ClassConstructorDescriptor && callable.type.classifier.isObject) ||
       callable.callable.parents.any { callableParent ->
         allScopes.any { it.ownerDescriptor == callableParent }
       } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&

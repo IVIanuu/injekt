@@ -73,8 +73,6 @@ fun TypeRef.isSubTypeOf(
     (superType.isMarkedNullable || !isNullableType)
   ) return true
 
-  if (isNullableType && !superType.isNullableType) return false
-
   subtypeView(superType.classifier)
     ?.let { return it.isSubTypeOfSameClassifier(superType) }
 
@@ -85,6 +83,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
   superType: TypeRef,
   @Inject context: TypeCheckerContext
 ): Boolean {
+  if (!superType.isMarkedNullable && isMarkedNullable) return false
   if (isMarkedComposable != superType.isMarkedComposable) return false
 
   for (i in arguments.indices) {
@@ -179,49 +178,6 @@ sealed class ConstraintPosition {
   object DeclaredUpperBound : ConstraintPosition()
   object Unknown : ConstraintPosition()
 }
-
-fun buildContextForSpreadingInjectable(
-  constraintType: TypeRef,
-  candidateType: TypeRef,
-  staticTypeParameters: List<ClassifierRef>,
-  @Inject context: TypeCheckerContext
-  ): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
-  val candidateTypeParameters = mutableListOf<ClassifierRef>()
-  candidateType.allTypes.forEach {
-    if (it.classifier.isTypeParameter)
-      candidateTypeParameters += it.classifier
-  }
-  val context = candidateType.buildContext(
-    constraintType,
-    candidateTypeParameters + staticTypeParameters,
-    true
-  )
-
-  val map = if (context.isOk) {
-    val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
-    val rawMap = context.fixedTypeVariables
-    rawMap.forEach { (key, value) ->
-      if (value.classifier in candidateTypeParameters) {
-        swapMap[value.classifier] = key.defaultType
-      }
-    }
-    rawMap
-      .filterKeys { it !in candidateTypeParameters }
-      .mapValues { it.value.substitute(swapMap) }
-  } else emptyMap()
-  return context to map
-}
-
-fun CallableRef.buildContext(
-  staticTypeParameters: List<ClassifierRef>,
-  superType: TypeRef,
-  collectSuperTypeVariables: Boolean = false,
-  @Inject context: TypeCheckerContext
-): TypeContext = type.buildContext(
-  superType,
-  staticTypeParameters,
-  collectSuperTypeVariables
-)
 
 fun TypeRef.buildContext(
   superType: TypeRef,

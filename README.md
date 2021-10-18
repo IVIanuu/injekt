@@ -59,16 +59,13 @@ TODO
 # Type aliases
 TODO
 
-# Tags
-TODO
-
-# Sets
+# Components
 TODO
 
 # Providers
 TODO
 
-# Scopes
+# Sets
 TODO
 
 # Coroutines
@@ -80,11 +77,8 @@ TODO
 # Android work
 TODO
 
-# Compose
-TODO
-
-# Ktor
-TODO
-
 # Type keys
+TODO
+
+# Source keys
 TODO
