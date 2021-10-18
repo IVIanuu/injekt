@@ -110,7 +110,7 @@ class ComponentInjectable(
   }
 
   val componentObserversRequest = InjectableRequest(
-    type = ownerScope.context.setClassifier.defaultType.copy(
+    type = ownerScope.context.listClassifier.defaultType.copy(
       arguments = listOf(
         ownerScope.context.componentObserverType.defaultType.copy(
           arguments = listOf(type)
@@ -201,15 +201,24 @@ class ComponentInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-class SetInjectable(
+class ListInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope,
-  override val dependencies: List<InjectableRequest>,
+  elements: List<TypeRef>,
   val singleElementType: TypeRef,
   val collectionElementType: TypeRef
 ) : Injectable() {
   override val callableFqName: FqName =
-    FqName("com.ivianuu.injekt.injectSetOf<${type.arguments[0].renderToString()}>")
+    FqName("com.ivianuu.injekt.injectListOf<${type.arguments[0].renderToString()}>")
+  override val dependencies: List<InjectableRequest> = elements
+    .mapIndexed { index, element ->
+      InjectableRequest(
+        type = element,
+        callableFqName = callableFqName,
+        parameterName = "element$index".asNameId(),
+        parameterIndex = index
+      )
+    }
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope>

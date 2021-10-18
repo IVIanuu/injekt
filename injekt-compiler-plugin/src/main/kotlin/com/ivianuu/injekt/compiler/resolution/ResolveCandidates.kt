@@ -239,7 +239,7 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
 ): ResolutionResult? {
   // try the type scope if the requested type is not a framework type
   return if (!request.type.isProviderFunctionType &&
-    request.type.classifier != context.injektContext.setClassifier &&
+    request.type.classifier != context.injektContext.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
     request.type.classifier.fqName != injektFqNames().sourceKey)
     with(TypeInjectablesScope(request.type, this)) {

@@ -91,19 +91,19 @@ class ProviderTest {
     invokeSingleFile()
   }
 
-  @Test fun testMultipleProvidersInSetWithDependencyDerivedByProviderArgument() =
+  @Test fun testMultipleProvidersInListWithDependencyDerivedByProviderArgument() =
     singleAndMultiCodegen(
       """
         typealias MyScope = Scope
         @Provide val MyScope.key: String get() = ""
         @Provide fun foo(key: String) = Foo()
-        @Provide fun fooIntoSet(provider: (@Provide MyScope) -> Foo): (MyScope) -> Any = provider as (MyScope) -> Any 
+        @Provide fun fooIntoList(provider: (@Provide MyScope) -> Foo): (MyScope) -> Any = provider as (MyScope) -> Any 
         @Provide class Dep(key: String)
-        @Provide fun depIntoSet(provider: (@Provide MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
+        @Provide fun depIntoList(provider: (@Provide MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
     """,
     """
       fun invoke() {
-        inject<Set<(MyScope) -> Any>>()
+        inject<List<(MyScope) -> Any>>()
       } 
     """
     )

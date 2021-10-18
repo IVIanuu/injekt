@@ -50,7 +50,7 @@ class InjektContext(
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val setClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.set.toClassifierRef() }
+  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
   val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }
   val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef() }
   val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef() }

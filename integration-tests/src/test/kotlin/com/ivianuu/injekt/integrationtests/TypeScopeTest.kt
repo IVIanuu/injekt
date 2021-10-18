@@ -143,7 +143,7 @@ class TypeScopeTest {
           """
             class Dep {
               companion object {
-                @Provide val listOfDeps = listOf(Dep())
+                @Provide val setOfDeps = setOf(Dep())
               }
             }
           """,
@@ -153,7 +153,7 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            fun invoke() = inject<List<injectables.Dep>>()
+            fun invoke() = inject<Set<injectables.Dep>>()
           """
         )
       )

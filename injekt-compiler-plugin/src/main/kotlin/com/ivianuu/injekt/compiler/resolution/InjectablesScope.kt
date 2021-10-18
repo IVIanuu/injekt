@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -67,12 +66,12 @@ class InjectablesScope(
 
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val setElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
+  private val listElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
 
   private data class ProviderRequestKey(val type: TypeRef, val callContext: CallContext)
 
   private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
-  private val setInjectablesByType = mutableMapOf<TypeRef, SetInjectable?>()
+  private val listInjectablesByType = mutableMapOf<TypeRef, ListInjectable?>()
 
   private val componentTypes: MutableList<TypeRef> =
     parent?.componentTypes?.toMutableList() ?: mutableListOf()
@@ -119,7 +118,7 @@ class InjectablesScope(
   ): List<Injectable> {
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
-      request.type.classifier == context.injektContext.setClassifier) return emptyList()
+      request.type.classifier == context.injektContext.listClassifier) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { it.isValidObjectRequest(request) }
@@ -168,24 +167,24 @@ class InjectablesScope(
           }
         )
       }
-      request.type.classifier == context.injektContext.setClassifier -> return listOfNotNull(
-        setInjectablesByType.getOrPut(request.type) {
+      request.type.classifier == context.injektContext.listClassifier -> return listOfNotNull(
+        listInjectablesByType.getOrPut(request.type) {
           val singleElementType = request.type.arguments[0]
           val collectionElementType = context.injektContext.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
 
           var key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-          var elements = setElementsForType(singleElementType, collectionElementType, key) +
-              frameworkSetElementsForType(singleElementType, collectionElementType, key)
+          var elements = listElementsForType(singleElementType, collectionElementType, key) +
+              frameworkListElementsForType(singleElementType, collectionElementType, key)
           if (elements.isEmpty() && singleElementType.isProviderFunctionType) {
             val providerReturnType = singleElementType.arguments.last()
             key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
-            elements = (setElementsForType(
+            elements = (listElementsForType(
               providerReturnType, context.injektContext.collectionClassifier
                 .defaultType.withArguments(listOf(providerReturnType)), key) +
-                frameworkSetElementsForType(providerReturnType, context.injektContext.collectionClassifier
+                frameworkListElementsForType(providerReturnType, context.injektContext.collectionClassifier
                   .defaultType.withArguments(listOf(providerReturnType)), key))
               .map { elementType ->
                 singleElementType.copy(
@@ -197,19 +196,10 @@ class InjectablesScope(
 
           if (elements.isEmpty()) null
           else {
-            val elementRequests = elements
-              .mapIndexed { index, element ->
-                InjectableRequest(
-                  type = element,
-                  callableFqName = FqName("com.ivianuu.injekt.injectSetOf<${request.type.arguments[0].renderToString()}>"),
-                  parameterName = "element$index".asNameId(),
-                  parameterIndex = index
-                )
-              }
-            SetInjectable(
+            ListInjectable(
               type = request.type,
               ownerScope = this,
-              dependencies = elementRequests,
+              elements = elements,
               singleElementType = singleElementType,
               collectionElementType = collectionElementType
             )
@@ -226,14 +216,14 @@ class InjectablesScope(
     }
   }
 
-  private fun setElementsForType(
+  private fun listElementsForType(
     singleElementType: TypeRef,
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef> {
     if (injectables.isEmpty())
-      return parent?.setElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
-    return setElementsByType.getOrPut(key) {
+      return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
+    return listElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef> = injectables
         .mapNotNull { candidate ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
@@ -253,13 +243,13 @@ class InjectablesScope(
           injectables += callable.copy(type = typeWithFrameworkKey)
           typeWithFrameworkKey
         }
-      val parentElements = parent?.setElementsForType(singleElementType, collectionElementType, key)
+      val parentElements = parent?.listElementsForType(singleElementType, collectionElementType, key)
       if (parentElements != null) parentElements + thisElements
       else thisElements
     }
   }
 
-  private fun frameworkSetElementsForType(
+  private fun frameworkListElementsForType(
     singleElementType: TypeRef,
     collectionElementType: TypeRef,
     key: CallableRequestKey

@@ -19,6 +19,6 @@ package kotlin.collections
 import com.ivianuu.injekt.Provide
 
 /**
- * Provides a Map<K, V> for each Set<Pair<K, V>>
+ * Provides a Map<K, V> for each List<Pair<K, V>>
  */
-@Provide inline fun <K, V> mapOfPairs(pairs: Set<Pair<K, V>>): Map<K, V> = pairs.toMap()
+@Provide inline fun <K, V> mapOfPairs(pairs: List<Pair<K, V>>): Map<K, V> = pairs.toMap()

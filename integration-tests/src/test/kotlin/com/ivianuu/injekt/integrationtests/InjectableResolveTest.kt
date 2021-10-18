@@ -325,12 +325,12 @@ class InjectableResolveTest {
     """
       typealias SpecialScope = Unit
       
-      @Provide fun <E> asRunnable(factory: (@Provide SpecialScope) -> List<E>): List<E> = factory(Unit)
+      @Provide fun <E> asRunnable(factory: (@Provide SpecialScope) -> Set<E>): Set<E> = factory(Unit)
       
-      @Provide fun raw(scope: SpecialScope): List<String> = listOf("")
+      @Provide fun raw(scope: SpecialScope): Set<String> = setOf("")
     """,
     """
-      fun invoke() = inject<List<String>>()
+      fun invoke() = inject<Set<String>>()
     """
   )
 
@@ -540,19 +540,19 @@ class InjectableResolveTest {
 
   @Test fun testCannotUseNonReifiedTypeParameterForReifiedInjectable() = singleAndMultiCodegen(
     """
-      @Provide inline fun <reified T> list(): List<T> {
+      @Provide inline fun <reified T> set(): Set<T> {
         T::class
-        return emptyList()
+        return emptySet()
       }
     """,
     """
       fun <T> invoke() {
-        inject<List<T>>()
+        inject<Set<T>>()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of injectable com.ivianuu.injekt.integrationtests.list() of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
+      "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.T> for parameter value of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
     )
   }
 

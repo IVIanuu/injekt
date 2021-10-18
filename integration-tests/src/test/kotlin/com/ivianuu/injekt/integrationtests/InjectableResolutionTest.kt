@@ -336,26 +336,26 @@ class InjectableResolutionTest {
 
   @Test fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
     """
-      @Provide fun stringList(): List<String> = listOf("a", "b", "c")
-      @Provide fun <T> anyList(): List<T> = emptyList()
+      @Provide fun stringSet(): Set<String> = setOf("a", "b", "c")
+      @Provide fun <T> anySet(): Set<T> = emptySet()
     """,
     """
-      fun invoke() = inject<List<String>>() 
+      fun invoke() = inject<Set<String>>() 
     """
   ) {
-    invokeSingleFile() shouldBe listOf("a", "b", "c")
+    invokeSingleFile() shouldBe setOf("a", "b", "c")
   }
 
   @Test fun testPrefersMoreSpecificType2() = singleAndMultiCodegen(
     """
-      @Provide fun <T> list(): List<T> = emptyList()
-      @Provide fun <T> listList(): List<List<T>> = listOf(listOf("a", "b", "c")) as List<List<T>>
+      @Provide fun <T> set(): Set<T> = emptySet()
+      @Provide fun <T> setSet(): Set<Set<T>> = setOf(setOf("a", "b", "c")) as Set<Set<T>>
     """,
     """
-      fun invoke() = inject<List<List<String>>>() 
+      fun invoke() = inject<Set<Set<String>>>() 
     """
   ) {
-    invokeSingleFile() shouldBe listOf(listOf("a", "b", "c"))
+    invokeSingleFile() shouldBe setOf(setOf("a", "b", "c"))
   }
 
   @Test fun testPrefersMoreSpecificType3() = singleAndMultiCodegen(

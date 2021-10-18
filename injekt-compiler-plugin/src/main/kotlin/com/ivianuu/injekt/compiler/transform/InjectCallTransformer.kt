@@ -32,9 +32,9 @@ import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.ListInjectable
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.SetInjectable
 import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeRef
@@ -311,7 +311,7 @@ class InjectCallTransformer(
               is CallableInjectable -> callableExpression(result, result.candidate.cast())
               is ComponentInjectable -> componentExpression(result, result.candidate.cast())
               is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-              is SetInjectable -> setExpression(result, result.candidate.cast())
+              is ListInjectable -> listExpression(result, result.candidate.cast())
               is SourceKeyInjectable -> sourceKeyExpression()
               is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
             }
@@ -820,32 +820,32 @@ class InjectCallTransformer(
       }
     }
 
-  private val mutableSetOf = pluginContext.referenceFunctions(
-    FqName("kotlin.collections.mutableSetOf")
+  private val mutableListOf = pluginContext.referenceFunctions(
+    FqName("kotlin.collections.mutableListOf")
   ).single { it.owner.valueParameters.isEmpty() }
-  private val setAdd = mutableSetOf.owner.returnType
+  private val listAdd = mutableListOf.owner.returnType
     .classOrNull!!
     .owner
     .functions
-    .single { it.name.asString() == "add" }
-  private val setAddAll = mutableSetOf.owner.returnType
+    .single { it.name.asString() == "add" && it.valueParameters.size == 1 }
+  private val listAddAll = mutableListOf.owner.returnType
     .classOrNull!!
     .owner
     .functions
-    .single { it.name.asString() == "addAll" }
-  private val setOf = pluginContext.referenceFunctions(
-    FqName("kotlin.collections.setOf")
+    .single { it.name.asString() == "addAll" && it.valueParameters.size == 1 }
+  private val listOf = pluginContext.referenceFunctions(
+    FqName("kotlin.collections.listOf")
   ).single { it.owner.valueParameters.singleOrNull()?.isVararg == false }
-  private val iterableToSet = pluginContext.referenceFunctions(
-    FqName("kotlin.collections.toSet")
+  private val iterableToList = pluginContext.referenceFunctions(
+    FqName("kotlin.collections.toList")
   ).single {
     it.owner.extensionReceiverParameter?.type?.classifierOrNull?.descriptor ==
         pluginContext.builtIns.iterable
   }
 
-  private fun ScopeContext.setExpression(
+  private fun ScopeContext.listExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
-    injectable: SetInjectable
+    injectable: ListInjectable
   ): IrExpression = when (injectable.dependencies.size) {
     1 -> {
       val singleDependency = result.dependencyResults.values.single()
@@ -855,7 +855,7 @@ class InjectCallTransformer(
           expressionFor(result.dependencyResults.values.single().cast())
         singleDependency.candidate.type.isSubTypeOf(injectable.collectionElementType) -> {
           DeclarationIrBuilder(pluginContext, symbol)
-            .irCall(iterableToSet)
+            .irCall(iterableToList)
             .apply {
               extensionReceiver =
                 expressionFor(result.dependencyResults.values.single().cast())
@@ -866,7 +866,7 @@ class InjectCallTransformer(
             }
         }
         else -> DeclarationIrBuilder(pluginContext, symbol)
-          .irCall(setOf)
+          .irCall(listOf)
           .apply {
             putTypeArgument(
               0,
@@ -882,7 +882,7 @@ class InjectCallTransformer(
     else -> {
       DeclarationIrBuilder(pluginContext, symbol).irBlock {
         val tmpSet = irTemporary(
-          irCall(mutableSetOf)
+          irCall(mutableListOf)
             .apply {
               putTypeArgument(
                 0,
@@ -897,12 +897,12 @@ class InjectCallTransformer(
             if (dependency !is ResolutionResult.Success.WithCandidate.Value)
               return@forEach
             if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType)) {
-              +irCall(setAddAll).apply {
+              +irCall(listAddAll).apply {
                 dispatchReceiver = irGet(tmpSet)
                 putValueArgument(0, expressionFor(dependency))
               }
             } else {
-              +irCall(setAdd).apply {
+              +irCall(listAdd).apply {
                 dispatchReceiver = irGet(tmpSet)
                 putValueArgument(0, expressionFor(dependency))
               }
