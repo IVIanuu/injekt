@@ -44,5 +44,7 @@ class InjektWorkerTest {
   workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
   override fun doWork(): Result = Result.success()
-  companion object : WorkerModule<TestWorker>
+  companion object {
+    @Provide val module = WorkerModule<TestWorker>()
+  }
 }
