@@ -773,10 +773,6 @@ class InjectCallTransformer(
                 )
                 +irSetField(irGet(dispatchReceiverParameter!!), field, irNull())
               }
-
-            fields
-              .filter { it.name.asString().endsWith("Lock") }
-              .forEach { +irSetField(irGet(dispatchReceiverParameter!!), it, irNull()) }
           }
         }
       }
