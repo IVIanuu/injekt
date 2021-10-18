@@ -133,7 +133,7 @@ class InjectablesScope(
         .mapNotNull { candidate ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
-          val context = candidate.buildContext(key.staticTypeParameters, key.type)
+          val context = candidate.type.buildContext(key.type, key.staticTypeParameters)
           if (!context.isOk)
             return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables
@@ -240,9 +240,9 @@ class InjectablesScope(
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           var context =
-            candidate.buildContext(key.staticTypeParameters, singleElementType)
+            candidate.type.buildContext(singleElementType, key.staticTypeParameters)
           if (!context.isOk) {
-            context = candidate.buildContext(key.staticTypeParameters, collectionElementType)
+            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
           }
           if (!context.isOk) return@mapNotNull null
           val substitutionMap = context.fixedTypeVariables

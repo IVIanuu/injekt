@@ -73,8 +73,6 @@ fun TypeRef.isSubTypeOf(
     (superType.isMarkedNullable || !isNullableType)
   ) return true
 
-  if (isNullableType && !superType.isNullableType) return false
-
   subtypeView(superType.classifier)
     ?.let { return it.isSubTypeOfSameClassifier(superType) }
 
@@ -85,6 +83,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
   superType: TypeRef,
   @Inject context: TypeCheckerContext
 ): Boolean {
+  if (!superType.isMarkedNullable && isMarkedNullable) return false
   if (isMarkedComposable != superType.isMarkedComposable) return false
 
   for (i in arguments.indices) {
@@ -179,17 +178,6 @@ sealed class ConstraintPosition {
   object DeclaredUpperBound : ConstraintPosition()
   object Unknown : ConstraintPosition()
 }
-
-fun CallableRef.buildContext(
-  staticTypeParameters: List<ClassifierRef>,
-  superType: TypeRef,
-  collectSuperTypeVariables: Boolean = false,
-  @Inject context: TypeCheckerContext
-): TypeContext = type.buildContext(
-  superType,
-  staticTypeParameters,
-  collectSuperTypeVariables
-)
 
 fun TypeRef.buildContext(
   superType: TypeRef,

@@ -67,24 +67,27 @@ class PersistenceTest {
 
   @Test fun testTypeParameterWithAliasedFunctionUpperbound() = singleAndMultiCodegen(
     """
-      @Provide fun <T : @MyTag S, S : FuncA> impl(instance: T): @MyOtherTag S =
+      typealias MyWrapper<T> = T
+      typealias MyOtherWrapper<T> = T
+
+      @Provide fun <T : FuncA> impl(instance: MyWrapper<T>): MyOtherWrapper<T> =
         instance
   
       typealias FuncA = suspend () -> Unit
       typealias FuncB = suspend () -> Boolean
   
-      @Provide fun funcA(funcB: FuncB): @MyTag FuncA = { }
-      @Provide fun funcB(): @MyTag FuncB = { true }
+      @Provide fun funcA(funcB: FuncB): MyWrapper<FuncA> = { }
+      @Provide fun funcB(): MyWrapper<FuncB> = { true }
     """,
     """
       fun invoke() {
-        inject<@MyOtherTag FuncA>()
-        inject<@MyOtherTag FuncB>()
+        inject<MyOtherWrapper<FuncA>>()
+        inject<MyOtherWrapper<FuncB>>()
       } 
     """
   ) {
-    shouldNotContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherTag<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
-    shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherTag<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
+    shouldNotContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherWrapper<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
+    shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherWrapper<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
@@ -119,15 +122,15 @@ class PersistenceTest {
 
   @Test fun testNonInjectableClassWithInjectableMembers() = singleAndMultiCodegen(
     """ 
-      abstract class MyModule<T : S, S> {
-        @Provide fun func(t: T): S = t
+      class Wrapped<T>(val value: T)
+      class MyModule<T> {
+        @Provide fun func(t: T) = Wrapped(t)
       }
-      class MyModuleImpl<T> : MyModule<@Tag1 T, T>()
     """,
     """
-      @Provide val myFooModule = MyModuleImpl<Foo>()
-      @Provide val foo: @Tag1 Foo = Foo()
-      fun invoke() = inject<Foo>()
+      @Provide val myFooModule = MyModule<Foo>()
+      @Provide val foo: Foo = Foo()
+      fun invoke() = inject<Wrapped<Foo>>()
         """
   )
 

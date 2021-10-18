@@ -198,7 +198,11 @@ class TypeRef(
         .zip(arguments)
         .toMap()
       _superTypes = if (substitutionMap.isEmpty()) classifier.superTypes
-      else classifier.superTypes.map { it.substitute(substitutionMap) }
+        .map { it.withNullability(isMarkedNullable) }
+      else classifier.superTypes.map {
+        it.substitute(substitutionMap)
+          .withNullability(isMarkedNullable)
+      }
     }
     return _superTypes!!
   }

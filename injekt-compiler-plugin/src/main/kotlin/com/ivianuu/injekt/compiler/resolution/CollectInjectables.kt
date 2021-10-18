@@ -339,7 +339,7 @@ fun TypeRef.collectTypeScopeInjectables(
 
     containingObjectClassifier != null && injectables.any { other ->
       other.callable is LazyClassReceiverParameterDescriptor &&
-          other.buildContext(emptyList(), containingObjectClassifier.defaultType).isOk
+          other.type.buildContext(containingObjectClassifier.defaultType, emptyList()).isOk
     }
   }
 
