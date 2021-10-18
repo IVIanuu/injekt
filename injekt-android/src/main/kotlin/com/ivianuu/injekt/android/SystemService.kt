@@ -19,9 +19,20 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 import kotlin.reflect.KClass
 
-typealias SystemService<T> = T
-
-@Provide fun <T : Any> systemService(app: Application, serviceClass: KClass<T>): SystemService<T> =
-  ContextCompat.getSystemService(app, serviceClass.java)!!
+/**
+ * Tag for android system services
+ *
+ * Example:
+ * ```
+ * fun Notification.post(@Inject notificationManager: @SystemService NotificationManager) { ... }
+ * ```
+ */
+@Tag annotation class SystemService {
+  companion object {
+    @Provide inline fun <T : Any> systemService(application: Application, serviceClass: KClass<T>):
+        @SystemService T = ContextCompat.getSystemService(application, serviceClass.java)!!
+  }
+}

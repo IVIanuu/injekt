@@ -136,6 +136,30 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testTagTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Tag annotation class MyTag {
+              companion object {
+                @Provide val default: @MyTag String = ""
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = inject<@injectables.MyTag String>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testTypeArgumentTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -229,6 +253,36 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testClassTagScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Tag annotation class MyTag {
+              companion object {
+                @Provide val dep = injectables.Dep()
+              }
+            }
+          """,
+          packageFqName = FqName("tags")
+        ),
+        source(
+          """
+            @Provide @tags.MyTag class Dep
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testPackageNestedClassTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -303,6 +357,112 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testTypeScopeWhichReferencesTypeInInjectableDeclaration() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Tag annotation class MyTag {
+              companion object {
+                @Provide inline fun <@Spread T : @MyTag S, S> value(t: T): S = t
+              }
+            }
+          """,
+          packageFqName = FqName("tags")
+        )
+      ),
+      listOf(
+        source(
+          """
+            class Dep {
+              companion object {
+                @Provide fun dep(): @tags.MyTag Dep = Dep()
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Tag annotation class MyTag {
+              companion object {
+                @Provide inline fun <@Spread T : @MyTag S, S> value(t: T): S = t
+              }
+            }
+
+            @MyTag @Provide class Dep
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
+  @Test fun testNestedClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Tag annotation class MyTag2 {
+              companion object {
+                @Provide inline fun <@Spread T : @MyTag2 S, S> value(t: T): S = t
+              }
+            }
+          """,
+          packageFqName = FqName("tags2")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Tag annotation class MyTag1 {
+              companion object {
+                @Provide inline fun <@Spread T : @MyTag1 S, S> value(t: T): @tags2.MyTag2 S = t
+              }
+            }
+          """,
+          packageFqName = FqName("tags1")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @tags1.MyTag1 @Provide class Dep
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testTypeScopeCanAccessOtherTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -356,39 +516,4 @@ class TypeScopeTest {
   ) {
     invokeSingleFile()
   }
-
-  @Test fun testTypeScopeWhichReferencesTypeInInjectableDeclaration() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            class UpCastable<T, D : T>(val value: T)
-            typealias UpCasted<T> = T
-            
-            @Provide fun <D> upCastableImpl(t: UpCastable<*, D>): UpCasted<D> = t as D
-          """,
-          packageFqName = FqName("injectables1")
-        )
-      ),
-      listOf(
-        source(
-          """
-            class Dep {
-              companion object {
-                @Provide fun dep(): injectables1.UpCastable<Any, Dep> = injectables1.UpCastable(Dep())
-              }
-            }
-          """,
-          packageFqName = FqName("injectables2")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            fun invoke() = inject<injectables1.UpCasted<injectables2.Dep>>()
-          """
-        )
-      )
-    )
-  )
 }

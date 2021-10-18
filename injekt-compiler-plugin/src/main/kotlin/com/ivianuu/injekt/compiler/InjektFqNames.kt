@@ -23,6 +23,8 @@ class InjektFqNames(val injektPackage: FqName) {
   val inject = injektPackage.child("Inject".asNameId())
   val provide = injektPackage.child("Provide".asNameId())
   val providers = injektPackage.child("Providers".asNameId())
+  val tag = injektPackage.child("Tag".asNameId())
+  val spread = injektPackage.child("Spread".asNameId())
 
   val internalPackage = injektPackage.child("internal".asNameId())
   val callableInfo = internalPackage.child("CallableInfo".asNameId())

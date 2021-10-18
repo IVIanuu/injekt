@@ -21,6 +21,8 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
 import kotlin.reflect.KClass
 
 /**
@@ -36,15 +38,17 @@ import kotlin.reflect.KClass
  * ) : CoroutineWorker(context, parameters)
  * ```
  */
-class WorkerModule<T : ListenableWorker> {
-  @Provide fun workerFactory(
-    factory: (@Provide WorkerParameters) -> T,
-    workerClass: KClass<T>
-  ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
+@Tag annotation class InjektWorker {
+  companion object {
+    @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
+      noinline factory: (@Provide WorkerParameters) -> T,
+      workerClass: KClass<S>
+    ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
+  }
 }
 
 /**
- * Factory which is able to create [ListenableWorker]s installed via [WorkerModule]
+ * Factory which is able to create [ListenableWorker]s installed via [InjektWorker]
  */
 @Provide class InjektWorkerFactory(
   private val workers: Map<String, SingleWorkerFactory>
@@ -56,4 +60,4 @@ class WorkerModule<T : ListenableWorker> {
   ): ListenableWorker? = workers[workerClassName]?.invoke(workerParameters)
 }
 
-typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
+internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
