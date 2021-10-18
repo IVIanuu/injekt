@@ -115,14 +115,9 @@ class InjectablesScope(
   fun injectablesForRequest(
     request: InjectableRequest,
     requestingScope: InjectablesScope
-  ): List<Injectable> {
-    // we return merged collections
-    if (request.type.frameworkKey == 0 &&
-      request.type.classifier == context.injektContext.listClassifier) return emptyList()
-
-    return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
+  ): List<Injectable> =
+    injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { it.isValidObjectRequest(request) }
-  }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
     if (injectables.isEmpty())
