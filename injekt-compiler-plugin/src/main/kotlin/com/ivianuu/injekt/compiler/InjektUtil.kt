@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -135,6 +136,12 @@ fun String.asNameId() = Name.identifier(this)
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
+
+fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+  annotations.filter {
+    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+    inner.hasAnnotation(annotation)
+  }
 
 fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
   when (val original = this.original) {

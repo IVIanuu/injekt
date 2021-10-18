@@ -92,6 +92,21 @@ class OverrideDeclarationTest {
     compilationShouldHaveFailed("'bar' overrides nothing")
   }
 
+  @Test fun testNonSpreadTypeParameterOverrideWithSpreadOverridden() = singleAndMultiCodegen(
+    """
+      abstract class MySuperClass {
+        @Provide abstract fun <@Spread T : Bar> foo(): Foo
+      }
+    """,
+    """
+      class MySubClass : MySuperClass() {
+        @Provide override fun <T : Bar> foo(): Foo = TODO()
+      } 
+    """
+  ) {
+    compilationShouldHaveFailed("'foo' overrides nothing")
+  }
+
   @Test fun testProvidePropertyOverrideWithoutProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
@@ -153,5 +168,27 @@ class OverrideDeclarationTest {
     """
   ) {
     compilationShouldHaveFailed("Actual constructor of 'Dep' has no corresponding expected declaration")
+  }
+
+  @Test fun testExpectActualFunctionSpreadTypeParameterMismatch() = multiPlatformCodegen(
+    """
+      @Provide expect fun <@Spread T> myFunc(): Foo
+    """,
+    """
+      @Provide actual fun <T> myFunc(): Foo = Foo()
+    """
+  ) {
+    compilationShouldHaveFailed("Actual function 'myFunc' has no corresponding expected declaration")
+  }
+
+  @Test fun testExpectActualClassSpreadTypeParameterMismatch() = multiPlatformCodegen(
+    """
+      @Provide expect class Dep<@Spread T>
+    """,
+    """
+      @Provide actual class Dep<T>
+    """
+  ) {
+    compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
   }
 }

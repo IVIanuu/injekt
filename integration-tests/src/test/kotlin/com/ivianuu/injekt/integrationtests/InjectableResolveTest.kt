@@ -334,6 +334,18 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveStarProjectedType() = singleAndMultiCodegen(
+    """
+      @Provide fun foos() = Foo() to Foo()
+      
+      @Tag annotation class First
+      @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
+    """,
+    """
+      fun invoke() = inject<@First Foo>() 
+    """
+  )
+
   @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(
     """
       object MyObject
@@ -568,6 +580,20 @@ class InjectableResolveTest {
       fun invoke() = inject<String>() 
     """
   )
+
+  @Test fun testCannotResolveUnparameterizedSubTypeOfParameterizedInjectableWithTags() =
+    singleAndMultiCodegen(
+      """
+        typealias TypedString<T> = String
+
+        @Provide val foo = Foo()
+
+        @Provide fun <T : Foo> typedString(value: T): @TypedTag<T> TypedString<T> = ""
+      """,
+      """
+        fun invoke() = inject<@TypedTag<Foo> String>() 
+      """
+    )
 
   @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
       """
@@ -1069,6 +1095,24 @@ class InjectableResolveTest {
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testTaggedObjectInjectableIsNotApplicableToUntaggedType() = singleAndMultiCodegen(
+    """
+      interface Logger
+
+      @Provide @Tag1 object NoopLogger : Logger
+      
+      fun log(@Inject logger: Logger) {
+      }
+    """,
+    """
+      fun invoke() = log()
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "no injectable found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
+    )
   }
 
   @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(

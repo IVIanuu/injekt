@@ -32,7 +32,7 @@ class SystemServiceTest {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     scenario.onActivity {
       @Provide val application = it.application
-      inject<SystemService<PowerManager>>().isPowerSaveMode
+      inject<@SystemService PowerManager>().isPowerSaveMode
     }
   }
 }

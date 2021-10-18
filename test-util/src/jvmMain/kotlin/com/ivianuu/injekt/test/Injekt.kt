@@ -16,9 +16,13 @@
 
 package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentObserver
 import com.ivianuu.injekt.common.Disposable
+import com.ivianuu.injekt.common.TypeKey
 
 class Foo
 
@@ -31,6 +35,12 @@ interface Command
 class CommandA : Command
 
 class CommandB : Command
+
+@Tag annotation class Tag1
+
+@Tag annotation class Tag2
+
+@Tag annotation class TypedTag<T>
 
 class TestDisposable : Disposable {
   var disposeCalls = 0
@@ -56,3 +66,13 @@ class TestComponentObserver<C : @Component Any> : ComponentObserver<C> {
 interface Scope
 
 object AppScope : Scope
+
+@Tag annotation class FakeScoped<S : Scope> {
+  companion object {
+    @Provide inline fun <@Spread T : @FakeScoped<S> U, U : Any, S : Scope> scopedValue(
+      factory: () -> T,
+      scope: S,
+      key: TypeKey<U>
+    ): U = factory()
+  }
+}

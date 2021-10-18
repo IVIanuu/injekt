@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.withArguments
+import com.ivianuu.injekt.compiler.resolution.wrap
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.model.TypeVariance
 import org.junit.Test
@@ -26,6 +27,7 @@ class SubtypingTest {
   @Test fun testNullableAnyIsSuperTypeOfEveryOtherType() = withTypeCheckerContext {
     stringType shouldBeSubTypeOf nullableAny
     stringType.nullable() shouldBeSubTypeOf nullableAny
+    tag1.wrap(stringType) shouldBeSubTypeOf nullableAny
     stringType.copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
     stringType.nullable().copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
   }
@@ -73,8 +75,8 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable8() = withTypeCheckerContext {
-    listType.withArguments(typeParameter()) shouldBeAssignableTo
-        listType.withArguments(listOf(stringType))
+    listType.withArguments(tag1.wrap(typeParameter())) shouldBeAssignableTo
+        listType.withArguments(listOf(tag1.wrap(stringType)))
   }
 
   @Test fun testMatchingGenericTypeIsAssignable2() = withTypeCheckerContext {
@@ -85,9 +87,9 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable3() = withTypeCheckerContext {
-    val tpB = typeParameter(charSequenceType, fqName = FqName("B"))
+    val tpB = typeParameter(tag1.wrap(charSequenceType), fqName = FqName("B"))
     val tpA = typeParameter(tpB, fqName = FqName("A"))
-    stringType shouldBeAssignableTo tpA
+    tag1.wrap(stringType) shouldBeAssignableTo tpA
   }
 
   @Test fun testMatchingGenericTypeIsAssignable5() = withTypeCheckerContext {
@@ -135,6 +137,26 @@ class SubtypingTest {
 
   @Test fun testSameComposabilityIsAssignable() = withTypeCheckerContext {
     composableFunction(0) shouldBeAssignableTo composableFunction(0)
+  }
+
+  @Test fun testSameTagsIsAssignable() = withTypeCheckerContext {
+    tag1.wrap(stringType) shouldBeAssignableTo tag1.wrap(stringType)
+  }
+
+  @Test fun testDifferentTagsIsNotAssignable() = withTypeCheckerContext {
+    tag1.wrap(stringType) shouldNotBeAssignableTo tag2.wrap(stringType)
+  }
+
+  @Test fun testTaggedIsNotSubTypeOfUntagged() = withTypeCheckerContext {
+    tag1.wrap(stringType) shouldNotBeSubTypeOf stringType
+  }
+
+  @Test fun testTaggedIsNotAssignableToUntagged() = withTypeCheckerContext {
+    tag1.wrap(stringType) shouldNotBeAssignableTo stringType
+  }
+
+  @Test fun testUntaggedTypeParameterIsNotAssignableToTaggedType() = withTypeCheckerContext {
+    typeParameter(stringType) shouldNotBeAssignableTo tag1.wrap(stringType)
   }
 
   @Test fun testComposableTypeAliasIsSubTypeOfComposableFunctionUpperBound() =
@@ -186,6 +208,11 @@ class SubtypingTest {
 
   @Test fun testSubTypeOfTypeParameterWithNullableUpperBound() = withTypeCheckerContext {
     subType(stringType) shouldBeAssignableTo typeParameter(stringType.nullable())
+  }
+
+  @Test fun testNestedTaggedSubTypeOfNestedTaggedTypeParameter() = withTypeCheckerContext {
+    listType.withArguments(tag1.wrap(stringType)) shouldBeAssignableTo
+        listType.withArguments(tag1.wrap(typeParameter(nullable = false)))
   }
 
   @Test fun testTypeAliasIsNotSubTypeOfTypeParameterWithOtherTypeAliasUpperBound() =
