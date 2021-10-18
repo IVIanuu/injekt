@@ -356,4 +356,39 @@ class TypeScopeTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testTypeScopeWhichReferencesTypeInInjectableDeclaration() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class UpCastable<T, D : T>(val value: T)
+            typealias UpCasted<T> = T
+            
+            @Provide fun <D> upCastableImpl(t: UpCastable<*, D>): UpCasted<D> = t as D
+          """,
+          packageFqName = FqName("injectables1")
+        )
+      ),
+      listOf(
+        source(
+          """
+            class Dep {
+              companion object {
+                @Provide fun dep(): injectables1.UpCastable<Any, Dep> = injectables1.UpCastable(Dep())
+              }
+            }
+          """,
+          packageFqName = FqName("injectables2")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = inject<injectables1.UpCasted<injectables2.Dep>>()
+          """
+        )
+      )
+    )
+  )
 }
