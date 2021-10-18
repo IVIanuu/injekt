@@ -34,6 +34,7 @@ class CommandB : Command
 
 class TestDisposable : Disposable {
   var disposeCalls = 0
+
   override fun dispose() {
     disposeCalls++
   }
