@@ -44,8 +44,6 @@ import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.canBeInlineArgument
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInline
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInlineParameter
-import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
-import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 
 enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
@@ -54,9 +52,9 @@ enum class CallContext {
 fun CallContext.canCall(other: CallContext) = this == other || other == CallContext.DEFAULT
 
 fun CallableDescriptor.callContext(@Inject context: InjektContext): CallContext {
-  if (this !is FunctionDescriptor && this !is PropertyDescriptor) return CallContext.DEFAULT
-
   if (this is ConstructorDescriptor) return CallContext.DEFAULT
+
+  if (this !is FunctionDescriptor && this !is PropertyDescriptor) return CallContext.DEFAULT
 
   if (context.trace == null) return callContextOfThis()
 
@@ -142,11 +140,3 @@ private val composeCompilerInClasspath = try {
 } catch (e: ClassNotFoundException) {
   false
 }
-
-fun HierarchicalScope.callContext(@Inject context: InjektContext): CallContext =
-  generateSequence(this) { it.parent }
-    .filterIsInstance<LexicalScope>()
-    .mapNotNull { it.ownerDescriptor as? FunctionDescriptor }
-    .firstOrNull()
-    ?.callContext(context)
-    ?: CallContext.DEFAULT
