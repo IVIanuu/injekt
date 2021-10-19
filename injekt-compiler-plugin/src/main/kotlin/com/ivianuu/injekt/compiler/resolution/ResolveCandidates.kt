@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.moduleName
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
@@ -449,10 +448,6 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   }
 }
 
-private enum class TypeScopeOrigin {
-  EXTERNAL, TYPE, INTERNAL
-}
-
 private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int {
   if (a === b) return 0
 
@@ -485,28 +480,6 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   }
 
   val requestedType = a.type
-  if (aIsFromTypeScope && bIsFromTypeScope) {
-    val thisModuleName = context.injektContext.module.name.asString()
-    val aModuleName = a.safeAs<CallableInjectable>()?.callable?.callable?.moduleName()
-    val bModuleName = b.safeAs<CallableInjectable>()?.callable?.callable?.moduleName()
-    val typeModuleName = requestedType.classifier.descriptor!!.moduleName()
-
-    val aOrigin = when (aModuleName) {
-      thisModuleName -> TypeScopeOrigin.INTERNAL
-      typeModuleName -> TypeScopeOrigin.TYPE
-      else -> TypeScopeOrigin.EXTERNAL
-    }
-
-    val bOrigin = when (bModuleName) {
-      thisModuleName -> TypeScopeOrigin.INTERNAL
-      typeModuleName -> TypeScopeOrigin.TYPE
-      else -> TypeScopeOrigin.EXTERNAL
-    }
-
-    if (aOrigin.ordinal > bOrigin.ordinal) return -1
-    if (bOrigin.ordinal > aOrigin.ordinal) return 1
-  }
-
   val diff = compareType(a.originalType, b.originalType, requestedType)
   if (diff < 0) return -1
   if (diff > 0) return 1

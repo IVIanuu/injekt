@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -627,16 +628,43 @@ fun TypeInjectablesScope(
   @Inject context: InjektContext
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
+
+  val externalInjectables = mutableListOf<CallableRef>()
+  val typeInjectables = mutableListOf<CallableRef>()
+  val internalInjectables = mutableListOf<CallableRef>()
+
+  val thisModuleName = context.injektContext.module.name.asString()
+  val typeModuleName = type.classifier.descriptor!!.moduleName()
+  injectablesWithLookups.injectables.forEach { callable ->
+    when (callable.callable.moduleName()) {
+      thisModuleName -> internalInjectables += callable
+      typeModuleName -> typeInjectables += callable
+      else -> externalInjectables += callable
+    }
+  }
+
   InjectablesScope(
-    name = "TYPE ${type.renderToString()}",
-    parent = parent,
+    name = "INTERNAL TYPE ${type.renderToString()}",
     ownerDescriptor = type.classifier.descriptor,
-    initialInjectables = injectablesWithLookups.injectables,
+    initialInjectables = internalInjectables,
     imports = injectablesWithLookups.lookedUpPackages
       .map { ResolvedProviderImport(null, "$it.*", it) },
     isTypeScope = true,
     isDeclarationContainer = false,
-    nesting = parent.nesting
+    parent = InjectablesScope(
+      name = "TYPE TYPE ${type.renderToString()}",
+      initialInjectables = typeInjectables,
+      isTypeScope = true,
+      isDeclarationContainer = false,
+      parent = InjectablesScope(
+        name = "EXTERNAL TYPE ${type.renderToString()}",
+        parent = parent,
+        ownerDescriptor = type.classifier.descriptor,
+        initialInjectables = externalInjectables,
+        isTypeScope = true,
+        isDeclarationContainer = false
+      )
+    )
   )
 }
 
@@ -648,23 +676,23 @@ private fun ImportInjectablesScope(
   injectablesPredicate: (CallableRef) -> Boolean = { true },
   @Inject context: InjektContext
 ): InjectablesScope {
-  val externalStarImports = mutableListOf<CallableRef>()
-  val externalByNameImports = mutableListOf<CallableRef>()
-  val internalStarImports = mutableListOf<CallableRef>()
-  val internalByNameImports = mutableListOf<CallableRef>()
+  val externalStarInjectables = mutableListOf<CallableRef>()
+  val externalByNameInjectables = mutableListOf<CallableRef>()
+  val internalStarInjectables = mutableListOf<CallableRef>()
+  val internalByNameInjectables = mutableListOf<CallableRef>()
 
   imports.collectImportedInjectables().forEach { callable ->
     if (callable.callable.isExternalDeclaration()) {
       if (callable.import!!.importPath!!.endsWith(".*")) {
-        externalStarImports += callable
+        externalStarInjectables += callable
       } else {
-        externalByNameImports += callable
+        externalByNameInjectables += callable
       }
     } else {
       if (callable.import!!.importPath!!.endsWith(".*")) {
-        internalStarImports += callable
+        internalStarInjectables += callable
       } else {
-        internalByNameImports += callable
+        internalByNameInjectables += callable
       }
     }
   }
@@ -672,27 +700,27 @@ private fun ImportInjectablesScope(
   return InjectablesScope(
     name = "$namePrefix INTERNAL BY NAME IMPORTS",
     file = file,
-    initialInjectables = internalByNameImports,
+    initialInjectables = internalByNameInjectables,
     isDeclarationContainer = false,
     injectablesPredicate = injectablesPredicate,
     imports = imports.mapNotNull { it.resolve() },
     parent = InjectablesScope(
       name = "$namePrefix INTERNAL STAR IMPORTS",
       file = file,
-      initialInjectables = internalStarImports,
+      initialInjectables = internalStarInjectables,
       isDeclarationContainer = false,
       injectablesPredicate = injectablesPredicate,
       parent = InjectablesScope(
         name = "$namePrefix EXTERNAL BY NAME IMPORTS",
         file = file,
-        initialInjectables = externalByNameImports,
+        initialInjectables = externalByNameInjectables,
         isDeclarationContainer = false,
         injectablesPredicate = injectablesPredicate,
         parent = InjectablesScope(
           name = "$namePrefix EXTERNAL STAR IMPORTS",
           parent = parent,
           file = file,
-          initialInjectables = externalStarImports,
+          initialInjectables = externalStarInjectables,
           isDeclarationContainer = false,
           injectablesPredicate = injectablesPredicate
         )
