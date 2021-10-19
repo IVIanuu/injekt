@@ -124,8 +124,7 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
 ) = context.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
 fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
-  moduleName().removeSurrounding("<", ">") !=
-      context.module.name.asString().removeSurrounding("<", ">")
+  moduleName() != context.module.name.asString()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -271,7 +270,8 @@ val KtElement?.lookupLocation: LookupLocation
 
 fun DeclarationDescriptor.moduleName(@Inject context: InjektContext): String =
   getJvmModuleNameForDeserializedDescriptor(this)
-    ?: context.module.name.asString()
+    ?.removeSurrounding("<", ">")
+    ?: context.module.name.asString().removeSurrounding("<", ">")
 
 inline fun <K, V> BindingTrace?.getOrPut(
   slice: WritableSlice<K, V>,
