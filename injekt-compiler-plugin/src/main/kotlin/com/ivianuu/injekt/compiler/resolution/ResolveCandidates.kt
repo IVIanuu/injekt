@@ -340,14 +340,11 @@ private fun InjectablesScope.resolveCandidates(
     }
   }
 
-  return if (successes.isNotEmpty()) {
-    successes.singleOrNull()
-      ?: successes
-        .let {
-          it.singleOrNull()
-            ?: ResolutionResult.Failure.CandidateAmbiguity(request, it.cast())
-        }
-  } else failure!!
+  return when {
+    successes.size == 1 -> successes.single()
+    successes.isNotEmpty() -> ResolutionResult.Failure.CandidateAmbiguity(request, successes.cast())
+    else -> failure!!
+  }
 }
 
 private fun InjectablesScope.resolveCandidate(
