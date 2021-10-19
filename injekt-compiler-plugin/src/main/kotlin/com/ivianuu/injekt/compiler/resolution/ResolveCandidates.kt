@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
@@ -310,6 +311,10 @@ private fun InjectablesScope.resolveCandidates(
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
     .sortedWith { a, b -> compareCandidate(a, b) }
+    .distinctBy {
+      if (it is CallableInjectable) it.callable.callable.uniqueKey()
+      else it
+    }
     .toMutableList()
   while (remaining.isNotEmpty()) {
     val candidate = remaining.removeAt(0)

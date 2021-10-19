@@ -87,11 +87,6 @@ class InjectablesScope(
 
   private val listElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
 
-  private data class ProviderRequestKey(val type: TypeRef, val callContext: CallContext)
-
-  private val providerInjectablesByRequest = mutableMapOf<ProviderRequestKey, ProviderInjectable>()
-  private val listInjectablesByType = mutableMapOf<TypeRef, ListInjectable?>()
-
   private val componentTypes: MutableList<TypeRef> =
     parent?.componentTypes?.toMutableList() ?: mutableListOf()
   private val entryPointTypes: MutableList<TypeRef> =
@@ -206,57 +201,51 @@ class InjectablesScope(
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext
         return listOf(
-          providerInjectablesByRequest.getOrPut(
-            ProviderRequestKey(request.type, finalCallContext)
-          ) {
-            ProviderInjectable(
-              type = request.type,
-              ownerScope = this,
-              dependencyCallContext = finalCallContext,
-              isInline = request.isInline
-            )
-          }
+          ProviderInjectable(
+            type = request.type,
+            ownerScope = this,
+            dependencyCallContext = finalCallContext,
+            isInline = request.isInline
+          )
         )
       }
-      request.type.classifier == context.injektContext.listClassifier -> return listOfNotNull(
-        listInjectablesByType.getOrPut(request.type) {
-          val singleElementType = request.type.arguments[0]
-          val collectionElementType = context.injektContext.collectionClassifier.defaultType
-            .withArguments(listOf(singleElementType))
+      request.type.classifier == context.injektContext.listClassifier -> {
+        val singleElementType = request.type.arguments[0]
+        val collectionElementType = context.injektContext.collectionClassifier.defaultType
+          .withArguments(listOf(singleElementType))
 
-          var key = CallableRequestKey(request.type, allStaticTypeParameters)
+        var key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-          var elements = listElementsForType(singleElementType, collectionElementType, key) +
-              frameworkListElementsForType(singleElementType, collectionElementType, key)
-          if (elements.isEmpty() && singleElementType.isFunctionType) {
-            val providerReturnType = singleElementType.arguments.last()
-            key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
+        var elements = listElementsForType(singleElementType, collectionElementType, key) +
+            frameworkListElementsForType(singleElementType, collectionElementType, key)
+        if (elements.isEmpty() && singleElementType.isFunctionType) {
+          val providerReturnType = singleElementType.arguments.last()
+          key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
-            elements = (listElementsForType(
-              providerReturnType, context.injektContext.collectionClassifier
-                .defaultType.withArguments(listOf(providerReturnType)), key) +
-                frameworkListElementsForType(providerReturnType, context.injektContext.collectionClassifier
-                  .defaultType.withArguments(listOf(providerReturnType)), key))
-              .map { elementType ->
-                singleElementType.copy(
-                  arguments = singleElementType.arguments
-                    .dropLast(1) + elementType
-                )
-              }
-          }
-
-          if (elements.isEmpty()) null
-          else {
-            ListInjectable(
-              type = request.type,
-              ownerScope = this,
-              elements = elements,
-              singleElementType = singleElementType,
-              collectionElementType = collectionElementType
-            )
-          }
+          elements = (listElementsForType(
+            providerReturnType, context.injektContext.collectionClassifier
+              .defaultType.withArguments(listOf(providerReturnType)), key) +
+              frameworkListElementsForType(providerReturnType, context.injektContext.collectionClassifier
+                .defaultType.withArguments(listOf(providerReturnType)), key))
+            .map { elementType ->
+              singleElementType.copy(
+                arguments = singleElementType.arguments
+                  .dropLast(1) + elementType
+              )
+            }
         }
-      )
+
+        return if (elements.isEmpty()) emptyList()
+        else listOf(
+          ListInjectable(
+            type = request.type,
+            ownerScope = this,
+            elements = elements,
+            singleElementType = singleElementType,
+            collectionElementType = collectionElementType
+          )
+        )
+      }
       request.type.classifier.fqName == injektFqNames().typeKey ->
         return listOf(TypeKeyInjectable(request.type, this))
       request.type.classifier.fqName == injektFqNames().sourceKey ->
