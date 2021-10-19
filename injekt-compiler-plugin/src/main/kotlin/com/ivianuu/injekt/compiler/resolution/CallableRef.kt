@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 
@@ -33,6 +35,7 @@ data class CallableRef(
   val scopeComponentType: TypeRef? = null,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
+  val isEntryPoint: Boolean,
   val import: ResolvedProviderImport?
 )
 
@@ -79,6 +82,7 @@ fun CallableDescriptor.toCallableRef(@Inject context: InjektContext): CallableRe
         .map { it to it.defaultType }
         .toMap(),
       isProvide = isProvide(),
+      isEntryPoint = hasAnnotation(injektFqNames().entryPoint),
       import = null
     )
   }

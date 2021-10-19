@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeParameter
@@ -42,6 +43,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     val injektFqNames = bindingContext[InjektWritableSlices.INJEKT_FQ_NAMES, Unit]
       ?: return false
+
+    if (diagnostic.factory == Errors.NON_ABSTRACT_FUNCTION_WITH_NO_BODY ||
+        diagnostic.factory == Errors.NON_MEMBER_FUNCTION_NO_BODY ||
+        diagnostic.factory == Errors.EXTENSION_PROPERTY_MUST_HAVE_ACCESSORS_OR_BE_ABSTRACT ||
+        diagnostic.factory == Errors.MUST_BE_INITIALIZED_OR_BE_ABSTRACT)
+      return diagnostic.psiElement.cast<KtAnnotated>().hasAnnotation(injektFqNames.entryPoint)
 
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER

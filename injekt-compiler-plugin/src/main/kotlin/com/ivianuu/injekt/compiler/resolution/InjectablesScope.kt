@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
+import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -94,8 +95,8 @@ class InjectablesScope(
 
   private val componentTypes: MutableList<TypeRef> =
     parent?.componentTypes?.toMutableList() ?: mutableListOf()
-  private val entryPointTypes: MutableList<TypeRef> =
-    parent?.entryPointTypes?.toMutableList() ?: mutableListOf()
+  private val entryPoints: MutableList<CallableRef> =
+    parent?.entryPoints?.toMutableList() ?: mutableListOf()
 
   init {
     initialInjectables
@@ -124,7 +125,7 @@ class InjectablesScope(
             val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
             spreadingInjectableCandidateTypes += typeWithFrameworkKey
           },
-          addEntryPoint = { entryPointTypes += it }
+          addEntryPoint = { entryPoints += it }
         )
       }
 
@@ -322,18 +323,14 @@ class InjectablesScope(
       }
   }
 
-  fun entryPointsForType(componentType: TypeRef): List<TypeRef> {
-    if (entryPointTypes.isEmpty()) return emptyList()
-    return entryPointTypes
+  fun entryPointsForType(componentType: TypeRef): List<CallableRef> {
+    if (entryPoints.isEmpty()) return emptyList()
+    return entryPoints
       .mapNotNull { candidate ->
-        if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
-          candidate.withArguments(listOf(componentType))
-        } else {
-          val context = candidate.classifier.entryPointComponentType
-            .buildContext(componentType, allStaticTypeParameters)
-          if (!context.isOk) return@mapNotNull null
-          candidate.substitute(context.fixedTypeVariables)
-        }
+        val context = candidate.parameterTypes[EXTENSION_RECEIVER_INDEX]!!
+          .buildContext(componentType, allStaticTypeParameters)
+        if (!context.isOk) return@mapNotNull null
+        candidate.substitute(context.fixedTypeVariables)
       }
   }
 

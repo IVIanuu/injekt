@@ -21,8 +21,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +37,8 @@ class MainActivity : ComponentActivity() {
     }
   }
 }
+
+@EntryPoint val AppComponent.deps: MainActivityDependencies
 
 @EntryPoint<ActivityComponent> interface MainActivityDependencies {
   val theme: AppTheme

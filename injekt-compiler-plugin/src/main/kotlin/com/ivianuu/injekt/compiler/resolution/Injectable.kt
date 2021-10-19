@@ -106,7 +106,7 @@ class ComponentInjectable(
 
     visit(type)
 
-    entryPoints.forEach { visit(it) }
+    this += entryPoints
   }
 
   val componentObserversRequest = InjectableRequest(
@@ -124,17 +124,15 @@ class ComponentInjectable(
     isLazy = true
   )
 
-  val componentAndEntryPointInjectables = entryPoints
-    .map {
-      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
-    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+  val componentInjectable =
+    type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
 
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
     parent = ownerScope,
     context = ownerScope.context,
     componentType = type,
-    initialInjectables = componentAndEntryPointInjectables
+    initialInjectables = listOf(componentInjectable)
   )
 
   val requestsByRequestCallables = requestCallables
@@ -164,7 +162,11 @@ class ComponentInjectable(
         context = componentScope.context,
         callContext = requestCallable.callable.callContext(),
         initialInjectables = requestCallable.callable.allParameters
-          .filter { it != requestCallable.callable.dispatchReceiverParameter }
+          .filter {
+            it != requestCallable.callable.dispatchReceiverParameter &&
+                (!requestCallable.isEntryPoint ||
+                    it != requestCallable.callable.extensionReceiverParameter)
+          }
           .map {
             if (it is ReceiverParameterDescriptor)
               ComponentReceiverParameterDescriptor(it)

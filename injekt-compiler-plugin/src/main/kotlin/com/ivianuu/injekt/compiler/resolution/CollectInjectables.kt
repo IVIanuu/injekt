@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
-import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
@@ -119,7 +118,8 @@ fun ResolutionScope.collectInjectables(
               classBodyView ||
               declaration.hasAnnotation(injektFqNames().provide) ||
               declaration.primaryConstructorPropertyValueParameter()
-                ?.hasAnnotation(injektFqNames().provide) == true)) {
+                ?.hasAnnotation(injektFqNames().provide) == true) ||
+            declaration.hasAnnotation(injektFqNames().entryPoint)) {
           listOf(
             declaration.toCallableRef()
               .let { callable ->
@@ -193,8 +193,6 @@ fun ClassDescriptor.injectableConstructors(
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
   (if (hasAnnotation(injektFqNames().component))
     listOf(ComponentConstructorDescriptor(this))
-  else if (hasAnnotation(injektFqNames().entryPoint))
-    listOf(EntryPointConstructorDescriptor(this))
   else
     constructors
       .filter { constructor ->
@@ -229,7 +227,7 @@ fun CallableRef.collectInjectables(
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
   addComponent: (TypeRef) -> Unit,
-  addEntryPoint: (TypeRef) -> Unit,
+  addEntryPoint: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf(),
   @Inject context: InjektContext
@@ -248,8 +246,8 @@ fun CallableRef.collectInjectables(
     return
   }
 
-  if (callable is EntryPointConstructorDescriptor) {
-    addEntryPoint(callable.returnType!!.toTypeRef())
+  if (isEntryPoint) {
+    addEntryPoint(this)
     return
   }
 

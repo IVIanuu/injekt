@@ -19,10 +19,8 @@ package com.ivianuu.injekt.common
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Component
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
-annotation class EntryPoint<C : @Component Any>
-
-inline fun <E> entryPoint(component: @Component Any): E = component as E
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class EntryPoint
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class Scoped<C : @Component Any>

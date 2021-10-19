@@ -336,18 +336,16 @@ class ComponentTest {
     a shouldBeSameInstanceAs b
   }
 
-  @Test fun testEntryPoint() = singleAndMultiCodegen(
+  @Test fun testEntryPointFunction() = singleAndMultiCodegen(
     """
       @Component interface MyComponent
 
-      @EntryPoint<MyComponent> interface MyEntryPoint {
-        val foo: Foo
-      } 
-
-      @Provide val foo = Foo() 
+      @EntryPoint fun MyComponent.foo(): Foo
+      
+      @Provide val foo = Foo()
     """,
     """
-      fun invoke() = (inject<MyComponent>() as MyEntryPoint).foo
+      fun invoke() = inject<MyComponent>().foo()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

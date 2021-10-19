@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import java.io.File
 
-var dumpAllFiles = false
+var dumpAllFiles = true
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjektIrGenerationExtension(
@@ -45,6 +45,8 @@ class InjektIrGenerationExtension(
       injektFqNames,
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
+    @Provide val entryPointTransformer = EntryPointTransformer()
+    moduleFragment.transform(entryPointTransformer, null)
     moduleFragment.transform(InjectCallTransformer(), null)
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)

@@ -141,6 +141,7 @@ import kotlin.collections.set
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) class InjectCallTransformer(
   @Inject private val context: InjektContext,
+  @Inject private val entryPointTransformer: EntryPointTransformer,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
@@ -533,7 +534,7 @@ import kotlin.collections.set
       parent = scope.getLocalDeclarationParent()
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
-      superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
+      //superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
       superTypes += this@InjectCallTransformer.context.disposableType.defaultType
         .toIrType().typeOrNull!!
 

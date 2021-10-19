@@ -236,7 +236,6 @@ fun PersistedCallableInfo.toCallableInfo(@Inject context: InjektContext) = Calla
 class ClassifierInfo(
   val tags: List<TypeRef> = emptyList(),
   val scopeComponentType: TypeRef? = null,
-  val entryPointComponentType: TypeRef? = null,
   val lazySuperTypes: Lazy<List<TypeRef>> = lazy(LazyThreadSafetyMode.NONE) { emptyList() },
   val primaryConstructorPropertyParameters: List<String> = emptyList(),
   val isSpread: Boolean = false
@@ -310,7 +309,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
     val info = ClassifierInfo(
       tags = tags,
       scopeComponentType = scopeComponentType,
-      entryPointComponentType = entryPointComponentType,
       lazySuperTypes = lazySuperTypes,
       primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
       isSpread = isSpread
@@ -338,7 +336,6 @@ fun PersistedClassifierInfo.toClassifierInfo(
 ): ClassifierInfo = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   scopeComponentType = scopeComponentType?.toTypeRef(),
-  entryPointComponentType = entryPointComponentType?.toTypeRef(),
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread
@@ -349,7 +346,6 @@ fun ClassifierInfo.toPersistedClassifierInfo(
 ): PersistedClassifierInfo = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
-  entryPointComponentType = entryPointComponentType?.toPersistedTypeRef(),
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread
@@ -411,7 +407,6 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       (this !is ClassDescriptor ||
           constructors.none { it.hasAnnotation(injektFqNames().provide) }) &&
       info.superTypes.none { it.shouldBePersisted() } &&
-      info.entryPointComponentType == null &&
       info.scopeComponentType == null
     ) return
 

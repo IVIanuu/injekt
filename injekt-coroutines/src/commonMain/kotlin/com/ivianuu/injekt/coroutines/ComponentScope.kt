@@ -19,6 +19,7 @@ package com.ivianuu.injekt.coroutines
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
+import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.Scoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +27,9 @@ import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
 typealias ComponentScope<C> = CoroutineScope
+
+
+@EntryPoint fun <C : @Component Any> C.componentScope(): ComponentScope<C>
 
 @Provide fun <C : @Component Any> componentScope(
   context: ComponentCoroutineContext<C>

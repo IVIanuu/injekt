@@ -218,19 +218,23 @@ interface InjektErrors {
 
     @JvmField val COMPONENT_WITHOUT_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "only interfaces can be marked with @Component") }
+        .also { MAP.put(it, "only interfaces can be a component") }
 
-    @JvmField val COMPONENT_MEMBER_VAR =
+    @JvmField val MUTABLE_COMPONENT_PROPERTY =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component cannot contain a abstract var property") }
+        .also { MAP.put(it, "component cannot contain abstract mutable properties") }
 
-    @JvmField val ENTRY_POINT_WITHOUT_INTERFACE =
+    @JvmField val ENTRY_POINT_WITHOUT_RECEIVER =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "only interfaces can be marked with @EntryPoint") }
+        .also { MAP.put(it, "entry point must specify the target component as the receiver") }
 
-    @JvmField val ENTRY_POINT_MEMBER_VAR =
+    @JvmField val ENTRY_POINT_WITH_BODY =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "entry point cannot contain a abstract var property") }
+        .also { MAP.put(it, "entry point cannot have a body") }
+
+    @JvmField val MUTABLE_ENTRY_POINT_PROPERTY =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "entry point cannot be a mutable property") }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
