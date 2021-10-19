@@ -519,6 +519,36 @@ class InjectableResolutionTest {
     invokeSingleFile() shouldBe "explicit"
   }
 
+  @Test fun testPrefersExplicitExternalImportOverInternalStarImport() = multiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val value = "explicit"
+          """,
+          packageFqName = FqName("explicit")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide val value = "star"
+          """,
+          packageFqName = FqName("internal")
+        ),
+        source(
+          """
+            @Providers("explicit.value", "internal.*")
+            fun invoke() = inject<String>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    invokeSingleFile() shouldBe "explicit"
+  }
+
   @Test fun testPrefersExplicitImportOverStarImport2() = singleAndMultiCodegen(
     listOf(
       listOf(
