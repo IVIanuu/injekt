@@ -484,16 +484,6 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
     if (bSubClassNesting < aSubClassNesting) return 1
   }
 
-  val importPathA = a.safeAs<CallableInjectable>()?.callable?.import?.importPath
-  val importPathB = b.safeAs<CallableInjectable>()?.callable?.import?.importPath
-
-  if (importPathA != null && importPathB != null) {
-    if (!importPathA.endsWith("*")
-      && importPathB.endsWith("*")) return -1
-    if (!importPathB.endsWith("*") &&
-      importPathA.endsWith("*")) return 1
-  }
-
   val requestedType = a.type
   if (aIsFromTypeScope && bIsFromTypeScope) {
     val thisModuleName = context.injektContext.module.name.asString()

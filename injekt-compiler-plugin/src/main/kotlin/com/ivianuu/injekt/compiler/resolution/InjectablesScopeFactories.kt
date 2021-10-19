@@ -648,24 +648,56 @@ private fun ImportInjectablesScope(
   injectablesPredicate: (CallableRef) -> Boolean = { true },
   @Inject context: InjektContext
 ): InjectablesScope {
-  val resolvedImports = imports.collectImportedInjectables()
+  val externalStarImports = mutableListOf<CallableRef>()
+  val externalByNameImports = mutableListOf<CallableRef>()
+  val internalStarImports = mutableListOf<CallableRef>()
+  val internalByNameImports = mutableListOf<CallableRef>()
+
+  imports.collectImportedInjectables().forEach { callable ->
+    if (callable.callable.isExternalDeclaration()) {
+      if (callable.import!!.importPath!!.endsWith(".*")) {
+        externalStarImports += callable
+      } else {
+        externalByNameImports += callable
+      }
+    } else {
+      if (callable.import!!.importPath!!.endsWith(".*")) {
+        internalStarImports += callable
+      } else {
+        internalByNameImports += callable
+      }
+    }
+  }
+
   return InjectablesScope(
-    name = "$namePrefix INTERNAL IMPORTS",
-    parent = InjectablesScope(
-      name = "$namePrefix EXTERNAL IMPORTS",
-      parent = parent,
-      file = file,
-      initialInjectables = resolvedImports
-        .filter { it.callable.isExternalDeclaration() },
-      isDeclarationContainer = false,
-      injectablesPredicate = injectablesPredicate
-    ),
+    name = "$namePrefix INTERNAL BY NAME IMPORTS",
     file = file,
-    initialInjectables = resolvedImports
-      .filterNot { it.callable.isExternalDeclaration() },
+    initialInjectables = internalByNameImports,
     isDeclarationContainer = false,
     injectablesPredicate = injectablesPredicate,
-    imports = imports.mapNotNull { it.resolve() }
+    imports = imports.mapNotNull { it.resolve() },
+    parent = InjectablesScope(
+      name = "$namePrefix INTERNAL STAR IMPORTS",
+      file = file,
+      initialInjectables = internalStarImports,
+      isDeclarationContainer = false,
+      injectablesPredicate = injectablesPredicate,
+      parent = InjectablesScope(
+        name = "$namePrefix EXTERNAL BY NAME IMPORTS",
+        file = file,
+        initialInjectables = externalByNameImports,
+        isDeclarationContainer = false,
+        injectablesPredicate = injectablesPredicate,
+        parent = InjectablesScope(
+          name = "$namePrefix EXTERNAL STAR IMPORTS",
+          parent = parent,
+          file = file,
+          initialInjectables = externalStarImports,
+          isDeclarationContainer = false,
+          injectablesPredicate = injectablesPredicate
+        )
+      )
+    )
   )
 }
 
