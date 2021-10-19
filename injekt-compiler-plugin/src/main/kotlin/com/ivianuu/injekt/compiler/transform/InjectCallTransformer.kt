@@ -139,8 +139,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
-class InjectCallTransformer(
+@OptIn(ObsoleteDescriptorBasedAPI::class) class InjectCallTransformer(
   @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {

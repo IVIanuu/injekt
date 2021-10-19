@@ -38,11 +38,9 @@ import java.util.Locale
 
 interface InjektErrors {
   companion object {
-    @JvmField
-    val MAP = DiagnosticFactoryToRendererMap("Injekt")
+    @JvmField val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
-    @JvmField
-    val UNRESOLVED_INJECTION =
+    @JvmField val UNRESOLVED_INJECTION =
       DiagnosticFactory1.create<PsiElement, InjectionGraph.Error>(Severity.ERROR)
         .also {
           MAP.put(
@@ -57,34 +55,29 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
+    @JvmField val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(it, "parameters of a injectable are automatically treated as inject parameters")
         }
 
-    @JvmField
-    val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
+    @JvmField val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(it, "parameters of a injectable are automatically provided")
         }
 
-    @JvmField
-    val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    @JvmField val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, "receiver cannot be injected")
       }
 
-    @JvmField
-    val PROVIDE_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    @JvmField val PROVIDE_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, "receiver is automatically provided")
       }
 
-    @JvmField
-    val PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR =
+    @JvmField val PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -93,33 +86,27 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val PROVIDE_ANNOTATION_CLASS =
+    @JvmField val PROVIDE_ANNOTATION_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "annotation class cannot be injectable") }
 
-    @JvmField
-    val PROVIDE_ENUM_CLASS =
+    @JvmField val PROVIDE_ENUM_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "enum class cannot be injectable") }
 
-    @JvmField
-    val PROVIDE_INNER_CLASS =
+    @JvmField val PROVIDE_INNER_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "inner class cannot be injectable") }
 
-    @JvmField
-    val PROVIDE_ABSTRACT_CLASS =
+    @JvmField val PROVIDE_ABSTRACT_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "abstract class cannot be injectable") }
 
-    @JvmField
-    val PROVIDE_INTERFACE =
+    @JvmField val PROVIDE_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "interface cannot be injectable") }
 
-    @JvmField
-    val PROVIDE_VARIABLE_MUST_BE_INITIALIZED = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
@@ -129,8 +116,7 @@ interface InjektErrors {
         })
       }
 
-    @JvmField
-    val MULTIPLE_SPREADS =
+    @JvmField val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -139,8 +125,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val SPREAD_ON_NON_PROVIDE_DECLARATION =
+    @JvmField val SPREAD_ON_NON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -149,8 +134,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val TAG_WITH_VALUE_PARAMETERS =
+    @JvmField val TAG_WITH_VALUE_PARAMETERS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -159,8 +143,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val TAG_ON_NON_CLASS_AND_NON_TYPE =
+    @JvmField val TAG_ON_NON_CLASS_AND_NON_TYPE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -169,8 +152,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val MALFORMED_INJECTABLE_IMPORT =
+    @JvmField val MALFORMED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -184,8 +166,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val UNRESOLVED_INJECTABLE_IMPORT =
+    @JvmField val UNRESOLVED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -199,8 +180,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val DUPLICATED_INJECTABLE_IMPORT =
+    @JvmField val DUPLICATED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
@@ -214,8 +194,7 @@ interface InjektErrors {
           )
         }
 
-    @JvmField
-    val UNUSED_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
+    @JvmField val UNUSED_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
@@ -225,8 +204,7 @@ interface InjektErrors {
         })
       }
 
-    @JvmField
-    val DECLARATION_PACKAGE_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    @JvmField val DECLARATION_PACKAGE_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
         MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
           override fun render(diagnostic: Diagnostic): String =
@@ -238,23 +216,19 @@ interface InjektErrors {
         })
       }
 
-    @JvmField
-    val COMPONENT_WITHOUT_INTERFACE =
+    @JvmField val COMPONENT_WITHOUT_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "only interfaces can be marked with @Component") }
 
-    @JvmField
-    val COMPONENT_MEMBER_VAR =
+    @JvmField val COMPONENT_MEMBER_VAR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "component cannot contain a abstract var property") }
 
-    @JvmField
-    val ENTRY_POINT_WITHOUT_INTERFACE =
+    @JvmField val ENTRY_POINT_WITHOUT_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "only interfaces can be marked with @EntryPoint") }
 
-    @JvmField
-    val ENTRY_POINT_MEMBER_VAR =
+    @JvmField val ENTRY_POINT_MEMBER_VAR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "entry point cannot contain a abstract var property") }
 
