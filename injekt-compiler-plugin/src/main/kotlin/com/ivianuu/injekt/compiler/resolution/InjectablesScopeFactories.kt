@@ -236,7 +236,7 @@ private fun FileInjectablesScope(
   file: KtFile,
   @Inject context: InjektContext
 ): InjectablesScope = context.trace.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
-  ImportInjectablesScope(
+  ImportInjectablesScopes(
     file = file,
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE ${file.name}",
@@ -257,12 +257,12 @@ private fun FileInitInjectablesScope(
     .mapNotNull { it.descriptor() }
     .filter { it.isProvide() }
 
-  return ImportInjectablesScope(
+  return ImportInjectablesScopes(
     file = file,
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE INIT ${file.name} at ",
     injectablesPredicate = {
-      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScope true
+      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScopes true
       psiProperty.containingFile != file ||
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
@@ -289,7 +289,7 @@ private fun ClassImportsInjectablesScope(
     .safeAs<KtClassOrObject>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(null, it, "CLASS ${clazz.fqNameSafe}", finalParent) }
+    ?.let { ImportInjectablesScopes(null, it, "CLASS ${clazz.fqNameSafe}", finalParent) }
     ?: finalParent)
 }
 
@@ -388,7 +388,7 @@ private fun FunctionImportsInjectablesScope(
   ?.takeIf { it.isNotEmpty() }
   ?.let {
     val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-    ImportInjectablesScope(null, it, "$baseName ${function.fqNameSafe}", parent)
+    ImportInjectablesScopes(null, it, "$baseName ${function.fqNameSafe}", parent)
   }
   ?: parent
 
@@ -488,7 +488,7 @@ private fun PropertyInjectablesScope(
     .safeAs<KtProperty>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(null, it, "PROPERTY ${property.fqNameSafe}", parent) }
+    ?.let { ImportInjectablesScopes(null, it, "PROPERTY ${property.fqNameSafe}", parent) }
     ?: parent
 
   InjectablesScope(
@@ -527,7 +527,7 @@ private fun PropertyInitInjectablesScope(
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let {
-      ImportInjectablesScope(
+      ImportInjectablesScopes(
         file = null,
         imports = it,
         namePrefix = "PROPERTY ${property.fqNameSafe}",
@@ -557,7 +557,7 @@ private fun LocalVariableInjectablesScope(
     .safeAs<KtProperty>()
     ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(null, it, "LOCAL VARIABLE ${variable.fqNameSafe}", parent) }
+    ?.let { ImportInjectablesScopes(null, it, "LOCAL VARIABLE ${variable.fqNameSafe}", parent) }
     ?: parent
 
   InjectablesScope(
@@ -577,7 +577,7 @@ private fun ExpressionInjectablesScope(
   val finalParent = expression
     .getProviderImports()
     .takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScope(null, it, "EXPRESSION ${expression.startOffset}", parent) }
+    ?.let { ImportInjectablesScopes(null, it, "EXPRESSION ${expression.startOffset}", parent) }
     ?: parent
 
   InjectablesScope(
@@ -668,7 +668,7 @@ fun TypeInjectablesScope(
   )
 }
 
-private fun ImportInjectablesScope(
+private fun ImportInjectablesScopes(
   file: KtFile?,
   imports: List<ProviderImport>,
   namePrefix: String,
