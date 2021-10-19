@@ -636,7 +636,7 @@ fun TypeInjectablesScope(
   val typeInjectables = mutableListOf<CallableRef>()
   val internalInjectables = mutableListOf<CallableRef>()
 
-  val thisModuleName = context.injektContext.module.name.asString()
+  val thisModuleName = context.injektContext.module.moduleName()
   val typeModuleName = type.classifier.descriptor!!.moduleName()
   injectablesWithLookups.injectables.forEach { callable ->
     when (callable.callable.moduleName()) {
