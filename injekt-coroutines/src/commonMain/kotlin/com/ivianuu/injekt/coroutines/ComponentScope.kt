@@ -31,7 +31,7 @@ typealias ComponentScope<C> = CoroutineScope
   context: ComponentCoroutineContext<C>
 ): @Scoped<C> ComponentScope<C> = DisposableCoroutineScope<C>(context)
 
-class DisposableCoroutineScope<C : @Component Any>(
+private class DisposableCoroutineScope<C : @Component Any>(
   context: CoroutineContext
 ) : CoroutineScope, Disposable {
   override val coroutineContext: CoroutineContext = context + SupervisorJob()
