@@ -980,6 +980,20 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolvePropertyOfSuperClassFromClassInit() = codegen(
+    """
+      abstract class MySuperClass {
+        @Provide val foo = Foo()
+      }
+
+      class MyClass : MySuperClass() {
+        init {
+          inject<Foo>()
+        }
+      }
+    """
+  )
+
   @Test fun testCannotResolveTopLevelPropertyFromWithinInitializer() = codegen(
     """
       @Provide private val foo: Foo = inject<Foo>()

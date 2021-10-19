@@ -320,7 +320,8 @@ private fun ClassInitInjectablesScope(
   position: KtElement,
   @Inject context: InjektContext
 ): InjectablesScope {
-  val visibleInjectableDeclarations = clazz.findPsi()!!
+  val psiClass = clazz.findPsi()!!
+  val visibleInjectableDeclarations = psiClass
     .cast<KtClassOrObject>()
     .declarations
     .filter { it.endOffset < position.startOffset }
@@ -344,7 +345,9 @@ private fun ClassInitInjectablesScope(
     initialInjectables = listOf(thisInjectable),
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
-      psiProperty.delegateExpressionOrInitializer == null || it.callable in visibleInjectableDeclarations
+      psiProperty.getParentOfType<KtClass>(false) != psiClass ||
+          psiProperty.delegateExpressionOrInitializer == null ||
+          it.callable in visibleInjectableDeclarations
     },
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef() }
   )
