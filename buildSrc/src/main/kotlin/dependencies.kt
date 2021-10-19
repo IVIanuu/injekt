@@ -37,7 +37,7 @@ object Deps {
     }
 
     object Compose {
-      const val version = "1.0.3"
+      const val version = "1.0.4"
       const val compiler = "androidx.compose.compiler:compiler:$version"
       const val material = "androidx.compose.material:material:$version"
       const val runtime = "androidx.compose.runtime:runtime:$version"
@@ -54,7 +54,7 @@ object Deps {
       const val junit = "androidx.test.ext:junit:1.0.0"
     }
 
-    const val work = "androidx.work:work-runtime-ktx:2.5.0"
+    const val work = "androidx.work:work-runtime-ktx:2.7.0"
   }
 
   const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
@@ -75,7 +75,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.5.30"
+    const val version = "1.5.31"
     const val compiler = "org.jetbrains.kot#lin:kotlin-compiler:$version"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
