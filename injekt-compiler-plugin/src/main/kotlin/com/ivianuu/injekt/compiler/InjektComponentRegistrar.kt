@@ -80,7 +80,7 @@ private fun registerExtensions(project: MockProject, configuration: CompilerConf
 
   @Suppress("DEPRECATION")
   Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-    .registerExtension(InjektDiagnosticSuppressor())
+    .registerExtension(InjektDiagnosticSuppressor(), project)
 }
 
 private fun isKaptCompilation(configuration: CompilerConfiguration): Boolean {
