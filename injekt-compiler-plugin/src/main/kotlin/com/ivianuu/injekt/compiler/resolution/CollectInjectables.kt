@@ -457,7 +457,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject context: Inje
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName() == context.injektContext.module.name.asString()) ||
+          callable.callable.moduleName() == context.injektContext.module.moduleName()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->

@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
+import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.updatePrivateFinalField
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -136,8 +138,7 @@ class IncrementalFixAnalysisHandlerExtension(
       appendLine()
 
       val markerName = "_${
-        module.name
-          .asString()
+        module.moduleName(InjektContext(module, injektFqNames, null))
           .filter { it.isLetterOrDigit() }
       }_${
         file.name.removeSuffix(".kt")
