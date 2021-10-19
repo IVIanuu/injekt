@@ -115,7 +115,7 @@ class InjectableListTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<List<(@Provide Foo) -> Bar>>() 
+      fun invoke() = inject<List<(Foo) -> Bar>>() 
     """
   ) {
     val list = invokeSingleFile<List<(Foo) -> Bar>>().toList()
@@ -152,8 +152,7 @@ class InjectableListTest {
 
   @Test fun testUsesAllProviderArgumentsForInjectableRequest() = codegen(
     """
-      fun invoke(): List<Any> = 
-          inject<(@Provide String, @Provide String) -> List<String>>()("a", "b")
+      fun invoke(): List<Any> = inject<(String, String) -> List<String>>()("a", "b")
     """
   ) {
     val list = invokeSingleFile<List<Any>>().toList()

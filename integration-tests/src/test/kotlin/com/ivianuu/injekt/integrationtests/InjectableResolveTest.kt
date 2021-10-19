@@ -325,7 +325,7 @@ class InjectableResolveTest {
     """
       typealias SpecialScope = Unit
       
-      @Provide fun <E> asRunnable(factory: (@Provide SpecialScope) -> Set<E>): Set<E> = factory(Unit)
+      @Provide fun <E> asRunnable(factory: (SpecialScope) -> Set<E>): Set<E> = factory(Unit)
       
       @Provide fun raw(scope: SpecialScope): Set<String> = setOf("")
     """,

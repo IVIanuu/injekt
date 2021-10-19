@@ -493,18 +493,6 @@ val TypeRef.isComposableType: Boolean
     return false
   }
 
-val TypeRef.isProviderFunctionType: Boolean
-  get() {
-    if (!isFunctionType) return false
-    for (i in arguments.indices) {
-      val argument = arguments[i]
-      if (i < arguments.lastIndex && !argument.isProvide)
-        return false
-    }
-
-    return true
-  }
-
 val TypeRef.isFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||

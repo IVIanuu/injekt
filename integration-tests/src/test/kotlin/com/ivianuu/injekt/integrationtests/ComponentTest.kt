@@ -202,7 +202,7 @@ class ComponentTest {
       }
     """,
     """
-      fun invoke() = inject<(@Provide Foo) -> MyComponent>()
+      fun invoke() = inject<(Foo) -> MyComponent>()
     """
   ) {
     invokeSingleFile()

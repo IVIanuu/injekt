@@ -21,7 +21,7 @@ import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.callContext
-import com.ivianuu.injekt.compiler.resolution.isProviderFunctionType
+import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.Diagnostic
@@ -406,7 +406,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       printCall(
         failureRequest,
         failure,
-        if (failureRequest.type.isProviderFunctionType) failureRequest.type.callContext
+        if (failureRequest.type.isFunctionType) failureRequest.type.callContext
         else scope.callContext
       )
     }

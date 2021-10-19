@@ -202,7 +202,7 @@ class InjectablesScope(
 
   fun frameworkInjectablesForRequest(request: InjectableRequest): List<Injectable> {
     when {
-      request.type.isProviderFunctionType -> {
+      request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext
         return listOf(
@@ -228,7 +228,7 @@ class InjectablesScope(
 
           var elements = listElementsForType(singleElementType, collectionElementType, key) +
               frameworkListElementsForType(singleElementType, collectionElementType, key)
-          if (elements.isEmpty() && singleElementType.isProviderFunctionType) {
+          if (elements.isEmpty() && singleElementType.isFunctionType) {
             val providerReturnType = singleElementType.arguments.last()
             key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 

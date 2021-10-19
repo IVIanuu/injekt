@@ -51,7 +51,7 @@ class ProviderTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<(@Provide Foo) -> Bar>()(Foo()) 
+      fun invoke() = inject<(Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -64,7 +64,7 @@ class ProviderTest {
       @Provide fun bar(foo: @MyTag Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<(@Provide @MyTag Foo) -> Bar>()(Foo()) 
+      fun invoke() = inject<(@MyTag Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -77,7 +77,7 @@ class ProviderTest {
       class FooModule(@Provide val foo: Foo)
     """,
     """
-      fun invoke() = inject<(@Provide FooModule) -> Bar>()(FooModule(Foo()))
+      fun invoke() = inject<(FooModule) -> Bar>()(FooModule(Foo()))
     """
   )
 
@@ -110,9 +110,9 @@ class ProviderTest {
         typealias MyScope = Scope
         @Provide val MyScope.key: String get() = ""
         @Provide fun foo(key: String) = Foo()
-        @Provide fun fooIntoList(provider: (@Provide MyScope) -> Foo): (MyScope) -> Any = provider as (MyScope) -> Any 
+        @Provide fun fooIntoList(provider: (MyScope) -> Foo): (MyScope) -> Any = provider as (MyScope) -> Any 
         @Provide class Dep(key: String)
-        @Provide fun depIntoList(provider: (@Provide MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
+        @Provide fun depIntoList(provider: (MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
     """,
     """
       fun invoke() {
@@ -126,7 +126,7 @@ class ProviderTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<(@Provide Foo) -> Foo>()(Foo())
+      fun invoke() = inject<(Foo) -> Foo>()(Foo())
     """
   ) {
     invokeSingleFile()

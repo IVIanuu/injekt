@@ -53,9 +53,7 @@ class ModuleTest {
       @Provide fun foo() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      inline fun <R> withModule(
-        block: (@Provide MyModule) -> R
-      ): R = block(MyModule())
+      inline fun <R> withModule(block: (MyModule) -> R): R = block(MyModule())
     """,
     """
       fun invoke() = withModule { 

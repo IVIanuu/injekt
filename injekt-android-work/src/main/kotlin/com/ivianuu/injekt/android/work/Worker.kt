@@ -41,7 +41,7 @@ import kotlin.reflect.KClass
 @Tag annotation class InjektWorker {
   companion object {
     @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
-      noinline factory: (@Provide WorkerParameters) -> T,
+      noinline factory: (WorkerParameters) -> T,
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
