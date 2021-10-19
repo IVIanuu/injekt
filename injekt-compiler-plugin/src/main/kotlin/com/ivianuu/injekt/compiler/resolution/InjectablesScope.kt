@@ -195,18 +195,16 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectablesForRequest(request: InjectableRequest): List<Injectable> {
+  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
     when {
       request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext
-        return listOf(
-          ProviderInjectable(
-            type = request.type,
-            ownerScope = this,
-            dependencyCallContext = finalCallContext,
-            isInline = request.isInline
-          )
+        return ProviderInjectable(
+          type = request.type,
+          ownerScope = this,
+          dependencyCallContext = finalCallContext,
+          isInline = request.isInline
         )
       }
       request.type.classifier == context.injektContext.listClassifier -> {
@@ -235,24 +233,22 @@ class InjectablesScope(
             }
         }
 
-        return if (elements.isEmpty()) emptyList()
-        else listOf(
-          ListInjectable(
-            type = request.type,
-            ownerScope = this,
-            elements = elements,
-            singleElementType = singleElementType,
-            collectionElementType = collectionElementType
-          )
+        return if (elements.isEmpty()) null
+        else ListInjectable(
+          type = request.type,
+          ownerScope = this,
+          elements = elements,
+          singleElementType = singleElementType,
+          collectionElementType = collectionElementType
         )
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
-        return listOf(TypeKeyInjectable(request.type, this))
+        return TypeKeyInjectable(request.type, this)
       request.type.classifier.fqName == injektFqNames().sourceKey ->
-        return listOf(SourceKeyInjectable(request.type, this))
+        return SourceKeyInjectable(request.type, this)
       request.type.classifier.isComponent ->
-        return listOf(ComponentInjectable(request.type, this))
-      else -> return emptyList()
+        return ComponentInjectable(request.type, this)
+      else -> return null
     }
   }
 

@@ -252,9 +252,9 @@ private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
   lookupLocation: LookupLocation
 ): ResolutionResult {
-  val frameworkCandidates = frameworkInjectablesForRequest(request)
+  val frameworkCandidate = frameworkInjectableForRequest(request)
   return when {
-    frameworkCandidates.isNotEmpty() -> resolveCandidates(request, frameworkCandidates, lookupLocation)
+    frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
     request.isRequired -> ResolutionResult.Failure.NoCandidates
     else -> ResolutionResult.Success.DefaultValue
   }
