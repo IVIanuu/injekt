@@ -384,41 +384,50 @@ import kotlin.collections.set
                 isMutable = true
               )
 
-              +irIfThenElse(
-                result.candidate.type.toIrType().typeOrNull!!,
-                irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
-                irCall(
-                  pluginContext.referenceFunctions(
-                    injektFqNames().commonPackage.child("synchronized".asNameId())
-                  ).single()
-                ).apply {
-                  putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
-                  putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
-                  putValueArgument(
-                    1,
-                    irLambda(
-                      pluginContext.irBuiltIns.function(0)
-                        .typeWith(result.candidate.type.toIrType().typeOrNull!!),
-                      parameterNameProvider = { "p${graphContext.variableIndex++}" }
-                    ) {
-                      irBlock {
-                        +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
-
-                        +irIfThen(
-                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
-                          irBlock {
-                            +irSet(tmp.symbol, rawExpressionProvider())
-                            +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
-                          }
-                        )
-
-                        +irGet(tmp)
-                      }
+              fun lockedScopedExpression(): IrExpression {
+                return irBlock {
+                  +irIfThen(
+                    irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                    irBlock {
+                      +irSet(tmp.symbol, rawExpressionProvider())
+                      +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
                     }
                   )
-                },
-                irGet(tmp)
-              )
+
+                  +irGet(tmp)
+                }
+              }
+
+              if (result.candidate.callContext == CallContext.SUSPEND) {
+                +lockedScopedExpression()
+              } else {
+                +irIfThenElse(
+                  result.candidate.type.toIrType().typeOrNull!!,
+                  irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                  irCall(
+                    pluginContext.referenceFunctions(
+                      injektFqNames().commonPackage.child("synchronized".asNameId())
+                    ).single()
+                  ).apply {
+                    putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
+                    putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
+                    putValueArgument(
+                      1,
+                      irLambda(
+                        pluginContext.irBuiltIns.function(0)
+                          .typeWith(result.candidate.type.toIrType().typeOrNull!!),
+                        parameterNameProvider = { "p${graphContext.variableIndex++}" }
+                      ) {
+                        irBlock {
+                          +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
+                          +lockedScopedExpression()
+                        }
+                      }
+                    )
+                  },
+                  irGet(tmp)
+                )
+              }
             }
           }
         }

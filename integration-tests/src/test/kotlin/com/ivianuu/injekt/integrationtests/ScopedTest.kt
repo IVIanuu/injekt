@@ -168,9 +168,11 @@ class ScopedTest {
       }
     """,
     """
-      fun invoke() = inject<MyComponent>()
+      fun invoke() = runBlocking { inject<MyComponent>().foo() }
     """
-  )
+  ) {
+    invokeSingleFile()
+  }
 
   @Test fun testScopedComposableInjectable() = singleAndMultiCodegen(
     """
@@ -180,7 +182,35 @@ class ScopedTest {
       }
     """,
     """
-      fun invoke() = inject<MyComponent>()
+      @Composable fun invoke() = inject<MyComponent>().foo()
+    """
+  )
+
+  @Test fun testScopedInjectableWithSuspendDependency() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo): @Scoped<MyComponent> Bar = Bar(foo)
+      @Provide suspend fun foo() = Foo()
+      @Component interface MyComponent {
+        suspend fun bar(): Bar
+      }
+    """,
+    """
+      fun invoke() = runBlocking { inject<MyComponent>().bar() }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testScopedInjectableWithComposableDependency() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo): @Scoped<MyComponent> Bar = Bar(foo)
+      @Provide @Composable fun foo() = Foo()
+      @Component interface MyComponent {
+        @Composable fun bar(): Bar
+      }
+    """,
+    """
+      @Composable fun invoke() = inject<MyComponent>().bar()
     """
   )
 }
