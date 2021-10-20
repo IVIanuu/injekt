@@ -224,6 +224,10 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "component cannot contain a abstract var property") }
 
+    @JvmField val SCOPED_WITHOUT_DEFAULT_CALL_CONTEXT =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "a scoped declarations call context must be default") }
+
     @JvmField val ENTRY_POINT_WITHOUT_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "only interfaces can be marked with @EntryPoint") }

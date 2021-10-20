@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.test.TestDisposable
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -27,6 +28,22 @@ import org.junit.Test
 
 class ScopedTest {
   @Test fun testScopedFunction() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent {
+        val foo: Foo
+      } 
+
+      @Provide fun foo(): @Scoped<ScopeComponent> Foo = Foo() 
+    """,
+    """
+      val component = inject<ScopeComponent>()
+      fun invoke() = component.foo
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
+  @Test fun testScopedProperty() = singleAndMultiCodegen(
     """
       @Component interface ScopeComponent {
         val foo: Foo
@@ -160,57 +177,19 @@ class ScopedTest {
     disposable.disposeCalls shouldBe 1
   }
 
-  @Test fun testScopedSuspendInjectable() = singleAndMultiCodegen(
+  @Test fun testScopedSuspendFunction() = codegen(
     """
-      @Provide suspend fun foo(): @Scoped<MyComponent> Foo = Foo()
-      @Component interface MyComponent {
-        suspend fun foo(): Foo
-      }
-    """,
-    """
-      fun invoke() = runBlocking { inject<MyComponent>().foo() }
+      @Provide suspend fun foo(): @Scoped<Any> Foo = Foo() 
     """
   ) {
-    invokeSingleFile()
+    compilationShouldHaveFailed("a scoped declarations call context must be default")
   }
 
-  @Test fun testScopedComposableInjectable() = singleAndMultiCodegen(
+  @Test fun testScopedComposableFunction() = codegen(
     """
-      @Provide @Composable fun foo(): @Scoped<MyComponent> Foo = Foo()
-      @Component interface MyComponent {
-        @Composable fun foo(): Foo
-      }
-    """,
-    """
-      @Composable fun invoke() = inject<MyComponent>().foo()
-    """
-  )
-
-  @Test fun testScopedInjectableWithSuspendDependency() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo): @Scoped<MyComponent> Bar = Bar(foo)
-      @Provide suspend fun foo() = Foo()
-      @Component interface MyComponent {
-        suspend fun bar(): Bar
-      }
-    """,
-    """
-      fun invoke() = runBlocking { inject<MyComponent>().bar() }
+      @Provide @Composable fun foo(): @Scoped<Any> Foo = Foo() 
     """
   ) {
-    invokeSingleFile()
+    compilationShouldHaveFailed("a scoped declarations call context must be default")
   }
-
-  @Test fun testScopedInjectableWithComposableDependency() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo): @Scoped<MyComponent> Bar = Bar(foo)
-      @Provide @Composable fun foo() = Foo()
-      @Component interface MyComponent {
-        @Composable fun bar(): Bar
-      }
-    """,
-    """
-      @Composable fun invoke() = inject<MyComponent>().bar()
-    """
-  )
 }

@@ -20,10 +20,14 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.resolution.CallContext
+import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.collectComponentCallables
+import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -40,46 +44,59 @@ class ComponentChecker(@Inject private val context: InjektContext) : Declaration
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    if (descriptor !is ClassDescriptor) return
-
-    @Provide val injektContext = this.context.withTrace(context.trace)
-
-    if (descriptor.hasAnnotation(injektFqNames().component)) {
-      if (descriptor.kind != ClassKind.INTERFACE)
-        context.trace.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
-
-      descriptor.defaultType.toTypeRef()
-        .collectComponentCallables()
-        .map { it.callable }
-        .forEach {
-          if (it is PropertyDescriptor && it.isVar) {
-            context.trace.report(
-              InjektErrors.COMPONENT_MEMBER_VAR
-                .on(
-                  if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
-                  else it.findPsi() ?: declaration
-                )
-            )
-          }
+    when (descriptor) {
+      is CallableDescriptor -> {
+        @Provide val injektContext = this.context.withTrace(context.trace)
+        if (descriptor.returnType?.hasAnnotation(injektFqNames().scoped) == true &&
+          descriptor.isProvide() &&
+          descriptor.callContext() != CallContext.DEFAULT) {
+          context.trace.report(
+            InjektErrors.SCOPED_WITHOUT_DEFAULT_CALL_CONTEXT
+              .on(declaration)
+          )
         }
-    } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
-      if (descriptor.kind != ClassKind.INTERFACE)
-        context.trace.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
+      }
+      is ClassDescriptor -> {
+        @Provide val injektContext = this.context.withTrace(context.trace)
 
-      descriptor.defaultType.toTypeRef()
-        .collectComponentCallables()
-        .map { it.callable }
-        .forEach {
-          if (it is PropertyDescriptor && it.isVar) {
-            context.trace.report(
-              InjektErrors.ENTRY_POINT_MEMBER_VAR
-                .on(
-                  if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
-                  else it.findPsi() ?: declaration
+        if (descriptor.hasAnnotation(injektFqNames().component)) {
+          if (descriptor.kind != ClassKind.INTERFACE)
+            context.trace.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
+
+          descriptor.defaultType.toTypeRef()
+            .collectComponentCallables()
+            .map { it.callable }
+            .forEach {
+              if (it is PropertyDescriptor && it.isVar) {
+                context.trace.report(
+                  InjektErrors.COMPONENT_MEMBER_VAR
+                    .on(
+                      if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
+                      else it.findPsi() ?: declaration
+                    )
                 )
-            )
-          }
+              }
+            }
+        } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
+          if (descriptor.kind != ClassKind.INTERFACE)
+            context.trace.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
+
+          descriptor.defaultType.toTypeRef()
+            .collectComponentCallables()
+            .map { it.callable }
+            .forEach {
+              if (it is PropertyDescriptor && it.isVar) {
+                context.trace.report(
+                  InjektErrors.ENTRY_POINT_MEMBER_VAR
+                    .on(
+                      if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
+                      else it.findPsi() ?: declaration
+                    )
+                )
+              }
+            }
         }
+      }
     }
   }
 }

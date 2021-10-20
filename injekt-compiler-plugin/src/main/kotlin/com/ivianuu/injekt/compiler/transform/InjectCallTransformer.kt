@@ -102,6 +102,8 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -334,18 +336,6 @@ import kotlin.collections.set
     }
   }
 
-  private fun mutex() = pluginContext.referenceClass(
-    FqName("kotlinx.coroutines.sync.Mutex")
-  )!!
-
-  private fun mutexFactory() = pluginContext.referenceFunctions(
-    FqName("kotlinx.coroutines.sync.Mutex")
-  ).single()
-
-  private fun mutexWithLock() = pluginContext.referenceFunctions(
-    FqName("kotlinx.coroutines.sync.withLock")
-  ).single()
-
   private fun ScopeContext.scopeExpressionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
@@ -355,67 +345,54 @@ import kotlin.collections.set
     val scope = scope.allScopes.last { it.componentType == scopeComponent }
     return with(findScopeContext(scope)) {
       scopedExpressions.getOrPut(result.candidate.usageKey) {
-        val isSuspend = result.candidate.callContext == CallContext.SUSPEND
-
         val fieldNameIndex = graphContext.variableIndex++
         val lockField = component!!.addField(
           "_${fieldNameIndex}Lock",
-          if (isSuspend) mutex().defaultType else pluginContext.irBuiltIns.anyType,
+          pluginContext.irBuiltIns.anyType,
           DescriptorVisibilities.PRIVATE
         ).apply {
+          component.placeAfterFields(this)
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
             irExprBody(
-              if (isSuspend) irCall(mutexFactory())
-              else irCall(pluginContext.irBuiltIns.anyClass.constructors.single())
+              irCall(pluginContext.irBuiltIns.anyClass.constructors.single())
             )
           }
         }
+
         val instanceField = component.addField(
           "_${fieldNameIndex}Instance",
           pluginContext.irBuiltIns.anyNType,
           DescriptorVisibilities.PRIVATE
         ).apply {
+          component.placeAfterFields(this)
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
-            irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
+            irExprBody(irGet(component.thisReceiver!!))
           }
         }
-        component.declarations.remove(lockField)
-        component.declarations.remove(instanceField)
-        val fieldDeclarationIndex = component.declarations
-          .indexOfLast { it is IrField }
-          .takeUnless { it == -1 }
-          ?.inc()
-          ?: 0
-        component.declarations.add(fieldDeclarationIndex, instanceField)
-        component.declarations.add(fieldDeclarationIndex, lockField)
 
-        val scopeReceiverParameter =
+        val componentReceiverParameter =
           scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
 
         val expression: ScopeContext.() -> IrExpression = {
           DeclarationIrBuilder(pluginContext, symbol).run {
             irBlock {
               val tmp = irTemporary(
-                value = irGetField(receiverExpression(scopeReceiverParameter), instanceField),
+                value = irGetField(receiverExpression(componentReceiverParameter), instanceField),
                 nameHint = "${graphContext.variableIndex++}",
                 isMutable = true
               )
 
               +irIfThenElse(
                 result.candidate.type.toIrType().typeOrNull!!,
-                irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                irEqeqeq(irGet(tmp), receiverExpression(componentReceiverParameter)),
                 irCall(
-                  if (isSuspend) mutexWithLock()
-                  else pluginContext.referenceFunctions(
+                  pluginContext.referenceFunctions(
                     injektFqNames().commonPackage.child("synchronized".asNameId())
                   ).single()
                 ).apply {
                   putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
 
-                  if (isSuspend)
-                    extensionReceiver = irGetField(receiverExpression(scopeReceiverParameter), lockField)
-                  else
-                    putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
+                  putValueArgument(0, irGetField(receiverExpression(componentReceiverParameter), lockField))
 
                   putValueArgument(
                     1,
@@ -425,12 +402,12 @@ import kotlin.collections.set
                       parameterNameProvider = { "p${graphContext.variableIndex++}" }
                     ) {
                       irBlock {
-                        +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
+                        +irSet(tmp.symbol, irGetField(receiverExpression(componentReceiverParameter), instanceField))
                         +irIfThen(
-                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                          irEqeqeq(irGet(tmp), receiverExpression(componentReceiverParameter)),
                           irBlock {
                             +irSet(tmp.symbol, rawExpressionProvider())
-                            +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
+                            +irSetField(receiverExpression(componentReceiverParameter), instanceField, irGet(tmp))
                           }
                         )
 
@@ -684,14 +661,7 @@ import kotlin.collections.set
         injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
         DescriptorVisibilities.PRIVATE
       ).apply {
-        declarations.remove(this)
-        declarations.add(
-          declarations
-            .indexOfLast { it is IrField }
-            .takeUnless { it == -1 }
-            ?.inc() ?: 0,
-          this
-        )
+        placeAfterFields(this)
         initializer = DeclarationIrBuilder(pluginContext, symbol).run {
           irExprBody(
             with(componentScope) {
@@ -745,14 +715,7 @@ import kotlin.collections.set
         isPrimary = true
         visibility = DescriptorVisibilities.PUBLIC
       }.apply {
-        declarations.remove(this)
-        declarations.add(
-          declarations
-            .indexOfLast { it is IrField }
-            .takeUnless { it == -1 }
-            ?.inc() ?: 0,
-          this
-        )
+        placeAfterFields(this)
         body = DeclarationIrBuilder(
           pluginContext,
           symbol
@@ -1169,6 +1132,18 @@ import kotlin.collections.set
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
+
+  private fun IrDeclarationContainer.placeAfterFields(declaration: IrDeclaration) {
+    declarations.remove(declaration)
+    declarations.add(
+      declarations
+        .indexOfLast { it is IrField }
+        .takeUnless { it == -1 }
+        ?.inc()
+        ?: 0,
+      declaration
+    )
+  }
 
   private fun IrFunctionAccessExpression.fillTypeParameters(callable: CallableRef) {
     callable
