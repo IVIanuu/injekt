@@ -336,6 +336,24 @@ class ComponentTest {
     a shouldBeSameInstanceAs b
   }
 
+  @Test fun testScopedValueCannotResolveInjectablesInScopesBelowIt() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo): @Scoped<ParentComponent> Bar = Bar(foo)
+      @Component interface ParentComponent {
+        fun childComponent(foo: Foo): ChildComponent
+      } 
+
+      @Component interface ChildComponent {
+        val bar: Bar
+      }
+    """,
+    """
+      fun invoke() = inject<ParentComponent>()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+  }
+
   @Test fun testEntryPoint() = singleAndMultiCodegen(
     """
       @Component interface MyComponent
