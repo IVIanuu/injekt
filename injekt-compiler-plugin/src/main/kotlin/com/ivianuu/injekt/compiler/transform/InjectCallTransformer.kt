@@ -334,6 +334,18 @@ import kotlin.collections.set
     }
   }
 
+  private fun mutex() = pluginContext.referenceClass(
+    FqName("kotlinx.coroutines.sync.Mutex")
+  )!!
+
+  private fun mutexFactory() = pluginContext.referenceFunctions(
+    FqName("kotlinx.coroutines.sync.Mutex")
+  ).single()
+
+  private fun mutexWithLock() = pluginContext.referenceFunctions(
+    FqName("kotlinx.coroutines.sync.withLock")
+  ).single()
+
   private fun ScopeContext.scopeExpressionIfNeeded(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
@@ -343,14 +355,19 @@ import kotlin.collections.set
     val scope = scope.allScopes.last { it.componentType == scopeComponent }
     return with(findScopeContext(scope)) {
       scopedExpressions.getOrPut(result.candidate.usageKey) {
+        val isSuspend = result.candidate.callContext == CallContext.SUSPEND
+
         val fieldNameIndex = graphContext.variableIndex++
         val lockField = component!!.addField(
           "_${fieldNameIndex}Lock",
-          pluginContext.irBuiltIns.anyType,
+          if (isSuspend) mutex().defaultType else pluginContext.irBuiltIns.anyType,
           DescriptorVisibilities.PRIVATE
         ).apply {
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
-            irExprBody(irCall(pluginContext.irBuiltIns.anyClass.constructors.single()))
+            irExprBody(
+              if (isSuspend) irCall(mutexFactory())
+              else irCall(pluginContext.irBuiltIns.anyClass.constructors.single())
+            )
           }
         }
         val instanceField = component.addField(
@@ -384,50 +401,46 @@ import kotlin.collections.set
                 isMutable = true
               )
 
-              fun lockedScopedExpression(): IrExpression {
-                return irBlock {
-                  +irIfThen(
-                    irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
-                    irBlock {
-                      +irSet(tmp.symbol, rawExpressionProvider())
-                      +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
+              +irIfThenElse(
+                result.candidate.type.toIrType().typeOrNull!!,
+                irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                irCall(
+                  if (isSuspend) mutexWithLock()
+                  else pluginContext.referenceFunctions(
+                    injektFqNames().commonPackage.child("synchronized".asNameId())
+                  ).single()
+                ).apply {
+                  putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
+
+                  if (isSuspend)
+                    extensionReceiver = irGetField(receiverExpression(scopeReceiverParameter), lockField)
+                  else
+                    putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
+
+                  putValueArgument(
+                    1,
+                    irLambda(
+                      pluginContext.irBuiltIns.function(0)
+                        .typeWith(result.candidate.type.toIrType().typeOrNull!!),
+                      parameterNameProvider = { "p${graphContext.variableIndex++}" }
+                    ) {
+                      irBlock {
+                        +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
+                        +irIfThen(
+                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
+                          irBlock {
+                            +irSet(tmp.symbol, rawExpressionProvider())
+                            +irSetField(receiverExpression(scopeReceiverParameter), instanceField, irGet(tmp))
+                          }
+                        )
+
+                        +irGet(tmp)
+                      }
                     }
                   )
-
-                  +irGet(tmp)
-                }
-              }
-
-              if (result.candidate.callContext == CallContext.SUSPEND) {
-                +lockedScopedExpression()
-              } else {
-                +irIfThenElse(
-                  result.candidate.type.toIrType().typeOrNull!!,
-                  irEqeqeq(irGet(tmp), irGetField(receiverExpression(scopeReceiverParameter), lockField)),
-                  irCall(
-                    pluginContext.referenceFunctions(
-                      injektFqNames().commonPackage.child("synchronized".asNameId())
-                    ).single()
-                  ).apply {
-                    putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
-                    putValueArgument(0, irGetField(receiverExpression(scopeReceiverParameter), lockField))
-                    putValueArgument(
-                      1,
-                      irLambda(
-                        pluginContext.irBuiltIns.function(0)
-                          .typeWith(result.candidate.type.toIrType().typeOrNull!!),
-                        parameterNameProvider = { "p${graphContext.variableIndex++}" }
-                      ) {
-                        irBlock {
-                          +irSet(tmp.symbol, irGetField(receiverExpression(scopeReceiverParameter), instanceField))
-                          +lockedScopedExpression()
-                        }
-                      }
-                    )
-                  },
-                  irGet(tmp)
-                )
-              }
+                },
+                irGet(tmp)
+              )
             }
           }
         }
