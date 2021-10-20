@@ -661,7 +661,6 @@ import kotlin.collections.set
         injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
         DescriptorVisibilities.PRIVATE
       ).apply {
-        placeAfterFields(this)
         initializer = DeclarationIrBuilder(pluginContext, symbol).run {
           irExprBody(
             with(componentScope) {
@@ -669,6 +668,10 @@ import kotlin.collections.set
             }
           )
         }
+
+        // we do this AFTER creating the initializer expression
+        // because it's important that all other fields are initialized at this point
+        placeAfterFields(this)
       }
       fun forEachObserver(
         observerFunctionName: String,

@@ -299,6 +299,19 @@ class ComponentTest {
     observer.disposeCalls shouldBe 1
   }
 
+  @Test fun testComponentObserverWhoUsesScopedInjectables() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent
+    """,
+    """
+      class MyObserver<C : @Component Any> @Provide @Scoped<C> constructor() : ComponentObserver<C>
+
+      fun invoke(): MyComponent = inject<MyComponent>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testCanInjectComponent() = singleAndMultiCodegen(
     """
       @Component interface MyComponent {
