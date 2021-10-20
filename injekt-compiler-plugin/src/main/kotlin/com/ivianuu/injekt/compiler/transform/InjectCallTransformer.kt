@@ -103,6 +103,7 @@ import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -342,9 +343,9 @@ import kotlin.collections.set
     val scope = scope.allScopes.last { it.componentType == scopeComponent }
     return with(findScopeContext(scope)) {
       scopedExpressions.getOrPut(result.candidate.usageKey) {
-        val index = graphContext.variableIndex++
+        val fieldNameIndex = graphContext.variableIndex++
         val lockField = component!!.addField(
-          "_${index}Lock",
+          "_${fieldNameIndex}Lock",
           pluginContext.irBuiltIns.anyType,
           DescriptorVisibilities.PRIVATE
         ).apply {
@@ -353,7 +354,7 @@ import kotlin.collections.set
           }
         }
         val instanceField = component.addField(
-          "_${index}Instance",
+          "_${fieldNameIndex}Instance",
           pluginContext.irBuiltIns.anyNType,
           DescriptorVisibilities.PRIVATE
         ).apply {
@@ -363,8 +364,13 @@ import kotlin.collections.set
         }
         component.declarations.remove(lockField)
         component.declarations.remove(instanceField)
-        component.declarations.add(0, instanceField)
-        component.declarations.add(0, lockField)
+        val fieldDeclarationIndex = component.declarations
+          .indexOfLast { it is IrField }
+          .takeUnless { it == -1 }
+          ?.inc()
+          ?: 0
+        component.declarations.add(fieldDeclarationIndex, instanceField)
+        component.declarations.add(fieldDeclarationIndex, lockField)
 
         val scopeReceiverParameter =
           scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
@@ -656,8 +662,15 @@ import kotlin.collections.set
         injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
         DescriptorVisibilities.PRIVATE
       ).apply {
+        declarations.remove(this)
+        declarations.add(
+          declarations
+            .indexOfLast { it is IrField }
+            .takeUnless { it == -1 }
+            ?.inc() ?: 0,
+          this
+        )
         initializer = DeclarationIrBuilder(pluginContext, symbol).run {
-
           irExprBody(
             with(componentScope) {
               expressionFor(observersResult)
@@ -710,6 +723,14 @@ import kotlin.collections.set
         isPrimary = true
         visibility = DescriptorVisibilities.PUBLIC
       }.apply {
+        declarations.remove(this)
+        declarations.add(
+          declarations
+            .indexOfLast { it is IrField }
+            .takeUnless { it == -1 }
+            ?.inc() ?: 0,
+          this
+        )
         body = DeclarationIrBuilder(
           pluginContext,
           symbol
