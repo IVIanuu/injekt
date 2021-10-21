@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.irShouldNotContain
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -143,4 +144,53 @@ class ExpressionWrappingTest {
       }
     """
   )
+
+  @Test fun testDoesFunctionWrapProviderWithMultipleUsages() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+    """,
+    """
+      fun invoke() = inject<Pair<() -> Foo, () -> Foo>>()
+    """
+  ) {
+    irShouldContain(1, "local fun function0(): Function0<Foo>")
+  }
+
+  @Test fun testDoesNotFunctionWrapProviderWithSingleUsage() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke() = inject<() -> Foo>()
+    """
+  ) {
+    irShouldNotContain("local fun function0(): Function0<Foo>")
+  }
+
+  @Test fun testDoesNotFunctionWrapInlineProvider() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+      @Provide inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
+      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
+    """,
+    """
+      fun invoke() = inject<Pair<Bar, Bar>>()
+    """
+  ) {
+    irShouldNotContain("local fun function0(): Function0<Foo>")
+  }
+
+  @Test fun testDoesNotFunctionWrapCircularDependency() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: B)
+      @Provide class B(a: () -> A, a2: () -> A)
+     """,
+    """
+      fun invoke() = inject<B>() 
+    """
+  ) {
+    irShouldNotContain("local fun function0(): Function0<Foo>")
+    invokeSingleFile()
+  }
 }
