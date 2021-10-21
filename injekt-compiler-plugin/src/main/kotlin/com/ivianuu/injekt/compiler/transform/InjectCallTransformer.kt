@@ -366,7 +366,7 @@ import kotlin.collections.set
         ).apply {
           component.placeAfterFields(this)
           initializer = DeclarationIrBuilder(pluginContext, symbol).run {
-            irExprBody(irGet(component.thisReceiver!!))
+            irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
           }
         }
 
@@ -384,7 +384,7 @@ import kotlin.collections.set
 
               +irIfThenElse(
                 result.candidate.type.toIrType().typeOrNull!!,
-                irEqeqeq(irGet(tmp), receiverExpression(componentReceiverParameter)),
+                irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
                 irCall(
                   pluginContext.referenceFunctions(
                     injektFqNames().commonPackage.child("synchronized".asNameId())
@@ -404,7 +404,7 @@ import kotlin.collections.set
                       irBlock {
                         +irSet(tmp.symbol, irGetField(receiverExpression(componentReceiverParameter), instanceField))
                         +irIfThen(
-                          irEqeqeq(irGet(tmp), receiverExpression(componentReceiverParameter)),
+                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
                           irBlock {
                             +irSet(tmp.symbol, rawExpressionProvider())
                             +irSetField(receiverExpression(componentReceiverParameter), instanceField, irGet(tmp))
@@ -756,7 +756,6 @@ import kotlin.collections.set
                 observerFunctionName = "dispose",
                 thisExpression = { irGet(dispatchReceiverParameter!!) }
               )
-              irSetField(irGet(dispatchReceiverParameter!!), observersField, irNull())
             }
 
             val disposableClass = pluginContext.referenceClass(injektFqNames().disposable)!!
@@ -779,7 +778,6 @@ import kotlin.collections.set
                     )
                   }
                 )
-                +irSetField(irGet(dispatchReceiverParameter!!), field, irNull())
               }
           }
         }

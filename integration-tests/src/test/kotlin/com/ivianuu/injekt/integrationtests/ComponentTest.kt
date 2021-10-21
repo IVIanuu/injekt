@@ -363,4 +363,17 @@ class ComponentTest {
   ) {
     irShouldContain(1, "override val foo")
   }
+
+  @Test fun testComponentDisposeWithUninitializedScopedValue() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent {
+        val foo: Foo
+      }
+
+      @Provide val foo: @Scoped<MyComponent> Foo = Foo()
+    """,
+    """
+      fun invoke() = inject<MyComponent>().dispose()
+    """
+  )
 }
