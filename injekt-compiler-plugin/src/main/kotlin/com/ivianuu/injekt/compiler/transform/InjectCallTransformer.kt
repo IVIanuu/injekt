@@ -208,7 +208,6 @@ import kotlin.collections.set
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
-    val cachedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val scopedExpressions = mutableMapOf<Any, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
@@ -307,17 +306,15 @@ import kotlin.collections.set
 
       initializing = true
 
-      val rawExpression = cacheExpressionIfNeeded(result) {
-        wrapExpressionInFunctionIfNeeded(result) {
-          scopeExpressionIfNeeded(result) {
-            when (result.candidate) {
-              is CallableInjectable -> callableExpression(result, result.candidate.cast())
-              is ComponentInjectable -> componentExpression(result, result.candidate.cast())
-              is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-              is ListInjectable -> listExpression(result, result.candidate.cast())
-              is SourceKeyInjectable -> sourceKeyExpression()
-              is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
-            }
+      val rawExpression = wrapExpressionInFunctionIfNeeded(result) {
+        scopeExpressionIfNeeded(result) {
+          when (result.candidate) {
+            is CallableInjectable -> callableExpression(result, result.candidate.cast())
+            is ComponentInjectable -> componentExpression(result, result.candidate.cast())
+            is ProviderInjectable -> providerExpression(result, result.candidate.cast())
+            is ListInjectable -> listExpression(result, result.candidate.cast())
+            is SourceKeyInjectable -> sourceKeyExpression()
+            is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
           }
         }
       }
@@ -429,7 +426,7 @@ import kotlin.collections.set
 
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     context: GraphContext
-  ): Boolean = candidate !is ProviderInjectable &&
+  ): Boolean = (candidate !is ProviderInjectable || !candidate.isInline) &&
       (dependencyResults.isNotEmpty() || candidate.scopeComponentType != null) &&
       context.graph.usages[this.usageKey]!!.size > 1 &&
       !context.isInBetweenCircularDependency(this)
@@ -494,34 +491,6 @@ import kotlin.collections.set
       expression
     }
   }.invoke(this)
-
-  private fun ResolutionResult.Success.WithCandidate.Value.shouldCache(
-    context: ScopeContext
-  ): Boolean = candidate is ProviderInjectable &&
-      context.graphContext.graph.usages[this.usageKey]!!.count { !it.isInline } > 1 &&
-      !context.graphContext.isInBetweenCircularDependency(this) &&
-      context.findScopeContext(highestScope).component == null
-
-  private fun ScopeContext.cacheExpressionIfNeeded(
-    result: ResolutionResult.Success.WithCandidate.Value,
-    rawExpressionProvider: () -> IrExpression
-  ): IrExpression {
-    if (!result.shouldCache(this)) return rawExpressionProvider()
-    return with(findScopeContext(result.highestScope)) {
-      cachedExpressions.getOrPut(result.candidate.type) {
-        val variable = irScope.createTemporaryVariable(
-          rawExpressionProvider(),
-          nameHint = "${graphContext.variableIndex++}"
-        )
-        statements += variable
-        val expression: ScopeContext.() -> IrExpression = {
-          DeclarationIrBuilder(pluginContext, symbol)
-            .irGet(variable)
-        }
-        expression
-      }
-    }.invoke(this)
-  }
 
   private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =
     DeclarationIrBuilder(pluginContext, symbol)

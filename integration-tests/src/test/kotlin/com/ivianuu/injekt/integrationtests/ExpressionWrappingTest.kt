@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.irShouldNotContain
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -72,55 +71,6 @@ class ExpressionWrappingTest {
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Foo {")
-  }
-
-  @Test fun testDoesCacheProviderWithMultipleUsages() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
-    """,
-    """
-      fun invoke() = inject<Pair<() -> Foo, () -> Foo>>()
-    """
-  ) {
-    irShouldNotContain("local fun <anonymous>(): Function0<Foo> {")
-    irShouldContain(1, "val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
-  }
-
-  @Test fun testDoesNotCacheProviderWithSingleUsage() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke() = inject<() -> Foo>()
-    """
-  ) {
-    irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
-  }
-
-  @Test fun testDoesNotCacheInlineProvider() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      @Provide inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
-      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
-    """,
-    """
-      fun invoke() = inject<Pair<Bar, Bar>>()
-    """
-  ) {
-    irShouldNotContain("val tmp0_0: Function0<Foo> = local fun <anonymous>(): Foo {")
-  }
-
-  @Test fun testDoesNotCacheCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: B)
-      @Provide class B(a: () -> A, a2: () -> A)
-     """,
-    """
-      fun invoke() = inject<B>() 
-    """
-  ) {
-    invokeSingleFile()
   }
 
   @Test fun testDoesFunctionWrapComponentWithMultipleUsages() = codegen(
