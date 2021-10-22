@@ -145,6 +145,19 @@ class ExpressionWrappingTest {
     """
   )
 
+  @Test fun testDoesFunctionWrapListInjectablesWithSameElements() = singleAndMultiCodegen(
+    """
+      @Provide val a = "a"
+      @Provide val b = "b"
+      @Provide fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
+    """,
+    """
+      fun invoke() = inject<Pair<List<String>, () -> List<String>>>()
+    """
+  ) {
+    irShouldContain(1, "local fun function0(): List<String> {")
+  }
+
   @Test fun testDoesFunctionWrapProviderWithMultipleUsages() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
