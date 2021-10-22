@@ -596,7 +596,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
   }
 }
 
-private fun commonSuperType(
+fun commonSuperType(
   types: List<TypeRef>,
   depth: Int = -(types.maxOfOrNull { it.typeDepth } ?: 0),
   @Inject context: TypeCheckerContext

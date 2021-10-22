@@ -481,15 +481,14 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
     if (bSubClassNesting < aSubClassNesting) return 1
   }
 
-  val requestedType = a.type
-  val diff = compareType(a.originalType, b.originalType, requestedType)
+  val diff = compareType(a.originalType, b.originalType)
   if (diff < 0) return -1
   if (diff > 0) return 1
 
   return 0
 }
 
-fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRef?): Int {
+fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
@@ -516,7 +515,7 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
 
     var diff = 0
     a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
-      diff += compareType(aTypeArgument, bTypeArgument, null)
+      diff += compareType(aTypeArgument, bTypeArgument)
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
@@ -528,13 +527,11 @@ fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?, requestedType: TypeRe
     val bSubTypeOfA = b.isSubTypeOf(a)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
-    if (requestedType != null) {
-      val aSubTypeView = a.subtypeView(requestedType.classifier)
-      val bSubTypeView = b.subtypeView(requestedType.classifier)
-      val diff = compareSameClassifier(aSubTypeView, bSubTypeView)
-      if (diff < 0) return -1
-      if (diff > 0) return 1
-    }
+    val aCommonSuperType = commonSuperType(a.superTypes)
+    val bCommonSuperType = commonSuperType(b.superTypes)
+    val diff = compareType(aCommonSuperType, bCommonSuperType)
+    if (diff < 0) return -1
+    if (diff > 0) return 1
   } else {
     val diff = compareSameClassifier(a, b)
     if (diff < 0) return -1

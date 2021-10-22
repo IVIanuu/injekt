@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
@@ -368,7 +369,43 @@ class InjectableResolutionTest {
     """
       fun invoke() = useOrd<Int>()
     """
-  )
+  ) {
+    irShouldContain(1, "useOrd<Int>(ord = IntOrd)")
+  }
+
+  @Test fun testPrefersMoreSpecificType4() = singleAndMultiCodegen(
+    """
+      fun interface Ord<in T> {
+        fun result(): String
+      }
+      @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
+      @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
+      @Provide fun <T : Int> intOrd(): Ord<T> = TODO()
+      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+    """,
+    """
+      fun invoke() = useOrd<Int>()
+    """
+  ) {
+    irShouldContain(1, "useOrd<Int>(ord = intOrd<Int>())")
+  }
+
+  @Test fun testPrefersMoreSpecificType5() = singleAndMultiCodegen(
+    """
+      fun interface Ord<in T> {
+        fun result(): String
+      }
+      @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
+      @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
+      @Provide fun <T : Int> intOrd(long: Long): Ord<T> = TODO()
+      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+    """,
+    """
+      fun invoke() = useOrd<Int>()
+    """
+  ) {
+    irShouldContain(1, "useOrd<Int>(ord = numberOrd<Int>())")
+  }
 
   @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
     """
