@@ -44,13 +44,13 @@ object Versions {
     const val guava = "27.1-android"
     const val guice = "4.2.2"
     const val junit = "4.12"
-    const val kotlin = "1.3.40-eap-67"
+    const val kotlin = "1.3.40"
     const val kotlinStatistics = "1.2.1"
     const val katana = "1.6.0"
     const val kodein = "6.1.0"
     const val koin = "2.0.0-rc-2"
     const val mavenGradle = "2.1"
-    const val processingX = "0.0.1-dev-3"
+    const val processingX = "d8e9aa7d"
     const val toothpick = "2.1.0"
 }
 
@@ -86,7 +86,7 @@ object Deps {
     const val mavenGradlePlugin =
         "com.github.dcendents:android-maven-gradle-plugin:${Versions.mavenGradle}"
 
-    const val processingX = "com.ivianuu.processingx:processingx:${Versions.processingX}"
+    const val processingX = "com.github.IVIanuu:processing-x:${Versions.processingX}"
 
     const val toothpick =
         "com.github.stephanenicolas.toothpick:toothpick-runtime:${Versions.toothpick}"
