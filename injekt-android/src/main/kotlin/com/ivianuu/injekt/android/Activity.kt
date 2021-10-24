@@ -20,6 +20,7 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.dispose
@@ -32,7 +33,7 @@ import com.ivianuu.injekt.common.entryPoint
 val ComponentActivity.activityComponent: ActivityComponent
   get() = synchronized(activityComponents) {
     activityComponents[this]?.let { return it }
-    val component = entryPoint<ActivityComponentFactory>(activityRetainedComponent)
+    val component = entryPoint<ActivityComponentFactory>(appComponent)
       .activityComponent(this)
     activityComponents[this] = component
 
@@ -50,7 +51,7 @@ val ComponentActivity.activityComponent: ActivityComponent
 
 @Component interface ActivityComponent
 
-@EntryPoint<ActivityRetainedComponent> interface ActivityComponentFactory {
+@EntryPoint<AppComponent> interface ActivityComponentFactory {
   fun activityComponent(activity: ComponentActivity): ActivityComponent
 }
 

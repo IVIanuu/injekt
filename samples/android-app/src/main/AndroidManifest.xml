@@ -15,7 +15,6 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     package="com.ivianuu.injekt.samples.android">
 
     <application
@@ -26,17 +25,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
-        <activity android:name="com.ivianuu.injekt.samples.android.ui.MainActivity">
+        <activity
+            android:name="com.ivianuu.injekt.samples.android.ui.MainActivity"
+            android:configChanges="colorMode|density|fontScale|keyboard|keyboardHidden|layoutDirection|locale|mcc|mnc
+            |navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <provider
-            android:name="androidx.work.impl.WorkManagerInitializer"
-            android:enabled="false"
-            tools:ignore="ExportedContentProvider" />
     </application>
-
 </manifest>
