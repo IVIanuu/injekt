@@ -162,7 +162,7 @@ class IncrementalFixAnalysisHandlerExtension(
           appendLine("  index$it: Byte,")
         }
 
-        val stringToHash: String = when (injectable) {
+        val hash = when (injectable) {
           is KtClassOrObject ->
             injectable.name.orEmpty() +
                 injectable.annotationEntries.joinToString { it.text } +
@@ -189,7 +189,7 @@ class IncrementalFixAnalysisHandlerExtension(
           else -> throw AssertionError()
         }
 
-        val finalHash = String(Base64.getEncoder().encode(stringToHash.toByteArray()))
+        val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
 
         finalHash
           .filter { it.isLetterOrDigit() }
