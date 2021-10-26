@@ -164,7 +164,8 @@ class IncrementalFixAnalysisHandlerExtension(
 
         val stringToHash: String = when (injectable) {
           is KtClassOrObject ->
-            injectable.annotationEntries.joinToString { it.text } +
+            injectable.name.orEmpty() +
+                injectable.annotationEntries.joinToString { it.text } +
                 injectable.primaryConstructor
                   ?.let {
                     it.valueParameters
@@ -176,12 +177,15 @@ class IncrementalFixAnalysisHandlerExtension(
               } + injectable.superTypeListEntries
               .joinToString { it.text }
           is KtFunction ->
-            injectable.receiverTypeReference?.text.orEmpty() +
+            injectable.name.orEmpty() +
+                injectable.receiverTypeReference?.text.orEmpty() +
                 injectable.valueParameters
                   .joinToString { it.text } +
                 injectable.typeReference?.text.orEmpty()
-          is KtProperty -> injectable.receiverTypeReference?.text.orEmpty() +
-              injectable.typeReference?.text.orEmpty()
+          is KtProperty ->
+            injectable.name.orEmpty() +
+                injectable.receiverTypeReference?.text.orEmpty() +
+                injectable.typeReference?.text.orEmpty()
           else -> throw AssertionError()
         }
 
