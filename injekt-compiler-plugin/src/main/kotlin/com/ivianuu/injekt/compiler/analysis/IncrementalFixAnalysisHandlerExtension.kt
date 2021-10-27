@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.toVisibility
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -165,6 +166,7 @@ class IncrementalFixAnalysisHandlerExtension(
         val hash = when (injectable) {
           is KtClassOrObject ->
             injectable.name.orEmpty() +
+                injectable.visibilityModifier()?.text.orEmpty() +
                 injectable.annotationEntries.joinToString { it.text } +
                 injectable.primaryConstructor
                   ?.let {
@@ -178,12 +180,14 @@ class IncrementalFixAnalysisHandlerExtension(
               .joinToString { it.text }
           is KtFunction ->
             injectable.name.orEmpty() +
+                injectable.visibilityModifier()?.text.orEmpty() +
                 injectable.receiverTypeReference?.text.orEmpty() +
                 injectable.valueParameters
                   .joinToString { it.text } +
                 injectable.typeReference?.text.orEmpty()
           is KtProperty ->
             injectable.name.orEmpty() +
+                injectable.visibilityModifier()?.text.orEmpty() +
                 injectable.receiverTypeReference?.text.orEmpty() +
                 injectable.typeReference?.text.orEmpty()
           else -> throw AssertionError()
