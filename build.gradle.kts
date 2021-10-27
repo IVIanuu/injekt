@@ -54,7 +54,7 @@ allprojects {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
 
-    val sourceSetName = name
+    val sourceSetName = compilation.defaultSourceSetName
 
     val project = compilation.compileKotlinTask.project
 
