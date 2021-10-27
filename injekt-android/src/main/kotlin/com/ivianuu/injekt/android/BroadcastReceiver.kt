@@ -30,7 +30,8 @@ import com.ivianuu.injekt.common.entryPoint
 fun BroadcastReceiver.createReceiverComponent(
   context: Context,
   intent: Intent,
-): ReceiverComponent = entryPoint<ReceiverComponentFactory>(context.appComponent)
+): ReceiverComponent = context.appComponent
+  .entryPoint<ReceiverComponentFactory>()
   .receiverComponent(this, context, intent)
 
 @Component interface ReceiverComponent

@@ -21,10 +21,9 @@ import com.ivianuu.injekt.common.AnyInterface
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.EvaluationStrategy
 import com.ivianuu.injekt.common.Scoped
 
-class TestDisposable<C : @Component Any> @Provide @Scoped<C>(EvaluationStrategy.EAGER) constructor() : Disposable {
+class TestDisposable<C : @Component Any> @Provide @Scoped<C>() constructor() : Disposable {
   var disposed = false
 
   override fun dispose() {

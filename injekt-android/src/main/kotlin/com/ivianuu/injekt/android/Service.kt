@@ -26,7 +26,7 @@ import com.ivianuu.injekt.common.entryPoint
  * Returns a new [ServiceComponent] which must be manually stored and disposed
  */
 fun Service.createServiceComponent(): ServiceComponent =
-  entryPoint<ServiceComponentFactory>(appComponent).serviceComponent(this)
+  appComponent.entryPoint<ServiceComponentFactory>().serviceComponent(this)
 
 @Component interface ServiceComponent
 

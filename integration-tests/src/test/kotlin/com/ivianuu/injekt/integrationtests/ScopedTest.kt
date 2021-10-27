@@ -102,7 +102,7 @@ class ScopedTest {
       class Dep<C : @Component Any> @Provide @Scoped<C> constructor()
     """,
     """
-      val component = entryPoint<GenericEntryPoint<ScopeComponent>>(inject<ScopeComponent>())
+      val component = inject<ScopeComponent>().entryPoint<GenericEntryPoint<ScopeComponent>>()
       fun invoke() = component.dep
     """
   ) {

@@ -22,7 +22,7 @@ annotation class Component
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class EntryPoint<C : @Component Any>
 
-inline fun <E> entryPoint(component: @Component Any): E = component as E
+inline fun <E> (@Component Any).entryPoint(): E = this as E
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class Scoped<C : @Component Any>

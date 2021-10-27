@@ -33,7 +33,8 @@ import com.ivianuu.injekt.common.entryPoint
 val ComponentActivity.activityComponent: ActivityComponent
   get() = synchronized(activityComponents) {
     activityComponents[this]?.let { return it }
-    val component = entryPoint<ActivityComponentFactory>(appComponent)
+    val component = appComponent
+      .entryPoint<ActivityComponentFactory>()
       .activityComponent(this)
     activityComponents[this] = component
 

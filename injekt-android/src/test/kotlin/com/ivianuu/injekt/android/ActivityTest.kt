@@ -33,7 +33,8 @@ class ActivityTest {
     val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
     lateinit var disposable: TestDisposable<ActivityComponent>
     scenario.onActivity {
-      disposable = entryPoint<TestDisposableComponent<ActivityComponent>>(it.activityComponent)
+      disposable = it.activityComponent
+        .entryPoint<TestDisposableComponent<ActivityComponent>>()
         .disposable
     }
     disposable.disposed.shouldBeFalse()

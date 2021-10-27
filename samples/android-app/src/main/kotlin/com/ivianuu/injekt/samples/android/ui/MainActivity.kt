@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies: MainActivityDependencies = entryPoint(activityComponent)
+    val dependencies = activityComponent.entryPoint<MainActivityDependencies>()
     // display ui
     setContent {
       dependencies.theme {
