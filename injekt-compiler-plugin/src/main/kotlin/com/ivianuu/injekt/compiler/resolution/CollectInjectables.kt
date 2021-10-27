@@ -21,8 +21,10 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -49,6 +51,7 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -68,6 +71,27 @@ fun TypeRef.collectInjectables(
   @Inject context: InjektContext
 ): List<CallableRef> {
   if (isStarProjection) return emptyList()
+
+  // special case to support @Provide () -> Foo
+  if (isProvideFunctionType) {
+    return listOf(
+      classifier.descriptor!!
+        .defaultType
+        .memberScope
+        .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+        .first()
+        .toCallableRef()
+        .let { callable ->
+          callable.copy(
+            type = arguments.last(),
+            isProvide = true,
+            parameterTypes = callable.parameterTypes.toMutableMap()
+              .also { it[DISPATCH_RECEIVER_INDEX] = this },
+            import = import
+          ).substitute(classifier.typeParameters.zip(arguments).toMap())
+        }
+    )
+  }
 
   return (classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
@@ -253,16 +277,21 @@ fun CallableRef.collectInjectables(
     return
   }
 
-  addInjectable(this)
+  val nextCallable = if (type.isProvideFunctionType) {
+    addInjectable(this)
+    copy(type = type.copy(frameworkKey = generateFrameworkKey()))
+  } else this
+  addInjectable(nextCallable)
 
-  type
+  nextCallable
+    .type
     .also { type ->
       type.classifier.descriptor?.findPackage()?.fqName?.let {
         addImport(type.classifier.fqName, it)
       }
     }
     .collectInjectables(
-      scope.allScopes.any { it.ownerDescriptor == type.classifier.descriptor },
+      scope.allScopes.any { it.ownerDescriptor == nextCallable.type.classifier.descriptor },
       import
     )
     .forEach { innerCallable ->

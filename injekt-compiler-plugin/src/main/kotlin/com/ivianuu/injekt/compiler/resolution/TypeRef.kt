@@ -493,6 +493,9 @@ val TypeRef.isComposableType: Boolean
     return false
   }
 
+val TypeRef.isProvideFunctionType: Boolean
+  get() = isProvide && isFunctionType
+
 val TypeRef.isFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
