@@ -95,7 +95,7 @@ class ScopedTest {
     """
       @Component interface ScopeComponent
 
-      @EntryPoint<Any> interface GenericEntryPoint<C : @Component Any> {
+      interface GenericEntryPoint<C : @Component Any> : @EntryPoint<C> AnyInterface {
         val dep: Dep<C>
       }
 
