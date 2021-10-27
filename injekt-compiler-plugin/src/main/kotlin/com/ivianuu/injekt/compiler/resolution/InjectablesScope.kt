@@ -311,14 +311,10 @@ class InjectablesScope(
     if (entryPointTypes.isEmpty()) return emptyList()
     return entryPointTypes
       .mapNotNull { candidate ->
-        if (candidate.classifier.entryPointComponentType!!.classifier.fqName == injektFqNames().any) {
-          candidate.withArguments(listOf(componentType))
-        } else {
-          val context = candidate.classifier.entryPointComponentType
-            .buildContext(componentType, allStaticTypeParameters)
-          if (!context.isOk) return@mapNotNull null
-          candidate.substitute(context.fixedTypeVariables)
-        }
+        val context = candidate.classifier.entryPointComponentType!!
+          .buildContext(componentType, allStaticTypeParameters)
+        if (!context.isOk) return@mapNotNull null
+        candidate.substitute(context.fixedTypeVariables)
       }
   }
 

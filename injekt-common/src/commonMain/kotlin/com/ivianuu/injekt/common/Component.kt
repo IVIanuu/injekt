@@ -44,3 +44,5 @@ fun <C : @Component Any> C.dispose() {
 }
 
 @Component interface AppComponent
+
+interface AnyInterface

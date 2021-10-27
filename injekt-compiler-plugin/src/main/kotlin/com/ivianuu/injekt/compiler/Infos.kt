@@ -63,6 +63,7 @@ import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -288,11 +289,15 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
     val tags = getAnnotatedAnnotations(injektFqNames().tag)
       .map { it.type.toTypeRef() }
 
-    val scopeComponentType = annotations.findAnnotation(injektFqNames().scoped)
-      ?.type?.arguments?.single()?.type?.toTypeRef()
+    val scopeComponentType = (annotations.findAnnotation(injektFqNames().scoped)
+      ?: defaultType.supertypes().firstNotNullOfOrNull {
+        it.annotations.findAnnotation(injektFqNames().scoped)
+      })?.type?.arguments?.single()?.type?.toTypeRef()
 
-    val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
-    ?.type?.arguments?.single()?.type?.toTypeRef()
+    val entryPointComponentType = (annotations.findAnnotation(injektFqNames().entryPoint)
+      ?: defaultType.supertypes().firstNotNullOfOrNull {
+        it.annotations.findAnnotation(injektFqNames().entryPoint)
+      })?.type?.arguments?.single()?.type?.toTypeRef()
 
     val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
     else safeAs<ClassDescriptor>()

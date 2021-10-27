@@ -235,11 +235,11 @@ class ComponentTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testWildcardEntryPoint() = singleAndMultiCodegen(
+  @Test fun testGenericEntryPoint() = singleAndMultiCodegen(
     """
       @Component interface MyComponent
 
-      @EntryPoint<Any> interface MyEntryPoint<C> {
+      interface MyEntryPoint<C : @Component Any> : @EntryPoint<C> AnyInterface {
         val foo: Foo
       }
 
@@ -256,7 +256,7 @@ class ComponentTest {
     """
       @Component interface MyComponent
 
-      @EntryPoint<Any> interface CoroutineScopeComponent<C : @Component Any> {
+      interface CoroutineScopeComponent<C : @Component Any> : @EntryPoint<C> AnyInterface {
         val coroutineScope: com.ivianuu.injekt.coroutines.ComponentScope<C>
       }
     """,

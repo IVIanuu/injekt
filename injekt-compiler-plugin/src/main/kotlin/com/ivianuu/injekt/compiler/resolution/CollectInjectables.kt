@@ -217,7 +217,7 @@ fun ClassDescriptor.injectableConstructors(
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
   (if (hasAnnotation(injektFqNames().component))
     listOf(ComponentConstructorDescriptor(this))
-  else if (hasAnnotation(injektFqNames().entryPoint))
+  else if (classifierInfo().entryPointComponentType != null)
     listOf(EntryPointConstructorDescriptor(this))
   else
     constructors
