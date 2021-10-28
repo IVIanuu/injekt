@@ -182,12 +182,7 @@ class InjectablesScope(
           if (!context.isOk)
             return@mapNotNull null
           val finalCandidate = candidate.substitute(context.fixedTypeVariables)
-          CallableInjectable(
-            key.type,
-            finalCandidate.getInjectableRequests(),
-            this,
-            finalCandidate
-          )
+          CallableInjectable(this, finalCandidate)
         }
       val parentInjectables = parent?.injectablesForType(key)
       if (parentInjectables != null) parentInjectables + thisInjectables

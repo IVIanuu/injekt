@@ -342,6 +342,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
         .startsWith("com.ivianuu.injekt.") && request.callableFqName.asString()
         .endsWith("roviderOf")
       append("${request.callableFqName}")
+      if (request.callableTypeParameters.isNotEmpty()) {
+        append(request.callableTypeParameters.joinToString(", ", "<", ">") {
+          it.renderToString()
+        })
+      }
       if (isProvider) {
         appendLine(" {")
       } else {
