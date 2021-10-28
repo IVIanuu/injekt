@@ -346,11 +346,19 @@ private fun InjectionGraph.Error.render(): String = buildString {
       candidate: Injectable?,
       callContext: CallContext
     ) {
-      append("${request.callableFqName}")
-      if (request.callableTypeParameters.isNotEmpty()) {
-        append(request.callableTypeParameters.joinToString(", ", "<", ">") {
-          it.renderToString()
-        })
+      if (candidate is ProviderInjectable) {
+        when (candidate.type.callContext) {
+          CallContext.DEFAULT -> {}
+          CallContext.COMPOSABLE -> append("@Composable")
+          CallContext.SUSPEND -> append("suspend")
+        }
+      } else {
+        append("${request.callableFqName}")
+        if (request.callableTypeParameters.isNotEmpty()) {
+          append(request.callableTypeParameters.joinToString(", ", "<", ">") {
+            it.renderToString()
+          })
+        }
       }
       when (candidate) {
         is ProviderInjectable -> {
