@@ -136,14 +136,15 @@ sealed class ResolutionResult {
         override val failureOrdering: Int
           get() = 1
       }
-    }
 
-    data class DependencyFailure(
-      val dependencyRequest: InjectableRequest,
-      val dependencyFailure: Failure,
-    ) : Failure() {
-      override val failureOrdering: Int
-        get() = 1
+      data class DependencyFailure(
+        override val candidate: Injectable,
+        val dependencyRequest: InjectableRequest,
+        val dependencyFailure: Failure,
+      ) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
     }
 
     data class CandidateAmbiguity(
@@ -400,7 +401,8 @@ private fun InjectablesScope.resolveCandidate(
           candidate is ProviderInjectable && dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates
           dependency.isRequired || dependencyResult !is ResolutionResult.Failure.NoCandidates ->
-            return@computeForCandidate ResolutionResult.Failure.DependencyFailure(
+            return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
+              candidate,
               dependency,
               dependencyResult
             )

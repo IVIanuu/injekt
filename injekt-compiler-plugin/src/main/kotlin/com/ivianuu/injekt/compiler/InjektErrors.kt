@@ -17,13 +17,18 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.CallContext
+import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
+import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.renderToString
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
@@ -250,6 +255,8 @@ interface InjektErrors {
 }
 
 private fun InjectionGraph.Error.render(): String = buildString {
+  @Provide val injektContext = this@render.scope.context
+
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++
@@ -317,7 +324,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         )
       }
     }
-    is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
+    is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
     is ResolutionResult.Failure.NoCandidates,
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
       appendLine(
@@ -329,42 +336,97 @@ private fun InjectionGraph.Error.render(): String = buildString {
     }
   }.let { }
 
-  if (failure is ResolutionResult.Failure.DependencyFailure) {
+  if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
     appendLine("I found:")
     appendLine()
 
     fun printCall(
       request: InjectableRequest,
       failure: ResolutionResult.Failure,
+      candidate: Injectable?,
       callContext: CallContext
     ) {
-      val isProvider = request.callableFqName.asString()
-        .startsWith("com.ivianuu.injekt.") && request.callableFqName.asString()
-        .endsWith("roviderOf")
       append("${request.callableFqName}")
       if (request.callableTypeParameters.isNotEmpty()) {
         append(request.callableTypeParameters.joinToString(", ", "<", ">") {
           it.renderToString()
         })
       }
-      if (isProvider) {
-        appendLine(" {")
-      } else {
-        appendLine("(")
+      when (candidate) {
+        is ProviderInjectable -> {
+          append(" { ")
+          if (candidate.parameterDescriptors.isNotEmpty()) {
+            append(
+              candidate.parameterDescriptors
+                .zip(candidate.type.arguments.dropLast(1))
+                .joinToString {
+                  "${it.first.name}: ${it.second.renderToString()}"
+                }
+            )
+
+            append(" -> ")
+          }
+          appendLine()
+        }
+        is ComponentInjectable -> {
+          appendLine(" {")
+        }
+        else -> {
+          appendLine("(")
+        }
       }
       withIndent {
-        if (isProvider &&
+        if (candidate is ProviderInjectable &&
           unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
           appendLine("${indent()}/* ${callContext.name.lowercase(Locale.getDefault())} call context */")
         }
         append(indent())
-        if (!isProvider) {
-          append("${request.parameterName} = ")
+        if (candidate !is ProviderInjectable) {
+          if (candidate is ComponentInjectable) {
+            val requestCallable = candidate.requestsByRequestCallables.entries
+              .single { it.value == request }
+              .key
+
+            when (requestCallable.callable.callContext()) {
+              CallContext.DEFAULT -> {}
+              CallContext.COMPOSABLE -> append("@Composable ")
+              CallContext.SUSPEND -> append("suspend ")
+            }
+
+            if (requestCallable.callable is FunctionDescriptor)
+              append("fun ")
+            else
+              append("val ")
+
+            if (requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX] != null)
+              append("${requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX]!!.renderToString()}.")
+
+            append("${request.parameterName}")
+
+            if (requestCallable.callable is FunctionDescriptor)
+              append(
+                requestCallable.parameterTypes
+                  .filter {
+                    it.key != DISPATCH_RECEIVER_INDEX &&
+                        it.key != EXTENSION_RECEIVER_INDEX
+                  }
+                  .entries
+                  .joinToString(", ", "(", ")") {
+                    "${requestCallable.callable.valueParameters[it.key].name}: " +
+                        it.value.renderToString()
+                  }
+              )
+          } else {
+            append("${request.parameterName}")
+          }
+
+          append(" = ")
         }
-        if (failure is ResolutionResult.Failure.DependencyFailure) {
+        if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
-            if (isProvider) request.type.callContext else callContext
+            failure.candidate,
+            if (candidate is ProviderInjectable) request.type.callContext else callContext
           )
         } else {
           append("/* ")
@@ -387,7 +449,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
                 } do match type ${request.type.renderToString()}"
               )
             }
-            is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
+            is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.NoCandidates,
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
@@ -400,7 +462,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
       }
       append(indent())
-      if (isProvider) {
+      if (candidate is ProviderInjectable || candidate is ComponentInjectable) {
         appendLine("}")
       } else {
         appendLine(")")
@@ -415,6 +477,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       printCall(
         failureRequest,
         failure,
+        null,
         if (failureRequest.type.isFunctionType) failureRequest.type.callContext
         else scope.callContext
       )
@@ -440,7 +503,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           }\ndo all match type ${unwrappedFailureRequest.type.renderToString()}"
         )
       }
-      is ResolutionResult.Failure.DependencyFailure -> throw AssertionError()
+      is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
       is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
         appendLine(
           "but injectable ${unwrappedFailure.candidate.callableFqName} " +
@@ -457,6 +520,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
 fun ResolutionResult.Failure.unwrapDependencyFailure(
   request: InjectableRequest
 ): Pair<InjectableRequest, ResolutionResult.Failure> =
-  if (this is ResolutionResult.Failure.DependencyFailure)
+  if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
     dependencyFailure.unwrapDependencyFailure(dependencyRequest)
   else request to this

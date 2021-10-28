@@ -122,7 +122,7 @@ class ComponentInjectable(
     callableFqName = callableFqName.child("observers".asNameId()),
     callableTypeParameters = type.arguments,
     parameterName = "observers".asNameId(),
-    parameterIndex = -1,
+    parameterIndex = 0,
     isRequired = false,
     isLazy = true
   )
@@ -250,7 +250,6 @@ class ProviderInjectable(
     InjectableRequest(
       type = type.arguments.last(),
       callableFqName = callableFqName,
-      callableTypeParameters = type.arguments,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
       isInline = isInline,
@@ -366,7 +365,7 @@ fun CallableRef.getInjectableRequests(
 data class InjectableRequest(
   val type: TypeRef,
   val callableFqName: FqName,
-  val callableTypeParameters: List<TypeRef>,
+  val callableTypeParameters: List<TypeRef> = emptyList(),
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true,
