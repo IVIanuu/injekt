@@ -22,7 +22,7 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
-import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +35,7 @@ class InjektWorkerTest {
   @Test fun testWorkerBinding() {
     val workerFactory = inject<(Context) -> WorkerFactory>()(mockk())
     workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
-      .shouldNotBeNull()
+      .shouldBeTypeOf<TestWorker>()
   }
 }
 

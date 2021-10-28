@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.os.PowerManager
-import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.launchActivity
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
 import org.junit.Test
@@ -29,10 +29,10 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 class SystemServiceTest {
   @Test fun testCanRequestSystemService() {
-    val scenario = ActivityScenario.launch(AndroidTestActivity::class.java)
-    scenario.onActivity {
-      @Provide val application = it.application
-      inject<@SystemService PowerManager>().isPowerSaveMode
-    }
+    launchActivity<AndroidTestActivity>()
+      .onActivity {
+        @Provide val application = it.application
+        inject<@SystemService PowerManager>().isPowerSaveMode
+      }
   }
 }

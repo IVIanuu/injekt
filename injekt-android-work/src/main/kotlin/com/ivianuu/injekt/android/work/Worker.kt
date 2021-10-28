@@ -33,7 +33,7 @@ import kotlin.reflect.KClass
  * @Provide
  * @InjektWorker
  * class MyWorker(
- *   context: AppContext,
+ *   context: Context,
  *   parameters: WorkerParameters
  * ) : CoroutineWorker(context, parameters)
  * ```
@@ -41,7 +41,7 @@ import kotlin.reflect.KClass
 @Tag annotation class InjektWorker {
   companion object {
     @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
-      noinline factory: (WorkerParameters) -> T,
+      noinline factory: (Context, WorkerParameters) -> T,
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
   }
@@ -57,7 +57,7 @@ import kotlin.reflect.KClass
     appContext: Context,
     workerClassName: String,
     workerParameters: WorkerParameters,
-  ): ListenableWorker? = workers[workerClassName]?.invoke(workerParameters)
+  ): ListenableWorker? = workers[workerClassName]?.invoke(appContext, workerParameters)
 }
 
-internal typealias SingleWorkerFactory = (WorkerParameters) -> ListenableWorker
+internal typealias SingleWorkerFactory = (Context, WorkerParameters) -> ListenableWorker
