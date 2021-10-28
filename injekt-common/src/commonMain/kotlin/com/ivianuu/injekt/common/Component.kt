@@ -31,6 +31,10 @@ fun interface Disposable {
   fun dispose()
 }
 
+fun <C : @Component Any> C.dispose() {
+  (this as Disposable).dispose()
+}
+
 interface ComponentObserver<C : @Component Any> : Disposable {
   fun init() {
   }
@@ -39,10 +43,6 @@ interface ComponentObserver<C : @Component Any> : Disposable {
   }
 }
 
-fun <C : @Component Any> C.dispose() {
-  (this as Disposable).dispose()
-}
+interface AnyInterface
 
 @Component interface AppComponent
-
-interface AnyInterface
