@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
@@ -81,6 +82,18 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
               diagnostic.psiElement.endOffset
             )] != null
       }
+    }
+
+    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER)
+      return true
+
+    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
+      return true
+
+    if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
+      val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
+      if (function?.hasAnnotation(injektFqNames.provide) == true)
+        return true
     }
 
     return false
