@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -371,7 +372,8 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRe
   val index = injektIndex()
   return InjectableRequest(
     type = callable.parameterTypes[index]!!,
-    callableFqName = containingDeclaration.fqNameSafe,
+    callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
+      ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     parameterName = injektName(),
     parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
