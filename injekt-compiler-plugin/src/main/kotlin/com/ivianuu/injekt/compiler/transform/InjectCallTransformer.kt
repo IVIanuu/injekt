@@ -55,6 +55,7 @@ import org.jetbrains.kotlin.backend.common.lower.irIfThen
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.builtins.StandardNames
+import org.jetbrains.kotlin.builtins.isFunctionOrSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -1284,6 +1285,10 @@ import kotlin.collections.set
     // some ir transformations reuse the start and end offsets
     // we ensure that were not transforming wrong calls
     if (!expression.symbol.owner.isPropertyAccessor &&
+      expression.symbol.owner.descriptor.containingDeclaration
+        .safeAs<ClassDescriptor>()
+        ?.defaultType
+        ?.isFunctionOrSuspendFunctionType != true &&
       graph.callee.callable.uniqueKey() != result.symbol.owner.descriptor.uniqueKey())
       return result
 

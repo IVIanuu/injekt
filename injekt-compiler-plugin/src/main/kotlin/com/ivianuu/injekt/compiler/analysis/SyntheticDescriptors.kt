@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.descriptors.impl.DeclarationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeSubstitutor
 
@@ -97,7 +98,6 @@ class EntryPointConstructorDescriptor(
 class InjectNParameterDescriptor(
   private val _containingDeclaration: DeclarationDescriptor,
   val index: Int,
-  private val _type: KotlinType,
   val typeRef: TypeRef,
   @Inject context: InjektContext
 ) : DeclarationDescriptorImpl(
@@ -128,11 +128,11 @@ class InjectNParameterDescriptor(
   override fun getOverriddenDescriptors(): MutableCollection<out CallableDescriptor> =
     mutableListOf()
 
-  override fun getReturnType(): KotlinType = _type
+  override fun getReturnType(): KotlinType = type
 
   override fun getSource(): SourceElement = SourceElement.NO_SOURCE
 
-  override fun getType(): KotlinType = _type
+  override fun getType(): KotlinType = module.builtIns.nullableAnyType
 
   override fun getTypeParameters(): List<TypeParameterDescriptor> = emptyList()
 

@@ -59,7 +59,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     if (resultingDescriptor !is InjectFunctionDescriptor &&
         !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
       (resolvedCall !is VariableAsFunctionResolvedCall ||
-          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2))) return
+          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2)) &&
+      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) != true) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -94,24 +95,42 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
             .toMap()
         } ?: emptyMap())
 
-    val callee = resultingDescriptor
-        .toCallableRef()
-        .substitute(substitutionMap)
-
-    val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
-
-    val lambdaInjectNTypes = resolvedCall
+    val injectLambdaType = resolvedCall
       .safeAs<NewVariableAsFunctionResolvedCallImpl>()
       ?.resultingDescriptor
       ?.callableInfo()
       ?.type
-      ?.let {
+      ?: resolvedCall.dispatchReceiver
+        ?.type
+        ?.takeIf { it.hasAnnotation(injektFqNames().inject2) }
+        ?.toTypeRef()
 
+    val lambdaInjectParameters = injectLambdaType
+      ?.injectNTypes
+      ?.mapIndexed { index, injectNType ->
+        InjectNParameterDescriptor(
+          resultingDescriptor.containingDeclaration,
+          resultingDescriptor.valueParameters.size + index,
+          injectNType
+        )
       }
 
+    val callee = resultingDescriptor
+      .toCallableRef()
+      .let {
+        if (lambdaInjectParameters == null) it
+        else it.copy(
+          parameterTypes = it.parameterTypes + lambdaInjectParameters
+            .map { it.index to it.typeRef }
+        )
+      }
+      .substitute(substitutionMap)
+
+    val valueArgumentsByIndex = resolvedCall.valueArguments
+      .mapKeys { it.key.injektIndex() }
+
     val info = resultingDescriptor.callableInfo()
-    val requests = (callee.callable.valueParameters + info.injectNParameters)
+    val requests = (callee.callable.valueParameters + info.injectNParameters + (lambdaInjectParameters ?: emptyList()))
       .filter {
         val argument = valueArgumentsByIndex[it.injektIndex()]
         (argument == null || argument is DefaultValueArgument) && it.isInject()

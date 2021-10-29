@@ -140,7 +140,6 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
         InjectNParameterDescriptor(
           this,
           valueParameters.size + index,
-          context.module.builtIns.nullableAnyType,
           parameterType
         )
       }
@@ -260,7 +259,6 @@ fun PersistedCallableInfo.toCallableInfo(
     InjectNParameterDescriptor(
       callable,
       callable.valueParameters.size + index,
-      context.module.builtIns.nullableAnyType,
       type.toTypeRef()
     )
   }
@@ -354,7 +352,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
         InjectNParameterDescriptor(
           this,
           index,
-          context.module.builtIns.nullableAnyType,
           parameterType.toTypeRef()
         )
       }
@@ -401,7 +398,6 @@ fun PersistedClassifierInfo.toClassifierInfo(
     InjectNParameterDescriptor(
       descriptor,
       0,
-      context.module.builtIns.nullableAnyType,
       type.toTypeRef()
     )
   }

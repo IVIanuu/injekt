@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptorExtension
+import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLambdaExpression
@@ -32,9 +33,12 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getValueArgumentForExpression
 import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
+import org.jetbrains.kotlin.resolve.sam.getSingleAbstractMethodOrNull
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
+import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED", "IllegalExperimentalApiUsage")
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
@@ -74,23 +78,29 @@ class InjectTypeResolutionInterceptorExtension(
       ?.constructor
       ?.declarationDescriptor as? ClassDescriptor
 
-    /*fun KotlinType.addInjectAnnotations(): KotlinType {
-      if (hasComposableAnnotation()) return this
-      val annotation = ComposeFqNames.makeComposableAnnotation(module)
-      return replaceAnnotations(Annotations.create(annotations + annotation))
-    }
-
     if (argTypeDescriptor != null) {
       val sam = getSingleAbstractMethodOrNull(argTypeDescriptor)
       if (sam != null && sam.hasAnnotation(injektFqNames.inject2)) {
-        return resultType.addInjectAnnotations(context.scope.ownerDescriptor.module)
+        return resultType.replaceAnnotations(
+          Annotations.create(
+            resultType.annotations + sam.annotations.filter {
+              it.fqName == injektFqNames.inject2
+            }
+          )
+        )
       }
     }
 
     if (element.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.inject2) == true ||
       context.expectedType.hasAnnotation(injektFqNames.inject2)) {
-      return resultType.addInjectAnnotations(context.scope.ownerDescriptor.module)
-    }*/
+      return resultType.replaceAnnotations(
+        Annotations.create(
+          resultType.annotations + context.expectedType.annotations.filter {
+            it.fqName == injektFqNames.inject2
+          }
+        )
+      )
+    }
 
     return resultType
   }
