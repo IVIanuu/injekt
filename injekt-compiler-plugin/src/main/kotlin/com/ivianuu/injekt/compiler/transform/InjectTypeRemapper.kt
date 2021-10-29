@@ -16,22 +16,29 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import androidx.compose.compiler.plugins.kotlin.lower.function
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
+import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
 import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -44,9 +51,11 @@ import org.jetbrains.kotlin.ir.declarations.copyAttributes
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
@@ -63,16 +72,19 @@ import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRenamer
 import org.jetbrains.kotlin.ir.util.TypeRemapper
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class DeepCopyIrTreeWithSymbolsPreservingMetadata(
   private val symbolRemapper: DeepCopySymbolRemapper,
-  private val typeRemapper: TypeRemapper,
+  private val typeRemapper: InjectNTypeRemapper,
   @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext,
   symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
@@ -101,7 +113,9 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     if (declaration.symbol.isBoundButNotRemapped()) {
       symbolRemapper.visitSimpleFunction(declaration)
     }
+    typeRemapper.scopeStack.push(declaration to null)
     return super.visitSimpleFunction(declaration).also {
+      typeRemapper.scopeStack.pop()
       it.correspondingPropertySymbol = declaration.correspondingPropertySymbol
       it.copyMetadataFrom(declaration)
     }
@@ -114,7 +128,9 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
   }
 
   override fun visitProperty(declaration: IrProperty): IrProperty {
+    typeRemapper.scopeStack.push(declaration to null)
     return super.visitProperty(declaration).also {
+      typeRemapper.scopeStack.pop()
       it.copyMetadataFrom(declaration)
       it.copyAttributes(declaration)
     }
@@ -163,6 +179,39 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     return super.visitConstructorCall(expression)
   }
 
+  override fun visitDelegatingConstructorCall(expression: IrDelegatingConstructorCall): IrDelegatingConstructorCall {
+    if (!expression.symbol.isBound)
+      (pluginContext as IrPluginContextImpl).linker.getDeclaration(expression.symbol)
+    val ownerFn = expression.symbol.owner as? IrConstructor
+    // If we are calling an external constructor, we want to "remap" the types of its signature
+    // as well, since if it they are @Composable it will have its unmodified signature. These
+    // types won't be traversed by default by the DeepCopyIrTreeWithSymbols so we have to
+    // do it ourself here.
+    if (
+      ownerFn != null &&
+      ownerFn.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+    ) {
+      symbolRemapper.visitConstructor(ownerFn)
+      val newFn = super.visitConstructor(ownerFn).also {
+        it.parent = ownerFn.parent
+        it.patchDeclarationParents(it.parent)
+      }
+      val newCallee = symbolRemapper.getReferencedConstructor(newFn.symbol)
+
+      return IrDelegatingConstructorCallImpl(
+        expression.startOffset, expression.endOffset,
+        expression.type.remapType(),
+        newCallee,
+        expression.typeArgumentsCount,
+        expression.valueArgumentsCount,
+      ).apply {
+        copyRemappedTypeArgumentsFrom(expression)
+        transformValueArguments(expression)
+      }.copyAttributes(expression)
+    }
+    return super.visitDelegatingConstructorCall(expression)
+  }
+
   private fun IrFunction.hasInjectNArguments(): Boolean {
     if (
       dispatchReceiverParameter?.type?.isInjectN() == true ||
@@ -186,31 +235,34 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     // a function instance is `invoke`, which we *already* do in the ComposeParamTransformer.
     // There are others that can happen though as well, such as `equals` and `hashCode`. In this
     // case, we want to update those calls as well.
-    if (
-      ownerFn != null &&
-      ownerFn.origin == IrDeclarationOrigin.FAKE_OVERRIDE &&
+    if (ownerFn != null &&
       containingClass != null &&
-      containingClass.defaultType.isFunctionType &&
+      (containingClass.defaultType.isFunctionType ||
+          containingClass.defaultType.isSuspendFunctionType) &&
       expression.dispatchReceiver?.type?.isInjectN() == true
     ) {
       val typeArguments = containingClass.defaultType.arguments
-      val newFnClass = pluginContext.irBuiltIns.function(typeArguments.size).owner
+      val newFnClass = if (containingClass.defaultType.isFunctionType)
+        pluginContext.irBuiltIns.function(typeArguments.size).owner
+      else
+        pluginContext.irBuiltIns.suspendFunction(typeArguments.size).owner
 
       var newFn = newFnClass
         .functions
         .first { it.name == ownerFn.name }
 
       symbolRemapper.visitSimpleFunction(newFn)
+      typeRemapper.scopeStack.push(newFn to null)
       newFn = super.visitSimpleFunction(newFn).also { fn ->
+        typeRemapper.scopeStack.pop()
         fn.parent = newFnClass
-        fn.overriddenSymbols = ownerFn.overriddenSymbols.map { it }
+        /*fn.overriddenSymbols = ownerFn.overriddenSymbols.map { it }
         fn.dispatchReceiverParameter = ownerFn.dispatchReceiverParameter
         fn.extensionReceiverParameter = ownerFn.extensionReceiverParameter
         newFn.valueParameters.forEach { p ->
           fn.addValueParameter(p.name.identifier, p.type)
-        }
+        }*/
         fn.patchDeclarationParents(fn.parent)
-        assert(fn.body == null) { "expected body to be null" }
       }
 
       val newCallee = symbolRemapper.getReferencedSimpleFunction(newFn.symbol)
@@ -256,16 +308,15 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
         }
       }
       val newCallee = symbolRemapper.getReferencedSimpleFunction(ownerFn.symbol)
+      typeRemapper.scopeStack.push(newCallee.owner to InjectNTypeRemapper.Kind.RETURN_TYPE)
       return shallowCopyCall(expression, newCallee).apply {
         copyRemappedTypeArgumentsFrom(expression)
         transformValueArguments(expression)
+        typeRemapper.scopeStack.pop()
       }
     }
 
-    if (
-      ownerFn != null &&
-      ownerFn.hasInjectNArguments()
-    ) {
+    if (ownerFn != null && ownerFn.hasInjectNArguments()) {
       val newFn = visitSimpleFunction(ownerFn).also {
         it.overriddenSymbols = ownerFn.overriddenSymbols.map { override ->
           if (override.isBound) {
@@ -305,7 +356,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
       expression.type.remapType(),
       newCallee,
       expression.typeArgumentsCount,
-      expression.valueArgumentsCount,
+      newCallee.owner.valueParameters.size,
       mapStatementOrigin(expression.origin),
       symbolRemapper.getReferencedClassOrNull(expression.superQualifierSymbol)
     ).apply {
@@ -360,14 +411,17 @@ class InjectNTypeRemapper(
 
   lateinit var deepCopy: IrElementTransformerVoid
 
-  private val scopeStack = mutableListOf<IrTypeParametersContainer>()
+  enum class Kind {
+    RETURN_TYPE,
+    UNKNOWN
+  }
+
+  val scopeStack = mutableListOf<Pair<IrDeclaration, Kind?>>()
 
   override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
-    scopeStack.add(irTypeParametersContainer)
   }
 
   override fun leaveScope() {
-    scopeStack.pop()
   }
 
   private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2)
@@ -384,12 +438,34 @@ class InjectNTypeRemapper(
   @OptIn(ObsoleteDescriptorBasedAPI::class)
   override fun remapType(type: IrType): IrType {
     if (type !is IrSimpleType) return type
-    if (!type.isFunction()) return underlyingRemapType(type)
+    if (!type.isFunction() && !type.isSuspendFunction()) return underlyingRemapType(type)
     if (!type.isInjectN()) return underlyingRemapType(type)
+
+    val owner = scopeStack.lastOrNull()
+
+    val extraArgsCount: Int = if (owner != null &&
+      owner.first.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB) {
+      when (val descriptor = owner.first.descriptor) {
+        is PropertyAccessorDescriptor -> {
+          val ownerFunction = owner.first as IrFunction
+          val property = ownerFunction.propertyIfAccessor
+          val info = property.descriptor.cast<PropertyDescriptor>().callableInfo()
+          when {
+            type === ownerFunction.returnType || owner.second == Kind.RETURN_TYPE -> info.type.injectNTypes
+            type === ownerFunction.dispatchReceiverParameter?.type -> info.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.injectNTypes
+            type === ownerFunction.extensionReceiverParameter?.type -> info.parameterTypes[EXTENSION_RECEIVER_INDEX]!!.injectNTypes
+            else -> throw AssertionError("Unexpected type $type ${ownerFunction.dump()}")
+          }.size
+        }
+        else -> throw AssertionError("Unexpected owner $descriptor")
+      }
+    } else {
+      type.toKotlinType().injectNTypes().size
+    }
 
     val oldIrArguments = type.arguments
 
-    val extraArgs = type.toKotlinType().injectNTypes().indices
+    val extraArgs = (0 until extraArgsCount)
       .map { makeTypeProjection(pluginContext.irBuiltIns.anyNType, Variance.INVARIANT) }
 
     val newIrArguments =
@@ -398,7 +474,10 @@ class InjectNTypeRemapper(
           oldIrArguments.last()
 
     val newArgSize = oldIrArguments.size - 1 + extraArgs.size
-    val functionCls = pluginContext.function(newArgSize)
+    val functionCls = if (type.isFunction())
+      pluginContext.irBuiltIns.function(newArgSize)
+    else
+      pluginContext.irBuiltIns.suspendFunction(newArgSize)
 
     return IrSimpleTypeImpl(
       null,

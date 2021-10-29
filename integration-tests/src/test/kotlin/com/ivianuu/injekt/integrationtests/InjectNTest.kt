@@ -59,6 +59,18 @@ class InjectNTest {
     """
   )
 
+  @Test fun testInjectNGenericProperty() = codegen(
+    """
+      @Inject1<List<T>> val <T> T.myProperty: List<T> get() = inject()
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        @Provide val stringList = listOf<String>()
+        string.myProperty
+      }
+    """
+  )
+
   // todo property getter / setter
 
   @Test fun testInjectNClass() = singleAndMultiCodegen(
@@ -77,6 +89,22 @@ class InjectNTest {
     """
   )
 
+  @Test fun testInjectNGenericClass() = singleAndMultiCodegen(
+    """
+      @Inject1<T> @Provide class MyClass<T> {
+        val string = inject<T>()
+        fun string() = inject<T>()
+        val string2 get() = inject<T>()
+      }
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        MyClass<String>()
+        inject<MyClass<String>>()
+      }
+    """
+  )
+
   @Test fun testInjectNSuperClass() = singleAndMultiCodegen(
     """
       @Inject1<String> abstract class MyAbstractClass {
@@ -88,6 +116,23 @@ class InjectNTest {
       fun invoke(@Inject string: String) {
         MyClass()
         inject<MyClass>()
+      }
+    """
+  )
+
+  @Test fun testInjectNGenericSuperClass() = singleAndMultiCodegen(
+    """
+      @Inject1<T> abstract class MyAbstractClass<T> {
+        
+      }
+    """,
+    """
+      @Inject1<T> @Provide class MyClass<T> : MyAbstractClass<T>()
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        MyClass<String>()
+        inject<String>()
       }
     """
   )
@@ -171,7 +216,7 @@ class InjectNTest {
 
   @Test fun testInjectNSuspendLambda() = singleAndMultiCodegen(
     """
-      val lambda: @Inject1<String> suspend () -> Unit = { inject<String>() }
+      val lambda: @Inject1<String> suspend () -> String = { inject<String>() }
     """,
     """
       suspend fun invoke(@Inject string: String) {

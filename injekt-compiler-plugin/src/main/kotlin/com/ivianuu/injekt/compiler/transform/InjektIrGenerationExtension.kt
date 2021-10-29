@@ -23,14 +23,22 @@ import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.TranslationPluginContext
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 
 var dumpAllFiles = false
@@ -46,16 +54,13 @@ class InjektIrGenerationExtension(
       injektFqNames,
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
-    @Provide val localClassCollector = LocalClassCollector()
+    @Provide var localClassCollector = LocalClassCollector()
     moduleFragment.transform(localClassCollector, null)
 
     @Provide val injectNTransformer = InjectNTransformer()
     moduleFragment.transform(injectNTransformer, null)
 
-    moduleFragment.transform(InjectCallTransformer(), null)
-
-    val symbolRemapper = InjectSymbolRemapper()
-
+    @Provide val symbolRemapper = InjectSymbolRemapper()
     moduleFragment.acceptVoid(symbolRemapper)
 
     val typeRemapper = InjectNTypeRemapper(symbolRemapper)
@@ -67,9 +72,31 @@ class InjektIrGenerationExtension(
       typeRemapper
     ).also { typeRemapper.deepCopy = it }
     moduleFragment.transformChildren(transformer, null)
+    moduleFragment.patchDeclarationParents()
+
+    localClassCollector = LocalClassCollector()
+    moduleFragment.transform(localClassCollector, null)
+
+    moduleFragment.transform(InjectCallTransformer(), null)
 
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)
+  }
+
+  @OptIn(ObsoleteDescriptorBasedAPI::class)
+  override fun resolveSymbol(symbol: IrSymbol, context: TranslationPluginContext): IrDeclaration? {
+    val descriptor = symbol.descriptor
+    return if (descriptor is TypeParameterDescriptor)
+      IrTypeParameterImpl(
+        UNDEFINED_OFFSET,
+        UNDEFINED_OFFSET,
+        IrDeclarationOrigin.DEFINED,
+        symbol.cast(),
+        descriptor.name,
+        descriptor.index,
+        descriptor.isReified,
+        descriptor.variance
+      ) else null
   }
 }
 

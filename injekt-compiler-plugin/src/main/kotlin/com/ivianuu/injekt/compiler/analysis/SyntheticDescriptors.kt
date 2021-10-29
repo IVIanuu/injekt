@@ -112,7 +112,7 @@ class InjectNParameterDescriptor(
       )
     )
   ),
-  "\$inject$index".asNameId()
+  "_inject$index".asNameId()
 ), ParameterDescriptor {
   override fun getOriginal(): ParameterDescriptor = this
 

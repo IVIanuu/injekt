@@ -45,7 +45,6 @@ import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -149,7 +148,8 @@ import kotlin.collections.set
   @Inject private val localClassCollector: LocalClassCollector,
   @Inject private val injectNTransformer: InjectNTransformer,
   @Inject private val context: InjektContext,
-  @Inject private val pluginContext: IrPluginContext
+  @Inject private val pluginContext: IrPluginContext,
+  @Inject private val symbolRemapper: InjectSymbolRemapper
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
@@ -1022,9 +1022,9 @@ import kotlin.collections.set
     injectable: CallableInjectable,
     descriptor: ClassConstructorDescriptor
   ): IrExpression = if (descriptor.constructedClass.kind == ClassKind.OBJECT) {
-    val clazz = pluginContext.referenceClass(descriptor.constructedClass.fqNameSafe)!!
+    val clazz = descriptor.constructedClass.irClass()
     DeclarationIrBuilder(pluginContext, symbol)
-      .irGetObject(clazz)
+      .irGetObject(clazz.symbol)
   } else {
     val constructor = descriptor.irConstructor()
     DeclarationIrBuilder(pluginContext, symbol)
@@ -1123,7 +1123,7 @@ import kotlin.collections.set
           else
             containingDeclaration.irProperty()
               .getter!!.valueParameters[descriptor.injektIndex()].symbol
-          )
+        )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
 
@@ -1174,22 +1174,25 @@ import kotlin.collections.set
 
   private fun ClassDescriptor.irClass(): IrClass {
     if (visibility == DescriptorVisibilities.LOCAL) {
-      return localClasses
+      return localClassCollector.localClasses
         .single { it.descriptor.fqNameSafe == fqNameSafe }
     }
-    return pluginContext.referenceClass(fqNameSafe)!!.owner
+    return pluginContext.referenceClass(fqNameSafe)!!
+      .let { symbolRemapper.getDeclaredClass(it) }
+      .owner
   }
 
 
   private fun ClassConstructorDescriptor.irConstructor(): IrConstructor {
     if (constructedClass.visibility == DescriptorVisibilities.LOCAL) {
-      return localClasses
+      return localClassCollector.localClasses
         .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
         .constructors
         .single { it.descriptor.uniqueKey() == uniqueKey() }
     }
     return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
+      .let { symbolRemapper.getDeclaredConstructor(it) }
       .owner
   }
 
@@ -1202,26 +1205,28 @@ import kotlin.collections.set
 
     if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
         ?.visibility == DescriptorVisibilities.LOCAL) {
-      return localClasses.flatMap { it.declarations }
+      return localClassCollector.localClasses.flatMap { it.declarations }
         .single { it.descriptor.uniqueKey() == uniqueKey() }
-        .cast<IrFunction>()
+        .cast()
     }
 
     return pluginContext.referenceFunctions(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
+      .let { symbolRemapper.getDeclaredFunction(it) }
       .owner
   }
 
   private fun PropertyDescriptor.irProperty(): IrProperty {
     if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
         ?.visibility == DescriptorVisibilities.LOCAL) {
-      return localClasses.flatMap { it.declarations }
+      return localClassCollector.localClasses.flatMap { it.declarations }
         .single { it.descriptor.uniqueKey() == uniqueKey() }
         .cast()
     }
 
     return pluginContext.referenceProperties(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
+      .let { symbolRemapper.getDeclaredProperty(it) }
       .owner
   }
 
@@ -1229,7 +1234,6 @@ import kotlin.collections.set
 
   private val localVariables = mutableListOf<IrVariable>()
   private val localFunctions = mutableListOf<IrFunction>()
-  @Provide private val localClasses = mutableListOf<IrClass>()
 
   override fun visitClassNew(declaration: IrClass): IrStatement {
     receiverAccessors.push(
@@ -1238,7 +1242,6 @@ import kotlin.collections.set
           .irGet(declaration.thisReceiver!!)
       }
     )
-    if (declaration.isLocal) localClasses += declaration
     val result = super.visitClassNew(declaration)
     receiverAccessors.pop()
     return result
