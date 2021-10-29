@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
@@ -30,6 +31,19 @@ class InjectNTest {
     """
       fun invoke(@Inject string: String) {
         myFunc()
+      }
+    """
+  )
+
+  @Test fun testInjectNGenericFunction() = codegen(
+    """
+      @Inject1<T> fun <T> myFunc() {
+        inject<T>()
+      }
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        myFunc<String>()
       }
     """
   )
@@ -143,19 +157,19 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNLambda() = singleAndMultiCodegen(
+  @Test fun testInjectNLambda() = multiCodegen(
     """
       val lambda: @Inject1<String> () -> String = { inject<String>() }
     """,
     """
       fun invoke(@Inject string: String) {
-        //lambda()
+        lambda()
         lambda.invoke()
       }
     """
   )
 
-  @Test fun testInjectNSuspendLambda() = codegen(
+  @Test fun testInjectNSuspendLambda() = singleAndMultiCodegen(
     """
       val lambda: @Inject1<String> suspend () -> Unit = { inject<String>() }
     """,
@@ -168,7 +182,7 @@ class InjectNTest {
   )
 
 
-  @Test fun testInjectNComposableLambda() = codegen(
+  @Test fun testInjectNComposableLambda() = singleAndMultiCodegen(
     """
       val lambda: @Inject1<String> @Composable () -> String = { inject<String>() }
     """,

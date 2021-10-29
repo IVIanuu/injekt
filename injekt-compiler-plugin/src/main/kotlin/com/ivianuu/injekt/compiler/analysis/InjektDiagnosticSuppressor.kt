@@ -44,6 +44,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     val injektFqNames = bindingContext[InjektWritableSlices.INJEKT_FQ_NAMES, Unit]
       ?: return false
 
+    if (diagnostic.factory == Errors.UNRESOLVED_REFERENCE)
+      return bindingContext[InjektWritableSlices.FIXED_TYPE, diagnostic.psiElement.text] != null
+
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
     )

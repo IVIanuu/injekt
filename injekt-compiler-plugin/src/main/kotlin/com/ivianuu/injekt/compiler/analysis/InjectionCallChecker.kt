@@ -41,12 +41,13 @@ import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
-import org.jetbrains.kotlin.resolve.calls.tower.NewVariableAsFunctionResolvedCallImpl
+import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectionCallChecker(@Inject private val context: InjektContext) : CallChecker {
@@ -96,10 +97,18 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
         } ?: emptyMap())
 
     val injectLambdaType = resolvedCall
-      .safeAs<NewVariableAsFunctionResolvedCallImpl>()
+      .safeAs<VariableAsFunctionResolvedCall>()
+      ?.variableCall
       ?.resultingDescriptor
       ?.callableInfo()
       ?.type
+      ?: resolvedCall.dispatchReceiver
+        ?.safeAs<ExpressionReceiver>()
+        ?.expression
+        ?.getResolvedCall(context.trace.bindingContext)
+        ?.resultingDescriptor
+        ?.callableInfo(injektContext)
+        ?.type
       ?: resolvedCall.dispatchReceiver
         ?.type
         ?.takeIf { it.hasAnnotation(injektFqNames().inject2) }

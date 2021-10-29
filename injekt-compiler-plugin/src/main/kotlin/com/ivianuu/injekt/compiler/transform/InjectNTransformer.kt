@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -49,7 +48,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
-import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) class InjectNTransformer(
@@ -113,16 +111,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
       val type = result.dispatchReceiver!!.type as IrSimpleType
       val oldIrArguments = type.arguments
 
-      val extraArgs = type.toKotlinType().injectNTypes().indices
-        .map { makeTypeProjection(pluginContext.irBuiltIns.anyNType, Variance.INVARIANT) }
+      val extraArgs = type.toKotlinType().injectNTypes().size
 
-      val newIrArguments =
-        oldIrArguments.subList(0, oldIrArguments.size - 1) +
-            extraArgs +
-            oldIrArguments.last()
-
-      val newArgSize = oldIrArguments.size - 1 + extraArgs.size
-      val functionCls = pluginContext.function(newArgSize)
+      val functionCls = pluginContext.function(oldIrArguments.size - 1 + extraArgs)
       val newInvoke = functionCls.owner.functions
         .first { it.name.asString() == "invoke" }
       return IrCallImpl(

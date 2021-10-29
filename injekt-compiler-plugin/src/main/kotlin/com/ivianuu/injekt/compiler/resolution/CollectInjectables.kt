@@ -21,12 +21,14 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
@@ -36,6 +38,7 @@ import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -210,6 +213,21 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
       isInject = constructedClass.isProvide()
 
     isInject
+  }
+}
+
+fun CallableDescriptor.injectNParameters(@Inject context: InjektContext): List<InjectNParameterDescriptor> {
+  return context.trace.getOrPut(InjektWritableSlices.INJECT_N_PARAMETERS, this) {
+    ((safeAs<ConstructorDescriptor>()?.constructedClass
+      ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) +
+        injectNTypes().map { it.toTypeRef() })
+      .mapIndexed { index, parameterType ->
+        InjectNParameterDescriptor(
+          this,
+          valueParameters.size + index,
+          parameterType
+        )
+      } ?: emptyList()
   }
 }
 

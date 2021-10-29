@@ -33,7 +33,7 @@ class ScopedTest {
         val foo: Foo
       } 
 
-      @Provide fun foo(): @Scoped<ScopeComponent> Foo = Foo() 
+      @Provide @Scoped<ScopeComponent> fun foo(): Foo = Foo() 
     """,
     """
       val component = inject<ScopeComponent>()
@@ -49,7 +49,7 @@ class ScopedTest {
         val foo: Foo
       } 
 
-      @Provide val foo: @Scoped<ScopeComponent> Foo get() = Foo() 
+      @Provide @Scoped<ScopeComponent> val foo: Foo get() = Foo() 
     """,
     """
       val component = inject<ScopeComponent>()
@@ -75,7 +75,7 @@ class ScopedTest {
     invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
   }
 
-  @Test fun testScopedConstructor() = singleAndMultiCodegen(
+  @Test fun testScopedPrimaryConstructor() = singleAndMultiCodegen(
     """
       @Component interface ScopeComponent {
         val dep: Dep
@@ -91,11 +91,29 @@ class ScopedTest {
     invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
   }
 
+  @Test fun testScopedSecondaryConstructor() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent {
+        val dep: Dep
+      } 
+
+      class Dep {
+        @Provide @Scoped<ScopeComponent> constructor()
+      }
+    """,
+    """
+      val component = inject<ScopeComponent>()
+      fun invoke() = component.dep
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
   @Test fun testScopedGenericConstructor() = singleAndMultiCodegen(
     """
       @Component interface ScopeComponent
 
-      interface GenericEntryPoint<C : @Component Any> : @EntryPoint<C> AnyInterface {
+      @EntryPoint<C> interface GenericEntryPoint<C : @Component Any> {
         val dep: Dep<C>
       }
 
@@ -131,10 +149,10 @@ class ScopedTest {
   @Test fun testCannotResolveScopedInjectableWithoutEnclosingComponent() = singleAndMultiCodegen(
     """
       interface ScopeComponent
-      @Provide val foo: @Scoped<ScopeComponent> Foo = Foo() 
+      @Provide @Scoped<ScopeComponent> val foo: Foo = Foo() 
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke(): Foo = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("no enclosing component matches com.ivianuu.injekt.integrationtests.ScopeComponent")
@@ -166,7 +184,7 @@ class ScopedTest {
       }
     """,
     """
-      fun invoke(@Inject disposable: @Scoped<MyComponent> Disposable) = inject<MyComponent>()
+      fun invoke(@Inject @Scoped<MyComponent> disposable: Disposable) = inject<MyComponent>()
         .also { it.disposable }
     """
   ) {

@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
+import com.ivianuu.injekt.compiler.resolution.injectNParameters
 import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.isSuspendFunctionType
 import com.ivianuu.injekt.compiler.resolution.substitute
@@ -41,6 +42,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
@@ -57,6 +59,7 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
@@ -64,7 +67,10 @@ import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
-import org.jetbrains.kotlin.types.typeUtil.supertypes
+import org.jetbrains.kotlin.types.ErrorType
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeProjection
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -124,6 +130,13 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
       }
     }
 
+    findPsi()?.safeAs<KtDeclaration>()
+      ?.let { declaration ->
+        annotations.forEach {
+          fixTypes(it.type, declaration)
+        }
+      }
+
     val type = run {
       val tags = if (this is ConstructorDescriptor)
         constructedClass.classifierInfo().tags +
@@ -133,16 +146,7 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
       tags.wrap(returnType?.toTypeRef() ?: context.nullableAnyType)
     }
 
-    val injectNParameters = ((safeAs<ConstructorDescriptor>()?.constructedClass
-      ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) +
-        injectNTypes().map { it.toTypeRef() })
-      .mapIndexed { index, parameterType ->
-        InjectNParameterDescriptor(
-          this,
-          valueParameters.size + index,
-          parameterType
-        )
-      }
+    val injectNParameters = injectNParameters()
 
     val allParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters) +
         injectNParameters
@@ -163,8 +167,7 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
       }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
-    val scopeComponentType = (returnType?.annotations?.findAnnotation(injektFqNames().scoped)
-      ?: safeAs<ConstructorDescriptor>()?.annotations?.findAnnotation(injektFqNames().scoped) ?:
+    val scopeComponentType = (annotations.findAnnotation(injektFqNames().scoped) ?:
       safeAs<ConstructorDescriptor>()?.constructedClass?.annotations?.findAnnotation(injektFqNames().scoped))
       ?.type?.arguments?.single()?.type?.toTypeRef()
 
@@ -306,6 +309,13 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
       }
     }
 
+    findPsi()?.safeAs<KtDeclaration>()
+      ?.let { declaration ->
+        annotations.forEach {
+          fixTypes(it.type, declaration)
+        }
+      }
+
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
       ?.toTypeRef()
 
@@ -324,15 +334,11 @@ fun ClassifierDescriptor.classifierInfo(@Inject context: InjektContext): Classif
     val tags = getAnnotatedAnnotations(injektFqNames().tag)
       .map { it.type.toTypeRef() }
 
-    val scopeComponentType = (annotations.findAnnotation(injektFqNames().scoped)
-      ?: defaultType.supertypes().firstNotNullOfOrNull {
-        it.annotations.findAnnotation(injektFqNames().scoped)
-      })?.type?.arguments?.single()?.type?.toTypeRef()
+    val scopeComponentType = annotations.findAnnotation(injektFqNames().scoped)
+      ?.type?.arguments?.single()?.type?.toTypeRef()
 
-    val entryPointComponentType = (annotations.findAnnotation(injektFqNames().entryPoint)
-      ?: defaultType.supertypes().firstNotNullOfOrNull {
-        it.annotations.findAnnotation(injektFqNames().entryPoint)
-      })?.type?.arguments?.single()?.type?.toTypeRef()
+    val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
+      ?.type?.arguments?.single()?.type?.toTypeRef()
 
     val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
     else safeAs<ClassDescriptor>()
@@ -537,3 +543,47 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     DescriptorVisibilities.PUBLIC ||
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
+
+fun fixTypes(
+  type: KotlinType,
+  declaration: KtDeclaration,
+  @Inject context: InjektContext
+) {
+  val descriptor = declaration.descriptor<DeclarationDescriptor>()
+
+  val typeParameters = when (descriptor) {
+    is ClassDescriptor -> descriptor.declaredTypeParameters
+    is CallableDescriptor -> descriptor.typeParameters
+    else -> emptyList()
+  }
+
+  if (typeParameters.isNotEmpty()) {
+    fun fixUnresolved(type: KotlinType) {
+      val arguments = type.arguments as? MutableList<TypeProjection> ?: return
+      val replacements = mutableMapOf<Int, TypeProjection>()
+      for ((i, argument) in type.arguments.withIndex()) {
+        val argumentType = argument.type
+        if (argumentType is ErrorType) {
+          val typeParameter = typeParameters.singleOrNull {
+            it.name.asString() == argumentType.presentableName
+          }
+          if (typeParameter != null) {
+            context.trace!!.record(
+              InjektWritableSlices.FIXED_TYPE,
+              argumentType.presentableName,
+              Unit
+            )
+            replacements[i] = typeParameter.defaultType.asTypeProjection()
+          }
+        } else {
+          fixUnresolved(argumentType)
+        }
+      }
+
+      replacements.forEach {
+        arguments[it.key] = it.value
+      }
+    }
+    fixUnresolved(type)
+  }
+}

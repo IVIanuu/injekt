@@ -239,7 +239,7 @@ class ComponentTest {
     """
       @Component interface MyComponent
 
-      interface MyEntryPoint<C : @Component Any> : @EntryPoint<C> AnyInterface {
+      @EntryPoint<C> interface MyEntryPoint<C : @Component Any> {
         val foo: Foo
       }
 
@@ -256,7 +256,7 @@ class ComponentTest {
     """
       @Component interface MyComponent
 
-      interface CoroutineScopeComponent<C : @Component Any> : @EntryPoint<C> AnyInterface {
+      @EntryPoint<C> interface CoroutineScopeComponent<C : @Component Any> {
         val coroutineScope: com.ivianuu.injekt.coroutines.ComponentScope<C>
       }
     """,

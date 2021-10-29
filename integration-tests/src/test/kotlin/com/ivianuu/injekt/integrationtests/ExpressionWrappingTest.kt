@@ -110,7 +110,7 @@ class ExpressionWrappingTest {
 
   @Test fun testFunctionWrapScopedInjectableWithoutDependencies() = codegen(
     """
-      @Provide val foo: @Scoped<MyComponent> Foo = Foo()
+      @Provide @Scoped<MyComponent> val foo: Foo = Foo()
 
       @Component interface MyComponent {
         val foo: Foo
