@@ -93,10 +93,11 @@ fun TypeRef.collectInjectables(
     )
   }
 
-  return (classifier.descriptor ?: error("Wtf $classifier"))
+  return ((classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
     .memberScope
-    .collectInjectables(classBodyView)
+    .collectInjectables(classBodyView) + if (classBodyView) classifier.injectNParameters
+    .map { it.toCallableRef() } else emptyList())
     .map {
       val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
         CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
@@ -215,26 +216,15 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
 fun ClassDescriptor.injectableConstructors(
   @Inject context: InjektContext
 ): List<CallableRef> = context.trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
-  (if (hasAnnotation(injektFqNames().component))
-    listOf(ComponentConstructorDescriptor(this))
-  else if (classifierInfo().entryPointComponentType != null)
-    listOf(EntryPointConstructorDescriptor(this))
-  else
-    constructors
+  (when {
+    hasAnnotation(injektFqNames().component) -> listOf(ComponentConstructorDescriptor(this))
+    classifierInfo().entryPointComponentType != null -> listOf(EntryPointConstructorDescriptor(this))
+    else -> constructors
       .filter { constructor ->
         constructor.hasAnnotation(injektFqNames().provide) ||
             (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
-      })
-    .map { constructor ->
-      val callable = constructor.toCallableRef()
-      val taggedType = callable.type.classifier.tags.wrap(callable.type)
-      callable.copy(
-        isProvide = true,
-        type = taggedType,
-        originalType = taggedType,
-        scopeComponentType = callable.scopeComponentType ?: callable.type.classifier.scopeComponentType
-      )
-    }
+      }
+  }).map { it.toCallableRef() }
 }
 
 fun ClassDescriptor.injectableReceiver(

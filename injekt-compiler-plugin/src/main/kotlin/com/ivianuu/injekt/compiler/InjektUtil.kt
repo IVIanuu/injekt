@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -189,6 +190,7 @@ fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
       "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
     is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
     is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
+    is InjectNParameterDescriptor -> "inject_n_parameter:$fqNameSafe"
     is VariableDescriptor -> "variable:${fqNameSafe}"
     else -> error("Unexpected declaration $this")
   }
@@ -224,6 +226,7 @@ fun ParameterDescriptor.injektName(): Name = if (this is ValueParameterDescripto
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
+    this is InjectNParameterDescriptor -> name
     else -> throw AssertionError()
   }
 }
@@ -239,6 +242,7 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
+    this is InjectNParameterDescriptor -> index
     else -> throw AssertionError()
   }
 }

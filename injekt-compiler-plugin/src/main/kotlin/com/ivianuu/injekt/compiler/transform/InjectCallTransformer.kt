@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import androidx.compose.compiler.plugins.kotlin.lower.index
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
@@ -145,7 +145,8 @@ import kotlin.collections.component2
 import kotlin.collections.set
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) class InjectCallTransformer(
-  private val injectNTransformer: InjectNTransformer,
+  @Inject private val localClassCollector: LocalClassCollector,
+  @Inject private val injectNTransformer: InjectNTransformer,
   @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
@@ -1006,6 +1007,7 @@ import kotlin.collections.set
       objectExpression(injectable.callable.type.unwrapTags())
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
+    is InjectNParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is VariableDescriptor -> variableExpression(injectable.callable.callable, injectable)
     else -> error("Unsupported callable $injectable")
   }
@@ -1077,7 +1079,16 @@ import kotlin.collections.set
     injectable: CallableInjectable
   ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
-      is ClassDescriptor -> receiverExpression(descriptor)
+      is ClassDescriptor -> if (descriptor is InjectNParameterDescriptor) {
+        val irClass = injectNTransformer.transformIfNeeded(containingDeclaration.irClass())
+        DeclarationIrBuilder(pluginContext, symbol)
+          .irGetField(
+            receiverExpression(containingDeclaration.thisAsReceiverParameter),
+            irClass.fields.single { it.name == descriptor.name }
+          )
+      } else {
+        receiverExpression(descriptor)
+      }
       is ClassConstructorDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
@@ -1094,7 +1105,7 @@ import kotlin.collections.set
               function.allParameters
                 .filter { it != function.dispatchReceiverParameter }
             }
-            .single { it.index == (descriptor as? ValueParameterDescriptor)?.index ?: -1 })
+            .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
             .symbol
         )
       is PropertyDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
@@ -1106,7 +1117,7 @@ import kotlin.collections.set
               .getter!!.extensionReceiverParameter!!.symbol
           else
             containingDeclaration.irProperty()
-              .getter!!.valueParameters[descriptor.index()].symbol
+              .getter!!.valueParameters[descriptor.injektIndex()].symbol
           )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
@@ -1155,6 +1166,15 @@ import kotlin.collections.set
         )
     }
   }
+
+  private fun ClassDescriptor.irClass(): IrClass {
+    if (visibility == DescriptorVisibilities.LOCAL) {
+      return localClasses
+        .single { it.descriptor.fqNameSafe == fqNameSafe }
+    }
+    return pluginContext.referenceClass(fqNameSafe)!!.owner
+  }
+
 
   private fun ClassConstructorDescriptor.irConstructor(): IrConstructor {
     if (constructedClass.visibility == DescriptorVisibilities.LOCAL) {

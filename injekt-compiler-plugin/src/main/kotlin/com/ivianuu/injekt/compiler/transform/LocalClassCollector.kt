@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.samples.android.domain
+package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.samples.android.data.DbContext
-import com.ivianuu.injekt.samples.android.data.counterDb
-import kotlinx.coroutines.flow.Flow
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
-@DbContext val counter: Flow<Int>
-  get() = counterDb.counterState
+class LocalClassCollector : IrElementTransformerVoid() {
+  val localClasses = mutableListOf<IrClass>()
 
-@DbContext suspend fun incCounter() {
-  counterDb.updateCounter { inc() }
-}
-
-@DbContext suspend fun decCounter() {
-  counterDb.updateCounter { dec() }
+  override fun visitClass(declaration: IrClass): IrStatement {
+    if (declaration.visibility == DescriptorVisibilities.LOCAL)
+      localClasses += declaration
+    return super.visitClass(declaration)
+  }
 }

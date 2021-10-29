@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
@@ -45,6 +46,8 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
+import org.jetbrains.kotlin.resolve.calls.tower.NewVariableAsFunctionResolvedCallImpl
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectionCallChecker(@Inject private val context: InjektContext) : CallChecker {
   override fun check(
@@ -96,12 +99,21 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
         .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.index }
+      .mapKeys { it.key.injektIndex() }
+
+    val lambdaInjectNTypes = resolvedCall
+      .safeAs<NewVariableAsFunctionResolvedCallImpl>()
+      ?.resultingDescriptor
+      ?.callableInfo()
+      ?.type
+      ?.let {
+
+      }
 
     val info = resultingDescriptor.callableInfo()
     val requests = (callee.callable.valueParameters + info.injectNParameters)
       .filter {
-        val argument = valueArgumentsByIndex[it.index]
+        val argument = valueArgumentsByIndex[it.injektIndex()]
         (argument == null || argument is DefaultValueArgument) && it.isInject()
       }
       .map { it.toInjectableRequest(callee) }

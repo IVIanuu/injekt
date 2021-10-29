@@ -18,27 +18,50 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) class InjectNTransformer(
   @Inject private val context: InjektContext,
+  @Inject private val localClassCollector: LocalClassCollector,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
-  private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+  private val transformedClasses = mutableSetOf<IrClass>()
+  private val transformedFunctions = mutableSetOf<IrFunction>()
+
+  fun transformIfNeeded(clazz: IrClass): IrClass {
+    val info = clazz.descriptor.classifierInfo()
+    if (info.injectNParameters.isEmpty()) return clazz
+    if (clazz in transformedClasses) return clazz
+    transformedClasses += clazz
+
+    info.injectNParameters.forEach { parameter ->
+      clazz.addField(
+        fieldName = parameter.name,
+        fieldType = parameter.typeRef.toIrType().typeOrNull!!
+      )
+    }
+
+    return clazz
+  }
 
   fun transformIfNeeded(function: IrFunction): IrFunction {
     val info = if (function.descriptor is PropertyAccessorDescriptor)
@@ -46,18 +69,21 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     else function.descriptor.callableInfo()
     if (info.injectNParameters.isEmpty()) return function
 
-    if (function in transformedFunctions.values) return function
+    if (function in transformedFunctions) return function
+    transformedFunctions += function
 
-    return transformedFunctions.getOrPut(function) {
-      info.injectNParameters.forEach { parameter ->
-        function.addValueParameter(
-          parameter.name,
-          parameter.typeRef.toIrType(localClasses = emptyList()).typeOrNull!!
-        )
-      }
-      function
+    info.injectNParameters.forEach { parameter ->
+      function.addValueParameter(
+        parameter.name,
+        parameter.typeRef.toIrType().typeOrNull!!
+      )
     }
+
+    return function
   }
+
+  override fun visitClassNew(declaration: IrClass): IrStatement =
+    transformIfNeeded(super.visitClassNew(declaration) as IrClass)
 
   override fun visitFunctionNew(declaration: IrFunction): IrStatement =
     transformIfNeeded(super.visitFunctionNew(declaration) as IrFunction)
@@ -77,6 +103,18 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
         callee.valueParameters.size,
         expression.origin,
         expression.superQualifierSymbol
+      ).apply {
+        copyTypeAndValueArgumentsFrom(expression)
+      }
+      is IrConstructorCall -> IrConstructorCallImpl(
+        expression.startOffset,
+        expression.endOffset,
+        expression.type,
+        callee.symbol.cast(),
+        expression.typeArgumentsCount,
+        expression.constructorTypeArgumentsCount,
+        callee.valueParameters.size,
+        expression.origin
       ).apply {
         copyTypeAndValueArgumentsFrom(expression)
       }

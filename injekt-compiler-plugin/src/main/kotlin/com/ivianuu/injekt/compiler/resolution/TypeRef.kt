@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
@@ -60,7 +61,8 @@ class ClassifierRef(
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
-  val variance: TypeVariance = TypeVariance.INV
+  val variance: TypeVariance = TypeVariance.INV,
+  val injectNParameters: List<InjectNParameterDescriptor> = emptyList()
 ) {
   val superTypes by lazySuperTypes
 
@@ -87,11 +89,12 @@ class ClassifierRef(
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
-    variance: TypeVariance = this.variance
+    variance: TypeVariance = this.variance,
+    injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTypeAlias, isTag, isComponent, scopeComponentType, entryPointComponentType, descriptor,
-    tags, isSpread, primaryConstructorPropertyParameters, variance
+    tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -150,7 +153,8 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
       isSpread = info.isSpread,
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
-      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
+      injectNParameters = info.injectNParameters
     )
   }
 

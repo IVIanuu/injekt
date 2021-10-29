@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -351,10 +352,10 @@ class TypeKeyInjectable(
 
 fun CallableRef.getInjectableRequests(
   @Inject context: InjektContext
-): List<InjectableRequest> = callable.allParameters
+): List<InjectableRequest> = (callable.allParameters
   .filter {
     callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-  }
+  } + callable.callableInfo().injectNParameters)
   .filter {
     it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||

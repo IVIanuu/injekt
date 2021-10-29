@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
@@ -60,7 +59,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
   @Inject pluginContext: IrPluginContext,
-  @Inject localClasses: List<IrClass>,
+  @Inject localClassCollector: LocalClassCollector,
   @Inject context: InjektContext
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
@@ -114,7 +113,9 @@ fun TypeRef.toIrType(
     else -> {
       val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
-      val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
+      val irClassifier = localClassCollector.localClasses.singleOrNull {
+        it.descriptor.fqNameSafe == fqName
+      }
         ?.symbol
         ?: pluginContext.referenceClass(fqName)
         ?: pluginContext.referenceFunctions(fqName.parent())
@@ -151,7 +152,7 @@ fun TypeRef.toIrType(
 
 private fun TypeRef.toIrAbbreviation(
   @Inject pluginContext: IrPluginContext,
-  @Inject localClasses: List<IrClass>,
+  @Inject localClassCollector: LocalClassCollector,
   @Inject context: InjektContext
 ): IrTypeAbbreviation {
   val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
