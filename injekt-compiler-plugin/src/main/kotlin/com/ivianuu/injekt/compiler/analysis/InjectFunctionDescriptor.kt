@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt_shaded.Inject
@@ -78,10 +80,11 @@ abstract class AbstractInjectFunctionDescriptor(
 fun FunctionDescriptor.toInjectFunctionDescriptor(
   @Inject context: InjektContext
 ): InjectFunctionDescriptor? {
+  if (this is InjectFunctionDescriptor) return this
   if (this is JavaMethodDescriptor) return null
-  if (allParameters.none { it.isInject() }) return null
+  if (allParameters.none { it.isInject() } &&
+    !hasAnnotation(injektFqNames().inject2)) return null
   return when (this) {
-    is InjectFunctionDescriptor -> this
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this)
     is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this)
     else -> InjectFunctionDescriptorImpl(this)

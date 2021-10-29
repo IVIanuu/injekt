@@ -16,14 +16,24 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt_shaded.Inject
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.types.KotlinType
 
 class ComponentConstructorDescriptor(
   clazz: ClassDescriptor
@@ -74,3 +84,33 @@ class EntryPointConstructorDescriptor(
     p5: SourceElement
   ): FunctionDescriptorImpl = TODO()
 }
+
+class InjectNParameterDescriptor(
+  callable: CallableDescriptor,
+  index: Int,
+  type: KotlinType,
+  val typeRef: TypeRef,
+  @Inject context: InjektContext
+) : ValueParameterDescriptorImpl(
+  callable,
+  null,
+  index,
+  Annotations.create(
+    listOf(
+      AnnotationDescriptorImpl(
+        context.module.findClassAcrossModuleDependencies(
+          ClassId.topLevel(injektFqNames().inject)
+        )!!.defaultType,
+        emptyMap(),
+        SourceElement.NO_SOURCE
+      )
+    )
+  ),
+  Name.special("<\$inject_$index>"),
+  type,
+  false,
+  false,
+  false,
+  null,
+  SourceElement.NO_SOURCE
+)

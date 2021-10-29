@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
@@ -75,7 +76,8 @@ data class CallableInfo(
   val type: TypeRef,
   val parameterTypes: Map<Int, TypeRef> = emptyMap(),
   val injectParameters: Set<Int> = emptySet(),
-  val scopeComponentType: TypeRef? = null
+  val scopeComponentType: TypeRef? = null,
+  val injectNParameters: List<InjectNParameterDescriptor>
 )
 
 fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInfo =
@@ -86,7 +88,7 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
         .findAnnotation(injektFqNames().callableInfo)
         ?.readChunkedValue()
         ?.decode<PersistedCallableInfo>()
-        ?.toCallableInfo()
+        ?.toCallableInfo(this)
 
       if (info != null) {
         val finalInfo = if (this !is CallableMemberDescriptor ||
@@ -127,14 +129,29 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
         getAnnotatedAnnotations(injektFqNames().tag)
           .map { it.type.toTypeRef() }
       else emptyList()
-      tags.wrap(returnType!!.toTypeRef())
+      tags.wrap(returnType?.toTypeRef() ?: context.nullableAnyType)
     }
 
-    val parameterTypes = (if (this is ConstructorDescriptor) valueParameters else allParameters)
-      .map { it.injektIndex() to it.type.toTypeRef() }
+    val injectNParameters = injectNTypes()
+      .mapIndexed { index, parameterType ->
+        InjectNParameterDescriptor(
+          this,
+          valueParameters.size + index,
+          context.module.builtIns.nullableAnyType,
+          parameterType.toTypeRef()
+        )
+      }
+
+    val allParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters) +
+        injectNParameters
+
+    val parameterTypes = allParameters
+      .map {
+        it.injektIndex() to if (it is InjectNParameterDescriptor) it.typeRef else it.type.toTypeRef()
+      }
       .toMap()
 
-    val injectParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters)
+    val injectParameters = allParameters
       .filter {
         it.hasAnnotation(injektFqNames().inject) ||
             ((this is FunctionInvokeDescriptor ||
@@ -144,7 +161,7 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
       }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
-    val scopeComponentType = (returnType!!.annotations.findAnnotation(injektFqNames().scoped)
+    val scopeComponentType = (returnType?.annotations?.findAnnotation(injektFqNames().scoped)
       ?: safeAs<ConstructorDescriptor>()?.annotations?.findAnnotation(injektFqNames().scoped))
       ?.type?.arguments?.single()?.type?.toTypeRef()
 
@@ -152,7 +169,8 @@ fun CallableDescriptor.callableInfo(@Inject context: InjektContext): CallableInf
       type = type,
       parameterTypes = parameterTypes,
       injectParameters = injectParameters,
-      scopeComponentType = scopeComponentType
+      scopeComponentType = scopeComponentType,
+      injectNParameters = injectNParameters
     )
 
     // important to cache the info before persisting it
@@ -211,7 +229,8 @@ private fun CallableDescriptor.persistInfoIfNeeded(
   @SerialName("0") val type: PersistedTypeRef,
   @SerialName("1") val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
   @SerialName("2") val injectParameters: Set<Int> = emptySet(),
-  @SerialName("3") val scopeComponentType: PersistedTypeRef? = null
+  @SerialName("3") val scopeComponentType: PersistedTypeRef? = null,
+  @SerialName("4") val injectNParameters: List<PersistedTypeRef>
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject context: InjektContext) = PersistedCallableInfo(
@@ -219,15 +238,27 @@ fun CallableInfo.toPersistedCallableInfo(@Inject context: InjektContext) = Persi
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
   injectParameters = injectParameters,
-  scopeComponentType = scopeComponentType?.toPersistedTypeRef()
+  scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
+  injectNParameters = injectNParameters.map { it.typeRef.toPersistedTypeRef() }
 )
 
-fun PersistedCallableInfo.toCallableInfo(@Inject context: InjektContext) = CallableInfo(
+fun PersistedCallableInfo.toCallableInfo(
+  callable: CallableDescriptor,
+  @Inject context: InjektContext
+) = CallableInfo(
   type = type.toTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef() },
   injectParameters = injectParameters,
-  scopeComponentType = scopeComponentType?.toTypeRef()
+  scopeComponentType = scopeComponentType?.toTypeRef(),
+  injectNParameters = injectNParameters.mapIndexed { index, type ->
+    InjectNParameterDescriptor(
+      callable,
+      callable.valueParameters.size + index,
+      context.module.builtIns.nullableAnyType,
+      type.toTypeRef()
+    )
+  }
 )
 
 /**

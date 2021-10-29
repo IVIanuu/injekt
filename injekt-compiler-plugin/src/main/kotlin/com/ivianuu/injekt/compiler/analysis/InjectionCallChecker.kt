@@ -20,6 +20,9 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
@@ -49,7 +52,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     context: CallCheckerContext
   ) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+    if (resultingDescriptor !is InjectFunctionDescriptor &&
+        !resultingDescriptor.hasAnnotation(injektFqNames().inject2)) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -91,9 +95,11 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.index }
 
-    val requests = callee.callable.valueParameters
+    val info = resultingDescriptor.callableInfo()
+    val requests = (callee.callable.valueParameters + info.injectNParameters)
       .filter {
-        valueArgumentsByIndex[it.index] is DefaultValueArgument && it.isInject()
+        val argument = valueArgumentsByIndex[it.index]
+        (argument == null || argument is DefaultValueArgument) && it.isInject()
       }
       .map { it.toInjectableRequest(callee) }
 

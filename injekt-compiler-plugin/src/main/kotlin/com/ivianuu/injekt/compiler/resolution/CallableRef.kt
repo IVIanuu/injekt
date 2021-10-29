@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt_shaded.Inject
@@ -69,7 +70,7 @@ fun CallableDescriptor.toCallableRef(@Inject context: InjektContext): CallableRe
     val typeParameters = typeParameters.map { it.toClassifierRef() }
     CallableRef(
       callable = this,
-      type = info.type,
+      type = if (this is InjectNParameterDescriptor) typeRef else info.type,
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,

@@ -45,6 +45,8 @@ class InjektIrGenerationExtension(
       injektFqNames,
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
+    val injectNTransformer = InjectNTransformer()
+    moduleFragment.transform(injectNTransformer, null)
     moduleFragment.transform(InjectCallTransformer(), null)
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)

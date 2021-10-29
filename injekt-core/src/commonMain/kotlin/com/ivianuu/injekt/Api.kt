@@ -53,6 +53,24 @@ annotation class Provide
 )
 annotation class Inject
 
+typealias Inject1<A> = Inject2<A, A>
+
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.TYPE
+)
+@Repeatable
+annotation class Inject2<A, B>
+
+typealias Inject3<A, B, C> = Inject2<Inject2<A, B>, C>
+
+typealias Inject4<A, B, C, D> = Inject2<Inject3<A, B, C>, D>
+
+typealias Inject5<A, B, C, D, E> = Inject2<Inject4<A, B, C, D>, E>
+
 /**
  * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
  */

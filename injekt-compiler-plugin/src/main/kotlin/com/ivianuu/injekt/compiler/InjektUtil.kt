@@ -282,3 +282,21 @@ inline fun <K, V> BindingTrace?.getOrPut(
   return computation()
     .also { this?.record(slice, key, it) }
 }
+
+fun Annotated.injectNTypes(@Inject context: InjektContext): Set<KotlinType> {
+  val result = mutableSetOf<KotlinType>()
+
+  fun visitInjectNType(type: KotlinType) {
+    if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames().inject2) {
+      type.arguments.forEach { visitInjectNType(it.type) }
+    } else {
+      result += type
+    }
+  }
+
+  annotations
+    .filter { it.fqName == injektFqNames().inject2 }
+    .forEach { visitInjectNType(it.type) }
+
+  return result
+}

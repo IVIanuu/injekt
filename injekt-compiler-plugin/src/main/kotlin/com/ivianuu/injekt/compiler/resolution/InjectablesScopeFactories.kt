@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
+import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -446,9 +448,10 @@ private fun FunctionParameterInjectablesScopes(
   @Inject context: InjektContext
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
-  return function.allParameters
+  val info = function.callableInfo()
+  return (function.allParameters + info.injectNParameters)
     .filter {
-      (maxIndex == null || it.injektIndex() < maxIndex) &&
+      (maxIndex == null || it is InjectNParameterDescriptor || it.injektIndex() < maxIndex) &&
           (it.isProvide() || it === function.extensionReceiverParameter)
     }
     .map { it.toCallableRef().makeProvide() }
@@ -468,6 +471,7 @@ private fun FunctionParameterInjectablesScope(
   @Inject context: InjektContext
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
+  function.callableInfo()
   return InjectablesScope(
     name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
     parent = parent,
