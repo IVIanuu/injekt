@@ -31,10 +31,12 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -91,33 +93,43 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val callee = transformIfNeeded(expression.symbol.owner)
 
-    if (expression.symbol.owner !in transformedFunctions) return super.visitFunctionAccess(expression)
+    val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    return when (expression) {
+    if (result.symbol.owner !in transformedFunctions) return super.visitFunctionAccess(result)
+
+    return when (result) {
       is IrCall -> IrCallImpl(
-        expression.startOffset,
-        expression.endOffset,
-        expression.type,
+        result.startOffset,
+        result.endOffset,
+        result.type,
         callee.symbol.cast(),
-        expression.typeArgumentsCount,
+        result.typeArgumentsCount,
         callee.valueParameters.size,
-        expression.origin,
-        expression.superQualifierSymbol
+        result.origin,
+        result.superQualifierSymbol
       ).apply {
-        copyTypeAndValueArgumentsFrom(expression)
+        copyTypeAndValueArgumentsFrom(result)
       }
       is IrConstructorCall -> IrConstructorCallImpl(
-        expression.startOffset,
-        expression.endOffset,
-        expression.type,
+        result.startOffset,
+        result.endOffset,
+        result.type,
         callee.symbol.cast(),
-        expression.typeArgumentsCount,
-        expression.constructorTypeArgumentsCount,
+        result.typeArgumentsCount,
+        result.constructorTypeArgumentsCount,
         callee.valueParameters.size,
-        expression.origin
+        result.origin
       ).apply {
-        copyTypeAndValueArgumentsFrom(expression)
+        copyTypeAndValueArgumentsFrom(result)
       }
+      is IrDelegatingConstructorCall -> IrDelegatingConstructorCallImpl(
+        result.startOffset,
+        result.endOffset,
+        result.type,
+        result.symbol,
+        result.typeArgumentsCount,
+        callee.valueParameters.size
+      )
       else -> throw AssertionError()
     }
   }

@@ -266,13 +266,17 @@ import kotlin.collections.set
           DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
           EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
           else -> {
-            putValueArgument(
-              symbol.owner
-                .valueParameters
-                .first { it.descriptor.injektIndex() == request.parameterIndex }
-                .index,
-              expression
-            )
+            try {
+              putValueArgument(
+                symbol.owner
+                  .valueParameters
+                  .first { it.descriptor.injektIndex() == request.parameterIndex }
+                  .index,
+                expression
+              )
+            } catch (e: Throwable) {
+              error("${currentFile.name} Lol $request $valueArgumentsCount ${dump()}")
+            }
           }
         }
       }
@@ -1080,7 +1084,7 @@ import kotlin.collections.set
   ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
       is ClassDescriptor -> if (descriptor is InjectNParameterDescriptor) {
-        val irClass = injectNTransformer.transformIfNeeded(containingDeclaration.irClass())
+        val irClass = containingDeclaration.irClass()
         DeclarationIrBuilder(pluginContext, symbol)
           .irGetField(
             receiverExpression(containingDeclaration.thisAsReceiverParameter),
@@ -1192,7 +1196,7 @@ import kotlin.collections.set
     if (visibility == DescriptorVisibilities.LOCAL) {
       return localFunctions.single {
         it.descriptor.uniqueKey() == uniqueKey()
-      }.let { injectNTransformer.transformIfNeeded(it) }
+      }
     }
 
     if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
@@ -1200,13 +1204,11 @@ import kotlin.collections.set
       return localClasses.flatMap { it.declarations }
         .single { it.descriptor.uniqueKey() == uniqueKey() }
         .cast<IrFunction>()
-        .let { injectNTransformer.transformIfNeeded(it) }
     }
 
     return pluginContext.referenceFunctions(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
       .owner
-      .let { injectNTransformer.transformIfNeeded(it) }
   }
 
   private fun PropertyDescriptor.irProperty(): IrProperty {

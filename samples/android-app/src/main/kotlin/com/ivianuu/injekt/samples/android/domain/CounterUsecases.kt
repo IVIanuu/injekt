@@ -18,15 +18,20 @@ package com.ivianuu.injekt.samples.android.domain
 
 import com.ivianuu.injekt.samples.android.data.DbContext
 import com.ivianuu.injekt.samples.android.data.counterDb
+import com.ivianuu.injekt.samples.android.data.dbTransaction
 import kotlinx.coroutines.flow.Flow
 
 @DbContext val counter: Flow<Int>
   get() = counterDb.counterState
 
 @DbContext suspend fun incCounter() {
-  counterDb.updateCounter { inc() }
+  dbTransaction {
+    counterDb.updateCounter { inc() }
+  }
 }
 
 @DbContext suspend fun decCounter() {
-  counterDb.updateCounter { dec() }
+  dbTransaction {
+    counterDb.updateCounter { dec() }
+  }
 }

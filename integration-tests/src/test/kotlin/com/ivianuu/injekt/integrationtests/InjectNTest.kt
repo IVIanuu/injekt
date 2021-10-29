@@ -62,6 +62,21 @@ class InjectNTest {
     """
   )
 
+  @Test fun testInjectNSuperClass() = singleAndMultiCodegen(
+    """
+      @Inject1<String> abstract class MyAbstractClass {
+        
+      }
+      @Inject1<String> @Provide class MyClass : MyAbstractClass()
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        MyClass()
+        inject<MyClass>()
+      }
+    """
+  )
+
   @Test fun testInjectNPrimaryConstructor() = singleAndMultiCodegen(
     """
       class MyClass @Inject1<String> constructor() {
