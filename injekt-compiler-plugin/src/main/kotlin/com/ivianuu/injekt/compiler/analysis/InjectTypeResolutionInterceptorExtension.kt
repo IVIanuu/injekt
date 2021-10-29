@@ -16,8 +16,11 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.resolution.injectNParameters
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -33,6 +36,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getValueArgumentForExpression
 import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.sam.getSingleAbstractMethodOrNull
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
@@ -49,10 +53,10 @@ class InjectTypeResolutionInterceptorExtension(
     expression: KtLambdaExpression,
     context: ExpressionTypingContext,
     descriptor: AnonymousFunctionDescriptor
-  ): AnonymousFunctionDescriptor =
+  ): AnonymousFunctionDescriptor {
     if (context.expectedType.hasAnnotation(injektFqNames.inject2) &&
       !descriptor.hasAnnotation(injektFqNames.inject2)) {
-      AnonymousFunctionDescriptor(
+        return AnonymousFunctionDescriptor(
         descriptor.containingDeclaration,
         Annotations.create(descriptor.annotations + context.expectedType.annotations.filter {
           it.fqName == injektFqNames.inject2
@@ -61,7 +65,23 @@ class InjectTypeResolutionInterceptorExtension(
         descriptor.source,
         descriptor.isSuspend
       )
-    } else descriptor
+    }
+    val arg = getArgumentDescriptor(expression.functionLiteral, context.trace.bindingContext)
+
+    val argTypeDescriptor = arg
+      ?.type
+      ?.constructor
+      ?.declarationDescriptor as? ClassDescriptor
+    if (argTypeDescriptor != null) {
+      val sam = getSingleAbstractMethodOrNull(argTypeDescriptor)
+      if (sam != null && sam.hasAnnotation(injektFqNames.inject2)) {
+        context.trace.record(InjektWritableSlices.INJECT_N_PARAMETERS, descriptor,
+          sam.injectNParameters(InjektContext(descriptor.module, injektFqNames, context.trace)))
+      }
+    }
+
+    return descriptor
+  }
 
   override fun interceptType(
     element: KtElement,

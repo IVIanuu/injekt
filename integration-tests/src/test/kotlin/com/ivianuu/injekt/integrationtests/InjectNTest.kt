@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
@@ -35,7 +33,7 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNGenericFunction() = codegen(
+  @Test fun testInjectNGenericFunction() = singleAndMultiCodegen(
     """
       @Inject1<T> fun <T> myFunc() {
         inject<T>()
@@ -59,7 +57,7 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNGenericProperty() = codegen(
+  @Test fun testInjectNGenericProperty() = singleAndMultiCodegen(
     """
       @Inject1<List<T>> val <T> T.myProperty: List<T> get() = inject()
     """,
@@ -202,7 +200,7 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNLambda() = multiCodegen(
+  @Test fun testInjectNLambda() = singleAndMultiCodegen(
     """
       val lambda: @Inject1<String> () -> String = { inject<String>() }
     """,
@@ -242,9 +240,9 @@ class InjectNTest {
   @Test fun testInjectNFunInterface() = singleAndMultiCodegen(
     """
       fun interface MyType {
-        @Inject1<Unit> operator fun invoke()
+        @Inject1<String> operator fun invoke(): String
       }
-      val lambda: MyType = MyType { inject<Unit>() }
+      val lambda: MyType = MyType { inject<String>() }
     """,
     """
       fun invoke(@Inject string: String) {
@@ -257,9 +255,9 @@ class InjectNTest {
   @Test fun testInjectNSuspendFunInterface() = singleAndMultiCodegen(
     """
       fun interface MyType {
-        @Inject1<Unit> suspend operator fun invoke()
+        @Inject1<String> suspend operator fun invoke(): String
       }
-      val lambda: MyType = MyType { inject<Unit>() }
+      val lambda: MyType = MyType { inject<String>() }
     """,
     """
       suspend fun invoke(@Inject string: String) {
@@ -272,9 +270,9 @@ class InjectNTest {
   @Test fun testInjectNComposableFunInterface() = singleAndMultiCodegen(
     """
       fun interface MyType {
-        @Inject1<Unit> @Composable operator fun invoke()
+        @Inject1<String> @Composable operator fun invoke(): String
       }
-      val lambda: MyType = MyType { inject<Unit>() }
+      val lambda: MyType = MyType { inject<String>() }
     """,
     """
       @Composable fun invoke(@Inject string: String) {

@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -58,6 +59,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -218,6 +220,11 @@ fun Annotated.isInject(@Inject context: InjektContext): Boolean {
 
 fun CallableDescriptor.injectNParameters(@Inject context: InjektContext): List<InjectNParameterDescriptor> {
   return context.trace.getOrPut(InjektWritableSlices.INJECT_N_PARAMETERS, this) {
+    findPsi()?.safeAs<KtDeclaration>()?.let { declaration ->
+      annotations.forEach {
+        fixTypes(it.type, declaration)
+      }
+    }
     ((safeAs<ConstructorDescriptor>()?.constructedClass
       ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) +
         injectNTypes().map { it.toTypeRef() })
@@ -227,7 +234,7 @@ fun CallableDescriptor.injectNParameters(@Inject context: InjektContext): List<I
           valueParameters.size + index,
           parameterType
         )
-      } ?: emptyList()
+      }
   }
 }
 

@@ -1178,7 +1178,7 @@ import kotlin.collections.set
         .single { it.descriptor.fqNameSafe == fqNameSafe }
     }
     return pluginContext.referenceClass(fqNameSafe)!!
-      .let { symbolRemapper.getDeclaredClass(it) }
+      .let { symbolRemapper.getReferencedClass(it) }
       .owner
   }
 
@@ -1192,7 +1192,7 @@ import kotlin.collections.set
     }
     return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
-      .let { symbolRemapper.getDeclaredConstructor(it) }
+      .let { symbolRemapper.getReferencedConstructor(it) }
       .owner
   }
 
@@ -1212,7 +1212,7 @@ import kotlin.collections.set
 
     return pluginContext.referenceFunctions(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
-      .let { symbolRemapper.getDeclaredFunction(it) }
+      .let { symbolRemapper.getReferencedFunction(it) }
       .owner
   }
 
@@ -1226,7 +1226,7 @@ import kotlin.collections.set
 
     return pluginContext.referenceProperties(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
-      .let { symbolRemapper.getDeclaredProperty(it) }
+      .let { symbolRemapper.getReferencedProperty(it) }
       .owner
   }
 
