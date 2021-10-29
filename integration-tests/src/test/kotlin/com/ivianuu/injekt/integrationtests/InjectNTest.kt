@@ -17,22 +17,35 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
 class InjectNTest {
-  @Test fun testInjectNFunction() = codegen(
+  @Test fun testInjectNFunction() = singleAndMultiCodegen(
     """
       @Inject1<String> fun myFunc() {
         inject<String>()
       }
-
+    """,
+    """
       fun invoke(@Inject string: String) {
         myFunc()
       }
     """
   )
 
-  // todo property
+  @Test fun testInjectNProperty() = singleAndMultiCodegen(
+    """
+      @Inject1<String> val myProperty: String get() = inject()
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        myProperty
+      }
+    """
+  )
+
+  // todo property getter / setter
 
   // todo class
 
@@ -40,11 +53,42 @@ class InjectNTest {
 
   // todo secondary constructor
 
-  // todo suspend function
+  @Test fun testInjectNSuspendFunction() = singleAndMultiCodegen(
+    """
+      @Inject1<String> suspend fun myFunc() {
+        inject<String>()
+      }
+    """,
+    """
+      suspend fun invoke(@Inject string: String) {
+        myFunc()
+      }
+    """
+  )
 
-  // todo composable function
+  @Test fun testInjectNComposableFunction() = singleAndMultiCodegen(
+    """
+      @Inject1<String> @Composable fun myFunc() {
+        inject<String>()
+      }
+    """,
+    """
+      @Composable fun invoke(@Inject string: String) {
+        myFunc()
+      }
+    """
+  )
 
-  // todo lambda
+  @Test fun testInjectNComposableProperty() = singleAndMultiCodegen(
+    """
+      @Inject1<String> val myProperty: String @Composable get() = inject()
+    """,
+    """
+      @Composable fun invoke(@Inject string: String) {
+        myProperty
+      }
+    """
+  )
 
   @Test fun testInjectNLambda() = codegen(
     """
@@ -52,17 +96,73 @@ class InjectNTest {
 
       fun invoke(@Inject string: String) {
         lambda()
+        lambda.invoke()
       }
     """
   )
 
-  // todo suspend lambda
+  @Test fun testInjectNSuspendLambda() = codegen(
+    """
+      val lambda: @Inject1<Unit> suspend () -> Unit = { inject<Unit>() }
 
-  // todo composable lambda
+      suspend fun invoke(@Inject string: String) {
+        lambda()
+        lambda.invoke()
+      }
+    """
+  )
 
-  // todo fun interface
 
-  // todo suspend fun interface
+  @Test fun testInjectNComposableLambda() = codegen(
+    """
+      val lambda: @Inject1<Unit> @Composable () -> Unit = { inject<Unit>() }
 
-  // todo composable fun interface
+      @Composable fun invoke(@Inject string: String) {
+        lambda()
+        lambda.invoke()
+      }
+    """
+  )
+
+  @Test fun testInjectNFunInterface() = codegen(
+    """
+      fun interface MyType {
+        @Inject1<Unit> operator fun invoke()
+      }
+      val lambda: MyType = MyType { inject<Unit>() }
+
+      fun invoke(@Inject string: String) {
+        lambda()
+        lambda.invoke()
+      }
+    """
+  )
+
+  @Test fun testInjectNSuspendFunInterface() = codegen(
+    """
+      fun interface MyType {
+        @Inject1<Unit> suspend operator fun invoke()
+      }
+      val lambda: MyType = MyType { inject<Unit>() }
+
+      suspend fun invoke(@Inject string: String) {
+        lambda()
+        lambda.invoke()
+      }
+    """
+  )
+
+  @Test fun testInjectNComposableFunInterface() = codegen(
+    """
+      fun interface MyType {
+        @Inject1<Unit> @Composable operator fun invoke()
+      }
+      val lambda: MyType = MyType { inject<Unit>() }
+
+      @Composable fun invoke(@Inject string: String) {
+        lambda()
+        lambda.invoke()
+      }
+    """
+  )
 }

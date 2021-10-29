@@ -208,7 +208,8 @@ private fun CallableDescriptor.persistInfoIfNeeded(
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
       } ||
-      info.scopeComponentType != null
+      info.scopeComponentType != null ||
+      info.injectNParameters.isNotEmpty()
 
   if (!shouldPersistInfo) return
 
@@ -478,9 +479,10 @@ private fun String.toChunkedAnnotationArguments() = chunked(65535 / 2)
   .mapIndexed { index, chunk -> "value$index".asNameId() to StringValue(chunk) }
   .toMap()
 
-private fun TypeRef.shouldBePersisted() = anyType {
+private fun TypeRef.shouldBePersisted(): Boolean = anyType {
   (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      (it.classifier.isTypeAlias && it.isSuspendFunctionType)
+      (it.classifier.isTypeAlias && it.isSuspendFunctionType) ||
+      it.injectNTypes.isNotEmpty()
 }
 
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {

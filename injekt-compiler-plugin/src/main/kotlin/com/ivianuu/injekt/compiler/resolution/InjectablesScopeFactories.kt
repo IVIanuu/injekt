@@ -498,16 +498,17 @@ private fun PropertyInjectablesScope(
     ?.let { ImportInjectablesScopes(null, it, "PROPERTY ${property.fqNameSafe}", parent) }
     ?: parent
 
+  val info = property.callableInfo()
+
+  val injectables = (listOfNotNull(property.extensionReceiverParameter) + info.injectNParameters)
+    .map { it.toCallableRef().makeProvide() }
+
   InjectablesScope(
     name = "PROPERTY ${property.fqNameSafe}",
     callContext = property.callContext(),
     parent = finalParent,
     ownerDescriptor = property,
-    initialInjectables = listOfNotNull(
-      property.extensionReceiverParameter
-        ?.toCallableRef()
-        ?.makeProvide()
-    ),
+    initialInjectables = injectables,
     typeParameters = property.typeParameters.map { it.toClassifierRef() }
   )
 }

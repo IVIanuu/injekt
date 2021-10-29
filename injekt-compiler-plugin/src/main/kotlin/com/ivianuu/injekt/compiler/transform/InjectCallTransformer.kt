@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import androidx.compose.compiler.plugins.kotlin.lower.index
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
@@ -112,6 +113,7 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
+import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -143,6 +145,7 @@ import kotlin.collections.component2
 import kotlin.collections.set
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) class InjectCallTransformer(
+  private val injectNTransformer: InjectNTransformer,
   @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
@@ -1097,9 +1100,14 @@ import kotlin.collections.set
       is PropertyDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
-          parameterMap[descriptor]?.symbol ?: containingDeclaration.irProperty()
-            .getter!!.extensionReceiverParameter!!.symbol
-        )
+          parameterMap[descriptor]?.symbol ?:
+          if (descriptor.injektIndex() == EXTENSION_RECEIVER_INDEX)
+            containingDeclaration.irProperty()
+              .getter!!.extensionReceiverParameter!!.symbol
+          else
+            containingDeclaration.irProperty()
+              .getter!!.valueParameters[descriptor.index()].symbol
+          )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
 
@@ -1164,19 +1172,21 @@ import kotlin.collections.set
     if (visibility == DescriptorVisibilities.LOCAL) {
       return localFunctions.single {
         it.descriptor.uniqueKey() == uniqueKey()
-      }
+      }.let { injectNTransformer.transformIfNeeded(it) }
     }
 
     if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
         ?.visibility == DescriptorVisibilities.LOCAL) {
       return localClasses.flatMap { it.declarations }
         .single { it.descriptor.uniqueKey() == uniqueKey() }
-        .cast()
+        .cast<IrFunction>()
+        .let { injectNTransformer.transformIfNeeded(it) }
     }
 
     return pluginContext.referenceFunctions(fqNameSafe)
       .single { it.descriptor.uniqueKey() == uniqueKey() }
       .owner
+      .let { injectNTransformer.transformIfNeeded(it) }
   }
 
   private fun PropertyDescriptor.irProperty(): IrProperty {
@@ -1251,7 +1261,8 @@ import kotlin.collections.set
 
     // some ir transformations reuse the start and end offsets
     // we ensure that were not transforming wrong calls
-    if (graph.callee.callable.uniqueKey() != result.symbol.owner.descriptor.uniqueKey())
+    if (!expression.symbol.owner.isPropertyAccessor &&
+      graph.callee.callable.uniqueKey() != result.symbol.owner.descriptor.uniqueKey())
       return result
 
     return DeclarationIrBuilder(pluginContext, result.symbol)

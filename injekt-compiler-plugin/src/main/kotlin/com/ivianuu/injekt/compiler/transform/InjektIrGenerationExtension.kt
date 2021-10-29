@@ -47,7 +47,7 @@ class InjektIrGenerationExtension(
     )
     val injectNTransformer = InjectNTransformer()
     moduleFragment.transform(injectNTransformer, null)
-    moduleFragment.transform(InjectCallTransformer(), null)
+    moduleFragment.transform(InjectCallTransformer(injectNTransformer), null)
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)
   }

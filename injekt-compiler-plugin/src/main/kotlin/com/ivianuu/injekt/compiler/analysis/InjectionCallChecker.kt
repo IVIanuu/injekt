@@ -44,6 +44,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
 
 class InjectionCallChecker(@Inject private val context: InjektContext) : CallChecker {
   override fun check(
@@ -53,7 +54,9 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
   ) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
-        !resultingDescriptor.hasAnnotation(injektFqNames().inject2)) return
+        !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
+      (resolvedCall !is VariableAsFunctionResolvedCall ||
+          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2))) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -89,8 +92,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
         } ?: emptyMap())
 
     val callee = resultingDescriptor
-      .toCallableRef()
-      .substitute(substitutionMap)
+        .toCallableRef()
+        .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.index }

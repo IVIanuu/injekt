@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
@@ -194,7 +195,8 @@ fun KotlinType.toTypeRef(
       isInject = kotlinType.hasAnnotation(injektFqNames().inject),
       isStarProjection = false,
       frameworkKey = 0,
-      variance = variance
+      variance = variance,
+      injectNTypes = injectNTypes().mapTo(mutableSetOf()) { it.toTypeRef() }
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
@@ -223,7 +225,8 @@ class TypeRef(
   val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
-  val variance: TypeVariance = TypeVariance.INV
+  val variance: TypeVariance = TypeVariance.INV,
+  val injectNTypes: Set<TypeRef> = emptySet()
 ) {
   override fun toString(): String = renderToString()
 
@@ -316,6 +319,7 @@ class TypeRef(
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
+      result = 31 * result + injectNTypes.hashCode()
       _hashCode = result
     }
     return _hashCode
@@ -345,7 +349,8 @@ fun TypeRef.copy(
   isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
-  variance: TypeVariance = this.variance
+  variance: TypeVariance = this.variance,
+  injectNTypes: Set<TypeRef> = this.injectNTypes
 ) = TypeRef(
   classifier,
   isMarkedNullable,
@@ -355,12 +360,13 @@ fun TypeRef.copy(
   isInject,
   isStarProjection,
   frameworkKey,
-  variance
+  variance,
+  injectNTypes
 )
 
 val STAR_PROJECTION_TYPE = TypeRef(
   classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
-  isStarProjection = true
+  isStarProjection = true,
 )
 
 fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
@@ -437,6 +443,15 @@ fun TypeRef.render(
     if (!renderType(this)) return
 
     if (isMarkedComposable) append("@Composable ")
+
+    if (injectNTypes.isNotEmpty()) {
+      append("@Inject<")
+      injectNTypes.forEachIndexed { index, injectNType ->
+        injectNType.render(depth = depth + 1, renderType, append)
+        if (index != arguments.lastIndex) append(", ")
+      }
+      append(">")
+    }
 
     when {
       isStarProjection -> append("*")
