@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -51,6 +52,7 @@ import org.jetbrains.kotlin.ir.declarations.copyAttributes
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrDeclarationReference
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -81,6 +83,7 @@ import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class DeepCopyIrTreeWithSymbolsPreservingMetadata(
   private val symbolRemapper: DeepCopySymbolRemapper,
@@ -241,11 +244,21 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
           containingClass.defaultType.isSuspendFunctionType) &&
       expression.dispatchReceiver?.type?.isInjectN() == true
     ) {
-      val typeArguments = containingClass.defaultType.arguments
+      val newTypeArgumentsSize = containingClass.defaultType.arguments.size - 1 +
+          (expression.dispatchReceiver!!
+            .safeAs<IrDeclarationReference>()
+            ?.symbol
+            ?.descriptor
+            ?.safeAs<CallableDescriptor>()
+            ?.callableInfo()
+            ?.type
+            ?.injectNTypes
+            ?.size
+            ?: throw AssertionError("Cannot find out inject n size for ${expression.dump()}"))
       val newFnClass = if (containingClass.defaultType.isFunctionType)
-        pluginContext.irBuiltIns.function(typeArguments.size).owner
+        pluginContext.irBuiltIns.function(newTypeArgumentsSize).owner
       else
-        pluginContext.irBuiltIns.suspendFunction(typeArguments.size).owner
+        pluginContext.irBuiltIns.suspendFunction(newTypeArgumentsSize).owner
 
       var newFn = newFnClass
         .functions
@@ -256,12 +269,6 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
       newFn = super.visitSimpleFunction(newFn).also { fn ->
         typeRemapper.scopeStack.pop()
         fn.parent = newFnClass
-        /*fn.overriddenSymbols = ownerFn.overriddenSymbols.map { it }
-        fn.dispatchReceiverParameter = ownerFn.dispatchReceiverParameter
-        fn.extensionReceiverParameter = ownerFn.extensionReceiverParameter
-        newFn.valueParameters.forEach { p ->
-          fn.addValueParameter(p.name.identifier, p.type)
-        }*/
         fn.patchDeclarationParents(fn.parent)
       }
 

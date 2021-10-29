@@ -452,7 +452,7 @@ fun TypeRef.render(
       append("@Inject<")
       injectNTypes.forEachIndexed { index, injectNType ->
         injectNType.render(depth = depth + 1, renderType, append)
-        if (index != arguments.lastIndex) append(", ")
+        if (index != injectNTypes.size - 1) append(", ")
       }
       append(">")
     }

@@ -16,10 +16,29 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
 class InjectNTest {
+  @Test fun testHehe() = codegen(
+    """
+      typealias DbContext = Inject2<Int, String>
+
+      @Inject1<String> val counterDb: String get() = inject()
+
+      @DbContext suspend inline fun <R> dbTransaction(crossinline block: @DbContext suspend () -> R): R {
+        return block()
+      }
+
+      @DbContext suspend fun decCounter() {
+        dbTransaction {
+          counterDb.toString()
+        }
+      }
+    """
+  )
+
   @Test fun testInjectNFunction() = singleAndMultiCodegen(
     """
       @Inject1<String> fun myFunc() {

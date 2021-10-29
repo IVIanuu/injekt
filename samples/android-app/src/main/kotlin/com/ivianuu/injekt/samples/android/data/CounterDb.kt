@@ -48,7 +48,7 @@ typealias DbContext = Inject2<CounterDb, DefaultDispatcher>
 
 @DbContext inline val counterDb: CounterDb get() = inject()
 
-@DbContext suspend inline fun <R> dbTransaction(crossinline block: suspend () -> R): R =
+@DbContext suspend inline fun <R> dbTransaction(crossinline block: @DbContext suspend () -> R): R =
   withContext(inject<DefaultDispatcher>()) {
     block()
   }

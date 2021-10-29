@@ -1292,7 +1292,7 @@ import kotlin.collections.set
         .safeAs<ClassDescriptor>()
         ?.defaultType
         ?.isFunctionOrSuspendFunctionType != true &&
-      graph.callee.callable.uniqueKey() != result.symbol.owner.descriptor.uniqueKey())
+      graph.callee.callable.fqNameSafe != result.symbol.owner.descriptor.fqNameSafe)
       return result
 
     return DeclarationIrBuilder(pluginContext, result.symbol)
