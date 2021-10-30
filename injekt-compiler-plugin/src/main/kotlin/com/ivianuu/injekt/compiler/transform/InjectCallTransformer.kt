@@ -1113,8 +1113,9 @@ class InjectCallTransformer(
               function.allParameters
                 .filter { it != function.dispatchReceiverParameter }
             }
-            .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
-            .symbol
+            .singleOrNull { it.descriptor.injektIndex() == descriptor.injektIndex() })
+            ?.symbol
+            ?: error("")
         )
       is PropertyDescriptor -> DeclarationIrBuilder(pluginContext, symbol)
         .irGet(

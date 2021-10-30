@@ -243,8 +243,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
       }
     }
     ((safeAs<ConstructorDescriptor>()?.constructedClass
-      ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) +
-        injectNTypes().map { it.toTypeRef() })
+      ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) + injectNTypes())
       .mapIndexed { index, parameterType ->
         InjectNParameterDescriptor(
           this,

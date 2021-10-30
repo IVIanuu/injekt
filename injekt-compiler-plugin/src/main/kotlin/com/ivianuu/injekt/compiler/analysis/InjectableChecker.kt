@@ -65,7 +65,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     context: DeclarationCheckerContext,
   ) {
     @Provide val trace = context.trace
-    trace.record(InjektWritableSlices.INJEKT_FQ_NAMES, Unit, this.context.injektFqNames)
+    trace.record(InjektWritableSlices.INJEKT_CONTEXT, Unit, this.context)
     when (descriptor) {
       is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor)
       is ConstructorDescriptor -> checkConstructor(declaration, descriptor)

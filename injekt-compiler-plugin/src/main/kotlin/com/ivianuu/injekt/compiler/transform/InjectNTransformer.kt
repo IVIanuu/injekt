@@ -17,13 +17,17 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.WithInjektContext
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.context
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -42,9 +46,15 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.findAnnotation
+import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.statements
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -97,15 +107,32 @@ class InjectNTransformer(
   }
 
   fun transformIfNeeded(function: IrFunction): IrFunction {
-    val info = if (function.descriptor is PropertyAccessorDescriptor)
+    val injectNParameters = if (function.descriptor is PropertyAccessorDescriptor)
       function.descriptor.cast<PropertyAccessorDescriptor>().correspondingProperty.callableInfo()
-    else function.descriptor.callableInfo()
-    if (info.injectNParameters.isEmpty()) return function
+        .injectNParameters
+    else if (function.descriptor !is AnonymousFunctionDescriptor)
+      function.descriptor.callableInfo().injectNParameters
+    else function.descriptor.annotations.findAnnotation(injektFqNames.injectNInfo)
+      ?.allValueArguments
+      ?.values
+      ?.single()
+      ?.cast<ArrayValue>()
+      ?.value
+      ?.indices
+      ?.map {
+        InjectNParameterDescriptor(
+          function.descriptor,
+          function.valueParameters.size + it,
+          context.nullableAnyType
+        )
+      }
+      ?: emptyList()
+    if (injectNParameters.isEmpty()) return function
 
     if (function in transformedFunctions) return function
     transformedFunctions += function
 
-    info.injectNParameters.forEach { parameter ->
+    injectNParameters.forEach { parameter ->
       function.addValueParameter(
         parameter.name,
         parameter.typeRef.toIrType().typeOrNull!!
@@ -122,11 +149,30 @@ class InjectNTransformer(
     transformIfNeeded(super.visitFunctionNew(declaration) as IrFunction)
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-    val callee = transformIfNeeded(expression.symbol.owner)
-
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    if (result.symbol.owner !in transformedFunctions) return super.visitFunctionAccess(result)
+    val callee = if (expression.symbol.descriptor.name.asString() == "invoke" &&
+      expression.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) == true) {
+      val argCount = expression.symbol.owner.valueParameters.size
+
+      val extraArgsCount = expression.dispatchReceiver!!.type
+        .annotations.findAnnotation(injektFqNames.injectNInfo)
+        ?.getValueArgument(0)
+        ?.cast<IrVarargImpl>()
+        ?.elements
+        ?.size
+        ?: error("")
+
+      val newFnClass = if (expression.dispatchReceiver!!.type.isSuspendFunction())
+        pluginContext.irBuiltIns.suspendFunction(argCount + extraArgsCount).owner
+      else
+        pluginContext.irBuiltIns.function(argCount + extraArgsCount).owner
+
+      newFnClass.functions.first { it.name.asString() == "invoke" }
+    } else transformIfNeeded(expression.symbol.owner)
+
+    if (result.symbol.owner !in transformedFunctions &&
+        callee.symbol != result.symbol) return super.visitFunctionAccess(result)
 
     return when (result) {
       is IrCall -> IrCallImpl(

@@ -213,7 +213,7 @@ fun KotlinType.toTypeRef2(
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      injectNTypes = injectNTypes().map { it.toTypeRef() },
+      injectNTypes = injectNTypes(),
       scopeComponentType = annotations.findAnnotation(injektFqNames.scoped)
         ?.type?.arguments?.single()?.type?.toTypeRef()
     )

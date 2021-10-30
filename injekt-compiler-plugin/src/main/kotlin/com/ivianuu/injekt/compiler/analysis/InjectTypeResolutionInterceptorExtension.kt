@@ -62,10 +62,11 @@ class InjectTypeResolutionInterceptorExtension(
 
     if (context.expectedType.hasAnnotation(injektFqNames.inject2) &&
       !descriptor.hasAnnotation(injektFqNames.inject2)) {
-        return AnonymousFunctionDescriptor(
+      return AnonymousFunctionDescriptor(
         descriptor.containingDeclaration,
         Annotations.create(descriptor.annotations + context.expectedType.annotations.filter {
-          it.fqName == injektFqNames.inject2
+          it.fqName == injektFqNames.inject2 ||
+              it.fqName == injektFqNames.injectNInfo
         }),
         descriptor.kind,
         descriptor.source,
@@ -125,7 +126,8 @@ class InjectTypeResolutionInterceptorExtension(
       return resultType.replaceAnnotations(
         Annotations.create(
           resultType.annotations + context.expectedType.annotations.filter {
-            it.fqName == injektFqNames.inject2
+            it.fqName == injektFqNames.inject2 ||
+                it.fqName == injektFqNames.injectNInfo
           }
         )
       )

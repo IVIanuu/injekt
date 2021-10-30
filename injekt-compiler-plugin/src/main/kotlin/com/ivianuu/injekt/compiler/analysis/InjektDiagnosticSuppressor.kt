@@ -19,16 +19,24 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.addInjectNInfo
+import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt_shaded.Provide
+import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeParameter
+import org.jetbrains.kotlin.psi.lambdaExpressionRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -41,8 +49,21 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
-    val injektFqNames = bindingContext[InjektWritableSlices.INJEKT_FQ_NAMES, Unit]
+    @Provide val injektContext = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
+
+    if (diagnostic.factory == InjektErrors.FILE_DECOY) {
+      @Provide val trace = DelegatingBindingTrace(bindingContext, "dummy")
+      diagnostic.psiElement.cast<KtFile>()
+        .accept(
+          lambdaExpressionRecursiveVisitor { lambdaExpression ->
+            lambdaExpression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()!!
+              .addInjectNInfo()
+            lambdaExpression.getType(bindingContext)!!.addInjectNInfo()
+          }
+        )
+      return true
+    }
 
     if (diagnostic.factory == Errors.UNRESOLVED_REFERENCE)
       return bindingContext[InjektWritableSlices.FIXED_TYPE, diagnostic.psiElement.text] != null

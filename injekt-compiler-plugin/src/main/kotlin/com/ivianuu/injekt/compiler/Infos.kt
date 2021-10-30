@@ -55,8 +55,8 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.annotations.TargetedAnnotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.ir.descriptors.IrBasedDeclarationDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -90,7 +90,7 @@ data class CallableInfo(
 
 @WithInjektContext fun CallableDescriptor.callableInfo(): CallableInfo =
   trace!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
-    if (isDeserializedDeclaration() || this is IrBasedDeclarationDescriptor<*>) {
+    if (isDeserializedDeclaration()) {
       val info = annotations
         .findAnnotation(injektFqNames.callableInfo)
         ?.readChunkedValue()
@@ -99,8 +99,7 @@ data class CallableInfo(
 
       if (info != null) {
         val finalInfo = if (this !is CallableMemberDescriptor ||
-          kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE ||
-            this is IrBasedDeclarationDescriptor<*>) {
+          kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           info
         } else {
           val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
@@ -185,6 +184,8 @@ data class CallableInfo(
     trace!!.record(InjektWritableSlices.CALLABLE_INFO, this, info)
 
     persistInfoIfNeeded(info)
+
+    addInjectNInfo()
 
     return info
   }
@@ -354,7 +355,7 @@ class ClassifierInfo(
         InjectNParameterDescriptor(
           this,
           index,
-          parameterType.toTypeRef()
+          parameterType
         )
       }
 
@@ -372,6 +373,8 @@ class ClassifierInfo(
     trace!!.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
 
     persistInfoIfNeeded(info)
+
+    addInjectNInfo()
 
     return info
   }
@@ -533,6 +536,79 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     DescriptorVisibilities.PUBLIC ||
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
+
+@WithInjektContext fun DeclarationDescriptor.addInjectNInfo() {
+  (this as Annotated).addInjectNInfo()
+
+  findPsi().safeAs<KtDeclaration>()?.let { declaration ->
+    annotations.forEach {
+      fixTypes(it.type, declaration)
+    }
+  }
+
+  annotations.forEach { it.type.addInjectNInfo() }
+
+  when (this) {
+    is FunctionDescriptor -> {
+      returnType?.addInjectNInfo()
+      dispatchReceiverParameter?.type?.addInjectNInfo()
+      extensionReceiverParameter?.type?.addInjectNInfo()
+      valueParameters.forEach {
+        it.type.addInjectNInfo()
+        it.varargElementType?.addInjectNInfo()
+      }
+    }
+    is PropertyDescriptor -> {
+      returnType?.addInjectNInfo()
+      dispatchReceiverParameter?.type?.addInjectNInfo()
+      extensionReceiverParameter?.type?.addInjectNInfo()
+    }
+  }
+}
+
+@WithInjektContext fun Annotated.addInjectNInfo() {
+  if (hasAnnotation(injektFqNames.inject2) &&
+    !hasAnnotation(injektFqNames.injectNInfo)) {
+    val injectNTypes = injectNTypes()
+      .map { it.toPersistedTypeRef() }
+
+    val transform: List<AnnotationDescriptor>.() -> List<AnnotationDescriptor> = {
+      this + AnnotationDescriptorImpl(
+        module.findClassAcrossModuleDependencies(
+          ClassId.topLevel(injektFqNames.injectNInfo)
+        )?.defaultType!!,
+        mapOf("values".asNameId() to ArrayValue(
+          injectNTypes.map { StringValue(it.encode()) }
+        ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }),
+        SourceElement.NO_SOURCE
+      )
+    }
+
+    when {
+      annotations is TargetedAnnotations -> annotations.updatePrivateFinalField(
+        TargetedAnnotations::class,
+        "standardAnnotations",
+        transform
+      )
+      annotations.javaClass.name == "org.jetbrains.kotlin.descriptors.annotations.AnnotationsImpl" ->
+        annotations.updatePrivateFinalField(
+          annotations.javaClass.kotlin,
+          "annotations",
+          transform
+        )
+      else -> throw AssertionError("Unexpected annotations")
+    }
+  }
+}
+
+@WithInjektContext fun KotlinType.addInjectNInfo() {
+  fun KotlinType.visit() {
+    (this as Annotated).addInjectNInfo()
+    arguments.forEach { it.type.visit() }
+  }
+
+  visit()
+}
 
 @WithInjektContext fun fixTypes(type: KotlinType, declaration: KtDeclaration) {
   val descriptor = declaration.descriptor<DeclarationDescriptor>()
