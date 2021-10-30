@@ -215,7 +215,7 @@ fun KotlinType.toTypeRef2(
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      injectNTypes = injectNTypes().mapTo(mutableSetOf()) { it.toTypeRef() }
+      injectNTypes = injectNTypes().map { it.toTypeRef() }
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames.tag)
@@ -245,7 +245,7 @@ class TypeRef(
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
-  val injectNTypes: Set<TypeRef> = emptySet()
+  val injectNTypes: List<TypeRef> = emptyList()
 ) {
   override fun toString(): String = renderToString()
 
@@ -370,7 +370,7 @@ fun TypeRef.copy(
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
-  injectNTypes: Set<TypeRef> = this.injectNTypes
+  injectNTypes: List<TypeRef> = this.injectNTypes
 ) = TypeRef(
   classifier,
   isMarkedNullable,
@@ -443,7 +443,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
   if (arguments.isEmpty() && injectNTypes.isEmpty()) return this
 
   val newArguments = arguments.map { it.substitute(map) }
-  val newInjectNTypes = injectNTypes.mapTo(mutableSetOf()) { it.substitute(map) }
+  val newInjectNTypes = injectNTypes.map { it.substitute(map) }
   if (arguments != newArguments || newInjectNTypes != injectNTypes)
     return copy(arguments = arguments, injectNTypes = newInjectNTypes)
 

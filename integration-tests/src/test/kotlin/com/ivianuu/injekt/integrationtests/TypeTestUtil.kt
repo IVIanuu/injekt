@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
+import org.jetbrains.kotlin.cli.jvm.compiler.CliBindingTrace
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -74,6 +75,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
   @Provide val injektContext = InjektContext(module, InjektFqNames.Default)
+  @Provide val trace = CliBindingTrace()
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
@@ -166,7 +168,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
 
   fun typeFor(fqName: FqName) = classifierDescriptorForFqName2(
     fqName, NoLookupLocation.FROM_BACKEND, injektContext)
-    ?.defaultType?.toTypeRef2(context = injektContext) ?: error("Wtf $fqName")
+    ?.defaultType?.toTypeRef2(context = injektContext, trace = trace) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
     shouldBeAssignableTo(other, emptyList())

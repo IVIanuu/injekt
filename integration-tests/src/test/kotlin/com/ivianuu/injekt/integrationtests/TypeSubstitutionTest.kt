@@ -91,7 +91,7 @@ class TypeSubstitutionTest {
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef2(injektContext) }
+      .map { it.toClassifierRef2(injektContext, trace) }
     val namedScope = typeFor(FqName("com.ivianuu.injekt.test.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {

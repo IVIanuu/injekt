@@ -31,7 +31,7 @@ import kotlinx.serialization.Serializable
   @SerialName("4") val isMarkedComposable: Boolean,
   @SerialName("5") val isProvide: Boolean,
   @SerialName("6") val isInject: Boolean,
-  @SerialName("7") val injectNTypes: Set<PersistedTypeRef>
+  @SerialName("7") val injectNTypes: List<PersistedTypeRef>
 )
 
 @WithInjektContext fun TypeRef.toPersistedTypeRef(): PersistedTypeRef =
@@ -43,7 +43,7 @@ import kotlinx.serialization.Serializable
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
-    injectNTypes = injectNTypes.mapTo(mutableSetOf()) { it.toPersistedTypeRef() }
+    injectNTypes = injectNTypes.map { it.toPersistedTypeRef() }
   )
 
 @WithInjektContext fun PersistedTypeRef.toTypeRef(): TypeRef {
@@ -65,6 +65,6 @@ import kotlinx.serialization.Serializable
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
-    injectNTypes = injectNTypes.mapTo(mutableSetOf()) { it.toTypeRef() }
+    injectNTypes = injectNTypes.map { it.toTypeRef() }
   )
 }
