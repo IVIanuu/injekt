@@ -46,7 +46,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
   ) {
     val file = declaration.containingKtFile
     checkFile(file, context.trace)
-    if (!declaration.hasAnnotation(injektFqNames().providers)) return
+    if (!declaration.hasAnnotation(injektFqNames.providers)) return
     checkImports(file.packageFqName, declaration.getProviderImports(), context.trace)
   }
 

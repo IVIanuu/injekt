@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -30,8 +31,9 @@ class TypeFixer(@Inject private val context: InjektContext) : DeclarationChecker
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
+    @Provide val injektContext = this.context.withTrace(context.trace)
     descriptor.annotations.forEach {
-      fixTypes(it.type, declaration, this.context.withTrace(context.trace))
+      fixTypes(it.type, declaration)
     }
   }
 }

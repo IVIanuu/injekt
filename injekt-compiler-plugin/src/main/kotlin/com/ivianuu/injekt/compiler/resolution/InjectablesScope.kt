@@ -237,9 +237,9 @@ class InjectablesScope(
           collectionElementType = collectionElementType
         )
       }
-      request.type.classifier.fqName == injektFqNames().typeKey ->
+      request.type.classifier.fqName == injektFqNames.typeKey ->
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == injektFqNames().sourceKey ->
+      request.type.classifier.fqName == injektFqNames.sourceKey ->
         return SourceKeyInjectable(request.type, this)
       request.type.classifier.isComponent ->
         return ComponentInjectable(request.type, this)
@@ -396,7 +396,7 @@ class InjectablesScope(
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames().provide))
+            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames.provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

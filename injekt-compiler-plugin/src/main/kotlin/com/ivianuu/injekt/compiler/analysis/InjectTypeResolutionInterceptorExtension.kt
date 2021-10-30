@@ -21,7 +21,9 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.injectNParameters
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -54,6 +56,8 @@ class InjectTypeResolutionInterceptorExtension(
     context: ExpressionTypingContext,
     descriptor: AnonymousFunctionDescriptor
   ): AnonymousFunctionDescriptor {
+    @Provide val injektContext = InjektContext(descriptor.module, injektFqNames, context.trace)
+
     if (context.expectedType.hasAnnotation(injektFqNames.inject2) &&
       !descriptor.hasAnnotation(injektFqNames.inject2)) {
         return AnonymousFunctionDescriptor(
@@ -66,7 +70,7 @@ class InjectTypeResolutionInterceptorExtension(
         descriptor.isSuspend
       )
     }
-    val arg = getArgumentDescriptor(expression.functionLiteral, context.trace.bindingContext)
+    val arg = getArgumentDescriptor(expression.functionLiteral, trace!!.bindingContext)
 
     val argTypeDescriptor = arg
       ?.type
@@ -75,8 +79,8 @@ class InjectTypeResolutionInterceptorExtension(
     if (argTypeDescriptor != null) {
       val sam = getSingleAbstractMethodOrNull(argTypeDescriptor)
       if (sam != null && sam.hasAnnotation(injektFqNames.inject2)) {
-        context.trace.record(InjektWritableSlices.INJECT_N_PARAMETERS, descriptor,
-          sam.injectNParameters(InjektContext(descriptor.module, injektFqNames, context.trace)))
+        trace!!.record(InjektWritableSlices.INJECT_N_PARAMETERS, descriptor,
+          sam.injectNParameters())
       }
     }
 
@@ -91,7 +95,9 @@ class InjectTypeResolutionInterceptorExtension(
     if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
     if (element !is KtLambdaExpression) return resultType
 
-    val arg = getArgumentDescriptor(element.functionLiteral, context.trace.bindingContext)
+    @Provide val injektContext = InjektContext(context.scope.ownerDescriptor.module, injektFqNames, context.trace)
+
+    val arg = getArgumentDescriptor(element.functionLiteral, trace!!.bindingContext)
 
     val argTypeDescriptor = arg
       ?.type

@@ -17,14 +17,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
@@ -68,7 +67,7 @@ class CallableInjectable(
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val callContext: CallContext
-    get() = callable.callable.callContext(ownerScope.context)
+    get() = callable.callable.callContext()
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = emptyMap()
   override val originalType: TypeRef
     get() = callable.originalType
@@ -176,7 +175,11 @@ class ComponentInjectable(
             else
               ComponentValueParameterDescriptor(it.cast())
           }
-          .map { it.toCallableRef(componentScope.context) }
+          .map {
+            with(componentScope.context) {
+              it.toCallableRef()
+            }
+          }
       )
     }
 
@@ -350,18 +353,17 @@ class TypeKeyInjectable(
     get() = type
 }
 
-fun CallableRef.getInjectableRequests(
-  @Inject context: InjektContext
-): List<InjectableRequest> = (callable.allParameters
-  .filter {
-    callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-  } + callable.callableInfo().injectNParameters)
-  .filter {
-    it === callable.dispatchReceiverParameter ||
-        it === callable.extensionReceiverParameter ||
-        it.isProvide()
-  }
-  .map { it.toInjectableRequest(this) }
+@WithInjektContext fun CallableRef.getInjectableRequests(): List<InjectableRequest> =
+  (callable.allParameters
+    .filter {
+      callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
+    } + callable.callableInfo().injectNParameters)
+    .filter {
+      it === callable.dispatchReceiverParameter ||
+          it === callable.extensionReceiverParameter ||
+          it.isProvide()
+    }
+    .map { it.toInjectableRequest(this) }
 
 data class InjectableRequest(
   val type: TypeRef,

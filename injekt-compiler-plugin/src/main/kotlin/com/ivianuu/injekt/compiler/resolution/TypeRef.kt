@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.WithInjektContext
+import com.ivianuu.injekt.compiler._context
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
@@ -26,8 +28,9 @@ import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -115,8 +118,11 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): ClassifierRef =
-  context.trace.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
+fun ClassifierDescriptor.toClassifierRef2(@Provide context: InjektContext) =
+  toClassifierRef()
+
+@WithInjektContext fun ClassifierDescriptor.toClassifierRef(): ClassifierRef =
+  trace.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
     val info = classifierInfo()
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
@@ -124,14 +130,14 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
       ?.map { it.toClassifierRef() }
       ?.toMutableList()
 
-    val isTag = hasAnnotation(injektFqNames().tag)
+    val isTag = hasAnnotation(injektFqNames.tag)
 
     if (isTag) {
       typeParameters!! += ClassifierRef(
         key = "${uniqueKey()}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
-        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(context.injektContext.nullableAnyType) },
+        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(_context.nullableAnyType) },
         variance = TypeVariance.OUT
       )
     }
@@ -144,7 +150,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
-      isComponent = hasAnnotation(injektFqNames().component),
+      isComponent = hasAnnotation(injektFqNames.component),
       scopeComponentType = info.scopeComponentType,
       entryPointComponentType = info.entryPointComponentType,
       isTypeAlias = this is TypeAliasDescriptor,
@@ -158,10 +164,15 @@ fun ClassifierDescriptor.toClassifierRef(@Inject context: InjektContext): Classi
     )
   }
 
-fun KotlinType.toTypeRef(
+fun KotlinType.toTypeRef2(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV,
-  @Inject context: InjektContext
+  @Provide context: InjektContext
+): TypeRef = toTypeRef(isStarProjection, variance)
+
+@WithInjektContext fun KotlinType.toTypeRef(
+  isStarProjection: Boolean = false,
+  variance: TypeVariance = TypeVariance.INV
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this
@@ -170,7 +181,7 @@ fun KotlinType.toTypeRef(
       unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
         .commonSupertype(unwrapped.constructor.supertypes)
       else -> null
-    } ?: return context.injektContext.nullableAnyType
+    } ?: return _context.nullableAnyType
 
     val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
 
@@ -192,18 +203,18 @@ fun KotlinType.toTypeRef(
           if (classifier.isTag &&
             it.size != classifier.typeParameters.size
           )
-            it += context.injektContext.nullableAnyType
+            it += _context.nullableAnyType
         },
-      isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
-      isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
-      isInject = kotlinType.hasAnnotation(injektFqNames().inject),
+      isMarkedComposable = kotlinType.hasAnnotation(injektFqNames.composable),
+      isProvide = kotlinType.hasAnnotation(injektFqNames.provide),
+      isInject = kotlinType.hasAnnotation(injektFqNames.inject),
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
       injectNTypes = injectNTypes().mapTo(mutableSetOf()) { it.toTypeRef() }
     )
 
-    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
+    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames.tag)
     if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }

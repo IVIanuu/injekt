@@ -21,6 +21,8 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt_shaded.Inject1
+import com.ivianuu.injekt_shaded.inject
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
@@ -36,6 +38,20 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+
+typealias WithInjektContext = Inject1<InjektContext>
+
+@Inject1<InjektContext> inline val _context: InjektContext
+  get() = inject()
+
+@Inject1<InjektContext> inline val injektFqNames: InjektFqNames
+  get() = _context.injektFqNames
+
+@Inject1<InjektContext> inline val trace: BindingTrace?
+  get() = _context.trace
+
+@Inject1<InjektContext> inline val module: ModuleDescriptor
+  get() = _context.module
 
 @Suppress("NewApi")
 class InjektContext(
@@ -59,17 +75,17 @@ class InjektContext(
   }
   val typeKeyType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().typeKey)
+      ClassId.topLevel(injektFqNames.typeKey)
     )!!.toClassifierRef()
   }
   val componentObserverType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().componentObserver)
+      ClassId.topLevel(injektFqNames.componentObserver)
     )!!.toClassifierRef()
   }
   val disposableType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().disposable)
+      ClassId.topLevel(injektFqNames.disposable)
     )!!.toClassifierRef()
   }
 
@@ -89,21 +105,21 @@ class InjektContext(
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
     ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.takeIf { it.uniqueKey(this) == key }
+      ?.takeIf { it.uniqueKey() == key }
       ?: functionDescriptorsForFqName(fqName.parent())
         .flatMap { it.typeParameters }
         .firstOrNull {
-          it.uniqueKey(this) == key
+          it.uniqueKey() == key
         }
       ?: propertyDescriptorsForFqName(fqName.parent())
         .flatMap { it.typeParameters }
         .firstOrNull {
-          it.uniqueKey(this) == key
+          it.uniqueKey() == key
         }
       ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
         .safeAs<ClassifierDescriptorWithTypeParameters>()
         ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(this) == key }
+        ?.firstOrNull { it.uniqueKey() == key }
       ?: error("Could not get for $fqName $key")
     classifierForKey[key] = classifier
     return classifier

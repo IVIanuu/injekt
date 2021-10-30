@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -65,21 +64,21 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  @Inject context: InjektContext
-): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
-  .map { it.containingDeclaration }
-  .filterIsInstance<ClassDescriptor>()
-  .mapNotNull { clazz ->
-    val clazzClassifier = clazz.toClassifierRef()
-    clazz.unsubstitutedPrimaryConstructor
-      ?.valueParameters
-      ?.firstOrNull {
-        it.name == name &&
-            it.name in clazzClassifier.primaryConstructorPropertyParameters
-      }
-  }
-  .firstOrNull()
+@WithInjektContext
+fun PropertyDescriptor.primaryConstructorPropertyValueParameter(): ValueParameterDescriptor? =
+  overriddenTreeUniqueAsSequence(false)
+    .map { it.containingDeclaration }
+    .filterIsInstance<ClassDescriptor>()
+    .mapNotNull { clazz ->
+      val clazzClassifier = clazz.toClassifierRef()
+      clazz.unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.firstOrNull {
+          it.name == name &&
+              it.name in clazzClassifier.primaryConstructorPropertyParameters
+        }
+    }
+    .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
@@ -120,12 +119,11 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   return null
 }
 
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor(
-  @Inject context: InjektContext
-) = context.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
+@WithInjektContext fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
+  trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-fun DeclarationDescriptor.isExternalDeclaration(@Inject context: InjektContext): Boolean =
-  moduleName() != context.module.moduleName()
+@WithInjektContext fun DeclarationDescriptor.isExternalDeclaration(): Boolean =
+  moduleName() != module.moduleName()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -143,7 +141,7 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
     inner.hasAnnotation(annotation)
   }
 
-fun DeclarationDescriptor.uniqueKey(@Inject context: InjektContext): String =
+@WithInjektContext fun DeclarationDescriptor.uniqueKey(): String =
   when (val original = this.original) {
     is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
       original.valueParameters
@@ -266,16 +264,14 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
 fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name =
   "_injectables".asNameId()
 
-inline fun injektFqNames(@Inject context: InjektContext) = context.injektFqNames
-
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
 
-fun DeclarationDescriptor.moduleName(@Inject context: InjektContext): String =
+@WithInjektContext fun DeclarationDescriptor.moduleName(): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")
-    ?: context.module.name.asString().removeSurrounding("<", ">")
+    ?: module.name.asString().removeSurrounding("<", ">")
 
 inline fun <K, V> BindingTrace?.getOrPut(
   slice: WritableSlice<K, V>,
@@ -287,11 +283,11 @@ inline fun <K, V> BindingTrace?.getOrPut(
     .also { this?.record(slice, key, it) }
 }
 
-fun Annotated.injectNTypes(@Inject context: InjektContext): Set<KotlinType> {
+@WithInjektContext fun Annotated.injectNTypes(): Set<KotlinType> {
   val result = mutableSetOf<KotlinType>()
 
   fun visitInjectNType(type: KotlinType) {
-    if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames().inject2) {
+    if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames.inject2) {
       type.arguments.forEach { visitInjectNType(it.type) }
     } else {
       result += type
@@ -299,7 +295,7 @@ fun Annotated.injectNTypes(@Inject context: InjektContext): Set<KotlinType> {
   }
 
   annotations
-    .filter { it.fqName == injektFqNames().inject2 }
+    .filter { it.fqName == injektFqNames.inject2 }
     .forEach { visitInjectNType(it.type) }
 
   return result

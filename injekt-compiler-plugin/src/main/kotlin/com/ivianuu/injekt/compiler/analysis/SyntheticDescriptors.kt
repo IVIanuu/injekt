@@ -19,8 +19,9 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -99,13 +100,13 @@ class InjectNParameterDescriptor(
   private val _containingDeclaration: DeclarationDescriptor,
   val index: Int,
   val typeRef: TypeRef,
-  @Inject context: InjektContext
+  @Provide val context: InjektContext
 ) : DeclarationDescriptorImpl(
   Annotations.create(
     listOf(
       AnnotationDescriptorImpl(
-        context.module.findClassAcrossModuleDependencies(
-          ClassId.topLevel(injektFqNames().inject)
+        module.findClassAcrossModuleDependencies(
+          ClassId.topLevel(injektFqNames.inject)
         )!!.defaultType,
         emptyMap(),
         SourceElement.NO_SOURCE

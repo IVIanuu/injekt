@@ -70,7 +70,7 @@ class InjectSymbolRemapper(@Inject private val context: InjektContext) : DeepCop
           containingDeclaration.let { it is FunctionDescriptor && it.isTransformed() }
 
     private fun KotlinType.containsComposable(): Boolean =
-      hasAnnotation(injektFqNames().inject2) ||
+      hasAnnotation(injektFqNames.inject2) ||
           arguments.any { it.type.containsComposable() }
   }
 )

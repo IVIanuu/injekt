@@ -21,7 +21,7 @@ import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef2
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.compiler.resolution.wrap
 import io.kotest.matchers.maps.shouldContain
@@ -89,7 +89,7 @@ class TypeSubstitutionTest {
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef(injektContext) }
+      .map { it.toClassifierRef2(injektContext) }
     val namedScope = typeFor(FqName("com.ivianuu.injekt.test.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {

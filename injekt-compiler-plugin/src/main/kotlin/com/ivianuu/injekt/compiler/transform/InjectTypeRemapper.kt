@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -406,7 +407,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     }
   }
 
-  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2)
+  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames.inject2)
 }
 
 @Suppress("DEPRECATION")
@@ -431,7 +432,7 @@ class InjectNTypeRemapper(
   override fun leaveScope() {
   }
 
-  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2)
+  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames.inject2)
 
   @OptIn(ObsoleteDescriptorBasedAPI::class)
   private fun IrType.isFunction(): Boolean {
@@ -522,5 +523,5 @@ class InjectNTypeRemapper(
     )
 }
 
-private fun IrConstructorCall.isInjectNAnnotation(@Inject context: InjektContext) =
-  symbol.owner.parent.fqNameForIrSerialization == injektFqNames().inject2
+@WithInjektContext private fun IrConstructorCall.isInjectNAnnotation() =
+  symbol.owner.parent.fqNameForIrSerialization == injektFqNames.inject2

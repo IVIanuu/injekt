@@ -36,8 +36,10 @@ import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.injekt_shaded.inject
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -58,10 +60,10 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
   ) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
-        !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
+        !resultingDescriptor.hasAnnotation(injektFqNames.inject2) &&
       (resolvedCall !is VariableAsFunctionResolvedCall ||
-          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2)) &&
-      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) != true) return
+          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames.inject2)) &&
+      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) != true) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -105,13 +107,13 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
       ?: resolvedCall.dispatchReceiver
         ?.safeAs<ExpressionReceiver>()
         ?.expression
-        ?.getResolvedCall(context.trace.bindingContext)
+        ?.getResolvedCall(trace!!.bindingContext)
         ?.resultingDescriptor
-        ?.callableInfo(injektContext)
+        ?.callableInfo()
         ?.type
       ?: resolvedCall.dispatchReceiver
         ?.type
-        ?.takeIf { it.hasAnnotation(injektFqNames().inject2) }
+        ?.takeIf { it.hasAnnotation(injektFqNames.inject2) }
         ?.toTypeRef()
 
     val lambdaInjectParameters = injectLambdaType
@@ -120,7 +122,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
         InjectNParameterDescriptor(
           resultingDescriptor.containingDeclaration,
           resultingDescriptor.valueParameters.size + index,
-          injectNType
+          injectNType,
+          inject()
         )
       }
 
@@ -154,7 +157,7 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
         result.candidate is CallableInjectable) {
         if (filePath != null) {
           result.candidate.callable.import?.element?.let {
-            context.trace.record(
+            trace!!.record(
               InjektWritableSlices.USED_IMPORT,
               SourcePosition(filePath, it.startOffset, it.endOffset),
               Unit
@@ -166,12 +169,12 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
 
     when (graph) {
       is InjectionGraph.Success -> if (filePath != null) {
-        context.trace.record(
+        trace!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
           filePath,
           Unit
         )
-        context.trace.record(
+        trace!!.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
             filePath,
@@ -181,7 +184,7 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
           graph
         )
       }
-      is InjectionGraph.Error -> context.trace.report(
+      is InjectionGraph.Error -> trace!!.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
       )
     }

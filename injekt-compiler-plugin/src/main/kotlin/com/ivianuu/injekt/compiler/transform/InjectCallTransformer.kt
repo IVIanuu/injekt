@@ -393,7 +393,7 @@ import kotlin.collections.set
                 irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
                 irCall(
                   pluginContext.referenceFunctions(
-                    injektFqNames().commonPackage.child("synchronized".asNameId())
+                    injektFqNames.commonPackage.child("synchronized".asNameId())
                   ).single()
                 ).apply {
                   putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
@@ -461,7 +461,7 @@ import kotlin.collections.set
         if (result.candidate.callContext == CallContext.COMPOSABLE) {
           annotations = annotations + DeclarationIrBuilder(pluginContext, symbol)
             .irCallConstructor(
-              pluginContext.referenceConstructors(injektFqNames().composable)
+              pluginContext.referenceConstructors(injektFqNames.composable)
                 .single(),
               emptyList()
             )
@@ -532,7 +532,7 @@ import kotlin.collections.set
           if (requestCallable.callable.callContext() == CallContext.COMPOSABLE) {
             annotations += DeclarationIrBuilder(pluginContext, symbol)
               .irCallConstructor(
-                pluginContext.referenceConstructors(injektFqNames().composable)
+                pluginContext.referenceConstructors(injektFqNames.composable)
                   .single(),
                 emptyList()
               )
@@ -736,7 +736,7 @@ import kotlin.collections.set
               )
             }
 
-            val disposableClass = pluginContext.referenceClass(injektFqNames().disposable)!!
+            val disposableClass = pluginContext.referenceClass(injektFqNames.disposable)!!
             fields
               .filter { it.name.asString().endsWith("Instance") }
               .forEach { field ->
@@ -899,7 +899,7 @@ import kotlin.collections.set
     }
   }
 
-  private val sourceKeyConstructor = pluginContext.referenceClass(injektFqNames().sourceKey)
+  private val sourceKeyConstructor = pluginContext.referenceClass(injektFqNames.sourceKey)
     ?.constructors?.single()
 
   private fun ScopeContext.sourceKeyExpression(): IrExpression =
@@ -920,7 +920,7 @@ import kotlin.collections.set
       }
     }
 
-  private val typeKey = pluginContext.referenceClass(injektFqNames().typeKey)
+  private val typeKey = pluginContext.referenceClass(injektFqNames.typeKey)
   private val typeKeyValue = typeKey?.owner?.properties
     ?.single { it.name.asString() == "value" }
   private val typeKeyConstructor = typeKey?.constructors?.single()

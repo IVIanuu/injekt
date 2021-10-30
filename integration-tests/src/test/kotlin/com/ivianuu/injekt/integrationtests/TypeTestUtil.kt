@@ -24,7 +24,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.toTypeRef2
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -167,7 +167,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
 
   fun typeFor(fqName: FqName) = injektContext.injektContext.classifierDescriptorForFqName(
     fqName, NoLookupLocation.FROM_BACKEND)
-    ?.defaultType?.toTypeRef(context = injektContext) ?: error("Wtf $fqName")
+    ?.defaultType?.toTypeRef2(context = injektContext) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
     shouldBeAssignableTo(other, emptyList())
