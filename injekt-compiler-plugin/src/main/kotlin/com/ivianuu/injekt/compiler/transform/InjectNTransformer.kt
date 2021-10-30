@@ -22,12 +22,17 @@ import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -39,6 +44,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) class InjectNTransformer(
@@ -55,12 +61,36 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     if (clazz in transformedClasses) return clazz
     transformedClasses += clazz
 
-    info.injectNParameters.forEach { parameter ->
+    val fieldsByParameter = info.injectNParameters.associateWith { parameter ->
       clazz.addField(
         fieldName = parameter.name,
         fieldType = parameter.typeRef.toIrType().typeOrNull!!
       )
     }
+
+    clazz.declarations
+      .filterIsInstance<IrConstructor>()
+      .map { transformIfNeeded(it) as IrConstructor }
+      .forEach { constructor ->
+        val oldBody = constructor.body!!
+        constructor.body = DeclarationIrBuilder(pluginContext, constructor.symbol).irBlockBody {
+          oldBody.statements.forEach { statement ->
+            +statement
+            if (statement is IrDelegatingConstructorCall) {
+              val constructorInjectParameters = constructor
+                .valueParameters
+                .filter { it.name.asString().startsWith("_inject") }
+              info.injectNParameters.forEach { parameter ->
+                +irSetField(
+                  irGet(clazz.thisReceiver!!),
+                  fieldsByParameter[parameter]!!,
+                  irGet(constructorInjectParameters[parameter.index])
+                )
+              }
+            }
+          }
+        }
+      }
 
     return clazz
   }

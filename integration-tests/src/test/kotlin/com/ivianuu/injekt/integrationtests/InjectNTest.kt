@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class InjectNTest {
@@ -92,19 +94,24 @@ class InjectNTest {
 
   @Test fun testInjectNClass() = singleAndMultiCodegen(
     """
-      @Inject1<String> @Provide class MyClass {
+      @Inject1<String> @Provide class MyClass @Inject1<Unit> constructor(val int: Int) {
         val string = inject<String>()
         fun string(): String = inject<String>()
         val string2: String get() = inject<String>()
       }
     """,
     """
-      fun invoke(@Inject string: String) {
-        MyClass()
-        inject<MyClass>()
+      fun invoke(@Inject string: String): Pair<String, String> {
+        @Provide val unit = Unit
+        @Provide val int = 0
+        return MyClass().string to inject<MyClass>().string()
       }
     """
-  )
+  ) {
+    val (a, b) = invokeSingleFile<Pair<String, String>>("42")
+    a shouldBe "42"
+    b shouldBe "42"
+  }
 
   @Test fun testInjectNGenericClass() = singleAndMultiCodegen(
     """
