@@ -73,4 +73,17 @@ class ProvideLambdaTest {
     val foos = invokeSingleFile<List<Foo>>()
     foos shouldBe foos.distinct()
   }
+
+  @Test fun testScopedProvideLambda() = codegen(
+    """
+      @Component interface MyComponent {
+        val foo: Foo
+      }
+  
+      val component = inject<(@Provide @Scoped<MyComponent> () -> Foo) -> MyComponent>()({ Foo() })
+      fun invoke() = component.foo
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
 }

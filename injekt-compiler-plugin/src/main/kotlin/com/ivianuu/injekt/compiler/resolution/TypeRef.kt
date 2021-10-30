@@ -204,9 +204,7 @@ fun KotlinType.toTypeRef2(
         }
         .toMutableList()
         .also {
-          if (classifier.isTag &&
-            it.size != classifier.typeParameters.size
-          )
+          if (classifier.isTag && it.size != classifier.typeParameters.size)
             it += context.nullableAnyType
         },
       isMarkedComposable = kotlinType.hasAnnotation(injektFqNames.composable),
@@ -215,7 +213,9 @@ fun KotlinType.toTypeRef2(
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      injectNTypes = injectNTypes().map { it.toTypeRef() }
+      injectNTypes = injectNTypes().map { it.toTypeRef() },
+      scopeComponentType = annotations.findAnnotation(injektFqNames.scoped)
+        ?.type?.arguments?.single()?.type?.toTypeRef()
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames.tag)
@@ -245,7 +245,8 @@ class TypeRef(
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
-  val injectNTypes: List<TypeRef> = emptyList()
+  val injectNTypes: List<TypeRef> = emptyList(),
+  val scopeComponentType: TypeRef? = null
 ) {
   override fun toString(): String = renderToString()
 
@@ -340,6 +341,7 @@ class TypeRef(
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
       result = 31 * result + injectNTypes.hashCode()
+      result = 31 * result + scopeComponentType.hashCode()
       _hashCode = result
     }
     return _hashCode
@@ -370,7 +372,8 @@ fun TypeRef.copy(
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
-  injectNTypes: List<TypeRef> = this.injectNTypes
+  injectNTypes: List<TypeRef> = this.injectNTypes,
+  scopeComponentType: TypeRef? = this.scopeComponentType
 ) = TypeRef(
   classifier,
   isMarkedNullable,
@@ -381,7 +384,8 @@ fun TypeRef.copy(
   isStarProjection,
   frameworkKey,
   variance,
-  injectNTypes
+  injectNTypes,
+  scopeComponentType
 )
 
 val STAR_PROJECTION_TYPE = TypeRef(

@@ -93,6 +93,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
             isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
               .also { it[DISPATCH_RECEIVER_INDEX] = this },
+            scopeComponentType = scopeComponentType,
             import = import
           ).substitute(classifier.typeParameters.zip(arguments).toMap())
         }
