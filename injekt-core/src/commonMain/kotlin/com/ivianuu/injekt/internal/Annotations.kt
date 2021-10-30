@@ -16,86 +16,8 @@
 
 package com.ivianuu.injekt.internal
 
-internal annotation class CallableInfo(
-  val value0: String = "",
-  val value1: String = "",
-  val value2: String = "",
-  val value3: String = "",
-  val value4: String = "",
-  val value5: String = "",
-  val value6: String = "",
-  val value7: String = "",
-  val value8: String = "",
-  val value9: String = "",
-  val value10: String = "",
-  val value11: String = "",
-  val value12: String = "",
-  val value13: String = "",
-  val value14: String = "",
-  val value15: String = "",
-  val value16: String = "",
-  val value17: String = "",
-  val value18: String = "",
-  val value19: String = "",
-  val value20: String = "",
-  val value21: String = "",
-  val value22: String = "",
-  val value23: String = "",
-  val value24: String = ""
-)
+internal annotation class CallableInfo(val values: Array<String>)
 
-internal annotation class ClassifierInfo(
-  val value0: String = "",
-  val value1: String = "",
-  val value2: String = "",
-  val value3: String = "",
-  val value4: String = "",
-  val value5: String = "",
-  val value6: String = "",
-  val value7: String = "",
-  val value8: String = "",
-  val value9: String = "",
-  val value10: String = "",
-  val value11: String = "",
-  val value12: String = "",
-  val value13: String = "",
-  val value14: String = "",
-  val value15: String = "",
-  val value16: String = "",
-  val value17: String = "",
-  val value18: String = "",
-  val value19: String = "",
-  val value20: String = "",
-  val value21: String = "",
-  val value22: String = "",
-  val value23: String = "",
-  val value24: String = ""
-)
+internal annotation class ClassifierInfo(val values: Array<String>)
 
-internal annotation class TypeParameterInfos(
-  val value0: String = "",
-  val value1: String = "",
-  val value2: String = "",
-  val value3: String = "",
-  val value4: String = "",
-  val value5: String = "",
-  val value6: String = "",
-  val value7: String = "",
-  val value8: String = "",
-  val value9: String = "",
-  val value10: String = "",
-  val value11: String = "",
-  val value12: String = "",
-  val value13: String = "",
-  val value14: String = "",
-  val value15: String = "",
-  val value16: String = "",
-  val value17: String = "",
-  val value18: String = "",
-  val value19: String = "",
-  val value20: String = "",
-  val value21: String = "",
-  val value22: String = "",
-  val value23: String = "",
-  val value24: String = ""
-)
+internal annotation class TypeParameterInfos(val values: Array<String>)

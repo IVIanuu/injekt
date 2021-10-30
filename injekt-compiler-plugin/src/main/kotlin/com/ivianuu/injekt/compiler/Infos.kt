@@ -64,12 +64,14 @@ import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
+import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -223,7 +225,7 @@ data class CallableInfo(
       module.findClassAcrossModuleDependencies(
         ClassId.topLevel(injektFqNames.callableInfo)
       )?.defaultType ?: return,
-      serializedInfo.toChunkedAnnotationArguments(),
+      mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
       SourceElement.NO_SOURCE
     )
   )
@@ -449,7 +451,7 @@ class ClassifierInfo(
           module.findClassAcrossModuleDependencies(
             ClassId.topLevel(injektFqNames.typeParameterInfos)
           )?.defaultType ?: return,
-          finalTypeParameterInfos.joinToString("=:=").toChunkedAnnotationArguments(),
+          mapOf("values".asNameId() to finalTypeParameterInfos.joinToString("=:=").toChunkedArrayValue()),
           SourceElement.NO_SOURCE
         )
       )
@@ -477,7 +479,7 @@ class ClassifierInfo(
         module.findClassAcrossModuleDependencies(
           ClassId.topLevel(injektFqNames.classifierInfo)
         )?.defaultType ?: return,
-        serializedInfo.toChunkedAnnotationArguments(),
+        mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
         SourceElement.NO_SOURCE
       )
     )
@@ -485,17 +487,16 @@ class ClassifierInfo(
 }
 
 private fun AnnotationDescriptor.readChunkedValue() = allValueArguments
-  .toList()
-  .sortedBy {
-    it.first.asString()
-      .removePrefix("value")
-      .toInt()
-  }
-  .joinToString(separator = "") { it.second.value as String }
+  .values
+  .single()
+  .cast<ArrayValue>()
+  .value
+  .map { it.value.toString() }
+  .joinToString("")
 
-private fun String.toChunkedAnnotationArguments() = chunked(65535 / 2)
-  .mapIndexed { index, chunk -> "value$index".asNameId() to StringValue(chunk) }
-  .toMap()
+private fun String.toChunkedArrayValue() = ArrayValue(
+  chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
+) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
 private fun TypeRef.shouldBePersisted(): Boolean = anyType {
   (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||

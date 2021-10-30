@@ -55,6 +55,8 @@ class InjectTypeResolutionInterceptorExtension(
     context: ExpressionTypingContext,
     descriptor: AnonymousFunctionDescriptor
   ): AnonymousFunctionDescriptor {
+    if (context.expectedType === TypeUtils.NO_EXPECTED_TYPE) return descriptor
+
     @Provide val injektContext = InjektContext(context.scope.ownerDescriptor.module, injektFqNames)
     @Provide val trace = context.trace
 
