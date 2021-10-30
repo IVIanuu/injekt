@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
@@ -58,10 +57,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-fun TypeRef.toIrType(
+@WithInjektContext fun TypeRef.toIrType(
   @Inject pluginContext: IrPluginContext,
-  @Inject localClasses: List<IrClass>,
-  @Inject context: InjektContext
+  @Inject localClassCollector: LocalClassCollector
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
@@ -114,7 +112,9 @@ fun TypeRef.toIrType(
     else -> {
       val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
-      val irClassifier = localClasses.singleOrNull { it.descriptor.fqNameSafe == fqName }
+      val irClassifier = localClassCollector.localClasses.singleOrNull {
+        it.descriptor.fqNameSafe == fqName
+      }
         ?.symbol
         ?: pluginContext.referenceClass(fqName)
         ?: pluginContext.referenceFunctions(fqName.parent())
@@ -137,7 +137,7 @@ fun TypeRef.toIrType(
         isMarkedNullable,
         arguments.map { it.toIrType() },
         if (isMarkedComposable) {
-          val composableConstructor = pluginContext.referenceConstructors(injektFqNames().composable)
+          val composableConstructor = pluginContext.referenceConstructors(injektFqNames.composable)
             .single()
           listOf(
             DeclarationIrBuilder(pluginContext, composableConstructor)
@@ -149,10 +149,9 @@ fun TypeRef.toIrType(
   }
 }
 
-private fun TypeRef.toIrAbbreviation(
+@WithInjektContext private fun TypeRef.toIrAbbreviation(
   @Inject pluginContext: IrPluginContext,
-  @Inject localClasses: List<IrClass>,
-  @Inject context: InjektContext
+  @Inject localClassCollector: LocalClassCollector
 ): IrTypeAbbreviation {
   val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
   return IrTypeAbbreviationImpl(

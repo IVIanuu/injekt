@@ -32,6 +32,24 @@ annotation class Provide
 @Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.TYPE)
 annotation class Inject
 
+typealias Inject1<A> = Inject2<A, A>
+
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.TYPE
+)
+@Repeatable
+annotation class Inject2<A, B>
+
+typealias Inject3<A, B, C> = Inject2<Inject2<A, B>, C>
+
+typealias Inject4<A, B, C, D> = Inject2<Inject3<A, B, C>, D>
+
+typealias Inject5<A, B, C, D, E> = Inject2<Inject4<A, B, C, D>, E>
+
 @Target(
   AnnotationTarget.CLASS,
   AnnotationTarget.PROPERTY,

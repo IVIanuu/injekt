@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt_shaded.Inject
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -31,10 +30,12 @@ import kotlinx.serialization.Serializable
   @SerialName("3") val isMarkedNullable: Boolean,
   @SerialName("4") val isMarkedComposable: Boolean,
   @SerialName("5") val isProvide: Boolean,
-  @SerialName("6") val isInject: Boolean
+  @SerialName("6") val isInject: Boolean,
+  @SerialName("7") val injectNTypes: List<PersistedTypeRef>,
+  @SerialName("8") val scopeComponentType: PersistedTypeRef?
 )
 
-fun TypeRef.toPersistedTypeRef(@Inject context: InjektContext): PersistedTypeRef =
+@WithInjektContext fun TypeRef.toPersistedTypeRef(): PersistedTypeRef =
   PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey() ?: "",
     arguments = arguments.map { it.toPersistedTypeRef() },
@@ -42,28 +43,31 @@ fun TypeRef.toPersistedTypeRef(@Inject context: InjektContext): PersistedTypeRef
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
-    isInject = isInject
+    isInject = isInject,
+    injectNTypes = injectNTypes.map { it.toPersistedTypeRef() },
+    scopeComponentType = scopeComponentType?.toPersistedTypeRef()
   )
 
-fun PersistedTypeRef.toTypeRef(@Inject context: InjektContext): TypeRef {
+@WithInjektContext fun PersistedTypeRef.toTypeRef(): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = context.injektContext.classifierDescriptorForKey(classifierKey)
+  val classifier = classifierDescriptorForKey(classifierKey)
     .toClassifierRef()
   val arguments = if (classifier.isTag) {
     arguments
       .map { it.toTypeRef() } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
-            context.injektContext.nullableAnyType
+            context.nullableAnyType
           else null
         )
   } else arguments.map { it.toTypeRef() }
-  return classifier.untaggedType
-    .copy(
-      arguments = arguments,
-      isMarkedNullable = isMarkedNullable,
-      isMarkedComposable = isMarkedComposable,
-      isProvide = isProvide,
-      isInject = isInject
-    )
+  return classifier.untaggedType.copy(
+    arguments = arguments,
+    isMarkedNullable = isMarkedNullable,
+    isMarkedComposable = isMarkedComposable,
+    isProvide = isProvide,
+    isInject = isInject,
+    injectNTypes = injectNTypes.map { it.toTypeRef() },
+    scopeComponentType = scopeComponentType?.toTypeRef()
+  )
 }

@@ -24,7 +24,15 @@ annotation class EntryPoint<C : @Component Any>
 
 inline fun <E> (@Component Any).entryPoint(): E = this as E
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.LOCAL_VARIABLE,
+  AnnotationTarget.VALUE_PARAMETER,
+  AnnotationTarget.TYPE
+)
 annotation class Scoped<C : @Component Any>
 
 fun interface Disposable {
@@ -42,7 +50,5 @@ interface ComponentObserver<C : @Component Any> : Disposable {
   override fun dispose() {
   }
 }
-
-interface AnyInterface
 
 @Component interface AppComponent

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -72,5 +73,29 @@ class ProvideLambdaTest {
   ) {
     val foos = invokeSingleFile<List<Foo>>()
     foos shouldBe foos.distinct()
+  }
+
+  @Test fun testScopedProvideLambda() = codegen(
+    """
+      @Component interface MyComponent {
+        val foo: Foo
+      }
+  
+      val component = inject<(@Provide @Scoped<MyComponent> () -> Foo) -> MyComponent>()({ Foo() })
+      fun invoke() = component.foo
+    """
+  ) {
+    invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
+  }
+
+  @Test fun testInjectNProvideLambda() = codegen(
+    """
+      fun invoke(): Bar {
+        @Provide val provider: @Provide @Inject1<Foo> () -> Bar = { Bar(inject()) }
+        return inject<(Foo) -> Bar>()(Foo())
+      }
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 }

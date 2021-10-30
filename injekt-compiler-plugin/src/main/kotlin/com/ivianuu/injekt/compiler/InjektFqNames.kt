@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.name.FqName
 
 class InjektFqNames(val injektPackage: FqName) {
   val inject = injektPackage.child("Inject".asNameId())
+  val inject2 = injektPackage.child("Inject2".asNameId())
   val provide = injektPackage.child("Provide".asNameId())
   val providers = injektPackage.child("Providers".asNameId())
   val tag = injektPackage.child("Tag".asNameId())
@@ -29,6 +30,7 @@ class InjektFqNames(val injektPackage: FqName) {
   val internalPackage = injektPackage.child("internal".asNameId())
   val callableInfo = internalPackage.child("CallableInfo".asNameId())
   val classifierInfo = internalPackage.child("ClassifierInfo".asNameId())
+  val injectNInfo = internalPackage.child("InjectNInfo".asNameId())
   val typeParameterInfos = internalPackage.child("TypeParameterInfos".asNameId())
 
   val commonPackage = injektPackage.child("common".asNameId())

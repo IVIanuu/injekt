@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.types.model.TypeVariance
 
@@ -65,11 +64,11 @@ fun TypeRef.isSubTypeOf(
   context.addSubTypeConstraint(this, superType)
     ?.let { return it }
 
-  if (classifier.fqName == injektFqNames(context.injektContext).nothing &&
+  if (classifier.fqName == context.injektContext.injektFqNames.nothing &&
     (!isMarkedNullable || superType.isNullableType)
   ) return true
 
-  if (superType.classifier.fqName == injektFqNames(context.injektContext).any &&
+  if (superType.classifier.fqName == context.injektContext.injektFqNames.any &&
     (superType.isMarkedNullable || !isNullableType)
   ) return true
 
@@ -98,6 +97,16 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     }
 
     if (!argumentOk) return false
+  }
+
+  if (injectNTypes.size != superType.injectNTypes.size)
+    return false
+
+  for (i in injectNTypes.indices) {
+    val argument = injectNTypes[i]
+    val parameter = superType.injectNTypes[i]
+    if (!argument.isSubTypeOf(parameter))
+      return false
   }
 
   return true
@@ -404,7 +413,7 @@ class TypeContext(override val injektContext: InjektContext) : TypeCheckerContex
     resultType: TypeRef,
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
-    if (resultType.classifier.fqName == injektFqNames(injektContext).nothing) return false
+    if (resultType.classifier.fqName == injektContext.injektFqNames.nothing) return false
     val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))

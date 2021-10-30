@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
@@ -35,7 +36,7 @@ import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 
 object InjektWritableSlices {
-  val INJEKT_FQ_NAMES = BasicWritableSlice<Unit, InjektFqNames>(RewritePolicy.DO_NOTHING)
+  val INJEKT_CONTEXT = BasicWritableSlice<Unit, InjektContext>(RewritePolicy.DO_NOTHING)
   val INJECTION_GRAPH = BasicWritableSlice<SourcePosition, InjectionGraph.Success>(RewritePolicy.DO_NOTHING)
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
@@ -53,6 +54,9 @@ object InjektWritableSlices {
   val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
+  val FIXED_TYPE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
+  val INJECT_N_PARAMETERS = BasicWritableSlice<CallableDescriptor, List<InjectNParameterDescriptor>>(RewritePolicy.DO_NOTHING)
+  val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)

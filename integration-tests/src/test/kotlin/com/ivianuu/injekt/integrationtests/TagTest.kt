@@ -90,13 +90,14 @@ class TagTest {
     """
   )
 
-  @Test fun testTaggedFunction() = codegen(
+  @Test fun testTaggedFunction() = singleAndMultiCodegen(
     """ 
       @Provide @Tag1 fun foo() = Foo()
+    """,
     """
-  ) {
-    compilationShouldHaveFailed("only types, classes and class constructors can be annotated with a tag")
-  }
+      fun invoke() = inject<@Tag Foo>()
+    """
+  )
 
   @Test fun testTagWithArguments() = codegen(
     """ 

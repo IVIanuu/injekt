@@ -34,8 +34,9 @@ class InfoAnnotationPatcher(@Inject private val context: InjektContext) : Declar
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
+    @Provide val trace = context.trace
+
     // requesting infos triggers saving them
-    @Provide val injektContext = this.context.withTrace(context.trace)
     when (descriptor) {
       is ClassDescriptor -> {
         descriptor.classifierInfo()

@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
+import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.lookupLocation
-import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -40,17 +40,17 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   element, importPath, packageFqName
 )
 
-fun ProviderImport.resolve(@Inject context: InjektContext): ResolvedProviderImport? {
+@WithInjektContext fun ProviderImport.resolve(): ResolvedProviderImport? {
   if (!isValidImport()) return null
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
-    val objectForFqName = context.injektContext.classifierDescriptorForFqName(packageFqName,
+    val objectForFqName = classifierDescriptorForFqName(packageFqName,
       element.lookupLocation)
     objectForFqName?.findPackage()?.fqName ?: packageFqName
   } else {
     val fqName = FqName(importPath)
     val parentFqName = fqName.parent()
-    val objectForFqName = context.injektContext.classifierDescriptorForFqName(
+    val objectForFqName = classifierDescriptorForFqName(
       parentFqName, NoLookupLocation.FROM_BACKEND)
     objectForFqName?.findPackage()?.fqName ?: parentFqName
   }
@@ -58,8 +58,8 @@ fun ProviderImport.resolve(@Inject context: InjektContext): ResolvedProviderImpo
   return toResolvedImport(packageFqName)
 }
 
-fun KtAnnotated.getProviderImports(@Inject context: InjektContext): List<ProviderImport> =
-  findAnnotation(injektFqNames().providers)
+@WithInjektContext fun KtAnnotated.getProviderImports(): List<ProviderImport> =
+  findAnnotation(injektFqNames.providers)
     ?.valueArguments
     ?.map { it.toProviderImport() } ?: emptyList()
 

@@ -720,7 +720,7 @@ class InjectableResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass.<init>")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass")
   }
 
   @Test fun testCanResolveClassProvideDeclarationInSecondaryConstructorAfterSuperInit() = codegen(
@@ -1162,7 +1162,7 @@ class InjectableResolveTest {
       interface ScopeComponent {
         val foo: Foo
       }
-      @Provide val foo: @Scoped<ScopeComponent> Foo = Foo() 
+      @Provide @Scoped<ScopeComponent> val foo: Foo = Foo() 
     """,
     """
       fun invoke() = inject<Foo>()
@@ -1173,7 +1173,7 @@ class InjectableResolveTest {
 
   @Test fun testScopedValueCannotResolveInjectablesInScopesBelowIt() = singleAndMultiCodegen(
     """
-      @Provide fun bar(foo: Foo): @Scoped<ParentComponent> Bar = Bar(foo)
+      @Provide @Scoped<ParentComponent> fun bar(foo: Foo): Bar = Bar(foo)
       @Component interface ParentComponent {
         fun childComponent(foo: Foo): ChildComponent
       } 

@@ -39,6 +39,8 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingTrace
 import java.util.Locale
 
 interface InjektErrors {
@@ -148,15 +150,6 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val TAG_ON_NON_CLASS_AND_NON_TYPE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "only types, classes and class constructors can be annotated with a tag"
-          )
-        }
-
     @JvmField val MALFORMED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
@@ -241,6 +234,10 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "entry point cannot contain a abstract var property") }
 
+    @JvmField val FILE_DECOY =
+      DiagnosticFactory0.create<KtFile>(Severity.ERROR)
+        .also { MAP.put(it, "decoy") }
+
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,
@@ -256,6 +253,7 @@ interface InjektErrors {
 
 private fun InjectionGraph.Error.render(): String = buildString {
   @Provide val injektContext = this@render.scope.context
+  @Provide val trace: BindingTrace? = this@render.scope.trace
 
   var indent = 0
   fun withIndent(block: () -> Unit) {

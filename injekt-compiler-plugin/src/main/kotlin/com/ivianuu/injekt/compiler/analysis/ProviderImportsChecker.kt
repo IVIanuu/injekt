@@ -22,10 +22,12 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.resolution.ProviderImport
 import com.ivianuu.injekt.compiler.resolution.getProviderImports
 import com.ivianuu.injekt.compiler.resolution.isValidImport
 import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
@@ -44,13 +46,14 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
+    @Provide val trace = context.trace
     val file = declaration.containingKtFile
-    checkFile(file, context.trace)
-    if (!declaration.hasAnnotation(injektFqNames().providers)) return
-    checkImports(file.packageFqName, declaration.getProviderImports(), context.trace)
+    checkFile(file)
+    if (!declaration.hasAnnotation(injektFqNames.providers)) return
+    checkImports(file.packageFqName, declaration.getProviderImports())
   }
 
-  private fun checkFile(file: KtFile, trace: BindingTrace) {
+  private fun checkFile(file: KtFile, @Inject trace: BindingTrace) {
     if (file in checkedFiles) return
     checkedFiles += file
     checkImports(file.packageFqName, file.getProviderImports(), trace)
@@ -59,7 +62,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
   private fun checkImports(
     currentPackage: FqName,
     imports: List<ProviderImport>,
-    trace: BindingTrace
+    @Inject trace: BindingTrace
   ) {
     if (imports.isEmpty()) return
 
@@ -95,7 +98,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
           )
           return@forEach
         }
-        if (context.memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
+        if (memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
           trace.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!)
@@ -113,7 +116,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
           return@forEach
         }
         val shortName = fqName.shortName()
-        val importedDeclarations = context.memberScopeForFqName(parentFqName,
+        val importedDeclarations = memberScopeForFqName(parentFqName,
           import.element.lookupLocation)
           ?.getContributedDescriptors()
           ?.filter {

@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -30,6 +31,7 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
@@ -37,6 +39,7 @@ class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   @Inject @Provide val context: InjektContext,
+  @Inject @Provide val trace: BindingTrace?,
   val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
@@ -147,7 +150,7 @@ class InjectablesScope(
     if (isIde) return
     parent?.recordLookup(lookupLocation)
     for (import in imports) {
-      context.injektContext.memberScopeForFqName(import.packageFqName, lookupLocation)
+      memberScopeForFqName(import.packageFqName, lookupLocation)
         ?.recordLookup(
           injectablesLookupName(
             FqName(import.importPath!!.removeSuffix(".*")),
@@ -237,9 +240,9 @@ class InjectablesScope(
           collectionElementType = collectionElementType
         )
       }
-      request.type.classifier.fqName == injektFqNames().typeKey ->
+      request.type.classifier.fqName == injektFqNames.typeKey ->
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == injektFqNames().sourceKey ->
+      request.type.classifier.fqName == injektFqNames.sourceKey ->
         return SourceKeyInjectable(request.type, this)
       request.type.classifier.isComponent ->
         return ComponentInjectable(request.type, this)
@@ -396,7 +399,7 @@ class InjectablesScope(
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames().provide))
+            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames.provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

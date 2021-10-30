@@ -18,7 +18,9 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -47,10 +49,13 @@ class InjectSyntheticScopeProviderExtension(
   override fun getScopes(
     moduleDescriptor: ModuleDescriptor,
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
-  ): List<SyntheticScope> =
-    if (isEnabled(moduleDescriptor))
-      listOf(InjectSyntheticScope(InjektContext(moduleDescriptor, injektFqNames(moduleDescriptor), DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))))
+  ): List<SyntheticScope> {
+    @Provide val injektContext = InjektContext(moduleDescriptor, injektFqNames(moduleDescriptor))
+    @Provide val trace = DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
+    return if (isEnabled(moduleDescriptor))
+      listOf(InjectSyntheticScope())
     else emptyList()
+  }
 }
 
 class InjectSyntheticScopes(
@@ -62,14 +67,11 @@ class InjectSyntheticScopes(
 ) : SyntheticScopes {
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
-  override val scopes: Collection<SyntheticScope> = delegate.scopes + InjectSyntheticScope(
-    injektContext.withTrace(DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))
-  )
+  @Provide private val trace = DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
+  override val scopes: Collection<SyntheticScope> = delegate.scopes + InjectSyntheticScope()
 }
 
-private class InjectSyntheticScope(
-  @Inject private val context: InjektContext
-) : SyntheticScope.Default() {
+@WithInjektContext private class InjectSyntheticScope() : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
     constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor
 
