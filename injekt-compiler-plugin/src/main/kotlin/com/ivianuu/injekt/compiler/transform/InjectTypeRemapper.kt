@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
@@ -455,6 +456,16 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
           val ownerFunction = owner.first as IrFunction
           val property = ownerFunction.propertyIfAccessor
           val info = property.descriptor.cast<PropertyDescriptor>().callableInfo()
+          when {
+            type === ownerFunction.returnType || owner.second == Kind.RETURN_TYPE -> info.type.injectNTypes
+            type === ownerFunction.dispatchReceiverParameter?.type -> info.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.injectNTypes
+            type === ownerFunction.extensionReceiverParameter?.type -> info.parameterTypes[EXTENSION_RECEIVER_INDEX]!!.injectNTypes
+            else -> throw AssertionError("Unexpected type $type ${ownerFunction.dump()}")
+          }.size
+        }
+        is SimpleFunctionDescriptor -> {
+          val ownerFunction = owner.first as IrFunction
+          val info = descriptor.callableInfo()
           when {
             type === ownerFunction.returnType || owner.second == Kind.RETURN_TYPE -> info.type.injectNTypes
             type === ownerFunction.dispatchReceiverParameter?.type -> info.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.injectNTypes

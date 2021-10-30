@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.wrap
-import com.ivianuu.injekt_shaded.inject
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -256,8 +255,7 @@ data class CallableInfo(
       InjectNParameterDescriptor(
         callable,
         callable.valueParameters.size + index,
-        type.toTypeRef(),
-        inject()
+        type.toTypeRef()
       )
     }
   )
@@ -352,8 +350,7 @@ class ClassifierInfo(
         InjectNParameterDescriptor(
           this,
           index,
-          parameterType.toTypeRef(),
-          inject()
+          parameterType.toTypeRef()
         )
       }
 
@@ -398,8 +395,7 @@ class ClassifierInfo(
     InjectNParameterDescriptor(
       descriptor,
       0,
-      type.toTypeRef(),
-      inject()
+      type.toTypeRef()
     )
   }
 )

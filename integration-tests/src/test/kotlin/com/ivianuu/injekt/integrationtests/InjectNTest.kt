@@ -238,6 +238,18 @@ class InjectNTest {
     """
   )
 
+  @Test fun testInjectNGenericLambda() = singleAndMultiCodegen(
+    """
+      fun <T> lambda(): @Inject1<T> () -> T = { inject<T>() }
+    """,
+    """
+      fun invoke(@Inject string: String) {
+        lambda<String>()()
+        lambda<String>().invoke()
+      }
+    """
+  )
+
   @Test fun testInjectNSuspendLambda() = singleAndMultiCodegen(
     """
       val lambda: @Inject1<String> suspend () -> String = { inject<String>() }

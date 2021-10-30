@@ -295,6 +295,7 @@ class TypeRef(
         allTypes += inner
         inner.arguments.forEach { collect(it) }
         inner.superTypes.forEach { collect(it) }
+        inner.injectNTypes.forEach { collect(it) }
       }
       collect(this)
       _allTypes = allTypes
@@ -439,11 +440,12 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     } else substitution
   }
 
-  if (arguments.isEmpty()) return this
+  if (arguments.isEmpty() && injectNTypes.isEmpty()) return this
 
   val newArguments = arguments.map { it.substitute(map) }
-  if (arguments != newArguments)
-    return withArguments(newArguments)
+  val newInjectNTypes = injectNTypes.mapTo(mutableSetOf()) { it.substitute(map) }
+  if (arguments != newArguments || newInjectNTypes != injectNTypes)
+    return copy(arguments = arguments, injectNTypes = newInjectNTypes)
 
   return this
 }

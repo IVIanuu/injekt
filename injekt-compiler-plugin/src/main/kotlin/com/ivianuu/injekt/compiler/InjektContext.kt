@@ -28,7 +28,9 @@ import com.ivianuu.injekt_shaded.inject
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 typealias WithInjektContext = Inject2<InjektContext, BindingTrace?>
 
@@ -54,7 +56,7 @@ class InjektContext(
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  @Provide private val trace: BindingTrace? = null
+  @Provide private val trace = DelegatingBindingTrace(BindingContext.EMPTY, "injekt-context")
 
   val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
   val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }

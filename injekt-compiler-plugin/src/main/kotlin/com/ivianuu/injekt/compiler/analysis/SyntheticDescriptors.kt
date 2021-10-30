@@ -16,12 +16,13 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.module
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.injekt.compiler.resolution.substitute
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -96,11 +97,10 @@ class EntryPointConstructorDescriptor(
   ): FunctionDescriptorImpl = TODO()
 }
 
-class InjectNParameterDescriptor(
+@WithInjektContext class InjectNParameterDescriptor(
   private val _containingDeclaration: DeclarationDescriptor,
   val index: Int,
-  val typeRef: TypeRef,
-  @Provide val context: InjektContext
+  val typeRef: TypeRef
 ) : DeclarationDescriptorImpl(
   Annotations.create(
     listOf(
@@ -148,4 +148,11 @@ class InjectNParameterDescriptor(
   override fun hasSynthesizedParameterNames(): Boolean = false
 
   override fun substitute(substitutor: TypeSubstitutor): CallableDescriptor = this
+}
+
+@WithInjektContext fun InjectNParameterDescriptor.substitute(
+  map: Map<ClassifierRef, TypeRef>
+): InjectNParameterDescriptor {
+  if (map.isEmpty()) return this
+  return InjectNParameterDescriptor(containingDeclaration, index, typeRef.substitute(map))
 }
