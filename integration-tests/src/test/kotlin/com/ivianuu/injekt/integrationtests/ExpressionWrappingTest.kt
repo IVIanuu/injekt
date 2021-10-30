@@ -92,7 +92,7 @@ class ExpressionWrappingTest {
 
   @Test fun testFunctionWrapScopedInjectable() = codegen(
     """
-      @Provide val foo: @Scoped<MyComponent> Foo = Foo()
+      @Provide @Scoped<MyComponent> val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
 
       @Component interface MyComponent {
@@ -131,7 +131,7 @@ class ExpressionWrappingTest {
 
       @Provide object AndroidLogger : Logger
 
-      @Provide fun androidLogger(factory: () -> AndroidLogger): @Scoped<MyComponent> Logger =
+      @Provide @Scoped<MyComponent> fun androidLogger(factory: () -> AndroidLogger): Logger =
         factory()
 
       @Component interface MyComponent {

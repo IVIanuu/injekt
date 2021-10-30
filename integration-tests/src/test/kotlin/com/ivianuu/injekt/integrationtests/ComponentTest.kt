@@ -370,7 +370,7 @@ class ComponentTest {
         val foo: Foo
       }
 
-      @Provide val foo: @Scoped<MyComponent> Foo = Foo()
+      @Provide @Scoped<MyComponent> val foo = Foo()
     """,
     """
       fun invoke() = inject<MyComponent>().dispose()

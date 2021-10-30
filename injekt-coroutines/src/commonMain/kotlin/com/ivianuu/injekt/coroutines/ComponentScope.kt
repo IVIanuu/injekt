@@ -27,9 +27,9 @@ import kotlin.coroutines.CoroutineContext
 
 typealias ComponentScope<C> = CoroutineScope
 
-@Provide fun <C : @Component Any> componentScope(
+@Provide @Scoped<C> fun <C : @Component Any> componentScope(
   context: ComponentCoroutineContext<C>
-): @Scoped<C> ComponentScope<C> = DisposableCoroutineScope<C>(context)
+): ComponentScope<C> = DisposableCoroutineScope<C>(context)
 
 private class DisposableCoroutineScope<C : @Component Any>(
   context: CoroutineContext

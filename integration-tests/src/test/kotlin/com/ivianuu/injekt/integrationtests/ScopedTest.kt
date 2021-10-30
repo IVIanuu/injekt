@@ -197,7 +197,7 @@ class ScopedTest {
 
   @Test fun testScopedSuspendFunction() = codegen(
     """
-      @Provide suspend fun foo(): @Scoped<Any> Foo = Foo() 
+      @Provide @Scoped<Any> suspend fun foo() = Foo() 
     """
   ) {
     compilationShouldHaveFailed("a scoped declarations call context must be default")
@@ -205,7 +205,7 @@ class ScopedTest {
 
   @Test fun testScopedComposableFunction() = codegen(
     """
-      @Provide @Composable fun foo(): @Scoped<Any> Foo = Foo() 
+      @Provide @Scoped<Any> @Composable fun foo() = Foo() 
     """
   ) {
     compilationShouldHaveFailed("a scoped declarations call context must be default")
