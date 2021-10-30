@@ -159,7 +159,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
         result.symbol,
         result.typeArgumentsCount,
         callee.valueParameters.size
-      )
+      ).apply {
+        copyTypeAndValueArgumentsFrom(result)
+      }
       else -> throw AssertionError()
     }
   }
