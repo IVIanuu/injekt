@@ -23,36 +23,6 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class InjectNTest {
-  @Test fun testProvideLike() = codegen(
-    """
-      inline fun <P1, R> provide(@Provide p1: P1, block: @Inject1<P1> () -> R) = block()
-    """,
-    """
-      fun invoke() {
-        provide("") { inject<String>() }
-      }
-    """
-  )
-
-  @Test fun testDbContextLike() = singleAndMultiCodegen(
-    """
-      typealias DbContext = Inject2<Int, String>
-
-      @Inject1<String> val counterDb: String get() = inject()
-
-      @DbContext suspend inline fun <R> dbTransaction(crossinline block: @DbContext suspend () -> R): R {
-        return block()
-      }
-    """,
-    """
-      @DbContext suspend fun decCounter() {
-        dbTransaction {
-          counterDb.toString()
-        }
-      }
-    """
-  )
-
   @Test fun testInjectNFunction() = singleAndMultiCodegen(
     """
       @Inject1<String> fun myFunc() {
@@ -284,6 +254,17 @@ class InjectNTest {
       @Composable fun invoke(@Inject string: String) {
         lambda()
         lambda.invoke()
+      }
+    """
+  )
+
+  @Test fun testInjectNLambdaParameter() = codegen(
+    """
+      inline fun <P1, R> provide(@Provide p1: P1, block: @Inject1<P1> () -> R) = block()
+    """,
+    """
+      fun invoke() {
+        provide("") { inject<String>() }
       }
     """
   )
