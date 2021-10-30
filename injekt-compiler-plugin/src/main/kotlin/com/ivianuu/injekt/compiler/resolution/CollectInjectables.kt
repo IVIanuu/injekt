@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
+import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
@@ -80,21 +81,36 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
+    val functionType = if (isSuspendFunctionType)
+      module.builtIns.getSuspendFunction(arguments.size - 1 + injectNTypes.size)
+    else
+      module.builtIns.getFunction(arguments.size - 1 + injectNTypes.size)
+
     return listOf(
-      classifier.descriptor!!
+      functionType
         .defaultType
         .memberScope
         .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
         .first()
         .toCallableRef()
         .let { callable ->
+          val lambdaInjectParameters = injectNTypes.mapIndexed { index, injectNType ->
+            InjectNParameterDescriptor(
+              callable.callable,
+              arguments.size - 1 + index,
+              injectNType
+            )
+          }
+
           callable.copy(
             type = arguments.last(),
             isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
-              .also { it[DISPATCH_RECEIVER_INDEX] = this },
+              .also { it[DISPATCH_RECEIVER_INDEX] = this } + lambdaInjectParameters
+              .map { it.index to it.typeRef },
             scopeComponentType = scopeComponentType,
-            import = import
+            import = import,
+            injectNParameters = lambdaInjectParameters
           ).substitute(classifier.typeParameters.zip(arguments).toMap())
         }
     )

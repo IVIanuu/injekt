@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
+import com.ivianuu.injekt.compiler.analysis.substitute
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
@@ -34,10 +35,11 @@ data class CallableRef(
   val scopeComponentType: TypeRef? = null,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
-  val import: ResolvedProviderImport?
+  val import: ResolvedProviderImport?,
+  val injectNParameters: List<InjectNParameterDescriptor>
 )
 
-fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
+@WithInjektContext fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   if (map.isEmpty()) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
@@ -58,7 +60,8 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
       },
-    scopeComponentType = scopeComponentType?.substitute(map)
+    scopeComponentType = scopeComponentType?.substitute(map),
+    injectNParameters = injectNParameters.map { it.substitute(map) }
   )
 }
 
@@ -80,6 +83,7 @@ fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isPro
         .map { it to it.defaultType }
         .toMap(),
       isProvide = isProvide(),
-      import = null
+      import = null,
+      injectNParameters = info.injectNParameters
     )
   }

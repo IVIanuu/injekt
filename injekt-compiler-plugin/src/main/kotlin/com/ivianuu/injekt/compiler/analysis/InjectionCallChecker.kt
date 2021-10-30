@@ -129,10 +129,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
 
-    val info = resultingDescriptor.callableInfo()
     val requests = (callee.callable.valueParameters +
-        info.injectNParameters
-          .map { it.substitute(substitutionMap) } +
+        callee.injectNParameters +
         (lambdaInjectParameters ?: emptyList()))
       .filter {
         val argument = valueArgumentsByIndex[it.injektIndex()]
