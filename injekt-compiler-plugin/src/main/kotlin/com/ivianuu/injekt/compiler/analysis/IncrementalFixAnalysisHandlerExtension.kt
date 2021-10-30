@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
@@ -165,29 +166,39 @@ class IncrementalFixAnalysisHandlerExtension(
 
         val hash = when (injectable) {
           is KtClassOrObject ->
-            injectable.name.orEmpty() +
+            "class" +
+                injectable.name.orEmpty() +
                 injectable.visibilityModifier()?.text.orEmpty() +
                 injectable.annotationEntries.joinToString { it.text } +
                 injectable.primaryConstructor
                   ?.let {
-                    it.valueParameters
-                      .joinToString { it.text }
+                    "primary constructor" +
+                        it.valueParameters
+                          .joinToString { it.text }
                   } + injectable.secondaryConstructors
-              .map {
-                it.valueParameters
-                  .joinToString(it.text)
+              .mapIndexed { index, it ->
+                "secondary_constructor_$index" +
+                    it.valueParameters
+                      .joinToString(it.text)
               } + injectable.superTypeListEntries
               .joinToString { it.text }
           is KtFunction ->
-            injectable.name.orEmpty() +
+            "function" +
+                injectable.name.orEmpty() +
                 injectable.visibilityModifier()?.text.orEmpty() +
+                injectable.hasModifier(KtTokens.SUSPEND_KEYWORD).toString() +
+                injectable.modifierList +
+                injectable.annotationEntries.joinToString { it.text } +
                 injectable.receiverTypeReference?.text.orEmpty() +
                 injectable.valueParameters
                   .joinToString { it.text } +
                 injectable.typeReference?.text.orEmpty()
           is KtProperty ->
-            injectable.name.orEmpty() +
+            "property" +
+                injectable.name.orEmpty() +
                 injectable.visibilityModifier()?.text.orEmpty() +
+                injectable.annotationEntries.joinToString { it.text } +
+                injectable.getter?.annotationEntries?.joinToString { it.text }.orEmpty() +
                 injectable.receiverTypeReference?.text.orEmpty() +
                 injectable.typeReference?.text.orEmpty()
           else -> throw AssertionError()
