@@ -47,7 +47,7 @@ class ComponentChecker(@Inject private val context: InjektContext) : Declaration
     @Provide val trace = context.trace
     when (descriptor) {
       is CallableDescriptor -> {
-        if (descriptor.returnType?.hasAnnotation(injektFqNames.scoped) == true &&
+        if (descriptor.hasAnnotation(injektFqNames.scoped) &&
           descriptor.isProvide() &&
           descriptor.callContext() != CallContext.DEFAULT) {
           trace.report(

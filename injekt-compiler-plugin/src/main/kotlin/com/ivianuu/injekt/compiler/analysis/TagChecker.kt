@@ -18,14 +18,11 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.findAnnotation
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -44,19 +41,6 @@ class TagChecker(@Inject private val context: InjektContext) : DeclarationChecke
         trace.report(
           InjektErrors.TAG_WITH_VALUE_PARAMETERS
             .on(declaration)
-        )
-      }
-    } else {
-      val tags = descriptor.getAnnotatedAnnotations(injektFqNames.tag)
-      if (tags.isNotEmpty() && descriptor !is ClassDescriptor &&
-        descriptor !is ConstructorDescriptor
-      ) {
-        trace.report(
-          InjektErrors.TAG_ON_NON_CLASS_AND_NON_TYPE
-            .on(
-              declaration.findAnnotation(tags.first().fqName!!)
-                ?: declaration
-            )
         )
       }
     }

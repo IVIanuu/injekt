@@ -149,15 +149,6 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val TAG_ON_NON_CLASS_AND_NON_TYPE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "only types, classes and class constructors can be annotated with a tag"
-          )
-        }
-
     @JvmField val MALFORMED_INJECTABLE_IMPORT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {

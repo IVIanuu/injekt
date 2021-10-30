@@ -146,15 +146,16 @@ class InjectNTest {
 
   @Test fun testInjectNGenericSuperClass() = singleAndMultiCodegen(
     """
-      @Inject1<T> abstract class MyAbstractClass<T>(val unit: Unit) {
+      @Inject1<T> abstract class MyAbstractClass<T>(@Inject val unit: Unit) {
         
       }
     """,
     """
-      @Inject1<T> @Provide class MyClass<T> : MyAbstractClass<T>()
+      @Inject1<T> @Provide class MyClass<T>(unit: Unit) : MyAbstractClass<T>()
     """,
     """
       fun invoke(@Inject string: String) {
+        @Provide val unit = Unit
         MyClass<String>()
         inject<String>()
       }
