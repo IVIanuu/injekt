@@ -22,13 +22,15 @@ import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt_shaded.Inject1
+import com.ivianuu.injekt_shaded.Inject2
+import com.ivianuu.injekt_shaded.Provide
 import com.ivianuu.injekt_shaded.inject
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-typealias WithInjektContext = Inject1<InjektContext>
+typealias WithInjektContext = Inject2<InjektContext, BindingTrace?>
 
 @Inject1<InjektContext> inline val context: InjektContext
   get() = inject()
@@ -36,8 +38,8 @@ typealias WithInjektContext = Inject1<InjektContext>
 @Inject1<InjektContext> inline val injektFqNames: InjektFqNames
   get() = context.injektFqNames
 
-@Inject1<InjektContext> inline val trace: BindingTrace?
-  get() = context.trace
+@Inject1<BindingTrace?> inline val trace: BindingTrace?
+  get() = inject()
 
 @Inject1<InjektContext> inline val module: ModuleDescriptor
   get() = context.module
@@ -45,15 +47,14 @@ typealias WithInjektContext = Inject1<InjektContext>
 @Suppress("NewApi")
 class InjektContext(
   val module: ModuleDescriptor,
-  val injektFqNames: InjektFqNames,
-  val trace: BindingTrace?
+  val injektFqNames: InjektFqNames
 ) : TypeCheckerContext {
-  fun withTrace(trace: BindingTrace?) = InjektContext(module, injektFqNames, trace)
-
   override val injektContext: InjektContext
     get() = this
 
   override fun isDenotable(type: TypeRef): Boolean = true
+
+  @Provide private val trace: BindingTrace? = null
 
   val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
   val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }

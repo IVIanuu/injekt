@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.injectNParameters
-import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -56,7 +55,8 @@ class InjectTypeResolutionInterceptorExtension(
     context: ExpressionTypingContext,
     descriptor: AnonymousFunctionDescriptor
   ): AnonymousFunctionDescriptor {
-    @Provide val injektContext = InjektContext(descriptor.module, injektFqNames, context.trace)
+    @Provide val injektContext = InjektContext(context.scope.ownerDescriptor.module, injektFqNames)
+    @Provide val trace = context.trace
 
     if (context.expectedType.hasAnnotation(injektFqNames.inject2) &&
       !descriptor.hasAnnotation(injektFqNames.inject2)) {
@@ -95,7 +95,8 @@ class InjectTypeResolutionInterceptorExtension(
     if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
     if (element !is KtLambdaExpression) return resultType
 
-    @Provide val injektContext = InjektContext(context.scope.ownerDescriptor.module, injektFqNames, context.trace)
+    @Provide val injektContext = InjektContext(context.scope.ownerDescriptor.module, injektFqNames)
+    @Provide val trace = context.trace
 
     val arg = getArgumentDescriptor(element.functionLiteral, trace!!.bindingContext)
 

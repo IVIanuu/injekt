@@ -310,7 +310,8 @@ inline fun <K, V> BindingTrace?.getOrPut(
 fun classifierDescriptorForFqName2(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  @Provide injektContext: InjektContext
+  @Provide injektContext: InjektContext,
+  @Provide trace: BindingTrace? = null
 ): ClassifierDescriptor? = classifierDescriptorForFqName(fqName, lookupLocation)
 
 @WithInjektContext fun classifierDescriptorForFqName(
@@ -358,7 +359,10 @@ fun classifierDescriptorForFqName2(
 
 
 fun memberScopeForFqName2(
-  fqName: FqName, lookupLocation: LookupLocation, @Provide context: InjektContext
+  fqName: FqName,
+  lookupLocation: LookupLocation,
+  @Provide context: InjektContext,
+  @Provide trace: BindingTrace? = null
 ): MemberScope? = memberScopeForFqName(fqName, lookupLocation)
 
 @WithInjektContext fun memberScopeForFqName(fqName: FqName, lookupLocation: LookupLocation): MemberScope? {

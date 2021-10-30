@@ -49,11 +49,8 @@ class InjektIrGenerationExtension(
   @Inject private val injektFqNames: InjektFqNames
 ) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, @Provide pluginContext: IrPluginContext) {
-    @Provide val context = InjektContext(
-      pluginContext.moduleDescriptor,
-      injektFqNames,
-      DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
-    )
+    @Provide val context = InjektContext(pluginContext.moduleDescriptor, injektFqNames)
+    @Provide val trace = DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     @Provide var localClassCollector = LocalClassCollector()
     moduleFragment.transform(localClassCollector, null)
 

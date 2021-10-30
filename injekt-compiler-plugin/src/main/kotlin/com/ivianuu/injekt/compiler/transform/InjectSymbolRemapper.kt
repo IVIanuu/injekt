@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -29,7 +28,7 @@ import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
 import org.jetbrains.kotlin.types.KotlinType
 
-class InjectSymbolRemapper(@Inject private val context: InjektContext) : DeepCopySymbolRemapper(
+@WithInjektContext class InjectSymbolRemapper : DeepCopySymbolRemapper(
   object : DescriptorsRemapper {
     override fun remapDeclaredConstructor(
       descriptor: ClassConstructorDescriptor

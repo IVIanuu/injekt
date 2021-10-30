@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.KotlinType
@@ -118,8 +119,10 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef2(@Provide context: InjektContext) =
-  toClassifierRef()
+fun ClassifierDescriptor.toClassifierRef2(
+  @Provide context: InjektContext,
+  @Provide trace: BindingTrace? = null
+) = toClassifierRef()
 
 @WithInjektContext fun ClassifierDescriptor.toClassifierRef(): ClassifierRef =
   trace.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
@@ -167,7 +170,8 @@ fun ClassifierDescriptor.toClassifierRef2(@Provide context: InjektContext) =
 fun KotlinType.toTypeRef2(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV,
-  @Provide context: InjektContext
+  @Provide context: InjektContext,
+  @Provide trace: BindingTrace? = null
 ): TypeRef = toTypeRef(isStarProjection, variance)
 
 @WithInjektContext fun KotlinType.toTypeRef(

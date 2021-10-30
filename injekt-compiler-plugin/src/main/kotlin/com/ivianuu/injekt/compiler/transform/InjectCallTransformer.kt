@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -45,6 +46,7 @@ import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.injekt_shaded.inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -144,10 +146,11 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 
-@OptIn(ObsoleteDescriptorBasedAPI::class) class InjectCallTransformer(
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+@WithInjektContext
+class InjectCallTransformer(
   @Inject private val localClassCollector: LocalClassCollector,
   @Inject private val injectNTransformer: InjectNTransformer,
-  @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext,
   @Inject private val symbolRemapper: InjectSymbolRemapper
 ) : IrElementTransformerVoidWithContext() {
@@ -517,7 +520,7 @@ import kotlin.collections.set
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
       superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
-      superTypes += this@InjectCallTransformer.context.disposableType.defaultType
+      superTypes += inject<InjektContext>().disposableType.defaultType
         .toIrType().typeOrNull!!
 
       val componentScope = ScopeContext(
@@ -723,7 +726,7 @@ import kotlin.collections.set
         name = "dispose".asNameId()
       }.apply {
         addDispatchReceiver { type = defaultType }
-        overriddenSymbols = overriddenSymbols + this@InjectCallTransformer.context.disposableType
+        overriddenSymbols = overriddenSymbols + inject<InjektContext>().disposableType
           .defaultType.toIrType().typeOrNull!!.classOrNull!!
           .functions
           .single { it.owner.name == name }

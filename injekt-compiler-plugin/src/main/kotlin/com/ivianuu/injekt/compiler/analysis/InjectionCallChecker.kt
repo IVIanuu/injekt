@@ -36,7 +36,6 @@ import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import com.ivianuu.injekt_shaded.inject
@@ -58,6 +57,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
+    @Provide val trace = context.trace
+
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
         !resultingDescriptor.hasAnnotation(injektFqNames.inject2) &&
@@ -78,8 +79,6 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     } catch (e: Throwable) {
       null
     }
-
-    @Provide val injektContext = this.context.withTrace(context.trace)
 
     val substitutionMap = resolvedCall.typeArguments
       .mapKeys { it.key.toClassifierRef() }

@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.injectNTypes
@@ -86,10 +85,9 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class DeepCopyIrTreeWithSymbolsPreservingMetadata(
+@WithInjektContext class DeepCopyIrTreeWithSymbolsPreservingMetadata(
   private val symbolRemapper: DeepCopySymbolRemapper,
   private val typeRemapper: InjectNTypeRemapper,
-  @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext,
   symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
@@ -411,9 +409,8 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
 }
 
 @Suppress("DEPRECATION")
-class InjectNTypeRemapper(
+@WithInjektContext class InjectNTypeRemapper(
   private val symbolRemapper: SymbolRemapper,
-  @Inject private val context: InjektContext,
   @Inject private val pluginContext: IrPluginContext
 ) : TypeRemapper {
 

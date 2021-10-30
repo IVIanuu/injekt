@@ -31,7 +31,7 @@ class TypeFixer(@Inject private val context: InjektContext) : DeclarationChecker
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    @Provide val injektContext = this.context.withTrace(context.trace)
+    @Provide val trace = context.trace
     descriptor.annotations.forEach {
       fixTypes(it.type, declaration)
     }

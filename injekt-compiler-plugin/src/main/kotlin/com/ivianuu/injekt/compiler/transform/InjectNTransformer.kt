@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt_shaded.Inject
@@ -47,8 +47,9 @@ import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-@OptIn(ObsoleteDescriptorBasedAPI::class) class InjectNTransformer(
-  @Inject private val context: InjektContext,
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+@WithInjektContext
+class InjectNTransformer(
   @Inject private val localClassCollector: LocalClassCollector,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {

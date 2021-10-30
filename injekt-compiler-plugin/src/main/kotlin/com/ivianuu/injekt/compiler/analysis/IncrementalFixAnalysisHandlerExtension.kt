@@ -140,7 +140,8 @@ class IncrementalFixAnalysisHandlerExtension(
       appendLine(FILE_MARKER_COMMENT)
       appendLine()
 
-      @Provide val context = InjektContext(module, injektFqNames, null)
+      @Provide val context = InjektContext(module, injektFqNames)
+      @Provide val trace: BindingTrace? = null
       val markerName = "_${
         module.moduleName()
           .filter { it.isLetterOrDigit() }
