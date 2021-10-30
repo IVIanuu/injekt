@@ -444,12 +444,15 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     } else substitution
   }
 
-  if (arguments.isEmpty() && injectNTypes.isEmpty()) return this
+  if (arguments.isEmpty() && injectNTypes.isEmpty() && scopeComponentType == null) return this
 
   val newArguments = arguments.map { it.substitute(map) }
   val newInjectNTypes = injectNTypes.map { it.substitute(map) }
-  if (arguments != newArguments || newInjectNTypes != injectNTypes)
-    return copy(arguments = arguments, injectNTypes = newInjectNTypes)
+  val newScopeComponentType = scopeComponentType?.substitute(map)
+  if (newArguments != arguments ||
+    newInjectNTypes != injectNTypes ||
+    newScopeComponentType != scopeComponentType)
+    return copy(arguments = newArguments, injectNTypes = newInjectNTypes, scopeComponentType = newScopeComponentType)
 
   return this
 }
