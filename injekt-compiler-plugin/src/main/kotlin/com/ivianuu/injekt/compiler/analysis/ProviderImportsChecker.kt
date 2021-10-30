@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.resolution.ProviderImport
 import com.ivianuu.injekt.compiler.resolution.getProviderImports
 import com.ivianuu.injekt.compiler.resolution.isValidImport
@@ -95,7 +96,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
           )
           return@forEach
         }
-        if (context.memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
+        if (memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
           trace.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!)
@@ -113,7 +114,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
           return@forEach
         }
         val shortName = fqName.shortName()
-        val importedDeclarations = context.memberScopeForFqName(parentFqName,
+        val importedDeclarations = memberScopeForFqName(parentFqName,
           import.element.lookupLocation)
           ?.getContributedDescriptors()
           ?.filter {

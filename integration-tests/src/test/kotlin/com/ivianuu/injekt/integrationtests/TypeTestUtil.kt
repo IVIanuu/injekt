@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.classifierDescriptorForFqName2
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.buildContext
@@ -165,8 +166,8 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = injektContext.injektContext.classifierDescriptorForFqName(
-    fqName, NoLookupLocation.FROM_BACKEND)
+  fun typeFor(fqName: FqName) = classifierDescriptorForFqName2(
+    fqName, NoLookupLocation.FROM_BACKEND, injektContext)
     ?.defaultType?.toTypeRef2(context = injektContext) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {

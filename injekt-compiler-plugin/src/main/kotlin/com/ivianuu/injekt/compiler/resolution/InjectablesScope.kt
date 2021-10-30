@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -147,7 +148,7 @@ class InjectablesScope(
     if (isIde) return
     parent?.recordLookup(lookupLocation)
     for (import in imports) {
-      context.injektContext.memberScopeForFqName(import.packageFqName, lookupLocation)
+      memberScopeForFqName(import.packageFqName, lookupLocation)
         ?.recordLookup(
           injectablesLookupName(
             FqName(import.importPath!!.removeSuffix(".*")),

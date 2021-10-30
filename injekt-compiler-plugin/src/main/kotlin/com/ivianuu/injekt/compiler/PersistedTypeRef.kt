@@ -48,24 +48,23 @@ import kotlinx.serialization.Serializable
 
 @WithInjektContext fun PersistedTypeRef.toTypeRef(): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = _context.classifierDescriptorForKey(classifierKey)
+  val classifier = classifierDescriptorForKey(classifierKey)
     .toClassifierRef()
   val arguments = if (classifier.isTag) {
     arguments
       .map { it.toTypeRef() } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
-            _context.nullableAnyType
+            context.nullableAnyType
           else null
         )
   } else arguments.map { it.toTypeRef() }
-  return classifier.untaggedType
-    .copy(
-      arguments = arguments,
-      isMarkedNullable = isMarkedNullable,
-      isMarkedComposable = isMarkedComposable,
-      isProvide = isProvide,
-      isInject = isInject,
-      injectNTypes = injectNTypes.mapTo(mutableSetOf()) { it.toTypeRef() }
-    )
+  return classifier.untaggedType.copy(
+    arguments = arguments,
+    isMarkedNullable = isMarkedNullable,
+    isMarkedComposable = isMarkedComposable,
+    isProvide = isProvide,
+    isInject = isInject,
+    injectNTypes = injectNTypes.mapTo(mutableSetOf()) { it.toTypeRef() }
+  )
 }

@@ -19,13 +19,17 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -55,11 +59,13 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
@@ -300,3 +306,76 @@ inline fun <K, V> BindingTrace?.getOrPut(
 
   return result
 }
+
+fun classifierDescriptorForFqName2(
+  fqName: FqName,
+  lookupLocation: LookupLocation,
+  @Provide injektContext: InjektContext
+): ClassifierDescriptor? = classifierDescriptorForFqName(fqName, lookupLocation)
+
+@WithInjektContext fun classifierDescriptorForFqName(
+  fqName: FqName,
+  lookupLocation: LookupLocation
+): ClassifierDescriptor? {
+  return if (fqName.isRoot) null
+  else memberScopeForFqName(fqName.parent(), lookupLocation)
+    ?.getContributedClassifier(fqName.shortName(), lookupLocation)
+}
+
+@WithInjektContext fun classifierDescriptorForKey(key: String): ClassifierDescriptor =
+  trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
+    val fqName = FqName(key.split(":")[1])
+    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+      ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+      ?.takeIf { it.uniqueKey() == key }
+      ?: functionDescriptorsForFqName(fqName.parent())
+        .flatMap { it.typeParameters }
+        .firstOrNull {
+          it.uniqueKey() == key
+        }
+      ?: propertyDescriptorsForFqName(fqName.parent())
+        .flatMap { it.typeParameters }
+        .firstOrNull {
+          it.uniqueKey() == key
+        }
+      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+        .safeAs<ClassifierDescriptorWithTypeParameters>()
+        ?.declaredTypeParameters
+        ?.firstOrNull { it.uniqueKey() == key }
+      ?: error("Could not get for $fqName $key")
+    classifier
+  }
+
+@WithInjektContext private fun functionDescriptorsForFqName(fqName: FqName): Collection<FunctionDescriptor> =
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedFunctions(
+    fqName.shortName(), NoLookupLocation.FROM_BACKEND
+  ) ?: emptyList()
+
+@WithInjektContext private fun propertyDescriptorsForFqName(fqName: FqName): Collection<PropertyDescriptor> =
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedVariables(
+    fqName.shortName(), NoLookupLocation.FROM_BACKEND
+  ) ?: emptyList()
+
+
+fun memberScopeForFqName2(
+  fqName: FqName, lookupLocation: LookupLocation, @Provide context: InjektContext
+): MemberScope? = memberScopeForFqName(fqName, lookupLocation)
+
+@WithInjektContext fun memberScopeForFqName(fqName: FqName, lookupLocation: LookupLocation): MemberScope? {
+  val pkg = module.getPackage(fqName)
+
+  if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
+
+  val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation) ?: return null
+
+  val classDescriptor =
+    parentMemberScope.getContributedClassifier(
+      fqName.shortName(),
+      lookupLocation
+    ) as? ClassDescriptor ?: return null
+
+  return classDescriptor.unsubstitutedMemberScope
+}
+
+@WithInjektContext fun packageFragmentsForFqName(fqName: FqName): List<PackageFragmentDescriptor> =
+  module.getPackage(fqName).fragments

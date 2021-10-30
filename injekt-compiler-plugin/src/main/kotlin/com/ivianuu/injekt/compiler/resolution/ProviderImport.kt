@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler._context
+import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.lookupLocation
@@ -44,13 +44,13 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   if (!isValidImport()) return null
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
-    val objectForFqName = _context.classifierDescriptorForFqName(packageFqName,
+    val objectForFqName = classifierDescriptorForFqName(packageFqName,
       element.lookupLocation)
     objectForFqName?.findPackage()?.fqName ?: packageFqName
   } else {
     val fqName = FqName(importPath)
     val parentFqName = fqName.parent()
-    val objectForFqName = _context.classifierDescriptorForFqName(
+    val objectForFqName = classifierDescriptorForFqName(
       parentFqName, NoLookupLocation.FROM_BACKEND)
     objectForFqName?.findPackage()?.fqName ?: parentFqName
   }

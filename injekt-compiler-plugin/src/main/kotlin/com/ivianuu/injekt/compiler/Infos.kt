@@ -142,7 +142,7 @@ data class CallableInfo(
             getAnnotatedAnnotations(injektFqNames.tag)
               .map { it.type.toTypeRef() }
       else emptyList()
-      tags.wrap(returnType?.toTypeRef() ?: _context.nullableAnyType)
+      tags.wrap(returnType?.toTypeRef() ?: context.nullableAnyType)
     }
 
     val injectNParameters = injectNParameters()
@@ -318,7 +318,7 @@ class ClassifierInfo(
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
         expandedType != null -> listOf(expandedType)
-        isTag -> listOf(_context.anyType)
+        isTag -> listOf(context.anyType)
         else -> typeConstructor.supertypes.map { it.toTypeRef() }
       }
     }

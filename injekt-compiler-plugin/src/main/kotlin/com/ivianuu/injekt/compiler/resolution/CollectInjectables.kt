@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler._context
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
@@ -35,7 +34,9 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
+import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.inject
@@ -328,7 +329,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
       val packageFqName = FqName(import.importPath.removeSuffix(".*"))
 
       // import all injectables in the package
-      _context.memberScopeForFqName(packageFqName, import.element.lookupLocation)
+      memberScopeForFqName(packageFqName, import.element.lookupLocation)
         ?.collectInjectables(false)
         ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
         ?.let { this += it }
@@ -338,7 +339,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
       val name = fqName.shortName()
 
       // import all injectables with the specified name
-      _context.memberScopeForFqName(parentFqName, import.element.lookupLocation)
+      memberScopeForFqName(parentFqName, import.element.lookupLocation)
         ?.collectInjectables(false)
         ?.filter {
           it.callable.name == name ||
@@ -456,7 +457,7 @@ data class InjectablesWithLookups(
   return trace.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
     val lookedUpPackages = setOf(packageFqName)
 
-    val packageFragments = _context.packageFragmentsForFqName(packageFqName)
+    val packageFragments = packageFragmentsForFqName(packageFqName)
       .filterNot { it is BuiltInsPackageFragment }
 
     if (packageFragments.isEmpty())

@@ -19,10 +19,10 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler._context
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.context
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -137,7 +137,7 @@ fun ClassifierDescriptor.toClassifierRef2(@Provide context: InjektContext) =
         key = "${uniqueKey()}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
-        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(_context.nullableAnyType) },
+        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(context.nullableAnyType) },
         variance = TypeVariance.OUT
       )
     }
@@ -181,7 +181,7 @@ fun KotlinType.toTypeRef2(
       unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
         .commonSupertype(unwrapped.constructor.supertypes)
       else -> null
-    } ?: return _context.nullableAnyType
+    } ?: return context.nullableAnyType
 
     val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
 
@@ -203,7 +203,7 @@ fun KotlinType.toTypeRef2(
           if (classifier.isTag &&
             it.size != classifier.typeParameters.size
           )
-            it += _context.nullableAnyType
+            it += context.nullableAnyType
         },
       isMarkedComposable = kotlinType.hasAnnotation(injektFqNames.composable),
       isProvide = kotlinType.hasAnnotation(injektFqNames.provide),
