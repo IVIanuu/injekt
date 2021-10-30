@@ -478,7 +478,7 @@ fun TypeRef.render(
         injectNType.render(depth = depth + 1, renderType, append)
         if (index != injectNTypes.size - 1) append(", ")
       }
-      append(">")
+      append("> ")
     }
 
     when {

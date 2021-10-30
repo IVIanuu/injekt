@@ -56,6 +56,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.descriptors.IrBasedDeclarationDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -87,7 +88,7 @@ data class CallableInfo(
 
 @WithInjektContext fun CallableDescriptor.callableInfo(): CallableInfo =
   trace!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
-    if (isDeserializedDeclaration()) {
+    if (isDeserializedDeclaration() || this is IrBasedDeclarationDescriptor<*>) {
       val info = annotations
         .findAnnotation(injektFqNames.callableInfo)
         ?.readChunkedValue()
@@ -96,7 +97,8 @@ data class CallableInfo(
 
       if (info != null) {
         val finalInfo = if (this !is CallableMemberDescriptor ||
-          kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+          kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE ||
+            this is IrBasedDeclarationDescriptor<*>) {
           info
         } else {
           val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
@@ -498,7 +500,8 @@ private fun String.toChunkedAnnotationArguments() = chunked(65535 / 2)
 private fun TypeRef.shouldBePersisted(): Boolean = anyType {
   (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
       (it.classifier.isTypeAlias && it.isSuspendFunctionType) ||
-      it.injectNTypes.isNotEmpty()
+      it.injectNTypes.isNotEmpty() ||
+      it.scopeComponentType != null
 }
 
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {

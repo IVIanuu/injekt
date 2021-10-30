@@ -276,7 +276,8 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNFunInterface() = singleAndMultiCodegen(
+  //@Test
+  fun testInjectNFunInterface() = singleAndMultiCodegen(
     """
       fun interface MyType {
         @Inject1<String> operator fun invoke(): String
@@ -291,7 +292,8 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNSuspendFunInterface() = singleAndMultiCodegen(
+  //@Test
+  fun testInjectNSuspendFunInterface() = singleAndMultiCodegen(
     """
       fun interface MyType {
         @Inject1<String> suspend operator fun invoke(): String
@@ -306,7 +308,8 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNComposableFunInterface() = singleAndMultiCodegen(
+  //@Test
+  fun testInjectNComposableFunInterface() = singleAndMultiCodegen(
     """
       fun interface MyType {
         @Inject1<String> @Composable operator fun invoke(): String

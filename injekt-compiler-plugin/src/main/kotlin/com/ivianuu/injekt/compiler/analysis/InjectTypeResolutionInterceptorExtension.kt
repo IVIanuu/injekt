@@ -70,7 +70,7 @@ class InjectTypeResolutionInterceptorExtension(
         descriptor.isSuspend
       )
     }
-    val arg = getArgumentDescriptor(expression.functionLiteral, trace!!.bindingContext)
+    val arg = getArgumentDescriptor(expression.functionLiteral, trace.bindingContext)
 
     val argTypeDescriptor = arg
       ?.type
@@ -79,7 +79,7 @@ class InjectTypeResolutionInterceptorExtension(
     if (argTypeDescriptor != null) {
       val sam = getSingleAbstractMethodOrNull(argTypeDescriptor)
       if (sam != null && sam.hasAnnotation(injektFqNames.inject2)) {
-        trace!!.record(InjektWritableSlices.INJECT_N_PARAMETERS, descriptor,
+        trace.record(InjektWritableSlices.INJECT_N_PARAMETERS, descriptor,
           sam.injectNParameters())
       }
     }
@@ -98,7 +98,7 @@ class InjectTypeResolutionInterceptorExtension(
     @Provide val injektContext = InjektContext(context.scope.ownerDescriptor.module, injektFqNames)
     @Provide val trace = context.trace
 
-    val arg = getArgumentDescriptor(element.functionLiteral, trace!!.bindingContext)
+    val arg = getArgumentDescriptor(element.functionLiteral, trace.bindingContext)
 
     val argTypeDescriptor = arg
       ?.type
