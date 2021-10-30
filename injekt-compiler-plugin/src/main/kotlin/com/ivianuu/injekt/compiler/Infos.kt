@@ -434,7 +434,7 @@ class ClassifierInfo(
         when (container) {
           is CallableDescriptor -> container.typeParameters
           is ClassifierDescriptorWithTypeParameters -> container.declaredTypeParameters
-          else -> throw AssertionError()
+          else -> throw AssertionError("Unexpected container $container")
         }.map { "" }
       }).toMutableList()
 

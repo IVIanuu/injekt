@@ -234,7 +234,7 @@ fun ParameterDescriptor.injektName(): Name = if (this is ValueParameterDescripto
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
     this is InjectNParameterDescriptor -> name
-    else -> throw AssertionError()
+    else -> throw AssertionError("Unexpected descriptor $this")
   }
 }
 
@@ -250,7 +250,7 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
     this is InjectNParameterDescriptor -> index
-    else -> throw AssertionError()
+    else -> throw AssertionError("Unexpected descriptor $this")
   }
 }
 
