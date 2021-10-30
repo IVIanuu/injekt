@@ -538,8 +538,6 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.PROTECTED
 
 @WithInjektContext fun DeclarationDescriptor.addInjectNInfo() {
-  (this as Annotated).addInjectNInfo()
-
   findPsi().safeAs<KtDeclaration>()?.let { declaration ->
     annotations.forEach {
       fixTypes(it.type, declaration)
@@ -550,6 +548,8 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
 
   when (this) {
     is FunctionDescriptor -> {
+      (this as Annotated).addInjectNInfo()
+
       returnType?.addInjectNInfo()
       dispatchReceiverParameter?.type?.addInjectNInfo()
       extensionReceiverParameter?.type?.addInjectNInfo()
@@ -559,6 +559,8 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
       }
     }
     is PropertyDescriptor -> {
+      (this as Annotated).addInjectNInfo()
+
       returnType?.addInjectNInfo()
       dispatchReceiverParameter?.type?.addInjectNInfo()
       extensionReceiverParameter?.type?.addInjectNInfo()
@@ -596,7 +598,7 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
           "annotations",
           transform
         )
-      else -> throw AssertionError("Unexpected annotations")
+      else -> throw AssertionError("Unexpected annotations $annotations $this")
     }
   }
 }

@@ -49,6 +49,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -151,11 +152,11 @@ class InjectNTransformer(
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    val callee = if (expression.symbol.descriptor.name.asString() == "invoke" &&
-      expression.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) == true) {
-      val argCount = expression.symbol.owner.valueParameters.size
+    val callee = if (result.symbol.descriptor.name.asString() == "invoke" &&
+      result.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) == true) {
+      val argCount = result.symbol.owner.valueParameters.size
 
-      val extraArgsCount = expression.dispatchReceiver!!.type
+      val extraArgsCount = result.dispatchReceiver!!.type
         .annotations.findAnnotation(injektFqNames.injectNInfo)
         ?.getValueArgument(0)
         ?.cast<IrVarargImpl>()
@@ -163,16 +164,16 @@ class InjectNTransformer(
         ?.size
         ?: error("")
 
-      val newFnClass = if (expression.dispatchReceiver!!.type.isSuspendFunction())
+      val newFnClass = if (result.dispatchReceiver!!.type.isSuspendFunction())
         pluginContext.irBuiltIns.suspendFunction(argCount + extraArgsCount).owner
       else
         pluginContext.irBuiltIns.function(argCount + extraArgsCount).owner
 
       newFnClass.functions.first { it.name.asString() == "invoke" }
-    } else transformIfNeeded(expression.symbol.owner)
+    } else transformIfNeeded(result.symbol.owner)
 
     if (result.symbol.owner !in transformedFunctions &&
-        callee.symbol != result.symbol) return super.visitFunctionAccess(result)
+        callee.symbol == result.symbol) return super.visitFunctionAccess(result)
 
     return when (result) {
       is IrCall -> IrCallImpl(
@@ -209,7 +210,7 @@ class InjectNTransformer(
       ).apply {
         copyTypeAndValueArgumentsFrom(result)
       }
-      else -> throw AssertionError()
+      else -> throw AssertionError("Unexpected expression $result ${result.dump()}")
     }
   }
 }

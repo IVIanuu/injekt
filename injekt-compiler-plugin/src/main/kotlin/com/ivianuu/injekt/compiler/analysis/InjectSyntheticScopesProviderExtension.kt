@@ -71,7 +71,7 @@ class InjectSyntheticScopes(
   override val scopes: Collection<SyntheticScope> = delegate.scopes + InjectSyntheticScope()
 }
 
-@WithInjektContext private class InjectSyntheticScope() : SyntheticScope.Default() {
+@WithInjektContext private class InjectSyntheticScope : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
     constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor
 

@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
@@ -218,6 +219,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     // case, we want to update those calls as well.
     if (ownerFn != null &&
       containingClass != null &&
+      ownerFn.origin == IrDeclarationOrigin.FAKE_OVERRIDE &&
       (containingClass.defaultType.isFunctionType ||
           containingClass.defaultType.isSuspendFunctionType) &&
       expression.dispatchReceiver?.type?.isInjectN() == true
@@ -245,6 +247,12 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
       symbolRemapper.visitSimpleFunction(newFn)
       newFn = super.visitSimpleFunction(newFn).also { fn ->
         fn.parent = newFnClass
+        fn.overriddenSymbols = ownerFn.overriddenSymbols.map { it }
+        fn.dispatchReceiverParameter = ownerFn.dispatchReceiverParameter
+        fn.extensionReceiverParameter = ownerFn.extensionReceiverParameter
+        newFn.valueParameters.forEach { p ->
+          fn.addValueParameter(p.name.identifier, p.type)
+        }
         fn.patchDeclarationParents(fn.parent)
       }
 
