@@ -23,6 +23,27 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class InjectNTest {
+  @Test fun testDbContextLike() = singleAndMultiCodegen(
+    """
+      typealias DbContext = Inject2<Int, String>
+
+      @Inject1<String> val counterDb: String get() = inject()
+
+      @DbContext suspend inline fun <R> dbTransaction(crossinline block: @DbContext suspend () -> R): R {
+        return kotlinx.coroutines.withContext(kotlin.coroutines.EmptyCoroutineContext) {
+          block()
+        }
+      }
+    """,
+    """
+      @DbContext suspend fun decCounter() {
+        dbTransaction {
+          counterDb.toString()
+        }
+      }
+    """
+  )
+
   @Test fun testInjectNFunction() = singleAndMultiCodegen(
     """
       @Inject1<String> fun myFunc() {

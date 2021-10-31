@@ -453,7 +453,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
       functionCls,
       type.hasQuestionMark,
       newIrArguments.map { remapTypeArgument(it) },
-      type.annotations.filter { !it.isInjectNAnnotation() }.map {
+      type.annotations.filter {
+        !it.isInjectNAnnotation() &&
+            it.symbol.owner.parent.fqNameForIrSerialization != injektFqNames.injectNInfo
+      }.map {
         it.transform(deepCopy, null) as IrConstructorCall
       },
       null

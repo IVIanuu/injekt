@@ -173,7 +173,7 @@ class InjectNTransformer(
     } else transformIfNeeded(result.symbol.owner)
 
     if (result.symbol.owner !in transformedFunctions &&
-        callee.symbol == result.symbol) return super.visitFunctionAccess(result)
+        callee.symbol == result.symbol) return result
 
     return when (result) {
       is IrCall -> IrCallImpl(
