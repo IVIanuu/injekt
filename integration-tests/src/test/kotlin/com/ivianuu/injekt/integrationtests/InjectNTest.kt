@@ -144,6 +144,25 @@ class InjectNTest {
     """
   )
 
+  @Test fun testInjectNInterfaceFunction() = singleAndMultiCodegen(
+    """
+      interface MyInterface {
+        @Inject1<String> fun func() = inject<String>()
+      }
+
+      class MyInterfaceImpl : MyInterface {
+        @Inject1<String> override fun func() = inject<String>()
+      }
+    """,
+    """
+      fun invoke(@Inject string: String): String {
+        return MyInterfaceImpl().func()
+      }
+    """
+  ) {
+    invokeSingleFile("42") shouldBe "42"
+  }
+
   @Test fun testInjectNPrimaryConstructor() = singleAndMultiCodegen(
     """
       class MyClass @Inject1<String> constructor() {
