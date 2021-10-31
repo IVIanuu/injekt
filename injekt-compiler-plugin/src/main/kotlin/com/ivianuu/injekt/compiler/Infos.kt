@@ -597,7 +597,10 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
 }
 
 @WithInjektContext fun KotlinType.addInjectNInfo() {
+  val seen = mutableSetOf<KotlinType>()
   fun KotlinType.visit() {
+    if (this in seen) return
+    seen += this
     (this as Annotated).addInjectNInfo()
     arguments.forEach { it.type.visit() }
   }
