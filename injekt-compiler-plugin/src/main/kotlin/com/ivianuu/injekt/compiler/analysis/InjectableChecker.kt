@@ -23,9 +23,11 @@ import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
+import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
@@ -81,7 +83,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
   ) {
     if (descriptor.isProvide()) {
       descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
+        .checkProvideCallableDoesNotHaveProvideParameters(declaration)
       checkSpreadingInjectable(declaration, descriptor.typeParameters)
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
@@ -184,7 +186,7 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
   ) {
     if (descriptor.isProvide()) {
       descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
+        .checkProvideCallableDoesNotHaveProvideParameters(declaration)
     } else {
       checkExceptActual(declaration, descriptor)
     }
@@ -221,17 +223,6 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
       descriptor.extensionReceiverParameter?.type?.hasAnnotation(injektFqNames.provide) == true) {
       trace!!.report(
         InjektErrors.PROVIDE_RECEIVER
-          .on(
-            declaration.safeAs<KtProperty>()
-              ?.receiverTypeReference ?: declaration
-          )
-      )
-    }
-
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(injektFqNames.inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(injektFqNames.inject) == true) {
-      trace!!.report(
-        InjektErrors.INJECT_RECEIVER
           .on(
             declaration.safeAs<KtProperty>()
               ?.receiverTypeReference ?: declaration
@@ -293,20 +284,15 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
     descriptor: MemberDescriptor,
     overriddenDescriptor: MemberDescriptor
   ): Boolean {
-    if (overriddenDescriptor.hasAnnotation(injektFqNames.provide) && !descriptor.isProvide()) {
+    if (overriddenDescriptor.hasAnnotation(injektFqNames.provide) && !descriptor.isProvide())
       return false
-    }
 
-    if (descriptor is CallableMemberDescriptor) {
-      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters
-        .zip(descriptor.valueParameters)
-        .forEach { (overriddenValueParameter, valueParameter) ->
-          if (overriddenValueParameter.hasAnnotation(injektFqNames.inject) !=
-            valueParameter.hasAnnotation(injektFqNames.inject)) {
-            return false
-          }
-        }
-    }
+    val overriddenInjectNTypes = overriddenDescriptor.injectNTypes()
+    val injectNTypes = descriptor.injectNTypes()
+    if (injectNTypes.size != overriddenInjectNTypes.size)
+      return false
+    if (injectNTypes.zip(overriddenInjectNTypes).any { !it.first.isSubTypeOf(it.second) })
+      return false
 
     val (typeParameters, overriddenTypeParameters) = when (descriptor) {
       is CallableMemberDescriptor ->
@@ -345,18 +331,12 @@ class InjectableChecker(@Inject private val context: InjektContext) : Declaratio
   }
 
   @WithInjektContext
-  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
+  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveProvideParameters(
     declaration: KtDeclaration
   ) {
     if (isEmpty()) return
     this
       .forEach { parameter ->
-        if (parameter.hasAnnotation(injektFqNames.inject)) {
-          trace!!.report(
-            InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
-              .on(parameter.findPsi() ?: declaration)
-          )
-        }
         if (parameter.hasAnnotation(injektFqNames.provide) &&
           parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
         ) {

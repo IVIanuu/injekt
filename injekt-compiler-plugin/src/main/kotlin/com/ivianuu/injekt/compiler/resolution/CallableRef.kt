@@ -31,7 +31,6 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
-  val injectParameters: Set<Int>,
   val scopeComponentType: TypeRef? = null,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
@@ -77,7 +76,6 @@ fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isPro
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
-      injectParameters = info.injectParameters,
       scopeComponentType = info.scopeComponentType,
       typeArguments = typeParameters
         .map { it to it.defaultType }

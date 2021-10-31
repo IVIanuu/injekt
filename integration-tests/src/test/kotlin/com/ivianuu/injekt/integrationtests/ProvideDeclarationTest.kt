@@ -30,17 +30,18 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class InjectableDeclarationTest {
+class ProvideDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
     """
-      @Provide fun foo() = Foo()
+      @Provide val foo = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = inject<Bar>() 
     """
   ) {
     invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+      .shouldBeTypeOf<Bar>()
   }
 
   @Test fun testProvideProperty() = singleAndMultiCodegen(
@@ -159,7 +160,7 @@ class InjectableDeclarationTest {
       @Provide fun Foo.bar() = Bar(this)
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke(@Provide foo: Foo) = inject<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -171,7 +172,7 @@ class InjectableDeclarationTest {
       @Provide val Foo.bar get() = Bar(this)
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke(@Provide foo: Foo) = inject<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -181,15 +182,6 @@ class InjectableDeclarationTest {
   @Test fun testProvideValueParameter() = codegen(
     """
       fun invoke(@Provide foo: Foo) = inject<Foo>()
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testInjectValueParameter() = codegen(
-    """
-      fun invoke(@Inject foo: Foo) = inject<Foo>()
     """
   ) {
     val foo = Foo()
@@ -220,38 +212,7 @@ class InjectableDeclarationTest {
     foo shouldBeSameInstanceAs invokeSingleFile(foo)
   }
 
-  @Test fun testInjectPrimaryConstructorParameterInClassInitializer() = singleAndMultiCodegen(
-    """
-      class MyClass(@Inject foo: Foo) {
-        val foo: Foo
-        init {
-          this.foo = inject()
-        }
-      }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MyClass().foo 
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testInjectPrimaryConstructorParameterInClassBody() = singleAndMultiCodegen(
-    """
-      class MyClass(@Inject foo: Foo) {
-        val foo: Foo = inject()
-      }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MyClass().foo 
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testClassDeclarationInClassBody() = singleAndMultiCodegen(
+  @Test fun testProvideDeclarationInClassBody() = singleAndMultiCodegen(
     """
       class MyClass(private val _foo: Foo) {
         val foo: Foo = inject()
@@ -260,23 +221,6 @@ class InjectableDeclarationTest {
     """,
     """
       fun invoke(@Inject foo: Foo) = MyClass(foo).foo 
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testInjectConstructorParameterInConstructorBody() = singleAndMultiCodegen(
-    """
-      class MyClass {
-        val foo: Foo
-        constructor(@Inject foo: Foo) {
-          this.foo = inject()   
-        }
-      }
-    """,
-    """
-       fun invoke(@Inject foo: Foo) = MyClass().foo 
     """
   ) {
     val foo = Foo()
@@ -360,90 +304,6 @@ class InjectableDeclarationTest {
     """,
     """
       fun invoke(foo: Foo) = withProvidedInstance(foo) { inject<Foo>() }
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(
-    """
-      fun usesFoo(@Inject foo: Foo) {
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        usesFoo()
-      }
-    """
-  )
-
-  @Test fun testCanLeaveOutConstructorInjectParameters() = singleAndMultiCodegen(
-    """
-      class FooHolder(@Inject foo: Foo)
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        FooHolder()
-      }
-    """
-  )
-
-  @Test fun testCanLeaveOutSuperConstructorInjectParameters() = singleAndMultiCodegen(
-    """
-      abstract class AbstractFooHolder(@Inject foo: Foo)
-    """,
-    """
-      @Provide val foo = Foo()
-      class FooHolderImpl : AbstractFooHolder()
-    """
-  )
-
-  @Test fun testCanLeaveOutInjectLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = lambda()
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testCanLeaveOutInjectLambdaParametersWithTypeAlias() = singleAndMultiCodegen(
-    """
-      typealias LambdaType = (@Inject Foo) -> Foo
-      val lambda: LambdaType = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = lambda()
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testCanLeaveOutInjectExtensionLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: Unit.(@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = lambda(Unit)
-    """
-  ) {
-    val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
-  }
-
-  @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: suspend (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = runBlocking { lambda() }
     """
   ) {
     val foo = Foo()

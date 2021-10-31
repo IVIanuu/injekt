@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.IncrementalFixAnalysisHandlerExtension
-import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjectTypeResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
@@ -75,14 +74,6 @@ private fun registerExtensions(project: MockProject, configuration: CompilerConf
   TypeResolutionInterceptor.registerExtension(
     project,
     InjectTypeResolutionInterceptorExtension()
-  )
-
-  // extension point does not exist CLI for some reason
-  // but it's still queried later
-  SyntheticScopeProviderExtension.registerExtensionPoint(project)
-  SyntheticScopeProviderExtension.registerExtension(
-    project,
-    InjectSyntheticScopeProviderExtension({ injektFqNames })
   )
 
   @Suppress("DEPRECATION")

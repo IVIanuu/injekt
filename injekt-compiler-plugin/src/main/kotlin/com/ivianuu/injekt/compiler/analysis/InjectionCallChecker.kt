@@ -32,7 +32,6 @@ import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
@@ -59,11 +58,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
-    @Provide val trace = context.trace
-
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor &&
-        !resultingDescriptor.hasAnnotation(injektFqNames.inject2) &&
+    if (!resultingDescriptor.hasAnnotation(injektFqNames.inject2) &&
       (resolvedCall !is VariableAsFunctionResolvedCall ||
           !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames.inject2)) &&
       resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) != true) return
@@ -81,6 +77,8 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     } catch (e: Throwable) {
       null
     }
+
+    @Provide val trace = context.trace
 
     val substitutionMap = resolvedCall.getSubstitutionMap()
 
@@ -126,16 +124,7 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
       }
       .substitute(substitutionMap)
 
-    val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
-
-    val requests = (callee.callable.valueParameters +
-        callee.injectNParameters +
-        (lambdaInjectParameters ?: emptyList()))
-      .filter {
-        val argument = valueArgumentsByIndex[it.injektIndex()]
-        (argument == null || argument is DefaultValueArgument) && it.isInject()
-      }
+    val requests = (callee.injectNParameters + (lambdaInjectParameters ?: emptyList()))
       .map { it.toInjectableRequest(callee) }
 
     if (requests.isEmpty()) return

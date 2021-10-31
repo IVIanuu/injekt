@@ -91,7 +91,7 @@ class InjectableListTest {
     irShouldContain(1, "toList")
   }
 
-  @Test fun testListWithSingleListCollectionElement() = singleAndMultiCodegen(
+  @Test fun teWstListWithSingleListCollectionElement() = singleAndMultiCodegen(
     """
       @Provide fun commandA() = listOf(CommandA())
     """,

@@ -79,22 +79,6 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("interface cannot be injectable")
   }
 
-  @Test fun testInjectValueParameterOnProvideFunction() = codegen(
-    """
-      @Provide fun bar(@Inject foo: Foo) = Bar(foo)
-    """
-  ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
-  }
-
-  @Test fun testInjectValueParameterOnProvideClass() = codegen(
-    """
-      @Provide class MyBar(@Inject foo: Foo)
-    """
-  ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
-  }
-
   @Test fun testProvideValueParameterOnProvideFunction() = codegen(
     """
       @Provide fun bar(@Provide foo: Foo) = Bar(foo)
@@ -124,14 +108,6 @@ class InjectableDeclarationCheckTest {
     """
   ) {
     compilationShouldHaveFailed("parameters of a injectable are automatically provided")
-  }
-
-  @Test fun testInjectReceiverOnFunction() = codegen(
-    """
-      fun @receiver:Inject Foo.bar() = Bar(this)
-    """
-  ) {
-    compilationShouldHaveFailed("receiver cannot be injected")
   }
 
   @Test fun testInjectReceiverOnProperty() = codegen(

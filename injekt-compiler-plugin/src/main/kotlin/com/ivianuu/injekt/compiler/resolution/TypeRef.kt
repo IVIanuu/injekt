@@ -64,7 +64,6 @@ class ClassifierRef(
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
-  val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
   val injectNParameters: List<InjectNParameterDescriptor> = emptyList()
 ) {
@@ -92,13 +91,12 @@ class ClassifierRef(
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
-    primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
     injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTypeAlias, isTag, isComponent, scopeComponentType, entryPointComponentType, descriptor,
-    tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters
+    tags, isSpread, variance, injectNParameters
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -160,8 +158,6 @@ fun ClassifierDescriptor.toClassifierRef2(
       descriptor = this,
       tags = info.tags,
       isSpread = info.isSpread,
-      primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
-        .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
       injectNParameters = info.injectNParameters
     )
@@ -209,7 +205,6 @@ fun KotlinType.toTypeRef2(
         },
       isMarkedComposable = kotlinType.hasAnnotation(injektFqNames.composable),
       isProvide = kotlinType.hasAnnotation(injektFqNames.provide),
-      isInject = kotlinType.hasAnnotation(injektFqNames.inject),
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
@@ -241,7 +236,6 @@ class TypeRef(
   val arguments: List<TypeRef> = emptyList(),
   val isMarkedComposable: Boolean = false,
   val isProvide: Boolean = false,
-  val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
@@ -336,7 +330,6 @@ class TypeRef(
       result = 31 * result + arguments.hashCode()
       result = 31 * result + isMarkedComposable.hashCode()
       result = 31 * result + isProvide.hashCode()
-      result = 31 * result + isInject.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
@@ -368,7 +361,6 @@ fun TypeRef.copy(
   arguments: List<TypeRef> = this.arguments,
   isMarkedComposable: Boolean = this.isMarkedComposable,
   isProvide: Boolean = this.isProvide,
-  isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
@@ -380,7 +372,6 @@ fun TypeRef.copy(
   arguments,
   isMarkedComposable,
   isProvide,
-  isInject,
   isStarProjection,
   frameworkKey,
   variance,
@@ -424,12 +415,10 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     val newNullability = if (isStarProjection) substitution.isMarkedNullable
     else isMarkedNullable || substitution.isMarkedNullable
     val newIsProvide = isProvide || substitution.isProvide
-    val newIsInject = isInject || substitution.isInject
     val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
     else variance
     return if (newNullability != substitution.isMarkedNullable ||
       newIsProvide != substitution.isProvide ||
-      newIsInject != substitution.isInject ||
       newVariance != substitution.variance
     ) {
       substitution.copy(
@@ -438,7 +427,6 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
         // we copy injectable kind to support @Provide C -> @Provide String
         // fallback to substitution injectable
         isProvide = newIsProvide,
-        isInject = newIsInject,
         variance = newVariance
       )
     } else substitution

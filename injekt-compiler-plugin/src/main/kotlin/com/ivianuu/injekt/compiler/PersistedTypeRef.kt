@@ -20,19 +20,17 @@ import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable data class PersistedTypeRef(
-  @SerialName("0") val classifierKey: String,
-  @SerialName("1") val arguments: List<PersistedTypeRef> = emptyList(),
-  @SerialName("2") val isStarProjection: Boolean,
-  @SerialName("3") val isMarkedNullable: Boolean,
-  @SerialName("4") val isMarkedComposable: Boolean,
-  @SerialName("5") val isProvide: Boolean,
-  @SerialName("6") val isInject: Boolean,
-  @SerialName("7") val injectNTypes: List<PersistedTypeRef>,
-  @SerialName("8") val scopeComponentType: PersistedTypeRef?
+  val classifierKey: String,
+  val arguments: List<PersistedTypeRef> = emptyList(),
+  val isStarProjection: Boolean,
+  val isMarkedNullable: Boolean,
+  val isMarkedComposable: Boolean,
+  val isProvide: Boolean,
+  val injectNTypes: List<PersistedTypeRef>,
+  val scopeComponentType: PersistedTypeRef?
 )
 
 @WithInjektContext fun TypeRef.toPersistedTypeRef(): PersistedTypeRef =
@@ -43,7 +41,6 @@ import kotlinx.serialization.Serializable
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
-    isInject = isInject,
     injectNTypes = injectNTypes.map { it.toPersistedTypeRef() },
     scopeComponentType = scopeComponentType?.toPersistedTypeRef()
   )
@@ -66,7 +63,6 @@ import kotlinx.serialization.Serializable
     isMarkedNullable = isMarkedNullable,
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
-    isInject = isInject,
     injectNTypes = injectNTypes.map { it.toTypeRef() },
     scopeComponentType = scopeComponentType?.toTypeRef()
   )

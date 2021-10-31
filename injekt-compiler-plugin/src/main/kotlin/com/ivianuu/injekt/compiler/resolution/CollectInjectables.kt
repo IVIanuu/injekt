@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt.compiler.generateFrameworkKey
@@ -31,14 +30,11 @@ import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
-import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.trace
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
@@ -50,10 +46,8 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
@@ -160,24 +154,17 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
         declaration.companionObjectDescriptor
           ?.injectableReceiver(false)
       )
-      is CallableMemberDescriptor -> {
-        if (declaration.isProvide() &&
-          (declaration !is PropertyDescriptor ||
-              classBodyView ||
-              declaration.hasAnnotation(injektFqNames.provide) ||
-              declaration.primaryConstructorPropertyValueParameter()
-                ?.hasAnnotation(injektFqNames.provide) == true)) {
-          listOf(
-            declaration.toCallableRef()
-              .let { callable ->
-                callable.copy(
-                  isProvide = true,
-                  parameterTypes = callable.parameterTypes.toMutableMap()
-                )
-              }
-          )
-        } else emptyList()
-      }
+      is CallableMemberDescriptor -> if (declaration.isProvide()) {
+        listOf(
+          declaration.toCallableRef()
+            .let { callable ->
+              callable.copy(
+                isProvide = true,
+                parameterTypes = callable.parameterTypes.toMutableMap()
+              )
+            }
+        )
+      } else emptyList()
       is VariableDescriptor -> if (declaration.isProvide()) {
         listOf(declaration.toCallableRef().makeProvide())
       } else emptyList()
@@ -189,49 +176,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return trace.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
-    var isProvide = hasAnnotation(injektFqNames.provide) ||
-        hasAnnotation(injektFqNames.inject)
-
-    if (!isProvide && this is PropertyDescriptor)
-      isProvide = primaryConstructorPropertyValueParameter()?.isProvide() == true
-
-    if (!isProvide && this is ParameterDescriptor)
-      isProvide = type.isProvide() ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide() ||
-                  (containingFunction.isDeserializedDeclaration() &&
-                      injektIndex() in containingFunction.callableInfo().injectParameters)
-            } == true
-
-    if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
-      isProvide = constructedClass.isProvide()
-
-    isProvide
-  }
-}
-
-@WithInjektContext fun Annotated.isInject(): Boolean {
-  @Suppress("IMPLICIT_CAST_TO_ANY")
-  val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return trace.getOrPut(InjektWritableSlices.IS_INJECT, key) {
-    var isInject = hasAnnotation(injektFqNames.inject)
-    if (!isInject && this is PropertyDescriptor)
-      isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
-
-    if (!isInject && this is ParameterDescriptor)
-      isInject = type.isInject() ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide() ||
-                  (containingFunction.isDeserializedDeclaration() &&
-                      injektIndex() in containingFunction.callableInfo().injectParameters)
-            } == true
-
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary)
-      isInject = constructedClass.isProvide()
-
-    isInject
+    hasAnnotation(injektFqNames.provide) ||
+        (this is ParameterDescriptor &&
+            containingDeclaration.hasAnnotation(injektFqNames.provide)) ||
+        (this is ConstructorDescriptor &&
+            constructedClass.hasAnnotation(injektFqNames.provide))
   }
 }
 

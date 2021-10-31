@@ -102,17 +102,7 @@ class EntryPointConstructorDescriptor(
   val index: Int,
   val typeRef: TypeRef
 ) : DeclarationDescriptorImpl(
-  Annotations.create(
-    listOf(
-      AnnotationDescriptorImpl(
-        module.findClassAcrossModuleDependencies(
-          ClassId.topLevel(injektFqNames.inject)
-        )!!.defaultType,
-        emptyMap(),
-        SourceElement.NO_SOURCE
-      )
-    )
-  ),
+  Annotations.EMPTY,
   "_inject$index".asNameId()
 ), ParameterDescriptor {
   override fun getOriginal(): ParameterDescriptor = this

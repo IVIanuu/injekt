@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -73,22 +72,6 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
-@WithInjektContext
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(): ValueParameterDescriptor? =
-  overriddenTreeUniqueAsSequence(false)
-    .map { it.containingDeclaration }
-    .filterIsInstance<ClassDescriptor>()
-    .mapNotNull { clazz ->
-      val clazzClassifier = clazz.toClassifierRef()
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.name == name &&
-              it.name in clazzClassifier.primaryConstructorPropertyParameters
-        }
-    }
-    .firstOrNull()
-
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
@@ -136,7 +119,6 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor
 
 fun String.asNameId() = Name.identifier(this)

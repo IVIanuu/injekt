@@ -122,16 +122,6 @@ inline fun <P1, P2, P3, P4, P5, P6, P7, P8, P9, R> provide(
   block: @Inject9<P1, P2, P3, P4, P5, P6, P7, P8, P9> () -> R
 ): R = block()
 
-@Target(
-  // fun func(@Inject foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
-
-  // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
-)
-annotation class Inject
-
 typealias Inject1<A> = Inject2<A, A>
 
 @Target(
@@ -161,7 +151,7 @@ typealias Inject9<A, B, C, D, E, F, G, H, I> = Inject2<Inject8<A, B, C, D, E, F,
 /**
  * Returns a provided instance of [T]
  */
-inline fun <T> inject(@Inject value: T): T = value
+@Inject1<T> inline fun <T> inject(): T = throw NotImplementedError("Implemented as an intrinsic")
 
 /**
  * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration

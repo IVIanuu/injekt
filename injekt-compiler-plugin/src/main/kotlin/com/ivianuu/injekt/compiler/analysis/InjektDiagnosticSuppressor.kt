@@ -79,14 +79,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.UNRESOLVED_REFERENCE)
       return bindingContext[InjektWritableSlices.FIXED_TYPE, diagnostic.psiElement.text] != null
 
-    if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
-      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
-    )
-      return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
-        ?.valueParameters
-        ?.count { !it.hasAnnotation(injektFqNames.inject) }
-        ?.let { it <= 1 } == true
-
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 

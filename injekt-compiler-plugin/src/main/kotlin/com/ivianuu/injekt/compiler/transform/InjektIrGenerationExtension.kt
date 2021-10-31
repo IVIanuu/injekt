@@ -75,6 +75,7 @@ class InjektIrGenerationExtension(
     moduleFragment.transform(localClassCollector, null)
 
     moduleFragment.transform(InjectCallTransformer(), null)
+    moduleFragment.transform(InjectIntrinsicTransformer(), null)
 
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)

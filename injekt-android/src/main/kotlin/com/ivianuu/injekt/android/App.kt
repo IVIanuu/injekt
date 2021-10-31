@@ -18,8 +18,9 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
-import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Inject1
 import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.inject
 
 /**
  * Returns the [AppComponent] hosted in the application
@@ -53,6 +54,5 @@ interface AppComponentOwner {
 /**
  * Creates the [AppComponent] which must be manually stored
  */
-inline fun Application.createAppComponent(
-  @Inject componentFactory: (Application) -> AppComponent
-): AppComponent = componentFactory(this)
+@Inject1<(Application) -> AppComponent> inline fun Application.createAppComponent(): AppComponent =
+  inject<(Application) -> AppComponent>()(this)

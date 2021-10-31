@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
@@ -38,6 +37,7 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -384,7 +384,7 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRe
     callableTypeParameters = callable.typeArguments.values.toList(),
     parameterName = injektName(),
     parameterIndex = injektIndex(),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
+    isRequired = this !is ValueParameterDescriptor || !hasDefaultValue(),
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this)
   )

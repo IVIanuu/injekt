@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
 import kotlin.jvm.JvmInline
 
 /**
@@ -27,5 +26,4 @@ import kotlin.jvm.JvmInline
 /**
  * Returns the [TypeKey] of [T]
  */
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T> typeKeyOf(@Inject key: TypeKey<T>): TypeKey<T> = key
+inline fun <T> typeKeyOf(key: TypeKey<T>): TypeKey<T> = key
