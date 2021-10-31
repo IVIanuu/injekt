@@ -44,7 +44,6 @@ import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
-import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -60,7 +59,6 @@ import org.jetbrains.kotlin.builtins.isFunctionOrSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
@@ -104,13 +102,11 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
@@ -149,7 +145,7 @@ import kotlin.collections.set
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 @WithInjektContext
 class InjectCallTransformer(
-  @Inject private val localClassCollector: LocalClassCollector,
+  @Inject private val localDeclarationCollector: LocalDeclarationCollector,
   @Inject private val injectNTransformer: InjectNTransformer,
   @Inject private val pluginContext: IrPluginContext,
   @Inject private val symbolRemapper: InjectSymbolRemapper
@@ -269,19 +265,13 @@ class InjectCallTransformer(
         when (request.parameterIndex) {
           DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
           EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
-          else -> {
-            try {
-              putValueArgument(
-                symbol.owner
-                  .valueParameters
-                  .first { it.descriptor.injektIndex() == request.parameterIndex }
-                  .index,
-                expression
-              )
-            } catch (e: Throwable) {
-              error("${currentFile.name} Lol $request $valueArgumentsCount ${dump()}")
-            }
-          }
+          else -> putValueArgument(
+            symbol.owner
+              .valueParameters
+              .first { it.descriptor.injektIndex() == request.parameterIndex }
+              .index,
+            expression
+          )
         }
       }
   }
@@ -1157,7 +1147,7 @@ class InjectCallTransformer(
     injectable: CallableInjectable
   ): IrExpression {
     return if (descriptor is LocalVariableDescriptor && descriptor.isDelegated) {
-      val localFunction = localFunctions.single { candidateFunction ->
+      val localFunction = localDeclarationCollector.localFunctions.single { candidateFunction ->
         candidateFunction.descriptor
           .safeAs<LocalVariableAccessorDescriptor.Getter>()
           ?.correspondingVariable == descriptor
@@ -1171,73 +1161,12 @@ class InjectCallTransformer(
       DeclarationIrBuilder(pluginContext, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
-          localVariables.single { it.descriptor == descriptor }.symbol
+          localDeclarationCollector.localVariables.single { it.descriptor == descriptor }.symbol
         )
     }
   }
 
-  private fun ClassDescriptor.irClass(): IrClass {
-    if (visibility == DescriptorVisibilities.LOCAL) {
-      return localClassCollector.localClasses
-        .single { it.descriptor.fqNameSafe == fqNameSafe }
-    }
-    return pluginContext.referenceClass(fqNameSafe)!!
-      .let { symbolRemapper.getReferencedClass(it) }
-      .owner
-  }
-
-
-  private fun ClassConstructorDescriptor.irConstructor(): IrConstructor {
-    if (constructedClass.visibility == DescriptorVisibilities.LOCAL) {
-      return localClassCollector.localClasses
-        .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
-        .constructors
-        .single { it.descriptor.uniqueKey() == uniqueKey() }
-    }
-    return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
-      .single { it.descriptor.uniqueKey() == uniqueKey() }
-      .let { symbolRemapper.getReferencedConstructor(it) }
-      .owner
-  }
-
-  private fun FunctionDescriptor.irFunction(): IrFunction {
-    if (visibility == DescriptorVisibilities.LOCAL) {
-      return localFunctions.single {
-        it.descriptor.uniqueKey() == uniqueKey()
-      }
-    }
-
-    if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
-        ?.visibility == DescriptorVisibilities.LOCAL) {
-      return localClassCollector.localClasses.flatMap { it.declarations }
-        .single { it.descriptor.uniqueKey() == uniqueKey() }
-        .cast()
-    }
-
-    return pluginContext.referenceFunctions(fqNameSafe)
-      .single { it.descriptor.uniqueKey() == uniqueKey() }
-      .let { symbolRemapper.getReferencedFunction(it) }
-      .owner
-  }
-
-  private fun PropertyDescriptor.irProperty(): IrProperty {
-    if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
-        ?.visibility == DescriptorVisibilities.LOCAL) {
-      return localClassCollector.localClasses.flatMap { it.declarations }
-        .single { it.descriptor.uniqueKey() == uniqueKey() }
-        .cast()
-    }
-
-    return pluginContext.referenceProperties(fqNameSafe)
-      .single { it.descriptor.uniqueKey() == uniqueKey() }
-      .let { symbolRemapper.getReferencedProperty(it) }
-      .owner
-  }
-
   private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
-
-  private val localVariables = mutableListOf<IrVariable>()
-  private val localFunctions = mutableListOf<IrFunction>()
 
   override fun visitClassNew(declaration: IrClass): IrStatement {
     receiverAccessors.push(
@@ -1270,16 +1199,12 @@ class InjectCallTransformer(
         }
       )
     }
-    if (declaration.isLocal) localFunctions += declaration
+    if (declaration.isLocal) localDeclarationCollector.localFunctions += declaration
     val result = super.visitFunctionNew(declaration)
     if (dispatchReceiver != null) receiverAccessors.pop()
     if (extensionReceiver != null) receiverAccessors.pop()
     return result
   }
-
-  override fun visitVariable(declaration: IrVariable): IrStatement =
-    super.visitVariable(declaration)
-      .also { localVariables += declaration }
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression

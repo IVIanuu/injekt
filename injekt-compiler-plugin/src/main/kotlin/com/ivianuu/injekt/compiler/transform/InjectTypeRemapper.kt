@@ -16,16 +16,25 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.isDeserializedDeclaration
+import com.ivianuu.injekt.compiler.resolution.CallableInjectable
+import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.visitRecursive
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
@@ -74,16 +83,21 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @WithInjektContext class DeepCopyIrTreeWithSymbolsPreservingMetadata(
-  private val symbolRemapper: DeepCopySymbolRemapper,
   private val typeRemapper: InjectNTypeRemapper,
+  @Inject private val symbolRemapper: DeepCopySymbolRemapper,
+  @Inject private val localDeclarationCollector: LocalDeclarationCollector,
   @Inject private val pluginContext: IrPluginContext,
+  @Inject private val trace: BindingTrace?,
   symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
+  private var currentFile: IrFile? = null
+
   override fun visitClass(declaration: IrClass): IrClass =
     super.visitClass(declaration).also { it.copyMetadataFrom(declaration) }
 
@@ -120,9 +134,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
       it.copyAttributes(declaration)
     }
 
-  override fun visitFile(declaration: IrFile): IrFile = super.visitFile(declaration).also {
-    if (it is IrFileImpl) {
-      it.metadata = declaration.metadata
+  override fun visitFile(declaration: IrFile): IrFile {
+    currentFile = declaration
+    return super.visitFile(declaration).also {
+      currentFile = it
+      if (it is IrFileImpl) {
+        it.metadata = declaration.metadata
+      }
     }
   }
 
@@ -211,6 +229,27 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     val ownerFn = expression.symbol.owner as? IrSimpleFunction
     @Suppress("DEPRECATION")
     val containingClass = expression.symbol.descriptor.containingDeclaration as? ClassDescriptor
+
+    val graph = pluginContext.bindingContext[
+        InjektWritableSlices.INJECTION_GRAPH,
+        SourcePosition(currentFile!!.fileEntry.name, expression.startOffset, expression.endOffset)
+    ]
+
+    if (graph != null) {
+      graph.visitRecursive { _, result ->
+        if (result is ResolutionResult.Success.WithCandidate.Value) {
+          val callable = result.candidate.safeAs<CallableInjectable>()?.callable?.callable
+          if (callable?.isDeserializedDeclaration() == true) {
+            when (callable) {
+              is ClassConstructorDescriptor -> visitConstructor(callable.irConstructor())
+              is PropertyDescriptor -> visitProperty(callable.irProperty())
+              is FunctionDescriptor -> visitSimpleFunction(callable.irFunction().cast())
+              else -> error("Unsupported callable $callable")
+            }
+          }
+        }
+      }
+    }
 
     // Any virtual calls on composable functions we want to make sure we update the call to
     // the right function base class (of n+1 arity). The most often virtual call to make on

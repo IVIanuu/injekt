@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
@@ -23,7 +24,12 @@ import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -32,8 +38,11 @@ import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irReturn
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
@@ -49,17 +58,102 @@ import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun ClassDescriptor.irClass(
+  @Inject injektContext: InjektContext,
+  @Inject pluginContext: IrPluginContext,
+  @Inject localDeclarationCollector: LocalDeclarationCollector,
+  @Inject symbolRemapper: SymbolRemapper
+): IrClass {
+  if (visibility == DescriptorVisibilities.LOCAL)
+    return localDeclarationCollector.localClasses
+      .single { it.descriptor.fqNameSafe == fqNameSafe }
+
+  return pluginContext.referenceClass(fqNameSafe)!!
+    .let { symbolRemapper.getReferencedClass(it) }
+    .owner
+}
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun ClassConstructorDescriptor.irConstructor(
+  @Inject injektContext: InjektContext,
+  @Inject pluginContext: IrPluginContext,
+  @Inject localDeclarationCollector: LocalDeclarationCollector,
+  @Inject symbolRemapper: SymbolRemapper,
+  @Inject trace: BindingTrace?,
+  ): IrConstructor {
+  if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
+    return localDeclarationCollector.localClasses
+      .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
+      .constructors
+
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
+
+  return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
+    .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .let { symbolRemapper.getReferencedConstructor(it) }
+    .owner
+}
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun FunctionDescriptor.irFunction(
+  @Inject injektContext: InjektContext,
+  @Inject pluginContext: IrPluginContext,
+  @Inject localDeclarationCollector: LocalDeclarationCollector,
+  @Inject symbolRemapper: SymbolRemapper,
+  @Inject trace: BindingTrace?,
+): IrFunction {
+  if (visibility == DescriptorVisibilities.LOCAL)
+    return localDeclarationCollector.localFunctions.single {
+      it.descriptor.uniqueKey() == uniqueKey()
+    }
+
+  if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
+      ?.visibility == DescriptorVisibilities.LOCAL)
+        return localDeclarationCollector.localClasses.flatMap { it.declarations }
+          .single { it.descriptor.uniqueKey() == uniqueKey() }
+          .cast()
+
+  return pluginContext.referenceFunctions(fqNameSafe)
+    .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .let { symbolRemapper.getReferencedFunction(it) }
+    .owner
+}
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun PropertyDescriptor.irProperty(
+  @Inject injektContext: InjektContext,
+  @Inject pluginContext: IrPluginContext,
+  @Inject localDeclarationCollector: LocalDeclarationCollector,
+  @Inject symbolRemapper: SymbolRemapper,
+  @Inject trace: BindingTrace?,
+): IrProperty {
+  if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
+      ?.visibility == DescriptorVisibilities.LOCAL)
+        return localDeclarationCollector.localClasses.flatMap { it.declarations }
+          .single { it.descriptor.uniqueKey() == uniqueKey() }
+          .cast()
+
+  return pluginContext.referenceProperties(fqNameSafe)
+    .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .let { symbolRemapper.getReferencedProperty(it) }
+    .owner
+}
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 @WithInjektContext fun TypeRef.toIrType(
   @Inject pluginContext: IrPluginContext,
-  @Inject localClassCollector: LocalClassCollector
+  @Inject localDeclarationCollector: LocalDeclarationCollector
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
@@ -112,7 +206,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     else -> {
       val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
-      val irClassifier = localClassCollector.localClasses.singleOrNull {
+      val irClassifier = localDeclarationCollector.localClasses.singleOrNull {
         it.descriptor.fqNameSafe == fqName
       }
         ?.symbol
@@ -151,7 +245,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @WithInjektContext private fun TypeRef.toIrAbbreviation(
   @Inject pluginContext: IrPluginContext,
-  @Inject localClassCollector: LocalClassCollector
+  @Inject localDeclarationCollector: LocalDeclarationCollector
 ): IrTypeAbbreviation {
   val typeAlias = pluginContext.referenceTypeAlias(classifier.fqName)!!
   return IrTypeAbbreviationImpl(

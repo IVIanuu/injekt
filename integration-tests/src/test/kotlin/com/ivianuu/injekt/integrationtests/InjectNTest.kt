@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -41,6 +42,17 @@ class InjectNTest {
           counterDb.toString()
         }
       }
+    """
+  )
+
+  @Test fun testInjectNCallableInOtherCompilationOnlyReferencedInInjection() = multiCodegen(
+    """
+      typealias KeyUiContext = Inject2<Int, String>
+
+      @Provide @KeyUiContext fun pair(): Pair<Int, String> = inject<Int>() to inject<String>()
+    """,
+    """
+      fun invoke() = provide(0, "") { inject<Pair<Int, String>>() }
     """
   )
 

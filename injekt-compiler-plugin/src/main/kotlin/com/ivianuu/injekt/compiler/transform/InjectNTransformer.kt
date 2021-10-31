@@ -61,7 +61,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 @WithInjektContext
 class InjectNTransformer(
-  @Inject private val localClassCollector: LocalClassCollector,
+  @Inject private val localDeclarationCollector: LocalDeclarationCollector,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
   private val transformedClasses = mutableSetOf<IrClass>()

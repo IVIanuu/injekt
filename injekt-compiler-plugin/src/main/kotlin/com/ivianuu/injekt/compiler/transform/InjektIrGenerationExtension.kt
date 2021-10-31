@@ -51,7 +51,7 @@ class InjektIrGenerationExtension(
   override fun generate(moduleFragment: IrModuleFragment, @Provide pluginContext: IrPluginContext) {
     @Provide val context = InjektContext(pluginContext.moduleDescriptor, injektFqNames)
     @Provide val trace = DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
-    @Provide var localClassCollector = LocalClassCollector()
+    @Provide var localClassCollector = LocalDeclarationCollector()
     moduleFragment.transform(localClassCollector, null)
 
     @Provide val injectNTransformer = InjectNTransformer()
@@ -65,13 +65,13 @@ class InjektIrGenerationExtension(
     // use the "preserving metadata" variant since we are using this copy to *replace* the
     // originals, or else the module we would produce wouldn't have any metadata in it.
     val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
-      symbolRemapper,
-      typeRemapper
+      typeRemapper,
+      symbolRemapper
     ).also { typeRemapper.deepCopy = it }
     moduleFragment.transformChildren(transformer, null)
     moduleFragment.patchDeclarationParents()
 
-    localClassCollector = LocalClassCollector()
+    localClassCollector = LocalDeclarationCollector()
     moduleFragment.transform(localClassCollector, null)
 
     moduleFragment.transform(InjectCallTransformer(), null)
