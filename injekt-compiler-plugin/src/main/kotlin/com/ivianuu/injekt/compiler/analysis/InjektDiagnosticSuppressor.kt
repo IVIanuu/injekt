@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt_shaded.Provide
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -31,6 +32,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.lambdaExpressionRecursiveVisitor
+import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -60,6 +62,15 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
             lambdaExpression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()!!
               .addInjectNInfo()
             lambdaExpression.getType(bindingContext)!!.addInjectNInfo()
+          }
+        )
+      diagnostic.psiElement.cast<KtFile>()
+        .accept(
+          propertyRecursiveVisitor { property ->
+            if (property.isLocal) {
+              property.descriptor<CallableDescriptor>()!!
+                .addInjectNInfo()
+            }
           }
         )
       return true

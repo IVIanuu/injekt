@@ -538,6 +538,8 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.PROTECTED
 
 @WithInjektContext fun DeclarationDescriptor.addInjectNInfo() {
+  if (isDeserializedDeclaration()) return
+
   findPsi().safeAs<KtDeclaration>()?.let { declaration ->
     annotations.forEach {
       fixTypes(it.type, declaration)
@@ -546,24 +548,15 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
 
   annotations.forEach { it.type.addInjectNInfo() }
 
-  when (this) {
-    is FunctionDescriptor -> {
-      (this as Annotated).addInjectNInfo()
+  if (this is CallableDescriptor) {
+    (this as Annotated).addInjectNInfo()
 
-      returnType?.addInjectNInfo()
-      dispatchReceiverParameter?.type?.addInjectNInfo()
-      extensionReceiverParameter?.type?.addInjectNInfo()
-      valueParameters.forEach {
-        it.type.addInjectNInfo()
-        it.varargElementType?.addInjectNInfo()
-      }
-    }
-    is PropertyDescriptor -> {
-      (this as Annotated).addInjectNInfo()
-
-      returnType?.addInjectNInfo()
-      dispatchReceiverParameter?.type?.addInjectNInfo()
-      extensionReceiverParameter?.type?.addInjectNInfo()
+    returnType?.addInjectNInfo()
+    dispatchReceiverParameter?.type?.addInjectNInfo()
+    extensionReceiverParameter?.type?.addInjectNInfo()
+    valueParameters.forEach {
+      it.type.addInjectNInfo()
+      it.varargElementType?.addInjectNInfo()
     }
   }
 }
