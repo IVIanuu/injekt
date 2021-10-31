@@ -127,8 +127,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
       val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-      if (function?.hasAnnotation(injektFqNames.provide) == true)
-        return true
+      if (function?.hasAnnotation(injektFqNames.provide) == true ||
+          function?.valueParameters?.any {
+            it.hasAnnotation(injektFqNames.inject) ||
+                it.hasAnnotation(injektFqNames.provide)
+          } == true)
+            return true
     }
 
     return false
