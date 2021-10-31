@@ -55,12 +55,14 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDeclarationReference
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
@@ -71,7 +73,6 @@ import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.util.DeepCopyIrTreeWithSymbols
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRenamer
 import org.jetbrains.kotlin.ir.util.TypeRemapper
@@ -90,8 +91,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @WithInjektContext class DeepCopyIrTreeWithSymbolsPreservingMetadata(
   private val typeRemapper: InjectNTypeRemapper,
-  @Inject private val symbolRemapper: DeepCopySymbolRemapper,
+  @Inject private val symbolRemapper: InjectSymbolRemapper,
   @Inject private val localDeclarationCollector: LocalDeclarationCollector,
+  @Inject private val injectNTransformer: InjectNTransformer,
   @Inject private val pluginContext: IrPluginContext,
   @Inject private val trace: BindingTrace?,
   symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
@@ -101,21 +103,37 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   override fun visitClass(declaration: IrClass): IrClass =
     super.visitClass(declaration).also { it.copyMetadataFrom(declaration) }
 
-  override fun visitFunction(declaration: IrFunction): IrStatement =
-    super.visitFunction(declaration).also {
-      it.copyMetadataFrom(declaration)
+  override fun visitFunction(declaration: IrFunction): IrStatement {
+    if (declaration.symbol.isRemappedAndBound { getReferencedFunction(it) }) {
+      return symbolRemapper.getReferencedFunction(declaration.symbol).owner
+    }
+    if (declaration.symbol.isBoundButNotRemapped { getReferencedFunction(it) }) {
+      symbolRemapper.visitFunction(declaration)
     }
 
-  override fun visitConstructor(declaration: IrConstructor): IrConstructor =
-    super.visitConstructor(declaration).also {
+    return super.visitFunction(declaration).also {
       it.copyMetadataFrom(declaration)
     }
+  }
+
+  override fun visitConstructor(declaration: IrConstructor): IrConstructor {
+    if (declaration.symbol.isRemappedAndBound { getReferencedConstructor(it) }) {
+      return symbolRemapper.getReferencedConstructor(declaration.symbol).owner
+    }
+    if (declaration.symbol.isBoundButNotRemapped { getReferencedConstructor(it) }) {
+      symbolRemapper.visitConstructor(declaration)
+    }
+
+    return super.visitConstructor(declaration).also {
+      it.copyMetadataFrom(declaration)
+    }
+  }
 
   override fun visitSimpleFunction(declaration: IrSimpleFunction): IrSimpleFunction {
-    if (declaration.symbol.isRemappedAndBound()) {
+    if (declaration.symbol.isRemappedAndBound { getReferencedSimpleFunction(it) }) {
       return symbolRemapper.getReferencedSimpleFunction(declaration.symbol).owner
     }
-    if (declaration.symbol.isBoundButNotRemapped()) {
+    if (declaration.symbol.isBoundButNotRemapped { getReferencedSimpleFunction(it) }) {
       symbolRemapper.visitSimpleFunction(declaration)
     }
     return super.visitSimpleFunction(declaration).also {
@@ -128,11 +146,19 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     it.metadata = declaration.metadata
   }
 
-  override fun visitProperty(declaration: IrProperty): IrProperty =
-    super.visitProperty(declaration).also {
+  override fun visitProperty(declaration: IrProperty): IrProperty {
+    if (declaration.symbol.isRemappedAndBound { getReferencedProperty(it) }) {
+      return symbolRemapper.getReferencedProperty(declaration.symbol).owner
+    }
+    if (declaration.symbol.isBoundButNotRemapped { getReferencedProperty(it) }) {
+      symbolRemapper.visitProperty(declaration)
+    }
+
+    return super.visitProperty(declaration).also {
       it.copyMetadataFrom(declaration)
       it.copyAttributes(declaration)
     }
+  }
 
   override fun visitFile(declaration: IrFile): IrFile {
     currentFile = declaration
@@ -147,6 +173,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   override fun visitConstructorCall(expression: IrConstructorCall): IrConstructorCall {
     if (!expression.symbol.isBound)
       (pluginContext as IrPluginContextImpl).linker.getDeclaration(expression.symbol)
+
+    expression.transformGraphCallables()
+
     val ownerFn = expression.symbol.owner as? IrConstructor
     // If we are calling an external constructor, we want to "remap" the types of its signature
     // as well, since if it they are @Composable it will have its unmodified signature. These
@@ -182,6 +211,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   override fun visitDelegatingConstructorCall(expression: IrDelegatingConstructorCall): IrDelegatingConstructorCall {
     if (!expression.symbol.isBound)
       (pluginContext as IrPluginContextImpl).linker.getDeclaration(expression.symbol)
+
+    expression.transformGraphCallables()
+
     val ownerFn = expression.symbol.owner as? IrConstructor
     // If we are calling an external constructor, we want to "remap" the types of its signature
     // as well, since if it they are @Composable it will have its unmodified signature. These
@@ -212,44 +244,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     return super.visitDelegatingConstructorCall(expression)
   }
 
-  private fun IrFunction.hasInjectNArguments(): Boolean {
-    if (
-      dispatchReceiverParameter?.type?.isInjectN() == true ||
-      extensionReceiverParameter?.type?.isInjectN() == true
-    ) return true
-
-    for (param in valueParameters) {
-      if (param.type.isInjectN()) return true
-    }
-    return false
-  }
-
   @OptIn(ObsoleteDescriptorBasedAPI::class)
   override fun visitCall(expression: IrCall): IrCall {
     val ownerFn = expression.symbol.owner as? IrSimpleFunction
     @Suppress("DEPRECATION")
     val containingClass = expression.symbol.descriptor.containingDeclaration as? ClassDescriptor
 
-    val graph = pluginContext.bindingContext[
-        InjektWritableSlices.INJECTION_GRAPH,
-        SourcePosition(currentFile!!.fileEntry.name, expression.startOffset, expression.endOffset)
-    ]
-
-    if (graph != null) {
-      graph.visitRecursive { _, result ->
-        if (result is ResolutionResult.Success.WithCandidate.Value) {
-          val callable = result.candidate.safeAs<CallableInjectable>()?.callable?.callable
-          if (callable?.isDeserializedDeclaration() == true) {
-            when (callable) {
-              is ClassConstructorDescriptor -> visitConstructor(callable.irConstructor())
-              is PropertyDescriptor -> visitProperty(callable.irProperty())
-              is FunctionDescriptor -> visitSimpleFunction(callable.irFunction().cast())
-              else -> error("Unsupported callable $callable")
-            }
-          }
-        }
-      }
-    }
+    expression.transformGraphCallables()
 
     // Any virtual calls on composable functions we want to make sure we update the call to
     // the right function base class (of n+1 arity). The most often virtual call to make on
@@ -368,11 +369,69 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     return super.visitCall(expression)
   }
 
-  private fun IrSimpleFunctionSymbol.isBoundButNotRemapped(): Boolean =
-    this.isBound && symbolRemapper.getReferencedFunction(this) == this
+  private fun IrFunction.hasInjectNArguments(): Boolean {
+    if (
+      dispatchReceiverParameter?.type?.isInjectN() == true ||
+      extensionReceiverParameter?.type?.isInjectN() == true
+    ) return true
 
-  private fun IrSimpleFunctionSymbol.isRemappedAndBound(): Boolean {
-    val symbol = symbolRemapper.getReferencedFunction(this)
+    for (param in valueParameters) {
+      if (param.type.isInjectN()) return true
+    }
+    return false
+  }
+
+  @OptIn(ObsoleteDescriptorBasedAPI::class)
+  private fun IrFunctionAccessExpression.transformGraphCallables() {
+    val graph = pluginContext.bindingContext[
+        InjektWritableSlices.INJECTION_GRAPH,
+        SourcePosition(currentFile!!.fileEntry.name, startOffset, endOffset)
+    ] ?: return
+
+    graph.visitRecursive { _, result ->
+      if (result is ResolutionResult.Success.WithCandidate.Value) {
+        val callable = result.candidate.safeAs<CallableInjectable>()?.callable?.callable
+        if (callable?.isDeserializedDeclaration() == true) {
+          when (callable) {
+            is ClassConstructorDescriptor -> {
+              val constructor = injectNTransformer.transformIfNeeded(
+                callable.irConstructor()
+              ) as IrConstructor
+              visitConstructor(constructor).apply {
+                parent = constructor.parent
+                patchDeclarationParents(constructor.parent)
+              }
+            }
+            is PropertyDescriptor -> {
+              val propertyGetter = injectNTransformer.transformIfNeeded(
+                callable.irProperty().getter!!
+              ) as IrSimpleFunction
+              visitSimpleFunction(propertyGetter).apply {
+                parent = propertyGetter.parent
+                patchDeclarationParents(propertyGetter.parent)
+              }
+            }
+            is FunctionDescriptor -> {
+              val function = injectNTransformer.transformIfNeeded(
+                callable.irFunction().cast<IrSimpleFunction>()
+              ) as IrSimpleFunction
+              visitSimpleFunction(function).apply {
+                parent = function.parent
+                patchDeclarationParents(function.parent)
+              }
+            }
+            else -> error("Unsupported callable $callable")
+          }
+        }
+      }
+    }
+  }
+
+  private fun <T : IrSymbol> T.isBoundButNotRemapped(getter: SymbolRemapper.(T) -> T): Boolean =
+    this.isBound && symbolRemapper.getter(this) == this
+
+  private fun <T : IrSymbol> T.isRemappedAndBound(getter: SymbolRemapper.(T) -> T): Boolean {
+    val symbol = symbolRemapper.getter(this)
     return symbol.isBound && symbol != this
   }
 

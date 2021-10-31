@@ -58,7 +58,6 @@ import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.name.FqName
@@ -73,7 +72,7 @@ fun ClassDescriptor.irClass(
   @Inject injektContext: InjektContext,
   @Inject pluginContext: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject symbolRemapper: SymbolRemapper
+  @Inject symbolRemapper: InjectSymbolRemapper
 ): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
@@ -89,14 +88,13 @@ fun ClassConstructorDescriptor.irConstructor(
   @Inject injektContext: InjektContext,
   @Inject pluginContext: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject symbolRemapper: SymbolRemapper,
-  @Inject trace: BindingTrace?,
-  ): IrConstructor {
+  @Inject symbolRemapper: InjectSymbolRemapper,
+  @Inject trace: BindingTrace?
+): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
       .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
       .constructors
-
       .single { it.descriptor.uniqueKey() == uniqueKey() }
 
   return pluginContext.referenceConstructors(constructedClass.fqNameSafe)
@@ -110,7 +108,7 @@ fun FunctionDescriptor.irFunction(
   @Inject injektContext: InjektContext,
   @Inject pluginContext: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject symbolRemapper: SymbolRemapper,
+  @Inject symbolRemapper: InjectSymbolRemapper,
   @Inject trace: BindingTrace?,
 ): IrFunction {
   if (visibility == DescriptorVisibilities.LOCAL)
@@ -126,7 +124,7 @@ fun FunctionDescriptor.irFunction(
 
   return pluginContext.referenceFunctions(fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
-    .let { symbolRemapper.getReferencedFunction(it) }
+    .let { symbolRemapper.getReferencedSimpleFunction(it) }
     .owner
 }
 
@@ -135,7 +133,7 @@ fun PropertyDescriptor.irProperty(
   @Inject injektContext: InjektContext,
   @Inject pluginContext: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject symbolRemapper: SymbolRemapper,
+  @Inject symbolRemapper: InjectSymbolRemapper,
   @Inject trace: BindingTrace?,
 ): IrProperty {
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()

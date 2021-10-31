@@ -54,10 +54,11 @@ class InjektIrGenerationExtension(
     @Provide var localClassCollector = LocalDeclarationCollector()
     moduleFragment.transform(localClassCollector, null)
 
+    @Provide val symbolRemapper = InjectSymbolRemapper()
+
     @Provide val injectNTransformer = InjectNTransformer()
     moduleFragment.transform(injectNTransformer, null)
 
-    @Provide val symbolRemapper = InjectSymbolRemapper()
     moduleFragment.acceptVoid(symbolRemapper)
 
     val typeRemapper = InjectNTypeRemapper(symbolRemapper)

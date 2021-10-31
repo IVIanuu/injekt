@@ -16,17 +16,26 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.context
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.isDeserializedDeclaration
+import com.ivianuu.injekt.compiler.resolution.CallableInjectable
+import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.visitRecursive
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
@@ -37,7 +46,9 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
@@ -57,10 +68,12 @@ import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 @WithInjektContext
 class InjectNTransformer(
+  @Inject private val injectSymbolRemapper: InjectSymbolRemapper,
   @Inject private val localDeclarationCollector: LocalDeclarationCollector,
   @Inject private val pluginContext: IrPluginContext
 ) : IrElementTransformerVoidWithContext() {
@@ -68,6 +81,9 @@ class InjectNTransformer(
   private val transformedFunctions = mutableSetOf<IrFunction>()
 
   fun transformIfNeeded(clazz: IrClass): IrClass {
+    if (clazz.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB)
+      return clazz
+
     val info = clazz.descriptor.classifierInfo()
     if (info.injectNParameters.isEmpty()) return clazz
     if (clazz in transformedClasses) return clazz
@@ -134,10 +150,12 @@ class InjectNTransformer(
     transformedFunctions += function
 
     injectNParameters.forEach { parameter ->
-      function.addValueParameter(
-        parameter.name,
-        parameter.typeRef.toIrType().typeOrNull!!
-      )
+      if (function.valueParameters.none { it.name == parameter.name }) {
+        function.addValueParameter(
+          parameter.name,
+          parameter.typeRef.toIrType().typeOrNull!!
+        )
+      }
     }
 
     return function
@@ -151,6 +169,27 @@ class InjectNTransformer(
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+
+    val graph = pluginContext.bindingContext[
+        InjektWritableSlices.INJECTION_GRAPH,
+        SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
+    ] ?: return result
+
+    graph.visitRecursive { _, result ->
+      if (result is ResolutionResult.Success.WithCandidate.Value) {
+        val callable = result.candidate.safeAs<CallableInjectable>()?.callable?.callable
+        if (callable?.isDeserializedDeclaration() == true) {
+          when (callable) {
+            is ClassConstructorDescriptor -> transformIfNeeded(callable.irConstructor())
+            is PropertyDescriptor -> transformIfNeeded(callable.irProperty().getter!!)
+            is FunctionDescriptor -> transformIfNeeded(
+              callable.irFunction().cast<IrSimpleFunction>()
+            )
+            else -> error("Unsupported callable $callable")
+          }
+        }
+      }
+    }
 
     val callee = if (result.symbol.descriptor.name.asString() == "invoke" &&
       result.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) == true) {
