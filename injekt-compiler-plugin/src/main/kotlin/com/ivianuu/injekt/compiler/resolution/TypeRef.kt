@@ -342,6 +342,10 @@ fun TypeRef.withVariance(variance: TypeVariance) =
   if (this.variance == variance) this
   else copy(variance = variance)
 
+fun TypeRef.withFrameworkKey(frameworkKey: Int): TypeRef =
+  if (this.frameworkKey == frameworkKey) this
+  else copy(frameworkKey = frameworkKey)
+
 fun TypeRef.copy(
   classifier: ClassifierRef = this.classifier,
   isMarkedNullable: Boolean = this.isMarkedNullable,

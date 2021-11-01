@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.multiPlatformCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
+import io.kotest.matchers.collections.shouldHaveSize
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
@@ -515,5 +516,32 @@ class TypeScopeTest {
     )
   ) {
     invokeSingleFile()
+  }
+
+  @Test fun testTypeScopeDoesNotProduceDuplicates() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            interface MyType
+
+            @Provide object MyTypeImpl : MyType
+
+            @Provide fun pair(type: MyType): Pair<String, MyType> = "a" to type
+          """,
+          packageFqName = FqName("package1")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            @Providers("package1.*")
+            fun invoke() = inject<List<Pair<String, package1.MyType>>>()
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile<List<*>>() shouldHaveSize 1
   }
 }

@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -625,6 +626,8 @@ fun TypeInjectablesScope(
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
+  val allInjectables = parent.allScopes.flatMap { it.injectables }
+
   val externalInjectables = mutableListOf<CallableRef>()
   val typeInjectables = mutableListOf<CallableRef>()
   val internalInjectables = mutableListOf<CallableRef>()
@@ -632,10 +635,16 @@ fun TypeInjectablesScope(
   val thisModuleName = module().moduleName()
   val typeModuleName = type.classifier.descriptor!!.moduleName()
   injectablesWithLookups.injectables.forEach { callable ->
-    when (callable.callable.moduleName()) {
-      thisModuleName -> internalInjectables += callable
-      typeModuleName -> typeInjectables += callable
-      else -> externalInjectables += callable
+    val uniqueKey = callable.callable.uniqueKey()
+    if (allInjectables.none {
+        it.callable.uniqueKey() == uniqueKey &&
+            it.originalType.withFrameworkKey(0) == callable.originalType
+    }) {
+      when (callable.callable.moduleName()) {
+        thisModuleName -> internalInjectables += callable
+        typeModuleName -> typeInjectables += callable
+        else -> externalInjectables += callable
+      }
     }
   }
 

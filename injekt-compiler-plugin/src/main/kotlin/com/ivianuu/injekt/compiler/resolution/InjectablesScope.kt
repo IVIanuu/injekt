@@ -57,7 +57,7 @@ class InjectablesScope(
 
   private val imports = imports.toMutableList()
 
-  private val injectables = mutableListOf<CallableRef>()
+  val injectables = mutableListOf<CallableRef>()
 
   private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
   private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
