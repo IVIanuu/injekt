@@ -22,6 +22,7 @@ annotation class Component
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class EntryPoint<C : @Component Any>
 
+@Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
 inline fun <E> (@Component Any).entryPoint(): E = this as E
 
 @Target(
