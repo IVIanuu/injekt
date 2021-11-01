@@ -148,54 +148,56 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
   }
 
 fun DeclarationDescriptor.uniqueKey(@Inject ctx: InjektContext): String =
-  when (val original = this.original) {
-    is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
-      original.valueParameters
-        .joinToString(",") {
-          it.type
-            .fullyAbbreviatedType
-            .uniqueTypeKey()
-        }
-    }"
-    is ClassDescriptor -> "class:$fqNameSafe"
-    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let { 
-      "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-    }}"
-    is FunctionDescriptor -> "function:$fqNameSafe:${
-      listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-        .plus(original.valueParameters)
-        .joinToString(",") { parameter ->
-          buildString {
-            when {
-              parameter === original.dispatchReceiverParameter -> append("d:")
-              parameter === original.extensionReceiverParameter -> append("e:")
-              else -> append("p:")
-            }
-            append(
-              parameter.type
-                .fullyAbbreviatedType
-                .uniqueTypeKey()
-            )
+  trace()!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, this) {
+    when (val original = this.original) {
+      is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
+        original.valueParameters
+          .joinToString(",") {
+            it.type
+              .fullyAbbreviatedType
+              .uniqueTypeKey()
           }
-        }
-    }"
-    is PropertyDescriptor -> "property:$fqNameSafe:${
-      listOfNotNull(
-        original.dispatchReceiverParameter, original.extensionReceiverParameter
-      )
-        .joinToString(",") {
-          it.type
-            .fullyAbbreviatedType
-            .uniqueTypeKey()
-        }
-    }"
-    is TypeAliasDescriptor -> "typealias:$fqNameSafe"
-    is TypeParameterDescriptor ->
-      "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
-    is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
-    is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
-    is VariableDescriptor -> "variable:${fqNameSafe}"
-    else -> error("Unexpected declaration $this")
+      }"
+      is ClassDescriptor -> "class:$fqNameSafe"
+      is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
+        "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
+      }}"
+      is FunctionDescriptor -> "function:$fqNameSafe:${
+        listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+          .plus(original.valueParameters)
+          .joinToString(",") { parameter ->
+            buildString {
+              when {
+                parameter === original.dispatchReceiverParameter -> append("d:")
+                parameter === original.extensionReceiverParameter -> append("e:")
+                else -> append("p:")
+              }
+              append(
+                parameter.type
+                  .fullyAbbreviatedType
+                  .uniqueTypeKey()
+              )
+            }
+          }
+      }"
+      is PropertyDescriptor -> "property:$fqNameSafe:${
+        listOfNotNull(
+          original.dispatchReceiverParameter, original.extensionReceiverParameter
+        )
+          .joinToString(",") {
+            it.type
+              .fullyAbbreviatedType
+              .uniqueTypeKey()
+          }
+      }"
+      is TypeAliasDescriptor -> "typealias:$fqNameSafe"
+      is TypeParameterDescriptor ->
+        "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
+      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
+      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
+      is VariableDescriptor -> "variable:${fqNameSafe}"
+      else -> error("Unexpected declaration $this")
+    }
   }
 
 private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {

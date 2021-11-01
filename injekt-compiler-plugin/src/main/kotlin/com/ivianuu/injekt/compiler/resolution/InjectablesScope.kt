@@ -59,10 +59,10 @@ class InjectablesScope(
 
   val injectables = mutableListOf<CallableRef>()
 
-  private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
+  val spreadingInjectables = mutableListOf<SpreadingInjectable>()
   private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
 
-  private data class SpreadingInjectable(
+  data class SpreadingInjectable(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
       it.isSpread

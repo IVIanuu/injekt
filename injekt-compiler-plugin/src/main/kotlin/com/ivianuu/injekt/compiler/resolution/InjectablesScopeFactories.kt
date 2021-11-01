@@ -626,7 +626,9 @@ fun TypeInjectablesScope(
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
-  val allInjectables = parent.allScopes.flatMap { it.injectables }
+  val allInjectables = parent.allScopes
+    .flatMap { it.injectables + it.spreadingInjectables.map { it.callable }}
+    .map { it.callable.uniqueKey() to it.originalType.withFrameworkKey(0) }
 
   val externalInjectables = mutableListOf<CallableRef>()
   val typeInjectables = mutableListOf<CallableRef>()
@@ -636,10 +638,7 @@ fun TypeInjectablesScope(
   val typeModuleName = type.classifier.descriptor!!.moduleName()
   injectablesWithLookups.injectables.forEach { callable ->
     val uniqueKey = callable.callable.uniqueKey()
-    if (allInjectables.none {
-        it.callable.uniqueKey() == uniqueKey &&
-            it.originalType.withFrameworkKey(0) == callable.originalType
-    }) {
+    if (allInjectables.none { it.first == uniqueKey && it.second == callable.originalType }) {
       when (callable.callable.moduleName()) {
         thisModuleName -> internalInjectables += callable
         typeModuleName -> typeInjectables += callable
