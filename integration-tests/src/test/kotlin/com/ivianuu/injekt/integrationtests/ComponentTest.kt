@@ -379,7 +379,7 @@ class ComponentTest {
     """
   )
 
-  @Test fun testTaggedComponent() = codegen(
+  @Test fun testTaggedComponent() = singleAndMultiCodegen(
     """
       @Component @Tag1 interface MyComponent
     """,
