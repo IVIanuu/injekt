@@ -447,6 +447,31 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveGenericInjectableOfExpandedTypeAliasType() = multiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide class Context1<A>(@Provide val a: A)
+          """,
+          packageFqName = FqName("other")
+        )
+      ),
+      listOf(
+        source(
+          """
+            typealias MyContext = other.Context1<String>
+
+            @Provide fun myContext(): MyContext = MyContext("")
+
+            fun invoke() = inject<Int>()
+          """
+        )
+      )
+    )
+
+  )
+
   @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
     """
       @Provide private val foo = Foo()
