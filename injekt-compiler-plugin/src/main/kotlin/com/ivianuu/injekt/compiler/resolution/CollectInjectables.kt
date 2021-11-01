@@ -380,7 +380,9 @@ fun TypeRef.collectTypeScopeInjectables(@Inject ctx: InjektContext): Injectables
     }
 
     injectables.removeAll { callable ->
-      if (callable.callable !is CallableMemberDescriptor) return@removeAll false
+      if (callable.callable !is CallableMemberDescriptor &&
+          callable.callable !is ComponentConstructorDescriptor &&
+          callable.callable !is EntryPointConstructorDescriptor) return@removeAll false
       val containingObjectClassifier = callable.callable.containingDeclaration
         .safeAs<ClassDescriptor>()
         ?.takeIf { it.kind == ClassKind.OBJECT }
@@ -488,7 +490,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: InjektCo
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName() == this.ctx.ctx.module.moduleName()) ||
+          callable.callable.moduleName() == this.ctx.module.moduleName()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->

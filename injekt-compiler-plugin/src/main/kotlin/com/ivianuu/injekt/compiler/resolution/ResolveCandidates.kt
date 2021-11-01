@@ -220,7 +220,9 @@ private fun InjectablesScope.resolveRequest(
         tryToResolveRequestInTypeScope(request, lookupLocation)
           ?.takeIf { it !is ResolutionResult.Failure.NoCandidates }
           ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
-      } else ResolutionResult.Failure.NoCandidates
+      } else if (request.type.unwrapTags().classifier.isComponent)
+        tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
+      else ResolutionResult.Failure.NoCandidates
     }
 
   resultsByType[request.type] = result
@@ -240,7 +242,7 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
 ): ResolutionResult? {
   // try the type scope if the requested type is not a framework type
   return if (!request.type.isFunctionType &&
-    request.type.classifier != ctx.ctx.listClassifier &&
+    request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
     request.type.classifier.fqName != injektFqNames().sourceKey)
     with(TypeInjectablesScope(request.type, this)) {

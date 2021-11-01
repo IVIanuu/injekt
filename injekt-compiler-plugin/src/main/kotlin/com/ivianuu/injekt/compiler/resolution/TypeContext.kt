@@ -831,11 +831,11 @@ private fun intersectTypesWithoutIntersectionType(
   if (types.size == 1) return types.single()
 
   val filteredEqualTypes = filterTypes(types) { lower, upper ->
-    isStrictSupertype(lower, upper, ctx.ctx)
+    isStrictSupertype(lower, upper, ctx)
   }
 
   val filteredSuperAndEqualTypes = filterTypes(filteredEqualTypes) { lower, upper ->
-    lower.isEqualTo(upper, ctx.ctx)
+    lower.isEqualTo(upper, ctx)
   }
 
   if (filteredSuperAndEqualTypes.size < 2) return filteredSuperAndEqualTypes.single()
@@ -864,8 +864,8 @@ private fun isStrictSupertype(
   subtype: TypeRef,
   supertype: TypeRef,
   @Inject ctx: TypeCheckerContext
-): Boolean = subtype.isSubTypeOf(supertype, ctx.ctx) &&
-    !supertype.isSubTypeOf(subtype, ctx.ctx)
+): Boolean = subtype.isSubTypeOf(supertype, ctx) &&
+    !supertype.isSubTypeOf(subtype, ctx)
 
 private enum class ResultNullability {
   START {

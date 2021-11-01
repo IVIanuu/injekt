@@ -165,7 +165,7 @@ class InjectablesScope(
   ): List<Injectable> {
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
-      request.type.classifier == ctx.ctx.listClassifier) return emptyList()
+      request.type.classifier == ctx.listClassifier) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { it.isValidObjectRequest(request) }
@@ -203,9 +203,9 @@ class InjectablesScope(
           isInline = request.isInline
         )
       }
-      request.type.classifier == ctx.ctx.listClassifier -> {
+      request.type.classifier == ctx.listClassifier -> {
         val singleElementType = request.type.arguments[0]
-        val collectionElementType = ctx.ctx.collectionClassifier.defaultType
+        val collectionElementType = ctx.collectionClassifier.defaultType
           .withArguments(listOf(singleElementType))
 
         var key = CallableRequestKey(request.type, allStaticTypeParameters)
@@ -217,9 +217,9 @@ class InjectablesScope(
           key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
           elements = (listElementsForType(
-            providerReturnType, ctx.ctx.collectionClassifier
+            providerReturnType, ctx.collectionClassifier
               .defaultType.withArguments(listOf(providerReturnType)), key) +
-              frameworkListElementsForType(providerReturnType, ctx.ctx.collectionClassifier
+              frameworkListElementsForType(providerReturnType, ctx.collectionClassifier
                 .defaultType.withArguments(listOf(providerReturnType)), key))
             .map { elementType ->
               singleElementType.copy(

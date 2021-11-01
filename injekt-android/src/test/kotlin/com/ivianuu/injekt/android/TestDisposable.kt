@@ -17,13 +17,12 @@
 package com.ivianuu.injekt.android
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.AnyInterface
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.Scoped
 
-class TestDisposable<C : @Component Any> @Provide @Scoped<C>() constructor() : Disposable {
+@Provide @Scoped<C>() class TestDisposable<C : @Component Any> : Disposable {
   var disposed = false
 
   override fun dispose() {
@@ -31,6 +30,6 @@ class TestDisposable<C : @Component Any> @Provide @Scoped<C>() constructor() : D
   }
 }
 
-interface TestDisposableComponent<C : @Component Any> : @EntryPoint<C> AnyInterface {
+@EntryPoint<C> interface TestDisposableComponent<C : @Component Any> {
   val disposable: TestDisposable<C>
 }

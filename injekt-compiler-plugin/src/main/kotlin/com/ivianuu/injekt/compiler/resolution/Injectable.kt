@@ -362,7 +362,7 @@ class TypeKeyInjectable(
     typeParameterDependencies
       .mapIndexed { index, typeParameter ->
         InjectableRequest(
-          type = ownerScope.ctx.ctx.typeKeyType.defaultType
+          type = ownerScope.ctx.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
           callableFqName = callableFqName,
           callableTypeParameters = type.arguments,
