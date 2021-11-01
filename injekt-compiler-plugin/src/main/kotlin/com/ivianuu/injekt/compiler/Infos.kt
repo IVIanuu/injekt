@@ -79,9 +79,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  */
 data class CallableInfo(
   val type: TypeRef,
-  val parameterTypes: Map<Int, TypeRef> = emptyMap(),
-  val injectParameters: Set<Int> = emptySet(),
-  val scopeComponentType: TypeRef? = null
+  val parameterTypes: Map<Int, TypeRef>,
+  val injectParameters: Set<Int>,
+  val scopeComponentType: TypeRef?,
+  val isEager: Boolean
 )
 
 fun CallableDescriptor.callableInfo(@Inject ctx: InjektContext): CallableInfo =
@@ -159,15 +160,18 @@ fun CallableDescriptor.callableInfo(@Inject ctx: InjektContext): CallableInfo =
       }
       .mapTo(mutableSetOf()) { it.injektIndex() }
 
-    val scopeComponentType = (annotations.findAnnotation(injektFqNames().scoped) ?:
-      safeAs<ConstructorDescriptor>()?.constructedClass?.annotations?.findAnnotation(injektFqNames().scoped))
-      ?.type?.arguments?.single()?.type?.toTypeRef()
+    val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped) ?:
+    safeAs<ConstructorDescriptor>()?.constructedClass?.annotations?.findAnnotation(injektFqNames().scoped)
+
+    val scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef()
+    val isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
 
     val info = CallableInfo(
       type = type,
       parameterTypes = parameterTypes,
       injectParameters = injectParameters,
-      scopeComponentType = scopeComponentType
+      scopeComponentType = scopeComponentType,
+      isEager = isEager
     )
 
     // important to cache the info before persisting it
@@ -221,9 +225,10 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
 
 @Serializable data class PersistedCallableInfo(
   val type: PersistedTypeRef,
-  val parameterTypes: Map<Int, PersistedTypeRef> = emptyMap(),
-  val injectParameters: Set<Int> = emptySet(),
-  val scopeComponentType: PersistedTypeRef? = null
+  val parameterTypes: Map<Int, PersistedTypeRef>,
+  val injectParameters: Set<Int>,
+  val scopeComponentType: PersistedTypeRef?,
+  val isEager: Boolean
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject ctx: InjektContext) = PersistedCallableInfo(
@@ -231,7 +236,8 @@ fun CallableInfo.toPersistedCallableInfo(@Inject ctx: InjektContext) = Persisted
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
   injectParameters = injectParameters,
-  scopeComponentType = scopeComponentType?.toPersistedTypeRef()
+  scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
+  isEager = isEager
 )
 
 fun PersistedCallableInfo.toCallableInfo(@Inject ctx: InjektContext) =
@@ -240,7 +246,8 @@ fun PersistedCallableInfo.toCallableInfo(@Inject ctx: InjektContext) =
     parameterTypes = parameterTypes
       .mapValues { it.value.toTypeRef() },
     injectParameters = injectParameters,
-    scopeComponentType = scopeComponentType?.toTypeRef()
+    scopeComponentType = scopeComponentType?.toTypeRef(),
+    isEager = isEager
   )
 
 /**
@@ -248,12 +255,13 @@ fun PersistedCallableInfo.toCallableInfo(@Inject ctx: InjektContext) =
  * but is critical to injekt
  */
 class ClassifierInfo(
-  val tags: List<TypeRef> = emptyList(),
-  val scopeComponentType: TypeRef? = null,
-  val entryPointComponentType: TypeRef? = null,
-  val lazySuperTypes: Lazy<List<TypeRef>> = lazy(LazyThreadSafetyMode.NONE) { emptyList() },
-  val primaryConstructorPropertyParameters: List<String> = emptyList(),
-  val isSpread: Boolean = false
+  val tags: List<TypeRef>,
+  val scopeComponentType: TypeRef?,
+  val isEager: Boolean,
+  val entryPointComponentType: TypeRef?,
+  val lazySuperTypes: Lazy<List<TypeRef>>,
+  val primaryConstructorPropertyParameters: List<String>,
+  val isSpread: Boolean
 ) {
   val superTypes by lazySuperTypes
 }
@@ -308,8 +316,9 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: InjektContext): ClassifierI
     val tags = getAnnotatedAnnotations(injektFqNames().tag)
       .map { it.type.toTypeRef() }
 
-    val scopeComponentType = annotations.findAnnotation(injektFqNames().scoped)
-      ?.type?.arguments?.single()?.type?.toTypeRef()
+    val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
+    val scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef()
+    val isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
 
     val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
       ?.type?.arguments?.single()?.type?.toTypeRef()
@@ -330,6 +339,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: InjektContext): ClassifierI
     val info = ClassifierInfo(
       tags = tags,
       scopeComponentType = scopeComponentType,
+      isEager = isEager,
       entryPointComponentType = entryPointComponentType,
       lazySuperTypes = lazySuperTypes,
       primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
@@ -347,6 +357,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: InjektContext): ClassifierI
 @Serializable data class PersistedClassifierInfo(
   val tags: List<PersistedTypeRef>,
   val scopeComponentType: PersistedTypeRef?,
+  val isEager: Boolean,
   val entryPointComponentType: PersistedTypeRef?,
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
@@ -356,6 +367,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: InjektContext): ClassifierI
 fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: InjektContext) = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   scopeComponentType = scopeComponentType?.toTypeRef(),
+  isEager = isEager,
   entryPointComponentType = entryPointComponentType?.toTypeRef(),
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
@@ -365,6 +377,7 @@ fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: InjektContext) = Class
 fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: InjektContext) = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
+  isEager = isEager,
   entryPointComponentType = entryPointComponentType?.toPersistedTypeRef(),
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,

@@ -34,7 +34,7 @@ inline fun <E> (@Component Any).entryPoint(): E = this as E
   AnnotationTarget.VALUE_PARAMETER,
   AnnotationTarget.TYPE
 )
-annotation class Scoped<C : @Component Any>
+annotation class Scoped<C : @Component Any>(val eager: Boolean = false)
 
 fun interface Disposable {
   fun dispose()

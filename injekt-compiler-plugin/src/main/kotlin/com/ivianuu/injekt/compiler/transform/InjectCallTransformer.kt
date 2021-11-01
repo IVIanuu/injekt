@@ -342,80 +342,104 @@ class InjectCallTransformer(
     return with(findScopeContext(scope)) {
       scopedExpressions.getOrPut(result.candidate.usageKey) {
         val fieldNameIndex = graphContext.variableIndex++
-        val lockField = component!!.addField(
-          "_${fieldNameIndex}Lock",
-          irCtx.irBuiltIns.anyType,
-          DescriptorVisibilities.PRIVATE
-        ).apply {
-          component.placeAfterFields(this)
-          initializer = DeclarationIrBuilder(irCtx, symbol).run {
-            irExprBody(
-              irCall(irCtx.irBuiltIns.anyClass.constructors.single())
-            )
-          }
-        }
-
-        val instanceField = component.addField(
-          "_${fieldNameIndex}Instance",
-          irCtx.irBuiltIns.anyNType,
-          DescriptorVisibilities.PRIVATE
-        ).apply {
-          component.placeAfterFields(this)
-          initializer = DeclarationIrBuilder(irCtx, symbol).run {
-            irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
-          }
-        }
 
         val componentReceiverParameter =
           scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
 
-        val expression: ScopeContext.() -> IrExpression = {
-          DeclarationIrBuilder(irCtx, symbol).run {
-            irBlock {
-              val tmp = irTemporary(
-                value = irGetField(receiverExpression(componentReceiverParameter), instanceField),
-                nameHint = "${graphContext.variableIndex++}",
-                isMutable = true
-              )
+        val expression: ScopeContext.() -> IrExpression = if (result.candidate.isEager) {
+          val instanceField = component!!.addField(
+            "_${fieldNameIndex}Instance",
+            result.candidate.type.toIrType().typeOrNull!!,
+            DescriptorVisibilities.PRIVATE
+          ).apply {
+            component.placeAfterFields(this)
+            initializer = DeclarationIrBuilder(irCtx, symbol).run {
+              irExprBody(rawExpressionProvider())
+            }
+          }
 
-              +irIfThenElse(
-                result.candidate.type.toIrType().typeOrNull!!,
-                irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
-                irCall(
-                  irCtx.referenceFunctions(
-                    injektFqNames().commonPackage.child("synchronized".asNameId())
-                  ).single()
-                ).apply {
-                  putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
+          val expression: ScopeContext.() -> IrExpression = {
+            DeclarationIrBuilder(irCtx, symbol).run {
+              irGetField(receiverExpression(componentReceiverParameter), instanceField)
+            }
+          }
 
-                  putValueArgument(0, irGetField(receiverExpression(componentReceiverParameter), lockField))
-
-                  putValueArgument(
-                    1,
-                    irLambda(
-                      irCtx.irBuiltIns.function(0)
-                        .typeWith(result.candidate.type.toIrType().typeOrNull!!),
-                      parameterNameProvider = { "p${graphContext.variableIndex++}" }
-                    ) {
-                      irBlock {
-                        +irSet(tmp.symbol, irGetField(receiverExpression(componentReceiverParameter), instanceField))
-                        +irIfThen(
-                          irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
-                          irBlock {
-                            +irSet(tmp.symbol, rawExpressionProvider())
-                            +irSetField(receiverExpression(componentReceiverParameter), instanceField, irGet(tmp))
-                          }
-                        )
-
-                        +irGet(tmp)
-                      }
-                    }
-                  )
-                },
-                irGet(tmp)
+          expression
+        } else {
+          val lockField = component!!.addField(
+            "_${fieldNameIndex}Lock",
+            irCtx.irBuiltIns.anyType,
+            DescriptorVisibilities.PRIVATE
+          ).apply {
+            component.placeAfterFields(this)
+            initializer = DeclarationIrBuilder(irCtx, symbol).run {
+              irExprBody(
+                irCall(irCtx.irBuiltIns.anyClass.constructors.single())
               )
             }
           }
+
+          val instanceField = component.addField(
+            "_${fieldNameIndex}Instance",
+            irCtx.irBuiltIns.anyNType,
+            DescriptorVisibilities.PRIVATE
+          ).apply {
+            component.placeAfterFields(this)
+            initializer = DeclarationIrBuilder(irCtx, symbol).run {
+              irExprBody(irGetField(irGet(component.thisReceiver!!), lockField))
+            }
+          }
+
+          val expression: ScopeContext.() -> IrExpression = {
+            DeclarationIrBuilder(irCtx, symbol).run {
+              irBlock {
+                val tmp = irTemporary(
+                  value = irGetField(receiverExpression(componentReceiverParameter), instanceField),
+                  nameHint = "${graphContext.variableIndex++}",
+                  isMutable = true
+                )
+
+                +irIfThenElse(
+                  result.candidate.type.toIrType().typeOrNull!!,
+                  irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
+                  irCall(
+                    irCtx.referenceFunctions(
+                      injektFqNames().commonPackage.child("synchronized".asNameId())
+                    ).single()
+                  ).apply {
+                    putTypeArgument(0, result.candidate.type.toIrType().typeOrNull!!)
+
+                    putValueArgument(0, irGetField(receiverExpression(componentReceiverParameter), lockField))
+
+                    putValueArgument(
+                      1,
+                      irLambda(
+                        irCtx.irBuiltIns.function(0)
+                          .typeWith(result.candidate.type.toIrType().typeOrNull!!),
+                        parameterNameProvider = { "p${graphContext.variableIndex++}" }
+                      ) {
+                        irBlock {
+                          +irSet(tmp.symbol, irGetField(receiverExpression(componentReceiverParameter), instanceField))
+                          +irIfThen(
+                            irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
+                            irBlock {
+                              +irSet(tmp.symbol, rawExpressionProvider())
+                              +irSetField(receiverExpression(componentReceiverParameter), instanceField, irGet(tmp))
+                            }
+                          )
+
+                          +irGet(tmp)
+                        }
+                      }
+                    )
+                  },
+                  irGet(tmp)
+                )
+              }
+            }
+          }
+
+          expression
         }
 
         expression

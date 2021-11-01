@@ -31,7 +31,8 @@ import kotlinx.serialization.Serializable
   val isMarkedComposable: Boolean,
   val isProvide: Boolean,
   val isInject: Boolean,
-  val scopeComponentType: PersistedTypeRef?
+  val scopeComponentType: PersistedTypeRef?,
+  val isEager: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(@Inject ctx: InjektContext): PersistedTypeRef =
@@ -43,7 +44,8 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: InjektContext): PersistedTypeRef =
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
-    scopeComponentType = scopeComponentType?.toPersistedTypeRef()
+    scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
+    isEager = isEager
   )
 
 fun PersistedTypeRef.toTypeRef(@Inject ctx: InjektContext): TypeRef {

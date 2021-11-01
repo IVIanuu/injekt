@@ -48,6 +48,7 @@ sealed class Injectable {
   abstract val type: TypeRef
   abstract val originalType: TypeRef
   abstract val scopeComponentType: TypeRef?
+  abstract val isEager: Boolean
   abstract val dependencies: List<InjectableRequest>
   abstract val dependencyScopes: Map<InjectableRequest, InjectablesScope>
   abstract val callableFqName: FqName
@@ -73,6 +74,8 @@ class CallableInjectable(
     get() = callable.originalType
   override val scopeComponentType: TypeRef?
     get() = callable.scopeComponentType
+  override val isEager: Boolean
+    get() = callable.isEager
   override val usageKey: Any
     get() = listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
 }
@@ -227,6 +230,8 @@ class ComponentInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
+  override val isEager: Boolean
+    get() = false
   override val usageKey: Any
     get() = type
 
@@ -265,6 +270,8 @@ class ListInjectable(
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
+  override val isEager: Boolean
+    get() = false
   override val usageKey: Any
     get() = type
 }
@@ -321,6 +328,8 @@ class ProviderInjectable(
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
+  override val isEager: Boolean
+    get() = false
   override val usageKey: Any
     get() = type
 
@@ -344,6 +353,8 @@ class SourceKeyInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
+  override val isEager: Boolean
+    get() = false
   override val usageKey: Any
     get() = type
 }
@@ -379,6 +390,8 @@ class TypeKeyInjectable(
     get() = type
   override val scopeComponentType: TypeRef?
     get() = null
+  override val isEager: Boolean
+    get() = false
   override val usageKey: Any
     get() = type
 }

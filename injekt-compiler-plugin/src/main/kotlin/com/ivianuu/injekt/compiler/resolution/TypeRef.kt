@@ -58,6 +58,7 @@ class ClassifierRef(
   val isTag: Boolean = false,
   val isComponent: Boolean = false,
   val scopeComponentType: TypeRef? = null,
+  val isEager: Boolean = false,
   val entryPointComponentType: TypeRef? = null,
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
@@ -85,6 +86,7 @@ class ClassifierRef(
     isTag: Boolean = this.isTag,
     isComponent: Boolean = this.isComponent,
     scopeComponentType: TypeRef? = this.scopeComponentType,
+    isEager: Boolean = this.isEager,
     entryPointComponentType: TypeRef? = this.entryPointComponentType,
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
@@ -93,7 +95,7 @@ class ClassifierRef(
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isTag, isComponent, scopeComponentType, entryPointComponentType, descriptor,
+    isTypeAlias, isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
     tags, isSpread, primaryConstructorPropertyParameters, variance
   )
 
@@ -173,6 +175,7 @@ fun KotlinType.toTypeRef(
 
     val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
 
+    val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
     val rawType = TypeRef(
       classifier = classifier,
       isMarkedNullable = kotlinType.isMarkedNullable,
@@ -197,8 +200,8 @@ fun KotlinType.toTypeRef(
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      scopeComponentType = annotations.findAnnotation(injektFqNames().scoped)
-        ?.type?.arguments?.single()?.type?.toTypeRef()
+      scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef(),
+      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
@@ -228,7 +231,8 @@ class TypeRef(
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
-  val scopeComponentType: TypeRef? = null
+  val scopeComponentType: TypeRef? = null,
+  val isEager: Boolean = false
 ) {
   override fun toString(): String = renderToString()
 
@@ -322,6 +326,7 @@ class TypeRef(
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
       result = 31 * result + scopeComponentType.hashCode()
+      result = 31 * result + isEager.hashCode()
       _hashCode = result
     }
     return _hashCode
@@ -356,7 +361,8 @@ fun TypeRef.copy(
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
-  scopeComponentType: TypeRef? = this.scopeComponentType
+  scopeComponentType: TypeRef? = this.scopeComponentType,
+  isEager: Boolean = this.isEager
 ) = TypeRef(
   classifier,
   isMarkedNullable,
@@ -367,7 +373,8 @@ fun TypeRef.copy(
   isStarProjection,
   frameworkKey,
   variance,
-  scopeComponentType
+  scopeComponentType,
+  isEager
 )
 
 val STAR_PROJECTION_TYPE = TypeRef(

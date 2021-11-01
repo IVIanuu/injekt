@@ -31,7 +31,8 @@ data class CallableRef(
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
   val injectParameters: Set<Int>,
-  val scopeComponentType: TypeRef? = null,
+  val scopeComponentType: TypeRef?,
+  val isEager: Boolean,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
   val import: ResolvedProviderImport?
@@ -79,6 +80,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: InjektContext): CallableRef =
       parameterTypes = info.parameterTypes,
       injectParameters = info.injectParameters,
       scopeComponentType = info.scopeComponentType,
+      isEager = info.isEager,
       typeArguments = typeParameters
         .map { it to it.defaultType }
         .toMap(),

@@ -17,11 +17,14 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.common.Disposable
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.TestDisposable
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
@@ -209,5 +212,28 @@ class ScopedTest {
     """
   ) {
     compilationShouldHaveFailed("a scoped declarations call context must be default")
+  }
+
+  @Test fun testScopedEager() = singleAndMultiCodegen(
+    """
+      @Component interface ScopeComponent {
+        val foo: Foo
+      }
+    """,
+    """
+      fun invoke(@Provide foo: @Provide @Scoped<ScopeComponent>(eager = true) () -> Foo) = {
+        inject<ScopeComponent>()
+      }
+    """
+  ) {
+    var called = false
+    val componentFactory = invokeSingleFile<() -> Any?>({
+      called = true
+      Foo()
+    })
+
+    called.shouldBeFalse()
+    componentFactory()
+    called.shouldBeTrue()
   }
 }
