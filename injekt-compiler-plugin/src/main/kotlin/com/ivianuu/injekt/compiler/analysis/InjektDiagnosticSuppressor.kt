@@ -43,7 +43,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
-    @Provide val injektContext = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
+    @Provide val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
     if (diagnostic.factory == Errors.UNRESOLVED_REFERENCE)
@@ -54,7 +54,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     )
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
         ?.valueParameters
-        ?.count { !it.hasAnnotation(injektFqNames.inject) }
+        ?.count { !it.hasAnnotation(injektFqNames().inject) }
         ?.let { it <= 1 } == true
 
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
@@ -65,14 +65,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(injektFqNames.spread) == true) return true
+      if (typeParameter?.hasAnnotation(injektFqNames().spread) == true) return true
     }
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
       if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(injektFqNames.tag) == true
+          ?.hasAnnotation(injektFqNames().tag) == true
       )
         return true
     }
@@ -97,10 +97,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
       val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-      if (function?.hasAnnotation(injektFqNames.provide) == true ||
+      if (function?.hasAnnotation(injektFqNames().provide) == true ||
           function?.valueParameters?.any {
-            it.hasAnnotation(injektFqNames.inject) ||
-                it.hasAnnotation(injektFqNames.provide)
+            it.hasAnnotation(injektFqNames().inject) ||
+                it.hasAnnotation(injektFqNames().provide)
           } == true)
             return true
     }

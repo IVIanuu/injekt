@@ -21,42 +21,31 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt_shaded.Inject1
-import com.ivianuu.injekt_shaded.Inject2
-import com.ivianuu.injekt_shaded.Provide
-import com.ivianuu.injekt_shaded.inject
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
-typealias WithInjektContext = Inject2<InjektContext, BindingTrace?>
+inline fun ctx(@Inject ctx: InjektContext) = ctx
 
-@Inject1<InjektContext> inline val context: InjektContext
-  get() = inject()
+inline fun injektFqNames(@Inject ctx: InjektContext) = ctx.injektFqNames
 
-@Inject1<InjektContext> inline val injektFqNames: InjektFqNames
-  get() = context.injektFqNames
+inline fun trace(@Inject ctx: InjektContext) = ctx.trace
 
-@Inject1<BindingTrace?> inline val trace: BindingTrace?
-  get() = inject()
-
-@Inject1<InjektContext> inline val module: ModuleDescriptor
-  get() = context.module
+inline fun module(@Inject ctx: InjektContext) = ctx.module
 
 @Suppress("NewApi")
 class InjektContext(
   val module: ModuleDescriptor,
-  val injektFqNames: InjektFqNames
+  val injektFqNames: InjektFqNames,
+  val trace: BindingTrace?
 ) : TypeCheckerContext {
-  override val injektContext: InjektContext
-    get() = this
+  fun withTrace(trace: BindingTrace?) = InjektContext(module, injektFqNames, trace)
+
+  override val ctx: InjektContext get() = this
 
   override fun isDenotable(type: TypeRef): Boolean = true
-
-  @Provide private val trace = DelegatingBindingTrace(BindingContext.EMPTY, "injekt-context")
 
   val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
   val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }
@@ -67,17 +56,17 @@ class InjektContext(
   }
   val typeKeyType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames.typeKey)
+      ClassId.topLevel(injektFqNames().typeKey)
     )!!.toClassifierRef()
   }
   val componentObserverType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames.componentObserver)
+      ClassId.topLevel(injektFqNames().componentObserver)
     )!!.toClassifierRef()
   }
   val disposableType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames.disposable)
+      ClassId.topLevel(injektFqNames().disposable)
     )!!.toClassifierRef()
   }
 }

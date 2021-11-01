@@ -52,7 +52,7 @@ class AppInitializer : ApplicationInitializedListener {
               it.moduleInfo?.unwrapModuleSourceInfo()?.module
                 ?.getOptionValueInFacet(RootPackageOption)
                 ?.let { InjektFqNames(FqName(it)) }
-                ?: InjektFqNames.Default
+                ?: injektFqNames().Default
             }
             StorageComponentContainerContributor.registerExtension(
               project,

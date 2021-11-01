@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt_shaded.Inject
 import kotlinx.serialization.Serializable
 
 @Serializable data class PersistedTypeRef(
@@ -33,7 +34,7 @@ import kotlinx.serialization.Serializable
   val scopeComponentType: PersistedTypeRef?
 )
 
-@WithInjektContext fun TypeRef.toPersistedTypeRef(): PersistedTypeRef =
+fun TypeRef.toPersistedTypeRef(@Inject ctx: InjektContext): PersistedTypeRef =
   PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey() ?: "",
     arguments = arguments.map { it.toPersistedTypeRef() },
@@ -45,7 +46,7 @@ import kotlinx.serialization.Serializable
     scopeComponentType = scopeComponentType?.toPersistedTypeRef()
   )
 
-@WithInjektContext fun PersistedTypeRef.toTypeRef(): TypeRef {
+fun PersistedTypeRef.toTypeRef(@Inject ctx: InjektContext): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
   val classifier = classifierDescriptorForKey(classifierKey)
     .toClassifierRef()
@@ -54,7 +55,7 @@ import kotlinx.serialization.Serializable
       .map { it.toTypeRef() } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
-            context.nullableAnyType
+            ctx.nullableAnyType
           else null
         )
   } else arguments.map { it.toTypeRef() }

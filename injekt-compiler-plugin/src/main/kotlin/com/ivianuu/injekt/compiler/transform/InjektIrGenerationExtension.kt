@@ -47,9 +47,12 @@ class InjektIrGenerationExtension(
   private val dumpDir: File,
   @Inject private val injektFqNames: InjektFqNames
 ) : IrGenerationExtension {
-  override fun generate(moduleFragment: IrModuleFragment, @Provide pluginContext: IrPluginContext) {
-    @Provide val context = InjektContext(pluginContext.moduleDescriptor, injektFqNames)
-    @Provide val trace = DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
+  override fun generate(moduleFragment: IrModuleFragment, @Provide irCtx: IrPluginContext) {
+    @Provide val ctx = InjektContext(
+      irCtx.moduleDescriptor,
+      injektFqNames,
+      DelegatingBindingTrace(irCtx.bindingContext, "IR trace")
+    )
     @Provide var localClassCollector = LocalDeclarationCollector()
     moduleFragment.transform(localClassCollector, null)
 
@@ -59,7 +62,7 @@ class InjektIrGenerationExtension(
     moduleFragment.transform(InjectCallTransformer(), null)
 
     moduleFragment.patchDeclarationParents()
-    moduleFragment.dumpToFiles(dumpDir, pluginContext)
+    moduleFragment.dumpToFiles(dumpDir, irCtx)
   }
 
   @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -81,11 +84,11 @@ class InjektIrGenerationExtension(
 
 @OptIn(ObsoleteDescriptorBasedAPI::class) fun IrModuleFragment.dumpToFiles(
   dumpDir: File,
-  pluginContext: IrPluginContext
+  irCtx: IrPluginContext
 ) {
   files
     .filter {
-      dumpAllFiles || pluginContext.bindingContext[InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
+      dumpAllFiles || irCtx.bindingContext[InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
           it.fileEntry.name] != null
     }
     .forEach { irFile ->

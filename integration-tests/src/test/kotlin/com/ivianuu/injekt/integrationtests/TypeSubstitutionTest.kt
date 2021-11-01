@@ -17,12 +17,12 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.memberScopeForFqName2
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef2
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.compiler.resolution.wrap
 import io.kotest.matchers.maps.shouldContain
@@ -83,15 +83,15 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
     val scoped = typeFor(FqName("com.ivianuu.injekt.test.FakeScoped"))
-    val (scopedT, scopedU, scopedN) = memberScopeForFqName2(
+    val (scopedT, scopedU, scopedN) = memberScopeForFqName(
       FqName("com.ivianuu.injekt.test.FakeScoped.Companion"),
       NoLookupLocation.FROM_BACKEND,
-      injektContext
+      ctx
     )!!
       .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef2(injektContext, trace) }
+      .map { it.toClassifierRef(ctx) }
     val namedScope = typeFor(FqName("com.ivianuu.injekt.test.AppScope"))
     val substitutionType = scoped.wrap(stringType)
       .let {
@@ -101,7 +101,7 @@ class TypeSubstitutionTest {
       scopedT.defaultType,
       substitutionType,
       emptyList(),
-      injektContext
+      ctx
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
@@ -117,7 +117,7 @@ class TypeSubstitutionTest {
       superType,
       staticTypeParameters,
       true,
-      injektContext
+      ctx
     )
     return context.fixedTypeVariables
   }

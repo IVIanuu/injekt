@@ -43,85 +43,6 @@ package com.ivianuu.injekt_shaded
 )
 annotation class Provide
 
-inline fun <P1, R> provide(@Provide p1: P1, block: @Inject1<P1> () -> R): R = block()
-
-inline fun <P1, P2, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  block: @Inject2<P1, P2> () -> R
-): R = block()
-
-inline fun <P1, P2, P3, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  block: @Inject3<P1, P2, P3> () -> R
-): R = block()
-
-inline fun <P1, P2, P3, P4, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  @Provide p4: P4,
-  block: @Inject4<P1, P2, P3, P4> () -> R
-): R = block()
-
-inline fun <P1, P2, P3, P4, P5, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  @Provide p4: P4,
-  @Provide p5: P5,
-  block: @Inject5<P1, P2, P3, P4, P5> () -> R
-): R = block()
-
-inline fun <P1, P2, P3, P4, P5, P6, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  @Provide p4: P4,
-  @Provide p5: P5,
-  @Provide p6: P6,
-  block: @Inject6<P1, P2, P3, P4, P5, P6> () -> R
-): R = block()
-
-inline fun <P1, P2, P3, P4, P5, P6, P7, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  @Provide p4: P4,
-  @Provide p5: P5,
-  @Provide p6: P6,
-  @Provide p7: P7,
-  block: @Inject7<P1, P2, P3, P4, P5, P6, P7> () -> R
-): R = block()
-
-inline fun <P1, P2, P3, P4, P5, P6, P7, P8, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  @Provide p4: P4,
-  @Provide p5: P5,
-  @Provide p6: P6,
-  @Provide p7: P7,
-  @Provide p8: P8,
-  block: @Inject8<P1, P2, P3, P4, P5, P6, P7, P8> () -> R
-): R = block()
-
-
-inline fun <P1, P2, P3, P4, P5, P6, P7, P8, P9, R> provide(
-  @Provide p1: P1,
-  @Provide p2: P2,
-  @Provide p3: P3,
-  @Provide p4: P4,
-  @Provide p5: P5,
-  @Provide p6: P6,
-  @Provide p7: P7,
-  @Provide p8: P8,
-  @Provide p9: P9,
-  block: @Inject9<P1, P2, P3, P4, P5, P6, P7, P8, P9> () -> R
-): R = block()
-
 @Target(
   // fun func(@Inject foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
@@ -131,32 +52,6 @@ inline fun <P1, P2, P3, P4, P5, P6, P7, P8, P9, R> provide(
   AnnotationTarget.TYPE
 )
 annotation class Inject
-
-typealias Inject1<A> = Inject2<A, A>
-
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.CONSTRUCTOR,
-  AnnotationTarget.FUNCTION,
-  AnnotationTarget.PROPERTY,
-  AnnotationTarget.TYPE
-)
-@Repeatable
-annotation class Inject2<out A, out B>
-
-typealias Inject3<A, B, C> = Inject2<Inject2<A, B>, C>
-
-typealias Inject4<A, B, C, D> = Inject2<Inject3<A, B, C>, D>
-
-typealias Inject5<A, B, C, D, E> = Inject2<Inject4<A, B, C, D>, E>
-
-typealias Inject6<A, B, C, D, E, F> = Inject2<Inject5<A, B, C, D, E>, F>
-
-typealias Inject7<A, B, C, D, E, F, G> = Inject2<Inject6<A, B, C, D, E, F>, G>
-
-typealias Inject8<A, B, C, D, E, F, G, H> = Inject2<Inject7<A, B, C, D, E, F, G>, H>
-
-typealias Inject9<A, B, C, D, E, F, G, H, I> = Inject2<Inject8<A, B, C, D, E, F, G, H>, I>
 
 /**
  * Returns a provided instance of [T]

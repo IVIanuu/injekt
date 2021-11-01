@@ -17,12 +17,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.WithInjektContext
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
@@ -111,9 +112,9 @@ class ComponentInjectable(
   }
 
   val componentObserversRequest = InjectableRequest(
-    type = ownerScope.context.listClassifier.defaultType.copy(
+    type = ownerScope.ctx.listClassifier.defaultType.copy(
       arguments = listOf(
-        ownerScope.context.componentObserverType.defaultType.copy(
+        ownerScope.ctx.componentObserverType.defaultType.copy(
           arguments = listOf(type)
         )
       )
@@ -134,7 +135,7 @@ class ComponentInjectable(
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
     parent = ownerScope,
-    context = ownerScope.context,
+    ctx = ownerScope.ctx,
     componentType = type,
     initialInjectables = componentAndEntryPointInjectables
   )
@@ -164,7 +165,7 @@ class ComponentInjectable(
       InjectablesScope(
         name = "COMPONENT FUNCTION ${callableFqName.child(requestCallable.callable.name)}",
         parent = componentScope,
-        context = componentScope.context,
+        ctx = componentScope.ctx,
         callContext = requestCallable.callable.callContext(),
         initialInjectables = requestCallable.callable.allParameters
           .filter { it != requestCallable.callable.dispatchReceiverParameter }
@@ -175,7 +176,7 @@ class ComponentInjectable(
               ComponentValueParameterDescriptor(it.cast())
           }
           .map {
-            with(componentScope.context) {
+            with(componentScope.ctx) {
               it.toCallableRef()
             }
           }
@@ -274,7 +275,7 @@ class ProviderInjectable(
     dependencies.single() to InjectablesScope(
       name = "PROVIDER $type",
       parent = ownerScope,
-      context = ownerScope.context,
+      ctx = ownerScope.ctx,
       callContext = dependencyCallContext,
       initialInjectables = parameterDescriptors
         .mapIndexed { index, parameter ->
@@ -331,7 +332,7 @@ class TypeKeyInjectable(
     typeParameterDependencies
       .mapIndexed { index, typeParameter ->
         InjectableRequest(
-          type = ownerScope.context.injektContext.typeKeyType.defaultType
+          type = ownerScope.ctx.ctx.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
           callableFqName = callableFqName,
           callableTypeParameters = type.arguments,
@@ -352,7 +353,7 @@ class TypeKeyInjectable(
     get() = type
 }
 
-@WithInjektContext fun CallableRef.getInjectableRequests(): List<InjectableRequest> =
+fun CallableRef.getInjectableRequests(@Inject ctx: InjektContext): List<InjectableRequest> =
   callable.allParameters
     .filter {
       callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"

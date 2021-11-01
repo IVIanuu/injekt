@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
 import java.util.Locale
 
 interface InjektErrors {
@@ -247,8 +246,7 @@ interface InjektErrors {
 }
 
 private fun InjectionGraph.Error.render(): String = buildString {
-  @Provide val injektContext = this@render.scope.context
-  @Provide val trace: BindingTrace? = this@render.scope.trace
+  @Provide val ctx = this@render.scope.ctx
 
   var indent = 0
   fun withIndent(block: () -> Unit) {

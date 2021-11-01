@@ -20,15 +20,12 @@ import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
@@ -36,6 +33,7 @@ import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -46,7 +44,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
-class InjectionCallChecker(@Inject private val context: InjektContext) : CallChecker {
+class InjectionCallChecker(@Inject private val baseCtx: InjektContext) : CallChecker {
   override fun check(
     resolvedCall: ResolvedCall<*>,
     reportOn: PsiElement,
@@ -55,7 +53,7 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
-    @Provide val trace = context.trace
+    @Provide val ctx = baseCtx.withTrace(context.trace)
 
     val callExpression = resolvedCall.call.callElement
 
@@ -71,7 +69,22 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
       null
     }
 
-    val substitutionMap = resolvedCall.getSubstitutionMap()
+    val substitutionMap = resolvedCall.typeArguments
+      .mapKeys { it.key.toClassifierRef() }
+      .mapValues { it.value.toTypeRef() }
+      .filter { it.key != it.value.classifier } +
+        (resolvedCall.dispatchReceiver?.type?.toTypeRef()?.let {
+          it.classifier.typeParameters
+            .zip(it.arguments)
+            .filter { it.first != it.second.classifier }
+            .toMap()
+        } ?: emptyMap()) +
+        (resolvedCall.extensionReceiver?.type?.toTypeRef()?.let {
+          it.classifier.typeParameters
+            .zip(it.arguments)
+            .filter { it.first != it.second.classifier }
+            .toMap()
+        } ?: emptyMap())
 
     val callee = resultingDescriptor
       .toCallableRef()
@@ -95,7 +108,7 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
         result.candidate is CallableInjectable) {
         if (filePath != null) {
           result.candidate.callable.import?.element?.let {
-            trace.record(
+            trace()!!.record(
               InjektWritableSlices.USED_IMPORT,
               SourcePosition(filePath, it.startOffset, it.endOffset),
               Unit
@@ -107,12 +120,12 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
 
     when (graph) {
       is InjectionGraph.Success -> if (filePath != null) {
-        trace.record(
+        trace()!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
           filePath,
           Unit
         )
-        trace.record(
+        trace()!!.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
             filePath,
@@ -122,27 +135,9 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
           graph
         )
       }
-      is InjectionGraph.Error -> trace.report(
+      is InjectionGraph.Error -> trace()!!.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
       )
     }
   }
-
-  @WithInjektContext
-  private fun ResolvedCall<*>.getSubstitutionMap(): Map<ClassifierRef, TypeRef> = typeArguments
-    .mapKeys { it.key.toClassifierRef() }
-    .mapValues { it.value.toTypeRef() }
-    .filter { it.key != it.value.classifier } +
-      (dispatchReceiver?.type?.toTypeRef()?.let {
-        it.classifier.typeParameters
-          .zip(it.arguments)
-          .filter { it.first != it.second.classifier }
-          .toMap()
-      } ?: emptyMap()) +
-      (extensionReceiver?.type?.toTypeRef()?.let {
-        it.classifier.typeParameters
-          .zip(it.arguments)
-          .filter { it.first != it.second.classifier }
-          .toMap()
-      } ?: emptyMap())
 }

@@ -16,11 +16,12 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.WithInjektContext
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -40,7 +41,7 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   element, importPath, packageFqName
 )
 
-@WithInjektContext fun ProviderImport.resolve(): ResolvedProviderImport? {
+fun ProviderImport.resolve(@Inject ctx: InjektContext): ResolvedProviderImport? {
   if (!isValidImport()) return null
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
@@ -58,8 +59,8 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   return toResolvedImport(packageFqName)
 }
 
-@WithInjektContext fun KtAnnotated.getProviderImports(): List<ProviderImport> =
-  findAnnotation(injektFqNames.providers)
+fun KtAnnotated.getProviderImports(@Inject ctx: InjektContext): List<ProviderImport> =
+  findAnnotation(injektFqNames().providers)
     ?.valueArguments
     ?.map { it.toProviderImport() } ?: emptyList()
 

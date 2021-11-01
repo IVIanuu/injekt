@@ -28,13 +28,13 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class InfoAnnotationPatcher(@Inject private val context: InjektContext) : DeclarationChecker {
+class InfoAnnotationPatcher(@Inject private val baseCtx: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    @Provide val trace = context.trace
+    @Provide val ctx = baseCtx.withTrace(context.trace)
 
     // requesting infos triggers saving them
     when (descriptor) {

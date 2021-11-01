@@ -19,13 +19,13 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.classifierDescriptorForFqName2
+import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.buildContext
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
-import com.ivianuu.injekt.compiler.resolution.toTypeRef2
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.test.codegen
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -74,8 +74,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
-  @Provide val injektContext = InjektContext(module, InjektFqNames.Default)
-  @Provide val trace = CliBindingTrace()
+  @Provide val ctx = InjektContext(module, InjektFqNames.Default, CliBindingTrace())
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
@@ -166,9 +165,9 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = classifierDescriptorForFqName2(
-    fqName, NoLookupLocation.FROM_BACKEND, injektContext)
-    ?.defaultType?.toTypeRef2(context = injektContext, trace = trace) ?: error("Wtf $fqName")
+  fun typeFor(fqName: FqName) = classifierDescriptorForFqName(
+    fqName, NoLookupLocation.FROM_BACKEND, ctx)
+    ?.defaultType?.toTypeRef(ctx = ctx) ?: error("Wtf $fqName")
 
   infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
     shouldBeAssignableTo(other, emptyList())
@@ -182,7 +181,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
       other,
       staticTypeParameters,
       true,
-      injektContext
+      ctx
     )
     if (!context.isOk) {
       throw AssertionError("'$this' is not assignable to '$other'")
@@ -201,7 +200,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
       other,
       staticTypeParameters,
       true,
-      injektContext
+      ctx
     )
     if (context.isOk) {
       throw AssertionError("'$this' is assignable to '$other'")
@@ -209,13 +208,13 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   }
 
   infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
-    if (!isSubTypeOf(other, injektContext)) {
+    if (!isSubTypeOf(other, ctx)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }
 
   infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
-    if (isSubTypeOf(other, injektContext)) {
+    if (isSubTypeOf(other, ctx)) {
       throw AssertionError("'$this' is sub type of '$other'")
     }
   }
