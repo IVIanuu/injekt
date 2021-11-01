@@ -220,14 +220,28 @@ fun Annotated.isInject(@Inject ctx: InjektContext): Boolean {
 fun ClassDescriptor.injectableConstructors(@Inject ctx: InjektContext): List<CallableRef> =
   trace()!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
     (when {
-      hasAnnotation(injektFqNames().component) -> listOf(ComponentConstructorDescriptor(this))
-      classifierInfo().entryPointComponentType != null -> listOf(EntryPointConstructorDescriptor(this))
+      hasAnnotation(injektFqNames().component) ->
+        listOf(
+          ComponentConstructorDescriptor(this)
+            .toCallableRef()
+            .let { callable ->
+              val info = classifierInfo()
+              if (info.tags.isEmpty()) callable
+              else {
+                val taggedType = info.tags.wrap(callable.type)
+                callable.copy(type = taggedType, originalType = taggedType)
+              }
+            }
+        )
+      classifierInfo().entryPointComponentType != null ->
+        listOf(EntryPointConstructorDescriptor(this).toCallableRef())
       else -> constructors
         .filter { constructor ->
           constructor.hasAnnotation(injektFqNames().provide) ||
               (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
         }
-    }).map { it.toCallableRef() }
+        .map { it.toCallableRef() }
+    })
   }
 
 fun ClassDescriptor.injectableReceiver(tagged: Boolean, @Inject ctx: InjektContext): CallableRef {
@@ -258,12 +272,12 @@ fun CallableRef.collectInjectables(
   }
 
   if (callable is ComponentConstructorDescriptor) {
-    addComponent(callable.returnType!!.toTypeRef())
+    addComponent(type)
     return
   }
 
   if (callable is EntryPointConstructorDescriptor) {
-    addEntryPoint(callable.returnType!!.toTypeRef())
+    addEntryPoint(type)
     return
   }
 

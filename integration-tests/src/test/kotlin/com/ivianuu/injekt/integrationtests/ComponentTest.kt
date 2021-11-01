@@ -23,6 +23,8 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
+import com.ivianuu.injekt.test.shouldContainMessage
+import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -376,4 +378,38 @@ class ComponentTest {
       fun invoke() = inject<MyComponent>().dispose()
     """
   )
+
+  @Test fun testTaggedComponent() = codegen(
+    """
+      @Component @Tag1 interface MyComponent
+    """,
+    """
+      fun invoke() {
+        inject<@Tag1 MyComponent>()
+        inject<MyComponent>()
+      }
+    """
+  ) {
+    shouldContainMessage(
+      "no injectable found of type com.ivianuu.injekt.integrationtests.MyComponent"
+    )
+    shouldNotContainMessage(
+      "no injectable found of type com.ivianuu.injekt.test.Tag1<com.ivianuu.injekt.integrationtests.MyComponent>"
+    )
+  }
+
+  @Test fun testComponentCannotUseInjectablesDeclaredInSuperType() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+      
+      @Component interface FooComponent {
+        val foo: Foo
+      }
+    """,
+    """
+      fun invoke() = inject<FooComponent>().foo
+    """
+  ) {
+    invokeSingleFile()
+  }
 }

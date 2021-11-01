@@ -242,8 +242,10 @@ class InjectablesScope(
         return TypeKeyInjectable(request.type, this)
       request.type.classifier.fqName == injektFqNames().sourceKey ->
         return SourceKeyInjectable(request.type, this)
-      request.type.classifier.isComponent ->
-        return ComponentInjectable(request.type, this)
+      request.type.unwrapTags().classifier.isComponent ->
+        return componentForType(request.type)?.let {
+          ComponentInjectable(it, this)
+        }
       else -> return null
     }
   }
@@ -310,6 +312,16 @@ class InjectablesScope(
         val context = candidate.classifier.entryPointComponentType!!
           .buildContext(componentType, allStaticTypeParameters)
         if (!context.isOk) return@mapNotNull null
+        candidate.substitute(context.fixedTypeVariables)
+      }
+  }
+
+  private fun componentForType(type: TypeRef): TypeRef? {
+    if (componentTypes.isEmpty()) return null
+    return componentTypes
+      .firstNotNullOfOrNull { candidate ->
+        val context = candidate.buildContext(type, allStaticTypeParameters)
+        if (!context.isOk) return@firstNotNullOfOrNull null
         candidate.substitute(context.fixedTypeVariables)
       }
   }
