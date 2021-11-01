@@ -104,7 +104,7 @@ fun TypeRef.collectInjectables(
     .collectInjectables(classBodyView)
     .map {
       val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-        CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+        CallableMemberDescriptor.Kind.FAKE_OVERRIDE || classifier.isTypeAlias) {
         val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
           .overriddenTreeAsSequence(false)
           .last()
