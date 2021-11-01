@@ -16,22 +16,18 @@
 
 package com.ivianuu.injekt.samples.android.domain
 
-import com.ivianuu.injekt.samples.android.data.DbContext
-import com.ivianuu.injekt.samples.android.data.counterDb
-import com.ivianuu.injekt.samples.android.data.dbTransaction
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.samples.android.data.CounterDb
 import kotlinx.coroutines.flow.Flow
 
-@DbContext val counter: Flow<Int>
-  get() = counterDb.counterState
+@Provide class CounterUsecases(private val db: CounterDb) {
+  fun counter(): Flow<Int> = db.counterState
 
-@DbContext suspend fun incCounter() {
-  dbTransaction {
-    counterDb.updateCounter { inc() }
+  suspend fun incCounter() {
+    db.updateCounter { inc() }
   }
-}
 
-@DbContext suspend fun decCounter() {
-  dbTransaction {
-    counterDb.updateCounter { dec() }
+  suspend fun decCounter() {
+    db.updateCounter { dec() }
   }
 }

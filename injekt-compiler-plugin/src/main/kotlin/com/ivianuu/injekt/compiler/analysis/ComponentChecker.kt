@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.collectComponentCallables
 import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -38,35 +39,35 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 
-class ComponentChecker(@Inject private val context: InjektContext) : DeclarationChecker {
+class ComponentChecker(@Inject private val baseCtx: InjektContext) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    @Provide val trace = context.trace
+    @Provide val ctx = baseCtx.withTrace(context.trace)
     when (descriptor) {
       is CallableDescriptor -> {
-        if (descriptor.hasAnnotation(injektFqNames.scoped) &&
+        if (descriptor.hasAnnotation(injektFqNames().scoped) &&
           descriptor.isProvide() &&
           descriptor.callContext() != CallContext.DEFAULT) {
-          trace.report(
+          trace()!!.report(
             InjektErrors.SCOPED_WITHOUT_DEFAULT_CALL_CONTEXT
               .on(declaration)
           )
         }
       }
       is ClassDescriptor -> {
-        if (descriptor.hasAnnotation(injektFqNames.component)) {
+        if (descriptor.hasAnnotation(injektFqNames().component)) {
           if (descriptor.kind != ClassKind.INTERFACE)
-            trace.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
+            trace()!!.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
 
           descriptor.defaultType.toTypeRef()
             .collectComponentCallables()
             .map { it.callable }
             .forEach {
               if (it is PropertyDescriptor && it.isVar) {
-                trace.report(
+                trace()!!.report(
                   InjektErrors.COMPONENT_MEMBER_VAR
                     .on(
                       if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
@@ -75,16 +76,16 @@ class ComponentChecker(@Inject private val context: InjektContext) : Declaration
                 )
               }
             }
-        } else if (descriptor.hasAnnotation(injektFqNames.entryPoint)) {
+        } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
           if (descriptor.kind != ClassKind.INTERFACE)
-            trace.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
+            trace()!!.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
 
           descriptor.defaultType.toTypeRef()
             .collectComponentCallables()
             .map { it.callable }
             .forEach {
               if (it is PropertyDescriptor && it.isVar) {
-                trace.report(
+                trace()!!.report(
                   InjektErrors.ENTRY_POINT_MEMBER_VAR
                     .on(
                       if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration

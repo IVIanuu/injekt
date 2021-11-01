@@ -17,32 +17,28 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.WithInjektContext
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -62,7 +58,6 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -73,54 +68,40 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@WithInjektContext fun TypeRef.collectInjectables(
+fun TypeRef.collectInjectables(
   classBodyView: Boolean,
-  import: ResolvedProviderImport?
+  import: ResolvedProviderImport?,
+  @Inject ctx: InjektContext
 ): List<CallableRef> {
   if (isStarProjection) return emptyList()
 
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
-    val functionType = if (isSuspendFunctionType)
-      module.builtIns.getSuspendFunction(arguments.size - 1 + injectNTypes.size)
-    else
-      module.builtIns.getFunction(arguments.size - 1 + injectNTypes.size)
-
     return listOf(
-      functionType
+      classifier
+        .descriptor!!
         .defaultType
         .memberScope
         .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
         .first()
         .toCallableRef()
         .let { callable ->
-          val lambdaInjectParameters = injectNTypes.mapIndexed { index, injectNType ->
-            InjectNParameterDescriptor(
-              callable.callable,
-              arguments.size - 1 + index,
-              injectNType
-            )
-          }
-
           callable.copy(
             type = arguments.last(),
             isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
-              .also { it[DISPATCH_RECEIVER_INDEX] = this } + lambdaInjectParameters
-              .map { it.index to it.typeRef },
+              .also { it[DISPATCH_RECEIVER_INDEX] = this },
             scopeComponentType = scopeComponentType,
-            import = import,
-            injectNParameters = lambdaInjectParameters
+            import = import
           ).substitute(classifier.typeParameters.zip(arguments).toMap())
         }
     )
   }
 
-  return ((classifier.descriptor ?: error("Wtf $classifier"))
+  return (classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
     .memberScope
-    .collectInjectables(classBodyView) + if (classBodyView) classifier.injectNParameters
-    .map { it.toCallableRef() } else emptyList())
+    .collectInjectables(classBodyView)
     .map {
       val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
         CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
@@ -148,9 +129,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     }
 }
 
-@WithInjektContext fun ResolutionScope.collectInjectables(
+fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
-  onEach: (DeclarationDescriptor) -> Unit = {}
+  onEach: (DeclarationDescriptor) -> Unit = {},
+  @Inject ctx: InjektContext
 ): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
     onEach(declaration)
@@ -164,9 +146,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
         if (declaration.isProvide() &&
           (declaration !is PropertyDescriptor ||
               classBodyView ||
-              declaration.hasAnnotation(injektFqNames.provide) ||
+              declaration.hasAnnotation(injektFqNames().provide) ||
               declaration.primaryConstructorPropertyValueParameter()
-                ?.hasAnnotation(injektFqNames.provide) == true)) {
+                ?.hasAnnotation(injektFqNames().provide) == true)) {
           listOf(
             declaration.toCallableRef()
               .let { callable ->
@@ -185,12 +167,12 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     }
   }
 
-@WithInjektContext fun Annotated.isProvide(): Boolean {
+fun Annotated.isProvide(@Inject ctx: InjektContext): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return trace.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
-    var isProvide = hasAnnotation(injektFqNames.provide) ||
-        hasAnnotation(injektFqNames.inject)
+  return trace()!!.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
+    var isProvide = hasAnnotation(injektFqNames().provide) ||
+        hasAnnotation(injektFqNames().inject)
 
     if (!isProvide && this is PropertyDescriptor)
       isProvide = primaryConstructorPropertyValueParameter()?.isProvide() == true
@@ -211,11 +193,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   }
 }
 
-@WithInjektContext fun Annotated.isInject(): Boolean {
+fun Annotated.isInject(@Inject ctx: InjektContext): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return trace.getOrPut(InjektWritableSlices.IS_INJECT, key) {
-    var isInject = hasAnnotation(injektFqNames.inject)
+  return trace()!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
+    var isInject = hasAnnotation(injektFqNames().inject)
     if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter()?.isInject() == true
 
@@ -235,45 +217,27 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   }
 }
 
-@WithInjektContext fun CallableDescriptor.injectNParameters(): List<InjectNParameterDescriptor> =
-  trace.getOrPut(InjektWritableSlices.INJECT_N_PARAMETERS, this) {
-    findPsi()?.safeAs<KtDeclaration>()?.let { declaration ->
-      annotations.forEach {
-        fixTypes(it.type, declaration)
-      }
-    }
-    ((safeAs<ConstructorDescriptor>()?.constructedClass
-      ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) + injectNTypes())
-      .mapIndexed { index, parameterType ->
-        InjectNParameterDescriptor(
-          this,
-          valueParameters.size + index,
-          parameterType
-        )
-      }
-  }
-
-@WithInjektContext fun ClassDescriptor.injectableConstructors(): List<CallableRef> =
-  trace.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
+fun ClassDescriptor.injectableConstructors(@Inject ctx: InjektContext): List<CallableRef> =
+  trace()!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
     (when {
-      hasAnnotation(injektFqNames.component) -> listOf(ComponentConstructorDescriptor(this))
+      hasAnnotation(injektFqNames().component) -> listOf(ComponentConstructorDescriptor(this))
       classifierInfo().entryPointComponentType != null -> listOf(EntryPointConstructorDescriptor(this))
       else -> constructors
         .filter { constructor ->
-          constructor.hasAnnotation(injektFqNames.provide) ||
-              (constructor.isPrimary && hasAnnotation(injektFqNames.provide))
+          constructor.hasAnnotation(injektFqNames().provide) ||
+              (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
         }
     }).map { it.toCallableRef() }
   }
 
-@WithInjektContext fun ClassDescriptor.injectableReceiver(tagged: Boolean): CallableRef {
+fun ClassDescriptor.injectableReceiver(tagged: Boolean, @Inject ctx: InjektContext): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef()
   val finalType = if (tagged) callable.type.classifier.tags.wrap(callable.type)
   else callable.type
   return callable.copy(isProvide = true, type = finalType, originalType = finalType)
 }
 
-@WithInjektContext fun CallableRef.collectInjectables(
+fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
@@ -281,7 +245,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   addComponent: (TypeRef) -> Unit,
   addEntryPoint: (TypeRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
-  seen: MutableSet<CallableRef> = mutableSetOf()
+  seen: MutableSet<CallableRef> = mutableSetOf(),
+  @Inject ctx: InjektContext
 ) {
   if (this in seen) return
   seen += this
@@ -334,7 +299,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-@WithInjektContext fun List<ProviderImport>.collectImportedInjectables(
+fun List<ProviderImport>.collectImportedInjectables(
+  @Inject ctx: InjektContext
 ): List<CallableRef> = flatMap { import ->
   buildList<CallableRef> {
     if (!import.isValidImport()) return@buildList
@@ -375,8 +341,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   }
 }
 
-@WithInjektContext fun TypeRef.collectTypeScopeInjectables(): InjectablesWithLookups =
-  trace.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
+fun TypeRef.collectTypeScopeInjectables(@Inject ctx: InjektContext): InjectablesWithLookups =
+  trace()!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
     val injectables = mutableListOf<CallableRef>()
     val lookedUpPackages = mutableSetOf<FqName>()
 
@@ -426,10 +392,12 @@ data class InjectablesWithLookups(
   }
 }
 
-@WithInjektContext private fun TypeRef.collectInjectablesForSingleType(): InjectablesWithLookups {
+private fun TypeRef.collectInjectablesForSingleType(
+  @Inject ctx: InjektContext
+): InjectablesWithLookups {
   if (classifier.isTypeParameter) return InjectablesWithLookups.Empty
 
-  trace?.bindingContext?.get(InjektWritableSlices.TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE, key)
+  trace()!!.bindingContext.get(InjektWritableSlices.TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE, key)
     ?.let { return it }
 
   val injectables = mutableListOf<CallableRef>()
@@ -438,7 +406,7 @@ data class InjectablesWithLookups(
   val result = InjectablesWithLookups(injectables, lookedUpPackages)
 
   // we might recursively call our self so we make sure that we do not end up in a endless loop
-  trace?.record(InjektWritableSlices.TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE, key, result)
+  trace()!!.record(InjektWritableSlices.TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE, key, result)
 
   val packageResult = collectPackageTypeScopeInjectables()
   injectables += packageResult.injectables
@@ -465,10 +433,12 @@ data class InjectablesWithLookups(
   return result
 }
 
-@WithInjektContext private fun TypeRef.collectPackageTypeScopeInjectables(): InjectablesWithLookups {
+private fun TypeRef.collectPackageTypeScopeInjectables(
+  @Inject ctx: InjektContext
+): InjectablesWithLookups {
   val packageFqName = classifier.descriptor!!.findPackage().fqName
 
-  return trace.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
+  return trace()!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
     val lookedUpPackages = setOf(packageFqName)
 
     val packageFragments = packageFragmentsForFqName(packageFqName)
@@ -482,9 +452,7 @@ data class InjectablesWithLookups(
     fun collectInjectables(scope: MemberScope) {
       injectables += scope.collectInjectables(
         onEach = { declaration ->
-          if (declaration is ClassDescriptor &&
-            declaration !is LazyJavaClassDescriptor
-          )
+          if (declaration is ClassDescriptor && declaration !is LazyJavaClassDescriptor)
             collectInjectables(declaration.unsubstitutedMemberScope)
         },
         classBodyView = false
@@ -501,11 +469,11 @@ data class InjectablesWithLookups(
   }
 }
 
-@WithInjektContext private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
+private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: InjektContext): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName() == context.injektContext.module.moduleName()) ||
+          callable.callable.moduleName() == this.ctx.ctx.module.moduleName()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->
@@ -518,7 +486,7 @@ data class InjectablesWithLookups(
           ?.containingFile
       })
 
-@WithInjektContext fun TypeRef.collectComponentCallables(): List<CallableRef> =
+fun TypeRef.collectComponentCallables(@Inject ctx: InjektContext): List<CallableRef> =
   classifier.descriptor!!.defaultType.memberScope
     .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
     .filterIsInstance<CallableMemberDescriptor>()

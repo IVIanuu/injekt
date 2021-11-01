@@ -17,11 +17,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -59,7 +56,6 @@ import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -73,8 +69,9 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
-@WithInjektContext
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(): ValueParameterDescriptor? =
+fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
+  @Inject ctx: InjektContext
+): ValueParameterDescriptor? =
   overriddenTreeUniqueAsSequence(false)
     .map { it.containingDeclaration }
     .filterIsInstance<ClassDescriptor>()
@@ -128,11 +125,11 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   return null
 }
 
-@WithInjektContext fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
-  trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
+fun <D : DeclarationDescriptor> KtDeclaration.descriptor(@Inject ctx: InjektContext) =
+  trace()!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-@WithInjektContext fun DeclarationDescriptor.isExternalDeclaration(): Boolean =
-  moduleName() != module.moduleName()
+fun DeclarationDescriptor.isExternalDeclaration(@Inject ctx: InjektContext): Boolean =
+  moduleName() != module().moduleName()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -150,7 +147,7 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
     inner.hasAnnotation(annotation)
   }
 
-@WithInjektContext fun DeclarationDescriptor.uniqueKey(): String =
+fun DeclarationDescriptor.uniqueKey(@Inject ctx: InjektContext): String =
   when (val original = this.original) {
     is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
       original.valueParameters
@@ -197,7 +194,6 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
       "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
     is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
     is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
-    is InjectNParameterDescriptor -> "inject_n_parameter:$fqNameSafe"
     is VariableDescriptor -> "variable:${fqNameSafe}"
     else -> error("Unexpected declaration $this")
   }
@@ -233,7 +229,6 @@ fun ParameterDescriptor.injektName(): Name = if (this is ValueParameterDescripto
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
-    this is InjectNParameterDescriptor -> name
     else -> throw AssertionError("Unexpected descriptor $this")
   }
 }
@@ -249,7 +244,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-    this is InjectNParameterDescriptor -> index
     else -> throw AssertionError("Unexpected descriptor $this")
   }
 }
@@ -277,10 +271,10 @@ val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
 
-@WithInjektContext fun DeclarationDescriptor.moduleName(): String =
+fun DeclarationDescriptor.moduleName(@Inject ctx: InjektContext): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")
-    ?: module.name.asString().removeSurrounding("<", ">")
+    ?: module().name.asString().removeSurrounding("<", ">")
 
 inline fun <K, V> BindingTrace?.getOrPut(
   slice: WritableSlice<K, V>,
@@ -292,52 +286,18 @@ inline fun <K, V> BindingTrace?.getOrPut(
     .also { this?.record(slice, key, it) }
 }
 
-@WithInjektContext fun Annotated.injectNTypes(): List<TypeRef> {
-  if (hasAnnotation(injektFqNames.injectNInfo)) {
-    return annotations.findAnnotation(injektFqNames.injectNInfo)!!
-      .allValueArguments
-      .values
-      .single()
-      .cast<ArrayValue>()
-      .value
-      .map { it.value.toString().decode<PersistedTypeRef>().toTypeRef() }
-  }
-
-  val result = mutableListOf<TypeRef>()
-
-  fun visitInjectNType(type: KotlinType) {
-    if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames.inject2) {
-      type.arguments.forEach { visitInjectNType(it.type) }
-    } else {
-      result += type.toTypeRef()
-    }
-  }
-
-  annotations
-    .filter { it.fqName == injektFqNames.inject2 }
-    .forEach { visitInjectNType(it.type) }
-
-  return result.distinct()
-}
-
-fun classifierDescriptorForFqName2(
+fun classifierDescriptorForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  @Provide injektContext: InjektContext,
-  @Provide trace: BindingTrace? = null
-): ClassifierDescriptor? = classifierDescriptorForFqName(fqName, lookupLocation)
-
-@WithInjektContext fun classifierDescriptorForFqName(
-  fqName: FqName,
-  lookupLocation: LookupLocation
+  @Inject ctx: InjektContext
 ): ClassifierDescriptor? {
   return if (fqName.isRoot) null
   else memberScopeForFqName(fqName.parent(), lookupLocation)
     ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
 
-@WithInjektContext fun classifierDescriptorForKey(key: String): ClassifierDescriptor =
-  trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
+fun classifierDescriptorForKey(key: String, @Inject ctx: InjektContext): ClassifierDescriptor =
+  trace().getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
@@ -360,26 +320,28 @@ fun classifierDescriptorForFqName2(
     classifier
   }
 
-@WithInjektContext private fun functionDescriptorsForFqName(fqName: FqName): Collection<FunctionDescriptor> =
+private fun functionDescriptorsForFqName(
+  fqName: FqName,
+  @Inject ctx: InjektContext
+): Collection<FunctionDescriptor> =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedFunctions(
     fqName.shortName(), NoLookupLocation.FROM_BACKEND
   ) ?: emptyList()
 
-@WithInjektContext private fun propertyDescriptorsForFqName(fqName: FqName): Collection<PropertyDescriptor> =
+private fun propertyDescriptorsForFqName(
+  fqName: FqName,
+  @Inject ctx: InjektContext
+): Collection<PropertyDescriptor> =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedVariables(
     fqName.shortName(), NoLookupLocation.FROM_BACKEND
   ) ?: emptyList()
 
-
-fun memberScopeForFqName2(
+fun memberScopeForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  @Provide context: InjektContext,
-  @Provide trace: BindingTrace? = null
-): MemberScope? = memberScopeForFqName(fqName, lookupLocation)
-
-@WithInjektContext fun memberScopeForFqName(fqName: FqName, lookupLocation: LookupLocation): MemberScope? {
-  val pkg = module.getPackage(fqName)
+  @Inject ctx: InjektContext
+): MemberScope? {
+  val pkg = module().getPackage(fqName)
 
   if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
@@ -394,5 +356,7 @@ fun memberScopeForFqName2(
   return classDescriptor.unsubstitutedMemberScope
 }
 
-@WithInjektContext fun packageFragmentsForFqName(fqName: FqName): List<PackageFragmentDescriptor> =
-  module.getPackage(fqName).fragments
+fun packageFragmentsForFqName(
+  fqName: FqName,
+  @Inject ctx: InjektContext
+): List<PackageFragmentDescriptor> = module().getPackage(fqName).fragments

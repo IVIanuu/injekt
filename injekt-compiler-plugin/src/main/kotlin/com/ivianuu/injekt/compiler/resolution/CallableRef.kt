@@ -16,13 +16,12 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.analysis.substitute
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 
 data class CallableRef(
@@ -35,11 +34,13 @@ data class CallableRef(
   val scopeComponentType: TypeRef? = null,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
-  val import: ResolvedProviderImport?,
-  val injectNParameters: List<InjectNParameterDescriptor>
+  val import: ResolvedProviderImport?
 )
 
-@WithInjektContext fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
+fun CallableRef.substitute(
+  map: Map<ClassifierRef, TypeRef>,
+  @Inject ctx: InjektContext
+): CallableRef {
   if (map.isEmpty()) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
@@ -60,20 +61,19 @@ data class CallableRef(
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
       },
-    scopeComponentType = scopeComponentType?.substitute(map),
-    injectNParameters = injectNParameters.map { it.substitute(map) }
+    scopeComponentType = scopeComponentType?.substitute(map)
   )
 }
 
 fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isProvide = true)
 
-@WithInjektContext fun CallableDescriptor.toCallableRef(): CallableRef =
-  trace.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
+fun CallableDescriptor.toCallableRef(@Inject ctx: InjektContext): CallableRef =
+  trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo()
     val typeParameters = typeParameters.map { it.toClassifierRef() }
     CallableRef(
       callable = this,
-      type = if (this is InjectNParameterDescriptor) typeRef else info.type,
+      type = info.type,
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
@@ -83,7 +83,6 @@ fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isPro
         .map { it to it.defaultType }
         .toMap(),
       isProvide = isProvide(),
-      import = null,
-      injectNParameters = info.injectNParameters
+      import = null
     )
   }

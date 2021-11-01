@@ -31,15 +31,13 @@ import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  @Inject @Provide val context: InjektContext,
-  @Inject @Provide val trace: BindingTrace?,
+  @Inject @Provide val ctx: InjektContext,
   val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
@@ -167,7 +165,7 @@ class InjectablesScope(
   ): List<Injectable> {
     // we return merged collections
     if (request.type.frameworkKey == 0 &&
-      request.type.classifier == context.injektContext.listClassifier) return emptyList()
+      request.type.classifier == ctx.ctx.listClassifier) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { it.isValidObjectRequest(request) }
@@ -205,9 +203,9 @@ class InjectablesScope(
           isInline = request.isInline
         )
       }
-      request.type.classifier == context.injektContext.listClassifier -> {
+      request.type.classifier == ctx.ctx.listClassifier -> {
         val singleElementType = request.type.arguments[0]
-        val collectionElementType = context.injektContext.collectionClassifier.defaultType
+        val collectionElementType = ctx.ctx.collectionClassifier.defaultType
           .withArguments(listOf(singleElementType))
 
         var key = CallableRequestKey(request.type, allStaticTypeParameters)
@@ -219,9 +217,9 @@ class InjectablesScope(
           key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
           elements = (listElementsForType(
-            providerReturnType, context.injektContext.collectionClassifier
+            providerReturnType, ctx.ctx.collectionClassifier
               .defaultType.withArguments(listOf(providerReturnType)), key) +
-              frameworkListElementsForType(providerReturnType, context.injektContext.collectionClassifier
+              frameworkListElementsForType(providerReturnType, ctx.ctx.collectionClassifier
                 .defaultType.withArguments(listOf(providerReturnType)), key))
             .map { elementType ->
               singleElementType.copy(
@@ -240,9 +238,9 @@ class InjectablesScope(
           collectionElementType = collectionElementType
         )
       }
-      request.type.classifier.fqName == injektFqNames.typeKey ->
+      request.type.classifier.fqName == injektFqNames().typeKey ->
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == injektFqNames.sourceKey ->
+      request.type.classifier.fqName == injektFqNames().sourceKey ->
         return SourceKeyInjectable(request.type, this)
       request.type.classifier.isComponent ->
         return ComponentInjectable(request.type, this)
@@ -399,7 +397,7 @@ class InjectablesScope(
             callable.callable !is ReceiverParameterDescriptor ||
             callable.callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames.provide))
+            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames().provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

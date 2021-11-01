@@ -18,18 +18,16 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.context
+import com.ivianuu.injekt.compiler.ctx
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -65,8 +63,7 @@ class ClassifierRef(
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
-  val variance: TypeVariance = TypeVariance.INV,
-  val injectNParameters: List<InjectNParameterDescriptor> = emptyList()
+  val variance: TypeVariance = TypeVariance.INV
 ) {
   val superTypes by lazySuperTypes
 
@@ -93,12 +90,11 @@ class ClassifierRef(
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
-    variance: TypeVariance = this.variance,
-    injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters
+    variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTypeAlias, isTag, isComponent, scopeComponentType, entryPointComponentType, descriptor,
-    tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters
+    tags, isSpread, primaryConstructorPropertyParameters, variance
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -119,13 +115,8 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef2(
-  @Provide context: InjektContext,
-  @Provide trace: BindingTrace? = null
-) = toClassifierRef()
-
-@WithInjektContext fun ClassifierDescriptor.toClassifierRef(): ClassifierRef =
-  trace.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
+fun ClassifierDescriptor.toClassifierRef(@Inject ctx: InjektContext): ClassifierRef =
+  trace()!!.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
     val info = classifierInfo()
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
@@ -133,14 +124,14 @@ fun ClassifierDescriptor.toClassifierRef2(
       ?.map { it.toClassifierRef() }
       ?.toMutableList()
 
-    val isTag = hasAnnotation(injektFqNames.tag)
+    val isTag = hasAnnotation(injektFqNames().tag)
 
     if (isTag) {
       typeParameters!! += ClassifierRef(
         key = "${uniqueKey()}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
-        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(context.nullableAnyType) },
+        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
         variance = TypeVariance.OUT
       )
     }
@@ -153,7 +144,7 @@ fun ClassifierDescriptor.toClassifierRef2(
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
-      isComponent = hasAnnotation(injektFqNames.component),
+      isComponent = hasAnnotation(injektFqNames().component),
       scopeComponentType = info.scopeComponentType,
       entryPointComponentType = info.entryPointComponentType,
       isTypeAlias = this is TypeAliasDescriptor,
@@ -162,21 +153,14 @@ fun ClassifierDescriptor.toClassifierRef2(
       isSpread = info.isSpread,
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
-      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      injectNParameters = info.injectNParameters
+      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
 
-fun KotlinType.toTypeRef2(
+fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV,
-  @Provide context: InjektContext,
-  @Provide trace: BindingTrace? = null
-): TypeRef = toTypeRef(isStarProjection, variance)
-
-@WithInjektContext fun KotlinType.toTypeRef(
-  isStarProjection: Boolean = false,
-  variance: TypeVariance = TypeVariance.INV
+  @Inject ctx: InjektContext
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this
@@ -185,7 +169,7 @@ fun KotlinType.toTypeRef2(
       unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
         .commonSupertype(unwrapped.constructor.supertypes)
       else -> null
-    } ?: return context.nullableAnyType
+    } ?: return ctx.nullableAnyType
 
     val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
 
@@ -205,20 +189,19 @@ fun KotlinType.toTypeRef2(
         .toMutableList()
         .also {
           if (classifier.isTag && it.size != classifier.typeParameters.size)
-            it += context.nullableAnyType
+            it += ctx.nullableAnyType
         },
-      isMarkedComposable = kotlinType.hasAnnotation(injektFqNames.composable),
-      isProvide = kotlinType.hasAnnotation(injektFqNames.provide),
-      isInject = kotlinType.hasAnnotation(injektFqNames.inject),
+      isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
+      isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
+      isInject = kotlinType.hasAnnotation(injektFqNames().inject),
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      injectNTypes = injectNTypes(),
-      scopeComponentType = annotations.findAnnotation(injektFqNames.scoped)
+      scopeComponentType = annotations.findAnnotation(injektFqNames().scoped)
         ?.type?.arguments?.single()?.type?.toTypeRef()
     )
 
-    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames.tag)
+    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
     if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }
@@ -245,7 +228,6 @@ class TypeRef(
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
-  val injectNTypes: List<TypeRef> = emptyList(),
   val scopeComponentType: TypeRef? = null
 ) {
   override fun toString(): String = renderToString()
@@ -296,7 +278,6 @@ class TypeRef(
         allTypes += inner
         inner.arguments.forEach { collect(it) }
         inner.superTypes.forEach { collect(it) }
-        inner.injectNTypes.forEach { collect(it) }
       }
       collect(this)
       _allTypes = allTypes
@@ -340,7 +321,6 @@ class TypeRef(
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
-      result = 31 * result + injectNTypes.hashCode()
       result = 31 * result + scopeComponentType.hashCode()
       _hashCode = result
     }
@@ -372,7 +352,6 @@ fun TypeRef.copy(
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
-  injectNTypes: List<TypeRef> = this.injectNTypes,
   scopeComponentType: TypeRef? = this.scopeComponentType
 ) = TypeRef(
   classifier,
@@ -384,7 +363,6 @@ fun TypeRef.copy(
   isStarProjection,
   frameworkKey,
   variance,
-  injectNTypes,
   scopeComponentType
 )
 
@@ -444,15 +422,12 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     } else substitution
   }
 
-  if (arguments.isEmpty() && injectNTypes.isEmpty() && scopeComponentType == null) return this
+  if (arguments.isEmpty() && scopeComponentType == null) return this
 
   val newArguments = arguments.map { it.substitute(map) }
-  val newInjectNTypes = injectNTypes.map { it.substitute(map) }
   val newScopeComponentType = scopeComponentType?.substitute(map)
-  if (newArguments != arguments ||
-    newInjectNTypes != injectNTypes ||
-    newScopeComponentType != scopeComponentType)
-    return copy(arguments = newArguments, injectNTypes = newInjectNTypes, scopeComponentType = newScopeComponentType)
+  if (newArguments != arguments || newScopeComponentType != scopeComponentType)
+    return copy(arguments = newArguments, scopeComponentType = newScopeComponentType)
 
   return this
 }
@@ -471,15 +446,6 @@ fun TypeRef.render(
     if (!renderType(this)) return
 
     if (isMarkedComposable) append("@Composable ")
-
-    if (injectNTypes.isNotEmpty()) {
-      append("@Inject<")
-      injectNTypes.forEachIndexed { index, injectNType ->
-        injectNType.render(depth = depth + 1, renderType, append)
-        if (index != injectNTypes.size - 1) append(", ")
-      }
-      append("> ")
-    }
 
     when {
       isStarProjection -> append("*")

@@ -36,10 +36,8 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.coroutines.ComponentScope
-import com.ivianuu.injekt.samples.android.data.DbContext
-import com.ivianuu.injekt.samples.android.domain.counter
-import com.ivianuu.injekt.samples.android.domain.decCounter
-import com.ivianuu.injekt.samples.android.domain.incCounter
+import com.ivianuu.injekt.samples.android.domain.CounterUsecases
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 typealias AppUi = @Composable () -> Unit
@@ -72,16 +70,18 @@ typealias AppUi = @Composable () -> Unit
   }
 }
 
-@Provide @Scoped<ActivityComponent> @DbContext class CounterViewModel(
+@Provide @Scoped<ActivityComponent> class CounterViewModel(
+  private val usecases: CounterUsecases,
   private val scope: ComponentScope<ActivityComponent>
 ) {
-  val state = counter
+  val state: Flow<Int>
+    get() = usecases.counter()
 
   fun inc() {
-    scope.launch { incCounter() }
+    scope.launch { usecases.incCounter() }
   }
 
   fun dec() {
-    scope.launch { decCounter() }
+    scope.launch { usecases.decCounter() }
   }
 }

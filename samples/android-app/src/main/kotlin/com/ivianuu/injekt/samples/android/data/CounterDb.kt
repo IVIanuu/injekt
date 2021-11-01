@@ -16,17 +16,13 @@
 
 package com.ivianuu.injekt.samples.android.data
 
-import com.ivianuu.injekt.Inject2
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Scoped
-import com.ivianuu.injekt.coroutines.DefaultDispatcher
-import com.ivianuu.injekt.inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 
 interface CounterDb {
   val counterState: Flow<Int>
@@ -43,12 +39,3 @@ interface CounterDb {
     _counterState.value = transform(_counterState.value)
   }
 }
-
-typealias DbContext = Inject2<CounterDb, DefaultDispatcher>
-
-@DbContext inline val counterDb: CounterDb get() = inject()
-
-@DbContext suspend inline fun <R> dbTransaction(crossinline block: @DbContext suspend () -> R): R =
-  withContext(inject<DefaultDispatcher>()) {
-    block()
-  }

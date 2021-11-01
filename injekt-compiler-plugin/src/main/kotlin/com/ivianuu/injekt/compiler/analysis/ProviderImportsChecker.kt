@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.resolution.ProviderImport
 import com.ivianuu.injekt.compiler.resolution.getProviderImports
 import com.ivianuu.injekt.compiler.resolution.isValidImport
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -34,11 +35,10 @@ import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class ProviderImportsChecker(@Inject private val context: InjektContext) : DeclarationChecker {
+class ProviderImportsChecker(@Inject private val baseCtx: InjektContext) : DeclarationChecker {
   private val checkedFiles = mutableSetOf<KtFile>()
 
   override fun check(
@@ -46,23 +46,23 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    @Provide val trace = context.trace
+    @Provide val ctx = baseCtx.withTrace(context.trace)
     val file = declaration.containingKtFile
     checkFile(file)
-    if (!declaration.hasAnnotation(injektFqNames.providers)) return
+    if (!declaration.hasAnnotation(injektFqNames().providers)) return
     checkImports(file.packageFqName, declaration.getProviderImports())
   }
 
-  private fun checkFile(file: KtFile, @Inject trace: BindingTrace) {
+  private fun checkFile(file: KtFile, @Inject ctx: InjektContext) {
     if (file in checkedFiles) return
     checkedFiles += file
-    checkImports(file.packageFqName, file.getProviderImports(), trace)
+    checkImports(file.packageFqName, file.getProviderImports())
   }
 
   private fun checkImports(
     currentPackage: FqName,
     imports: List<ProviderImport>,
-    @Inject trace: BindingTrace
+    @Inject ctx: InjektContext
   ) {
     if (imports.isEmpty()) return
 
@@ -72,7 +72,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
       .filter { it.value.size > 1 }
       .forEach { (_, imports) ->
         imports.forEach {
-          trace.report(
+          trace()!!.report(
             InjektErrors.DUPLICATED_INJECTABLE_IMPORT
               .on(it.element!!)
           )
@@ -82,7 +82,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
     imports.forEach { import ->
       val (element, importPath) = import
       if (!import.isValidImport()) {
-        trace.report(
+        trace()!!.report(
           InjektErrors.MALFORMED_INJECTABLE_IMPORT
             .on(element!!)
         )
@@ -92,14 +92,14 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
       if (importPath.endsWith(".*")) {
         val packageFqName = FqName(importPath.removeSuffix(".*"))
         if (packageFqName == currentPackage) {
-          trace.report(
+          trace()!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!)
           )
           return@forEach
         }
         if (memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
-          trace.report(
+          trace()!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!)
           )
@@ -109,7 +109,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
         val fqName = FqName(importPath.removeSuffix(".*"))
         val parentFqName = fqName.parent()
         if (parentFqName == currentPackage) {
-          trace.report(
+          trace()!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!)
           )
@@ -126,7 +126,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
                         it.constructedClass.name == shortName))
           }
         if (importedDeclarations == null || importedDeclarations.isEmpty()) {
-          trace.report(
+          trace()!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!)
           )
@@ -135,7 +135,7 @@ class ProviderImportsChecker(@Inject private val context: InjektContext) : Decla
       }
 
       if (!isIde) {
-        trace.report(
+        trace()!!.report(
           InjektErrors.UNUSED_INJECTABLE_IMPORT
             .on(element!!)
         )

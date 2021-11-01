@@ -238,9 +238,4 @@ class SubtypingTest {
   @Test fun testComparableStackOverflowBug() = withTypeCheckerContext {
     floatType shouldNotBeSubTypeOf comparable.withArguments(intType)
   }
-
-  @Test fun testTypeWithDifferentInjectNTypesIsNotSubType() = withTypeCheckerContext {
-    stringType.copy(injectNTypes = listOf(stringType)) shouldNotBeSubTypeOf
-        stringType
-  }
 }

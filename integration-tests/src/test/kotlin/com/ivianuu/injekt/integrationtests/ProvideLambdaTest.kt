@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -86,16 +85,5 @@ class ProvideLambdaTest {
     """
   ) {
     invokeSingleFile() shouldBeSameInstanceAs invokeSingleFile()
-  }
-
-  @Test fun testInjectNProvideLambda() = codegen(
-    """
-      fun invoke(): Bar {
-        @Provide val provider: @Provide @Inject1<Foo> () -> Bar = { Bar(inject()) }
-        return inject<(Foo) -> Bar>()(Foo())
-      }
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 }

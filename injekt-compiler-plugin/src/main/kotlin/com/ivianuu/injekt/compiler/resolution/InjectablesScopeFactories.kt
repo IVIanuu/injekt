@@ -16,9 +16,8 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -29,6 +28,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -70,16 +70,17 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@WithInjektContext fun ElementInjectablesScope(
+fun ElementInjectablesScope(
   element: KtElement,
-  position: KtElement = element
+  position: KtElement = element,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val scopeOwner = element.parentsWithSelf
     .first { (it as KtElement).isScopeOwner(position) }
     .cast<KtElement>()
 
   if (scopeOwner !is KtBlockExpression)
-    trace?.bindingContext?.get(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner)
+    trace()!!.bindingContext.get(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner)
       ?.let { return it }
 
   val parentScope = scopeOwner.parents
@@ -145,12 +146,12 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   }
 
   if (scopeOwner !is KtBlockExpression)
-    trace?.record(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner, scope)
+    trace()!!.record(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner, scope)
 
   return scope
 }
 
-@WithInjektContext private fun KtElement.isScopeOwner(position: KtElement): Boolean {
+private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: InjektContext): Boolean {
   if (this is KtFile ||
     this is KtClassInitializer ||
     this is KtProperty ||
@@ -193,7 +194,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   if (this is KtObjectDeclaration)
     return true
 
-  if (this is KtAnnotatedExpression && hasAnnotation(injektFqNames.providers))
+  if (this is KtAnnotatedExpression && hasAnnotation(injektFqNames().providers))
     return true
 
   if (this is KtClass && position.getParentOfType<KtSuperTypeList>(false) == null) {
@@ -233,8 +234,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   return false
 }
 
-@WithInjektContext private fun FileInjectablesScope(file: KtFile): InjectablesScope =
-  trace.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
+private fun FileInjectablesScope(file: KtFile, @Inject ctx: InjektContext): InjectablesScope =
+  trace()!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
     ImportInjectablesScopes(
       file = file,
       imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
@@ -243,7 +244,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     )
   }
 
-@WithInjektContext private fun FileInitInjectablesScope(position: KtElement): InjectablesScope {
+private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: InjektContext): InjectablesScope {
   val file = position.containingKtFile
 
   val visibleInjectableDeclarations = file
@@ -267,15 +268,17 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun ClassCompanionInjectablesScope(
+private fun ClassCompanionInjectablesScope(
   clazz: ClassDescriptor,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope = clazz.companionObjectDescriptor
   ?.let { ClassInjectablesScope(it, parent) } ?: parent
 
-@WithInjektContext private fun ClassImportsInjectablesScope(
+private fun ClassImportsInjectablesScope(
   clazz: ClassDescriptor,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val finalParent = ClassCompanionInjectablesScope(clazz, parent)
   return (clazz
@@ -287,10 +290,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     ?: finalParent)
 }
 
-@WithInjektContext private fun ClassInjectablesScope(
+private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
-  parent: InjectablesScope
-): InjectablesScope = trace.getOrPut(
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
+): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(clazz, parent.name)
 ) {
@@ -307,10 +311,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun ClassInitInjectablesScope(
+private fun ClassInitInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
-  position: KtElement
+  position: KtElement,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val psiClass = clazz.findPsi()!!
   val visibleInjectableDeclarations = psiClass
@@ -350,9 +355,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   else FunctionInjectablesScope(primaryConstructor, classInitScope)
 }
 
-@WithInjektContext private fun ConstructorPreInitInjectablesScope(
+private fun ConstructorPreInitInjectablesScope(
   constructor: ConstructorDescriptor,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val finalParent = ClassImportsInjectablesScope(
     constructor.constructedClass,
@@ -371,9 +377,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun FunctionImportsInjectablesScope(
+private fun FunctionImportsInjectablesScope(
   function: FunctionDescriptor,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope = function
   .findPsi()
   .safeAs<KtFunction>()
@@ -385,9 +392,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   }
   ?: parent
 
-@WithInjektContext private fun ValueParameterDefaultValueInjectablesScope(
+private fun ValueParameterDefaultValueInjectablesScope(
   valueParameter: ValueParameterDescriptor,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val function = valueParameter.containingDeclaration.cast<FunctionDescriptor>()
   val finalParent = FunctionImportsInjectablesScope(function, parent)
@@ -403,10 +411,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun FunctionInjectablesScope(
+private fun FunctionInjectablesScope(
   function: FunctionDescriptor,
-  parent: InjectablesScope
-): InjectablesScope = trace.getOrPut(
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
+): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(function, parent.name)
 ) {
@@ -427,15 +436,16 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun FunctionParameterInjectablesScopes(
+private fun FunctionParameterInjectablesScopes(
   parent: InjectablesScope,
   function: FunctionDescriptor,
-  until: ValueParameterDescriptor? = null
+  until: ValueParameterDescriptor? = null,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
-  return (function.allParameters + function.injectNParameters())
+  return function.allParameters
     .filter {
-      (maxIndex == null || it is InjectNParameterDescriptor || it.injektIndex() < maxIndex) &&
+      (maxIndex == null || it.injektIndex() < maxIndex) &&
           (it.isProvide() || it === function.extensionReceiverParameter)
     }
     .map { it.toCallableRef().makeProvide() }
@@ -448,10 +458,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     }
 }
 
-@WithInjektContext private fun FunctionParameterInjectablesScope(
+private fun FunctionParameterInjectablesScope(
   parent: InjectablesScope,
   function: FunctionDescriptor,
-  parameter: CallableRef
+  parameter: CallableRef,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
   return InjectablesScope(
@@ -464,10 +475,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun PropertyInjectablesScope(
+private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
-  parent: InjectablesScope
-): InjectablesScope = trace.getOrPut(
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
+): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(property, parent.name)
 ) {
@@ -479,24 +491,21 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
     ?.let { ImportInjectablesScopes(null, it, "PROPERTY ${property.fqNameSafe}", parent) }
     ?: parent
 
-  val injectables = (listOfNotNull(property.extensionReceiverParameter) +
-      property.injectNParameters())
-    .map { it.toCallableRef() }
-
   InjectablesScope(
     name = "PROPERTY ${property.fqNameSafe}",
     callContext = property.callContext(),
     parent = finalParent,
     ownerDescriptor = property,
-    initialInjectables = injectables,
+    initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef()),
     typeParameters = property.typeParameters.map { it.toClassifierRef() }
   )
 }
 
-@WithInjektContext private fun PropertyInitInjectablesScope(
+private fun PropertyInitInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
-  position: KtElement
+  position: KtElement,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val containingDeclarationScope = if (property.containingDeclaration is ClassDescriptor) {
     ClassInitInjectablesScope(
@@ -531,10 +540,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun LocalVariableInjectablesScope(
+private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
-  parent: InjectablesScope
-): InjectablesScope = trace.getOrPut(
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
+): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(variable, parent.name)
 ) {
@@ -555,10 +565,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun ExpressionInjectablesScope(
+private fun ExpressionInjectablesScope(
   expression: KtAnnotatedExpression,
-  parent: InjectablesScope
-): InjectablesScope = trace.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
+): InjectablesScope = trace()!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
   val finalParent = expression
     .getProviderImports()
     .takeIf { it.isNotEmpty() }
@@ -573,10 +584,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun BlockExpressionInjectablesScope(
+private fun BlockExpressionInjectablesScope(
   block: KtBlockExpression,
   position: KtElement,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val visibleInjectableDeclarations = block.statements
     .filter { it.endOffset < position.startOffset }
@@ -586,7 +598,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   if (visibleInjectableDeclarations.isEmpty()) return parent
   val injectableDeclaration = visibleInjectableDeclarations.last()
   val key = block to injectableDeclaration
-  return trace.getOrPut(InjektWritableSlices.BLOCK_SCOPE, key) {
+  return trace()!!.getOrPut(InjektWritableSlices.BLOCK_SCOPE, key) {
     val finalParent = if (visibleInjectableDeclarations.size > 1)
       BlockExpressionInjectablesScope(block, injectableDeclaration.findPsi().cast(), parent)
     else parent
@@ -606,9 +618,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   }
 }
 
-@WithInjektContext fun TypeInjectablesScope(
+fun TypeInjectablesScope(
   type: TypeRef,
-  parent: InjectablesScope
+  parent: InjectablesScope,
+  @Inject ctx: InjektContext
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
@@ -616,7 +629,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   val typeInjectables = mutableListOf<CallableRef>()
   val internalInjectables = mutableListOf<CallableRef>()
 
-  val thisModuleName = module.moduleName()
+  val thisModuleName = module().moduleName()
   val typeModuleName = type.classifier.descriptor!!.moduleName()
   injectablesWithLookups.injectables.forEach { callable ->
     when (callable.callable.moduleName()) {
@@ -651,12 +664,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
   )
 }
 
-@WithInjektContext private fun ImportInjectablesScopes(
+private fun ImportInjectablesScopes(
   file: KtFile?,
   imports: List<ProviderImport>,
   namePrefix: String,
   parent: InjectablesScope?,
-  injectablesPredicate: (CallableRef) -> Boolean = { true }
+  injectablesPredicate: (CallableRef) -> Boolean = { true },
+  @Inject ctx: InjektContext
 ): InjectablesScope {
   val externalStarInjectables = mutableListOf<CallableRef>()
   val externalByNameInjectables = mutableListOf<CallableRef>()
