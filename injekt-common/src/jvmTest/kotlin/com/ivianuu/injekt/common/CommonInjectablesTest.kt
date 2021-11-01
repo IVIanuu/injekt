@@ -23,7 +23,7 @@ import org.junit.Test
 import kotlin.reflect.KClass
 
 class CommonInjectablesTest {
-  @Test fun testCanUseMapForSetOfPairs() {
+  @Test fun testCanResolveMapForSetOfPairs() {
     @Provide val elementsA = listOf("a" to "a")
     @Provide val elementB = "b" to "b"
     val map = inject<Map<String, String>>()
@@ -32,15 +32,15 @@ class CommonInjectablesTest {
     map["b"] shouldBe "b"
   }
 
-  @Test fun testCanUseLazy() {
+  @Test fun testCanResolveLazy() {
     inject<Lazy<Foo>>()
   }
 
-  @Test fun testCanUseKClass() {
+  @Test fun testCanResolveKClass() {
     inject<KClass<Foo>>()
   }
 
-  @Test fun testCanUseType() {
+  @Test fun testCanResolveType() {
     inject<TypeKey<Foo>>()
   }
 
