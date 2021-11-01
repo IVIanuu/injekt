@@ -158,6 +158,9 @@ class ComponentInjectable(
     ctx = ownerScope.ctx,
     componentType = type,
     initialInjectables = componentAndEntryPointInjectables,
+    injectablesPredicate = { candidate ->
+      requestCallables.none { it.callable == candidate.callable }
+    },
     ownerDescriptor = type.unwrapTags().classifier.descriptor
   )
 
