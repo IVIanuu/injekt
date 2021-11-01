@@ -27,6 +27,7 @@ import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
@@ -398,12 +399,11 @@ class ComponentTest {
     )
   }
 
-  @Test fun testComponentCannotUseInjectablesDeclaredInSuperType() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      
-      @Component interface FooComponent {
-        val foo: Foo
+  @Test fun testAbstractComponentClass() = singleAndMultiCodegen(
+    """ 
+      @Component abstract class FooComponent {
+        abstract val foo: Foo
+        @Provide protected fun foo() = Foo()
       }
     """,
     """
@@ -411,5 +411,20 @@ class ComponentTest {
     """
   ) {
     invokeSingleFile()
+  }
+
+  @Test fun testAbstractComponentClassWithConstructorDependencies() = singleAndMultiCodegen(
+    """ 
+      @Component abstract class FooComponent(private val _foo: Foo) {
+        abstract val foo: Foo
+        @Provide protected fun foo() = _foo
+      }
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = inject<(Foo) -> FooComponent>()(foo).foo
+    """
+  ) {
+    val foo = Foo()
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 }

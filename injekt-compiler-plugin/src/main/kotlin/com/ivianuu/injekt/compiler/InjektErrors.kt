@@ -212,9 +212,9 @@ interface InjektErrors {
         })
       }
 
-    @JvmField val COMPONENT_WITHOUT_INTERFACE =
+    @JvmField val NON_ABSTRACT_COMPONENT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "only interfaces can be marked with @Component") }
+        .also { MAP.put(it, "component must be abstract") }
 
     @JvmField val COMPONENT_MEMBER_VAR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)

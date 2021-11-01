@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -504,6 +505,7 @@ fun TypeRef.collectComponentCallables(@Inject ctx: InjektContext): List<Callable
   classifier.descriptor!!.defaultType.memberScope
     .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
     .filterIsInstance<CallableMemberDescriptor>()
+    .filter { it.modality != Modality.FINAL }
     .filter {
       it.overriddenTreeAsSequence(false).none {
         it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true

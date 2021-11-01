@@ -114,6 +114,7 @@ import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -220,7 +221,7 @@ class InjectCallTransformer(
       val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
       if (finalScope == scope) return this@ScopeContext
       return parent?.findScopeContext(finalScope)
-        ?: error("wtf 1")
+        ?: error("wtf")
     }
 
     fun expressionFor(result: ResolutionResult.Success.WithCandidate): IrExpression {
@@ -516,6 +517,11 @@ class InjectCallTransformer(
 
       componentScope.pushComponentReceivers { irGet(thisReceiver!!) }
 
+      val componentInitScope = ScopeContext(
+        this@componentExpression,
+        graphContext, injectable.componentInitScope, scope, null
+      )
+
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
           if (requestCallable.callable.callContext() == CallContext.COMPOSABLE) {
@@ -690,7 +696,32 @@ class InjectCallTransformer(
           irCtx,
           symbol
         ).irBlockBody {
-          +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+          if (injectable.superConstructor != null) {
+            val constructor = injectable.superConstructor
+              .callable
+              .cast<ClassConstructorDescriptor>()
+              .irConstructor()
+            +IrDelegatingConstructorCallImpl(
+              UNDEFINED_OFFSET,
+              UNDEFINED_OFFSET,
+              injectable.type.toIrType().typeOrNull!!,
+              constructor.symbol,
+              injectable.type.arguments.size,
+              constructor.valueParameters.size
+            ).apply {
+              fillTypeParameters(injectable.superConstructor)
+              with(componentInitScope) {
+                inject(
+                  this,
+                  result.dependencyResults.filterKeys {
+                    it in injectable.superConstructorDependencies
+                  }
+                )
+              }
+            }
+          } else {
+            +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+          }
           +IrInstanceInitializerCallImpl(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,

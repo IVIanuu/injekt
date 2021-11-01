@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -59,8 +60,8 @@ class ComponentChecker(@Inject private val baseCtx: InjektContext) : Declaration
       }
       is ClassDescriptor -> {
         if (descriptor.hasAnnotation(injektFqNames().component)) {
-          if (descriptor.kind != ClassKind.INTERFACE)
-            trace()!!.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
+          if (descriptor.modality != Modality.ABSTRACT)
+            trace()!!.report(InjektErrors.NON_ABSTRACT_COMPONENT.on(declaration))
 
           descriptor.defaultType.toTypeRef()
             .collectComponentCallables()

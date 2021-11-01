@@ -81,6 +81,14 @@ class ComponentInjectable(
   override val type: TypeRef,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
+  val superConstructor = type.classifier
+    .descriptor
+    .cast<ClassDescriptor>()
+    .constructors
+    .firstOrNull()
+    ?.toCallableRef()
+    ?.substitute(type.classifier.typeParameters.zip(type.arguments).toMap())
+
   override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
 
   val entryPoints = ownerScope.entryPointsForType(type)
@@ -111,6 +119,9 @@ class ComponentInjectable(
     entryPoints.forEach { visit(it) }
   }
 
+  val superConstructorDependencies = superConstructor
+    ?.getInjectableRequests(true) ?: emptyList()
+
   val componentObserversRequest = InjectableRequest(
     type = ownerScope.ctx.listClassifier.defaultType.copy(
       arguments = listOf(
@@ -132,12 +143,21 @@ class ComponentInjectable(
       it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
     } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
 
+  val componentInitScope = InjectablesScope(
+    name = "COMPONENT INIT $callableFqName",
+    parent = ownerScope,
+    ctx = ownerScope.ctx,
+    componentType = type,
+    ownerDescriptor = type.unwrapTags().classifier.descriptor
+  )
+
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
     parent = ownerScope,
     ctx = ownerScope.ctx,
     componentType = type,
-    initialInjectables = componentAndEntryPointInjectables
+    initialInjectables = componentAndEntryPointInjectables,
+    ownerDescriptor = type.unwrapTags().classifier.descriptor
   )
 
   val requestsByRequestCallables = requestCallables
@@ -158,7 +178,9 @@ class ComponentInjectable(
     .mapKeys { it.key.value }
     .mapValues { it.value }
 
-  override val dependencies = requestsByRequestCallables.values + componentObserversRequest
+  override val dependencies = superConstructorDependencies +
+      requestsByRequestCallables.values +
+      componentObserversRequest
 
   val dependencyScopesByRequestCallable = requestCallables
     .associateWith { requestCallable ->
@@ -167,6 +189,7 @@ class ComponentInjectable(
         parent = componentScope,
         ctx = componentScope.ctx,
         callContext = requestCallable.callable.callContext(),
+        ownerDescriptor = requestCallable.callable,
         initialInjectables = requestCallable.callable.allParameters
           .filter { it != requestCallable.callable.dispatchReceiverParameter }
           .map {
@@ -185,6 +208,9 @@ class ComponentInjectable(
 
   @OptIn(ExperimentalStdlibApi::class)
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = buildMap {
+    superConstructorDependencies.forEach {
+      this[it] = componentInitScope
+    }
     dependencyScopesByRequestCallable.forEach {
       this[requestsByRequestCallables[it.key]!!] = it.value
     }
@@ -353,17 +379,20 @@ class TypeKeyInjectable(
     get() = type
 }
 
-fun CallableRef.getInjectableRequests(@Inject ctx: InjektContext): List<InjectableRequest> =
-  callable.allParameters
-    .filter {
-      callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-    }
-    .filter {
-      it === callable.dispatchReceiverParameter ||
-          it === callable.extensionReceiverParameter ||
-          it.isProvide()
-    }
-    .map { it.toInjectableRequest(this) }
+fun CallableRef.getInjectableRequests(
+  ignoreInject: Boolean = false,
+  @Inject ctx: InjektContext
+): List<InjectableRequest> = callable.allParameters
+  .filter {
+    callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
+  }
+  .filter {
+    ignoreInject ||
+        it === callable.dispatchReceiverParameter ||
+        it === callable.extensionReceiverParameter ||
+        it.isProvide()
+  }
+  .map { it.toInjectableRequest(this) }
 
 data class InjectableRequest(
   val type: TypeRef,
