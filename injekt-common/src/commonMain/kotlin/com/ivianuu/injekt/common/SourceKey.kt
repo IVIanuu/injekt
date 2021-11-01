@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject1
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.Inject
 import kotlin.jvm.JvmInline
 
 /**
@@ -28,4 +27,4 @@ import kotlin.jvm.JvmInline
 /**
  * Returns the [SourceKey] at this call site
  */
-@Inject1<SourceKey> inline val sourceKey: SourceKey get() = inject()
+inline fun sourceKey(@Inject value: SourceKey): SourceKey = value

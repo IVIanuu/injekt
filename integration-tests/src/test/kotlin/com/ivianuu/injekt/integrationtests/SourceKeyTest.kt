@@ -24,7 +24,7 @@ import org.junit.Test
 class SourceKeyTest {
   @Test fun testSourceKey() = codegen(
     """
-      fun invoke() = sourceKey
+      fun invoke() = sourceKey()
     """
   ) {
     invokeSingleFile() shouldBe "File.kt:14:21"

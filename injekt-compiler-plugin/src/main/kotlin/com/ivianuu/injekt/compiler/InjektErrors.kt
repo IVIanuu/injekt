@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import java.util.Locale
 
@@ -233,10 +232,6 @@ interface InjektErrors {
     @JvmField val ENTRY_POINT_MEMBER_VAR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "entry point cannot contain a abstract var property") }
-
-    @JvmField val FILE_DECOY =
-      DiagnosticFactory0.create<KtFile>(Severity.ERROR)
-        .also { MAP.put(it, "decoy") }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

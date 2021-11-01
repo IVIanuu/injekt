@@ -353,10 +353,10 @@ class TypeKeyInjectable(
 }
 
 @WithInjektContext fun CallableRef.getInjectableRequests(): List<InjectableRequest> =
-  (callable.allParameters
+  callable.allParameters
     .filter {
       callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-    } + injectNParameters)
+    }
     .filter {
       it === callable.dispatchReceiverParameter ||
           it === callable.extensionReceiverParameter ||

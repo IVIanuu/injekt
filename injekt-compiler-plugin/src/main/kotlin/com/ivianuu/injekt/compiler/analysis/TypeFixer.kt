@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektContext
-import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
@@ -33,7 +32,6 @@ class TypeFixer(@Inject private val context: InjektContext) : DeclarationChecker
     context: DeclarationCheckerContext
   ) {
     @Provide val trace = context.trace
-    trace.report(InjektErrors.FILE_DECOY.on(declaration.containingKtFile))
     descriptor.annotations.forEach {
       fixTypes(it.type, declaration)
     }

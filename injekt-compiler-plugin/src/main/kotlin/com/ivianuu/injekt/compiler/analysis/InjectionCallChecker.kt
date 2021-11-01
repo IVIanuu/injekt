@@ -21,9 +21,6 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
@@ -44,14 +41,10 @@ import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
-import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectionCallChecker(@Inject private val context: InjektContext) : CallChecker {
   override fun check(
@@ -59,14 +52,10 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
-    @Provide val trace = context.trace
-
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor &&
-        !resultingDescriptor.hasAnnotation(injektFqNames.inject2) &&
-      (resolvedCall !is VariableAsFunctionResolvedCall ||
-          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames.inject2)) &&
-      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames.inject2) != true) return
+    if (resultingDescriptor !is InjectFunctionDescriptor) return
+
+    @Provide val trace = context.trace
 
     val callExpression = resolvedCall.call.callElement
 
@@ -84,57 +73,17 @@ class InjectionCallChecker(@Inject private val context: InjektContext) : CallChe
 
     val substitutionMap = resolvedCall.getSubstitutionMap()
 
-    val injectLambdaType = resolvedCall
-      .safeAs<VariableAsFunctionResolvedCall>()
-      ?.variableCall
-      ?.resultingDescriptor
-      ?.callableInfo()
-      ?.type
-      ?: resolvedCall.dispatchReceiver
-        ?.safeAs<ExpressionReceiver>()
-        ?.expression
-        ?.getResolvedCall(trace.bindingContext)
-        ?.let {
-          it.resultingDescriptor
-            .toCallableRef()
-            .substitute(it.getSubstitutionMap())
-        }
-        ?.type
-      ?: resolvedCall.dispatchReceiver
-        ?.type
-        ?.takeIf { it.hasAnnotation(injektFqNames.inject2) }
-        ?.toTypeRef()
-
-    val lambdaInjectParameters = injectLambdaType
-      ?.injectNTypes
-      ?.mapIndexed { index, injectNType ->
-        InjectNParameterDescriptor(
-          resultingDescriptor.containingDeclaration,
-          resultingDescriptor.valueParameters.size + index,
-          injectNType.substitute(substitutionMap)
-        )
-      }
-
     val callee = resultingDescriptor
       .toCallableRef()
-      .let {
-        if (lambdaInjectParameters == null) it
-        else it.copy(
-          parameterTypes = it.parameterTypes + lambdaInjectParameters
-            .map { it.index to it.typeRef }
-        )
-      }
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
 
-    val requests = (callee.callable.valueParameters +
-        callee.injectNParameters +
-        (lambdaInjectParameters ?: emptyList()))
+    val requests = callee.callable.valueParameters
       .filter {
-        val argument = valueArgumentsByIndex[it.injektIndex()]
-        (argument == null || argument is DefaultValueArgument) && it.isInject()
+        valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument &&
+            it.isInject()
       }
       .map { it.toInjectableRequest(callee) }
 

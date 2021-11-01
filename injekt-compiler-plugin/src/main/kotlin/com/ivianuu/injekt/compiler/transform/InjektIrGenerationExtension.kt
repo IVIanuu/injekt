@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
@@ -53,24 +52,6 @@ class InjektIrGenerationExtension(
     @Provide val trace = DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     @Provide var localClassCollector = LocalDeclarationCollector()
     moduleFragment.transform(localClassCollector, null)
-
-    @Provide val symbolRemapper = InjectSymbolRemapper()
-
-    @Provide val injectNTransformer = InjectNTransformer()
-    moduleFragment.transform(injectNTransformer, null)
-
-    moduleFragment.acceptVoid(symbolRemapper)
-
-    val typeRemapper = InjectNTypeRemapper(symbolRemapper)
-    // for each declaration, we create a deepCopy transformer It is important here that we
-    // use the "preserving metadata" variant since we are using this copy to *replace* the
-    // originals, or else the module we would produce wouldn't have any metadata in it.
-    val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
-      typeRemapper,
-      symbolRemapper
-    ).also { typeRemapper.deepCopy = it }
-    moduleFragment.transformChildren(transformer, null)
-    moduleFragment.patchDeclarationParents()
 
     localClassCollector = LocalDeclarationCollector()
     moduleFragment.transform(localClassCollector, null)

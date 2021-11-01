@@ -17,13 +17,10 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.WithInjektContext
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.isInject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -76,13 +73,9 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
 }
 
 @WithInjektContext fun FunctionDescriptor.toInjectFunctionDescriptor(): InjectFunctionDescriptor? {
-  if (this is InjectFunctionDescriptor) return this
   if (this is JavaMethodDescriptor) return null
-  if (allParameters.none { it.isInject() } &&
-    !hasAnnotation(injektFqNames.inject2) &&
-    (this !is ConstructorDescriptor ||
-        !constructedClass.hasAnnotation(injektFqNames.inject2)))
-          return null
+  if (this is InjectFunctionDescriptor) return this
+  if (allParameters.none { it.isInject() }) return null
   return when (this) {
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this)
     is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this)
