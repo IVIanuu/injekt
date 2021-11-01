@@ -464,7 +464,7 @@ class InjectableResolveTest {
 
             @Provide fun myContext(): MyContext = MyContext("")
 
-            fun invoke() = inject<Int>()
+            fun invoke() = inject<String>()
           """
         )
       )

@@ -81,7 +81,8 @@ class ComponentInjectable(
   override val type: TypeRef,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
-  val superConstructor = type.classifier
+  val superConstructor = type.unwrapTags()
+    .classifier
     .descriptor
     .cast<ClassDescriptor>()
     .constructors
