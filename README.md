@@ -83,8 +83,8 @@ fun run(@Provide config: Config) {
 ```
 
 # How injectables will be resolved
-1. Injekt collects all provided injectables in the current scope 
-e.g. local variables, function parameters, enclosing classes, injectables in the current package and so on:
+1. Injekt looks at all provided injectables in the current scope 
+e.g. enclosing local variables, function parameters, classes, injectables in the current package and so on:
 ```kotlin
 suspend fun main() {
   @Provide val dispatcher: IoDispatcher = ...
@@ -94,7 +94,7 @@ suspend fun main() {
 ```
 
 2. Injekt will also consider declarations imported with the ```@Providers(...)```.
-The ```@Providers``` can be place anywhere in a file and will only affect the nested scope:
+The ```@Providers``` can be placed anywhere in a file and will only affect the nested scope:
 ```kotlin
 // file wide imports
 @file:Providers("injectables.*")
@@ -108,16 +108,16 @@ class MyClass {
   @Providers("domain.*")
   fun main() {
     // expression wide imports
-    @Providers("data.*")
+    @Providers("data.*") 
     runApp()
   }
 }
 ```
 
-3. If no injectable was found injekt will look into the package of the request type
+3. If no injectable was found injekt will look into the package of the injected type
 
 Provider imports are only required if the injectable is not in the current scope 
-or in a package of the request type
+or in a package of the injected type
 
 # Function support
 If you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
@@ -132,16 +132,23 @@ fun main(tokenFactory: () -> Token) {
   val viewModel = remember { viewModelFactory("user_id") }
 }
 ```
-
 You can also inject ```suspend``` and ```@Composable``` functions.
 
+# Multi injection
+You can inject all injectables of a given type by injecting a ```List<T>```
+```kotlin
+@Provide fun element1(): String = "a"
+@Provide fun elements2(): Collection<String, String> = listOf("a", "b")
+
+fun main() {
+  inject<List<String>>() == listOf("a", "b", "c")
+}
+```
+All elements which match the T or Collection<T> will be included in the resulting list.
+
 # Components
-TODO
 
 # Scoping
-
-# Multi injection
-TODO
 
 # Distinguish between types
 Sometimes you have multiple injectables of the same type
@@ -172,6 +179,8 @@ fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: 
 ```
 
 # Injectable chaining
+
+# Component lifecycle
 
 # Coroutines
 TODO
