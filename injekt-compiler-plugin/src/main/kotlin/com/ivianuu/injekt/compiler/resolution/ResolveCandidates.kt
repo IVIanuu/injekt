@@ -313,7 +313,13 @@ private fun InjectablesScope.resolveCandidates(
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
-    .sortedWith { a, b -> compareCandidate(a, b) }
+    .let {
+      try {
+        it.sortedWith { a, b -> compareCandidate(a, b) }
+      } catch (e: Throwable) {
+        throw IllegalStateException("Wtf $request\n${candidates.joinToString("\n")}", e)
+      }
+    }
     .distinctBy {
       if (it is CallableInjectable) it.callable.callable.uniqueKey()
       else it
