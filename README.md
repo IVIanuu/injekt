@@ -35,9 +35,30 @@ infix operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) 
 
 // classes
 class MyService(@Inject private val logger: Logger)
+
+fun main() {
+  // automatically injects comparator if provided
+  "a" compareTo "b"
+  
+  // uses explicit arg
+  MyService(NoOpLogger)
+}
 ```
 
 Injekt will then try to resolve the dependencies on each call site if no explicit argument was provided.
+
+You can also inject a injectable at any point with the inject<T>() function:
+```kotlin
+fun main() {
+  val logger = inject<Logger>()
+  logger.log(message)
+}
+```
+
+The inject<T>() is declared in the core module and simply defined as follows:
+```kotlin
+inline fun <T> inject(@Inject value: T) = value
+```
 
 # Provide injectables
 You can provide dependencies by annotating them with @Provide:
@@ -54,13 +75,19 @@ class MyService @Provide constructor(logger: Logger) {
 @Provide fun okHttp(authenticator: Authenticator): OkHttpClient = ...
 
 // properties and local variables
-@Provide val apiKey: ApiKey = ""
+@Provide val apiKey: ApiKey = ...
 ```
 
-# Functions
-TODO
+# Function support
+If you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
+You can do this by injecting a function.
+```kotlin
+fun main() {
+  
+}
+```
 
-# Components
+#Components
 TODO
 
 # Scoping
@@ -69,7 +96,7 @@ TODO
 TODO
 
 # Distinguish between types
-Sometimes you have multiple instances of the same type
+Sometimes you have multiple injectables of the same type
 Injekt will need help to keep them apart here a are a few strategies:
 
 Type aliases:
@@ -116,7 +143,7 @@ TODO
 # Injectable chaining
 
 # Full kotlin support
-inline, reified, fun interface lambdas, default parameter value
+inline, reified, fun interface lambdas, default parameter value, abstract, expect/actual
 
 # Setup
 ```kotlin
