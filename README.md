@@ -1,20 +1,101 @@
-# Injekt: Next gen DI framework powered by a Kotlin compiler plugin
+# Injekt: Next gen DI framework for Kotlin
 
-Injekt is a compile-time checked DI framework for Kotlin developers.
-Injekt is highly experimental and the api is unstable.
 
-Minimal example:
+
+# Example:
 ```kotlin
-// provide injectables
-@Provide val foo = Foo()
-@Provide fun bar(foo: Foo) = Bar(foo)
+data class User(val id: Long)
 
-fun main() {
-  // inject
-  val bar = inject<Bar>()
-  println("Got $bar")
+interface Api
+
+@Provide object ApiImpl : Api
+
+interface Repository {
+  suspend fun loadAll(): List<User>
+}
+
+@Provide class RepositoryImpl(private val api: Api) : Repository {
+  ...
+}
+
+suspend fun loadUserById(id: Long, @Inject repository: Repository): User? = ...
+
+fun main() = runBlocking {
+  val user = User(1)
+  loadUsersById(1) // expands to loadUsersById(1, RepositoryImpl(ApiImpl))
 }
 ```
+
+# Inject injectables
+You can automatically inject dependencies into functions and classes 
+by marking parameters with @Inject
+```kotlin
+// functions
+infix operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
+
+// classes
+class MyService(@Inject private val logger: Logger)
+```
+
+Injekt will then try to resolve the dependencies on each call site if no explicit argument was provided
+
+# Provide injectables
+You can provide dependencies by annotating them with @Provide
+```kotlin
+// classes and objects
+@Provide class MyApi(baseUrl: BaseUrl)
+
+// constructors
+class MyService @Provide constructor(logger: Logger) {
+  @Provide constructor()
+}
+
+// functions
+@Provide fun okHttp(authenticator: Authenticator): OkHttpClient = ...
+
+// properties and local variables
+@Provide val apiKey: ApiKey = ""
+```
+
+# Distinguish between types
+
+Sometimes you have multiple instances of the same 
+```kotlin
+
+```
+
+# Functions
+TODO
+
+# Components
+TODO
+
+# Scoping
+
+# Lists
+TODO
+
+# Coroutines
+TODO
+
+# Compose
+
+# Android
+TODO
+
+# Android work
+TODO
+
+# Type keys
+TODO
+
+# Source keys
+TODO
+
+# Injectable chaining
+
+# Full kotlin support
+inline, reified, fun interface lambdas, default parameter value
 
 # Setup
 ```kotlin
@@ -50,35 +131,3 @@ dependencies {
 ```
 It's also required to install the Injekt IDE plugin
 
-# Provide injectables
-TODO
-
-# Inject injectables
-TODO
-
-# Type aliases
-TODO
-
-# Components
-TODO
-
-# Providers
-TODO
-
-# Lists
-TODO
-
-# Coroutines
-TODO
-
-# Android
-TODO
-
-# Android work
-TODO
-
-# Type keys
-TODO
-
-# Source keys
-TODO
