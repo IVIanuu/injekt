@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt_shaded.Provide
@@ -35,7 +35,7 @@ class InjektStorageComponentContainerContributor(
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    @Provide val ctx = InjektContext(moduleDescriptor, injektFqNames(moduleDescriptor), null)
+    @Provide val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
     container.useInstance(ctx)
     if (platform.componentPlatforms.size > 1)
       container.useImpl<InjectSyntheticScopes>()

@@ -70,7 +70,7 @@ import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): ValueParameterDescriptor? =
   overriddenTreeUniqueAsSequence(false)
     .map { it.containingDeclaration }
@@ -125,10 +125,10 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   return null
 }
 
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor(@Inject ctx: InjektContext) =
+fun <D : DeclarationDescriptor> KtDeclaration.descriptor(@Inject ctx: Context) =
   trace()!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-fun DeclarationDescriptor.isExternalDeclaration(@Inject ctx: InjektContext): Boolean =
+fun DeclarationDescriptor.isExternalDeclaration(@Inject ctx: Context): Boolean =
   moduleName() != module().moduleName()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
@@ -147,7 +147,7 @@ fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescri
     inner.hasAnnotation(annotation)
   }
 
-fun DeclarationDescriptor.uniqueKey(@Inject ctx: InjektContext): String =
+fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
   trace()!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, this) {
     when (val original = this.original) {
       is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
@@ -273,7 +273,7 @@ val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
 
-fun DeclarationDescriptor.moduleName(@Inject ctx: InjektContext): String =
+fun DeclarationDescriptor.moduleName(@Inject ctx: Context): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")
     ?: module().name.asString().removeSurrounding("<", ">")
@@ -291,14 +291,14 @@ inline fun <K, V> BindingTrace?.getOrPut(
 fun classifierDescriptorForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): ClassifierDescriptor? {
   return if (fqName.isRoot) null
   else memberScopeForFqName(fqName.parent(), lookupLocation)
     ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
 
-fun classifierDescriptorForKey(key: String, @Inject ctx: InjektContext): ClassifierDescriptor =
+fun classifierDescriptorForKey(key: String, @Inject ctx: Context): ClassifierDescriptor =
   trace().getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
@@ -324,7 +324,7 @@ fun classifierDescriptorForKey(key: String, @Inject ctx: InjektContext): Classif
 
 private fun functionDescriptorsForFqName(
   fqName: FqName,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): Collection<FunctionDescriptor> =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedFunctions(
     fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -332,7 +332,7 @@ private fun functionDescriptorsForFqName(
 
 private fun propertyDescriptorsForFqName(
   fqName: FqName,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): Collection<PropertyDescriptor> =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedVariables(
     fqName.shortName(), NoLookupLocation.FROM_BACKEND
@@ -341,7 +341,7 @@ private fun propertyDescriptorsForFqName(
 fun memberScopeForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): MemberScope? {
   val pkg = module().getPackage(fqName)
 
@@ -360,5 +360,5 @@ fun memberScopeForFqName(
 
 fun packageFragmentsForFqName(
   fqName: FqName,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): List<PackageFragmentDescriptor> = module().getPackage(fqName).fragments

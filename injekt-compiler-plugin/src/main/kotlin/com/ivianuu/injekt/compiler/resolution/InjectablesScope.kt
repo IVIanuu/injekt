@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
-import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -48,7 +48,7 @@ class InjectablesScope(
   imports: List<ResolvedProviderImport> = emptyList(),
   val typeParameters: List<ClassifierRef> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
-  @Inject @Provide val ctx: InjektContext
+  @Inject @Provide val ctx: Context
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()

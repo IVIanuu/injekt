@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt_shaded.Inject
@@ -48,7 +48,7 @@ class InjektIrGenerationExtension(
   @Inject private val injektFqNames: InjektFqNames
 ) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, @Provide irCtx: IrPluginContext) {
-    @Provide val ctx = InjektContext(
+    @Provide val ctx = Context(
       irCtx.moduleDescriptor,
       injektFqNames,
       DelegatingBindingTrace(irCtx.bindingContext, "IR trace")

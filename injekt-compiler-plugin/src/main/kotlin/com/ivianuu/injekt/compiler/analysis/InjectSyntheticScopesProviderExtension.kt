@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
@@ -49,7 +49,7 @@ class InjectSyntheticScopeProviderExtension(
     moduleDescriptor: ModuleDescriptor,
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
   ): List<SyntheticScope> {
-    @Provide val ctx = InjektContext(
+    @Provide val ctx = Context(
       moduleDescriptor, injektFqNames(moduleDescriptor),
       DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
     )
@@ -64,7 +64,7 @@ class InjectSyntheticScopes(
   lookupTracker: LookupTracker,
   samResolver: SamConversionResolver,
   samConversionOracle: SamConversionOracle,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ) : SyntheticScopes {
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
@@ -76,7 +76,7 @@ class InjectSyntheticScopes(
 }
 
 private class InjectSyntheticScope(
-  @Inject private val ctx: InjektContext
+  @Inject private val ctx: Context
 ) : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
     constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor

@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import androidx.compose.compiler.plugins.kotlin.isComposableCallable
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -52,7 +52,7 @@ enum class CallContext {
 
 fun CallContext.canCall(other: CallContext) = this == other || other == CallContext.DEFAULT
 
-fun CallableDescriptor.callContext(@Inject ctx: InjektContext): CallContext {
+fun CallableDescriptor.callContext(@Inject ctx: Context): CallContext {
   if (this is ConstructorDescriptor) return CallContext.DEFAULT
 
   if (this !is FunctionDescriptor && this !is PropertyDescriptor) return CallContext.DEFAULT
@@ -119,7 +119,7 @@ private fun getArgumentDescriptor(
   return mapping.valueParameter
 }
 
-private fun CallableDescriptor.callContextOfThis(@Inject ctx: InjektContext): CallContext = when {
+private fun CallableDescriptor.callContextOfThis(@Inject ctx: Context): CallContext = when {
   isSuspend -> CallContext.SUSPEND
   (hasAnnotation(injektFqNames().composable) ||
       (this is PropertyDescriptor &&

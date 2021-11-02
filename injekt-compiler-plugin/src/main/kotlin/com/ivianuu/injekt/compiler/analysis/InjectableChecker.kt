@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.classifierInfo
@@ -57,7 +57,7 @@ import org.jetbrains.kotlin.resolve.multiplatform.findExpects
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class InjectableChecker(@Inject private val baseCtx: InjektContext) : DeclarationChecker {
+class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
@@ -77,7 +77,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkFunction(
     declaration: KtDeclaration,
     descriptor: FunctionDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (descriptor.isProvide()) {
       descriptor.valueParameters
@@ -94,7 +94,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkClass(
     declaration: KtDeclaration,
     descriptor: ClassDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     val provideConstructors = descriptor.injectableConstructors()
       .filterNot {
@@ -182,7 +182,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkConstructor(
     declaration: KtDeclaration,
     descriptor: ConstructorDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (descriptor.isProvide()) {
       descriptor.valueParameters
@@ -195,7 +195,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkProperty(
     declaration: KtDeclaration,
     descriptor: PropertyDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
     checkReceiver(descriptor, declaration)
@@ -206,7 +206,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkLocalVariable(
     declaration: KtDeclaration,
     descriptor: LocalVariableDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (descriptor.isProvide() &&
       !descriptor.isDelegated &&
@@ -220,7 +220,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkReceiver(
     descriptor: CallableDescriptor,
     declaration: KtDeclaration,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (descriptor.extensionReceiverParameter?.hasAnnotation(injektFqNames().provide) == true ||
       descriptor.extensionReceiverParameter?.type?.hasAnnotation(injektFqNames().provide) == true) {
@@ -248,7 +248,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkSpreadingInjectable(
     declaration: KtDeclaration,
     typeParameters: List<TypeParameterDescriptor>,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     val spreadParameters = typeParameters.filter {
       it.classifierInfo().isSpread
@@ -268,7 +268,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkOverrides(
     declaration: KtDeclaration,
     descriptor: CallableMemberDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     descriptor.overriddenTreeAsSequence(false)
       .drop(1)
@@ -284,7 +284,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun checkExceptActual(
     declaration: KtDeclaration,
     descriptor: MemberDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (!descriptor.isActual) return
     descriptor.findExpects()
@@ -300,7 +300,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
   private fun isValidOverride(
     descriptor: MemberDescriptor,
     overriddenDescriptor: MemberDescriptor,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ): Boolean {
     if (overriddenDescriptor.hasAnnotation(injektFqNames().provide) && !descriptor.isProvide()) {
       return false
@@ -341,7 +341,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
 
   private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
     typeParameters: List<TypeParameterDescriptor>,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (typeParameters.isEmpty()) return
     typeParameters
@@ -356,7 +356,7 @@ class InjectableChecker(@Inject private val baseCtx: InjektContext) : Declaratio
 
   private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
     declaration: KtDeclaration,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (isEmpty()) return
     this

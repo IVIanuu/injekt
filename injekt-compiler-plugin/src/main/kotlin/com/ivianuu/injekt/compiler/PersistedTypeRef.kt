@@ -35,7 +35,7 @@ import kotlinx.serialization.Serializable
   val isEager: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(@Inject ctx: InjektContext): PersistedTypeRef =
+fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
   PersistedTypeRef(
     classifierKey = classifier.descriptor?.uniqueKey() ?: "",
     arguments = arguments.map { it.toPersistedTypeRef() },
@@ -48,7 +48,7 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: InjektContext): PersistedTypeRef =
     isEager = isEager
   )
 
-fun PersistedTypeRef.toTypeRef(@Inject ctx: InjektContext): TypeRef {
+fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
   val classifier = classifierDescriptorForKey(classifierKey)
     .toClassifierRef()

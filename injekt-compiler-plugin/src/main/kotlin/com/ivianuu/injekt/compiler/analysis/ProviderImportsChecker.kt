@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -38,7 +38,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class ProviderImportsChecker(@Inject private val baseCtx: InjektContext) : DeclarationChecker {
+class ProviderImportsChecker(@Inject private val baseCtx: Context) : DeclarationChecker {
   private val checkedFiles = mutableSetOf<KtFile>()
 
   override fun check(
@@ -53,7 +53,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: InjektContext) : Decla
     checkImports(file.packageFqName, declaration.getProviderImports())
   }
 
-  private fun checkFile(file: KtFile, @Inject ctx: InjektContext) {
+  private fun checkFile(file: KtFile, @Inject ctx: Context) {
     if (file in checkedFiles) return
     checkedFiles += file
     checkImports(file.packageFqName, file.getProviderImports())
@@ -62,7 +62,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: InjektContext) : Decla
   private fun checkImports(
     currentPackage: FqName,
     imports: List<ProviderImport>,
-    @Inject ctx: InjektContext
+    @Inject ctx: Context
   ) {
     if (imports.isEmpty()) return
 

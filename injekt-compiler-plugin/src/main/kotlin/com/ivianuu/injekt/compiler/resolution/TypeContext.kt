@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt_shaded.Inject
 import org.jetbrains.kotlin.types.model.TypeVariance
 
 interface TypeCheckerContext {
-  val ctx: InjektContext
+  val ctx: Context
   fun isDenotable(type: TypeRef): Boolean
   fun addSubTypeConstraint(subType: TypeRef, superType: TypeRef): Boolean? = null
 }
@@ -234,7 +234,7 @@ fun TypeRef.buildContext(
   return typeCtx
 }
 
-class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
+class TypeContext(override val ctx: Context) : TypeCheckerContext {
   private val staticTypeParameters = mutableListOf<ClassifierRef>()
   private val typeVariables = mutableMapOf<ClassifierRef, VariableWithConstraints>()
   val fixedTypeVariables = mutableMapOf<ClassifierRef, TypeRef>()

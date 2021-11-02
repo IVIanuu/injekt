@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt_shaded.Inject
@@ -38,7 +38,7 @@ interface InjectFunctionDescriptor : FunctionDescriptor {
 class InjectValueParameterDescriptor(
   parent: InjectFunctionDescriptor,
   val underlyingDescriptor: ValueParameterDescriptor,
-  @Inject val ctx: InjektContext
+  @Inject val ctx: Context
 ) : ValueParameterDescriptorImpl(
   parent,
   underlyingDescriptor,
@@ -63,7 +63,7 @@ val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
 
 abstract class AbstractInjectFunctionDescriptor(
   final override val underlyingDescriptor: FunctionDescriptor,
-  @Inject private val ctx: InjektContext
+  @Inject private val ctx: Context
 ) : InjectFunctionDescriptor {
   private val valueParameters = underlyingDescriptor
       .valueParameters
@@ -76,7 +76,7 @@ abstract class AbstractInjectFunctionDescriptor(
 }
 
 fun FunctionDescriptor.toInjectFunctionDescriptor(
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectFunctionDescriptor? {
   if (this is JavaMethodDescriptor) return null
   if (this is InjectFunctionDescriptor) return this
@@ -90,7 +90,7 @@ fun FunctionDescriptor.toInjectFunctionDescriptor(
 
 class InjectConstructorDescriptorImpl(
   underlyingDescriptor: ClassConstructorDescriptor,
-  @Inject private val ctx: InjektContext
+  @Inject private val ctx: Context
 ) : AbstractInjectFunctionDescriptor(underlyingDescriptor),
   ClassConstructorDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
@@ -105,7 +105,7 @@ class InjectConstructorDescriptorImpl(
 
 class InjectFunctionDescriptorImpl(
   underlyingDescriptor: FunctionDescriptor,
-  @Inject private val ctx: InjektContext
+  @Inject private val ctx: Context
 ) : AbstractInjectFunctionDescriptor(underlyingDescriptor),
   FunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
@@ -117,7 +117,7 @@ class InjectFunctionDescriptorImpl(
 
 class InjectSimpleFunctionDescriptorImpl(
   underlyingDescriptor: SimpleFunctionDescriptor,
-  @Inject private val ctx: InjektContext
+  @Inject private val ctx: Context
 ) : AbstractInjectFunctionDescriptor(underlyingDescriptor),
   SimpleFunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =

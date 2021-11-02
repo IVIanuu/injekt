@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
@@ -44,7 +44,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
-class InjectionCallChecker(@Inject private val baseCtx: InjektContext) : CallChecker {
+class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
   override fun check(
     resolvedCall: ResolvedCall<*>,
     reportOn: PsiElement,

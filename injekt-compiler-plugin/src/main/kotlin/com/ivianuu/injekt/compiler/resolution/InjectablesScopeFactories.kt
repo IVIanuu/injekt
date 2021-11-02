@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
@@ -74,7 +74,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 fun ElementInjectablesScope(
   element: KtElement,
   position: KtElement = element,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val scopeOwner = element.parentsWithSelf
     .first { (it as KtElement).isScopeOwner(position) }
@@ -152,7 +152,7 @@ fun ElementInjectablesScope(
   return scope
 }
 
-private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: InjektContext): Boolean {
+private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: Context): Boolean {
   if (this is KtFile ||
     this is KtClassInitializer ||
     this is KtProperty ||
@@ -235,7 +235,7 @@ private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: InjektConte
   return false
 }
 
-private fun FileInjectablesScope(file: KtFile, @Inject ctx: InjektContext): InjectablesScope =
+private fun FileInjectablesScope(file: KtFile, @Inject ctx: Context): InjectablesScope =
   trace()!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
     ImportInjectablesScopes(
       file = file,
@@ -245,7 +245,7 @@ private fun FileInjectablesScope(file: KtFile, @Inject ctx: InjektContext): Inje
     )
   }
 
-private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: InjektContext): InjectablesScope {
+private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: Context): InjectablesScope {
   val file = position.containingKtFile
 
   val visibleInjectableDeclarations = file
@@ -272,14 +272,14 @@ private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: InjektCon
 private fun ClassCompanionInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = clazz.companionObjectDescriptor
   ?.let { ClassInjectablesScope(it, parent) } ?: parent
 
 private fun ClassImportsInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val finalParent = ClassCompanionInjectablesScope(clazz, parent)
   return (clazz
@@ -294,7 +294,7 @@ private fun ClassImportsInjectablesScope(
 private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(clazz, parent.name)
@@ -316,7 +316,7 @@ private fun ClassInitInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
   position: KtElement,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val psiClass = clazz.findPsi()!!
   val visibleInjectableDeclarations = psiClass
@@ -359,7 +359,7 @@ private fun ClassInitInjectablesScope(
 private fun ConstructorPreInitInjectablesScope(
   constructor: ConstructorDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val finalParent = ClassImportsInjectablesScope(
     constructor.constructedClass,
@@ -381,7 +381,7 @@ private fun ConstructorPreInitInjectablesScope(
 private fun FunctionImportsInjectablesScope(
   function: FunctionDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = function
   .findPsi()
   .safeAs<KtFunction>()
@@ -396,7 +396,7 @@ private fun FunctionImportsInjectablesScope(
 private fun ValueParameterDefaultValueInjectablesScope(
   valueParameter: ValueParameterDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val function = valueParameter.containingDeclaration.cast<FunctionDescriptor>()
   val finalParent = FunctionImportsInjectablesScope(function, parent)
@@ -415,7 +415,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
 private fun FunctionInjectablesScope(
   function: FunctionDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(function, parent.name)
@@ -441,7 +441,7 @@ private fun FunctionParameterInjectablesScopes(
   parent: InjectablesScope,
   function: FunctionDescriptor,
   until: ValueParameterDescriptor? = null,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
   return function.allParameters
@@ -463,7 +463,7 @@ private fun FunctionParameterInjectablesScope(
   parent: InjectablesScope,
   function: FunctionDescriptor,
   parameter: CallableRef,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
   return InjectablesScope(
@@ -479,7 +479,7 @@ private fun FunctionParameterInjectablesScope(
 private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(property, parent.name)
@@ -506,7 +506,7 @@ private fun PropertyInitInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
   position: KtElement,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val containingDeclarationScope = if (property.containingDeclaration is ClassDescriptor) {
     ClassInitInjectablesScope(
@@ -544,7 +544,7 @@ private fun PropertyInitInjectablesScope(
 private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = trace()!!.getOrPut(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(variable, parent.name)
@@ -569,7 +569,7 @@ private fun LocalVariableInjectablesScope(
 private fun ExpressionInjectablesScope(
   expression: KtAnnotatedExpression,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = trace()!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
   val finalParent = expression
     .getProviderImports()
@@ -589,7 +589,7 @@ private fun BlockExpressionInjectablesScope(
   block: KtBlockExpression,
   position: KtElement,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val visibleInjectableDeclarations = block.statements
     .filter { it.endOffset < position.startOffset }
@@ -622,7 +622,7 @@ private fun BlockExpressionInjectablesScope(
 fun TypeInjectablesScope(
   type: TypeRef,
   parent: InjectablesScope,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
@@ -678,7 +678,7 @@ private fun ImportInjectablesScopes(
   namePrefix: String,
   parent: InjectablesScope?,
   injectablesPredicate: (CallableRef) -> Boolean = { true },
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): InjectablesScope {
   val externalStarInjectables = mutableListOf<CallableRef>()
   val externalByNameInjectables = mutableListOf<CallableRef>()

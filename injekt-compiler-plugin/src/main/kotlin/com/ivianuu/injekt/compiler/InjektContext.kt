@@ -27,23 +27,23 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-inline fun ctx(@Inject ctx: InjektContext) = ctx
+inline fun ctx(@Inject ctx: Context) = ctx
 
-inline fun injektFqNames(@Inject ctx: InjektContext) = ctx.injektFqNames
+inline fun injektFqNames(@Inject ctx: Context) = ctx.injektFqNames
 
-inline fun trace(@Inject ctx: InjektContext) = ctx.trace
+inline fun trace(@Inject ctx: Context) = ctx.trace
 
-inline fun module(@Inject ctx: InjektContext) = ctx.module
+inline fun module(@Inject ctx: Context) = ctx.module
 
 @Suppress("NewApi")
-class InjektContext(
+class Context(
   val module: ModuleDescriptor,
   val injektFqNames: InjektFqNames,
   val trace: BindingTrace?
 ) : TypeCheckerContext {
-  fun withTrace(trace: BindingTrace?) = InjektContext(module, injektFqNames, trace)
+  fun withTrace(trace: BindingTrace?) = Context(module, injektFqNames, trace)
 
-  override val ctx: InjektContext get() = this
+  override val ctx: Context get() = this
 
   override fun isDenotable(type: TypeRef): Boolean = true
 

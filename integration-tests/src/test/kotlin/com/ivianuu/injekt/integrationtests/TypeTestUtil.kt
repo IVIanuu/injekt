@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
@@ -74,7 +74,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
-  @Provide val ctx = InjektContext(module, InjektFqNames.Default, CliBindingTrace())
+  @Provide val ctx = Context(module, InjektFqNames.Default, CliBindingTrace())
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())

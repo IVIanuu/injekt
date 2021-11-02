@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.asNameId
@@ -145,7 +145,7 @@ import kotlin.collections.set
 class InjectCallTransformer(
   @Inject private val localDeclarationCollector: LocalDeclarationCollector,
   @Inject private val irCtx: IrPluginContext,
-  @Inject private val ctx: InjektContext
+  @Inject private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
@@ -533,7 +533,7 @@ class InjectCallTransformer(
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
       superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
-      superTypes += inject<InjektContext>().disposableType.defaultType
+      superTypes += inject<Context>().disposableType.defaultType
         .toIrType().typeOrNull!!
 
       val componentScope = ScopeContext(
@@ -769,7 +769,7 @@ class InjectCallTransformer(
         name = "dispose".asNameId()
       }.apply {
         addDispatchReceiver { type = defaultType }
-        overriddenSymbols = overriddenSymbols + inject<InjektContext>().disposableType
+        overriddenSymbols = overriddenSymbols + inject<Context>().disposableType
           .defaultType.toIrType().typeOrNull!!.classOrNull!!
           .functions
           .single { it.owner.name == name }

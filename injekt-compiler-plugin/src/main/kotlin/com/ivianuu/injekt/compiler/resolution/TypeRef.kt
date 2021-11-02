@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
@@ -117,7 +117,7 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(@Inject ctx: InjektContext): ClassifierRef =
+fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
   trace()!!.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
     val info = classifierInfo()
 
@@ -162,7 +162,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: InjektContext): Classifier
 fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this

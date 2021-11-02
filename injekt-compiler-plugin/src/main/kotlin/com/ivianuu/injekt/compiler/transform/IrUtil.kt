@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -67,7 +67,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassDescriptor.irClass(
-  @Inject ctx: InjektContext,
+  @Inject ctx: Context,
   @Inject irCtx: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector
 ): IrClass {
@@ -81,7 +81,7 @@ fun ClassDescriptor.irClass(
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassConstructorDescriptor.irConstructor(
-  @Inject ctx: InjektContext,
+  @Inject ctx: Context,
   @Inject irCtx: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector
 ): IrConstructor {
@@ -98,7 +98,7 @@ fun ClassConstructorDescriptor.irConstructor(
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun FunctionDescriptor.irFunction(
-  @Inject ctx: InjektContext,
+  @Inject ctx: Context,
   @Inject irCtx: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector
 ): IrFunction {
@@ -120,7 +120,7 @@ fun FunctionDescriptor.irFunction(
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun PropertyDescriptor.irProperty(
-  @Inject ctx: InjektContext,
+  @Inject ctx: Context,
   @Inject irCtx: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector
 ): IrProperty {
@@ -139,7 +139,7 @@ fun PropertyDescriptor.irProperty(
 fun TypeRef.toIrType(
   @Inject irCtx: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
@@ -232,7 +232,7 @@ fun TypeRef.toIrType(
 private fun TypeRef.toIrAbbreviation(
   @Inject irCtx: IrPluginContext,
   @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): IrTypeAbbreviation {
   val typeAlias = irCtx.referenceTypeAlias(classifier.fqName)!!
   return IrTypeAbbreviationImpl(

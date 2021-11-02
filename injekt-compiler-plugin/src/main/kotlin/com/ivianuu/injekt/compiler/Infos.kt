@@ -86,7 +86,7 @@ data class CallableInfo(
   val isEager: Boolean
 )
 
-fun CallableDescriptor.callableInfo(@Inject ctx: InjektContext): CallableInfo =
+fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
   if (this is PropertyAccessorDescriptor) correspondingProperty.callableInfo()
   else trace()!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
     if (isDeserializedDeclaration()) {
@@ -184,7 +184,7 @@ fun CallableDescriptor.callableInfo(@Inject ctx: InjektContext): CallableInfo =
     return info
   }
 
-private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject ctx: InjektContext) {
+private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject ctx: Context) {
   if (isExternalDeclaration() || isDeserializedDeclaration()) return
 
   if ((this !is ConstructorDescriptor && !visibility.shouldPersistInfo()) ||
@@ -233,7 +233,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
   val isEager: Boolean
 )
 
-fun CallableInfo.toPersistedCallableInfo(@Inject ctx: InjektContext) = PersistedCallableInfo(
+fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallableInfo(
   type = type.toPersistedTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
@@ -242,7 +242,7 @@ fun CallableInfo.toPersistedCallableInfo(@Inject ctx: InjektContext) = Persisted
   isEager = isEager
 )
 
-fun PersistedCallableInfo.toCallableInfo(@Inject ctx: InjektContext) =
+fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) =
   CallableInfo(
     type = type.toTypeRef(),
     parameterTypes = parameterTypes
@@ -268,7 +268,7 @@ class ClassifierInfo(
   val superTypes by lazySuperTypes
 }
 
-fun ClassifierDescriptor.classifierInfo(@Inject ctx: InjektContext): ClassifierInfo =
+fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   trace()!!.getOrPut(InjektWritableSlices.CLASSIFIER_INFO, this) {
     if (isDeserializedDeclaration()) {
       (if (this is TypeParameterDescriptor) {
@@ -366,7 +366,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: InjektContext): ClassifierI
   val isSpread: Boolean
 )
 
-fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: InjektContext) = ClassifierInfo(
+fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   scopeComponentType = scopeComponentType?.toTypeRef(),
   isEager = isEager,
@@ -376,7 +376,7 @@ fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: InjektContext) = Class
   isSpread = isSpread
 )
 
-fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: InjektContext) = PersistedClassifierInfo(
+fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: Context) = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
   isEager = isEager,
@@ -388,7 +388,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: InjektContext) = Persi
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
   info: ClassifierInfo,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ) {
   if (isExternalDeclaration() || isDeserializedDeclaration()) return
 
@@ -507,7 +507,7 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
 
-fun fixTypes(type: KotlinType, declaration: KtDeclaration, @Inject ctx: InjektContext) {
+fun fixTypes(type: KotlinType, declaration: KtDeclaration, @Inject ctx: Context) {
   val descriptor = declaration.descriptor<DeclarationDescriptor>()
 
   val typeParameters = when (descriptor) {

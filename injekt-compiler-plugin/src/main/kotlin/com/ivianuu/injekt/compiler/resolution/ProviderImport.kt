@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -41,7 +41,7 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
   element, importPath, packageFqName
 )
 
-fun ProviderImport.resolve(@Inject ctx: InjektContext): ResolvedProviderImport? {
+fun ProviderImport.resolve(@Inject ctx: Context): ResolvedProviderImport? {
   if (!isValidImport()) return null
   val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
     val packageFqName = FqName(importPath.removeSuffix(".*"))
@@ -59,7 +59,7 @@ fun ProviderImport.resolve(@Inject ctx: InjektContext): ResolvedProviderImport? 
   return toResolvedImport(packageFqName)
 }
 
-fun KtAnnotated.getProviderImports(@Inject ctx: InjektContext): List<ProviderImport> =
+fun KtAnnotated.getProviderImports(@Inject ctx: Context): List<ProviderImport> =
   findAnnotation(injektFqNames().providers)
     ?.valueArguments
     ?.map { it.toProviderImport() } ?: emptyList()

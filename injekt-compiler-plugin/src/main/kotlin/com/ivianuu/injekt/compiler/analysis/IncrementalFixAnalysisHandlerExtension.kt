@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -140,7 +140,7 @@ class IncrementalFixAnalysisHandlerExtension(
       appendLine(FILE_MARKER_COMMENT)
       appendLine()
 
-      @Provide val ctx = InjektContext(module, injektFqNames, null)
+      @Provide val ctx = Context(module, injektFqNames, null)
       val markerName = "_${
         module.moduleName()
           .filter { it.isLetterOrDigit() }

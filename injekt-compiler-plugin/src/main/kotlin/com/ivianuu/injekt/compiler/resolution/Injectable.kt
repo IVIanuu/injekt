@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
@@ -398,7 +398,7 @@ class TypeKeyInjectable(
 
 fun CallableRef.getInjectableRequests(
   ignoreInject: Boolean = false,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): List<InjectableRequest> = callable.allParameters
   .filter {
     callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"

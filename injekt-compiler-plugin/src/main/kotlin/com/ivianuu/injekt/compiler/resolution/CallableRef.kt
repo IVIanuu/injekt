@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
@@ -40,7 +40,7 @@ data class CallableRef(
 
 fun CallableRef.substitute(
   map: Map<ClassifierRef, TypeRef>,
-  @Inject ctx: InjektContext
+  @Inject ctx: Context
 ): CallableRef {
   if (map.isEmpty()) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
@@ -68,7 +68,7 @@ fun CallableRef.substitute(
 
 fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isProvide = true)
 
-fun CallableDescriptor.toCallableRef(@Inject ctx: InjektContext): CallableRef =
+fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
   trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo()
     val typeParameters = typeParameters.map { it.toClassifierRef() }
