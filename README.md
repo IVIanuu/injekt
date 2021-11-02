@@ -140,7 +140,7 @@ You can also inject ```suspend``` and ```@Composable``` functions.
 You can inject all injectables of a given type by injecting a ```List<T>```
 ```kotlin
 @Provide fun singleElement(): String = "a"
-@Provide fun multipleElements(): Collection<String> = listOf("a", "b")
+@Provide fun multipleElements(): Collection<String> = listOf("b", "c")
 
 fun main() {
   inject<List<String>>() == listOf("a", "b", "c")
