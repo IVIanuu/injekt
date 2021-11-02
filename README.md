@@ -144,7 +144,7 @@ fun main() {
   inject<List<String>>() == listOf("a", "b", "c")
 }
 ```
-All elements which match the T or Collection<T> will be included in the resulting list.
+All elements which match the T or Collection\<T\> will be included in the resulting list.
 
 # Components
 
