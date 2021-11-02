@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtensio
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
-import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -44,47 +43,47 @@ class InjektComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration,
   ) {
-    configuration.put(CLIConfigurationKeys.ALLOW_KOTLIN_PACKAGE, true)
-
-    if (isKaptCompilation(configuration) ||
+    if (configuration.isKaptCompilation() ||
       configuration.get(DumpDirKey) == null) return
 
-    registerExtensions(project, configuration)
+    configuration.put(CLIConfigurationKeys.ALLOW_KOTLIN_PACKAGE, true)
+
+    project.registerExtensions(configuration)
   }
 }
 
-private fun registerExtensions(project: MockProject, configuration: CompilerConfiguration) {
+private fun MockProject.registerExtensions(configuration: CompilerConfiguration) {
   @Provide val injektFqNames = InjektFqNames(configuration.getNotNull(RootPackageKey))
   AnalysisHandlerExtension.registerExtension(
-    project,
+    this,
     IncrementalFixAnalysisHandlerExtension()
   )
 
   StorageComponentContainerContributor.registerExtension(
-    project,
+    this,
     InjektStorageComponentContainerContributor { injektFqNames }
   )
   IrGenerationExtension.registerExtensionWithLoadingOrder(
-    project,
+    this,
     LoadingOrder.FIRST,
     InjektIrGenerationExtension(dumpDir(configuration))
   )
 
   // extension point does not exist CLI for some reason
   // but it's still queried later
-  SyntheticScopeProviderExtension.registerExtensionPoint(project)
+  SyntheticScopeProviderExtension.registerExtensionPoint(this)
   SyntheticScopeProviderExtension.registerExtension(
-    project,
+    this,
     InjectSyntheticScopeProviderExtension({ injektFqNames })
   )
 
   @Suppress("DEPRECATION")
   Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-    .registerExtension(InjektDiagnosticSuppressor(), project)
+    .registerExtension(InjektDiagnosticSuppressor(), this)
 }
 
-private fun isKaptCompilation(configuration: CompilerConfiguration): Boolean {
-  val outputDir = configuration[JVMConfigurationKeys.OUTPUT_DIRECTORY]
+private fun CompilerConfiguration.isKaptCompilation(): Boolean {
+  val outputDir = this[JVMConfigurationKeys.OUTPUT_DIRECTORY]
   val kaptOutputDirs = listOf(
     listOf("tmp", "kapt3", "stubs"),
     listOf("tmp", "kapt3", "incrementalData"),
@@ -94,7 +93,7 @@ private fun isKaptCompilation(configuration: CompilerConfiguration): Boolean {
 }
 
 fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
-  @Inject project: MockProject,
+  project: MockProject,
   loadingOrder: LoadingOrder,
   extension: IrGenerationExtension,
 ) {

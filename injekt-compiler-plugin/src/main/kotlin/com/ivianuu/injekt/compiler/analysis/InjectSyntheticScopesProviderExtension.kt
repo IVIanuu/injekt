@@ -60,11 +60,11 @@ class InjectSyntheticScopeProviderExtension(
 }
 
 class InjectSyntheticScopes(
-  @Inject ctx: InjektContext,
   storageManager: StorageManager,
   lookupTracker: LookupTracker,
   samResolver: SamConversionResolver,
-  samConversionOracle: SamConversionOracle
+  samConversionOracle: SamConversionOracle,
+  @Inject ctx: InjektContext
 ) : SyntheticScopes {
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
