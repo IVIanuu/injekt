@@ -76,7 +76,48 @@ class MyService @Provide constructor(logger: Logger) {
 
 // properties and local variables
 @Provide val apiKey: ApiKey = ...
+
+// value parameters
+fun run(@Provide config: Config) {
+}
 ```
+
+# How injectables will be resolved
+1. Injekt collects all provided injectables in the current scope 
+e.g. local variables, function parameters, enclosing classes, injectables in the current package and so on:
+```kotlin
+suspend fun main() {
+  @Provide val dispatcher: IoDispatcher = ...
+  withContext(inject<CoroutineDispatcher>()) {
+  }
+}
+```
+
+2. Injekt will also consider declarations imported with the ```@Providers(...)```.
+The ```@Providers``` can be place anywhere in a file and will only affect the nested scope:
+```kotlin
+// file wide imports
+@file:Providers("injectables.*")
+
+package mypackage
+
+// class wide imports
+@Providers("network.Api") 
+class MyClass {
+  // function wide imports
+  @Providers("domain.*")
+  fun main() {
+    // expression wide imports
+    @Providers("data.*")
+    runApp()
+  }
+}
+```
+
+3. If no injectable was found injekt will look into the package of the request type
+
+Provider imports are only required if the injectable is not in the current scope 
+or in a package of the request type
 
 # Function support
 If you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
@@ -130,6 +171,8 @@ Tags:
 fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: @TrackId String): List<Track> = ...
 ```
 
+# Injectable chaining
+
 # Coroutines
 TODO
 
@@ -146,8 +189,6 @@ TODO
 
 # Source keys
 TODO
-
-# Injectable chaining
 
 # Full kotlin support
 inline, reified, fun interface lambdas, default parameter value, abstract, expect/actual
