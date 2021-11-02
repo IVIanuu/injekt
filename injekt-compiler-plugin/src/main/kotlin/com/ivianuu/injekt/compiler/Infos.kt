@@ -44,6 +44,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
@@ -86,7 +87,8 @@ data class CallableInfo(
 )
 
 fun CallableDescriptor.callableInfo(@Inject ctx: InjektContext): CallableInfo =
-  trace()!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
+  if (this is PropertyAccessorDescriptor) correspondingProperty.callableInfo()
+  else trace()!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
     if (isDeserializedDeclaration()) {
       val info = annotations
         .findAnnotation(injektFqNames().callableInfo)
