@@ -190,10 +190,13 @@ fun InjectablesScope.resolveRequests(
     when (val result = resolveRequest(request, lookupLocation, false)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
-        if ((request.isRequired || result !is ResolutionResult.Failure.NoCandidates) &&
-          compareResult(result, failure) < 0) {
-          failureRequest = request
-          failure = result
+        if (request.isRequired || result !is ResolutionResult.Failure.NoCandidates) {
+          if (compareResult(result, failure) < 0) {
+            failureRequest = request
+            failure = result
+          }
+        } else {
+          successes[request] = ResolutionResult.Success.DefaultValue
         }
     }
   }
@@ -214,16 +217,29 @@ private fun InjectablesScope.resolveRequest(
 ): ResolutionResult {
   resultsByType[request.type]?.let { return it }
 
-  val result = tryToResolveRequestWithUserInjectables(request, lookupLocation)
-    ?: run {
-      if (!fromTypeScope) {
+  val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation)
+    .let { userResult ->
+      if (userResult is ResolutionResult.Success ||
+          userResult is ResolutionResult.Failure.CandidateAmbiguity)
+            userResult
+      else if (!fromTypeScope) {
         tryToResolveRequestInTypeScope(request, lookupLocation)
-          ?.takeIf { it !is ResolutionResult.Failure.NoCandidates }
+          ?.takeUnless { it is ResolutionResult.Failure.NoCandidates }
+          .let { typeScopeResult ->
+            when (typeScopeResult) {
+              is ResolutionResult.Failure.CandidateAmbiguity -> typeScopeResult
+              is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> userResult
+              else -> if (compareResult(userResult, typeScopeResult) < 0) userResult else typeScopeResult
+            }
+          }
           ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
+          ?: userResult
       } else if (request.type.unwrapTags().classifier.isComponent)
         tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
-      else ResolutionResult.Failure.NoCandidates
-    }
+          ?: userResult
+      else
+        userResult
+    } ?: ResolutionResult.Failure.NoCandidates
 
   resultsByType[request.type] = result
   return result
@@ -254,14 +270,8 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
   lookupLocation: LookupLocation
-): ResolutionResult {
-  val frameworkCandidate = frameworkInjectableForRequest(request)
-  return when {
-    frameworkCandidate != null -> resolveCandidate(request, frameworkCandidate, lookupLocation)
-    request.isRequired -> ResolutionResult.Failure.NoCandidates
-    else -> ResolutionResult.Success.DefaultValue
-  }
-}
+): ResolutionResult? =
+  frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it, lookupLocation) }
 
 private fun InjectablesScope.computeForCandidate(
   request: InjectableRequest,

@@ -742,4 +742,37 @@ class InjectableResolutionTest {
   ) {
     invokeSingleFile() shouldBe "internal"
   }
+
+  @Test fun testPrefersTypeScopeInjectableOverNonAmbiguityError() = singleAndMultiCodegen(
+    """
+      class MyDep {
+        companion object {
+          @Provide val myDep = MyDep()
+        }
+      }
+  
+      @Provide class Context1<A>(@Provide val a: A)
+    """,
+    """
+      fun invoke() = inject<MyDep>()
+    """
+  )
+
+  @Test fun testPrefersAmbiguityErrorOverTypeScopeInjectable() = singleAndMultiCodegen(
+    """
+      class MyDep {
+        object TypeScope {
+          @Provide val myDep = MyDep()
+        }
+      }
+
+      @Provide val a = MyDep()
+      @Provide val b = MyDep()
+    """,
+    """
+      fun invoke() = inject<MyDep>()
+    """
+  ) {
+    compilationShouldHaveFailed("ambiguous injectables")
+  }
 }
