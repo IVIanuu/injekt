@@ -92,7 +92,7 @@ fun main(tokenFactory: () -> Token) {
 }
 ```
 
-You can also inject ```kotlin suspend``` and ```kotlin @Composable``` functions.
+You can also inject ```suspend``` and ```@Composable``` functions.
 
 # Components
 TODO
