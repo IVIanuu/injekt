@@ -28,17 +28,18 @@ import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt_shaded.Inject
 import com.ivianuu.injekt_shaded.Provide
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 
 class ComponentChecker(@Inject private val baseCtx: InjektContext) : DeclarationChecker {
   override fun check(
@@ -63,40 +64,28 @@ class ComponentChecker(@Inject private val baseCtx: InjektContext) : Declaration
           if (descriptor.modality != Modality.ABSTRACT)
             trace()!!.report(InjektErrors.NON_ABSTRACT_COMPONENT.on(declaration))
 
-          descriptor.defaultType.toTypeRef()
-            .collectComponentCallables()
-            .map { it.callable }
-            .forEach {
-              if (it is PropertyDescriptor && it.isVar) {
-                trace()!!.report(
-                  InjektErrors.COMPONENT_MEMBER_VAR
-                    .on(
-                      if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
-                      else it.findPsi() ?: declaration
-                    )
-                )
-              }
-            }
+          descriptor.checkComponentCallables(InjektErrors.ENTRY_POINT_MEMBER_VAR)
         } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
           if (descriptor.kind != ClassKind.INTERFACE)
             trace()!!.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
 
-          descriptor.defaultType.toTypeRef()
-            .collectComponentCallables()
-            .map { it.callable }
-            .forEach {
-              if (it is PropertyDescriptor && it.isVar) {
-                trace()!!.report(
-                  InjektErrors.ENTRY_POINT_MEMBER_VAR
-                    .on(
-                      if (it.overriddenTreeUniqueAsSequence(false).count() > 1) declaration
-                      else it.findPsi() ?: declaration
-                    )
-                )
-              }
-            }
+          descriptor.checkComponentCallables(InjektErrors.ENTRY_POINT_MEMBER_VAR)
         }
       }
     }
+  }
+
+  private fun ClassDescriptor.checkComponentCallables(
+    factory: DiagnosticFactory0<PsiElement>,
+    @Inject ctx: InjektContext
+  ) {
+    defaultType.toTypeRef()
+      .collectComponentCallables()
+      .map { it.callable }
+      .forEach {
+        if (it is PropertyDescriptor && it.isVar) {
+          trace()!!.report(factory.on(it.findPsi() ?: findPsi()!!))
+        }
+      }
   }
 }
