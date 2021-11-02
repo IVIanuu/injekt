@@ -31,7 +31,7 @@ You can automatically inject dependencies into functions and classes
 by marking parameters with @Inject:
 ```kotlin
 // functions
-operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
+fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
 
 // classes
 class MyService(@Inject private val logger: Logger)
@@ -227,7 +227,7 @@ TODO
 TODO
 
 # Full kotlin support
-inline, reified, fun interface lambdas, default parameter value, abstract, expect/actual
+inline, reified, fun interface, lambdas, default parameter value, abstract, expect/actual
 
 # Setup
 ```kotlin
