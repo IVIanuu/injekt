@@ -371,7 +371,7 @@ fun TypeRef.collectTypeScopeInjectables(@Inject ctx: InjektContext): Injectables
       if (currentType in processedTypes) continue
       processedTypes += currentType
 
-      val resultForType = currentType.collectInjectablesForSingleType()
+      val resultForType = currentType.collectTypeScopeInjectablesForSingleType()
 
       injectables += resultForType.injectables
       lookedUpPackages += resultForType.lookedUpPackages
@@ -410,7 +410,7 @@ data class InjectablesWithLookups(
   }
 }
 
-private fun TypeRef.collectInjectablesForSingleType(
+private fun TypeRef.collectTypeScopeInjectablesForSingleType(
   @Inject ctx: InjektContext
 ): InjectablesWithLookups {
   if (classifier.isTypeParameter) return InjectablesWithLookups.Empty
