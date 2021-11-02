@@ -464,4 +464,20 @@ class ComponentTest {
       )
     )
   )
+
+  @Test fun testNonAbstractComponent() = codegen(
+    """ 
+      @Component class FooComponent
+    """
+  ) {
+    compilationShouldHaveFailed("component must be either a abstract class or a interface")
+  }
+
+  @Test fun testNonAbstractEntryPoint() = codegen(
+    """ 
+      @EntryPoint<Any> class FooComponent
+    """
+  ) {
+    compilationShouldHaveFailed("entry point must be a interface")
+  }
 }
