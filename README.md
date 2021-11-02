@@ -84,7 +84,8 @@ fun run(@Provide config: Config) {
 
 # How injectables will be resolved
 1. Injekt looks at all provided injectables in the current scope 
-e.g. enclosing local variables, function parameters, classes, injectables in the current package and so on:
+e.g. enclosing local variables, function parameters, classes, injectables in the current package and so on
+and chooses the closest most specific one:
 ```kotlin
 suspend fun main() {
   @Provide val dispatcher: IoDispatcher = ...
@@ -114,7 +115,8 @@ class MyClass {
 }
 ```
 
-3. If no injectable was found injekt will look into the package of the injected type
+3. If no injectable was found injekt will look into the package of the injected type and also in 
+   all of it's arguments and super types
 
 Provider imports are only required if the injectable is not in the current scope 
 or in a package of the injected type
@@ -170,6 +172,7 @@ It's also possible to eagerly create the scoped injectable as soon as the compon
 by setting the eager flag to true ```@Scoped<AppComponent>(eager = true)```.
 
 # Entry points
+TODO
 
 # Distinguish between types
 Sometimes you have multiple injectables of the same type
@@ -200,13 +203,16 @@ fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: 
 ```
 
 # Injectable chaining
+TODO
 
 # Component lifecycle
+TODO
 
 # Coroutines
 TODO
 
 # Compose
+TODO
 
 # Android
 TODO
