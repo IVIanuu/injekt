@@ -20,8 +20,6 @@ import android.content.Context
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.android.work.InjektWorkerFactory
 
-@Provide inline val Context.workManager: WorkManager
-  get() = WorkManager.getInstance(this)
+@Provide inline fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)
 
-@Provide inline val InjektWorkerFactory.workerFactory: WorkerFactory
-  get() = this
+@Provide inline fun workerFactory(factory: InjektWorkerFactory): WorkerFactory = factory
