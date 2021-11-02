@@ -655,6 +655,7 @@ fun TypeInjectablesScope(
       .map { ResolvedProviderImport(null, "$it.*", it) },
     isTypeScope = true,
     isDeclarationContainer = false,
+    callContext = parent.callContext,
     parent = InjectablesScope(
       name = "TYPE TYPE ${type.renderToString()}",
       initialInjectables = typeInjectables,
@@ -666,6 +667,7 @@ fun TypeInjectablesScope(
         ownerDescriptor = type.classifier.descriptor,
         initialInjectables = externalInjectables,
         isTypeScope = true,
+        callContext = parent.callContext,
         isDeclarationContainer = false
       )
     )

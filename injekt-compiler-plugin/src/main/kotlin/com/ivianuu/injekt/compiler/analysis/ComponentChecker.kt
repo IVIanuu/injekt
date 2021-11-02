@@ -64,7 +64,7 @@ class ComponentChecker(@Inject private val baseCtx: Context) : DeclarationChecke
           if (descriptor.modality != Modality.ABSTRACT)
             trace()!!.report(InjektErrors.NON_ABSTRACT_COMPONENT.on(declaration))
 
-          descriptor.checkComponentCallables(InjektErrors.ENTRY_POINT_MEMBER_VAR)
+          descriptor.checkComponentCallables(InjektErrors.COMPONENT_MEMBER_VAR)
         } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
           if (descriptor.kind != ClassKind.INTERFACE)
             trace()!!.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))

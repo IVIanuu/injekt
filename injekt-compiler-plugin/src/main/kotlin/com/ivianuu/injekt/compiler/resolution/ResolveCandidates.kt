@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -255,17 +254,10 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
 private fun InjectablesScope.tryToResolveRequestInTypeScope(
   request: InjectableRequest,
   lookupLocation: LookupLocation
-): ResolutionResult? {
-  // try the type scope if the requested type is not a framework type
-  return if (!request.type.isFunctionType &&
-    request.type.classifier != ctx.listClassifier &&
-    request.type.classifier.fqName != injektFqNames().typeKey &&
-    request.type.classifier.fqName != injektFqNames().sourceKey)
-    with(TypeInjectablesScope(request.type, this)) {
-      recordLookup(lookupLocation)
-      resolveRequest(request, lookupLocation, true)
-    } else null
-}
+): ResolutionResult? = with(TypeInjectablesScope(request.type, this)) {
+  recordLookup(lookupLocation)
+  resolveRequest(request, lookupLocation, true)
+}.takeIf { it !is ResolutionResult.Failure.NoCandidates }
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
