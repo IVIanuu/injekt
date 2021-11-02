@@ -354,7 +354,9 @@ class InjectCallTransformer(
           ).apply {
             component.placeAfterFields(this)
             initializer = DeclarationIrBuilder(irCtx, symbol).run {
+              pushComponentReceivers { irGet(component.thisReceiver!!) }
               irExprBody(rawExpressionProvider())
+                .also { popComponentReceivers() }
             }
           }
 
