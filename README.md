@@ -1,6 +1,6 @@
-# Injekt: Next gen DI framework for Kotlin
+# Injekt
 
-
+Next gen dependency injection library for Kotlin
 
 # Example:
 ```kotlin
@@ -28,7 +28,7 @@ fun main() = runBlocking {
 
 # Inject injectables
 You can automatically inject dependencies into functions and classes 
-by marking parameters with @Inject
+by marking parameters with @Inject:
 ```kotlin
 // functions
 infix operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
@@ -37,10 +37,10 @@ infix operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) 
 class MyService(@Inject private val logger: Logger)
 ```
 
-Injekt will then try to resolve the dependencies on each call site if no explicit argument was provided
+Injekt will then try to resolve the dependencies on each call site if no explicit argument was provided.
 
 # Provide injectables
-You can provide dependencies by annotating them with @Provide
+You can provide dependencies by annotating them with @Provide:
 ```kotlin
 // classes and objects
 @Provide class MyApi(baseUrl: BaseUrl)
@@ -57,13 +57,6 @@ class MyService @Provide constructor(logger: Logger) {
 @Provide val apiKey: ApiKey = ""
 ```
 
-# Distinguish between types
-
-Sometimes you have multiple instances of the same 
-```kotlin
-
-```
-
 # Functions
 TODO
 
@@ -72,8 +65,36 @@ TODO
 
 # Scoping
 
-# Lists
+# Multi injection
 TODO
+
+# Distinguish between types
+Sometimes you have multiple instances of the same type
+Injekt will need help to keep them apart here a are a few strategies:
+
+Type aliases:
+```kotlin
+typealias PlaylistId = String
+typealias TrackId = String
+
+fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
+```
+
+Inline classes:
+```kotlin
+inline class PlaylistId(val value: String)
+inline class TrackId(val value: String)
+
+fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
+```
+
+Tags:
+```kotlin
+@Tag annotation class PlaylistId
+@Tag annotation class TrackId
+
+fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: @TrackId String): List<Track> = ...
+```
 
 # Coroutines
 TODO
