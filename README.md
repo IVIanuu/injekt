@@ -31,17 +31,17 @@ You can automatically inject dependencies into functions and classes
 by marking parameters with @Inject:
 ```kotlin
 // functions
-infix operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
+operator fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
 
 // classes
 class MyService(@Inject private val logger: Logger)
 
 fun main() {
   // automatically injects comparator if provided
-  "a" compareTo "b"
+  "a".compareTo("b")
   
   // uses explicit arg
-  MyService(NoOpLogger)
+  MyService(NoOpLogger).run()
 }
 ```
 
@@ -82,12 +82,19 @@ class MyService @Provide constructor(logger: Logger) {
 If you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
 You can do this by injecting a function.
 ```kotlin
-fun main() {
-  
+fun main(tokenFactory: () -> Token) {
+  val tokenA = tokenFactory()
+  val tokenB = tokenFactory()
+}
+
+@Composable fun MyScreen(@Inject viewModelFactory: (String) -> MyViewModel) {
+  val viewModel = remember { viewModelFactory("user_id") }
 }
 ```
 
-#Components
+You can also inject ```kotlin suspend``` and ```kotlin @Composable``` functions.
+
+# Components
 TODO
 
 # Scoping
