@@ -30,7 +30,7 @@ dependencies {
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
   archiveClassifier.set("")
-  relocate("com.ivianuu.injekt", "com.ivianuu.shaded_injekt.properties")
+  relocate("com.ivianuu.injekt", "com.ivianuu.shaded_injekt")
   mergeServiceFiles()
 }
 
