@@ -26,8 +26,8 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.trace
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

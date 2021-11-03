@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtensio
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.com.intellij.mock.MockProject

@@ -27,8 +27,8 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind

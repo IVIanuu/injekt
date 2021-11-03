@@ -35,11 +35,14 @@ open class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun apply(target: Project) {
   }
 
-  override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
+  override fun getCompilerPluginId(): String = "com.ivianuu.injek".combine("t")
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = "com.ivianuu.injekt",
-    artifactId = "injekt-compiler-plugin",
+    groupId = "com.ivianuu.injek".combine("t"),
+    artifactId = if (javaClass.name == "com.ivianuu.shaded_injekt.gradle.InjektPlugin")
+      "injekt-compiler-plugin-shaded" else "injekt-compiler-plugin",
     version = BuildConfig.VERSION
   )
 }
+
+fun String.combine(other: String) = this + other

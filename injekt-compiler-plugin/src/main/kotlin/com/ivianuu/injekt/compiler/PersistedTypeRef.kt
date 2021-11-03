@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.shaded_injekt.Inject
 import kotlinx.serialization.Serializable
 
 @Serializable data class PersistedTypeRef(

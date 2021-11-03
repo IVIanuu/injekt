@@ -27,7 +27,7 @@ import java.io.File
 
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
-  override val pluginId = "com.ivianuu.injekt"
+  override val pluginId = "com.ivianuu.injek".combine("t")
 
   override val pluginOptions = listOf(DumpDirOption, RootPackageOption)
 

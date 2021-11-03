@@ -70,13 +70,17 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
-  const val injektCompilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:0.0.1-dev640"
+  object InjektShaded {
+    private const val version = "0.0.1-dev643"
+    const val compilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:0.0.1-dev635"
+    const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin-shaded:$version"
+    const val common = "com.ivianuu.injekt:injekt-common-shaded:$version"
+  }
 
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
     const val version = "1.5.31"
-    const val compiler = "org.jetbrains.kot#lin:kotlin-compiler:$version"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -97,5 +101,5 @@ object Deps {
 
   const val roboelectric = "org.robolectric:robolectric:4.4"
 
-  const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:6.1.0"
+  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.0"
 }

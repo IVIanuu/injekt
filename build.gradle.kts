@@ -28,6 +28,7 @@ buildscript {
   dependencies {
     classpath(Deps.androidGradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
+    classpath(Deps.InjektShaded.gradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)

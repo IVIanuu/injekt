@@ -23,8 +23,8 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor

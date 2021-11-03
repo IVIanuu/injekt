@@ -15,13 +15,13 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 plugins {
   kotlin("jvm")
   kotlin("kapt")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
+  id("com.ivianuu.shaded_injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -41,6 +41,7 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
   }
 }
 
+/*
 kotlin {
   target {
     compilations.forEach { compilation ->
@@ -58,7 +59,7 @@ kotlin {
         ),
         SubpluginOption(
           key = "rootPackage",
-          value = "com.ivianuu.injekt_shaded"
+          value = "com.ivianuu.shaded_injekt"
         )
       )
 
@@ -69,7 +70,7 @@ kotlin {
       }
     }
   }
-}
+}*/
 
 artifacts {
   archives(shadowJar)
@@ -81,7 +82,7 @@ dependencies {
   api(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.AndroidX.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
-  kotlinCompilerPluginClasspath(Deps.injektCompilerPlugin)
+  //kotlinCompilerPluginClasspath(Deps.InjektShaded.compilerPlugin)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

@@ -29,7 +29,7 @@ import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.injekt_shaded.Inject
+import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

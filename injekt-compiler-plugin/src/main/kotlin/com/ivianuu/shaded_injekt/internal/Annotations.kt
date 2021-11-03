@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt_shaded.internal
+package com.ivianuu.shaded_injekt.internal
 
 internal annotation class CallableInfo(val values: Array<String>)
 

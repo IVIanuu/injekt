@@ -24,8 +24,8 @@ import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
