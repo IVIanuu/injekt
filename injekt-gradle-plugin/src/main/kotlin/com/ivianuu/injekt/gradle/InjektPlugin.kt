@@ -104,7 +104,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           injektTask.classpath = kotlinCompileTask.project.files(Callable { kotlinCompileTask.classpath })
 
           getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
-            kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injekt", option)
+            kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injek".combine("t"), option)
           }
 
           injektTask.configureCompilation(
@@ -120,7 +120,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         project.tasks.register(injektTaskName, injektTaskClass, kotlinCompileTask.compilation).apply {
           configure { injektTask ->
             getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
-              kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injekt", option)
+              kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injek".combine("t"), option)
             }
             injektTask.onlyIf { kotlinCompileTask.compilation.konanTarget.enabledOnCurrentHost }
             configure(injektTask)
@@ -140,10 +140,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider { emptyList() }
   }
 
-  override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
+  override fun getCompilerPluginId(): String = "com.ivianuu.injek".combine("t")
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = "com.ivianuu.injekt",
+    groupId = "com.ivianuu.injek".combine("t"),
     artifactId = "injekt-compiler-plugin",
     version = BuildConfig.VERSION
   )
@@ -381,7 +381,7 @@ private inline fun <reified T : Task> Project.locateTask(name: String): TaskProv
     null
   }
 
-private fun SubpluginOption.toArg() = "plugin:com.ivianuu.injekt:$key=$value"
+private fun SubpluginOption.toArg() = "plugin:com.ivianuu.injek".combine("t:$key=$value")
 
 private fun CommonCompilerArguments.addPluginOptions(options: List<SubpluginOption>) {
   pluginOptions = (options.map { it.toArg() } + pluginOptions!!).toTypedArray()
@@ -402,8 +402,9 @@ private fun CommonCompilerArguments.addChangedFiles(changedFiles: ChangedFiles) 
 
 private fun ChangedFiles.hasNonSourceChange(): Boolean {
   if (this !is ChangedFiles.Known) return true
-
   return !(modified + removed).all {
     it.isKotlinFile(listOf("kt")) || it.isJavaFile()
   }
 }
+
+fun String.combine(other: String) = this + other
