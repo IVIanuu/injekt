@@ -41,6 +41,8 @@ import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile.Configurator
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.incremental.ChangedFiles
 import org.jetbrains.kotlin.incremental.destinationAsFile
+import org.jetbrains.kotlin.incremental.isJavaFile
+import org.jetbrains.kotlin.incremental.isKotlinFile
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
 import java.io.File
 import java.util.concurrent.Callable
@@ -84,9 +86,8 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       injektTask.destinationDirectory.set(srcDir)
       injektTask.outputs.dirs(srcDir)
       injektTask.source(kotlinCompileTask.source)
-      if (injektTask !is InjektTaskNative) {
+      if (injektTask !is InjektTaskNative)
         kotlinCompilation.output.classesDirs.from(srcDir)
-      }
       injektTask.source.filter { it.absolutePath.startsWith(srcDir.absolutePath) }
     }
 
@@ -103,9 +104,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           injektTask.classpath = kotlinCompileTask.project.files(Callable { kotlinCompileTask.classpath })
 
           getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
-            kotlinCompilation.kotlinOptions.freeCompilerArgs += listOf(
-              "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
-            )
+            kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injekt", option)
           }
 
           injektTask.configureCompilation(
@@ -120,6 +119,9 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           (kotlinCompileTask.compilation as AbstractKotlinNativeCompilation).pluginConfigurationName
         project.tasks.register(injektTaskName, injektTaskClass, kotlinCompileTask.compilation).apply {
           configure { injektTask ->
+            getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
+              kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injekt", option)
+            }
             injektTask.onlyIf { kotlinCompileTask.compilation.konanTarget.enabledOnCurrentHost }
             configure(injektTask)
             injektTask.compilerPluginClasspath = project.configurations.getByName(pluginConfigurationName)
@@ -167,9 +169,8 @@ interface InjektTask : Task {
   ) {
     Configurator<InjektTaskJvm>(kotlinCompilation).configure(this)
     kotlinCompile as KotlinCompile
-    val providerFactory = kotlinCompile.project.providers
     compileKotlinArgumentsContributor.set(
-      providerFactory.provider {
+      kotlinCompile.project.provider {
         kotlinCompile.compilerArgumentsContributor
       }
     )
@@ -207,7 +208,11 @@ interface InjektTask : Task {
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
   ) {
-    args.addChangedFiles(changedFiles)
+    if (changedFiles.hasNonSourceChange()) {
+      cacheDir.deleteRecursively()
+    } else {
+      args.addChangedFiles(changedFiles)
+    }
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
 
@@ -223,9 +228,8 @@ interface InjektTask : Task {
   ) {
     Configurator<InjektTaskJS>(kotlinCompilation).configure(this)
     kotlinCompile as Kotlin2JsCompile
-    val providerFactory = kotlinCompile.project.providers
     compileKotlinArgumentsContributor.set(
-      providerFactory.provider {
+      kotlinCompile.project.provider {
         kotlinCompile.abstractKotlinCompileArgumentsContributor
       }
     )
@@ -261,7 +265,11 @@ interface InjektTask : Task {
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
   ) {
-    args.addChangedFiles(changedFiles)
+    if (changedFiles.hasNonSourceChange()) {
+      cacheDir.deleteRecursively()
+    } else {
+      args.addChangedFiles(changedFiles)
+    }
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
 }
@@ -274,9 +282,8 @@ interface InjektTask : Task {
   ) {
     Configurator<InjektTaskMetadata>(kotlinCompilation).configure(this)
     kotlinCompile as KotlinCompileCommon
-    val providerFactory = kotlinCompile.project.providers
     compileKotlinArgumentsContributor.set(
-      providerFactory.provider {
+      kotlinCompile.project.provider {
         kotlinCompile.abstractKotlinCompileArgumentsContributor
       }
     )
@@ -316,7 +323,11 @@ interface InjektTask : Task {
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
   ) {
-    args.addChangedFiles(changedFiles)
+    if (changedFiles.hasNonSourceChange()) {
+      cacheDir.deleteRecursively()
+    } else {
+      args.addChangedFiles(changedFiles)
+    }
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
 }
@@ -386,5 +397,13 @@ private fun CommonCompilerArguments.addChangedFiles(changedFiles: ChangedFiles) 
       options += SubpluginOption("removedFiles", joinToString(File.pathSeparator) { it.path })
     }
     options.ifNotEmpty { addPluginOptions(this) }
+  }
+}
+
+private fun ChangedFiles.hasNonSourceChange(): Boolean {
+  if (this !is ChangedFiles.Known) return true
+
+  return !(modified + removed).all {
+    it.isKotlinFile(listOf("kt")) || it.isJavaFile()
   }
 }
