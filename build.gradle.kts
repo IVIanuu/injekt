@@ -46,37 +46,15 @@ allprojects {
     maven("https://plugins.gradle.org/m2")
   }
 
-  if (project.name == "injekt-compiler-plugin" ||
-    project.name == "injekt-gradle-plugin")
-      return@allprojects
+  if (project.name == "injekt-compiler-plugin" || project.name == "injekt-gradle-plugin")
+    return@allprojects
+
+  /*project.extensions.add("injekt", InjektExtension())
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
-
-    val sourceSetName = compilation.defaultSourceSetName
-
-    val project = compilation.compileKotlinTask.project
-
-    val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
-      .also { it.mkdirs() }
-
-    val pluginOptions = listOf(
-      SubpluginOption(
-        key = "dumpDir",
-        value = dumpDir.absolutePath
-      ),
-      SubpluginOption(
-        key = "rootPackage",
-        value = "com.ivianuu.injekt"
-      )
-    )
-
-    pluginOptions.forEach { option ->
-      compilation.kotlinOptions.freeCompilerArgs += listOf(
-        "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
-      )
-    }
+    InjektSubplugin().applyToCompilation(compilation)
   }
 
   afterEvaluate {
@@ -107,5 +85,5 @@ allprojects {
         }
       }
     }
-  }
+  }*/
 }

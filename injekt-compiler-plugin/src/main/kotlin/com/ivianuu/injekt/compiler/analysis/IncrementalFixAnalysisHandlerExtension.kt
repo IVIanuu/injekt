@@ -55,8 +55,6 @@ import java.util.Base64
 class IncrementalFixAnalysisHandlerExtension(
   @Inject private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
-  private var appliedFix = false
-
   override fun doAnalysis(
     project: Project,
     module: ModuleDescriptor,
@@ -65,24 +63,15 @@ class IncrementalFixAnalysisHandlerExtension(
     bindingTrace: BindingTrace,
     componentProvider: ComponentProvider
   ): AnalysisResult? {
-    if (!appliedFix) {
-      appliedFix = true
-
-      val newFiles = files.map { processFile(project, module, it) }
-      files as MutableList<KtFile>
-      files.clear()
-      files += newFiles
-
-      return AnalysisResult.RetryWithAdditionalRoots(
-        BindingContext.EMPTY,
-        module,
-        emptyList(),
-        emptyList(), emptyList(),
-        true
-      )
-    }
-
-    return null
+    /*val newFiles = files.map { processFile(project, module, it) }
+    files as MutableList<KtFile>
+    files.clear()
+    files += newFiles*/
+    return AnalysisResult.Companion.success(
+      bindingContext = BindingContext.EMPTY,
+      module = module,
+      shouldGenerateCode = false
+    )
   }
 
   private fun processFile(
