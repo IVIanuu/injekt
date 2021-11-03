@@ -19,7 +19,7 @@ interface Repository {
 
 suspend fun loadUserById(id: Long, @Inject repository: Repository): User? = ...
 
-fun main() = runBlocking {
+suspend fun main() {
   val user = User(1)
   loadUsersById(1) // expands to loadUsersById(1, RepositoryImpl(ApiImpl))
 }
@@ -81,6 +81,8 @@ fun run(@Provide config: Config) {
 }
 ```
 
+You can also declare ```suspend``` and ```@Composable``` provide functions.
+
 # How injectables will be resolved
 1. Injekt looks at all provided injectables in the current scope 
 e.g. enclosing local variables, function parameters, classes, injectables in the current package and so on
@@ -120,18 +122,32 @@ class MyClass {
 Provider imports are only required if the injectable is not in the current scope 
 or in a package of the injected type
 
-# Function support
-Sometimes you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
+# Function injection
+Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters dynamically,
+or you aren't in the right call context yet.
 You can do this by injecting a function.
 ```kotlin
-fun main(tokenFactory: () -> Token) {
+// inject a function to create multiple Tokens
+fun run(@Inject tokenFactory: () -> Token) {
   val tokenA = tokenFactory()
   val tokenB = tokenFactory()
 }
 
+// inject a function to create a MyViewModel with the additional String parameter
 @Composable fun MyScreen(@Inject viewModelFactory: (String) -> MyViewModel) {
   val viewModel = remember { viewModelFactory("user_id") }
 }
+
+// inject a function to create a dependency in suspend context
+fun startService(@Inject dbFactory: suspend () -> Db) {
+  scope.launch {
+    val db = dbFactory()
+  }
+}
+
+// inject functions in a inline function to create a conditional Logger with zero overhead
+@Provide inline fun logger(isDebug: IsDebug, loggerImpl: () -> LoggerImpl, noOpLogger: () -> NoOpLogger): Logger =
+  if (isDebug) loggerImpl() else noOpLogger()
 ```
 You can also inject ```suspend``` and ```@Composable``` functions.
 
