@@ -25,14 +25,13 @@ plugins {
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
-val shade: Configuration = configurations.maybeCreate("compileShaded")
-configurations.getByName("compileOnly").extendsFrom(shade)
 dependencies {
-  shade(project(":injekt-compiler-plugin"))
+  implementation(project(":injekt-compiler-plugin")) {
+    exclude(group = "org.jetbrains.kotlin")
+  }
 }
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
-  configurations = listOf(shade)
   archiveClassifier.set("")
   relocate("com.ivianuu.injekt", "com.ivianuu.shaded_injekt")
   mergeServiceFiles()

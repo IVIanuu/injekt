@@ -18,32 +18,19 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
   kotlin("jvm")
-  id("java-gradle-plugin")
   id("com.github.johnrengelman.shadow")
   id("com.vanniktech.maven.publish")
 }
 
-gradlePlugin {
-  plugins {
-    create("injektPlugin") {
-      id = "com.ivianuu.shaded_injekt"
-      implementationClass = "com.ivianuu.shaded_injekt.gradle.InjektPlugin"
-    }
+dependencies {
+  implementation(project(":injekt-gradle-plugin")) {
+    exclude(group = "org.jetbrains.kotlin")
   }
 }
 
-val shade: Configuration = configurations.maybeCreate("compileShaded")
-configurations.getByName("compileOnly").extendsFrom(shade)
-
-dependencies {
-  shade(project(":injekt-gradle-plugin"))
-}
-
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
-  isZip64 = true
-  configurations = listOf(shade)
   archiveClassifier.set("")
-  relocate("com.ivianuu.injekt", "com.ivianuu.shaded_injekt")
+  relocate("com.ivianuu.injekt", "com.ivianuu.shaded_injekt.properties")
   mergeServiceFiles()
 }
 

@@ -48,7 +48,7 @@ artifacts {
 dependencies {
   implementation(Deps.autoService)
   kapt(Deps.autoService)
-  api(Deps.Kotlin.compilerEmbeddable)
+  compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.AndroidX.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
 }
