@@ -70,12 +70,7 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
-  object InjektShaded {
-    private const val version = "0.0.1-dev643"
-    const val compilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:0.0.1-dev635"
-    const val gradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin-shaded:$version"
-    const val common = "com.ivianuu.injekt:injekt-common-shaded:$version"
-  }
+  const val injektGradlePluginShaded = "com.ivianuu.injekt:injekt-gradle-plugin-shaded:0.0.1-dev643"
 
   const val junit = "junit:junit:4.12"
 

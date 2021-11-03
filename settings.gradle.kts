@@ -2,7 +2,6 @@ include(
     ":injekt-android",
     ":injekt-android-work",
     ":injekt-common",
-    ":injekt-common-shaded",
     ":injekt-compiler-plugin",
     ":injekt-compiler-plugin-shaded",
     ":injekt-core",

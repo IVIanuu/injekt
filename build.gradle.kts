@@ -28,7 +28,7 @@ buildscript {
   dependencies {
     classpath(Deps.androidGradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
-    classpath(Deps.InjektShaded.gradlePlugin)
+    classpath(Deps.injektGradlePluginShaded)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)
@@ -47,8 +47,7 @@ allprojects {
   }
 
   if (project.name == "injekt-compiler-plugin" ||
-    project.name == "injekt-gradle-plugin" ||
-    project.name == "injekt-symbol-processor")
+    project.name == "injekt-gradle-plugin")
       return@allprojects
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {

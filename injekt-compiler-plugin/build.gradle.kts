@@ -41,37 +41,6 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
   }
 }
 
-/*
-kotlin {
-  target {
-    compilations.forEach { compilation ->
-      val sourceSetName = name
-
-      val project = compilation.compileKotlinTask.project
-
-      val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
-        .also { it.mkdirs() }
-
-      val pluginOptions = listOf(
-        SubpluginOption(
-          key = "dumpDir",
-          value = dumpDir.absolutePath
-        ),
-        SubpluginOption(
-          key = "rootPackage",
-          value = "com.ivianuu.shaded_injekt"
-        )
-      )
-
-      pluginOptions.forEach { option ->
-        compilation.kotlinOptions.freeCompilerArgs += listOf(
-          "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
-        )
-      }
-    }
-  }
-}*/
-
 artifacts {
   archives(shadowJar)
 }
@@ -82,7 +51,6 @@ dependencies {
   api(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.AndroidX.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
-  //kotlinCompilerPluginClasspath(Deps.InjektShaded.compilerPlugin)
 }
 
 plugins.apply("com.vanniktech.maven.publish")
