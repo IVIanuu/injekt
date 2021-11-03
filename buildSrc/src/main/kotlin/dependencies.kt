@@ -57,8 +57,6 @@ object Deps {
     const val work = "androidx.work:work-runtime-ktx:2.7.0"
   }
 
-  const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
-
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Coroutines {

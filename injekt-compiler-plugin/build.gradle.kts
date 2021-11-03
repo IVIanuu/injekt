@@ -18,7 +18,6 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
   kotlin("jvm")
-  kotlin("kapt")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
   id("com.ivianuu.shaded_injekt")
@@ -46,8 +45,6 @@ artifacts {
 }
 
 dependencies {
-  implementation(Deps.autoService)
-  kapt(Deps.autoService)
   compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.AndroidX.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)

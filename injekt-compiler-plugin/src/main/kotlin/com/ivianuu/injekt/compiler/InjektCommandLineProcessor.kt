@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -25,7 +24,6 @@ import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 
-@AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
   override val pluginId = "com.ivianuu.injek".combine("t")
 

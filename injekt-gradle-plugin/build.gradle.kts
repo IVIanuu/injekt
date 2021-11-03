@@ -16,7 +16,6 @@
 
 plugins {
   kotlin("jvm")
-  kotlin("kapt")
   id("com.github.gmazzo.buildconfig") version "3.0.2"
 }
 
@@ -31,8 +30,6 @@ buildConfig {
 
 dependencies {
   compileOnly(gradleApi())
-  implementation(Deps.autoService)
-  kapt(Deps.autoService)
   compileOnly(Deps.androidGradlePlugin)
   compileOnly(Deps.Kotlin.gradlePlugin)
   compileOnly(Deps.Kotlin.gradlePluginApi)
