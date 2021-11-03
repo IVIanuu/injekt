@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtensio
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
+import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -39,24 +40,40 @@ import java.io.File
 class InjektComponentRegistrar : ComponentRegistrar {
   override fun registerProjectComponents(
     project: MockProject,
-    configuration: CompilerConfiguration,
+    @Provide configuration: CompilerConfiguration,
   ) {
-    if (configuration.isKaptCompilation() ||
-      configuration.get(DumpDirKey) == null) return
+    if (configuration.isKaptCompilation()) return
 
     configuration.put(CLIConfigurationKeys.ALLOW_KOTLIN_PACKAGE, true)
 
-    project.registerExtensions(configuration)
+    @Provide val injektFqNames = InjektFqNames(configuration.getNotNull(RootPackageKey))
+
+    if (configuration.get(SrcDirKey) != null) {
+      project.registerCodegenExtensions()
+    } else {
+      project.registerAnalysisExtensions()
+    }
   }
 }
 
-private fun MockProject.registerExtensions(configuration: CompilerConfiguration) {
-  @Provide val injektFqNames = InjektFqNames(configuration.getNotNull(RootPackageKey))
+private fun MockProject.registerCodegenExtensions(
+  @Inject configuration: CompilerConfiguration,
+  @Inject injektFqNames: InjektFqNames
+) {
+  val srcDir = configuration.getNotNull(SrcDirKey)
+  val cacheDir = configuration.getNotNull(CacheDirKey)
+  val modifiedFiles = configuration.get(ModifiedFilesKey)
+  val removedFiles = configuration.get(RemovedFilesKey)
   AnalysisHandlerExtension.registerExtension(
     this,
-    IncrementalFixAnalysisHandlerExtension()
+    IncrementalFixAnalysisHandlerExtension(srcDir, cacheDir, modifiedFiles, removedFiles)
   )
+}
 
+private fun MockProject.registerAnalysisExtensions(
+  @Inject configuration: CompilerConfiguration,
+  @Inject injektFqNames: InjektFqNames
+) {
   StorageComponentContainerContributor.registerExtension(
     this,
     InjektStorageComponentContainerContributor { injektFqNames }
@@ -64,7 +81,7 @@ private fun MockProject.registerExtensions(configuration: CompilerConfiguration)
   IrGenerationExtension.registerExtensionWithLoadingOrder(
     this,
     LoadingOrder.FIRST,
-    InjektIrGenerationExtension(dumpDir(configuration))
+    InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
   )
 
   // extension point does not exist CLI for some reason

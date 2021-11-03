@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import com.ivianuu.injekt.gradle.InjektExtension
+import com.ivianuu.injekt.gradle.InjektPlugin
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 
@@ -28,6 +30,7 @@ buildscript {
   dependencies {
     classpath(Deps.androidGradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
+    classpath(Deps.injektGradlePlugin)
     classpath(Deps.injektGradlePluginShaded)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
@@ -47,36 +50,17 @@ allprojects {
   }
 
   if (project.name == "injekt-compiler-plugin" ||
-    project.name == "injekt-gradle-plugin")
-      return@allprojects
+    project.name == "injekt-compiler-plugin-shaded" ||
+    project.name == "injekt-gradle-plugin" ||
+    project.name == "injekt-gradle-plugin-shaded")
+    return@allprojects
+
+  project.extensions.add("injekt", InjektExtension())
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
-
-    val sourceSetName = compilation.defaultSourceSetName
-
-    val project = compilation.compileKotlinTask.project
-
-    val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
-      .also { it.mkdirs() }
-
-    val pluginOptions = listOf(
-      SubpluginOption(
-        key = "dumpDir",
-        value = dumpDir.absolutePath
-      ),
-      SubpluginOption(
-        key = "rootPackage",
-        value = "com.ivianuu.injekt"
-      )
-    )
-
-    pluginOptions.forEach { option ->
-      compilation.kotlinOptions.freeCompilerArgs += listOf(
-        "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
-      )
-    }
+    InjektPlugin().applyToCompilation(compilation)
   }
 
   afterEvaluate {
