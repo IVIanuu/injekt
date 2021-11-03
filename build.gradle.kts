@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import com.ivianuu.injekt.gradle.InjektExtension
+import com.ivianuu.injekt.gradle.InjektPlugin
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 
@@ -28,6 +30,7 @@ buildscript {
   dependencies {
     classpath(Deps.androidGradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
+    classpath(Deps.injektGradlePlugin)
     classpath(Deps.injektGradlePluginShaded)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
@@ -46,15 +49,18 @@ allprojects {
     maven("https://plugins.gradle.org/m2")
   }
 
-  if (project.name == "injekt-compiler-plugin" || project.name == "injekt-gradle-plugin")
+  if (project.name == "injekt-compiler-plugin" ||
+    project.name == "injekt-compiler-plugin-shaded" ||
+    project.name == "injekt-gradle-plugin" ||
+    project.name == "injekt-gradle-plugin-shaded")
     return@allprojects
 
-  /*project.extensions.add("injekt", InjektExtension())
+  project.extensions.add("injekt", InjektExtension())
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
-    InjektSubplugin().applyToCompilation(compilation)
+    InjektPlugin().applyToCompilation(compilation)
   }
 
   afterEvaluate {
@@ -85,5 +91,5 @@ allprojects {
         }
       }
     }
-  }*/
+  }
 }

@@ -17,5 +17,5 @@
 package com.ivianuu.injekt.gradle
 
 class InjektExtension {
-  var rootPackage = "com.ivianuu.injekt_shaded"
+  var rootPackage = "com.ivianuu.injekt"
 }

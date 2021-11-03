@@ -21,15 +21,10 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.updatePrivateFinalField
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
-import org.jetbrains.kotlin.com.intellij.openapi.editor.impl.DocumentImpl
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
-import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -50,11 +45,37 @@ import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.Base64
 
 class IncrementalFixAnalysisHandlerExtension(
+  private val srcDir: File,
+  cacheDir: File,
+  private val modifiedFiles: List<File>?,
+  private val removedFiles: List<File>?,
   @Inject private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
+  private val backupDir = cacheDir.resolve("backups")
+
+  private val fileMapFile = cacheDir.resolve("file-map")
+
+  private val fileMap = (if (fileMapFile.exists()) fileMapFile.readText() else "")
+    .split("\n")
+    .filter { it.isNotEmpty() }
+    .map { entry ->
+      val tmp = entry.split("=:=")
+      tmp[0] to tmp[1]
+    }
+    .groupBy { it.first }
+    .mapValues {
+      it.value
+        .map { it.second }
+        .toMutableSet()
+    }
+    .toMutableMap()
+
   override fun doAnalysis(
     project: Project,
     module: ModuleDescriptor,
@@ -62,11 +83,64 @@ class IncrementalFixAnalysisHandlerExtension(
     files: Collection<KtFile>,
     bindingTrace: BindingTrace,
     componentProvider: ComponentProvider
-  ): AnalysisResult? {
-    /*val newFiles = files.map { processFile(project, module, it) }
-    files as MutableList<KtFile>
-    files.clear()
-    files += newFiles*/
+  ): AnalysisResult {
+    fun File.backupFile() = File(backupDir, toRelativeString(srcDir))
+
+    removedFiles?.forEach {
+      fileMap.remove(it.absolutePath)?.forEach { outputFile ->
+        File(outputFile).backupFile().delete()
+      }
+    }
+
+    files.forEach { file ->
+      // Copy recursively, including last-modified-time of file and its parent dirs.
+      //
+      // `java.nio.file.Files.copy(path1, path2, options...)` keeps last-modified-time (if supported) according to
+      // https://docs.oracle.com/javase/7/docs/api/java/nio/file/Files.html
+      fun copy(src: File, dst: File, overwrite: Boolean) {
+        if (!dst.parentFile.exists())
+          copy(src.parentFile, dst.parentFile, false)
+        if (overwrite) {
+          Files.copy(
+            src.toPath(),
+            dst.toPath(),
+            StandardCopyOption.COPY_ATTRIBUTES,
+            StandardCopyOption.REPLACE_EXISTING
+          )
+        } else {
+          Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.COPY_ATTRIBUTES)
+        }
+      }
+
+      if (modifiedFiles == null || file.virtualFilePath in modifiedFiles.map { it.absolutePath }) {
+        processFile(module, file).forEach { generatedFile ->
+          fileMap.getOrPut(file.virtualFilePath) { mutableSetOf() } += generatedFile.absolutePath
+          copy(generatedFile, generatedFile.backupFile(), true)
+        }
+      } else {
+        fileMap[file.virtualFilePath]?.forEach { outputFile ->
+          copy(File(outputFile).backupFile(), File(outputFile), false)
+        }
+      }
+    }
+
+    if (fileMap.isNotEmpty()) {
+      fileMapFile.parentFile.mkdirs()
+      fileMapFile.createNewFile()
+      fileMapFile.writeText(
+        buildString {
+          fileMap
+            .forEach { (dependency, dependents) ->
+              dependents.forEach { dependent ->
+                appendLine("${dependency}=:=${dependent}")
+              }
+            }
+        }
+      )
+    } else {
+      fileMapFile.delete()
+    }
+
     return AnalysisResult.Companion.success(
       bindingContext = BindingContext.EMPTY,
       module = module,
@@ -74,14 +148,7 @@ class IncrementalFixAnalysisHandlerExtension(
     )
   }
 
-  private fun processFile(
-    project: Project,
-    module: ModuleDescriptor,
-    file: KtFile
-  ): KtFile {
-    if (file.text.contains(FILE_MARKER_COMMENT))
-      return file
-
+  private fun processFile(module: ModuleDescriptor, file: KtFile): List<File> {
     val injectables = mutableListOf<KtNamedDeclaration>()
 
     file.accept(
@@ -120,13 +187,11 @@ class IncrementalFixAnalysisHandlerExtension(
       }
     )
 
-    if (injectables.isEmpty()) return file
+    if (injectables.isEmpty()) return emptyList()
 
     val code = buildString {
-      appendLine(file.text)
+      appendLine("package ${file.packageFqName}")
 
-      appendLine()
-      appendLine(FILE_MARKER_COMMENT)
       appendLine()
 
       @Provide val ctx = Context(module, injektFqNames, null)
@@ -210,25 +275,14 @@ class IncrementalFixAnalysisHandlerExtension(
       }
     }
 
-    return KtFile(
-      viewProvider = object : SingleRootFileViewProvider(
-        PsiManager.getInstance(project),
-        file.virtualFile
-      ) {
-        override fun getDocument(): Document? = super.getDocument()
-          ?.also {
-            if (!it.text.contains(FILE_MARKER_COMMENT)) {
-              it.updatePrivateFinalField<Boolean>(
-                DocumentImpl::class,
-                "myAssertThreading"
-              ) { false }
-              it.setText(code)
-            }
-          }
-      }.also { it.document },
-      isCompiled = false
+    val injectableHashFile = srcDir.resolve(
+      (file.packageFqName.pathSegments().joinToString("/") +
+          "/${file.name.removeSuffix(".kt")}Hashes.kt")
     )
+    injectableHashFile.parentFile.mkdirs()
+    injectableHashFile.createNewFile()
+    injectableHashFile.writeText(code)
+
+    return listOf(injectableHashFile)
   }
 }
-
-private const val FILE_MARKER_COMMENT = "// injekt incremental " + "supporting declarations"

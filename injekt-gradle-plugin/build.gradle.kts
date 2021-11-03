@@ -31,6 +31,7 @@ buildConfig {
 dependencies {
   compileOnly(gradleApi())
   compileOnly(Deps.androidGradlePlugin)
+  compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.Kotlin.gradlePlugin)
   compileOnly(Deps.Kotlin.gradlePluginApi)
 }

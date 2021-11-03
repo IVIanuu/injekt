@@ -18,7 +18,6 @@
 
 package com.ivianuu.injekt.gradle
 
-import com.google.auto.service.AutoService
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.UnknownTaskException
@@ -26,45 +25,29 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.LocalState
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.*
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2MetadataCompilerArguments
-import org.jetbrains.kotlin.gradle.dsl.KotlinJsOptionsImpl
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptionsImpl
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformCommonOptionsImpl
-import org.jetbrains.kotlin.gradle.dsl.fillDefaultValues
+import org.jetbrains.kotlin.cli.common.arguments.*
+import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.internal.CompilerArgumentsContributor
 import org.jetbrains.kotlin.gradle.internal.compilerArgumentsConfigurationFlags
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.*
+import org.jetbrains.kotlin.gradle.plugin.mpp.AbstractKotlinNativeCompilation
+import org.jetbrains.kotlin.gradle.plugin.mpp.enabledOnCurrentHost
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinCompilationData
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinNativeCompilationData
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile.Configurator
-import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
-import org.jetbrains.kotlin.gradle.tasks.SourceRoots
 import org.jetbrains.kotlin.incremental.ChangedFiles
 import org.jetbrains.kotlin.incremental.destinationAsFile
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
 import java.io.File
+import java.util.concurrent.Callable
 import javax.inject.Inject
 
-@AutoService(KotlinCompilerPluginSupportPlugin::class)
-class InjektSubplugin : KotlinCompilerPluginSupportPlugin {
+class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
-    kotlinCompilation.target.project.plugins.hasPlugin(InjektSubplugin::class.java)
+    kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
 
   override fun apply(target: Project) {
     target.extensions.add("injekt", InjektExtension())
@@ -72,21 +55,21 @@ class InjektSubplugin : KotlinCompilerPluginSupportPlugin {
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
     val project = kotlinCompilation.target.project
-    val kotlinCompileProvider: TaskProvider<AbstractCompile> =
-      project.locateTask(kotlinCompilation.compileKotlinTaskName)
-        ?: return project.provider { emptyList() }
+
+    val extension = project.extensions.getByType(InjektExtension::class.java)
 
     val sourceSetName = kotlinCompilation.defaultSourceSetName
     val srcDir = srcDir(project, sourceSetName)
 
-    val injektTaskName = kotlinCompileProvider.name.replaceFirst("compile", "injekt")
+    val kotlinCompileProvider: TaskProvider<AbstractCompile> =
+      project.locateTask(kotlinCompilation.compileKotlinTaskName)
+        ?: return project.provider { emptyList() }
 
+    val injektTaskName = kotlinCompileProvider.name.replaceFirst("compile", "injekt")
 
     val kotlinCompileTask = kotlinCompileProvider.get()
 
-    val extension = project.extensions.getByType(InjektExtension::class.java)
-
-    /*fun configureAsInjektTask(injektTask: InjektTask) {
+    fun configure(injektTask: InjektTask) {
       injektTask.options.addAll(
         injektTask.project.provider {
           getSubpluginOptions(project, sourceSetName, extension, true)
@@ -94,15 +77,16 @@ class InjektSubplugin : KotlinCompilerPluginSupportPlugin {
       )
       injektTask.srcDir = srcDir
       injektTask.cacheDir = getCacheDir(project, sourceSetName)
-    }
 
-    fun configureAsAbstractCompile(injektTask: AbstractCompile) {
+      injektTask as AbstractKotlinCompile<*>
+
       injektTask.destinationDirectory.set(srcDir)
       injektTask.outputs.dirs(srcDir)
       injektTask.source(kotlinCompileTask.source)
       if (injektTask !is InjektTaskNative) {
         kotlinCompilation.output.classesDirs.from(srcDir)
       }
+      injektTask.source.filter { it.absolutePath.startsWith(srcDir.absolutePath) }
     }
 
     val injektTaskProvider = when (kotlinCompileTask) {
@@ -114,10 +98,15 @@ class InjektSubplugin : KotlinCompilerPluginSupportPlugin {
           else -> return project.provider { emptyList() }
         }
         project.tasks.register(injektTaskName, injektTaskClass) { injektTask ->
-          configureAsInjektTask(injektTask)
-          configureAsAbstractCompile(injektTask)
-
+          configure(injektTask)
           injektTask.classpath = kotlinCompileTask.project.files(Callable { kotlinCompileTask.classpath })
+
+          getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
+            kotlinCompilation.kotlinOptions.freeCompilerArgs += listOf(
+              "-P", "plugin:com.ivianuu.injekt:${option.key}=${option.value}"
+            )
+          }
+
           injektTask.configureCompilation(
             kotlinCompilation as KotlinCompilationData<*>,
             kotlinCompileTask,
@@ -131,8 +120,7 @@ class InjektSubplugin : KotlinCompilerPluginSupportPlugin {
         project.tasks.register(injektTaskName, injektTaskClass, kotlinCompileTask.compilation).apply {
           configure { injektTask ->
             injektTask.onlyIf { kotlinCompileTask.compilation.konanTarget.enabledOnCurrentHost }
-            configureAsInjektTask(injektTask)
-            configureAsAbstractCompile(injektTask)
+            configure(injektTask)
             injektTask.compilerPluginClasspath = project.configurations.getByName(pluginConfigurationName)
             injektTask.commonSources.from(kotlinCompileTask.commonSources)
           }
@@ -144,11 +132,9 @@ class InjektSubplugin : KotlinCompilerPluginSupportPlugin {
     kotlinCompileProvider.configure { kotlinCompile ->
       kotlinCompile.dependsOn(injektTaskProvider)
       kotlinCompile.source(srcDir)
-    }*/
-
-    return project.provider {
-      getSubpluginOptions(project, sourceSetName, extension, false)
     }
+
+    return project.provider { emptyList() }
   }
 
   override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
@@ -353,11 +339,11 @@ private fun getSubpluginOptions(
   forInjektTask: Boolean
 ): List<SubpluginOption> {
   val options = mutableListOf<SubpluginOption>()
-  options += SubpluginOption("rootPackage", extension.rootPackage)
   if (forInjektTask) {
     options += SubpluginOption("cacheDir", getCacheDir(project, sourceSetName).path)
     options += SubpluginOption("srcDir", srcDir(project, sourceSetName).path)
   } else {
+    options += SubpluginOption("rootPackage", extension.rootPackage)
     options += SubpluginOption("dumpDir", getDumpDir(project, sourceSetName).path)
     options += SubpluginOption("infoDir", getInfoDir(project, sourceSetName).path)
   }
@@ -386,16 +372,16 @@ private inline fun <reified T : Task> Project.locateTask(name: String): TaskProv
 private fun SubpluginOption.toArg() = "plugin:com.ivianuu.injekt:$key=$value"
 
 private fun CommonCompilerArguments.addPluginOptions(options: List<SubpluginOption>) {
-  pluginOptions = (options.map { it.toArg() } + pluginOptions!!).distinct().toTypedArray()
+  pluginOptions = (options.map { it.toArg() } + pluginOptions!!).toTypedArray()
 }
 
 private fun CommonCompilerArguments.addChangedFiles(changedFiles: ChangedFiles) {
   if (changedFiles is ChangedFiles.Known) {
     val options = mutableListOf<SubpluginOption>()
-    changedFiles.modified.filter { it.endsWith(".kt") }.ifNotEmpty {
+    changedFiles.modified.filter { it.extension == "kt" }.ifNotEmpty {
       options += SubpluginOption("modifiedFiles", joinToString(File.pathSeparator) { it.path })
     }
-    changedFiles.removed.filter { it.endsWith(".kt") }.ifNotEmpty {
+    changedFiles.removed.filter { it.extension == "kt" }.ifNotEmpty {
       options += SubpluginOption("removedFiles", joinToString(File.pathSeparator) { it.path })
     }
     options.ifNotEmpty { addPluginOptions(this) }
