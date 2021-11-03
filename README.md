@@ -1,7 +1,6 @@
 # Injekt
 
-Next gen dependency injection library for Kotlin
-
+Next gen dependency injection library for Kotlin.
 # Example:
 ```kotlin
 data class User(val id: Long)
@@ -55,7 +54,7 @@ fun main() {
 }
 ```
 
-The inject<T>() is declared in the core module and simply defined as follows:
+The inject<T>() function is declared in the core module and simply defined as follows:
 ```kotlin
 inline fun <T> inject(@Inject value: T) = value
 ```
@@ -85,7 +84,7 @@ fun run(@Provide config: Config) {
 # How injectables will be resolved
 1. Injekt looks at all provided injectables in the current scope 
 e.g. enclosing local variables, function parameters, classes, injectables in the current package and so on
-and chooses the closest most specific one:
+and chooses the closest most specific one.
 ```kotlin
 suspend fun main() {
   @Provide val dispatcher: IoDispatcher = ...
@@ -95,7 +94,7 @@ suspend fun main() {
 ```
 
 2. Injekt will also consider declarations imported with the ```@Providers(...)```.
-The ```@Providers``` can be placed anywhere in a file and will only affect the nested scope:
+The ```@Providers``` can be placed anywhere in a file and will only affect the nested scope.
 ```kotlin
 // file wide imports
 @file:Providers("injectables.*")
@@ -116,13 +115,13 @@ class MyClass {
 ```
 
 3. If no injectable was found injekt will look into the package of the injected type and also in 
-   all of it's arguments and super types
+   the packages of all of it's arguments and super types.
 
 Provider imports are only required if the injectable is not in the current scope 
 or in a package of the injected type
 
 # Function support
-If you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
+Sometimes you want to delay the creation, need multiple instances or if you want to provide additional parameters dynamically.
 You can do this by injecting a function.
 ```kotlin
 fun main(tokenFactory: () -> Token) {
