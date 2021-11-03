@@ -57,8 +57,6 @@ object Deps {
     const val work = "androidx.work:work-runtime-ktx:2.7.0"
   }
 
-  const val autoService = "com.google.auto.service:auto-service:1.0-rc7"
-
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Coroutines {
@@ -70,13 +68,12 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
-  const val injektCompilerPlugin = "com.ivianuu.injekt:injekt-compiler-plugin:0.0.1-dev640"
+  const val injektGradlePluginShaded = "com.ivianuu.injekt:injekt-gradle-plugin-shaded:0.0.1-dev643"
 
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
     const val version = "1.5.31"
-    const val compiler = "org.jetbrains.kot#lin:kotlin-compiler:$version"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -97,5 +94,5 @@ object Deps {
 
   const val roboelectric = "org.robolectric:robolectric:4.4"
 
-  const val shadowGradlePlugin = "com.github.jengelman.gradle.plugins:shadow:6.1.0"
+  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.0"
 }

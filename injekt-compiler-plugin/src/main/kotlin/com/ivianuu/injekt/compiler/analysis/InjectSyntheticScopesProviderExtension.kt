@@ -18,8 +18,8 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor

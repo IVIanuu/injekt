@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.name.FqName
 
-class InjektFqNames(val injektPackage: FqName) {
+class InjektFqNames(injektPackage: FqName) {
   val inject = injektPackage.child("Inject".asNameId())
   val provide = injektPackage.child("Provide".asNameId())
   val providers = injektPackage.child("Providers".asNameId())
@@ -29,7 +29,6 @@ class InjektFqNames(val injektPackage: FqName) {
   val internalPackage = injektPackage.child("internal".asNameId())
   val callableInfo = internalPackage.child("CallableInfo".asNameId())
   val classifierInfo = internalPackage.child("ClassifierInfo".asNameId())
-  val injectNInfo = internalPackage.child("InjectNInfo".asNameId())
   val typeParameterInfos = internalPackage.child("TypeParameterInfos".asNameId())
 
   val commonPackage = injektPackage.child("common".asNameId())
@@ -50,3 +49,5 @@ class InjektFqNames(val injektPackage: FqName) {
     val Default = InjektFqNames(FqName("com.ivianuu.injekt"))
   }
 }
+
+fun String.combine(other: String) = this + other

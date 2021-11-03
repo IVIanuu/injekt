@@ -27,8 +27,8 @@ import com.ivianuu.injekt.compiler.resolution.ProviderImport
 import com.ivianuu.injekt.compiler.resolution.getProviderImports
 import com.ivianuu.injekt.compiler.resolution.isValidImport
 import com.ivianuu.injekt.compiler.trace
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor

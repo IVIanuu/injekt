@@ -15,23 +15,12 @@
  */
 
 plugins {
-  id("java-gradle-plugin")
   kotlin("jvm")
-  kotlin("kapt")
   id("com.github.gmazzo.buildconfig") version "3.0.2"
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-
-gradlePlugin {
-  plugins {
-    create("injektPlugin") {
-      id = "com.ivianuu.injekt"
-      implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
-    }
-  }
-}
 
 buildConfig {
   className("BuildConfig")
@@ -40,11 +29,10 @@ buildConfig {
 }
 
 dependencies {
-  implementation(Deps.autoService)
-  kapt(Deps.autoService)
-  implementation(Deps.androidGradlePlugin)
-  implementation(Deps.Kotlin.gradlePlugin)
-  implementation(Deps.Kotlin.gradlePluginApi)
+  compileOnly(gradleApi())
+  compileOnly(Deps.androidGradlePlugin)
+  compileOnly(Deps.Kotlin.gradlePlugin)
+  compileOnly(Deps.Kotlin.gradlePluginApi)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

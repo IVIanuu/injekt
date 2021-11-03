@@ -42,8 +42,8 @@ import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
-import com.ivianuu.injekt_shaded.Inject
-import com.ivianuu.injekt_shaded.inject
+import com.ivianuu.shaded_injekt.Inject
+import com.ivianuu.shaded_injekt.inject
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters

@@ -16,7 +16,7 @@
 
 @file:Suppress("NOTHING_TO_INLINE")
 
-package com.ivianuu.injekt_shaded
+package com.ivianuu.shaded_injekt
 
 @Target(
   // @Provide class MyClass

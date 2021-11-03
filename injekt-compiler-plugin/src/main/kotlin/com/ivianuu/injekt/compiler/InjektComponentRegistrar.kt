@@ -16,13 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.IncrementalFixAnalysisHandlerExtension
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
-import com.ivianuu.injekt_shaded.Provide
+import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -37,7 +36,6 @@ import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
 import java.io.File
 
-@AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
   override fun registerProjectComponents(
     project: MockProject,
