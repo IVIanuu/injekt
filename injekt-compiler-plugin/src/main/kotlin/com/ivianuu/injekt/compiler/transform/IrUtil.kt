@@ -73,7 +73,7 @@ fun ClassDescriptor.irClass(
 ): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
-      .single { it.descriptor.fqNameSafe == fqNameSafe }
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
 
   return irCtx.referenceClass(fqNameSafe)!!
     .owner
@@ -87,7 +87,7 @@ fun ClassConstructorDescriptor.irConstructor(
 ): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
-      .single { it.descriptor.fqNameSafe == constructedClass.fqNameSafe }
+      .single { it.descriptor.uniqueKey() == constructedClass.uniqueKey() }
       .constructors
       .single { it.descriptor.uniqueKey() == uniqueKey() }
 
@@ -193,7 +193,7 @@ fun TypeRef.toIrType(
       val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
       val irClassifier = localDeclarationCollector.localClasses.singleOrNull {
-        it.descriptor.fqNameSafe == fqName
+        it.descriptor.uniqueKey() == key
       }
         ?.symbol
         ?: irCtx.referenceClass(fqName)
