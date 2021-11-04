@@ -36,8 +36,8 @@ import com.intellij.psi.PsiReferenceProvider
 import com.intellij.psi.PsiReferenceRegistrar
 import com.intellij.util.ProcessingContext
 import com.intellij.util.ThreeState
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.injektContext
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.idea.KotlinDescriptorIconProvider
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
@@ -74,7 +74,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           val refs = mutableListOf<PsiReference>()
 
           val module = element.getResolutionFacade().moduleDescriptor
-          val injektContext = module.injektContext
+          val injektContext = Context(module, module.injektFqNames(), null)
           val psiFacade = KotlinJavaPsiFacade.getInstance(element.project)
 
           fun resolveFqName(fqName: String, endOffset: Int) {
@@ -99,7 +99,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
                   return@lazy psiFacade.findPackage(finalFqName.asString(), element.resolveScope)
                 }
 
-                injektContext.memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE)
+                memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE, injektContext)
                   ?.getContributedDescriptors { it == finalFqName.shortName() }
                   ?.firstOrNull()
                   ?.findPsiDeclarations(element.project, element.resolveScope)
@@ -124,7 +124,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 }
 
 fun KtStringTemplateExpression.isProviderImport() = getParentOfType<KtAnnotationEntry>(false)
-  ?.takeIf { it.typeReference?.text == InjektFqNames.Providers.shortName().asString() } != null
+  ?.takeIf { it.typeReference?.text == injektFqNames().providers.shortName().asString() } != null
 
 class ImportCompletionExtension : KotlinCompletionExtension() {
   override fun perform(parameters: CompletionParameters, result: CompletionResultSet): Boolean {
@@ -144,11 +144,12 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     val prefix = template.text.substring(range.startOffset, offsetInElement)
 
     val module = template.getResolutionFacade().moduleDescriptor
-    val injektContext = module.injektContext
+    val injektContext = Context(module, module.injektFqNames(), null)
 
-    injektContext.memberScopeForFqName(
+    memberScopeForFqName(
       importReference.fqName.parent(),
-      NoLookupLocation.FROM_IDE
+      NoLookupLocation.FROM_IDE,
+      injektContext
     )
       ?.getContributedDescriptors()
       ?.filter { declaration ->
@@ -182,7 +183,7 @@ class ImportTypedHandlerDelegate : TypedHandlerDelegate() {
       ?.getParentOfType<KtStringTemplateExpression>(false)
       ?.getParentOfType<KtAnnotationEntry>(false)
       ?.takeIf {
-        it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
+        it.typeReference?.text == file.injektFqNames().providers.shortName().asString()
       }
       ?: return super.beforeCharTyped(c, project, editor, file, fileType)
 
@@ -203,7 +204,7 @@ class ImportTypedHandlerDelegate : TypedHandlerDelegate() {
       ?.getParentOfType<KtStringTemplateExpression>(false)
       ?.getParentOfType<KtAnnotationEntry>(false)
       ?.takeIf {
-        it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
+        it.typeReference?.text == file.injektFqNames().providers.shortName().asString()
       }
       ?: return super.checkAutoPopup(charTyped, project, editor, file)
 
@@ -222,7 +223,7 @@ class ImportCompletionConfidence : CompletionConfidence() {
     .getParentOfType<KtStringTemplateExpression>(false)
     ?.getParentOfType<KtAnnotationEntry>(false)
     ?.takeIf {
-      it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
+      it.typeReference?.text == contextElement.injektFqNames().providers.shortName().asString()
     }
     ?.let { ThreeState.NO } ?: ThreeState.UNSURE
 }

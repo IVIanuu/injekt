@@ -58,12 +58,12 @@ class InjektReferencesSearcher :
             element.accept(
               expressionRecursiveVisitor { expression ->
                 if (expression is KtStringTemplateExpression &&
-                        expression.isProviderImport()) {
+                  expression.isProviderImport()) {
                   tasks += {
                     expression.references
-                                .filterIsInstance<ImportElementReference>()
-                                .filter { it.isReferenceTo(ktElement) }
-                                .forEach { processor.process(it) }
+                      .filterIsInstance<ImportElementReference>()
+                      .filter { it.isReferenceTo(ktElement) }
+                      .forEach { processor.process(it) }
                   }
                 }
               }

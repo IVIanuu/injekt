@@ -20,15 +20,14 @@ import com.intellij.codeInspection.InspectionSuppressor
 import com.intellij.codeInspection.SuppressQuickFix
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.AnalysisContext
+import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injektContext
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
+import org.jetbrains.kotlin.idea.util.module
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtTypeAlias
@@ -49,13 +48,14 @@ class InjektInspectionSuppressor : InspectionSuppressor {
 
   override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
     if (!element.isInjektEnabled()) return false
+    val injektFqNames = element.injektFqNames()
     when (toolId) {
       "RedundantExplicitType" -> {
         if (element is KtTypeReference)
           element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
             .let { element.getAbbreviatedTypeOrType(it) }
             .let {
-              return it?.getAnnotatedAnnotations(InjektFqNames.Tag)
+              return it?.getAnnotatedAnnotations(injektFqNames.tag)
                 ?.isNotEmpty() == true
             }
         else return false
@@ -71,20 +71,19 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             val abbreviation = typeArgument.getAbbreviation()
             (abbreviation != null && typeParameter.defaultType.supertypes()
               .none { it.getAbbreviation() == typeArgument }) ||
-                typeArgument.toTypeRef(context = AnalysisContext(
-                  resolvedCall.candidateDescriptor.module
-                    .injektContext
-                )).anyType { it.classifier.isTag }
+                typeArgument.toTypeRef(ctx = Context(
+                  resolvedCall.candidateDescriptor.module, injektFqNames, null))
+                  .anyType { it.classifier.isTag }
           }
       }
       "unused" -> {
         if (element !is LeafPsiElement) return false
         val typeParameter = element.parent.safeAs<KtTypeParameter>()
           ?: return false
-        return typeParameter.hasAnnotation(InjektFqNames.Spread) ||
+        return typeParameter.hasAnnotation(injektFqNames.spread) ||
             typeParameter.parent.parent is KtTypeAlias ||
             typeParameter.parent.parent.safeAs<KtClass>()
-              ?.hasAnnotation(InjektFqNames.Tag) == true
+              ?.hasAnnotation(injektFqNames.tag) == true
       }
       else -> return false
     }

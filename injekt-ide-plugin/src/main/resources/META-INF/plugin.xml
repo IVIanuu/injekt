@@ -30,7 +30,7 @@
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
+    <!--<extensions defaultExtensionNs="com.intellij">
         <referencesSearch
             implementation="com.ivianuu.injekt.ide.InjektReferencesSearcher"/>
 
@@ -44,9 +44,9 @@
             language="kotlin"
             order="first"
             implementationClass="com.ivianuu.injekt.ide.ImportCompletionConfidence"/>
-
+-->
         <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
-
+<!---
         <lang.inspectionSuppressor language="kotlin"
             implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />
     </extensions>
@@ -54,6 +54,6 @@
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <completionExtension
             implementation="com.ivianuu.injekt.ide.ImportCompletionExtension"/>
-    </extensions>
+    </extensions>-->
 
 </idea-plugin>

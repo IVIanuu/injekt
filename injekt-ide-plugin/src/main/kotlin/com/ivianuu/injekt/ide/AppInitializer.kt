@@ -48,19 +48,13 @@ class AppInitializer : ApplicationInitializedListener {
         ProjectManager.TOPIC,
         object : ProjectManagerListener {
           override fun projectOpened(project: Project) {
-            val fqNamesProvider: (ModuleDescriptor) -> InjektFqNames = provider@ {
-              it.moduleInfo?.unwrapModuleSourceInfo()?.module
-                ?.getOptionValueInFacet(RootPackageOption)
-                ?.let { InjektFqNames(FqName(it)) }
-                ?: InjektFqNames.Default
-            }
             StorageComponentContainerContributor.registerExtension(
               project,
-              InjektStorageComponentContainerContributor(fqNamesProvider)
+              InjektStorageComponentContainerContributor { it.injektFqNames() }
             )
             SyntheticScopeProviderExtension.registerExtension(
               project,
-              InjectSyntheticScopeProviderExtension(injektFqNames = fqNamesProvider) {
+              InjectSyntheticScopeProviderExtension(injektFqNames = { it.injektFqNames() }) {
                 it.moduleInfo?.unwrapModuleSourceInfo()?.module
                   ?.getOptionValueInFacet(RootPackageOption) != null
               }
@@ -72,17 +66,4 @@ class AppInitializer : ApplicationInitializedListener {
         }
       )
   }
-}
-
-fun Module.getOptionValueInFacet(option: AbstractCliOption): String? {
-  val kotlinFacet = KotlinFacet.get(this) ?: return null
-  val commonArgs = kotlinFacet.configuration.settings.compilerArguments ?: return null
-
-  val prefix = "plugin:com.ivianuu.injekt:${option.optionName}="
-
-  val optionValue = commonArgs.pluginOptions
-    ?.firstOrNull { it.startsWith(prefix) }
-    ?.substring(prefix.length)
-
-  return optionValue
 }
