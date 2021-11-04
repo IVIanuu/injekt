@@ -220,7 +220,7 @@ class SpreadingInjectableTest {
       fun invoke() = inject<List<UiDecorator>>().size 
     """
   ) {
-    1 shouldBe invokeSingleFile()
+    invokeSingleFile() shouldBe 1
   }
 
   @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(

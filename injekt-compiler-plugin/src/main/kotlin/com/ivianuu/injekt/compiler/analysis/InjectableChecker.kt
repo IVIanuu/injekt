@@ -86,6 +86,8 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
     }
+    descriptor.valueParameters
+      .checkHasNotMoreThanOneInjectAnnotatedParameter(declaration)
     checkOverrides(declaration, descriptor)
     checkExceptActual(declaration, descriptor)
     checkReceiver(descriptor, declaration)
@@ -187,9 +189,12 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     if (descriptor.isProvide()) {
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
-    } else {
-      checkExceptActual(declaration, descriptor)
     }
+
+    checkExceptActual(declaration, descriptor)
+
+    descriptor.valueParameters
+      .checkHasNotMoreThanOneInjectAnnotatedParameter(declaration)
   }
 
   private fun checkProperty(
@@ -375,6 +380,22 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
               .on(parameter.findPsi() ?: declaration)
           )
         }
+      }
+  }
+
+  private fun List<ParameterDescriptor>.checkHasNotMoreThanOneInjectAnnotatedParameter(
+    declaration: KtDeclaration,
+    @Inject ctx: Context
+  ) {
+    if (isEmpty()) return
+    this
+      .filter { it.hasAnnotation(injektFqNames().inject) }
+      .drop(1)
+      .forEach {
+        trace()!!.report(
+          InjektErrors.MULTIPLE_INJECT_PARAMETERS
+            .on(it.findPsi() ?: declaration)
+        )
       }
   }
 }

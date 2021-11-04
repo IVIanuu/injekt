@@ -184,7 +184,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testInjectValueParameter() = codegen(
@@ -193,7 +193,19 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testMultipleInjectValueParameter() = codegen(
+    """
+      fun invoke(@Inject foo: Foo, bar: Bar) = inject<Foo>() to inject<Bar>()
+    """
+  ) {
+    val foo = Foo()
+    val bar = Bar(foo)
+    val (a, b) = invokeSingleFile<Pair<Foo, Bar>>(foo, bar)
+    foo shouldBeSameInstanceAs a
+    bar shouldBeSameInstanceAs b
   }
 
   @Test fun testProvideLocalVariable() = codegen(
@@ -205,7 +217,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideDelegatedLocalVariable() = codegen(
@@ -217,7 +229,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testInjectPrimaryConstructorParameterInClassInitializer() = singleAndMultiCodegen(
@@ -234,7 +246,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testInjectPrimaryConstructorParameterInClassBody() = singleAndMultiCodegen(
@@ -248,7 +260,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testClassDeclarationInClassBody() = singleAndMultiCodegen(
@@ -263,7 +275,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testInjectConstructorParameterInConstructorBody() = singleAndMultiCodegen(
@@ -280,7 +292,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testImportedProvideFunctionInObject() = singleAndMultiCodegen(
@@ -337,8 +349,7 @@ class InjectableDeclarationTest {
       )
     )
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
@@ -350,7 +361,22 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testMultipleInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
+    """
+      inline fun <T, S, R> withProvidedInstances(@Provide t: T, @Provide s: S, block: (@Inject T, S) -> R) = block()
+    """,
+    """
+      fun invoke(foo: Foo, bar: Bar) = withProvidedInstances(foo, bar) { _, _ -> inject<Foo>() to inject<Bar>() }
+    """
+  ) {
+    val foo = Foo()
+    val bar = Bar(foo)
+    val (a, b) = invokeSingleFile<Pair<Foo, Bar>>(foo, bar)
+    a shouldBeSameInstanceAs foo
+    b shouldBeSameInstanceAs bar
   }
 
   @Test fun testInjectLambdaParameterDeclarationSiteWithTypeAlias() = singleAndMultiCodegen(
@@ -363,7 +389,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(
@@ -410,7 +436,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanLeaveOutInjectLambdaParametersWithTypeAlias() = singleAndMultiCodegen(
@@ -423,7 +449,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanLeaveOutInjectExtensionLambdaParameters() = singleAndMultiCodegen(
@@ -435,7 +461,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
@@ -447,7 +473,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
@@ -459,7 +485,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideInNestedBlock() = codegen(
@@ -476,8 +502,8 @@ class InjectableDeclarationTest {
     val a = Foo()
     val b = Foo()
     val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
-    a shouldBeSameInstanceAs result.first
-    b shouldBeSameInstanceAs result.second
+    result.first shouldBeSameInstanceAs a
+    result.second shouldBeSameInstanceAs b
   }
 
   @Test fun testProvideInTheMiddleOfABlock() = codegen(
@@ -508,7 +534,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideLocalFunction() = codegen(
@@ -520,7 +546,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testLocalObject() = codegen(
@@ -546,7 +572,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideNestedClass() = codegen(
@@ -559,7 +585,7 @@ class InjectableDeclarationTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideSuspendFunction() = singleAndMultiCodegen(

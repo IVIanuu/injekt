@@ -81,7 +81,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 data class CallableInfo(
   val type: TypeRef,
   val parameterTypes: Map<Int, TypeRef>,
-  val injectParameters: Set<Int>,
+  val injectParameterIndex: Int?,
   val scopeComponentType: TypeRef?,
   val isEager: Boolean
 )
@@ -152,15 +152,20 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
       .map { it.injektIndex() to it.type.toTypeRef() }
       .toMap()
 
-    val injectParameters = allParameters
-      .filter {
-        it.hasAnnotation(injektFqNames().inject) ||
-            ((this is FunctionInvokeDescriptor ||
-                (this is InjectFunctionDescriptor &&
-                    underlyingDescriptor is FunctionInvokeDescriptor)) &&
-                it.type.hasAnnotation(injektFqNames().inject))
-      }
-      .mapTo(mutableSetOf()) { it.injektIndex() }
+    val injectParameterIndex = if (hasAnnotation(injektFqNames().provide))
+      dispatchReceiverParameter?.let { DISPATCH_RECEIVER_INDEX }
+        ?: extensionReceiverParameter?.let { EXTENSION_RECEIVER_INDEX }
+        ?: 0
+    else
+      valueParameters
+        .firstOrNull {
+          it.hasAnnotation(injektFqNames().inject) ||
+              ((this is FunctionInvokeDescriptor ||
+                  (this is InjectFunctionDescriptor &&
+                      underlyingDescriptor is FunctionInvokeDescriptor)) &&
+                  it.type.hasAnnotation(injektFqNames().inject))
+        }
+        ?.injektIndex()
 
     val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped) ?:
     safeAs<ConstructorDescriptor>()?.constructedClass?.annotations?.findAnnotation(injektFqNames().scoped)
@@ -171,7 +176,7 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
     val info = CallableInfo(
       type = type,
       parameterTypes = parameterTypes,
-      injectParameters = injectParameters,
+      injectParameterIndex = injectParameterIndex,
       scopeComponentType = scopeComponentType,
       isEager = isEager
     )
@@ -228,7 +233,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
 @Serializable data class PersistedCallableInfo(
   val type: PersistedTypeRef,
   val parameterTypes: Map<Int, PersistedTypeRef>,
-  val injectParameters: Set<Int>,
+  val injectParameterIndex: Int?,
   val scopeComponentType: PersistedTypeRef?,
   val isEager: Boolean
 )
@@ -237,20 +242,19 @@ fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallab
   type = type.toPersistedTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
-  injectParameters = injectParameters,
+  injectParameterIndex = injectParameterIndex,
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
   isEager = isEager
 )
 
-fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) =
-  CallableInfo(
-    type = type.toTypeRef(),
-    parameterTypes = parameterTypes
-      .mapValues { it.value.toTypeRef() },
-    injectParameters = injectParameters,
-    scopeComponentType = scopeComponentType?.toTypeRef(),
-    isEager = isEager
-  )
+fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) = CallableInfo(
+  type = type.toTypeRef(),
+  parameterTypes = parameterTypes
+    .mapValues { it.value.toTypeRef() },
+  injectParameterIndex = injectParameterIndex,
+  scopeComponentType = scopeComponentType?.toTypeRef(),
+  isEager = isEager
+)
 
 /**
  * Stores information about a classifier which is NOT stored by the kotlin compiler

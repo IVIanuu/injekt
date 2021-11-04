@@ -248,7 +248,7 @@ class InjectableResolutionTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
@@ -258,7 +258,7 @@ class InjectableResolutionTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testPrefsInnerBlockInjectable() = codegen(
@@ -455,7 +455,7 @@ class InjectableResolutionTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(

@@ -24,7 +24,7 @@ fun main() {
   makeCoffee()
 }
 
-private fun makeCoffee(@Inject heater: Heater, @Inject pump: Pump) {
+private fun makeCoffee(@Inject heater: Heater, pump: Pump) {
   heater.on()
   pump()
   println(" [_]P coffee! [_]P ")

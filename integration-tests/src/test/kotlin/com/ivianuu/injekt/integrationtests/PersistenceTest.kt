@@ -139,7 +139,7 @@ class PersistenceTest {
       typealias MyAlias<T> = OtherAlias<T>
       typealias OtherAlias<S> = String
       fun <T> largeFunc(${
-        (1..150).map { "@Inject p$it: MyAlias<T>" }.joinToString("\n,")
+        (1..150).map { "${if (it == 1) "@Inject " else ""}p$it: MyAlias<T>" }.joinToString("\n,")
       }): String = ""
     """,
     """

@@ -296,7 +296,7 @@ class InjectableResolveTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testLocalConstructorInvocationWithInjectables() = codegen(
@@ -318,7 +318,7 @@ class InjectableResolveTest {
     """
   ) {
     val foo = Foo()
-    foo shouldBeSameInstanceAs invokeSingleFile(foo)
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanResolveInjectableWhichDependsOnAssistedInjectableOfTheSameType() = singleAndMultiCodegen(
@@ -1173,7 +1173,7 @@ class InjectableResolveTest {
       fun <T> produceState(
         vararg keys: Any?,
         @Inject scope: Scope,
-        @Inject key: SourceKey
+        Nkey: SourceKey
       ): State<T> = TODO()
 
       fun invoke(@Inject scope: Scope) {

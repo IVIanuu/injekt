@@ -153,4 +153,25 @@ class InjectableDeclarationCheckTest {
   ) {
     compilationShouldHaveFailed("injectable variable must be initialized, delegated or marked with lateinit")
   }
+
+  @Test fun testMultipleInjectAnnotatedFunctionParameters() = codegen(
+    """
+      fun invoke(@Inject foo: Foo, @Inject bar: Bar) {
+      }
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "parameters after the first @Inject parameter are automatically treated as inject parameters"
+    )
+  }
+
+  @Test fun testMultipleInjectAnnotatedConstructorParameters() = codegen(
+    """
+      class MyClass(@Inject foo: Foo, @Inject bar: Bar)
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "parameters after the first @Inject parameter are automatically treated as inject parameters"
+    )
+  }
 }
