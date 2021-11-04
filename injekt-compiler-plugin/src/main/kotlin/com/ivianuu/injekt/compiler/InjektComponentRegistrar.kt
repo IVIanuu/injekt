@@ -58,7 +58,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
 private fun MockProject.registerCodegenExtensions(
   @Inject configuration: CompilerConfiguration,
-  @Inject injektFqNames: InjektFqNames
+  injektFqNames: InjektFqNames
 ) {
   val srcDir = configuration.getNotNull(SrcDirKey)
   val cacheDir = configuration.getNotNull(CacheDirKey)
@@ -74,7 +74,7 @@ private fun MockProject.registerCodegenExtensions(
 
 private fun MockProject.registerAnalysisExtensions(
   @Inject configuration: CompilerConfiguration,
-  @Inject injektFqNames: InjektFqNames
+  injektFqNames: InjektFqNames
 ) {
   StorageComponentContainerContributor.registerExtension(
     this,

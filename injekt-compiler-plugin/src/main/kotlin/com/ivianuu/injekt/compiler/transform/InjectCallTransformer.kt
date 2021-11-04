@@ -144,8 +144,8 @@ import kotlin.collections.set
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjectCallTransformer(
   @Inject private val localDeclarationCollector: LocalDeclarationCollector,
-  @Inject private val irCtx: IrPluginContext,
-  @Inject private val ctx: Context
+  private val irCtx: IrPluginContext,
+  private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,

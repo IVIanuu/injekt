@@ -144,7 +144,8 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = "com.ivianuu.injek".combine("t"),
-    artifactId = "injekt-compiler-plugin",
+    artifactId = if (javaClass.name == "com.ivianuu.shaded_injekt.gradle.InjektPlugin")
+      "injekt-compiler-plugin-shaded" else "injekt-compiler-plugin",
     version = BuildConfig.VERSION
   )
 }

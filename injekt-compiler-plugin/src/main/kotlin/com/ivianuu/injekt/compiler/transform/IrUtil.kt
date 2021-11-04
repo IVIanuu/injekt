@@ -68,8 +68,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassDescriptor.irClass(
   @Inject ctx: Context,
-  @Inject irCtx: IrPluginContext,
-  @Inject localDeclarationCollector: LocalDeclarationCollector
+  irCtx: IrPluginContext,
+  localDeclarationCollector: LocalDeclarationCollector
 ): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
@@ -82,8 +82,8 @@ fun ClassDescriptor.irClass(
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassConstructorDescriptor.irConstructor(
   @Inject ctx: Context,
-  @Inject irCtx: IrPluginContext,
-  @Inject localDeclarationCollector: LocalDeclarationCollector
+  irCtx: IrPluginContext,
+  localDeclarationCollector: LocalDeclarationCollector
 ): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
@@ -99,8 +99,8 @@ fun ClassConstructorDescriptor.irConstructor(
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun FunctionDescriptor.irFunction(
   @Inject ctx: Context,
-  @Inject irCtx: IrPluginContext,
-  @Inject localDeclarationCollector: LocalDeclarationCollector
+  irCtx: IrPluginContext,
+  localDeclarationCollector: LocalDeclarationCollector
 ): IrFunction {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localFunctions.single {
@@ -121,8 +121,8 @@ fun FunctionDescriptor.irFunction(
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun PropertyDescriptor.irProperty(
   @Inject ctx: Context,
-  @Inject irCtx: IrPluginContext,
-  @Inject localDeclarationCollector: LocalDeclarationCollector
+  irCtx: IrPluginContext,
+  localDeclarationCollector: LocalDeclarationCollector
 ): IrProperty {
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
@@ -138,8 +138,8 @@ fun PropertyDescriptor.irProperty(
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
   @Inject irCtx: IrPluginContext,
-  @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject ctx: Context
+  localDeclarationCollector: LocalDeclarationCollector,
+  ctx: Context
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
@@ -231,8 +231,8 @@ fun TypeRef.toIrType(
 
 private fun TypeRef.toIrAbbreviation(
   @Inject irCtx: IrPluginContext,
-  @Inject localDeclarationCollector: LocalDeclarationCollector,
-  @Inject ctx: Context
+  localDeclarationCollector: LocalDeclarationCollector,
+  ctx: Context
 ): IrTypeAbbreviation {
   val typeAlias = irCtx.referenceTypeAlias(classifier.fqName)!!
   return IrTypeAbbreviationImpl(
