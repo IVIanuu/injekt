@@ -34,7 +34,8 @@ class InjektCommandLineProcessor : CommandLineProcessor {
     SrcDirOption,
     CacheDirOption,
     ModifiedFilesOption,
-    RemovedFilesOption
+    RemovedFilesOption,
+    WithCompilationOption
   )
 
   override fun processOption(
@@ -55,6 +56,9 @@ class InjektCommandLineProcessor : CommandLineProcessor {
       RemovedFilesOption.optionName -> configuration.put(
         RemovedFilesKey,
         value.split(File.pathSeparator).map { File(it) }
+      )
+      WithCompilationOption.optionName -> configuration.put(
+        WithCompilationKey, value.toBoolean()
       )
     }
   }
@@ -117,3 +121,11 @@ val RemovedFilesOption = CliOption(
   required = false
 )
 val RemovedFilesKey = CompilerConfigurationKey<List<File>>("removedFiles")
+
+val WithCompilationOption = CliOption(
+  optionName = "withCompilation",
+  valueDescription = "withCompilation",
+  description = "withCompilation",
+  required = false
+)
+val WithCompilationKey = CompilerConfigurationKey<Boolean>("withCompilation")

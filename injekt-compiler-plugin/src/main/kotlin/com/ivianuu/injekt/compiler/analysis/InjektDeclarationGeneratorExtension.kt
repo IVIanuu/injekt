@@ -50,11 +50,12 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.Base64
 
-class IncrementalFixAnalysisHandlerExtension(
+class InjektDeclarationGeneratorExtension(
   private val srcDir: File,
   cacheDir: File,
   private val modifiedFiles: List<File>?,
   private val removedFiles: List<File>?,
+  private val withCompilation: Boolean,
   @Inject private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
   private val backupDir = cacheDir.resolve("backups")
@@ -76,6 +77,8 @@ class IncrementalFixAnalysisHandlerExtension(
     }
     .toMutableMap()
 
+  private var finished = false
+
   override fun doAnalysis(
     project: Project,
     module: ModuleDescriptor,
@@ -83,7 +86,15 @@ class IncrementalFixAnalysisHandlerExtension(
     files: Collection<KtFile>,
     bindingTrace: BindingTrace,
     componentProvider: ComponentProvider
-  ): AnalysisResult {
+  ): AnalysisResult? {
+    if (finished) {
+      if (!withCompilation)
+        throw IllegalStateException("KSP is re-entered unexpectedly.")
+      return null
+    }
+
+    finished = true
+
     fun File.backupFile() = File(backupDir, toRelativeString(srcDir))
 
     removedFiles?.forEach {
@@ -141,11 +152,17 @@ class IncrementalFixAnalysisHandlerExtension(
       fileMapFile.delete()
     }
 
-    return AnalysisResult.Companion.success(
-      bindingContext = BindingContext.EMPTY,
-      module = module,
-      shouldGenerateCode = false
-    )
+    return if (finished && !withCompilation) {
+      AnalysisResult.success(BindingContext.EMPTY, module, shouldGenerateCode = false)
+    } else {
+      AnalysisResult.RetryWithAdditionalRoots(
+        BindingContext.EMPTY,
+        module,
+        emptyList(),
+        listOf(srcDir),
+        emptyList()
+      )
+    }
   }
 
   private fun processFile(module: ModuleDescriptor, file: KtFile): List<File> {

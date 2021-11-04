@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.IncrementalFixAnalysisHandlerExtension
+import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
@@ -48,11 +48,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
     @Provide val injektFqNames = InjektFqNames(configuration.getNotNull(RootPackageKey))
 
-    if (configuration.get(SrcDirKey) != null) {
+    if (configuration.get(SrcDirKey) != null)
       project.registerCodegenExtensions()
-    } else {
+
+    if (configuration.get(DumpDirKey) != null)
       project.registerAnalysisExtensions()
-    }
   }
 }
 
@@ -64,9 +64,11 @@ private fun MockProject.registerCodegenExtensions(
   val cacheDir = configuration.getNotNull(CacheDirKey)
   val modifiedFiles = configuration.get(ModifiedFilesKey)
   val removedFiles = configuration.get(RemovedFilesKey)
+  val withCompilation = configuration.get(WithCompilationKey) ?: false
   AnalysisHandlerExtension.registerExtension(
     this,
-    IncrementalFixAnalysisHandlerExtension(srcDir, cacheDir, modifiedFiles, removedFiles)
+    InjektDeclarationGeneratorExtension(srcDir, cacheDir, modifiedFiles, removedFiles,
+    withCompilation)
   )
 }
 
