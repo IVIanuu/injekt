@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
@@ -23,7 +24,10 @@ import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.injektIndex
+import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.shaded_injekt.Provide
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -57,8 +61,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     )
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
         ?.descriptor<CallableDescriptor>()
-        ?.callableInfo()
-        ?.injectParameterIndex == 1
+        ?.valueParameters
+        ?.filterNot { it.isInject() }
+        ?.size
+        ?.let { it <= 1 } == true
 
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
