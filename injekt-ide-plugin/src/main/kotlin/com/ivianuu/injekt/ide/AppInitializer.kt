@@ -19,22 +19,13 @@ package com.ivianuu.injekt.ide
 import com.intellij.ide.ApplicationInitializedListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.Extensions
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.RootPackageOption
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import org.jetbrains.kotlin.analyzer.moduleInfo
-import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.idea.core.unwrapModuleSourceInfo
-import org.jetbrains.kotlin.idea.facet.KotlinFacet
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
 
@@ -55,8 +46,7 @@ class AppInitializer : ApplicationInitializedListener {
             SyntheticScopeProviderExtension.registerExtension(
               project,
               InjectSyntheticScopeProviderExtension(injektFqNames = { it.injektFqNames() }) {
-                it.moduleInfo?.unwrapModuleSourceInfo()?.module
-                  ?.getOptionValueInFacet(RootPackageOption) != null
+                it.isInjektEnabled()
               }
             )
             @Suppress("DEPRECATION")
