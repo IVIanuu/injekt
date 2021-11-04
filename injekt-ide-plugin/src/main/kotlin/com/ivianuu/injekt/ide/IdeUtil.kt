@@ -74,7 +74,6 @@ fun Module.getOptionValueInFacet(option: AbstractCliOption): String? {
   return optionValue
 }
 
-
 fun PsiElement.ktElementOrNull() = safeAs<KtDeclaration>()
   ?: safeAs<KtLightDeclaration<*, *>>()?.kotlinOrigin
 

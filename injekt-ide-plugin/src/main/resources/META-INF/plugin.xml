@@ -30,8 +30,8 @@
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
-    <!--<extensions defaultExtensionNs="com.intellij">
-        <referencesSearch
+    <extensions defaultExtensionNs="com.intellij">
+    <!--    <referencesSearch
             implementation="com.ivianuu.injekt.ide.InjektReferencesSearcher"/>
 
         <psi.referenceContributor
@@ -53,7 +53,7 @@
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <completionExtension
-            implementation="com.ivianuu.injekt.ide.ImportCompletionExtension"/>
-    </extensions>-->
+            implementation="com.ivianuu.injekt.ide.ImportCompletionExtension"/>-->
+    </extensions>
 
 </idea-plugin>
