@@ -24,12 +24,14 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import org.junit.Test
+import kotlin.coroutines.CoroutineContext
 
 @Component interface CoroutinesComponent {
-  val scope: ComponentScope<CoroutinesComponent>
+  val scope: @ComponentScope<CoroutinesComponent> CoroutineScope
 }
 
 class ComponentScopeTest {
@@ -43,7 +45,7 @@ class ComponentScopeTest {
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: ComponentCoroutineContext<CoroutinesComponent> = Dispatchers.Main
+    @Provide val customContext: @ComponentContext<CoroutinesComponent> CoroutineContext = Dispatchers.Main
     val component = inject<CoroutinesComponent>()
     val scope = component.scope
     scope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext

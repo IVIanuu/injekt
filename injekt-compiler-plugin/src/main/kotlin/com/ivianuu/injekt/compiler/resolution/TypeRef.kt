@@ -54,7 +54,6 @@ class ClassifierRef(
   val lazySuperTypes: Lazy<List<TypeRef>> = lazyOf(emptyList()),
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
-  val isTypeAlias: Boolean = false,
   val isTag: Boolean = false,
   val isComponent: Boolean = false,
   val scopeComponentType: TypeRef? = null,
@@ -82,7 +81,6 @@ class ClassifierRef(
     lazySuperTypes: Lazy<List<TypeRef>> = this.lazySuperTypes,
     isTypeParameter: Boolean = this.isTypeParameter,
     isObject: Boolean = this.isObject,
-    isTypeAlias: Boolean = this.isTypeAlias,
     isTag: Boolean = this.isTag,
     isComponent: Boolean = this.isComponent,
     scopeComponentType: TypeRef? = this.scopeComponentType,
@@ -95,7 +93,7 @@ class ClassifierRef(
     variance: TypeVariance = this.variance
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTypeAlias, isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
+    isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
     tags, isSpread, primaryConstructorPropertyParameters, variance
   )
 
@@ -149,7 +147,6 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       isComponent = hasAnnotation(injektFqNames().component),
       scopeComponentType = info.scopeComponentType,
       entryPointComponentType = info.entryPointComponentType,
-      isTypeAlias = this is TypeAliasDescriptor,
       descriptor = this,
       tags = info.tags,
       isSpread = info.isSpread,
@@ -165,11 +162,10 @@ fun KotlinType.toTypeRef(
   @Inject ctx: Context
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
-    val unwrapped = getAbbreviation() ?: this
     val kotlinType = when {
-      unwrapped.constructor.isDenotable -> unwrapped
-      unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
-        .commonSupertype(unwrapped.constructor.supertypes)
+      constructor.isDenotable -> this
+      constructor.supertypes.isNotEmpty() -> CommonSupertypes
+        .commonSupertype(constructor.supertypes)
       else -> null
     } ?: return ctx.nullableAnyType
 
@@ -204,7 +200,7 @@ fun KotlinType.toTypeRef(
       isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
     )
 
-    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
+    val tagAnnotations = getAnnotatedAnnotations(injektFqNames().tag)
     if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }

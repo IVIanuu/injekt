@@ -50,33 +50,6 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
   }
 
-  @Test fun testTypeKeyWithTypeAliasWithNullableExpandedType() = codegen(
-    """
-      typealias MyAlias = String?
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
-  }
-
-  @Test fun testTypeKeyWithTypeAlias() = codegen(
-    """
-      typealias MyAlias = String
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
-  }
-
-  @Test fun testTypeKeyWithNullableTypeAlias() = codegen(
-    """
-      typealias MyAlias = String
-      fun invoke() = inject<TypeKey<MyAlias?>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
-  }
-
   @Test fun testTypeKeyWithComposableType() = codegen(
     """
       fun invoke() = inject<TypeKey<@Composable () -> Unit>>()
@@ -85,30 +58,12 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "@Composable kotlin.Function0<kotlin.Unit>"
   }
 
-  @Test fun testTypeKeyWithTypeAliasWithComposableExpandedType() = codegen(
-    """
-      typealias MyAlias = @Composable () -> Unit
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
-  }
-
   @Test fun testTypeKeyWithTags() = codegen(
     """
       fun invoke() = inject<TypeKey<@Tag2 String>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Tag2<kotlin.String>"
-  }
-
-  @Test fun testTypeKeyWithTypeAliasWithTaggedExpandedType() = codegen(
-    """
-      typealias MyAlias = @Tag2 String
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
   }
 
   @Test fun testTypeKeyWithParameterizedTags() = codegen(

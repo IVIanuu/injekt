@@ -32,7 +32,7 @@ import kotlin.reflect.KClass
  */
 @Tag annotation class SystemService {
   companion object {
-    @Provide inline fun <T : Any> systemService(application: Application, serviceClass: KClass<T>):
+    @Provide inline fun <T : Any> service(application: Application, serviceClass: KClass<T>):
         @SystemService T = ContextCompat.getSystemService(application, serviceClass.java)!!
   }
 }

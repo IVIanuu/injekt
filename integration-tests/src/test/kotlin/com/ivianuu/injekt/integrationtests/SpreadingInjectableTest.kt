@@ -203,18 +203,21 @@ class SpreadingInjectableTest {
 
   @Test fun testUiDecorator() = multiCodegen(
     """
-      typealias UiDecorator = @Composable (@Composable () -> Unit) -> Unit
+      fun interface UiDecorator {
+        @Composable operator fun invoke(content: @Composable () -> Unit)
+      }
   
       @Tag annotation class UiDecoratorBinding
   
       @Provide fun <@Spread T : @UiDecoratorBinding S, S : UiDecorator> uiDecoratorBindingImpl(
         instance: T,
         key: TypeKey<S>
-      ): UiDecorator = instance as UiDecorator
-  
-      typealias RootSystemBarsProvider = UiDecorator
-  
-      @Provide fun rootSystemBarsProvider(): @UiDecoratorBinding RootSystemBarsProvider = {}
+      ): UiDecorator = instance
+
+      @Provide @UiDecoratorBinding class RootSystemBarsProvider : UiDecorator {
+        @Composable override fun invoke(content: @Composable () -> Unit){
+        }
+      }
     """,
     """
       fun invoke() = inject<List<UiDecorator>>().size 
@@ -285,14 +288,16 @@ class SpreadingInjectableTest {
       fun invoke() = inject<Unit>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter x of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testSpreadingInjectableWithInvariantTypeParameter() = singleAndMultiCodegen(
     """
       interface IntentKey
       
-      typealias KeyIntentFactory<K> = (K) -> Any
+      fun interface KeyIntentFactory<K> {
+        operator fun invoke(key: K): Any
+      }
       
       @Provide fun <@Spread T : KeyIntentFactory<K>, K : IntentKey> impl() = Foo()
       

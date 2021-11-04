@@ -53,9 +53,11 @@ interface Heater {
   }
 }
 
-typealias Pump = () -> Unit
+fun interface Pump {
+  operator fun invoke()
+}
 
-@Provide fun thermosiphon(heater: Heater): Pump = {
+@Provide fun thermosiphon(heater: Heater): Pump = Pump {
   if (heater.isHot) {
     println("=> => pumping => =>")
   }

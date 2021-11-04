@@ -314,7 +314,7 @@ class InjectableResolutionTest {
       "ambiguous injectables:\n" +
           "com.ivianuu.injekt.integrationtests.a\n" +
           "com.ivianuu.injekt.integrationtests.b\n" +
-          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.inject"
+          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
     )
   }
 
@@ -331,7 +331,7 @@ class InjectableResolutionTest {
       "ambiguous injectables:\n" +
           "com.ivianuu.injekt.integrationtests.invoke.injectableA\n" +
           "com.ivianuu.injekt.integrationtests.invoke.injectableB\n" +
-          "do all match type kotlin.String for parameter value of function com.ivianuu.injekt.inject"
+          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
     )
   }
 
@@ -643,7 +643,7 @@ class InjectableResolutionTest {
       "ambiguous injectables:\n" +
           "com.ivianuu.injekt.integrationtests.foo\n" +
           "com.ivianuu.injekt.integrationtests.otherFoo\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter value of function com.ivianuu.injekt.inject"
+          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject"
     )
   }
 
@@ -652,7 +652,7 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            typealias MyType = String
+            @JvmInline value class MyType(val value: String)
           """,
           packageFqName = FqName("typescope")
         )
@@ -660,7 +660,7 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            @Provide val externalMyType: MyType = "external"
+            @Provide val externalMyType = MyType("external")
           """,
           packageFqName = FqName("typescope")
         )
@@ -668,13 +668,13 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            @Provide val internalMyType: MyType = "internal"
+            @Provide val internalMyType = MyType("internal")
           """,
           packageFqName = FqName("typescope")
         ),
         invokableSource(
           """
-            fun invoke() = inject<typescope.MyType>()  
+            fun invoke() = inject<typescope.MyType>().value
           """
         )
       )
@@ -688,8 +688,8 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            typealias MyType = String
-            @Provide val typeMyType: MyType = "type"
+            @JvmInline value class MyType(val value: String)
+            @Provide val typeMyType = MyType("type")
           """,
           packageFqName = FqName("typescope")
         )
@@ -697,7 +697,7 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            @Provide val externalMyType: MyType = "external"
+            @Provide val externalMyType = MyType("external")
           """,
           packageFqName = FqName("typescope")
         )
@@ -705,7 +705,7 @@ class InjectableResolutionTest {
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<typescope.MyType>()  
+            fun invoke() = inject<typescope.MyType>().value
           """
         )
       )
@@ -719,8 +719,8 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            typealias MyType = String
-            @Provide val typeMyType: MyType = "type"
+            @JvmInline value class MyType(val value: String)
+            @Provide val typeMyType = MyType("type")
           """,
           packageFqName = FqName("typescope")
         )
@@ -728,7 +728,7 @@ class InjectableResolutionTest {
       listOf(
         source(
           """
-            @Provide val internalMyType: MyType = "internal"
+            @Provide val internalMyType = MyType("internal")
           """,
           packageFqName = FqName("typescope")
         ),

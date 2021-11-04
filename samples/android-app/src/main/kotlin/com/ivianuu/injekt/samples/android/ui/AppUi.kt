@@ -33,16 +33,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.coroutines.ComponentScope
 import com.ivianuu.injekt.samples.android.domain.CounterUsecases
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-typealias AppUi = @Composable () -> Unit
+@Tag annotation class AppUi
 
-@Provide fun appUi(viewModel: CounterViewModel): AppUi = {
+@Provide fun appUi(viewModel: CounterViewModel): @AppUi @Composable () -> Unit = {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -72,7 +74,7 @@ typealias AppUi = @Composable () -> Unit
 
 @Provide @Scoped<ActivityComponent> class CounterViewModel(
   private val usecases: CounterUsecases,
-  private val scope: ComponentScope<ActivityComponent>
+  private val scope: @ComponentScope<ActivityComponent> CoroutineScope
 ) {
   val state: Flow<Int>
     get() = usecases.counter()

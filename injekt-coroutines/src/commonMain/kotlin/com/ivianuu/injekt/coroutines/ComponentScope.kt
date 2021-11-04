@@ -17,37 +17,33 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.Scoped
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
-typealias ComponentScope<C> = CoroutineScope
-
-@Provide @Scoped<C> fun <C : @Component Any> componentScope(
-  context: ComponentCoroutineContext<C>
-): ComponentScope<C> = DisposableCoroutineScope<C>(context)
-
-private class DisposableCoroutineScope<C : @Component Any>(
-  context: CoroutineContext
-) : CoroutineScope, Disposable {
-  override val coroutineContext: CoroutineContext = context + SupervisorJob()
-  override fun dispose() {
-    coroutineContext.cancel()
+@Tag annotation class ComponentScope<C : @Component Any> {
+  companion object {
+    @Provide @Scoped<C> fun <C : @Component Any> scope(
+      context: @ComponentContext<C> CoroutineContext
+    ): @ComponentScope<C> CoroutineScope = object : CoroutineScope, Disposable {
+      override val coroutineContext: CoroutineContext = context + SupervisorJob()
+      override fun dispose() {
+        coroutineContext.cancel()
+      }
+    }
   }
 }
 
-/**
- * [CoroutineContext] of a [ComponentScope]
- */
-typealias ComponentCoroutineContext<C> = CoroutineContext
-
-/**
- * The default [ComponentCoroutineContext] for component [C]
- */
-@Provide inline fun <C : @Component Any> componentCoroutineContext(
-  dispatcher: DefaultDispatcher
-): ComponentCoroutineContext<C> = dispatcher
+@Tag annotation class ComponentContext<C : @Component Any> {
+  companion object {
+    @Provide inline fun <C : @Component Any> context(
+      dispatcher: @Default CoroutineDispatcher
+    ): @ComponentContext<C> CoroutineContext = dispatcher
+  }
+}

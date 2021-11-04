@@ -18,7 +18,9 @@ package kotlin.collections
 
 import com.ivianuu.injekt.Provide
 
-/**
- * Provides a Map<K, V> for each List<Pair<K, V>>
- */
-@Provide inline fun <K, V> mapOfPairs(pairs: List<Pair<K, V>>): Map<K, V> = pairs.toMap()
+object MapInjectables {
+  /**
+   * Provides a Map<K, V> for each List<Pair<K, V>>
+   */
+  @Provide inline fun <K, V> mapOfPairs(pairs: List<Pair<K, V>>): Map<K, V> = pairs.toMap()
+}

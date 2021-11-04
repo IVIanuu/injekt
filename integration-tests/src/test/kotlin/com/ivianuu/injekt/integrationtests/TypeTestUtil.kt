@@ -114,16 +114,6 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     },
   ).defaultType
 
-  fun typeAlias(
-    expandedType: TypeRef,
-    fqName: FqName = FqName("Alias${id++}"),
-  ) = ClassifierRef(
-    key = fqName.asString(),
-    fqName = fqName,
-    lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(expandedType) },
-    isTypeAlias = true
-  ).defaultType
-
   fun classType(
     vararg superTypes: TypeRef,
     typeParameters: List<ClassifierRef> = emptyList(),

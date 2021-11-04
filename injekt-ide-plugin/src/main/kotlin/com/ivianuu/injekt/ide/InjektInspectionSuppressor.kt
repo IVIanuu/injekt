@@ -81,7 +81,6 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         val typeParameter = element.parent.safeAs<KtTypeParameter>()
           ?: return false
         return typeParameter.hasAnnotation(injektFqNames.spread) ||
-            typeParameter.parent.parent is KtTypeAlias ||
             typeParameter.parent.parent.safeAs<KtClass>()
               ?.hasAnnotation(injektFqNames.tag) == true
       }

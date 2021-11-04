@@ -117,24 +117,6 @@ class SubtypingTest {
     charSequenceTypeClass shouldBeAssignableTo stringTypeClass
   }
 
-  @Test fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() =
-    withTypeCheckerContext {
-      typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
-    }
-
-  @Test fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() =
-    withTypeCheckerContext {
-      typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
-    }
-
-  @Test fun testTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
-    typeAlias(stringType) shouldBeSubTypeOf stringType
-  }
-
-  @Test fun testNestedTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
-    typeAlias(typeAlias(stringType)) shouldBeSubTypeOf stringType
-  }
-
   @Test fun testSameComposabilityIsAssignable() = withTypeCheckerContext {
     composableFunction(0) shouldBeAssignableTo composableFunction(0)
   }
@@ -158,11 +140,6 @@ class SubtypingTest {
   @Test fun testUntaggedTypeParameterIsNotAssignableToTaggedType() = withTypeCheckerContext {
     typeParameter(stringType) shouldNotBeAssignableTo tag1.wrap(stringType)
   }
-
-  @Test fun testComposableTypeAliasIsSubTypeOfComposableFunctionUpperBound() =
-    withTypeCheckerContext {
-      typeAlias(composableFunction(0)) shouldBeAssignableTo typeParameter(composableFunction(0))
-    }
 
   @Test fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
     stringType shouldBeAssignableTo typeParameter()
@@ -213,20 +190,6 @@ class SubtypingTest {
   @Test fun testNestedTaggedSubTypeOfNestedTaggedTypeParameter() = withTypeCheckerContext {
     listType.withArguments(tag1.wrap(stringType)) shouldBeAssignableTo
         listType.withArguments(tag1.wrap(typeParameter(nullable = false)))
-  }
-
-  @Test fun testTypeAliasIsNotSubTypeOfTypeParameterWithOtherTypeAliasUpperBound() =
-    withTypeCheckerContext {
-      val typeAlias1 = typeAlias(function(0).withArguments(stringType))
-      val typeAlias2 = typeAlias(function(0).withArguments(intType))
-      val typeParameter = typeParameter(typeAlias1)
-      typeAlias2 shouldNotBeSubTypeOf typeParameter
-    }
-
-  @Test fun testTypeAliasIsSubTypeOfOtherTypeAlias() = withTypeCheckerContext {
-    val typeAlias1 = typeAlias(function(0).withArguments(stringType))
-    val typeAlias2 = typeAlias(typeAlias1)
-    typeAlias2 shouldBeSubTypeOf typeAlias1
   }
 
   @Test

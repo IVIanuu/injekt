@@ -24,30 +24,6 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class PersistenceTest {
-  @Test fun testPrimaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
-    """
-      @Provide class Dep(value: MyAlias)
-      typealias MyAlias = String
-      @Provide val myAlias: MyAlias = ""
-    """,
-    """
-      fun invoke() = inject<Dep>()
-    """
-  )
-
-  @Test fun testSecondaryConstructorWithTypeAliasDependencyMulti() = singleAndMultiCodegen(
-    """
-      class Dep {
-        @Provide constructor(value: MyAlias)
-      }
-      typealias MyAlias = String
-      @Provide val myAlias: MyAlias = ""
-    """,
-    """
-      fun invoke() = inject<Dep>()
-    """
-  )
-
   @Test fun testModuleDispatchReceiverTypeInference() = singleAndMultiCodegen(
     """
       class MyModule<T : S, S> {
@@ -63,31 +39,6 @@ class PersistenceTest {
     """
   ) {
     invokeSingleFile() shouldBe "42"
-  }
-
-  @Test fun testFunctionTypeParameterClassifier() = singleAndMultiCodegen(
-    """
-      var callCount = 0
-      @Tag annotation class MyTag
-      @Tag annotation class MyOtherTag
-      @Provide fun <@Spread T : @MyTag S, S : FuncA> impl(instance: T): @MyOtherTag S =
-        instance
-  
-      typealias FuncA = suspend () -> Unit
-      typealias FuncB = suspend () -> Boolean
-  
-      @Provide fun funcA(funcB: FuncB): @MyTag FuncA = { }
-      @Provide fun funcB(): @MyTag FuncB = { true }
-    """,
-    """
-      fun invoke() {
-        inject<@MyOtherTag FuncA>()
-        inject<@MyOtherTag FuncB>()
-      } 
-    """
-  ) {
-    shouldNotContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherTag<com.ivianuu.injekt.integrationtests.FuncA> for parameter value of function com.ivianuu.injekt.inject")
-    shouldContainMessage("no injectable found of type com.ivianuu.injekt.integrationtests.MyOtherTag<com.ivianuu.injekt.integrationtests.FuncB> for parameter value of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
@@ -136,15 +87,14 @@ class PersistenceTest {
 
   @Test fun testSupportsLargeFunction() = singleAndMultiCodegen(
     """
-      typealias MyAlias<T> = OtherAlias<T>
-      typealias OtherAlias<S> = String
+      @Tag annotation class MyAlias<T>
       fun <T> largeFunc(${
-        (1..150).map { "${if (it == 1) "@Inject " else ""}p$it: MyAlias<T>" }.joinToString("\n,")
+        (1..150).map { "${if (it == 1) "@Inject " else ""}p$it: @MyAlias<T> Any?" }.joinToString("\n,")
       }): String = ""
     """,
     """
       fun invoke() {
-        with("" as MyAlias<String>) { largeFunc<String>() }
+        with("" as @MyAlias<String> String) { largeFunc<String>() }
       }
     """
   ) {

@@ -18,7 +18,9 @@ package kotlin.reflect
 
 import com.ivianuu.injekt.Provide
 
-/**
- * Provides a [KClass] of [T]
- */
-@Provide inline fun <reified T : Any> kClass(): KClass<T> = T::class
+object ReflectInjectables {
+  /**
+   * Provides a [KClass] of [T]
+   */
+  @Provide inline fun <reified T : Any> kClass(): KClass<T> = T::class
+}

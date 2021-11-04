@@ -43,7 +43,7 @@ class ProviderTest {
       fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testProviderWithInjectableArgs() = codegen(
@@ -104,23 +104,6 @@ class ProviderTest {
     invokeSingleFile()
   }
 
-  @Test fun testMultipleProvidersInListWithDependencyDerivedByProviderArgument() =
-    singleAndMultiCodegen(
-      """
-        typealias MyScope = Scope
-        @Provide val MyScope.key: String get() = ""
-        @Provide fun foo(key: String) = Foo()
-        @Provide fun fooIntoList(provider: (MyScope) -> Foo): (MyScope) -> Any = provider as (MyScope) -> Any 
-        @Provide class Dep(key: String)
-        @Provide fun depIntoList(provider: (MyScope) -> Dep): (MyScope) -> Any = provider as (MyScope) -> Any
-    """,
-    """
-      fun invoke() {
-        inject<List<(MyScope) -> Any>>()
-      } 
-    """
-    )
-
   @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
@@ -140,6 +123,6 @@ class ProviderTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
   }
 }

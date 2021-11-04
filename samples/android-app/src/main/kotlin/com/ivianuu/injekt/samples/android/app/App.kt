@@ -40,8 +40,3 @@ class App : Application(), AppComponentOwner {
     super.onCreate()
   }
 }
-
-fun lol(@Inject S: String, I: Int) {
-  inject<String>()
-  inject<Int>()
-}

@@ -379,19 +379,6 @@ class InjectableDeclarationTest {
     b shouldBeSameInstanceAs bar
   }
 
-  @Test fun testInjectLambdaParameterDeclarationSiteWithTypeAlias() = singleAndMultiCodegen(
-    """
-      typealias UseContext<T, R> = (@Inject T) -> R
-      inline fun <T, R> withProvidedInstance(value: T, block: UseContext<T, R>) = block(value)
-    """,
-    """
-      fun invoke(foo: Foo) = withProvidedInstance(foo) { inject<Foo>() }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(
     """
       fun usesFoo(@Inject foo: Foo) {
@@ -430,19 +417,6 @@ class InjectableDeclarationTest {
   @Test fun testCanLeaveOutInjectLambdaParameters() = singleAndMultiCodegen(
     """
       val lambda: (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = lambda()
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testCanLeaveOutInjectLambdaParametersWithTypeAlias() = singleAndMultiCodegen(
-    """
-      typealias LambdaType = (@Inject Foo) -> Foo
-      val lambda: LambdaType = { inject<Foo>() }
     """,
     """
       fun invoke(@Inject foo: Foo) = lambda()

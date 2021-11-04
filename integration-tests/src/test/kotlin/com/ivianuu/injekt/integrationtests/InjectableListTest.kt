@@ -99,7 +99,7 @@ class InjectableListTest {
       fun invoke() = inject<List<Command>>() 
     """
   ) {
-    irShouldContain(1, "inject<List<Command>>(value = commandA())")
+    irShouldContain(1, "inject<List<Command>>(x = commandA())")
   }
 
   @Test fun testListWithoutElements() = codegen(
@@ -107,7 +107,7 @@ class InjectableListTest {
       fun invoke() = inject<List<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter value of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter x of function com.ivianuu.injekt.inject")
   }
 
   @Test fun testProviderList() = singleAndMultiCodegen(

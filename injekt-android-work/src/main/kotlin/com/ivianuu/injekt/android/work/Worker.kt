@@ -43,7 +43,8 @@ import kotlin.reflect.KClass
     @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
       noinline factory: (Context, WorkerParameters) -> T,
       workerClass: KClass<S>
-    ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
+    ): Pair<String, @SingleWorkerFactory (Context, WorkerParameters) -> ListenableWorker> =
+      workerClass.java.name to factory
   }
 }
 
@@ -51,7 +52,7 @@ import kotlin.reflect.KClass
  * Factory which is able to create [ListenableWorker]s installed via [InjektWorker]
  */
 @Provide class InjektWorkerFactory(
-  private val workers: Map<String, SingleWorkerFactory>
+  private val workers: Map<String, @SingleWorkerFactory (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {
   override fun createWorker(
     appContext: Context,
@@ -60,4 +61,4 @@ import kotlin.reflect.KClass
   ): ListenableWorker? = workers[workerClassName]?.invoke(appContext, workerParameters)
 }
 
-internal typealias SingleWorkerFactory = (Context, WorkerParameters) -> ListenableWorker
+@Tag internal annotation class SingleWorkerFactory

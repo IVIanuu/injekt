@@ -19,6 +19,7 @@ package com.ivianuu.injekt.samples.android.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.common.EntryPoint
@@ -31,7 +32,7 @@ class MainActivity : ComponentActivity() {
     val dependencies = activityComponent.entryPoint<MainActivityDependencies>()
     // display ui
     setContent {
-      dependencies.theme {
+      dependencies.theme.value {
         dependencies.appUi()
       }
     }
@@ -40,5 +41,5 @@ class MainActivity : ComponentActivity() {
 
 @EntryPoint<ActivityComponent> interface MainActivityDependencies {
   val theme: AppTheme
-  val appUi: AppUi
+  val appUi: @AppUi @Composable () -> Unit
 }

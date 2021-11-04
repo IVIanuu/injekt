@@ -21,10 +21,11 @@ import androidx.compose.material.Surface
 import androidx.compose.material.darkColors
 import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 
-typealias AppTheme = @Composable (@Composable () -> Unit) -> Unit
+@JvmInline value class AppTheme(val value: @Composable (@Composable () -> Unit) -> Unit)
 
-@Provide val appTheme: AppTheme = { content ->
+@Provide val appTheme = AppTheme { content ->
   MaterialTheme(colors = darkColors()) {
     Surface(content = content)
   }

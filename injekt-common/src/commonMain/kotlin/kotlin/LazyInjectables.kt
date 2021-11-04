@@ -18,7 +18,10 @@ package kotlin
 
 import com.ivianuu.injekt.Provide
 
-/**
- * Provides a [Lazy] of [T]
- */
-@Provide inline fun <T> lazyOf(noinline init: () -> T): Lazy<T> = lazy(init)
+object LazyInjectables {
+  /**
+   * Provides a [Lazy] of [T]
+   */
+  @Provide inline fun <T> lazyOf(noinline init: () -> T): Lazy<T> = lazy(init)
+}
+

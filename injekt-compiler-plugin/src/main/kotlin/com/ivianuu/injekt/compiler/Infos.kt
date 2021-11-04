@@ -468,9 +468,7 @@ private fun AnnotationDescriptor.readChunkedValue() = allValueArguments
   .values
   .single()
   .cast<ArrayValue>()
-  .value
-  .map { it.value.toString() }
-  .joinToString("")
+  .value.joinToString("") { it.value.toString() }
 
 private fun String.toChunkedArrayValue() = ArrayValue(
   chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
@@ -478,7 +476,6 @@ private fun String.toChunkedArrayValue() = ArrayValue(
 
 private fun TypeRef.shouldBePersisted(): Boolean = anyType {
   (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      (it.classifier.isTypeAlias && it.isSuspendFunctionType) ||
       it.scopeComponentType != null
 }
 

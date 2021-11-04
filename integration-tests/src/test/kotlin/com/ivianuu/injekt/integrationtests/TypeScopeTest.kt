@@ -93,50 +93,6 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testTypeAliasModuleTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            typealias Dep = String
-            object DepModule {
-              @Provide val default: Dep = ""
-            }
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testTypeAliasPackageTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            typealias Dep = String
-            @Provide val dep: Dep = ""
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
   @Test fun testTagTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -469,8 +425,10 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            typealias AppTheme = () -> Unit
-            @Provide fun appTheme(): AppTheme = {}
+            fun interface AppTheme {
+              operator fun invoke()
+            }
+            @Provide fun appTheme(): AppTheme = AppTheme {}
           """,
           packageFqName = FqName("package1")
         )
@@ -478,8 +436,10 @@ class TypeScopeTest {
       listOf(
         source(
           """
-            typealias AppContent = () -> Unit
-            @Provide fun appContent(appTheme: package1.AppTheme): AppContent = {}
+            fun interface AppContent {
+              operator fun invoke()
+            }
+            @Provide fun appContent(appTheme: package1.AppTheme): AppContent = AppContent {}
           """,
           packageFqName = FqName("package2")
         )

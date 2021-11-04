@@ -191,15 +191,7 @@ TODO
 
 # Distinguish between types
 Sometimes you have multiple injectables of the same type
-Injekt will need help to keep them apart here a are a few strategies:
-
-Type aliases:
-```kotlin
-typealias PlaylistId = String
-typealias TrackId = String
-
-fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
-```
+Injekt will need help to keep them apart here a are a two strategies:
 
 Inline classes:
 ```kotlin
