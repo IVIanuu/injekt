@@ -75,9 +75,7 @@ class InjectSyntheticScopes(
   )
 }
 
-private class InjectSyntheticScope(
-  @Inject private val ctx: Context
-) : SyntheticScope.Default() {
+private class InjectSyntheticScope(@Inject private val ctx: Context) : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
     constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor
 

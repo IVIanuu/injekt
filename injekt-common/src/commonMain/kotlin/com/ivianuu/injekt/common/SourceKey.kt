@@ -27,4 +27,4 @@ import kotlin.jvm.JvmInline
 /**
  * Returns the [SourceKey] at this call site
  */
-inline fun sourceKey(@Inject value: SourceKey): SourceKey = value
+inline fun sourceKey(@Inject x: SourceKey): SourceKey = x

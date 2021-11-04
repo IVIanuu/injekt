@@ -56,7 +56,7 @@ annotation class Inject
 /**
  * Returns a provided instance of [T]
  */
-inline fun <T> inject(@Inject value: T): T = value
+inline fun <T> inject(@Inject x: T): T = x
 
 /**
  * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration

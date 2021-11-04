@@ -27,4 +27,4 @@ import kotlin.jvm.JvmInline
 /**
  * Returns the [TypeKey] of [T]
  */
-inline fun <T> typeKeyOf(@Inject key: TypeKey<T>): TypeKey<T> = key
+inline fun <T> typeKeyOf(@Inject x: TypeKey<T>): TypeKey<T> = x
