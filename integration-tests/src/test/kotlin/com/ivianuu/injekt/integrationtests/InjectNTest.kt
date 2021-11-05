@@ -41,7 +41,7 @@ class InjectNTest {
         TODO()
       
       fun main() {
-        catchT<Unit, IllegalArgumentException> {
+        catchT<Unit, IllegalStateException> {
           getUsers()
         }
       }

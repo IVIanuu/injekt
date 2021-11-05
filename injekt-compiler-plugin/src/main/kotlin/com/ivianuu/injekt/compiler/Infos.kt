@@ -592,15 +592,17 @@ fun Annotated.addInjectNInfo(@Inject ctx: Context) {
       .map { it.toPersistedTypeRef() }
 
     val transform: List<AnnotationDescriptor>.() -> List<AnnotationDescriptor> = {
-      this + AnnotationDescriptorImpl(
-        module().findClassAcrossModuleDependencies(
-          ClassId.topLevel(injektFqNames().injectNInfo)
-        )?.defaultType!!,
-        mapOf("values".asNameId() to ArrayValue(
-          injectNTypes.map { StringValue(it.encode()) }
-        ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }),
-        SourceElement.NO_SOURCE
-      )
+      module().findClassAcrossModuleDependencies(
+        ClassId.topLevel(injektFqNames().injectNInfo)
+      )?.defaultType?.let {
+        this + AnnotationDescriptorImpl(
+          it,
+          mapOf("values".asNameId() to ArrayValue(
+            injectNTypes.map { StringValue(it.encode()) }
+          ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }),
+          SourceElement.NO_SOURCE
+        )
+      } ?: this
     }
 
     when {

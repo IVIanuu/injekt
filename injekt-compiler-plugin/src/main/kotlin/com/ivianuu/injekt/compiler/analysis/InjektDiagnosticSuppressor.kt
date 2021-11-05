@@ -66,18 +66,16 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       diagnostic.psiElement.cast<KtFile>()
         .accept(
           lambdaExpressionRecursiveVisitor { lambdaExpression ->
-            lambdaExpression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()!!
-              .addInjectNInfo()
-            lambdaExpression.getType(bindingContext)!!.addInjectNInfo()
+            lambdaExpression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()
+              ?.addInjectNInfo()
+            lambdaExpression.getType(bindingContext)?.addInjectNInfo()
           }
         )
       diagnostic.psiElement.cast<KtFile>()
         .accept(
           propertyRecursiveVisitor { property ->
-            if (property.isLocal) {
-              property.descriptor<CallableDescriptor>()!!
-                .addInjectNInfo()
-            }
+            if (property.isLocal)
+              property.descriptor<CallableDescriptor>()?.addInjectNInfo()
           }
         )
       return true

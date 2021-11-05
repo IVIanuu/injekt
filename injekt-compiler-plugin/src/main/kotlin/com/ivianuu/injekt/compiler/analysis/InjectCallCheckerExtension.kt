@@ -36,6 +36,8 @@ class InjectCallCheckerExtension(
 ) : AnalysisHandlerExtension {
   private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
 
+  private var checked = false
+
   override fun doAnalysis(
     project: Project,
     module: ModuleDescriptor,
@@ -54,6 +56,9 @@ class InjectCallCheckerExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
+    if (checked) return null
+    checked = true
+
     try {
       lazyTopDownAnalyzer.analyzeDeclarations(
         TopDownAnalysisMode.TopLevelDeclarations,

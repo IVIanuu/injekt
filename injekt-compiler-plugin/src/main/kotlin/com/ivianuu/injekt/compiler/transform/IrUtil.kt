@@ -201,6 +201,12 @@ fun TypeRef.toIrType(
           .flatMap { it.owner.getter!!.typeParameters }
           .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
+        ?: (irCtx.referenceClass(fqName.parent())
+          ?: irCtx.referenceTypeAlias(fqName.parent()))
+          ?.owner
+          ?.typeParameters
+          ?.singleOrNull { it.descriptor.uniqueKey() == key }
+          ?.symbol
         ?: error("Could not get for $fqName $key")
       IrSimpleTypeImpl(
         irClassifier,
