@@ -195,7 +195,7 @@ class ComponentTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      fun invoke() = runBlocking { inject<FooComponent>().foo() }
+      @Composable fun invoke() = inject<FooComponent>().foo()
     """,
     config = { withCompose() }
   ) {
