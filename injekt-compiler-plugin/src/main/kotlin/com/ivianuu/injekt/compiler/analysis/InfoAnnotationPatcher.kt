@@ -24,6 +24,7 @@ import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -48,6 +49,11 @@ class InfoAnnotationPatcher(@Inject private val baseCtx: Context) : DeclarationC
       is CallableDescriptor -> {
         descriptor.callableInfo()
         descriptor.typeParameters
+          .forEach { it.classifierInfo() }
+      }
+      is TypeAliasDescriptor -> {
+        descriptor.classifierInfo()
+        descriptor.declaredTypeParameters
           .forEach { it.classifierInfo() }
       }
     }

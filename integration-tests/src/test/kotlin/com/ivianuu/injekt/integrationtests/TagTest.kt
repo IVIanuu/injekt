@@ -162,9 +162,7 @@ class TagTest {
 
   @Test fun testGenericTagTypeAliasPattern() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
-        val scope: ComponentScope<MyComponent>        
-      }
+      @Component interface MyComponent
 
       typealias ComponentScope<C> = @ComponentScopeTag<C> String
 
@@ -175,6 +173,10 @@ class TagTest {
       }
     """,
     """
+      @EntryPoint<MyComponent> interface MyEntryPoint {
+        val scope: ComponentScope<MyComponent>
+      }
+
       fun invoke() = inject<MyComponent>()
     """
   )

@@ -38,7 +38,6 @@ import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.coroutines.ComponentScope
 import com.ivianuu.injekt.samples.android.domain.CounterUsecases
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
@@ -75,7 +74,7 @@ typealias AppUi = @AppUiTag @Composable () -> Unit
 
 @Provide @Scoped<ActivityComponent> class CounterViewModel(
   private val usecases: CounterUsecases,
-  private val scope: @ComponentScope<ActivityComponent> CoroutineScope
+  private val scope: ComponentScope<ActivityComponent>
 ) {
   val state: Flow<Int>
     get() = usecases.counter()
