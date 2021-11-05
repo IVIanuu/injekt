@@ -54,5 +54,5 @@ interface AppComponentOwner {
  * Creates the [AppComponent] which must be manually stored
  */
 inline fun Application.createAppComponent(
-  @Inject componentFactory: (Application) -> AppComponent
-): AppComponent = componentFactory(this)
+  @Inject x: (Application) -> AppComponent
+): AppComponent = x(this)
