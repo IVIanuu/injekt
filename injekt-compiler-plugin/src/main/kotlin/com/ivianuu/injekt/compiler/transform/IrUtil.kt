@@ -197,14 +197,20 @@ fun TypeRef.toIrType(
         ?: irCtx.referenceClass(fqName)
           ?.let { symbolRemapper.getReferencedClass(it) }
         ?: irCtx.referenceFunctions(fqName.parent())
-          .map { symbolRemapper.getReferencedFunction(it) }
-          .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
+          .flatMap {
+            symbolRemapper.getReferencedFunction(it).owner.typeParameters
+              .zip(it.owner.typeParameters)
+          }
+          .singleOrNull { it.second.descriptor.uniqueKey() == key }
+          ?.first
           ?.symbol
         ?: irCtx.referenceProperties(fqName.parent())
-          .map { symbolRemapper.getReferencedProperty(it) }
-          .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
+          .flatMap {
+            symbolRemapper.getReferencedProperty(it).owner.getter!!.typeParameters
+              .zip(it.owner.getter!!.typeParameters)
+          }
+          .singleOrNull { it.second.descriptor.uniqueKey() == key }
+          ?.first
           ?.symbol
         ?: (irCtx.referenceClass(fqName.parent())
           ?.let { symbolRemapper.getReferencedClass(it) }
