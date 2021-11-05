@@ -147,7 +147,8 @@ fun PropertyDescriptor.irProperty(
 fun TypeRef.toIrType(
   @Inject irCtx: IrPluginContext,
   localDeclarationCollector: LocalDeclarationCollector,
-  ctx: Context
+  ctx: Context,
+  symbolRemapper: InjectSymbolRemapper
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
@@ -156,6 +157,7 @@ fun TypeRef.toIrType(
       .cast<IrSimpleType>()
       .let { type ->
         val tagConstructor = irCtx.referenceClass(classifier.fqName)!!
+          .let { symbolRemapper.getReferencedClass(it) }
           .constructors.single()
         IrSimpleTypeImpl(
           type.originalKotlinType,
@@ -193,16 +195,21 @@ fun TypeRef.toIrType(
       }
         ?.symbol
         ?: irCtx.referenceClass(fqName)
+          ?.let { symbolRemapper.getReferencedClass(it) }
         ?: irCtx.referenceFunctions(fqName.parent())
+          .map { symbolRemapper.getReferencedFunction(it) }
           .flatMap { it.owner.typeParameters }
           .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: irCtx.referenceProperties(fqName.parent())
+          .map { symbolRemapper.getReferencedProperty(it) }
           .flatMap { it.owner.getter!!.typeParameters }
           .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: (irCtx.referenceClass(fqName.parent())
-          ?: irCtx.referenceTypeAlias(fqName.parent()))
+          ?.let { symbolRemapper.getReferencedClass(it) }
+          ?: irCtx.referenceTypeAlias(fqName.parent())
+            ?.let { symbolRemapper.getReferencedTypeAlias(it) })
           ?.owner
           ?.typeParameters
           ?.singleOrNull { it.descriptor.uniqueKey() == key }
