@@ -406,8 +406,11 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
                 callable.irProperty().getter!!
               ) as IrSimpleFunction
               visitSimpleFunction(propertyGetter).apply {
-                parent = propertyGetter.parent
-                patchDeclarationParents(propertyGetter.parent)
+                try {
+                  parent = propertyGetter.parent
+                  patchDeclarationParents(propertyGetter.parent)
+                } catch (e: Throwable) {
+                }
               }
             }
             is FunctionDescriptor -> {
