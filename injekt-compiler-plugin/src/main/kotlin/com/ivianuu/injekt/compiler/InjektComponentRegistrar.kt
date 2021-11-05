@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.InjectCallCheckerExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjectTypeResolutionInterceptorExtension
@@ -91,6 +92,11 @@ private fun MockProject.registerAnalysisExtensions(
   TypeResolutionInterceptor.registerExtension(
     this,
     InjectTypeResolutionInterceptorExtension()
+  )
+
+  AnalysisHandlerExtension.registerExtension(
+    this,
+    InjectCallCheckerExtension()
   )
 
   // extension point does not exist CLI for some reason

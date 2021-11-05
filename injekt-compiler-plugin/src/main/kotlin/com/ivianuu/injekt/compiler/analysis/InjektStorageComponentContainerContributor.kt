@@ -44,9 +44,7 @@ class InjektStorageComponentContainerContributor(
     container.useInstance(InjectableChecker())
     container.useInstance(TagChecker())
     container.useInstance(ProviderImportsChecker())
-    if (!isIde) {
-      container.useInstance(InjectionCallChecker())
+    if (!isIde)
       container.useInstance(InfoAnnotationPatcher())
-    }
   }
 }

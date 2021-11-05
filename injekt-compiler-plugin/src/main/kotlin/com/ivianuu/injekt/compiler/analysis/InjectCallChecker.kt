@@ -20,7 +20,10 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.getSubstitutionMap
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
@@ -40,27 +43,23 @@ import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.com.intellij.psi.PsiFile
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
-import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
-  override fun check(
-    resolvedCall: ResolvedCall<*>,
-    reportOn: PsiElement,
-    context: CallCheckerContext
-  ) {
-    @Provide val ctx = baseCtx.withTrace(context.trace)
-
+class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() {
+  override fun visitCallExpression(expression: KtCallExpression) {
+    super.visitCallExpression(expression)
+    val resolvedCall = expression.getResolvedCall(trace()!!.bindingContext)
+      ?: return
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
       !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
@@ -143,7 +142,8 @@ class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
     val scope = ElementInjectablesScope(callExpression)
     val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
       if (result is ResolutionResult.Success.WithCandidate.Value &&
-        result.candidate is CallableInjectable) {
+        result.candidate is CallableInjectable
+      ) {
         if (filePath != null) {
           result.candidate.callable.import?.element?.let {
             trace()!!.record(
@@ -179,23 +179,3 @@ class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
     }
   }
 }
-
-fun ResolvedCall<*>.getSubstitutionMap(
-  @Inject ctx: Context
-): Map<ClassifierRef, TypeRef> = typeArguments
-  .mapKeys { it.key.toClassifierRef() }
-  .mapValues { it.value.toTypeRef() }
-  .filter { it.key != it.value.classifier } +
-    (dispatchReceiver?.type?.toTypeRef()?.let {
-      it.classifier.typeParameters
-        .zip(it.arguments)
-        .filter { it.first != it.second.classifier }
-        .toMap()
-    } ?: emptyMap()) +
-    (extensionReceiver?.type?.toTypeRef()?.let {
-      it.classifier.typeParameters
-        .zip(it.arguments)
-        .filter { it.first != it.second.classifier }
-        .toMap()
-    } ?: emptyMap())
-

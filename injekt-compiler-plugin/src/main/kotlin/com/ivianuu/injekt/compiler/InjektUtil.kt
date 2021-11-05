@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -59,6 +60,7 @@ import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
@@ -397,3 +399,22 @@ fun packageFragmentsForFqName(
   fqName: FqName,
   @Inject ctx: Context
 ): List<PackageFragmentDescriptor> = module().getPackage(fqName).fragments
+
+fun ResolvedCall<*>.getSubstitutionMap(
+  @Inject ctx: Context
+): Map<ClassifierRef, TypeRef> = typeArguments
+  .mapKeys { it.key.toClassifierRef() }
+  .mapValues { it.value.toTypeRef() }
+  .filter { it.key != it.value.classifier } +
+    (dispatchReceiver?.type?.toTypeRef()?.let {
+      it.classifier.typeParameters
+        .zip(it.arguments)
+        .filter { it.first != it.second.classifier }
+        .toMap()
+    } ?: emptyMap()) +
+    (extensionReceiver?.type?.toTypeRef()?.let {
+      it.classifier.typeParameters
+        .zip(it.arguments)
+        .filter { it.first != it.second.classifier }
+        .toMap()
+    } ?: emptyMap())
