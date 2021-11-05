@@ -294,7 +294,8 @@ class ProviderInjectable(
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
       isInline = isInline,
-      isLazy = !isInline
+      isLazy = !isInline,
+      isRequired = !type.arguments.last().isNullableType
     )
   )
 

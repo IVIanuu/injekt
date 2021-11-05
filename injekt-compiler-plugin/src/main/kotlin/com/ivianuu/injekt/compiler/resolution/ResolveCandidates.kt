@@ -408,7 +408,8 @@ private fun InjectablesScope.resolveCandidate(
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
-          candidate is ProviderInjectable && dependencyResult is ResolutionResult.Failure.NoCandidates ->
+          dependency.isRequired && candidate is ProviderInjectable &&
+              dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates
           dependency.isRequired || dependencyResult !is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
