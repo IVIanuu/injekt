@@ -35,21 +35,7 @@ class InjectCallCheckerExtension(
   private val withDeclarationGenerator: Boolean,
   @Inject private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
-  private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
-
   private var completionCount = 0
-
-  override fun doAnalysis(
-    project: Project,
-    module: ModuleDescriptor,
-    projectContext: ProjectContext,
-    files: Collection<KtFile>,
-    bindingTrace: BindingTrace,
-    componentProvider: ComponentProvider
-  ): AnalysisResult? {
-    lazyTopDownAnalyzer = componentProvider.get()
-    return null
-  }
 
   override fun analysisCompleted(
     project: Project,
@@ -61,21 +47,6 @@ class InjectCallCheckerExtension(
       return null.also { completionCount++ }
     if (completionCount > 0 && !withDeclarationGenerator)
       return null.also { completionCount++ }
-
-    try {
-      lazyTopDownAnalyzer.analyzeDeclarations(
-        TopDownAnalysisMode.TopLevelDeclarations,
-        files
-      )
-    } catch (e: Throwable) {
-    }
-    try {
-      lazyTopDownAnalyzer.analyzeDeclarations(
-        TopDownAnalysisMode.LocalDeclarations,
-        files
-      )
-    } catch (e: Throwable) {
-    }
 
     val checker = InjectCallChecker(Context(module, injektFqNames, bindingTrace))
     files.forEach { it.accept(checker) }

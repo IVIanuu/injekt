@@ -95,7 +95,8 @@ class InjectTypeResolutionInterceptorExtension(
     context: ExpressionTypingContext,
     resultType: KotlinType
   ): KotlinType {
-    if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
+    if (resultType === TypeUtils.NO_EXPECTED_TYPE ||
+      context.expectedType === TypeUtils.NO_EXPECTED_TYPE) return resultType
     if (element !is KtLambdaExpression) return resultType
 
     @Provide val ctx = Context(context.scope.ownerDescriptor.module, injektFqNames, context.trace)
