@@ -303,7 +303,7 @@ class SpreadingInjectableTest {
       
       class IntentKeyImpl : IntentKey
       
-      @Provide val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = { Any() }
+      @Provide val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = KeyIntentFactory { Any() }
     """,
     """
       fun invoke() = inject<Foo>() 
