@@ -393,33 +393,42 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
         if (callable?.isDeserializedDeclaration() == true) {
           when (callable) {
             is ClassConstructorDescriptor -> {
-              val constructor = injectNTransformer.transformIfNeeded(
-                callable.irConstructor()
-              ) as IrConstructor
-              visitConstructor(constructor).apply {
-                parent = constructor.parent
-                patchDeclarationParents(constructor.parent)
+              try {
+                val constructor = injectNTransformer.transformIfNeeded(
+                  callable.irConstructor()
+                ) as IrConstructor
+                visitConstructor(constructor).apply {
+                  parent = constructor.parent
+                  patchDeclarationParents(constructor.parent)
+                }
+              } catch (e: Throwable) {
+                e.printStackTrace()
               }
             }
             is PropertyDescriptor -> {
-              val propertyGetter = injectNTransformer.transformIfNeeded(
-                callable.irProperty().getter!!
-              ) as IrSimpleFunction
-              visitSimpleFunction(propertyGetter).apply {
-                try {
+              try {
+                val propertyGetter = injectNTransformer.transformIfNeeded(
+                  callable.irProperty().getter!!
+                ) as IrSimpleFunction
+                visitSimpleFunction(propertyGetter).apply {
                   parent = propertyGetter.parent
                   patchDeclarationParents(propertyGetter.parent)
-                } catch (e: Throwable) {
                 }
+              } catch (e: Throwable) {
+                e.printStackTrace()
               }
             }
             is FunctionDescriptor -> {
-              val function = injectNTransformer.transformIfNeeded(
-                callable.irFunction().cast<IrSimpleFunction>()
-              ) as IrSimpleFunction
-              visitSimpleFunction(function).apply {
-                parent = function.parent
-                patchDeclarationParents(function.parent)
+              try {
+                val function = injectNTransformer.transformIfNeeded(
+                  callable.irFunction().cast<IrSimpleFunction>()
+                ) as IrSimpleFunction
+                visitSimpleFunction(function).apply {
+                  parent = function.parent
+                  patchDeclarationParents(function.parent)
+                }
+              } catch (e: Throwable) {
+                e.printStackTrace()
               }
             }
             else -> error("Unsupported callable $callable")
