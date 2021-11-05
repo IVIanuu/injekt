@@ -40,7 +40,13 @@ fun BroadcastReceiver.createReceiverComponent(
 @EntryPoint<AppComponent> interface ReceiverComponentFactory {
   fun receiverComponent(
     receiver: BroadcastReceiver,
-    context: Context,
-    intent: Intent
+    context: ReceiverContext,
+    intent: ReceiverIntent
   ): ReceiverComponent
 }
+
+@Tag annotation class ReceiverContextTag
+typealias ReceiverContext = @ReceiverContextTag Context
+
+@Tag annotation class ReceiverIntentTag
+typealias ReceiverIntent = @ReceiverIntentTag Intent
