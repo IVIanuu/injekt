@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
     val dependencies = activityComponent.entryPoint<MainActivityDependencies>()
     // display ui
     setContent {
-      dependencies.theme.value {
+      dependencies.theme {
         dependencies.appUi()
       }
     }
@@ -41,5 +41,5 @@ class MainActivity : ComponentActivity() {
 
 @EntryPoint<ActivityComponent> interface MainActivityDependencies {
   val theme: AppTheme
-  val appUi: @AppUi @Composable () -> Unit
+  val appUi: AppUi
 }

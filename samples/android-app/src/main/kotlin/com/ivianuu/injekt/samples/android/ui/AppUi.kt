@@ -42,9 +42,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-@Tag annotation class AppUi
+@Tag annotation class AppUiTag
+typealias AppUi = @AppUiTag @Composable () -> Unit
 
-@Provide fun appUi(viewModel: CounterViewModel): @AppUi @Composable () -> Unit = {
+@Provide fun appUi(viewModel: CounterViewModel): AppUi = {
   Scaffold(
     topBar = {
       TopAppBar(
