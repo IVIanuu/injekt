@@ -172,9 +172,9 @@ class InjectNTransformer(
     val graph = irCtx.bindingContext[
         InjektWritableSlices.INJECTION_GRAPH,
         SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
-    ] ?: return result
+    ]
 
-    graph.visitRecursive { _, result ->
+    graph?.visitRecursive { _, result ->
       if (result is ResolutionResult.Success.WithCandidate.Value) {
         val callable = result.candidate.safeAs<CallableInjectable>()?.callable?.callable
         if (callable?.isDeserializedDeclaration() == true) {
@@ -211,7 +211,8 @@ class InjectNTransformer(
     } else transformIfNeeded(result.symbol.owner)
 
     if (result.symbol.owner !in transformedFunctions &&
-      callee.symbol == result.symbol) return result
+      callee.symbol == result.symbol)
+        return result
 
     return when (result) {
       is IrCall -> IrCallImpl(

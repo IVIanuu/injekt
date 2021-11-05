@@ -45,6 +45,8 @@ import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -58,8 +60,17 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() {
   override fun visitCallExpression(expression: KtCallExpression) {
     super.visitCallExpression(expression)
-    val resolvedCall = expression.getResolvedCall(trace()!!.bindingContext)
-      ?: return
+    expression.getResolvedCall(trace()!!.bindingContext)
+      ?.let { checkCall(it) }
+  }
+
+  override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
+    super.visitSimpleNameExpression(expression)
+    expression.getResolvedCall(trace()!!.bindingContext)
+      ?.let { checkCall(it) }
+  }
+
+  private fun checkCall(resolvedCall: ResolvedCall<*>) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
       !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
