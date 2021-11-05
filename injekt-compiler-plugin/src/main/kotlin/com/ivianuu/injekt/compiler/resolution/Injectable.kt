@@ -400,10 +400,10 @@ class TypeKeyInjectable(
 fun CallableRef.getInjectableRequests(
   ignoreInject: Boolean = false,
   @Inject ctx: Context
-): List<InjectableRequest> = callable.allParameters
+): List<InjectableRequest> = (callable.allParameters
   .filter {
     callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-  }
+  } + injectNParameters)
   .filter {
     ignoreInject ||
         it === callable.dispatchReceiverParameter ||

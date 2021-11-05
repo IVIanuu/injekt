@@ -18,6 +18,9 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
+import com.ivianuu.injekt.compiler.analysis.getSubstitutionMap
+import com.ivianuu.injekt.compiler.analysis.substitute
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -40,11 +43,13 @@ import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassInitializer
@@ -67,6 +72,7 @@ import org.jetbrains.kotlin.psi.psiUtil.isObjectLiteral
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -444,9 +450,20 @@ private fun FunctionParameterInjectablesScopes(
   @Inject ctx: Context
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
-  return function.allParameters
+  var injectNParameters = function.injectNParameters()
+  if (function is AnonymousFunctionDescriptor) {
+    function.findPsi()
+      ?.getParentOfType<KtCallExpression>(false)
+      ?.getResolvedCall(trace()!!.bindingContext)
+      ?.getSubstitutionMap()
+      ?.let { substitutionMap ->
+        injectNParameters = injectNParameters.map { it.substitute(substitutionMap) }
+      }
+  }
+
+  return (function.allParameters + injectNParameters)
     .filter {
-      (maxIndex == null || it.injektIndex() < maxIndex) &&
+      (maxIndex == null || it is InjectNParameterDescriptor || it.injektIndex() < maxIndex) &&
           (it.isProvide() || it === function.extensionReceiverParameter)
     }
     .map { it.toCallableRef().makeProvide() }
@@ -492,12 +509,16 @@ private fun PropertyInjectablesScope(
     ?.let { ImportInjectablesScopes(null, it, "PROPERTY ${property.fqNameSafe}", parent) }
     ?: parent
 
+  val injectables = (listOfNotNull(property.extensionReceiverParameter) +
+      property.injectNParameters())
+    .map { it.toCallableRef() }
+
   InjectablesScope(
     name = "PROPERTY ${property.fqNameSafe}",
     callContext = property.callContext(),
     parent = finalParent,
     ownerDescriptor = property,
-    initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef()),
+    initialInjectables = injectables,
     typeParameters = property.typeParameters.map { it.toClassifierRef() }
   )
 }

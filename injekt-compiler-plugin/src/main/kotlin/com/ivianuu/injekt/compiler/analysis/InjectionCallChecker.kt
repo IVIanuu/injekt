@@ -20,12 +20,17 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
@@ -39,10 +44,14 @@ import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
+import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
   override fun check(
@@ -50,10 +59,14 @@ class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
     reportOn: PsiElement,
     context: CallCheckerContext
   ) {
-    val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
-
     @Provide val ctx = baseCtx.withTrace(context.trace)
+
+    val resultingDescriptor = resolvedCall.resultingDescriptor
+    if (resultingDescriptor !is InjectFunctionDescriptor &&
+      !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
+      (resolvedCall !is VariableAsFunctionResolvedCall ||
+          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2)) &&
+      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) != true) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -69,34 +82,59 @@ class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
       null
     }
 
-    val substitutionMap = resolvedCall.typeArguments
-      .mapKeys { it.key.toClassifierRef() }
-      .mapValues { it.value.toTypeRef() }
-      .filter { it.key != it.value.classifier } +
-        (resolvedCall.dispatchReceiver?.type?.toTypeRef()?.let {
-          it.classifier.typeParameters
-            .zip(it.arguments)
-            .filter { it.first != it.second.classifier }
-            .toMap()
-        } ?: emptyMap()) +
-        (resolvedCall.extensionReceiver?.type?.toTypeRef()?.let {
-          it.classifier.typeParameters
-            .zip(it.arguments)
-            .filter { it.first != it.second.classifier }
-            .toMap()
-        } ?: emptyMap())
+    val substitutionMap = resolvedCall.getSubstitutionMap()
+
+    val injectLambdaType = resolvedCall
+      .safeAs<VariableAsFunctionResolvedCall>()
+      ?.variableCall
+      ?.resultingDescriptor
+      ?.callableInfo()
+      ?.type
+      ?: resolvedCall.dispatchReceiver
+        ?.safeAs<ExpressionReceiver>()
+        ?.expression
+        ?.getResolvedCall(trace()!!.bindingContext)
+        ?.let {
+          it.resultingDescriptor
+            .toCallableRef()
+            .substitute(it.getSubstitutionMap())
+        }
+        ?.type
+      ?: resolvedCall.dispatchReceiver
+        ?.type
+        ?.takeIf { it.hasAnnotation(injektFqNames().inject2) }
+        ?.toTypeRef()
+
+    val lambdaInjectParameters = injectLambdaType
+      ?.injectNTypes
+      ?.mapIndexed { index, injectNType ->
+        InjectNParameterDescriptor(
+          resultingDescriptor.containingDeclaration,
+          resultingDescriptor.valueParameters.size + index,
+          injectNType.substitute(substitutionMap)
+        )
+      }
 
     val callee = resultingDescriptor
       .toCallableRef()
+      .let {
+        if (lambdaInjectParameters == null) it
+        else it.copy(
+          parameterTypes = it.parameterTypes + lambdaInjectParameters
+            .map { it.index to it.typeRef }
+        )
+      }
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
 
-    val requests = callee.callable.valueParameters
+    val requests = (callee.callable.valueParameters +
+        callee.injectNParameters +
+        (lambdaInjectParameters ?: emptyList()))
       .filter {
-        valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument &&
-            it.isInject()
+        val argument = valueArgumentsByIndex[it.injektIndex()]
+        (argument == null || argument is DefaultValueArgument) && it.isInject()
       }
       .map { it.toInjectableRequest(callee) }
 
@@ -141,3 +179,23 @@ class InjectionCallChecker(@Inject private val baseCtx: Context) : CallChecker {
     }
   }
 }
+
+fun ResolvedCall<*>.getSubstitutionMap(
+  @Inject ctx: Context
+): Map<ClassifierRef, TypeRef> = typeArguments
+  .mapKeys { it.key.toClassifierRef() }
+  .mapValues { it.value.toTypeRef() }
+  .filter { it.key != it.value.classifier } +
+    (dispatchReceiver?.type?.toTypeRef()?.let {
+      it.classifier.typeParameters
+        .zip(it.arguments)
+        .filter { it.first != it.second.classifier }
+        .toMap()
+    } ?: emptyMap()) +
+    (extensionReceiver?.type?.toTypeRef()?.let {
+      it.classifier.typeParameters
+        .zip(it.arguments)
+        .filter { it.first != it.second.classifier }
+        .toMap()
+    } ?: emptyMap())
+

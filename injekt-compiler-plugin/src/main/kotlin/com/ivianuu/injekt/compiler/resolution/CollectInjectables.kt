@@ -21,17 +21,21 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
+import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
@@ -39,6 +43,7 @@ import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -60,6 +65,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -79,32 +85,47 @@ fun TypeRef.collectInjectables(
 
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
+    val functionType = if (isSuspendFunctionType)
+      module().builtIns.getSuspendFunction(arguments.size - 1 + injectNTypes.size)
+    else
+      module().builtIns.getFunction(arguments.size - 1 + injectNTypes.size)
+
     return listOf(
-      classifier
-        .descriptor!!
+      functionType
         .defaultType
         .memberScope
         .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
         .first()
         .toCallableRef()
         .let { callable ->
+          val lambdaInjectParameters = injectNTypes.mapIndexed { index, injectNType ->
+            InjectNParameterDescriptor(
+              callable.callable,
+              arguments.size - 1 + index,
+              injectNType
+            )
+          }
+
           callable.copy(
             type = arguments.last(),
             isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
-              .also { it[DISPATCH_RECEIVER_INDEX] = this },
+              .also { it[DISPATCH_RECEIVER_INDEX] = this } + lambdaInjectParameters
+              .map { it.index to it.typeRef },
             scopeComponentType = scopeComponentType,
             isEager = isEager,
-            import = import
+            import = import,
+            injectNParameters = lambdaInjectParameters
           ).substitute(classifier.typeParameters.zip(arguments).toMap())
         }
     )
   }
 
-  return (classifier.descriptor ?: error("Wtf $classifier"))
+  return ((classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
     .memberScope
-    .collectInjectables(classBodyView)
+    .collectInjectables(classBodyView) + if (classBodyView) classifier.injectNParameters
+    .map { it.toCallableRef() } else emptyList())
     .map {
       val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
         CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
@@ -230,6 +251,24 @@ fun Annotated.isInject(@Inject ctx: Context): Boolean {
     isInject
   }
 }
+
+fun CallableDescriptor.injectNParameters(@Inject ctx: Context): List<InjectNParameterDescriptor> =
+  trace()!!.getOrPut(InjektWritableSlices.INJECT_N_PARAMETERS, this) {
+    findPsi()?.safeAs<KtDeclaration>()?.let { declaration ->
+      annotations.forEach {
+        fixTypes(it.type, declaration)
+      }
+    }
+    ((safeAs<ConstructorDescriptor>()?.constructedClass
+      ?.classifierInfo()?.injectNParameters?.map { it.typeRef } ?: emptyList()) + injectNTypes())
+      .mapIndexed { index, parameterType ->
+        InjectNParameterDescriptor(
+          this,
+          valueParameters.size + index,
+          parameterType
+        )
+      }
+  }
 
 fun ClassDescriptor.injectableConstructors(@Inject ctx: Context): List<CallableRef> =
   trace()!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {

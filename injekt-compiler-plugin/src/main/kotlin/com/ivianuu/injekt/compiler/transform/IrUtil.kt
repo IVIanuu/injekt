@@ -69,13 +69,15 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 fun ClassDescriptor.irClass(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector
+  localDeclarationCollector: LocalDeclarationCollector,
+  symbolRemapper: InjectSymbolRemapper
 ): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
       .single { it.descriptor.uniqueKey() == uniqueKey() }
 
   return irCtx.referenceClass(fqNameSafe)!!
+    .let { symbolRemapper.getReferencedClass(it) }
     .owner
 }
 
@@ -83,7 +85,8 @@ fun ClassDescriptor.irClass(
 fun ClassConstructorDescriptor.irConstructor(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector
+  localDeclarationCollector: LocalDeclarationCollector,
+  symbolRemapper: InjectSymbolRemapper,
 ): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localClasses
@@ -93,6 +96,7 @@ fun ClassConstructorDescriptor.irConstructor(
 
   return irCtx.referenceConstructors(constructedClass.fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .let { symbolRemapper.getReferencedConstructor(it) }
     .owner
 }
 
@@ -100,7 +104,8 @@ fun ClassConstructorDescriptor.irConstructor(
 fun FunctionDescriptor.irFunction(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector
+  localDeclarationCollector: LocalDeclarationCollector,
+  symbolRemapper: InjectSymbolRemapper
 ): IrFunction {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarationCollector.localFunctions.single {
@@ -115,6 +120,7 @@ fun FunctionDescriptor.irFunction(
 
   return irCtx.referenceFunctions(fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .let { symbolRemapper.getReferencedSimpleFunction(it) }
     .owner
 }
 
@@ -122,7 +128,8 @@ fun FunctionDescriptor.irFunction(
 fun PropertyDescriptor.irProperty(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector
+  localDeclarationCollector: LocalDeclarationCollector,
+  symbolRemapper: InjectSymbolRemapper
 ): IrProperty {
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
@@ -132,6 +139,7 @@ fun PropertyDescriptor.irProperty(
 
   return irCtx.referenceProperties(fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .let { symbolRemapper.getReferencedProperty(it) }
     .owner
 }
 

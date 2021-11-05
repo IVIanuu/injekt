@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
+import com.ivianuu.injekt.compiler.analysis.substitute
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
@@ -34,7 +36,8 @@ data class CallableRef(
   val isEager: Boolean,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
-  val import: ResolvedProviderImport?
+  val import: ResolvedProviderImport?,
+  val injectNParameters: List<InjectNParameterDescriptor>
 )
 
 fun CallableRef.substitute(
@@ -61,7 +64,8 @@ fun CallableRef.substitute(
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
       },
-    scopeComponentType = scopeComponentType?.substitute(map)
+    scopeComponentType = scopeComponentType?.substitute(map),
+    injectNParameters = injectNParameters.map { it.substitute(map) }
   )
 }
 
@@ -73,7 +77,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
     val typeParameters = typeParameters.map { it.toClassifierRef() }
     CallableRef(
       callable = this,
-      type = info.type,
+      type = if (this is InjectNParameterDescriptor) typeRef else info.type,
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
@@ -83,6 +87,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
         .map { it to it.defaultType }
         .toMap(),
       isProvide = isProvide(),
-      import = null
+      import = null,
+      injectNParameters = info.injectNParameters
     )
   }

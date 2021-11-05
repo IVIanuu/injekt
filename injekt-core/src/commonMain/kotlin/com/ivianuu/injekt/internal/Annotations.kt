@@ -20,4 +20,6 @@ internal annotation class CallableInfo(val values: Array<String>)
 
 internal annotation class ClassifierInfo(val values: Array<String>)
 
+internal annotation class InjectNInfo(val values: Array<String>)
+
 internal annotation class TypeParameterInfos(val values: Array<String>)

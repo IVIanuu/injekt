@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
@@ -145,7 +146,8 @@ import kotlin.collections.set
 class InjectCallTransformer(
   @Inject private val localDeclarationCollector: LocalDeclarationCollector,
   private val irCtx: IrPluginContext,
-  private val ctx: Context
+  private val ctx: Context,
+  private val symbolRemapper: InjectSymbolRemapper
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
@@ -1058,6 +1060,7 @@ class InjectCallTransformer(
       objectExpression(injectable.callable.type.unwrapTags())
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
+    is InjectNParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is VariableDescriptor -> variableExpression(injectable.callable.callable, injectable)
     else -> error("Unsupported callable $injectable")
   }
@@ -1129,7 +1132,16 @@ class InjectCallTransformer(
     injectable: CallableInjectable
   ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
-      is ClassDescriptor -> receiverExpression(descriptor)
+      is ClassDescriptor -> if (descriptor is InjectNParameterDescriptor) {
+        val irClass = containingDeclaration.irClass()
+        DeclarationIrBuilder(irCtx, symbol)
+          .irGetField(
+            receiverExpression(containingDeclaration.thisAsReceiverParameter),
+            irClass.fields.single { it.name == descriptor.name }
+          )
+      } else {
+        receiverExpression(descriptor)
+      }
       is ClassConstructorDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,

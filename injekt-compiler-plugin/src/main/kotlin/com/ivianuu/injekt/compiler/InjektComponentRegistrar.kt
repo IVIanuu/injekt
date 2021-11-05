@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
+import com.ivianuu.injekt.compiler.analysis.InjectTypeResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
@@ -84,6 +86,11 @@ private fun MockProject.registerAnalysisExtensions(
     this,
     LoadingOrder.FIRST,
     InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
+  )
+
+  TypeResolutionInterceptor.registerExtension(
+    this,
+    InjectTypeResolutionInterceptorExtension()
   )
 
   // extension point does not exist CLI for some reason

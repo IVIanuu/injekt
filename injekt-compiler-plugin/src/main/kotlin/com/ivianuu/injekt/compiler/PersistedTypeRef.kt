@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.shaded_injekt.Inject
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable data class PersistedTypeRef(
@@ -31,6 +32,7 @@ import kotlinx.serialization.Serializable
   val isMarkedComposable: Boolean,
   val isProvide: Boolean,
   val isInject: Boolean,
+  val injectNTypes: List<PersistedTypeRef>,
   val scopeComponentType: PersistedTypeRef?,
   val isEager: Boolean
 )
@@ -44,6 +46,7 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
+    injectNTypes = injectNTypes.map { it.toPersistedTypeRef() },
     scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
     isEager = isEager
   )

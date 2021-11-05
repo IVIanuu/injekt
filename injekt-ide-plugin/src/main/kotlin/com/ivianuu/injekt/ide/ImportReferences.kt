@@ -74,7 +74,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           val refs = mutableListOf<PsiReference>()
 
           val module = element.getResolutionFacade().moduleDescriptor
-          val injektContext = Context(module, module.injektFqNames(), null)
+          val ctx = Context(module, module.injektFqNames(), null)
           val psiFacade = KotlinJavaPsiFacade.getInstance(element.project)
 
           fun resolveFqName(fqName: String, endOffset: Int) {
@@ -99,7 +99,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
                   return@lazy psiFacade.findPackage(finalFqName.asString(), element.resolveScope)
                 }
 
-                memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE, injektContext)
+                memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE, ctx)
                   ?.getContributedDescriptors { it == finalFqName.shortName() }
                   ?.firstOrNull()
                   ?.findPsiDeclarations(element.project, element.resolveScope)
@@ -144,12 +144,12 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     val prefix = template.text.substring(range.startOffset, offsetInElement)
 
     val module = template.getResolutionFacade().moduleDescriptor
-    val injektContext = Context(module, module.injektFqNames(), null)
+    val ctx = Context(module, module.injektFqNames(), null)
 
     memberScopeForFqName(
       importReference.fqName.parent(),
       NoLookupLocation.FROM_IDE,
-      injektContext
+      ctx
     )
       ?.getContributedDescriptors()
       ?.filter { declaration ->

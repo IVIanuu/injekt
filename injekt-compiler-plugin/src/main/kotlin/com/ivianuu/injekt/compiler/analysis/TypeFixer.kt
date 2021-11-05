@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.fixTypes
+import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -32,6 +34,7 @@ class TypeFixer(@Inject private val baseCtx: Context) : DeclarationChecker {
     context: DeclarationCheckerContext
   ) {
     @Provide val ctx = baseCtx.withTrace(context.trace)
+    trace()!!.report(InjektErrors.FILE_DECOY.on(declaration.containingKtFile))
     descriptor.annotations.forEach {
       fixTypes(it.type, declaration)
     }

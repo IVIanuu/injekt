@@ -99,6 +99,16 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     if (!argumentOk) return false
   }
 
+  if (injectNTypes.size != superType.injectNTypes.size)
+    return false
+
+  for (i in injectNTypes.indices) {
+    val argument = injectNTypes[i]
+    val parameter = superType.injectNTypes[i]
+    if (!argument.isSubTypeOf(parameter))
+      return false
+  }
+
   return true
 }
 
