@@ -22,6 +22,19 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class SuppressionTest {
+  @Test fun testCanUseExtensionFunctionTypeUpperBound() = singleAndMultiCodegen(
+    """
+      typealias MyBuilder = StringBuilder.() -> Unit
+      @Provide fun <@Spread T : MyBuilder> toString(builder: MyBuilder): String = buildString(builder)
+      @Provide val myBuilder: MyBuilder = { append("42") }
+    """,
+    """
+      fun invoke() = inject<String>() 
+    """
+  ) {
+    invokeSingleFile() shouldBe "42"
+  }
+
   @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {

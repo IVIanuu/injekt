@@ -97,6 +97,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
+    if (diagnostic.factory == Errors.UPPER_BOUND_IS_EXTENSION_FUNCTION_TYPE)
+      return true
+
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
       if (typeParameter?.hasAnnotation(injektFqNames().spread) == true) return true
