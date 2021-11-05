@@ -46,6 +46,7 @@ import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
@@ -79,7 +80,12 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
       ?.let { checkCall(it) }
   }
 
+  private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
+
   private fun checkCall(resolvedCall: ResolvedCall<*>) {
+    if (resolvedCall in checkedCalls) return
+    checkedCalls += resolvedCall
+
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
       !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&

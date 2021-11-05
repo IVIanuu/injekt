@@ -290,7 +290,7 @@ class InjectNTest {
     """
   )
 
-  @Test fun testInjectNLambda() = singleAndMultiCodegen(
+  @Test fun testInjectNLambda() = multiCodegen(
     """
       val lambda: @Inject1<String> () -> String = { inject<String>() }
     """,

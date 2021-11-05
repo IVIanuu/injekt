@@ -32,11 +32,12 @@ import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 
 class InjectCallCheckerExtension(
+  private val withDeclarationGenerator: Boolean,
   @Inject private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
   private lateinit var lazyTopDownAnalyzer: LazyTopDownAnalyzer
 
-  private var checked = false
+  private var completionCount = 0
 
   override fun doAnalysis(
     project: Project,
@@ -56,8 +57,10 @@ class InjectCallCheckerExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
-    if (checked) return null
-    checked = true
+    if (completionCount < 1 && withDeclarationGenerator)
+      return null.also { completionCount++ }
+    if (completionCount > 0 && !withDeclarationGenerator)
+      return null.also { completionCount++ }
 
     try {
       lazyTopDownAnalyzer.analyzeDeclarations(

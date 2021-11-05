@@ -96,7 +96,7 @@ private fun MockProject.registerAnalysisExtensions(
 
   AnalysisHandlerExtension.registerExtension(
     this,
-    InjectCallCheckerExtension()
+    InjectCallCheckerExtension(configuration.get(WithCompilationKey) ?: false)
   )
 
   // extension point does not exist CLI for some reason

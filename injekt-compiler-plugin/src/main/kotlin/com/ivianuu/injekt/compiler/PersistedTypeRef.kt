@@ -70,6 +70,8 @@ fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
-    scopeComponentType = scopeComponentType?.toTypeRef()
+    injectNTypes = injectNTypes.map { it.toTypeRef() },
+    scopeComponentType = scopeComponentType?.toTypeRef(),
+    isEager = isEager
   )
 }
