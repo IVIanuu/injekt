@@ -27,6 +27,7 @@ import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -185,6 +186,22 @@ class ComponentTest {
     invokeSingleFile()
   }
 
+  @Test fun testComponentWithComposableFunction() = singleAndMultiCodegen(
+    """
+      @Component interface FooComponent {
+        @Composable fun foo(): Foo
+      }
+  
+      @Provide @Composable fun foo() = Foo()
+    """,
+    """
+      fun invoke() = runBlocking { inject<FooComponent>().foo() }
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testComponentWithComposableProperty() = singleAndMultiCodegen(
     """
       @Component interface FooComponent {
@@ -195,7 +212,8 @@ class ComponentTest {
     """,
     """
       @Composable fun invoke() = inject<FooComponent>().foo()
-    """
+    """,
+    config = { withCompose() }
   )
 
   @Test fun testComponentIsCreatedOnTheFly() = singleAndMultiCodegen(

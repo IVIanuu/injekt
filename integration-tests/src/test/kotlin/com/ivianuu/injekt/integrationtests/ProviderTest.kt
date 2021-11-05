@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
@@ -100,7 +101,8 @@ class ProviderTest {
     """,
     """
       fun invoke() = inject<@Composable () -> Foo>() 
-    """
+    """,
+    config = { withCompose() }
   ) {
     invokeSingleFile()
   }

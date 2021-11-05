@@ -18,6 +18,7 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.withCompose
 import org.junit.Test
 
 class CallContextTest {
@@ -28,7 +29,8 @@ class CallContextTest {
     """,
     """
       @Composable fun invoke() = inject<Bar>()
-    """
+    """,
+    config = { withCompose() }
   ) {
     compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.inject is a suspend function but current call context is composable")
   }
@@ -50,7 +52,8 @@ class CallContextTest {
     """,
     """
       suspend fun invoke() = inject<Bar>()
-    """
+    """,
+    config = { withCompose() }
   ) {
     compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.inject is a composable function but current call context is suspend")
   }
@@ -85,7 +88,8 @@ class CallContextTest {
       """,
       """
         fun invoke() = inject<@Composable () -> Bar>()
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = singleAndMultiCodegen(
@@ -114,7 +118,8 @@ class CallContextTest {
             inject<Foo>()
           }
         }
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testSuspendCanBeRequestFromLocalVariableInitializerInSuspendContext() =
@@ -150,7 +155,8 @@ class CallContextTest {
         @Composable fun invoke() {
           val foo = inject<Foo>()
         }
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testComposableCanBeRequestFromLocalVariableDelegateInitializerInComposableContext() =
@@ -162,7 +168,8 @@ class CallContextTest {
         @Composable fun invoke() {
           val foo = lazy(inject<Foo>()) {  }
         }
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testSuspendCanBeRequestFromInlineLambdaInLocalVariableInitializerInSuspendContext() =
@@ -198,7 +205,8 @@ class CallContextTest {
         fun invoke(): @Composable () -> Unit = {
           val foo = run { inject<Foo>() }
         }
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testComposableCanBeRequestFromInlineLambdaInLocalVariableDelegateInitializerInComposableContext() =
@@ -210,7 +218,8 @@ class CallContextTest {
         fun invoke(): @Composable () -> Unit = {
           val foo by lazy(run { inject<Foo>() }) {  }
         }
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testSuspendCanBeRequestFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
@@ -232,7 +241,8 @@ class CallContextTest {
       """
         val fooGetter: Foo
           @Composable get() = inject()
-      """
+      """,
+      config = { withCompose() }
     )
 
   @Test fun testCannotRequestSuspendDependencyInDefaultValueOfFunction() = singleAndMultiCodegen(
@@ -254,6 +264,7 @@ class CallContextTest {
     """
       @Composable fun invoke(foo: Foo = inject()) {
       }
-    """
+    """,
+    config = { withCompose() }
   )
 }

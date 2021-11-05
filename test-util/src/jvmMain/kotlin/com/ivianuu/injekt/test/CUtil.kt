@@ -258,8 +258,8 @@ fun multiPlatformCodegen(
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-  compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
-  commandLineProcessors = listOf(InjektCommandLineProcessor(), ComposeCommandLineProcessor())
+  compilerPlugins = listOf(InjektComponentRegistrar())
+  commandLineProcessors = listOf(InjektCommandLineProcessor())
   inheritClassPath = true
   useIR = true
   jvmTarget = "1.8"
@@ -297,6 +297,11 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     "withCompilation",
     true.toString()
   )
+}
+
+fun KotlinCompilation.withCompose() {
+  compilerPlugins += ComposeComponentRegistrar()
+  commandLineProcessors += ComposeCommandLineProcessor()
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()

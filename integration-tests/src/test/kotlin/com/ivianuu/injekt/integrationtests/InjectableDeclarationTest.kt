@@ -24,6 +24,7 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
+import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -581,7 +582,8 @@ class InjectableDeclarationTest {
     """,
     """
       @Composable fun invoke() = inject<Foo>() 
-    """
+    """,
+    config = { withCompose() }
   )
 
   @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(

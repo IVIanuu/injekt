@@ -22,6 +22,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
@@ -276,7 +277,8 @@ class InjectNTest {
       @Composable fun invoke(@Inject string: String) {
         myFunc()
       }
-    """
+    """,
+    config = { withCompose() }
   )
 
   @Test fun testInjectNComposableProperty() = singleAndMultiCodegen(
@@ -287,7 +289,8 @@ class InjectNTest {
       @Composable fun invoke(@Inject string: String) {
         myProperty
       }
-    """
+    """,
+    config = { withCompose() }
   )
 
   @Test fun testInjectNLambda() = multiCodegen(
@@ -336,7 +339,8 @@ class InjectNTest {
         lambda()
         lambda.invoke()
       }
-    """
+    """,
+    config = { withCompose() }
   )
 
   @Test fun testInjectNLambdaParameter() = codegen(
@@ -395,7 +399,8 @@ class InjectNTest {
         lambda()
         lambda.invoke()
       }
-    """
+    """,
+    config = { withCompose() }
   )
 
   // todo override error if missing inject n annotation

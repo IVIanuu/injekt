@@ -23,6 +23,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
@@ -209,7 +210,8 @@ class ScopedTest {
   @Test fun testScopedComposableFunction() = codegen(
     """
       @Provide @Scoped<Any> @Composable fun foo() = Foo() 
-    """
+    """,
+    config = { withCompose() }
   ) {
     compilationShouldHaveFailed("a scoped declarations call context must be default")
   }
