@@ -21,6 +21,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 actual object IOInjectables {
-  @Provide actual inline val dispatcher: @IO CoroutineDispatcher
+  @Provide actual inline val dispatcher: IODispatcher
     get() = Dispatchers.IO
 }

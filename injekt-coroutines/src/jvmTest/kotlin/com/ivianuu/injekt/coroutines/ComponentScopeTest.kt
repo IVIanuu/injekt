@@ -31,7 +31,7 @@ import org.junit.Test
 import kotlin.coroutines.CoroutineContext
 
 @Component interface CoroutinesComponent {
-  val scope: @ComponentScope<CoroutinesComponent> CoroutineScope
+  val scope: ComponentScope<CoroutinesComponent>
 }
 
 class ComponentScopeTest {
@@ -45,7 +45,7 @@ class ComponentScopeTest {
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: @ComponentContext<CoroutinesComponent> CoroutineContext = Dispatchers.Main
+    @Provide val customContext: ComponentContext<CoroutinesComponent> = Dispatchers.Main
     val component = inject<CoroutinesComponent>()
     val scope = component.scope
     scope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext

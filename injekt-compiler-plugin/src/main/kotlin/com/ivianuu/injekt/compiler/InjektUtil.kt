@@ -190,6 +190,7 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
               .uniqueTypeKey()
           }
       }"
+      is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
       is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"

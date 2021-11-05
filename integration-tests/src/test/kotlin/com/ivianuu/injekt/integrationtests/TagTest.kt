@@ -99,7 +99,7 @@ class TagTest {
     """
   )
 
-  @Test fun testTagWithArguments() = codegen(
+  @Test fun testTagWithValueParameters() = codegen(
     """ 
       @Tag annotation class MyTag(val value: String)
     """
@@ -107,7 +107,7 @@ class TagTest {
     compilationShouldHaveFailed("tag cannot have value parameters")
   }
 
-  @Test fun testTagWithTypeArguments() = singleAndMultiCodegen(
+  @Test fun testTagWithTypeParameters() = singleAndMultiCodegen(
     """
       @Tag annotation class MyTag<T>
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
@@ -148,4 +148,34 @@ class TagTest {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()
   }
+
+  @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
+    """
+      @Tag annotation class TaggedFooTag
+      typealias TaggedFoo = @TaggedFooTag Foo
+      @Provide val taggedFoo: TaggedFoo = Foo()
+    """,
+    """
+      fun invoke() = inject<TaggedFoo>()
+    """
+  )
+
+  @Test fun testGenericTagTypeAliasPattern() = singleAndMultiCodegen(
+    """
+      @Component interface MyComponent {
+        val scope: ComponentScope<MyComponent>        
+      }
+
+      typealias ComponentScope<C> = @ComponentScopeTag<C> String
+
+      @Tag annotation class ComponentScopeTag<C : @Component Any> {
+        companion object {
+          @Provide @Scoped<C> fun <C : @Component Any> scope(): ComponentScope<C> = ""
+        }
+      }
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  )
 }

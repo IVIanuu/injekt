@@ -27,11 +27,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
-@Tag annotation class ComponentScope<C : @Component Any> {
+typealias ComponentScope<C> = @ComponentScopeTag<C> CoroutineScope
+
+@Tag annotation class ComponentScopeTag<C : @Component Any> {
   companion object {
     @Provide @Scoped<C> fun <C : @Component Any> scope(
-      context: @ComponentContext<C> CoroutineContext
-    ): @ComponentScope<C> CoroutineScope = object : CoroutineScope, Disposable {
+      context: ComponentContext<C>
+    ): ComponentScope<C> = object : CoroutineScope, Disposable {
       override val coroutineContext: CoroutineContext = context + SupervisorJob()
       override fun dispose() {
         coroutineContext.cancel()
@@ -40,10 +42,12 @@ import kotlin.coroutines.CoroutineContext
   }
 }
 
-@Tag annotation class ComponentContext<C : @Component Any> {
+typealias ComponentContext<C> = @ComponentContextTag<C> CoroutineContext
+
+@Tag annotation class ComponentContextTag<C : @Component Any> {
   companion object {
     @Provide inline fun <C : @Component Any> context(
-      dispatcher: @Default CoroutineDispatcher
-    ): @ComponentContext<C> CoroutineContext = dispatcher
+      dispatcher: DefaultDispatcher
+    ): ComponentContext<C> = dispatcher
   }
 }

@@ -40,8 +40,10 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.AbbreviatedType
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.model.TypeVariance
 import org.jetbrains.kotlin.types.model.convertVariance
@@ -156,22 +158,26 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
     )
   }
 
+private val KotlinType.fullyExpandedType: KotlinType
+  get() = getAbbreviatedType()?.expandedType?.fullyExpandedType ?: this
+
 fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV,
   @Inject ctx: Context
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
+    val unwrapped = getAbbreviation() ?: this
     val kotlinType = when {
-      constructor.isDenotable -> this
-      constructor.supertypes.isNotEmpty() -> CommonSupertypes
-        .commonSupertype(constructor.supertypes)
-      else -> null
-    } ?: return ctx.nullableAnyType
+      unwrapped.constructor.isDenotable -> unwrapped
+      unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
+        .commonSupertype(unwrapped.constructor.supertypes)
+      else -> return ctx.nullableAnyType
+    }
 
     val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
 
-    val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
+    val scopeAnnotation = unwrapped.annotations.findAnnotation(injektFqNames().scoped)
     val rawType = TypeRef(
       classifier = classifier,
       isMarkedNullable = kotlinType.isMarkedNullable,
@@ -200,8 +206,8 @@ fun KotlinType.toTypeRef(
       isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
     )
 
-    val tagAnnotations = getAnnotatedAnnotations(injektFqNames().tag)
-    if (tagAnnotations.isNotEmpty()) {
+    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
+    var r = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }
         .map {
@@ -214,6 +220,14 @@ fun KotlinType.toTypeRef(
         }
         .wrap(rawType)
     } else rawType
+
+    // expand the type
+    while (r.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
+      val expanded = r.unwrapTags().superTypes.single()
+      r = if (r.classifier.isTag) r.wrap(expanded) else expanded
+    }
+
+    r
   }
 }
 
