@@ -562,6 +562,8 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.PROTECTED
 
 fun DeclarationDescriptor.addInjectNInfo(@Inject ctx: Context) {
+  if (isIde) return
+
   if (isDeserializedDeclaration()) return
 
   findPsi().safeAs<KtDeclaration>()?.let { declaration ->
@@ -586,6 +588,8 @@ fun DeclarationDescriptor.addInjectNInfo(@Inject ctx: Context) {
 }
 
 fun Annotated.addInjectNInfo(@Inject ctx: Context) {
+  if (isIde) return
+
   if (hasAnnotation(injektFqNames().inject2) &&
     !hasAnnotation(injektFqNames().injectNInfo)) {
     val injectNTypes = injectNTypes()
@@ -623,6 +627,8 @@ fun Annotated.addInjectNInfo(@Inject ctx: Context) {
 }
 
 fun KotlinType.addInjectNInfo(@Inject ctx: Context) {
+  if (isIde) return
+
   val seen = mutableSetOf<KotlinType>()
   fun KotlinType.visit() {
     if (this in seen) return

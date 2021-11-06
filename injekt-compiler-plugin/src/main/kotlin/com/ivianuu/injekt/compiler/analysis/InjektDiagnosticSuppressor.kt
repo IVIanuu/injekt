@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
+import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -59,7 +60,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     @Provide val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
-    if (diagnostic.factory == InjektErrors.FILE_DECOY) {
+    if (!isIde && diagnostic.factory == InjektErrors.FILE_DECOY) {
       @Provide val innerCtx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
         ?.withTrace(DelegatingBindingTrace(bindingContext, "dummy"))
         ?: return false
