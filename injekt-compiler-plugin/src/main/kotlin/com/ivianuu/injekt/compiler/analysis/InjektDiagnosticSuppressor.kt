@@ -60,7 +60,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     @Provide val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
-    if (!isIde && diagnostic.factory == InjektErrors.FILE_DECOY) {
+    if (diagnostic.factory == InjektErrors.FILE_DECOY) {
       @Provide val innerCtx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
         ?.withTrace(DelegatingBindingTrace(bindingContext, "dummy"))
         ?: return false
