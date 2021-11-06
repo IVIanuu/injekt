@@ -18,18 +18,11 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.anyType
-import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
 import com.ivianuu.injekt.compiler.resolution.injectNParameters
 import com.ivianuu.injekt.compiler.resolution.isProvide
-import com.ivianuu.injekt.compiler.resolution.isSuspendFunctionType
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.resolution.wrap
+import com.ivianuu.injekt.compiler.resolution.scopeComponentType
+import com.ivianuu.injekt.compiler.resolution.tags
 import com.ivianuu.shaded_injekt.Inject
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -73,6 +66,7 @@ import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
+import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -83,10 +77,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  * but is critical to injekt
  */
 data class CallableInfo(
-  val type: TypeRef,
-  val parameterTypes: Map<Int, TypeRef>,
+  val type: KotlinType,
+  val parameterTypes: Map<Int, KotlinType>,
   val injectParameterIndex: Int?,
-  val scopeComponentType: TypeRef?,
+  val scopeComponentType: KotlinType?,
   val isEager: Boolean,
   val injectNParameters: List<InjectNParameterDescriptor>
 )
@@ -109,19 +103,19 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
           val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
           val rootClassifier = rootOverriddenCallable.containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef()
           val classifierInfo = containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef()
           val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
             it.classifier == rootClassifier
           }!!
-          val substitutionMap = rootClassifier.typeParameters
-            .zip(superType.arguments)
-            .toMap() + rootOverriddenCallable
-            .typeParameters
-            .map { it.toClassifierRef() }
-            .zip(typeParameters.map { it.defaultType.toTypeRef() })
+          val substitutor = TypeSubstitutor.createChainedSubstitutor(
+            rootClassifier.typeParameters
+              .zip(superType.arguments)
+              .toMap() + rootOverriddenCallable
+              .typeParameters
+              .map { it.toClassifierRef() }
+              .zip(typeParameters.map { it.defaultType.toTypeRef() })
+          )
           info.copy(
             type = info.type.substitute(substitutionMap),
             parameterTypes = info.parameterTypes.mapValues {
@@ -245,39 +239,39 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
 }
 
 @Serializable data class PersistedCallableInfo(
-  val type: PersistedTypeRef,
-  val parameterTypes: Map<Int, PersistedTypeRef>,
+  val type: PersistedKotlinType,
+  val parameterTypes: Map<Int, PersistedKotlinType>,
   val injectParameterIndex: Int?,
-  val scopeComponentType: PersistedTypeRef?,
+  val scopeComponentType: PersistedKotlinType?,
   val isEager: Boolean,
-  val injectNParameters: List<PersistedTypeRef>
+  val injectNParameters: List<PersistedKotlinType>
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallableInfo(
-  type = type.toPersistedTypeRef(),
+  type = type.toPersistedType(),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toPersistedTypeRef() },
+    .mapValues { it.value.toPersistedType() },
   injectParameterIndex = injectParameterIndex,
-  scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
+  scopeComponentType = scopeComponentType?.toPersistedType(),
   isEager = isEager,
-  injectNParameters = injectNParameters.map { it.typeRef.toPersistedTypeRef() }
+  injectNParameters = injectNParameters.map { it.type.toPersistedType() }
 )
 
 fun PersistedCallableInfo.toCallableInfo(
   callable: CallableDescriptor,
   @Inject ctx: Context
 ) = CallableInfo(
-  type = type.toTypeRef(),
+  type = type.toType(),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toTypeRef() },
+    .mapValues { it.value.toType() },
   injectParameterIndex = injectParameterIndex,
-  scopeComponentType = scopeComponentType?.toTypeRef(),
+  scopeComponentType = scopeComponentType?.toType(),
   isEager = isEager,
   injectNParameters = injectNParameters.mapIndexed { index, type ->
     InjectNParameterDescriptor(
       callable,
       callable.valueParameters.size + index,
-      type.toTypeRef()
+      type.toType()
     )
   }
 )
@@ -287,17 +281,15 @@ fun PersistedCallableInfo.toCallableInfo(
  * but is critical to injekt
  */
 class ClassifierInfo(
-  val tags: List<TypeRef>,
-  val scopeComponentType: TypeRef?,
+  val tags: List<KotlinType>,
+  val scopeComponentType: KotlinType?,
   val isEager: Boolean,
-  val entryPointComponentType: TypeRef?,
-  val lazySuperTypes: Lazy<List<TypeRef>>,
+  val entryPointComponentType: KotlinType?,
+  val superTypes: List<KotlinType>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
   val injectNParameters: List<InjectNParameterDescriptor>
-) {
-  val superTypes by lazySuperTypes
-}
+)
 
 fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   trace()!!.getOrPut(InjektWritableSlices.CLASSIFIER_INFO, this) {
@@ -400,14 +392,14 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   }
 
 @Serializable data class PersistedClassifierInfo(
-  val tags: List<PersistedTypeRef>,
-  val scopeComponentType: PersistedTypeRef?,
+  val tags: List<PersistedKotlinType>,
+  val scopeComponentType: PersistedKotlinType?,
   val isEager: Boolean,
-  val entryPointComponentType: PersistedTypeRef?,
-  val superTypes: List<PersistedTypeRef>,
+  val entryPointComponentType: PersistedKotlinType?,
+  val superTypes: List<PersistedKotlinType>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
-  val injectNParameters: List<PersistedTypeRef>
+  val injectNParameters: List<PersistedKotlinType>
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
@@ -526,10 +518,10 @@ private fun String.toChunkedArrayValue() = ArrayValue(
   chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
 ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
-private fun TypeRef.shouldBePersisted(): Boolean = anyType {
-  (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      it.injectNTypes.isNotEmpty() ||
-      it.scopeComponentType != null
+private fun KotlinType.shouldBePersisted(): Boolean = anyType {
+  (tags().any { it.constructor.parameters.isNotEmpty() }) ||
+      injectNTypes().isNotEmpty() ||
+      scopeComponentType() != null
 }
 
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
@@ -593,7 +585,7 @@ fun Annotated.addInjectNInfo(@Inject ctx: Context) {
   if (hasAnnotation(injektFqNames().inject2) &&
     !hasAnnotation(injektFqNames().injectNInfo)) {
     val injectNTypes = injectNTypes()
-      .map { it.toPersistedTypeRef() }
+      .map { it.toPersistedType() }
 
     val transform: List<AnnotationDescriptor>.() -> List<AnnotationDescriptor> = {
       module().findClassAcrossModuleDependencies(

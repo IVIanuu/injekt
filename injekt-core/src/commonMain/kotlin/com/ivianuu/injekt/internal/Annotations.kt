@@ -23,3 +23,5 @@ internal annotation class ClassifierInfo(val values: Array<String>)
 internal annotation class InjectNInfo(val values: Array<String>)
 
 internal annotation class TypeParameterInfos(val values: Array<String>)
+
+internal annotation class FrameworkKey(val value: Int)

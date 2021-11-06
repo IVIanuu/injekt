@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
+import org.jetbrains.kotlin.builtins.isSuspendFunctionTypeOrSubtype
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -45,6 +46,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.canBeInlineArgument
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInline
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInlineParameter
+import org.jetbrains.kotlin.types.KotlinType
 
 enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
@@ -127,13 +129,11 @@ private fun CallableDescriptor.callContextOfThis(@Inject ctx: Context): CallCont
   else -> CallContext.DEFAULT
 }
 
-val TypeRef.callContext: CallContext
-  get() = when {
-    classifier.fqName.asString()
-      .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
-    isComposableType -> CallContext.COMPOSABLE
-    else -> CallContext.DEFAULT
-  }
+fun KotlinType.callContext(@Inject ctx: Context): CallContext = when {
+  isSuspendFunctionTypeOrSubtype -> CallContext.SUSPEND
+  isComposableTypeOrSubType() -> CallContext.COMPOSABLE
+  else -> CallContext.DEFAULT
+}
 
 private val composeCompilerInClasspath = try {
   Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")

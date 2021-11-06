@@ -20,9 +20,6 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.module
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
@@ -47,6 +44,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.Variance
 
 class ComponentConstructorDescriptor(
   clazz: ClassDescriptor
@@ -101,7 +99,7 @@ class EntryPointConstructorDescriptor(
 class InjectNParameterDescriptor(
   private val _containingDeclaration: DeclarationDescriptor,
   val index: Int,
-  val typeRef: TypeRef,
+  val _type: KotlinType,
   @Inject val ctx: Context
 ) : DeclarationDescriptorImpl(
   Annotations.create(
@@ -135,7 +133,7 @@ class InjectNParameterDescriptor(
 
   override fun getSource(): SourceElement = SourceElement.NO_SOURCE
 
-  override fun getType(): KotlinType = module.builtIns.nullableAnyType
+  override fun getType(): KotlinType = _type
 
   override fun getTypeParameters(): List<TypeParameterDescriptor> = emptyList()
 
@@ -149,13 +147,10 @@ class InjectNParameterDescriptor(
 
   override fun hasSynthesizedParameterNames(): Boolean = false
 
-  override fun substitute(substitutor: TypeSubstitutor): CallableDescriptor = this
-}
-
-fun InjectNParameterDescriptor.substitute(
-  map: Map<ClassifierRef, TypeRef>,
-  @Inject ctx: Context
-): InjectNParameterDescriptor {
-  if (map.isEmpty()) return this
-  return InjectNParameterDescriptor(containingDeclaration, index, typeRef.substitute(map))
+  override fun substitute(substitutor: TypeSubstitutor): InjectNParameterDescriptor =
+    InjectNParameterDescriptor(
+      _containingDeclaration,
+      index,
+      substitutor.safeSubstitute(type, Variance.INVARIANT)
+    )
 }

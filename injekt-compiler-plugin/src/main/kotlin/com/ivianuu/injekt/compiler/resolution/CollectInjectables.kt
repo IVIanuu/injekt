@@ -555,8 +555,8 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
           ?.containingFile
       })
 
-fun TypeRef.collectComponentCallables(@Inject ctx: Context): List<CallableRef> =
-  classifier.descriptor!!.defaultType.memberScope
+fun KotlinType.collectComponentCallables(@Inject ctx: Context): List<CallableRef> =
+  constructor.declarationDescriptor.defaultType.memberScope
     .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
     .filterIsInstance<CallableMemberDescriptor>()
     .filter { it.modality != Modality.FINAL }

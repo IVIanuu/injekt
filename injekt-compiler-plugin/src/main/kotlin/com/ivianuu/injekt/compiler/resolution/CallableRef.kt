@@ -19,53 +19,44 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.analysis.substitute
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.Variance
 
 data class CallableRef(
   val callable: CallableDescriptor,
-  val type: TypeRef,
-  val originalType: TypeRef,
-  val typeParameters: List<ClassifierRef>,
-  val parameterTypes: Map<Int, TypeRef>,
-  val scopeComponentType: TypeRef?,
+  val type: KotlinType,
+  val originalType: KotlinType,
+  val typeParameters: List<TypeParameterDescriptor>,
+  val parameterTypes: Map<Int, KotlinType>,
+  val scopeComponentType: KotlinType?,
   val isEager: Boolean,
-  val typeArguments: Map<ClassifierRef, TypeRef>,
+  val typeArguments: Map<TypeParameterDescriptor, KotlinType>,
   val isProvide: Boolean,
   val import: ResolvedProviderImport?,
   val injectNParameters: List<InjectNParameterDescriptor>
 )
 
 fun CallableRef.substitute(
-  map: Map<ClassifierRef, TypeRef>,
+  substitutor: TypeSubstitutor,
   @Inject ctx: Context
 ): CallableRef {
-  if (map.isEmpty()) return this
-  val substitutedTypeParameters = typeParameters.substitute(map)
-  val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
-    it.defaultType
-  }
+  if (substitutor.isEmpty) return this
   return copy(
-    type = type.substitute(map).substitute(typeParameterSubstitutionMap),
+    type = substitutor.safeSubstitute(type, Variance.INVARIANT),
     parameterTypes = parameterTypes
-      .mapValues {
-        it.value
-          .substitute(map)
-          .substitute(typeParameterSubstitutionMap)
-      },
-    typeParameters = substitutedTypeParameters,
+      .mapValues { substitutor.safeSubstitute(it.value, Variance.INVARIANT) },
     typeArguments = typeArguments
-      .mapValues {
-        it.value
-          .substitute(map)
-          .substitute(typeParameterSubstitutionMap)
-      },
-    scopeComponentType = scopeComponentType?.substitute(map),
-    injectNParameters = injectNParameters.map { it.substitute(map) }
+      .mapValues { substitutor.safeSubstitute(it.value, Variance.INVARIANT)
+                 },
+    scopeComponentType = scopeComponentType?.let { substitutor.safeSubstitute(it, Variance.INVARIANT) },
+    injectNParameters = injectNParameters.map { it.substitute(substitutor) }
   )
 }
 
@@ -74,10 +65,9 @@ fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isPro
 fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
   trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo()
-    val typeParameters = typeParameters.map { it.toClassifierRef() }
     CallableRef(
       callable = this,
-      type = if (this is InjectNParameterDescriptor) typeRef else info.type,
+      type = info.type,
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,

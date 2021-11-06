@@ -79,7 +79,7 @@ class ComponentChecker(@Inject private val baseCtx: Context) : DeclarationChecke
     factory: DiagnosticFactory0<PsiElement>,
     @Inject ctx: Context
   ) {
-    defaultType.toTypeRef()
+    defaultType
       .collectComponentCallables()
       .map { it.callable }
       .forEach {

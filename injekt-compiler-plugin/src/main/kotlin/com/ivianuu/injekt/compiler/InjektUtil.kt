@@ -18,10 +18,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.prepareForInjekt
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -67,7 +64,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequenc
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeConstructor
+import org.jetbrains.kotlin.types.TypeProjection
 import org.jetbrains.kotlin.types.getAbbreviatedType
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -82,12 +82,12 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
     .map { it.containingDeclaration }
     .filterIsInstance<ClassDescriptor>()
     .mapNotNull { clazz ->
-      val clazzClassifier = clazz.toClassifierRef()
+      val info = clazz.classifierInfo()
       clazz.unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.firstOrNull {
           it.name == name &&
-              it.name in clazzClassifier.primaryConstructorPropertyParameters
+              it.name.asString() in info.primaryConstructorPropertyParameters
         }
     }
     .firstOrNull()
@@ -297,7 +297,7 @@ inline fun <K, V> BindingTrace?.getOrPut(
     .also { this?.record(slice, key, it) }
 }
 
-fun Annotated.injectNTypes(@Inject ctx: Context): List<TypeRef> {
+fun Annotated.injectNTypes(@Inject ctx: Context): List<KotlinType> {
   if (hasAnnotation(injektFqNames().injectNInfo)) {
     return annotations.findAnnotation(injektFqNames().injectNInfo)!!
       .allValueArguments
@@ -305,16 +305,16 @@ fun Annotated.injectNTypes(@Inject ctx: Context): List<TypeRef> {
       .single()
       .cast<ArrayValue>()
       .value
-      .map { it.value.toString().decode<PersistedTypeRef>().toTypeRef() }
+      .map { it.value.toString().decode<PersistedKotlinType>().toType() }
   }
 
-  val result = mutableListOf<TypeRef>()
+  val result = mutableListOf<KotlinType>()
 
   fun visitInjectNType(type: KotlinType) {
     if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames().inject2) {
       type.arguments.forEach { visitInjectNType(it.type) }
     } else {
-      result += type.toTypeRef()
+      result += type.prepareForInjekt()
     }
   }
 
@@ -402,19 +402,21 @@ fun packageFragmentsForFqName(
 
 fun ResolvedCall<*>.getSubstitutionMap(
   @Inject ctx: Context
-): Map<ClassifierRef, TypeRef> = typeArguments
-  .mapKeys { it.key.toClassifierRef() }
-  .mapValues { it.value.toTypeRef() }
-  .filter { it.key != it.value.classifier } +
-    (dispatchReceiver?.type?.toTypeRef()?.let {
-      it.classifier.typeParameters
+): Map<TypeConstructor, TypeProjection> = typeArguments
+  .mapKeys { it.key.defaultType.constructor }
+  .mapValues { it.value.prepareForInjekt().asTypeProjection() }
+  .filter { it.key != it.value.type.constructor } +
+    (dispatchReceiver?.type?.prepareForInjekt()?.let {
+      it.constructor.parameters
+        .map { it.typeConstructor }
         .zip(it.arguments)
-        .filter { it.first != it.second.classifier }
+        .filter { it.first != it.second.type.constructor }
         .toMap()
     } ?: emptyMap()) +
-    (extensionReceiver?.type?.toTypeRef()?.let {
-      it.classifier.typeParameters
+    (extensionReceiver?.type?.prepareForInjekt()?.let {
+      it.constructor.parameters
+        .map { it.typeConstructor }
         .zip(it.arguments)
-        .filter { it.first != it.second.classifier }
+        .filter { it.first != it.second.type.constructor }
         .toMap()
     } ?: emptyMap())
