@@ -419,7 +419,7 @@ class InjectCallTransformer(
                       1,
                       irLambda(
                         irCtx.irBuiltIns.function(0)
-                          .typeWith(result.candidate.type.toIrType().typeOrNull!!),
+                          .typeWith(result.candidate.type.toIrType().typeOrNull ?: irCtx.irBuiltIns.anyNType),
                         parameterNameProvider = { "p${graphContext.variableIndex++}" }
                       ) {
                         irBlock {

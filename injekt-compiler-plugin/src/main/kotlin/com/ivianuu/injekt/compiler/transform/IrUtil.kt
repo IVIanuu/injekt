@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -172,7 +173,9 @@ fun TypeRef.toIrType(
                   .classifierOrFail
                   .typeWith(
                     arguments.dropLast(1)
-                      .map { it.toIrType().typeOrNull!! }
+                      .map {
+                        it.toIrType().typeOrNull ?: irCtx.irBuiltIns.anyNType
+                      }
                   )
               ).apply {
                 tagConstructor.owner.typeParameters.indices
