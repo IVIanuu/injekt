@@ -198,9 +198,7 @@ class ComponentTest {
       @Composable fun invoke() = inject<FooComponent>().foo()
     """,
     config = { withCompose() }
-  ) {
-    invokeSingleFile()
-  }
+  )
 
   @Test fun testComponentWithComposableProperty() = singleAndMultiCodegen(
     """
