@@ -41,8 +41,6 @@ import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile.Configurator
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.incremental.ChangedFiles
 import org.jetbrains.kotlin.incremental.destinationAsFile
-import org.jetbrains.kotlin.incremental.isJavaFile
-import org.jetbrains.kotlin.incremental.isKotlinFile
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
 import java.io.File
 import java.util.concurrent.Callable
@@ -209,11 +207,7 @@ interface InjektTask : Task {
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
   ) {
-    if (changedFiles.hasNonSourceChange()) {
-      cacheDir.deleteRecursively()
-    } else {
-      args.addChangedFiles(changedFiles)
-    }
+    args.addChangedFiles(changedFiles)
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
 
@@ -266,11 +260,7 @@ interface InjektTask : Task {
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
   ) {
-    if (changedFiles.hasNonSourceChange()) {
-      cacheDir.deleteRecursively()
-    } else {
-      args.addChangedFiles(changedFiles)
-    }
+    args.addChangedFiles(changedFiles)
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
 }
@@ -324,11 +314,7 @@ interface InjektTask : Task {
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
   ) {
-    if (changedFiles.hasNonSourceChange()) {
-      cacheDir.deleteRecursively()
-    } else {
-      args.addChangedFiles(changedFiles)
-    }
+    args.addChangedFiles(changedFiles)
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
 }
@@ -398,13 +384,6 @@ private fun CommonCompilerArguments.addChangedFiles(changedFiles: ChangedFiles) 
       options += SubpluginOption("removedFiles", joinToString(File.pathSeparator) { it.path })
     }
     options.ifNotEmpty { addPluginOptions(this) }
-  }
-}
-
-private fun ChangedFiles.hasNonSourceChange(): Boolean {
-  if (this !is ChangedFiles.Known) return true
-  return !(modified + removed).all {
-    it.isKotlinFile(listOf("kt")) || it.isJavaFile()
   }
 }
 
