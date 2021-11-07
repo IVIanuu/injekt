@@ -191,7 +191,8 @@ class InjectNTransformer(
     }
 
     val callee = if (result.symbol.descriptor.name.asString() == "invoke" &&
-      result.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) == true) {
+      (result.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) == true ||
+          result.dispatchReceiver?.type?.hasAnnotation(injektFqNames().injectNInfo) == true)) {
       val argCount = result.symbol.owner.valueParameters.size
 
       val extraArgsCount = result.dispatchReceiver!!.type

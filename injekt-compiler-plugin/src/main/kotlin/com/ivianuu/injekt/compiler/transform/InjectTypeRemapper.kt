@@ -495,7 +495,8 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     }
   }
 
-  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2)
+  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2) ||
+      hasAnnotation(injektFqNames().injectNInfo)
 }
 
 @Suppress("DEPRECATION")
@@ -513,7 +514,8 @@ class InjectNTypeRemapper(
   override fun leaveScope() {
   }
 
-  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2)
+  private fun IrType.isInjectN(): Boolean = hasAnnotation(injektFqNames().inject2) ||
+      hasAnnotation(injektFqNames().injectNInfo)
 
   @OptIn(ObsoleteDescriptorBasedAPI::class)
   private fun IrType.isFunction(): Boolean {
@@ -564,7 +566,7 @@ class InjectNTypeRemapper(
       type.hasQuestionMark,
       newIrArguments.map { remapTypeArgument(it) },
       type.annotations.filter {
-        !it.isInjectNAnnotation() &&
+        it.symbol.owner.parent.fqNameForIrSerialization != injektFqNames().inject2 &&
             it.symbol.owner.parent.fqNameForIrSerialization != injektFqNames().injectNInfo
       }.map {
         it.transform(deepCopy, null) as IrConstructorCall
@@ -596,6 +598,3 @@ class InjectNTypeRemapper(
       annotations
     )
 }
-
-private fun IrConstructorCall.isInjectNAnnotation(@Inject ctx: Context) =
-  symbol.owner.parent.fqNameForIrSerialization == injektFqNames().inject2

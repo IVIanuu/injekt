@@ -142,6 +142,7 @@ typealias Inject1<A> = Inject2<A, A>
   AnnotationTarget.TYPE
 )
 @Repeatable
+@Retention(AnnotationRetention.SOURCE)
 annotation class Inject2<out A, out B>
 
 typealias Inject3<A, B, C> = Inject2<Inject2<A, B>, C>

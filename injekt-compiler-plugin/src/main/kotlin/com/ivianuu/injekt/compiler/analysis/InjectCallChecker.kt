@@ -89,9 +89,12 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
       !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
+      !resultingDescriptor.hasAnnotation(injektFqNames().injectNInfo) &&
       (resolvedCall !is VariableAsFunctionResolvedCall ||
-          !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2)) &&
-      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) != true) return
+          (!resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2) &&
+              !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().injectNInfo))) &&
+      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) != true &&
+      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().injectNInfo) != true) return
 
     val callExpression = resolvedCall.call.callElement
 

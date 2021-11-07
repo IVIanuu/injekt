@@ -53,7 +53,6 @@ class InjectNTest {
     """
   )
 
-
   @Test fun testDbContextLike() = singleAndMultiCodegen(
     """
       typealias DbContext = Inject2<Int, String>
@@ -424,4 +423,18 @@ class InjectNTest {
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
+
+  @Test fun testMultipleInjectNAnnotations() = singleAndMultiCodegen(
+    """
+      @Inject1<String> @Inject1<Int> fun myFunc() {
+        inject<String>()
+        inject<Int>()
+      }
+    """,
+    """
+      fun invoke(@Inject S: String, I: Int) {
+        myFunc()
+      }
+    """
+  )
 }

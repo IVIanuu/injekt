@@ -85,8 +85,10 @@ fun FunctionDescriptor.toInjectFunctionDescriptor(
   if (this is InjectFunctionDescriptor) return this
   if (allParameters.none { it.isInject() } &&
     !hasAnnotation(injektFqNames().inject2) &&
+    !hasAnnotation(injektFqNames().injectNInfo) &&
     (this !is ConstructorDescriptor ||
-        !constructedClass.hasAnnotation(injektFqNames().inject2)))
+        !constructedClass.hasAnnotation(injektFqNames().inject2) && !constructedClass.hasAnnotation(
+      injektFqNames().injectNInfo)))
     return null
   return when (this) {
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this)

@@ -60,8 +60,10 @@ class InjectTypeResolutionInterceptorExtension(
 
     @Provide val ctx = Context(context.scope.ownerDescriptor.module, injektFqNames, context.trace)
 
-    if (context.expectedType.hasAnnotation(injektFqNames.inject2) &&
-      !descriptor.hasAnnotation(injektFqNames.inject2)) {
+    if ((context.expectedType.hasAnnotation(injektFqNames.inject2) ||
+          context.expectedType.hasAnnotation(injektFqNames.injectNInfo)) &&
+      !descriptor.hasAnnotation(injektFqNames.inject2) &&
+      !descriptor.hasAnnotation(injektFqNames.injectNInfo)) {
       return AnonymousFunctionDescriptor(
         descriptor.containingDeclaration,
         Annotations.create(descriptor.annotations + context.expectedType.annotations.filter {
@@ -81,7 +83,7 @@ class InjectTypeResolutionInterceptorExtension(
       ?.declarationDescriptor as? ClassDescriptor
     if (argTypeDescriptor != null) {
       val sam = getSingleAbstractMethodOrNull(argTypeDescriptor)
-      if (sam != null && sam.hasAnnotation(injektFqNames.inject2)) {
+      if (sam != null && (sam.hasAnnotation(injektFqNames.inject2) || sam.hasAnnotation(injektFqNames.injectNInfo))) {
         trace()!!.record(InjektWritableSlices.INJECT_N_PARAMETERS, descriptor,
           sam.injectNParameters())
       }
@@ -110,11 +112,13 @@ class InjectTypeResolutionInterceptorExtension(
 
     if (argTypeDescriptor != null) {
       val sam = getSingleAbstractMethodOrNull(argTypeDescriptor)
-      if (sam != null && sam.hasAnnotation(injektFqNames.inject2)) {
+      if (sam != null && (sam.hasAnnotation(injektFqNames.inject2) ||
+            sam.hasAnnotation(injektFqNames.injectNInfo))) {
         return resultType.replaceAnnotations(
           Annotations.create(
             resultType.annotations + sam.annotations.filter {
-              it.fqName == injektFqNames.inject2
+              it.fqName == injektFqNames.inject2 ||
+                  it.fqName == injektFqNames.injectNInfo
             }
           )
         )
@@ -122,7 +126,9 @@ class InjectTypeResolutionInterceptorExtension(
     }
 
     if (element.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.inject2) == true ||
-      context.expectedType.hasAnnotation(injektFqNames.inject2)) {
+      element.safeAs<KtAnnotated>()?.hasAnnotation(injektFqNames.injectNInfo) == true ||
+      context.expectedType.hasAnnotation(injektFqNames.inject2) ||
+      context.expectedType.hasAnnotation(injektFqNames.injectNInfo)) {
       return resultType.replaceAnnotations(
         Annotations.create(
           resultType.annotations + context.expectedType.annotations.filter {
