@@ -150,10 +150,7 @@ class InjectablesScope(
     for (import in imports) {
       memberScopeForFqName(import.packageFqName, lookupLocation)
         ?.recordLookup(
-          injectablesLookupName(
-            FqName(import.importPath!!.removeSuffix(".*")),
-            import.packageFqName
-          ),
+          injectablesLookupName,
           lookupLocation
         )
     }

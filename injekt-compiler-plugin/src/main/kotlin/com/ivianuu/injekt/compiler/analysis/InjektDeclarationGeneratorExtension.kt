@@ -226,10 +226,7 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        val functionName = injectablesLookupName(
-          injectable.fqName ?: error("Wtf ${injectable.text}"),
-          file.packageFqName
-        )
+        val functionName = injectablesLookupName
 
         appendLine("fun $functionName(")
         appendLine("  marker: $markerName,")

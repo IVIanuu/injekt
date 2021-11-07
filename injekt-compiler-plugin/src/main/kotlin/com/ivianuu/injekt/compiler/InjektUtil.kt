@@ -288,8 +288,7 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-fun injectablesLookupName(fqName: FqName, packageFqName: FqName): Name =
-  "_injectables".asNameId()
+val injectablesLookupName = "_injectables".asNameId()
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND

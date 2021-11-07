@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectNTypes
+import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isDeserializedDeclaration
@@ -65,6 +66,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -155,9 +157,10 @@ fun TypeRef.collectInjectables(
 
 fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
+  nameFilter: (Name) -> Boolean = { true },
   onEach: (DeclarationDescriptor) -> Unit = {},
   @Inject ctx: Context
-): List<CallableRef> = getContributedDescriptors()
+): List<CallableRef> = getContributedDescriptors(nameFilter = nameFilter)
   .flatMap { declaration ->
     onEach(declaration)
     when (declaration) {
@@ -378,6 +381,10 @@ fun List<ProviderImport>.collectImportedInjectables(
 
       // import all injectables in the package
       memberScopeForFqName(packageFqName, import.element.lookupLocation)
+        ?.takeIf {
+          it.getContributedFunctions(injectablesLookupName, NoLookupLocation.FROM_BACKEND)
+            .isNotEmpty()
+        }
         ?.collectInjectables(false)
         ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
         ?.let { this += it }
@@ -388,21 +395,7 @@ fun List<ProviderImport>.collectImportedInjectables(
 
       // import all injectables with the specified name
       memberScopeForFqName(parentFqName, import.element.lookupLocation)
-        ?.collectInjectables(false)
-        ?.filter {
-          it.callable.name == name ||
-              it.callable.safeAs<ClassConstructorDescriptor>()
-                ?.constructedClass
-                ?.name == name ||
-              it.callable.safeAs<ReceiverParameterDescriptor>()
-                ?.value
-                ?.type
-                ?.constructor
-                ?.declarationDescriptor
-                ?.safeAs<ClassDescriptor>()
-                ?.containingDeclaration
-                ?.name == name
-        }
+        ?.collectInjectables(false, { it == name })
         ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
         ?.let { this += it }
     }
@@ -515,6 +508,11 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
   return trace()!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
     val lookedUpPackages = setOf(packageFqName)
 
+    if (memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND)
+        ?.getContributedFunctions(injectablesLookupName, NoLookupLocation.FROM_BACKEND)
+        ?.isEmpty() == true)
+          return@getOrPut InjectablesWithLookups(emptyList(), lookedUpPackages)
+
     val packageFragments = packageFragmentsForFqName(packageFqName)
       .filterNot { it is BuiltInsPackageFragment }
 
@@ -529,7 +527,7 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
           if (declaration is ClassDescriptor && declaration
               .toClassifierRef()
               .declaresInjectables)
-            collectInjectables(declaration.unsubstitutedMemberScope)
+                collectInjectables(declaration.unsubstitutedMemberScope)
         },
         classBodyView = false
       )
