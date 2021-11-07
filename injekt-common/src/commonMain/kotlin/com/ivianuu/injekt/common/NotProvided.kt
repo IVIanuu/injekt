@@ -19,7 +19,7 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Provide
 
 class NotProvided<out T> private constructor() {
-  abstract class LowPriorityModule internal constructor() {
+  sealed class LowPriorityModule {
     private val defaultInstance: NotProvided<Nothing> = NotProvided()
 
     @Provide fun <T> default(): NotProvided<T> = defaultInstance

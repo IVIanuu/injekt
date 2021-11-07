@@ -18,6 +18,9 @@
 
 package com.ivianuu.injekt
 
+/**
+ * Provides this declaration in the current scope
+ */
 @Target(
   // @Provide class MyClass
   AnnotationTarget.CLASS,
@@ -122,6 +125,9 @@ inline fun <P1, P2, P3, P4, P5, P6, P7, P8, P9, R> provide(
   block: @Inject9<P1, P2, P3, P4, P5, P6, P7, P8, P9> () -> R
 ): R = block()
 
+/**
+ * Automatically fills in a argument if no explicit argument was provided
+ */
 @Target(
   // fun func(@Inject foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
@@ -210,3 +216,28 @@ annotation class Tag
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
+
+/**
+ * Specify a custom error message if no injectable could be found
+ */
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.ANNOTATION_CLASS,
+  AnnotationTarget.TYPE,
+  AnnotationTarget.VALUE_PARAMETER
+)
+annotation class InjectableNotFound(val message: String)
+
+/**
+ * Specify a custom error message if ambiguous injectables were found
+ */
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.VALUE_PARAMETER,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.TYPE,
+  AnnotationTarget.LOCAL_VARIABLE
+)
+annotation class AmbiguousInjectable(val message: String)

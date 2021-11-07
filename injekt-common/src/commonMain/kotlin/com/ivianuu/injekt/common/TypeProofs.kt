@@ -16,61 +16,62 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.AmbiguousInjectable
+import com.ivianuu.injekt.InjectableNotFound
 import com.ivianuu.injekt.Provide
 
 /**
- * Type class witnessing that every [A] is a sub type of [B]
+ * Proofs that every [A] is a sub type of [B]
  */
-sealed class IsSubType<A, B> : (A) -> B {
+@InjectableNotFound("Cannot proof that [A] is sub type of [B]")
+sealed interface IsSubType<A, B> : (A) -> B {
   companion object {
-    private object Singleton : IsSubType<Any?, Any?>() {
+    private object Impl : IsSubType<Any?, Any?> {
       override fun invoke(p1: Any?): Any? = p1
     }
 
     @Suppress("UNCHECKED_CAST")
     @Provide
-    fun <A : B, B> instance(): IsSubType<A, B> = Singleton as IsSubType<A, B>
+    fun <A : B, B> instance(): IsSubType<A, B> = Impl as IsSubType<A, B>
   }
 }
 
 /**
- * Type class witnessing that every [A] is not a sub type of [B]
+ * Proofs that every [A] is not a sub type of [B]
  */
-sealed class IsNotSubType<A, B> {
+sealed interface IsNotSubType<A, B> {
+  @Suppress("UNCHECKED_CAST")
   companion object {
-    private object Singleton : IsNotSubType<Any?, Any?>()
+    private object Impl : IsNotSubType<Any?, Any?>
 
-    @Suppress("UNCHECKED_CAST")
-    @Provide
-    fun <A, B> instance(): IsNotSubType<A, B> = Singleton as IsNotSubType<A, B>
+    @Provide fun <A, B> instance(): IsNotSubType<A, B> = Impl as IsNotSubType<A, B>
 
-    @Suppress("UNCHECKED_CAST")
     @Provide
+    @AmbiguousInjectable("Cannot proof that [A] is NOT a sub type of [B]")
     fun <A : B, B> amb1(): IsNotSubType<A, B> = throw AssertionError()
 
-    @Suppress("UNCHECKED_CAST")
-    @Provide
-    fun <A : B, B> amb2(): IsNotSubType<A, B> = throw AssertionError()
+    @Provide fun <A : B, B> amb2(): IsNotSubType<A, B> = throw AssertionError()
   }
 }
 
 /**
- * Type class witnessing that every [A] is equal to [B]
+ * Proofs that every [A] is equal to [B]
  */
-sealed class IsEqual<A, B> : (A) -> B {
+@InjectableNotFound("Cannot proof that [A] is equal to [B]")
+sealed interface IsEqual<A, B> : (A) -> B {
   companion object {
-    private object Singleton : IsEqual<Any?, Any?>() {
+    private object Impl : IsEqual<Any?, Any?> {
       override fun invoke(p1: Any?): Any? = p1
     }
 
     @Suppress("UNCHECKED_CAST")
     @Provide
-    fun <A> instance(): IsEqual<A, A> = Singleton as IsEqual<A, A>
+    fun <A> instance(): IsEqual<A, A> = Impl as IsEqual<A, A>
   }
 }
 
 /**
- * Type class witnessing that every [A] is not equal to [B]
+ * Proofs that every [A] is not equal to [B]
  */
 sealed class IsNotEqual<A, B> {
   companion object {
@@ -80,7 +81,9 @@ sealed class IsNotEqual<A, B> {
     @Provide
     fun <A, B> instance(): IsNotEqual<A, B> = Singleton as IsNotEqual<A, B>
 
-    @Provide fun <A> amb1(): IsNotEqual<A, A> = throw AssertionError()
+    @Provide
+    @AmbiguousInjectable("Cannot proof that [A] is NOT equal of [B]")
+    fun <A> amb1(): IsNotEqual<A, A> = throw AssertionError()
 
     @Provide fun <A> amb2(): IsNotEqual<A, A> = throw AssertionError()
   }

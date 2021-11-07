@@ -135,7 +135,7 @@ class ComponentInjectable(
       )
     ),
     callableFqName = callableFqName.child("observers".asNameId()),
-    callableTypeParameters = type.arguments,
+    callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
     parameterName = "observers".asNameId(),
     parameterIndex = 0,
     isRequired = false,
@@ -173,7 +173,7 @@ class ComponentInjectable(
       InjectableRequest(
         type = requestCallable.type,
         callableFqName = callableFqName,
-        callableTypeParameters = type.arguments,
+        callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
         parameterName = requestCallable.callable.name,
         parameterIndex = index,
         isRequired = requestCallable.callable
@@ -257,7 +257,7 @@ class ListInjectable(
       InjectableRequest(
         type = element,
         callableFqName = callableFqName,
-        callableTypeParameters = type.arguments,
+        callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
         parameterName = "element$index".asNameId(),
         parameterIndex = index
       )
@@ -377,7 +377,7 @@ class TypeKeyInjectable(
           type = ownerScope.ctx.typeKeyType.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
           callableFqName = callableFqName,
-          callableTypeParameters = type.arguments,
+          callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
           parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
           parameterIndex = index
         )
@@ -415,25 +415,31 @@ fun CallableRef.getInjectableRequests(
 data class InjectableRequest(
   val type: TypeRef,
   val callableFqName: FqName,
-  val callableTypeParameters: List<TypeRef> = emptyList(),
+  val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true,
   val isInline: Boolean = false,
-  val isLazy: Boolean = false
+  val isLazy: Boolean = false,
+  val customErrorMessages: CustomErrorMessages? = null
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
+fun ParameterDescriptor.toInjectableRequest(
+  callable: CallableRef,
+  @Inject ctx: Context
+): InjectableRequest {
   val index = injektIndex()
   return InjectableRequest(
     type = callable.parameterTypes[index]!!,
     callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
-    callableTypeParameters = callable.typeArguments.values.toList(),
+    callableTypeArguments = callable.typeArguments,
     parameterName = injektName(),
     parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-        InlineUtil.isInlineParameter(this)
+        InlineUtil.isInlineParameter(this),
+    customErrorMessages = toCallableRef().customErrorMessages
+      ?: callable.parameterTypes[index]!!.customErrorMessages
   )
 }

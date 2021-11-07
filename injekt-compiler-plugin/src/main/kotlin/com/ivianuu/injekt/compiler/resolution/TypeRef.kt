@@ -68,7 +68,8 @@ class ClassifierRef(
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
-  val injectNParameters: List<InjectNParameterDescriptor> = emptyList()
+  val injectNParameters: List<InjectNParameterDescriptor> = emptyList(),
+  val customErrorMessages: CustomErrorMessages? = null
 ) {
   val superTypes by lazySuperTypes
 
@@ -96,11 +97,13 @@ class ClassifierRef(
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
-    injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters
+    injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters,
+    customErrorMessages: CustomErrorMessages? = this.customErrorMessages
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
-    tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters
+    tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters,
+    customErrorMessages
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -130,11 +133,12 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       ?.declaredTypeParameters
       ?.map { it.toClassifierRef() }
       ?.toMutableList()
+      ?: mutableListOf()
 
     val isTag = hasAnnotation(injektFqNames().tag)
 
     if (isTag) {
-      typeParameters!! += ClassifierRef(
+      typeParameters += ClassifierRef(
         key = "${uniqueKey()}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
@@ -146,7 +150,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
     ClassifierRef(
       key = original.uniqueKey(),
       fqName = original.fqNameSafe,
-      typeParameters = typeParameters ?: emptyList(),
+      typeParameters = typeParameters,
       lazySuperTypes = info.lazySuperTypes,
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
@@ -160,12 +164,10 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      injectNParameters = info.injectNParameters
+      injectNParameters = info.injectNParameters,
+      customErrorMessages = annotations.customErrorMessages(typeParameters)
     )
   }
-
-private val KotlinType.fullyExpandedType: KotlinType
-  get() = getAbbreviatedType()?.expandedType?.fullyExpandedType ?: this
 
 fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
@@ -210,7 +212,8 @@ fun KotlinType.toTypeRef(
       variance = variance,
       injectNTypes = injectNTypes(),
       scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef(),
-      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
+      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true,
+      customErrorMessages = annotations.customErrorMessages(emptyList())
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
@@ -251,6 +254,7 @@ class TypeRef(
   val injectNTypes: List<TypeRef> = emptyList(),
   val scopeComponentType: TypeRef? = null,
   val isEager: Boolean = false,
+  val customErrorMessages: CustomErrorMessages? = null,
   val source: ClassifierRef? = null
 ) {
   override fun toString(): String = renderToString()
@@ -348,6 +352,7 @@ class TypeRef(
       result = 31 * result + injectNTypes.hashCode()
       result = 31 * result + scopeComponentType.hashCode()
       result = 31 * result + isEager.hashCode()
+      result = 31 * result + customErrorMessages.hashCode()
       _hashCode = result
     }
     return _hashCode
@@ -385,6 +390,7 @@ fun TypeRef.copy(
   injectNTypes: List<TypeRef> = this.injectNTypes,
   scopeComponentType: TypeRef? = this.scopeComponentType,
   isEager: Boolean = this.isEager,
+  customErrorMessages: CustomErrorMessages? = this.customErrorMessages,
   source: ClassifierRef? = this.source
 ) = TypeRef(
   classifier,
@@ -399,6 +405,7 @@ fun TypeRef.copy(
   injectNTypes,
   scopeComponentType,
   isEager,
+  customErrorMessages,
   source
 )
 

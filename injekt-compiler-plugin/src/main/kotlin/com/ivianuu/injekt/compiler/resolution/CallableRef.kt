@@ -25,6 +25,9 @@ import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -37,7 +40,8 @@ data class CallableRef(
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val isProvide: Boolean,
   val import: ResolvedProviderImport?,
-  val injectNParameters: List<InjectNParameterDescriptor>
+  val injectNParameters: List<InjectNParameterDescriptor>,
+  val customErrorMessages: CustomErrorMessages?
 )
 
 fun CallableRef.substitute(
@@ -75,12 +79,30 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
   trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo()
     val typeParameters = typeParameters.map { it.toClassifierRef() }
+
+    val typeParametersForErrorMessages = typeParameters
+      .takeIf { it.isNotEmpty() }
+      ?: containingDeclaration
+        .safeAs<CallableDescriptor>()
+        ?.typeParameters
+        ?.map { it.toClassifierRef() }
+      ?: emptyList()
+
+    val customErrorMessages = (annotations + (safeAs<ConstructorDescriptor>()
+      ?.constructedClass?.annotations?.toList() ?: emptyList()))
+      .customErrorMessages(typeParametersForErrorMessages)
+
+    val parameterTypes = if (typeParametersForErrorMessages.isNotEmpty())
+      info.parameterTypes
+        .mapValues { it.value.formatCustomErrorMessages(typeParametersForErrorMessages) }
+      else info.parameterTypes
+
     CallableRef(
       callable = this,
       type = if (this is InjectNParameterDescriptor) typeRef else info.type,
       originalType = info.type,
       typeParameters = typeParameters,
-      parameterTypes = info.parameterTypes,
+      parameterTypes = parameterTypes,
       scopeComponentType = info.scopeComponentType,
       isEager = info.isEager,
       typeArguments = typeParameters
@@ -88,6 +110,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
         .toMap(),
       isProvide = isProvide(),
       import = null,
-      injectNParameters = info.injectNParameters
+      injectNParameters = info.injectNParameters,
+      customErrorMessages = customErrorMessages
     )
   }

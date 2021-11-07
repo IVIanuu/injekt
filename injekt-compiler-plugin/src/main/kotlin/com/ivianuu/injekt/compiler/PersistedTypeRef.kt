@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.CustomErrorMessages
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
@@ -34,7 +35,8 @@ import kotlinx.serialization.Serializable
   val isInject: Boolean,
   val injectNTypes: List<PersistedTypeRef>,
   val scopeComponentType: PersistedTypeRef?,
-  val isEager: Boolean
+  val isEager: Boolean,
+  val customErrorMessages: CustomErrorMessages?
 )
 
 fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
@@ -48,7 +50,8 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
     isInject = isInject,
     injectNTypes = injectNTypes.map { it.toPersistedTypeRef() },
     scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
-    isEager = isEager
+    isEager = isEager,
+    customErrorMessages = customErrorMessages
   )
 
 fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
@@ -72,6 +75,7 @@ fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
     isInject = isInject,
     injectNTypes = injectNTypes.map { it.toTypeRef() },
     scopeComponentType = scopeComponentType?.toTypeRef(),
-    isEager = isEager
+    isEager = isEager,
+    customErrorMessages = customErrorMessages
   )
 }
