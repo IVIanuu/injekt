@@ -250,7 +250,8 @@ class TypeRef(
   val variance: TypeVariance = TypeVariance.INV,
   val injectNTypes: List<TypeRef> = emptyList(),
   val scopeComponentType: TypeRef? = null,
-  val isEager: Boolean = false
+  val isEager: Boolean = false,
+  val source: ClassifierRef? = null
 ) {
   override fun toString(): String = renderToString()
 
@@ -383,7 +384,8 @@ fun TypeRef.copy(
   variance: TypeVariance = this.variance,
   injectNTypes: List<TypeRef> = this.injectNTypes,
   scopeComponentType: TypeRef? = this.scopeComponentType,
-  isEager: Boolean = this.isEager
+  isEager: Boolean = this.isEager,
+  source: ClassifierRef? = this.source
 ) = TypeRef(
   classifier,
   isMarkedNullable,
@@ -396,7 +398,8 @@ fun TypeRef.copy(
   variance,
   injectNTypes,
   scopeComponentType,
-  isEager
+  isEager,
+  source
 )
 
 val STAR_PROJECTION_TYPE = TypeRef(
@@ -564,7 +567,7 @@ fun effectiveVariance(
   useSite: TypeVariance,
   originalDeclared: TypeVariance
 ): TypeVariance {
-  if (useSite != TypeVariance.INV) return useSite
   if (declared != TypeVariance.INV) return declared
+  if (useSite != TypeVariance.INV) return useSite
   return originalDeclared
 }

@@ -90,7 +90,8 @@ private fun TypeRef.isSubTypeOfSameClassifier(
     val parameter = superType.arguments[i]
     if (argument.isStarProjection || parameter.isStarProjection) continue
     val originalParameter = superType.classifier.defaultType.arguments[i]
-    val argumentOk = when (effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)) {
+    val variance = effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)
+    val argumentOk = when (variance) {
       TypeVariance.IN -> parameter.isSubTypeOf(argument)
       TypeVariance.OUT -> argument.isSubTypeOf(parameter)
       TypeVariance.INV -> argument.isEqualTo(parameter)
@@ -479,6 +480,11 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
 
     if (subType.classifier in typeVariables)
       return addUpperConstraint(subType, superType) && (answer ?: true)
+    else {
+      subType.source?.let {
+        return addUpperConstraint(it.defaultType, superType) && (answer ?: true)
+      }
+    }
 
     return answer
   }
@@ -560,8 +566,8 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
   ) {
     val newConstraint = when (otherConstraint.kind) {
       ConstraintKind.EQUAL -> otherConstraint.type
-      ConstraintKind.UPPER -> otherConstraint.type.withVariance(TypeVariance.OUT)
-      ConstraintKind.LOWER -> otherConstraint.type.withVariance(TypeVariance.IN)
+      ConstraintKind.UPPER -> otherConstraint.type.copy(variance = TypeVariance.OUT, source = otherVariable)
+      ConstraintKind.LOWER -> otherConstraint.type.copy(variance = TypeVariance.IN, source = otherVariable)
     }
     val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to newConstraint))
     if (baseConstraint.kind != ConstraintKind.LOWER) {
