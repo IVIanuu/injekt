@@ -27,15 +27,20 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.isIde
+import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.isInject
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.lambdaExpressionRecursiveVisitor
 import org.jetbrains.kotlin.psi.propertyRecursiveVisitor
@@ -135,6 +140,16 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
                 it.hasAnnotation(injektFqNames().provide)
           } == true)
             return true
+    }
+
+    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER) {
+      val typeParameter = diagnostic.psiElement
+        .cast<KtTypeParameter>().descriptor<TypeParameterDescriptor>()
+      return diagnostic.psiElement.getParentOfType<KtTypeAlias>(false)
+        ?.descriptor<TypeAliasDescriptor>()
+        ?.expandedType
+        ?.toTypeRef()
+        ?.anyType { it.classifier.descriptor == typeParameter } == true
     }
 
     return false

@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -87,4 +89,14 @@ class SuppressionTest {
       }
     """
   )
+
+  @Test fun testDoesNotShowUnusedTypeParameterIfUsedInAnnotation() = codegen(
+    """
+      typealias ComponentScope<C> = @ComponentScopeTag<C> String
+
+      @Tag annotation class ComponentScopeTag<C : @Component Any>
+    """
+  ) {
+    shouldNotContainMessage("Type alias parameter C is not used in the expanded type String and does not affect type checking")
+  }
 }
