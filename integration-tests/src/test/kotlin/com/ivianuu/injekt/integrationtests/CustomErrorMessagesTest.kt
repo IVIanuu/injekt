@@ -24,7 +24,7 @@ class CustomErrorMessagesTest {
   @Test fun testInjectableNotFoundOnClass() = singleAndMultiCodegen(
     """
       @InjectableNotFound("custom message [T]")
-      class Dep<T>Ad
+      class Dep<T>
     """,
     """
       fun invoke() = inject<Dep<String>>() 

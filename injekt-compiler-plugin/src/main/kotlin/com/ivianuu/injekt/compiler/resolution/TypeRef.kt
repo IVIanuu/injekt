@@ -69,7 +69,8 @@ class ClassifierRef(
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
   val injectNParameters: List<InjectNParameterDescriptor> = emptyList(),
-  val customErrorMessages: CustomErrorMessages? = null
+  val customErrorMessages: CustomErrorMessages? = null,
+  val declaresInjectables: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 
@@ -98,12 +99,14 @@ class ClassifierRef(
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
     injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters,
-    customErrorMessages: CustomErrorMessages? = this.customErrorMessages
+    customErrorMessages: CustomErrorMessages? = this.customErrorMessages,
+    declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
     tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters,
-    customErrorMessages
+    customErrorMessages,
+    declaresInjectables
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -165,7 +168,8 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
       injectNParameters = info.injectNParameters,
-      customErrorMessages = annotations.customErrorMessages(typeParameters)
+      customErrorMessages = annotations.customErrorMessages(typeParameters),
+      declaresInjectables = info.declaresInjectables
     )
   }
 

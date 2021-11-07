@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
 import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -56,7 +57,9 @@ import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -78,11 +81,11 @@ import kotlin.reflect.KClass
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   @Inject ctx: Context
-): ValueParameterDescriptor? =
-  overriddenTreeUniqueAsSequence(false)
-    .map { it.containingDeclaration }
-    .filterIsInstance<ClassDescriptor>()
-    .mapNotNull { clazz ->
+): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
+  .map { it.containingDeclaration }
+  .filterIsInstance<ClassDescriptor>()
+  .mapNotNull { clazz ->
+    if (clazz.isDeserializedDeclaration()) {
       val clazzClassifier = clazz.toClassifierRef()
       clazz.unsubstitutedPrimaryConstructor
         ?.valueParameters
@@ -90,8 +93,16 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
           it.name == name &&
               it.name in clazzClassifier.primaryConstructorPropertyParameters
         }
+    } else {
+      clazz.unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.firstOrNull {
+          it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
+              it.name == name
+        }
     }
-    .firstOrNull()
+  }
+  .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
@@ -141,7 +152,8 @@ fun DeclarationDescriptor.isExternalDeclaration(@Inject ctx: Context): Boolean =
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
     (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
-    this is DeserializedTypeParameterDescriptor
+    this is DeserializedTypeParameterDescriptor ||
+    this is JavaClassDescriptor
 
 fun String.asNameId() = Name.identifier(this)
 

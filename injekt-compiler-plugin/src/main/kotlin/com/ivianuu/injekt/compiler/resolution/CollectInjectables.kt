@@ -81,8 +81,6 @@ fun TypeRef.collectInjectables(
   import: ResolvedProviderImport?,
   @Inject ctx: Context
 ): List<CallableRef> {
-  if (isStarProjection) return emptyList()
-
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
     val functionType = if (isSuspendFunctionType)
@@ -120,6 +118,8 @@ fun TypeRef.collectInjectables(
         }
     )
   }
+
+  if (!classifier.declaresInjectables && !classBodyView) return emptyList()
 
   return ((classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
@@ -164,6 +164,7 @@ fun ResolutionScope.collectInjectables(
       is ClassDescriptor -> declaration
         .injectableConstructors() + listOfNotNull(
         declaration.companionObjectDescriptor
+          ?.takeIf { it.classifierInfo().declaresInjectables }
           ?.injectableReceiver(false)
       )
       is CallableMemberDescriptor -> {
@@ -485,10 +486,14 @@ private fun TypeRef.collectTypeScopeInjectablesForSingleType(
     .safeAs<ClassDescriptor>()
     ?.let { clazz ->
       if (clazz.kind == ClassKind.OBJECT) {
-        injectables += clazz.injectableReceiver(true)
+        clazz
+          .takeIf { it.classifierInfo().declaresInjectables }
+          ?.injectableReceiver(true)
+          ?.let { injectables += it }
       } else {
         injectables += clazz.injectableConstructors()
         clazz.companionObjectDescriptor
+          ?.takeIf { it.classifierInfo().declaresInjectables }
           ?.let { injectables += it.injectableReceiver(true) }
       }
 
@@ -521,7 +526,9 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
     fun collectInjectables(scope: MemberScope) {
       injectables += scope.collectInjectables(
         onEach = { declaration ->
-          if (declaration is ClassDescriptor && declaration !is LazyJavaClassDescriptor)
+          if (declaration is ClassDescriptor && declaration
+              .toClassifierRef()
+              .declaresInjectables)
             collectInjectables(declaration.unsubstitutedMemberScope)
         },
         classBodyView = false

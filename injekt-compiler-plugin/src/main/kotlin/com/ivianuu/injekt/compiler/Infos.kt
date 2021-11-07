@@ -22,14 +22,13 @@ import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
 import com.ivianuu.injekt.compiler.resolution.injectNParameters
+import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
-import com.ivianuu.injekt.compiler.resolution.isSuspendFunctionType
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.wrap
 import com.ivianuu.shaded_injekt.Inject
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -60,6 +59,7 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.annotations.TargetedAnnotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
@@ -68,6 +68,7 @@ import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.ErrorType
@@ -294,9 +295,11 @@ class ClassifierInfo(
   val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
-  val injectNParameters: List<InjectNParameterDescriptor>
+  val injectNParameters: List<InjectNParameterDescriptor>,
+  val lazyDeclaresInjectables: Lazy<Boolean>
 ) {
   val superTypes by lazySuperTypes
+  val declaresInjectables by lazyDeclaresInjectables
 }
 
 fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
@@ -324,13 +327,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
       }
     }
 
-    findPsi()?.safeAs<KtDeclaration>()
-      ?.let { declaration ->
-        annotations.forEach {
-          fixTypes(it.type, declaration)
-        }
-      }
-
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
       ?.toTypeRef()
 
@@ -344,59 +340,99 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
       }
     }
 
-    val isDeserialized = isDeserializedDeclaration()
+    if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
+      ClassifierInfo(
+        tags = emptyList(),
+        scopeComponentType = null,
+        isEager = false,
+        entryPointComponentType = null,
+        lazySuperTypes = lazySuperTypes,
+        primaryConstructorPropertyParameters = emptyList(),
+        isSpread = false,
+        injectNParameters = emptyList(),
+        lazyDeclaresInjectables = lazyOf(false)
+      )
+    } else {
+      findPsi()?.safeAs<KtDeclaration>()
+        ?.let { declaration ->
+          annotations.forEach {
+            fixTypes(it.type, declaration)
+          }
+        }
 
-    val tags = getAnnotatedAnnotations(injektFqNames().tag)
-      .map { it.type.toTypeRef() }
+      val tags = getAnnotatedAnnotations(injektFqNames().tag)
+        .map { it.type.toTypeRef() }
 
-    val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
-    val scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef()
-    val isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
+      val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
+      val scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef()
+      val isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
 
-    val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
-      ?.type?.arguments?.single()?.type?.toTypeRef()
+      val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
+        ?.type?.arguments?.single()?.type?.toTypeRef()
 
-    val primaryConstructorPropertyParameters = if (isDeserialized) emptyList()
-    else safeAs<ClassDescriptor>()
-      ?.unsubstitutedPrimaryConstructor
-      ?.valueParameters
-      ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
-      ?.map { it.name.asString() }
-      ?: emptyList()
+      val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+        ?.unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
+        ?: emptyList()
 
-    val isSpread = if (isDeserialized) false
-    else hasAnnotation(injektFqNames().spread) ||
-        findPsi()?.safeAs<KtTypeParameter>()
-          ?.hasAnnotation(injektFqNames().spread) == true
+      val isSpread = hasAnnotation(injektFqNames().spread) ||
+          findPsi()?.safeAs<KtTypeParameter>()
+            ?.hasAnnotation(injektFqNames().spread) == true
 
-    val injectNParameters = injectNTypes()
-      .mapIndexed { index, parameterType ->
-        InjectNParameterDescriptor(
-          this,
-          index,
-          parameterType
-        )
-      }
+      val injectNParameters = if (isDeserializedDeclaration()) emptyList()
+      else injectNTypes()
+        .mapIndexed { index, parameterType ->
+          InjectNParameterDescriptor(
+            this,
+            index,
+            parameterType
+          )
+        }
 
-    val info = ClassifierInfo(
-      tags = tags,
-      scopeComponentType = scopeComponentType,
-      isEager = isEager,
-      entryPointComponentType = entryPointComponentType,
-      lazySuperTypes = lazySuperTypes,
-      primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-      isSpread = isSpread,
-      injectNParameters = injectNParameters
-    )
+      val info = ClassifierInfo(
+        tags = tags,
+        scopeComponentType = scopeComponentType,
+        isEager = isEager,
+        entryPointComponentType = entryPointComponentType,
+        lazySuperTypes = lazySuperTypes,
+        primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+          .map { it.name.asString() },
+        isSpread = isSpread,
+        injectNParameters = injectNParameters,
+        lazyDeclaresInjectables = lazy {
+          defaultType
+            .memberScope
+            .getContributedDescriptors()
+            .any { declaration ->
+              when (declaration) {
+                is ClassDescriptor -> declaration
+                  .injectableConstructors()
+                  .isNotEmpty()
+                is CallableMemberDescriptor -> {
+                  declaration.visibility != DescriptorVisibilities.PRIVATE &&
+                      (declaration.hasAnnotation(injektFqNames().provide) ||
+                          (declaration.safeAs<PropertyDescriptor>()
+                            ?.primaryConstructorPropertyValueParameter()
+                            ?.hasAnnotation(injektFqNames().provide) == true))
+                }
+                else -> false
+              }
+            } || (this is ClassDescriptor &&
+              companionObjectDescriptor?.toClassifierRef()?.declaresInjectables == true)
+        }
+      )
 
-    // important to cache the info before persisting it
-    trace()!!.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
+      // important to cache the info before persisting it
+      trace()!!.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
 
-    persistInfoIfNeeded(info)
+      persistInfoIfNeeded(info)
 
-    addInjectNInfo()
+      addInjectNInfo()
 
-    return info
+      // no accident
+      return info
+    }
   }
 
 @Serializable data class PersistedClassifierInfo(
@@ -407,7 +443,8 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
-  val injectNParameters: List<PersistedTypeRef>
+  val injectNParameters: List<PersistedTypeRef>,
+  val declaresInjectables: Boolean
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(
@@ -427,7 +464,8 @@ fun PersistedClassifierInfo.toClassifierInfo(
       0,
       type.toTypeRef()
     )
-  }
+  },
+  lazyDeclaresInjectables = lazyOf(declaresInjectables)
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: Context) = PersistedClassifierInfo(
@@ -438,15 +476,14 @@ fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: Context) = PersistedCl
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  injectNParameters = injectNParameters.map { it.typeRef.toPersistedTypeRef() }
+  injectNParameters = injectNParameters.map { it.typeRef.toPersistedTypeRef() },
+  declaresInjectables = declaresInjectables
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
   info: ClassifierInfo,
   @Inject ctx: Context
 ) {
-  if (isExternalDeclaration() || isDeserializedDeclaration()) return
-
   if (this is TypeParameterDescriptor) {
     val container = containingDeclaration
     if (container is TypeAliasDescriptor) return
@@ -499,7 +536,8 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       info.superTypes.none { it.shouldBePersisted() } &&
       info.entryPointComponentType == null &&
       info.scopeComponentType == null &&
-      info.injectNParameters.isEmpty()
+      info.injectNParameters.isEmpty() &&
+      !info.declaresInjectables
     ) return
 
     val serializedInfo = info.toPersistedClassifierInfo().encode()
@@ -562,9 +600,7 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.PROTECTED
 
 fun DeclarationDescriptor.addInjectNInfo(@Inject ctx: Context) {
-  if (isIde) return
-
-  if (isDeserializedDeclaration()) return
+  if (isIde || isDeserializedDeclaration()) return
 
   findPsi().safeAs<KtDeclaration>()?.let { declaration ->
     annotations.forEach {
