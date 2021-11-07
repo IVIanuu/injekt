@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -247,6 +248,10 @@ interface InjektErrors {
     @JvmField val FILE_DECOY =
       DiagnosticFactory0.create<KtFile>(Severity.ERROR)
         .also { MAP.put(it, "decoy") }
+
+    @JvmField val INJECT_N_TYPE_MISMATCH =
+      DiagnosticFactory0.create<KtElement>(Severity.ERROR)
+        .also { MAP.put(it, "Inject n param types not compatible") }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

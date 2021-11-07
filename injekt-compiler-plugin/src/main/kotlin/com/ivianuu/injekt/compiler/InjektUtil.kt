@@ -68,6 +68,7 @@ import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
+import org.jetbrains.kotlin.types.model.TypeVariance
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -314,7 +315,7 @@ fun Annotated.injectNTypes(@Inject ctx: Context): List<TypeRef> {
     if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames().inject2) {
       type.arguments.forEach { visitInjectNType(it.type) }
     } else {
-      result += type.toTypeRef()
+      result += type.toTypeRef(variance = TypeVariance.IN)
     }
   }
 

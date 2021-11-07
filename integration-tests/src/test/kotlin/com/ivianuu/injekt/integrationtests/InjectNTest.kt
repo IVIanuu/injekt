@@ -19,6 +19,7 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -437,4 +438,102 @@ class InjectNTest {
       }
     """
   )
+
+  @Test fun testInjectNLambdaWithSameTypes() = singleAndMultiCodegen(
+    """
+      fun callee(block: @Inject1<String> () -> Unit) {
+      }
+    """,
+    """
+      val lambda: @Inject1<String> () -> Unit = {}
+    """,
+    """
+      fun invoke() {
+        callee(lambda)
+      }
+    """
+  )
+
+  @Test fun testInjectNLambdaWithDifferentTypes() = singleAndMultiCodegen(
+    """
+      fun callee(block: @Inject1<String> () -> Unit) {
+      }
+    """,
+    """
+      val lambda: @Inject1<Int> () -> Unit = {}
+    """,
+    """
+      fun invoke() {
+        callee(lambda)
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("Inject n param types not compatible")
+  }
+
+  @Test fun testInjectNLambdaWithSameTypesGeneric() = singleAndMultiCodegen(
+    """
+      fun <T> callee(block: @Inject1<T> () -> Unit) {
+      }
+    """,
+    """
+      val lambda: @Inject1<Int> () -> Unit = {}
+    """,
+    """
+      fun invoke() {
+        callee<Int>(lambda)
+      }
+    """
+  )
+
+  @Test fun testInjectNLambdaWithDifferentTypesGeneric() = singleAndMultiCodegen(
+    """
+      fun <T> callee(block: @Inject1<T> () -> Unit) {
+      }
+    """,
+    """
+      val lambda: @Inject1<Int> () -> Unit = {}
+    """,
+    """
+      fun invoke() {
+        callee<String>(lambda)
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("Inject n param types not compatible")
+  }
+
+  @Test fun testInjectNLambdaWithDifferentTypesSize() = singleAndMultiCodegen(
+    """
+      fun callee(block: @Inject2<String, Int> () -> Unit) {
+      }
+    """,
+    """
+      val lambda: @Inject1<Int> () -> Unit = {}
+    """,
+    """
+      fun invoke() {
+        callee(lambda)
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("Inject n param types not compatible")
+  }
+
+  @Test fun testInjectNLambdaWithDifferentOrder() = singleAndMultiCodegen(
+    """
+      fun usesString(block: @Inject2<String, Int> () -> Unit) {
+      }
+    """,
+    """
+      val lambda: @Inject2<Int, String> () -> Unit = {}
+    """,
+    """
+      fun invoke() {
+        usesString(lambda)
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("Inject n param types not compatible")
+  }
 }
