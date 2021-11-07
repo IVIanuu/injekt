@@ -179,8 +179,8 @@ interface InjektTask : Task {
       Property<CompilerArgumentsContributor<K2JVMCompilerArguments>>
 
   init {
-    incremental = false
-    useClasspathSnapshot.set(false)
+    incremental = true
+    useClasspathSnapshot.set(true)
   }
 
   override fun setupCompilerArgs(
@@ -234,7 +234,7 @@ interface InjektTask : Task {
       Property<CompilerArgumentsContributor<K2JSCompilerArguments>>
 
   init {
-    incremental = false
+    incremental = true
   }
 
   override fun setupCompilerArgs(
@@ -284,7 +284,7 @@ interface InjektTask : Task {
       Property<CompilerArgumentsContributor<K2MetadataCompilerArguments>>
 
   init {
-    incremental = false
+    incremental = true
   }
 
   override fun setupCompilerArgs(
