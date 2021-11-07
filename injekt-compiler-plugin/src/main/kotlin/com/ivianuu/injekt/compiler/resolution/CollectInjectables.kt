@@ -123,11 +123,18 @@ fun TypeRef.collectInjectables(
 
   if (!classifier.declaresInjectables && !classBodyView) return emptyList()
 
+  val companionObject =
+    classifier.descriptor.safeAs<ClassDescriptor>()?.companionObjectDescriptor
+
   return ((classifier.descriptor ?: error("Wtf $classifier"))
     .defaultType
     .memberScope
-    .collectInjectables(classBodyView) + if (classBodyView) classifier.injectNParameters
-    .map { it.toCallableRef() } else emptyList())
+    .collectInjectables(
+      classBodyView,
+      predicate = if (!classBodyView || companionObject == null) ({ true }) else {
+        { it != companionObject }
+      }
+    ) + if (classBodyView) classifier.injectNParameters.map { it.toCallableRef() } else emptyList())
     .map {
       val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
         CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
@@ -173,9 +180,11 @@ fun ResolutionScope.collectInjectables(
             ?.injectableReceiver(!classBodyView)
         )
         else (declaration.injectableConstructors() + listOfNotNull(
-          declaration.companionObjectDescriptor
-            ?.takeIf { it.classifierInfo().declaresInjectables }
-            ?.injectableReceiver(false)
+          if (!classBodyView)
+            declaration.companionObjectDescriptor
+              ?.takeIf { it.classifierInfo().declaresInjectables }
+              ?.injectableReceiver(false)
+        else null
         ))
       }
       is CallableMemberDescriptor -> {
