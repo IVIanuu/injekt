@@ -73,13 +73,13 @@ sealed interface IsEqual<A, B> : (A) -> B {
 /**
  * Proofs that every [A] is not equal to [B]
  */
-sealed class IsNotEqual<A, B> {
+sealed interface IsNotEqual<A, B> {
   companion object {
-    private object Singleton : IsNotEqual<Any?, Any?>()
+    private object Impl : IsNotEqual<Any?, Any?>
 
     @Suppress("UNCHECKED_CAST")
     @Provide
-    fun <A, B> instance(): IsNotEqual<A, B> = Singleton as IsNotEqual<A, B>
+    fun <A, B> instance(): IsNotEqual<A, B> = Impl as IsNotEqual<A, B>
 
     @Provide
     @AmbiguousInjectable("Cannot proof that [A] is NOT equal of [B]")
