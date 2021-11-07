@@ -425,21 +425,6 @@ fun TypeRef.collectTypeScopeInjectables(@Inject ctx: Context): InjectablesWithLo
         .flatMap { it.type.allTypes }
     }
 
-    injectables.removeAll { callable ->
-      if (callable.callable !is CallableMemberDescriptor &&
-          callable.callable !is ComponentConstructorDescriptor &&
-          callable.callable !is EntryPointConstructorDescriptor) return@removeAll false
-      val containingObjectClassifier = callable.callable.containingDeclaration
-        .safeAs<ClassDescriptor>()
-        ?.takeIf { it.kind == ClassKind.OBJECT }
-        ?.toClassifierRef()
-
-      containingObjectClassifier != null && injectables.any { other ->
-        other.callable is LazyClassReceiverParameterDescriptor &&
-            other.type.isSubTypeOf(containingObjectClassifier.defaultType)
-      }
-    }
-
     InjectablesWithLookups(
       injectables = injectables.distinct(),
       lookedUpPackages = lookedUpPackages
@@ -480,13 +465,19 @@ private fun TypeRef.collectTypeScopeInjectablesForSingleType(
     ?.let { clazz ->
       if (clazz.kind == ClassKind.OBJECT) {
         clazz
-          .takeIf { it.classifierInfo().declaresInjectables }
+          .takeIf {
+            it.hasAnnotation(injektFqNames().provide) ||
+                it.classifierInfo().declaresInjectables
+          }
           ?.injectableReceiver(true)
           ?.let { injectables += it }
       } else {
         injectables += clazz.injectableConstructors()
         clazz.companionObjectDescriptor
-          ?.takeIf { it.classifierInfo().declaresInjectables }
+          ?.takeIf {
+            it.hasAnnotation(injektFqNames().provide) ||
+                it.classifierInfo().declaresInjectables
+          }
           ?.let { injectables += it.injectableReceiver(true) }
       }
 
@@ -508,16 +499,15 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
   return trace()!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
     val lookedUpPackages = setOf(packageFqName)
 
-    if (memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND)
-        ?.getContributedFunctions(injectablesLookupName, NoLookupLocation.FROM_BACKEND)
-        ?.isEmpty() == true)
-          return@getOrPut InjectablesWithLookups(emptyList(), lookedUpPackages)
-
     val packageFragments = packageFragmentsForFqName(packageFqName)
       .filterNot { it is BuiltInsPackageFragment }
 
-    if (packageFragments.isEmpty())
-      return@getOrPut InjectablesWithLookups(emptyList(), lookedUpPackages)
+    if (packageFragments.none {
+        it.getMemberScope().getContributedFunctions(
+          injectablesLookupName,
+          NoLookupLocation.FROM_BACKEND
+        ).isNotEmpty()
+      }) return@getOrPut InjectablesWithLookups(emptyList(), lookedUpPackages)
 
     val injectables = mutableListOf<CallableRef>()
 
