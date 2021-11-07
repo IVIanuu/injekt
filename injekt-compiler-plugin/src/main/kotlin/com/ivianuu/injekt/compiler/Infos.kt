@@ -584,6 +584,8 @@ fun DeclarationDescriptor.addInjectNInfo(@Inject ctx: Context) {
       it.type.addInjectNInfo()
       it.varargElementType?.addInjectNInfo()
     }
+  } else if (this is ClassifierDescriptor) {
+    (this as Annotated).addInjectNInfo()
   }
 }
 
