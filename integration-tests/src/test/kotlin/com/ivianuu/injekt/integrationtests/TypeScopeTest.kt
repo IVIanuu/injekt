@@ -264,6 +264,34 @@ class TypeScopeTest {
     )
   )
 
+  @Test fun testPackageDeeplyNestedClassTypeScope() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class Dep
+
+            object DepImplicits {
+              class MyClass {
+                object RealDepImplicits {
+                  @Provide val dep = Dep()
+                }
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            fun invoke() = inject<injectables.Dep>()
+          """
+        )
+      )
+    )
+  )
+
   @Test fun testMultiplatformPackageTypeScope() = multiPlatformCodegen(
     listOf(
       source(

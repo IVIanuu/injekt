@@ -157,19 +157,27 @@ fun TypeRef.collectInjectables(
 
 fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
-  nameFilter: (Name) -> Boolean = { true },
   onEach: (DeclarationDescriptor) -> Unit = {},
+  predicate: (DeclarationDescriptor) -> Boolean = { true },
   @Inject ctx: Context
-): List<CallableRef> = getContributedDescriptors(nameFilter = nameFilter)
+): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
     onEach(declaration)
+    if (!predicate(declaration))
+      return@flatMap emptyList()
     when (declaration) {
-      is ClassDescriptor -> declaration
-        .injectableConstructors() + listOfNotNull(
-        declaration.companionObjectDescriptor
-          ?.takeIf { it.classifierInfo().declaresInjectables }
-          ?.injectableReceiver(false)
-      )
+      is ClassDescriptor -> {
+        if (declaration.kind == ClassKind.OBJECT) listOfNotNull(
+          declaration
+            .takeIf { it.isProvide() || it.classifierInfo().declaresInjectables }
+            ?.injectableReceiver(!classBodyView)
+        )
+        else (declaration.injectableConstructors() + listOfNotNull(
+          declaration.companionObjectDescriptor
+            ?.takeIf { it.classifierInfo().declaresInjectables }
+            ?.injectableReceiver(false)
+        ))
+      }
       is CallableMemberDescriptor -> {
         if (declaration.isProvide() &&
           (declaration !is PropertyDescriptor ||
@@ -395,7 +403,7 @@ fun List<ProviderImport>.collectImportedInjectables(
 
       // import all injectables with the specified name
       memberScopeForFqName(parentFqName, import.element.lookupLocation)
-        ?.collectInjectables(false, { it == name })
+        ?.collectInjectables(false, predicate = { it.name == name })
         ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
         ?.let { this += it }
     }
@@ -511,23 +519,24 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
 
     val injectables = mutableListOf<CallableRef>()
 
-    fun collectInjectables(scope: MemberScope) {
+    fun collectInjectables(
+      scope: MemberScope,
+      predicate: (DeclarationDescriptor) -> Boolean
+    ) {
       injectables += scope.collectInjectables(
         onEach = { declaration ->
-          if (declaration is ClassDescriptor && declaration
-              .toClassifierRef()
-              .declaresInjectables)
-                collectInjectables(declaration.unsubstitutedMemberScope)
+          if (declaration is ClassDescriptor) {
+            collectInjectables(declaration.unsubstitutedMemberScope) {
+              if (declaration.kind == ClassKind.OBJECT) true
+              else it is ClassDescriptor
+            }
+          }
         },
+        predicate = predicate,
         classBodyView = false
       )
-        .filter { callable ->
-          callable.callable is ConstructorDescriptor || callable.callable.containingDeclaration
-            .safeAs<ClassDescriptor>()
-            ?.let { it.kind == ClassKind.OBJECT } != false
-        }
     }
-    packageFragments.forEach { collectInjectables(it.getMemberScope()) }
+    packageFragments.forEach { collectInjectables(it.getMemberScope()) { true } }
 
     InjectablesWithLookups(injectables, lookedUpPackages)
   }
