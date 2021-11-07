@@ -99,4 +99,31 @@ class SuppressionTest {
   ) {
     shouldNotContainMessage("Type alias parameter C is not used in the expanded type String and does not affect type checking")
   }
+
+  @Test fun testDoesNotWarnInlineOnProvideDeclaration() = codegen(
+    """
+      @Provide inline fun func() {
+      }
+    """
+  ) {
+    shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
+  }
+
+  @Test fun testDoesNotWarnInlineWithInjectParams() = codegen(
+    """
+      inline fun func(@Inject x: Unit) {
+      }
+    """
+  ) {
+    shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
+  }
+
+  @Test fun testDoesNotWarnInlineWithInjectNParams() = codegen(
+    """
+      @Inject1<Unit> inline fun func() {
+      }
+    """
+  ) {
+    shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
+  }
 }

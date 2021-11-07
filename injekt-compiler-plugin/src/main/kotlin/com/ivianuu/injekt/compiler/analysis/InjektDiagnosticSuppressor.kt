@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
@@ -133,12 +134,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     }
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
-      val function = diagnostic.psiElement.getParentOfType<KtNamedFunction>(false)
-      if (function?.hasAnnotation(injektFqNames().provide) == true ||
-          function?.valueParameters?.any {
-            it.hasAnnotation(injektFqNames().inject) ||
-                it.hasAnnotation(injektFqNames().provide)
-          } == true)
+      val descriptor = diagnostic.psiElement.getParentOfType<KtNamedDeclaration>(false)
+        ?.descriptor<CallableDescriptor>()
+      if (descriptor?.hasAnnotation(injektFqNames().provide) == true ||
+        descriptor?.valueParameters?.any {
+          it.hasAnnotation(injektFqNames().inject) ||
+              it.hasAnnotation(injektFqNames().provide)
+        } == true ||
+        descriptor?.callableInfo()?.injectNParameters?.isNotEmpty() == true)
             return true
     }
 
