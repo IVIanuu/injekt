@@ -60,7 +60,6 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             }
         else return false
       }
-      "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
       "RemoveExplicitTypeArguments" -> {
         if (element !is KtTypeArgumentList) return false
         val call = element.parent as? KtCallExpression
