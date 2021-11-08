@@ -496,4 +496,23 @@ class ComponentTest {
   ) {
     compilationShouldHaveFailed("entry point must be a interface")
   }
+
+  @Test fun testComponentWithClashingEntryPoints() = singleAndMultiCodegen(
+    """ 
+      @Component interface MyComponent
+
+      @EntryPoint<MyComponent> interface EntryPointA {
+        fun a(): String
+      }
+
+      @EntryPoint<MyComponent> interface EntryPointB {
+        fun a(): Int
+      }
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.MyComponent has clashing super types com.ivianuu.injekt.integrationtests.EntryPointA and com.ivianuu.injekt.integrationtests.EntryPointB")
+  }
 }

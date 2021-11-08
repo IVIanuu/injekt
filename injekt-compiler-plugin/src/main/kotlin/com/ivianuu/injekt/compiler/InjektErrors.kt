@@ -32,7 +32,6 @@ import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -40,11 +39,9 @@ import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
-import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Locale
 
@@ -309,6 +306,16 @@ private fun InjectionGraph.Error.render(): String = buildString {
         appendLine("type argument kind mismatch")
       }
     }
+    is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
+      if (failure == unwrappedFailure) {
+        appendLine(
+          "${unwrappedFailure.candidate.type.renderToString()} has clashing super types " +
+              "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()}"
+        )
+      } else {
+        appendLine("clashing component super types")
+      }
+    }
     is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
       if (failure == unwrappedFailure) {
         appendLine(
@@ -469,6 +476,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
             }
+            is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
+              append("${failure.candidate.callableFqName} requested")
+            }
             is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
               append("${failure.candidate.callableFqName} is scoped to ${failure.scopeComponent.renderToString()}")
             }
@@ -522,6 +532,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
+      }
+      is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
+        appendLine("but component super types " +
+            "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()} do clash")
       }
       is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
         appendLine("but no enclosing component matches type ${unwrappedFailure.scopeComponent.renderToString()}")

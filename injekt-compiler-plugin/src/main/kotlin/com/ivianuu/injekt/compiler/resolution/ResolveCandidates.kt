@@ -16,8 +16,12 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.shaded_injekt.Inject
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
@@ -110,6 +114,15 @@ sealed class ResolutionResult {
       data class CallContextMismatch(
         val actualCallContext: CallContext,
         override val candidate: Injectable,
+      ) : WithCandidate() {
+        override val failureOrdering: Int
+          get() = 1
+      }
+
+      data class ClashingSuperTypes(
+        val superTypeA: TypeRef,
+        val superTypeB: TypeRef,
+        override val candidate: ComponentInjectable
       ) : WithCandidate() {
         override val failureOrdering: Int
           get() = 1
@@ -385,6 +398,23 @@ private fun InjectablesScope.resolveCandidate(
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
           candidate, candidate.scopeComponentType!!)
 
+  if (candidate is ComponentInjectable) {
+    candidate.requestCallables
+      .forEach { callable ->
+        candidate.requestCallables
+          .filter { it != callable }
+          .forEach { other ->
+            if (callable.clashesWith(other)) {
+              return@computeForCandidate ResolutionResult.Failure.WithCandidate.ClashingSuperTypes(
+                callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
+                other.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
+                candidate
+              )
+            }
+          }
+      }
+  }
+
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
@@ -585,6 +615,23 @@ fun ResolutionResult.visitRecursive(
         result.visitRecursive(request, action)
       }
   }
+}
+
+private fun CallableRef.clashesWith(other: CallableRef, @Inject ctx: Context): Boolean {
+  if (callable.name != other.callable.name) return false
+  if (parameterTypes.size != other.parameterTypes.size) return false
+  if (callable is PropertyDescriptor != other.callable is PropertyDescriptor)
+    return false
+
+  val receiver = parameterTypes[DISPATCH_RECEIVER_INDEX]!!
+  val otherReceiver = other.parameterTypes[DISPATCH_RECEIVER_INDEX]!!
+  if (receiver.isSubTypeOf(otherReceiver) || otherReceiver.isSubTypeOf(receiver))
+    return false
+
+  if (type.isSubTypeOf(other.type) || other.type.isSubTypeOf(type))
+    return false
+
+  return true
 }
 
 fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) -> Unit) {
