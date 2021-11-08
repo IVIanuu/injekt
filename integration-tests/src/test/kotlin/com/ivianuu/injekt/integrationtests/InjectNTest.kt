@@ -542,4 +542,12 @@ class InjectNTest {
   ) {
     compilationShouldHaveFailed("Inject n param types not compatible")
   }
+
+  @Test fun testInjectNObject() = codegen(
+    """
+      @Inject1<String> object MyObject
+    """
+  ) {
+    TODO()
+  }
 }
