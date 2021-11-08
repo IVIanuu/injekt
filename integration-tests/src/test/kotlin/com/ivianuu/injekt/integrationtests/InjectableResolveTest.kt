@@ -633,6 +633,30 @@ class InjectableResolveTest {
     """
   )
 
+  @Test fun testCanResolveInjectNInDefaultValueOfParameter() = codegen(
+    """
+      @Inject1<Foo> fun createBar(bar: Bar = Bar(inject())) = bar
+
+      fun invoke(@Provide foo: Foo) = createBar()
+    """
+  ) {
+    val foo = Foo()
+    val bar = invokeSingleFile<Bar>(foo)
+    bar.foo shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testCanResolveInjectNInDefaultValueOfConstructorParameter() = codegen(
+    """
+      @Inject1<Foo> class BarProvider(val bar: Bar = Bar(inject()))
+
+      fun invoke(@Provide foo: Foo) = BarProvider().bar
+    """
+  ) {
+    val foo = Foo()
+    val bar = invokeSingleFile<Bar>(foo)
+    bar.foo shouldBeSameInstanceAs foo
+  }
+
   @Test fun testCannotResolveClassProvideDeclarationInClassConstructorParameterDefaultValue() = codegen(
     """
       class MyClass {
