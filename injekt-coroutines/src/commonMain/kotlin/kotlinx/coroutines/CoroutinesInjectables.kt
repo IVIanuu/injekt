@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.coroutines.ComponentScope
 import com.ivianuu.injekt.coroutines.DefaultDispatcher
 
-@Provide inline fun coroutinesScope(scope: ComponentScope<*>): CoroutineScope =
+@Provide inline fun coroutineScope(scope: ComponentScope<*>): CoroutineScope =
   scope
 
 @Provide inline fun dispatcher(dispatcher: DefaultDispatcher): CoroutineDispatcher =
