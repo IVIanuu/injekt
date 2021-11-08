@@ -253,6 +253,10 @@ interface InjektErrors {
       DiagnosticFactory0.create<KtElement>(Severity.ERROR)
         .also { MAP.put(it, "Inject n param types not compatible") }
 
+    @JvmField val INJECT_N_OBJECT =
+      DiagnosticFactory0.create<KtElement>(Severity.ERROR)
+        .also { MAP.put(it, "object cannot have @Inject parameters") }
+
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,

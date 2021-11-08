@@ -548,6 +548,6 @@ class InjectNTest {
       @Inject1<String> object MyObject
     """
   ) {
-    TODO()
+    compilationShouldHaveFailed("object cannot have @Inject parameters")
   }
 }
