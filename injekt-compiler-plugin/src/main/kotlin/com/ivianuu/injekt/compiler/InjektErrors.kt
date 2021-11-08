@@ -52,6 +52,16 @@ interface InjektErrors {
   companion object {
     @JvmField val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
+    @JvmField val IMPORT_RENDERER = object : DiagnosticParameterRenderer<PsiElement> {
+      override fun render(obj: PsiElement, renderingContext: RenderingContext): String =
+        obj.text.removeSurrounding("\"")
+    }
+
+    @JvmField val TYPE_RENDERER = object : DiagnosticParameterRenderer<TypeRef> {
+      override fun render(obj: TypeRef, renderingContext: RenderingContext): String =
+        obj.renderToString()
+    }
+
     @JvmField val UNRESOLVED_INJECTION =
       DiagnosticFactory1.create<PsiElement, InjectionGraph.Error>(Severity.ERROR)
         .also {
@@ -124,15 +134,14 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "interface cannot be injectable") }
 
-    @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
-          override fun render(diagnostic: Diagnostic): String =
+    @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also {
+          MAP.put(
+            it,
             "injectable variable must be initialized, delegated or marked with lateinit"
-
-          override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
-        })
-      }
+          )
+        }
 
     @JvmField val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
@@ -162,68 +171,54 @@ interface InjektErrors {
         }
 
     @JvmField val MALFORMED_INJECTABLE_IMPORT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            object : DiagnosticRenderer<Diagnostic> {
-              override fun render(diagnostic: Diagnostic): String =
-                "cannot read injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
-
-              override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
-            }
+            "cannot read injectable import: '{0}'",
+            IMPORT_RENDERER
           )
         }
 
     @JvmField val UNRESOLVED_INJECTABLE_IMPORT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            object : DiagnosticRenderer<Diagnostic> {
-              override fun render(diagnostic: Diagnostic): String =
-                "unresolved injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
-
-              override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
-            }
+            "unresolved injectable import: '{0}'",
+            IMPORT_RENDERER
           )
         }
 
     @JvmField val DUPLICATED_INJECTABLE_IMPORT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            object : DiagnosticRenderer<Diagnostic> {
-              override fun render(diagnostic: Diagnostic): String =
-                "duplicated injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
-
-              override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
-            }
+            "duplicated injectable import: '{0}'",
+            IMPORT_RENDERER
           )
         }
 
-    @JvmField val UNUSED_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.WARNING)
-      .also {
-        MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
-          override fun render(diagnostic: Diagnostic): String =
-            "unused injectable import: '${diagnostic.psiElement.text.removeSurrounding("\"")}'"
+    @JvmField val UNUSED_INJECTABLE_IMPORT =
+      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.WARNING)
+        .also {
+          MAP.put(
+            it,
+            "unused injectable import: '{0}'",
+            IMPORT_RENDERER
+          )
+        }
 
-          override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
-        })
-      }
-
-    @JvmField val DECLARATION_PACKAGE_INJECTABLE_IMPORT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, object : DiagnosticRenderer<Diagnostic> {
-          override fun render(diagnostic: Diagnostic): String =
-            "injectables of the same package are automatically imported: '${
-              diagnostic.psiElement.text.removeSurrounding("\"")
-            }'"
-
-          override fun renderParameters(diagnostic: Diagnostic): Array<out Any?> = emptyArray()
-        })
-      }
+    @JvmField val DECLARATION_PACKAGE_INJECTABLE_IMPORT =
+      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
+        .also {
+          MAP.put(
+            it,
+            "injectables of the same package are automatically imported: '{0}'",
+            IMPORT_RENDERER
+          )
+        }
 
     @JvmField val NON_ABSTRACT_COMPONENT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)

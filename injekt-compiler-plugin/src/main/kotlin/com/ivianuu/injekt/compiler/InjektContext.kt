@@ -54,17 +54,17 @@ class Context(
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
-  val typeKeyType by lazy(LazyThreadSafetyMode.NONE) {
+  val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().typeKey)
     )!!.toClassifierRef()
   }
-  val componentObserverType by lazy(LazyThreadSafetyMode.NONE) {
+  val componentObserverClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().componentObserver)
     )!!.toClassifierRef()
   }
-  val disposableType by lazy(LazyThreadSafetyMode.NONE) {
+  val disposableClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().disposable)
     )!!.toClassifierRef()

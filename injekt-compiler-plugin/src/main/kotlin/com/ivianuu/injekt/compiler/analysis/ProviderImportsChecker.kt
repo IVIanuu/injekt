@@ -74,7 +74,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
         imports.forEach {
           trace()!!.report(
             InjektErrors.DUPLICATED_INJECTABLE_IMPORT
-              .on(it.element!!)
+              .on(it.element!!, it.element)
           )
         }
       }
@@ -84,7 +84,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
       if (!import.isValidImport()) {
         trace()!!.report(
           InjektErrors.MALFORMED_INJECTABLE_IMPORT
-            .on(element!!)
+            .on(element!!, element)
         )
         return@forEach
       }
@@ -94,14 +94,14 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
         if (packageFqName == currentPackage) {
           trace()!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
-              .on(element!!)
+              .on(element!!, element)
           )
           return@forEach
         }
         if (memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
           trace()!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
-              .on(element!!)
+              .on(element!!, element)
           )
           return@forEach
         }
@@ -111,7 +111,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
         if (parentFqName == currentPackage) {
           trace()!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
-              .on(element!!)
+              .on(element!!, element)
           )
           return@forEach
         }
@@ -128,7 +128,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
         if (importedDeclarations == null || importedDeclarations.isEmpty()) {
           trace()!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
-              .on(element!!)
+              .on(element!!, element)
           )
           return@forEach
         }
@@ -137,7 +137,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
       if (!isIde) {
         trace()!!.report(
           InjektErrors.UNUSED_INJECTABLE_IMPORT
-            .on(element!!)
+            .on(element!!, element)
         )
       }
     }

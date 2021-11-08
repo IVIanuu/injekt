@@ -129,7 +129,7 @@ class ComponentInjectable(
   val componentObserversRequest = InjectableRequest(
     type = ownerScope.ctx.listClassifier.defaultType.copy(
       arguments = listOf(
-        ownerScope.ctx.componentObserverType.defaultType.copy(
+        ownerScope.ctx.componentObserverClassifier.defaultType.copy(
           arguments = listOf(type)
         )
       )
@@ -374,7 +374,7 @@ class TypeKeyInjectable(
     typeParameterDependencies
       .mapIndexed { index, typeParameter ->
         InjectableRequest(
-          type = ownerScope.ctx.typeKeyType.defaultType
+          type = ownerScope.ctx.typeKeyClassifier.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
           callableFqName = callableFqName,
           callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),

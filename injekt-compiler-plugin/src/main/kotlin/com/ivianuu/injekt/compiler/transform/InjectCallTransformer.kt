@@ -535,7 +535,7 @@ class InjectCallTransformer(
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
       superTypes += injectable.entryPoints.map { it.toIrType().typeOrNull!! }
-      superTypes += inject<Context>().disposableType.defaultType
+      superTypes += inject<Context>().disposableClassifier.defaultType
         .toIrType().typeOrNull!!
 
       val componentScope = ScopeContext(
@@ -771,7 +771,7 @@ class InjectCallTransformer(
         name = "dispose".asNameId()
       }.apply {
         addDispatchReceiver { type = defaultType }
-        overriddenSymbols = overriddenSymbols + inject<Context>().disposableType
+        overriddenSymbols = overriddenSymbols + inject<Context>().disposableClassifier
           .defaultType.toIrType().typeOrNull!!.classOrNull!!
           .functions
           .single { it.owner.name == name }
