@@ -193,10 +193,10 @@ TODO
 Sometimes you have multiple injectables of the same type
 Injekt will need help to keep them apart here a are a two strategies:
 
-Inline classes:
+Value classes:
 ```kotlin
-inline class PlaylistId(val value: String)
-inline class TrackId(val value: String)
+@JvmInline value class PlaylistId(val value: String)
+@JvmInline value class TrackId(val value: String)
 
 fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
 ```
