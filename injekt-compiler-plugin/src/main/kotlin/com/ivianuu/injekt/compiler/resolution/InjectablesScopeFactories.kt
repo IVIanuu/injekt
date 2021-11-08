@@ -198,7 +198,9 @@ private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: Context): B
     }
   }
 
-  if (this is KtObjectDeclaration)
+  if (this is KtObjectDeclaration &&
+    position.getParentOfType<KtSuperTypeList>(false)
+      ?.getParentOfType<KtClassOrObject>(false) != this)
     return true
 
   if (this is KtAnnotatedExpression && hasAnnotation(injektFqNames().providers))

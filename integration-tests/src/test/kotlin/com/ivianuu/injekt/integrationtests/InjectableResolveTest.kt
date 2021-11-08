@@ -707,6 +707,29 @@ class InjectableResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass")
   }
 
+  @Test fun testCannotResolveThisInSuperTypeDelegation() = codegen(
+    """
+      interface Scope
+
+      class MyImpl : Scope by inject()
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.inject")
+  }
+
+  @Test fun testCannotResolveThisInSuperTypeDelegation2() = codegen(
+    """
+      interface Scope
+
+      fun invoke() {
+        val myImpl = object : Scope by inject() {
+        }
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.inject")
+  }
+
   @Test fun testCanResolveClassProvideDeclarationInSecondaryConstructorAfterSuperInit() = codegen(
     """
       class MyClass(unit: Unit) {
