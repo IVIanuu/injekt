@@ -59,7 +59,6 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.annotations.TargetedAnnotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
-import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
@@ -404,22 +403,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           defaultType
             .memberScope
             .getContributedDescriptors()
-            .any { declaration ->
-              when (declaration) {
-                is ClassDescriptor -> declaration
-                  .injectableConstructors()
-                  .isNotEmpty()
-                is CallableMemberDescriptor -> {
-                  declaration.visibility != DescriptorVisibilities.PRIVATE &&
-                      (declaration.hasAnnotation(injektFqNames().provide) ||
-                          (declaration.safeAs<PropertyDescriptor>()
-                            ?.primaryConstructorPropertyValueParameter()
-                            ?.hasAnnotation(injektFqNames().provide) == true))
-                }
-                else -> false
-              }
-            } || (this is ClassDescriptor &&
-              companionObjectDescriptor?.toClassifierRef()?.declaresInjectables == true)
+            .any { it.isProvide() }
         }
       )
 
