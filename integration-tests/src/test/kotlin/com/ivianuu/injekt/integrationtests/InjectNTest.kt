@@ -293,7 +293,7 @@ class InjectNTest {
     config = { withCompose() }
   )
 
-  @Test fun testInjectNLambda() = multiCodegen(
+  @Test fun testInjectNLambda() = singleAndMultiCodegen(
     """
       val lambda: @Inject1<String> () -> String = { inject<String>() }
     """,
