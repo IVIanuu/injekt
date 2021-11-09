@@ -57,7 +57,7 @@ fun interface Pump {
   operator fun invoke()
 }
 
-@Provide fun thermosiphon(heater: Heater): Pump = Pump {
+@Provide fun thermosiphon(heater: Heater) = Pump {
   if (heater.isHot) {
     println("=> => pumping => =>")
   }
