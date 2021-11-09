@@ -77,6 +77,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
+import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
@@ -220,7 +221,7 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
     }
   }
 
-@OptIn(kotlin.experimental.ExperimentalTypeInference::class)
+@OptIn(ExperimentalTypeInference::class, ExperimentalStdlibApi::class)
 inline fun <T, R> Collection<T>.fastFlatMap(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> {
   if (isEmpty()) return emptyList()
   return buildList {
