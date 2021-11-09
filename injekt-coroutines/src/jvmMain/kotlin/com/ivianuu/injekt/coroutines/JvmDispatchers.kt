@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 actual object IOInjectables {

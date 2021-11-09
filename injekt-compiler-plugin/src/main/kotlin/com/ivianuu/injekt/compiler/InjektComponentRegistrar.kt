@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectCallCheckerExtension
-import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
+import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension

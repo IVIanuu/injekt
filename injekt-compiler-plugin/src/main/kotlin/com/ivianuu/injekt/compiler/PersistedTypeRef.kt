@@ -16,13 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.CustomErrorMessages
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.shaded_injekt.Inject
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable data class PersistedTypeRef(

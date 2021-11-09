@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint

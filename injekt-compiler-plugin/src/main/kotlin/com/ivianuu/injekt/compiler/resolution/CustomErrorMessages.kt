@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.shaded_injekt.Inject
 import kotlinx.serialization.Serializable
-import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @Serializable
 data class CustomErrorMessages(val notFoundMessage: String?, val ambiguousMessage: String?)

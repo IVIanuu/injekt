@@ -53,7 +53,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.annotations.TargetedAnnotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
@@ -544,9 +543,7 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.PROTECTED
 
 fun fixTypes(type: KotlinType, declaration: KtDeclaration, @Inject ctx: Context) {
-  val descriptor = declaration.descriptor<DeclarationDescriptor>()
-
-  val typeParameters = when (descriptor) {
+  val typeParameters = when (val descriptor = declaration.descriptor<DeclarationDescriptor>()) {
     is ClassDescriptor -> descriptor.declaredTypeParameters
     is CallableDescriptor -> descriptor.typeParameters
     else -> emptyList()

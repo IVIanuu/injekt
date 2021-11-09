@@ -24,11 +24,9 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import org.junit.Test
-import kotlin.coroutines.CoroutineContext
 
 @Component interface CoroutinesComponent {
   val scope: ComponentScope<CoroutinesComponent>

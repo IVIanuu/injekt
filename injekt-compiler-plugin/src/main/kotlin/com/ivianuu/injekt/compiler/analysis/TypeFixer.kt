@@ -17,15 +17,11 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.fixTypes
-import com.ivianuu.injekt.compiler.isIde
-import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 

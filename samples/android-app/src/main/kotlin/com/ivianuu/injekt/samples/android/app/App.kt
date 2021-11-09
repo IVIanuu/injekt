@@ -25,12 +25,10 @@
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Providers
 import com.ivianuu.injekt.android.AppComponentOwner
 import com.ivianuu.injekt.android.createAppComponent
 import com.ivianuu.injekt.common.AppComponent
-import com.ivianuu.injekt.inject
 
 class App : Application(), AppComponentOwner {
   override lateinit var appComponent: AppComponent

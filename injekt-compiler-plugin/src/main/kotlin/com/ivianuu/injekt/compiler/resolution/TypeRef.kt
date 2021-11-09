@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -37,12 +36,9 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.AbbreviatedType
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.model.TypeVariance
 import org.jetbrains.kotlin.types.model.convertVariance
@@ -105,7 +101,7 @@ class ClassifierRef(
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
   override fun hashCode(): Int = key.hashCode()
-  override fun toString(): String = key.toString()
+  override fun toString(): String = key
 }
 
 fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextTag, acc ->
@@ -540,10 +536,6 @@ val TypeRef.isFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
         classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
-
-val TypeRef.isSuspendFunctionType: Boolean
-  get() =
-    classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
 
 fun effectiveVariance(
   declared: TypeVariance,

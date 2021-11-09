@@ -18,8 +18,6 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
 import org.junit.Test
 
 class NotProvidedTest {
