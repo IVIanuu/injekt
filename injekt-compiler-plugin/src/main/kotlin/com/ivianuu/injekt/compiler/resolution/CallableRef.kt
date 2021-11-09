@@ -38,7 +38,6 @@ data class CallableRef(
   val scopeComponentType: TypeRef?,
   val isEager: Boolean,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val isProvide: Boolean,
   val import: ResolvedProviderImport?,
   val injectNParameters: List<InjectNParameterDescriptor>,
   val customErrorMessages: CustomErrorMessages?
@@ -73,8 +72,6 @@ fun CallableRef.substitute(
   )
 }
 
-fun CallableRef.makeProvide(): CallableRef = if (isProvide) this else copy(isProvide = true)
-
 fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
   trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo()
@@ -108,7 +105,6 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       typeArguments = typeParameters
         .map { it to it.defaultType }
         .toMap(),
-      isProvide = isProvide(),
       import = null,
       injectNParameters = info.injectNParameters,
       customErrorMessages = customErrorMessages

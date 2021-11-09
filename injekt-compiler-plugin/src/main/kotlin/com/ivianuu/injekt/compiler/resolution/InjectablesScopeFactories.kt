@@ -468,7 +468,7 @@ private fun FunctionParameterInjectablesScopes(
       (maxIndex == null || it is InjectNParameterDescriptor || it.injektIndex() < maxIndex) &&
           (it.isProvide() || it === function.extensionReceiverParameter)
     }
-    .map { it.toCallableRef().makeProvide() }
+    .map { it.toCallableRef() }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
         parent = acc,

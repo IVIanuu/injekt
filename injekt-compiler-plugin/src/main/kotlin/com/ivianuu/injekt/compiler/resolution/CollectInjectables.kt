@@ -57,16 +57,12 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
-import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
-import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -108,7 +104,6 @@ fun TypeRef.collectInjectables(
 
           callable.copy(
             type = arguments.last(),
-            isProvide = true,
             parameterTypes = callable.parameterTypes.toMutableMap()
               .also { it[DISPATCH_RECEIVER_INDEX] = this } + lambdaInjectParameters
               .map { it.index to it.typeRef },
@@ -144,7 +139,6 @@ fun TypeRef.collectInjectables(
     }
     .map { callable ->
       callable.copy(
-        isProvide = true,
         parameterTypes = if (callable.callable.dispatchReceiverParameter != null &&
           callable.parameterTypes.isNotEmpty()) {
           callable.parameterTypes.toMutableMap()
@@ -188,19 +182,11 @@ fun ResolutionScope.collectInjectables(
               declaration.hasAnnotation(injektFqNames().provide) ||
               declaration.primaryConstructorPropertyValueParameter()
                 ?.hasAnnotation(injektFqNames().provide) == true)) {
-          listOf(
-            declaration.toCallableRef()
-              .let { callable ->
-                callable.copy(
-                  isProvide = true,
-                  parameterTypes = callable.parameterTypes.toMutableMap()
-                )
-              }
-          )
+          listOf(declaration.toCallableRef())
         } else emptyList()
       }
       is VariableDescriptor -> if (declaration.isProvide()) {
-        listOf(declaration.toCallableRef().makeProvide())
+        listOf(declaration.toCallableRef())
       } else emptyList()
       else -> emptyList()
     }
@@ -314,9 +300,11 @@ fun ClassDescriptor.injectableConstructors(@Inject ctx: Context): List<CallableR
 
 fun ClassDescriptor.injectableReceiver(tagged: Boolean, @Inject ctx: Context): CallableRef {
   val callable = thisAsReceiverParameter.toCallableRef()
-  val finalType = if (tagged) callable.type.classifier.tags.wrap(callable.type)
-  else callable.type
-  return callable.copy(isProvide = true, type = finalType, originalType = finalType)
+  return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
+  else {
+    val taggedType = callable.type.classifier.tags.wrap(callable.type)
+    callable.copy(type = taggedType, originalType = taggedType)
+  }
 }
 
 fun CallableRef.collectInjectables(

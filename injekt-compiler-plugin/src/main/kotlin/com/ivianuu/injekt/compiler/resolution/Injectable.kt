@@ -319,7 +319,7 @@ class ProviderInjectable(
         .mapIndexed { index, parameter ->
           parameter
             .toCallableRef()
-            .copy(isProvide = true, type = type.arguments[index])
+            .copy(type = type.arguments[index])
         }
     )
   )
