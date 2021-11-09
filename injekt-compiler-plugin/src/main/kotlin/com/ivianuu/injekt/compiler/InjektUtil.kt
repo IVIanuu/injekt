@@ -220,6 +220,7 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
     }
   }
 
+@OptIn(kotlin.experimental.ExperimentalTypeInference::class)
 inline fun <T, R> Collection<T>.fastFlatMap(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> {
   if (isEmpty()) return emptyList()
   return buildList {
