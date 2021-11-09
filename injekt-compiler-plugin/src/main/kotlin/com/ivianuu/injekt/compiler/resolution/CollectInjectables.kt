@@ -158,7 +158,7 @@ fun ResolutionScope.collectInjectables(
 ): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
     onEach(declaration)
-    if (declaration.name != name) return@flatMap emptyList()
+    if (name != null && declaration.name != name) return@flatMap emptyList()
     when (declaration) {
       is ClassDescriptor -> {
         if (declaration.kind == ClassKind.OBJECT &&
