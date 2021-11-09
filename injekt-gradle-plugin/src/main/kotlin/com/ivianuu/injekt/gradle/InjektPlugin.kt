@@ -350,7 +350,7 @@ private fun getSubpluginOptions(
 }
 
 private fun srcDir(project: Project, sourceSetName: String) =
-  File(project.project.buildDir, "generated/injekt/$sourceSetName")
+  File(project.project.buildDir, "injekt/src/$sourceSetName")
 
 private fun getCacheDir(project: Project, sourceSetName: String) =
   File(project.project.buildDir, "injekt/cache/$sourceSetName")
