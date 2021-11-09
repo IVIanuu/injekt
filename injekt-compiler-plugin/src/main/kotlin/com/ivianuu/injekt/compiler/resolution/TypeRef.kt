@@ -203,10 +203,10 @@ fun KotlinType.toTypeRef(
             variance = it.projectionKind.convertVariance()
           )
         }
-        .toMutableList()
-        .also {
+        .let {
           if (classifier.isTag && it.size != classifier.typeParameters.size)
-            it += ctx.nullableAnyType
+            it + ctx.nullableAnyType
+          else it
         },
       isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
       isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
@@ -358,6 +358,7 @@ class TypeRef(
       result = 31 * result + isEager.hashCode()
       result = 31 * result + customErrorMessages.hashCode()
       _hashCode = result
+      return result
     }
     return _hashCode
   }
