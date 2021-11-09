@@ -17,11 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -63,15 +59,12 @@ import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
-import org.jetbrains.kotlin.types.model.TypeVariance
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -215,7 +208,6 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
       is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
       is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
-      is InjectNParameterDescriptor -> "inject_n_parameter:$fqNameSafe"
       is VariableDescriptor -> "variable:${fqNameSafe}"
       else -> error("Unexpected declaration $this")
     }
@@ -261,7 +253,6 @@ fun ParameterDescriptor.injektName(): Name = if (this is ValueParameterDescripto
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
-    this is InjectNParameterDescriptor -> name
     else -> throw AssertionError("Unexpected descriptor $this")
   }
 }
@@ -277,7 +268,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-    this is InjectNParameterDescriptor -> index
     else -> throw AssertionError("Unexpected descriptor $this")
   }
 }
@@ -317,34 +307,6 @@ inline fun <K, V> BindingTrace?.getOrPut(
   this?.get(slice, key)?.let { return it }
   return computation()
     .also { this?.record(slice, key, it) }
-}
-
-fun Annotated.injectNTypes(@Inject ctx: Context): List<TypeRef> {
-  if (hasAnnotation(injektFqNames().injectNInfo)) {
-    return annotations.findAnnotation(injektFqNames().injectNInfo)!!
-      .allValueArguments
-      .values
-      .single()
-      .cast<ArrayValue>()
-      .value
-      .map { it.value.toString().decode<PersistedTypeRef>().toTypeRef() }
-  }
-
-  val result = mutableListOf<TypeRef>()
-
-  fun visitInjectNType(type: KotlinType) {
-    if (type.constructor.declarationDescriptor?.fqNameSafe == injektFqNames().inject2) {
-      type.arguments.forEach { visitInjectNType(it.type) }
-    } else {
-      result += type.toTypeRef(variance = TypeVariance.IN)
-    }
-  }
-
-  annotations
-    .filter { it.fqName == injektFqNames().inject2 }
-    .forEach { visitInjectNType(it.type) }
-
-  return result.distinct()
 }
 
 fun classifierDescriptorForFqName(
@@ -422,21 +384,3 @@ fun packageFragmentsForFqName(
   @Inject ctx: Context
 ): List<PackageFragmentDescriptor> = module().getPackage(fqName).fragments
 
-fun ResolvedCall<*>.getSubstitutionMap(
-  @Inject ctx: Context
-): Map<ClassifierRef, TypeRef> = typeArguments
-  .mapKeys { it.key.toClassifierRef() }
-  .mapValues { it.value.toTypeRef() }
-  .filter { it.key != it.value.classifier } +
-    (dispatchReceiver?.type?.toTypeRef()?.let {
-      it.classifier.typeParameters
-        .zip(it.arguments)
-        .filter { it.first != it.second.classifier }
-        .toMap()
-    } ?: emptyMap()) +
-    (extensionReceiver?.type?.toTypeRef()?.let {
-      it.classifier.typeParameters
-        .zip(it.arguments)
-        .filter { it.first != it.second.classifier }
-        .toMap()
-    } ?: emptyMap())

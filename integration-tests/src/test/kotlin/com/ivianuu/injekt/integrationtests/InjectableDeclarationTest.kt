@@ -21,7 +21,6 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
 import com.ivianuu.injekt.test.withCompose

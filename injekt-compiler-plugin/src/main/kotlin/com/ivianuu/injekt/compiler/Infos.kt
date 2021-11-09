@@ -17,12 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
-import com.ivianuu.injekt.compiler.resolution.injectNParameters
-import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -56,7 +53,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.annotations.TargetedAnnotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
@@ -87,8 +83,7 @@ data class CallableInfo(
   val parameterTypes: Map<Int, TypeRef>,
   val injectParameterIndex: Int?,
   val scopeComponentType: TypeRef?,
-  val isEager: Boolean,
-  val injectNParameters: List<InjectNParameterDescriptor>
+  val isEager: Boolean
 )
 
 fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
@@ -99,7 +94,7 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
         .findAnnotation(injektFqNames().callableInfo)
         ?.readChunkedValue()
         ?.decode<PersistedCallableInfo>()
-        ?.toCallableInfo(this)
+        ?.toCallableInfo()
 
       if (info != null) {
         val finalInfo = if (this !is CallableMemberDescriptor ||
@@ -151,15 +146,8 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
       tags.wrap(returnType?.toTypeRef() ?: ctx.nullableAnyType)
     }
 
-    val injectNParameters = injectNParameters()
-
-    val allParameters = (if (this is ConstructorDescriptor) valueParameters else allParameters) +
-        injectNParameters
-
     val parameterTypes = allParameters
-      .map {
-        it.injektIndex() to if (it is InjectNParameterDescriptor) it.typeRef else it.type.toTypeRef()
-      }
+      .map { it.injektIndex() to it.type.toTypeRef() }
       .toMap()
 
     val injectParameterIndex = if (hasAnnotation(injektFqNames().provide))
@@ -188,16 +176,13 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
       parameterTypes = parameterTypes,
       injectParameterIndex = injectParameterIndex,
       scopeComponentType = scopeComponentType,
-      isEager = isEager,
-      injectNParameters = injectNParameters
+      isEager = isEager
     )
 
     // important to cache the info before persisting it
     trace()!!.record(InjektWritableSlices.CALLABLE_INFO, this, info)
 
     persistInfoIfNeeded(info)
-
-    addInjectNInfo()
 
     return info
   }
@@ -226,8 +211,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
       } ||
-      info.scopeComponentType != null ||
-      info.injectNParameters.isNotEmpty()
+      info.scopeComponentType != null
 
   if (!shouldPersistInfo) return
 
@@ -249,8 +233,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
   val parameterTypes: Map<Int, PersistedTypeRef>,
   val injectParameterIndex: Int?,
   val scopeComponentType: PersistedTypeRef?,
-  val isEager: Boolean,
-  val injectNParameters: List<PersistedTypeRef>
+  val isEager: Boolean
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallableInfo(
@@ -259,27 +242,16 @@ fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallab
     .mapValues { it.value.toPersistedTypeRef() },
   injectParameterIndex = injectParameterIndex,
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
-  isEager = isEager,
-  injectNParameters = injectNParameters.map { it.typeRef.toPersistedTypeRef() }
+  isEager = isEager
 )
 
-fun PersistedCallableInfo.toCallableInfo(
-  callable: CallableDescriptor,
-  @Inject ctx: Context
-) = CallableInfo(
+fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) = CallableInfo(
   type = type.toTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef() },
   injectParameterIndex = injectParameterIndex,
   scopeComponentType = scopeComponentType?.toTypeRef(),
-  isEager = isEager,
-  injectNParameters = injectNParameters.mapIndexed { index, type ->
-    InjectNParameterDescriptor(
-      callable,
-      callable.valueParameters.size + index,
-      type.toTypeRef()
-    )
-  }
+  isEager = isEager
 )
 
 /**
@@ -294,7 +266,6 @@ class ClassifierInfo(
   val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
-  val injectNParameters: List<InjectNParameterDescriptor>,
   val lazyDeclaresInjectables: Lazy<Boolean>
 ) {
   val superTypes by lazySuperTypes
@@ -348,7 +319,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
         lazySuperTypes = lazySuperTypes,
         primaryConstructorPropertyParameters = emptyList(),
         isSpread = false,
-        injectNParameters = emptyList(),
         lazyDeclaresInjectables = lazyOf(false)
       )
     } else {
@@ -372,7 +342,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = emptyList(),
           isSpread = isSpread,
-          injectNParameters = emptyList(),
           lazyDeclaresInjectables = lazyOf(false)
         )
       } else {
@@ -392,16 +361,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
           ?: emptyList()
 
-        val injectNParameters = if (isDeserializedDeclaration()) emptyList()
-        else injectNTypes()
-          .mapIndexed { index, parameterType ->
-            InjectNParameterDescriptor(
-              this,
-              index,
-              parameterType
-            )
-          }
-
         ClassifierInfo(
           tags = tags,
           scopeComponentType = scopeComponentType,
@@ -411,7 +370,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
             .map { it.name.asString() },
           isSpread = false,
-          injectNParameters = injectNParameters,
           lazyDeclaresInjectables = lazy {
             defaultType
               .memberScope
@@ -426,8 +384,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
 
       persistInfoIfNeeded(info)
 
-      addInjectNInfo()
-
       // no accident
       return info
     }
@@ -441,7 +397,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
-  val injectNParameters: List<PersistedTypeRef>,
   val declaresInjectables: Boolean
 )
 
@@ -456,13 +411,6 @@ fun PersistedClassifierInfo.toClassifierInfo(
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  injectNParameters = injectNParameters.map { type ->
-    InjectNParameterDescriptor(
-      descriptor,
-      0,
-      type.toTypeRef()
-    )
-  },
   lazyDeclaresInjectables = lazyOf(declaresInjectables)
 )
 
@@ -474,7 +422,6 @@ fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: Context) = PersistedCl
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
-  injectNParameters = injectNParameters.map { it.typeRef.toPersistedTypeRef() },
   declaresInjectables = declaresInjectables
 )
 
@@ -534,7 +481,6 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       info.superTypes.none { it.shouldBePersisted() } &&
       info.entryPointComponentType == null &&
       info.scopeComponentType == null &&
-      info.injectNParameters.isEmpty() &&
       !info.declaresInjectables
     ) return
 
@@ -564,7 +510,6 @@ private fun String.toChunkedArrayValue() = ArrayValue(
 
 private fun TypeRef.shouldBePersisted(): Boolean = anyType {
   (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      it.injectNTypes.isNotEmpty() ||
       it.scopeComponentType != null
 }
 
@@ -597,89 +542,8 @@ private fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
 
-fun DeclarationDescriptor.addInjectNInfo(@Inject ctx: Context) {
-  if (isIde || isDeserializedDeclaration()) return
-
-  findPsi().safeAs<KtDeclaration>()?.let { declaration ->
-    annotations.forEach {
-      fixTypes(it.type, declaration)
-    }
-  }
-
-  annotations.forEach { it.type.addInjectNInfo() }
-
-  if (this is CallableDescriptor) {
-    (this as Annotated).addInjectNInfo()
-
-    returnType?.addInjectNInfo()
-    dispatchReceiverParameter?.type?.addInjectNInfo()
-    extensionReceiverParameter?.type?.addInjectNInfo()
-    valueParameters.forEach {
-      it.type.addInjectNInfo()
-      it.varargElementType?.addInjectNInfo()
-    }
-  } else if (this is ClassifierDescriptor) {
-    (this as Annotated).addInjectNInfo()
-  }
-}
-
-fun Annotated.addInjectNInfo(@Inject ctx: Context) {
-  if (isIde) return
-
-  if (hasAnnotation(injektFqNames().inject2) &&
-    !hasAnnotation(injektFqNames().injectNInfo)) {
-    val injectNTypes = injectNTypes()
-      .map { it.toPersistedTypeRef() }
-
-    val transform: List<AnnotationDescriptor>.() -> List<AnnotationDescriptor> = {
-      module().findClassAcrossModuleDependencies(
-        ClassId.topLevel(injektFqNames().injectNInfo)
-      )?.defaultType?.let {
-        this + AnnotationDescriptorImpl(
-          it,
-          mapOf("values".asNameId() to ArrayValue(
-            injectNTypes.map { StringValue(it.encode()) }
-          ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }),
-          SourceElement.NO_SOURCE
-        )
-      } ?: this
-    }
-
-    when {
-      annotations is TargetedAnnotations -> annotations.updatePrivateFinalField(
-        TargetedAnnotations::class,
-        "standardAnnotations",
-        transform
-      )
-      annotations.javaClass.name == "org.jetbrains.kotlin.descriptors.annotations.AnnotationsImpl" ->
-        annotations.updatePrivateFinalField(
-          annotations.javaClass.kotlin,
-          "annotations",
-          transform
-        )
-      else -> throw AssertionError("Unexpected annotations $annotations $this")
-    }
-  }
-}
-
-fun KotlinType.addInjectNInfo(@Inject ctx: Context) {
-  if (isIde) return
-
-  val seen = mutableSetOf<KotlinType>()
-  fun KotlinType.visit() {
-    if (this in seen) return
-    seen += this
-    (this as Annotated).addInjectNInfo()
-    arguments.forEach { it.type.visit() }
-  }
-
-  visit()
-}
-
 fun fixTypes(type: KotlinType, declaration: KtDeclaration, @Inject ctx: Context) {
-  val descriptor = declaration.descriptor<DeclarationDescriptor>()
-
-  val typeParameters = when (descriptor) {
+  val typeParameters = when (val descriptor = declaration.descriptor<DeclarationDescriptor>()) {
     is ClassDescriptor -> descriptor.declaredTypeParameters
     is CallableDescriptor -> descriptor.typeParameters
     else -> emptyList()
@@ -712,6 +576,7 @@ fun fixTypes(type: KotlinType, declaration: KtDeclaration, @Inject ctx: Context)
         arguments[it.key] = it.value
       }
     }
+
     fixUnresolved(type)
   }
 }

@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
 import org.junit.Test
 
 class TypeProofsTest {

@@ -57,18 +57,6 @@ class CustomErrorMessagesTest {
     compilationShouldHaveFailed("custom message kotlin.String")
   }
 
-  @Test fun testInjectableNotFoundOnInjectN() = singleAndMultiCodegen(
-    """
-      @Inject1<@InjectableNotFound("custom message [T]") String> fun <T> func() {
-      }
-    """,
-    """
-      fun invoke() = func<String>()
-    """
-  ) {
-    compilationShouldHaveFailed("custom message kotlin.String")
-  }
-
   @Test fun testInjectableAmbiguous() = singleAndMultiCodegen(
     """
       @AmbiguousInjectable("custom message [T]")

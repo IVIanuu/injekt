@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
@@ -157,14 +156,6 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
               ?.getModifier(KtTokens.INNER_KEYWORD)
               ?: declaration
           )
-      )
-    }
-
-    if (descriptor.kind == ClassKind.OBJECT &&
-        descriptor.injectNTypes().isNotEmpty()) {
-      trace()!!.report(
-        InjektErrors.INJECT_N_OBJECT
-          .on(declaration)
       )
     }
 

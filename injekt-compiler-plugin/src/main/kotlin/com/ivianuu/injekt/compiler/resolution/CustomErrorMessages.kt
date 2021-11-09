@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.shaded_injekt.Inject
 import kotlinx.serialization.Serializable
-import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-@Serializable data class CustomErrorMessages(val notFoundMessage: String?, val ambiguousMessage: String?)
+@Serializable
+data class CustomErrorMessages(val notFoundMessage: String?, val ambiguousMessage: String?)
 
 fun Iterable<AnnotationDescriptor>.customErrorMessages(
   typeParameters: List<ClassifierRef>,
@@ -44,34 +47,10 @@ fun Iterable<AnnotationDescriptor>.customErrorMessages(
   else CustomErrorMessages(notFoundMessage, ambiguousMessage)
 }
 
-fun String.formatMessage(substitutions: List<Pair<String, String>>): String =
+private fun String.formatMessage(substitutions: List<Pair<String, String>>): String =
   substitutions.fold(this) { acc, nextReplacement ->
     acc.replace(nextReplacement.first, nextReplacement.second)
   }
-
-fun TypeRef.formatCustomErrorMessages(typeParameters: List<ClassifierRef>): TypeRef {
-  if (typeParameters.isEmpty()) return this
-
-  val substitutions = typeParameters.toSubstitutions()
-  fun TypeRef.inner(): TypeRef {
-    val formattedErrorMessages = customErrorMessages?.let {
-      it.copy(
-        notFoundMessage = it.notFoundMessage?.formatMessage(substitutions),
-        ambiguousMessage = it.ambiguousMessage?.formatMessage(substitutions)
-      )
-    }
-
-    val formattedArguments = arguments.map { it.inner() }
-
-    return if (formattedErrorMessages != customErrorMessages || formattedArguments != arguments) copy(
-      customErrorMessages = formattedErrorMessages,
-      arguments = formattedArguments
-    )
-    else this
-  }
-
-  return inner()
-}
 
 private fun List<ClassifierRef>.toSubstitutions() =
   map { "[${it.fqName.shortName()}]" to "[${it.fqName}]" }

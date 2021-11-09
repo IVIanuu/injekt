@@ -27,8 +27,6 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-inline fun ctx(@Inject ctx: Context) = ctx
-
 inline fun injektFqNames(@Inject ctx: Context) = ctx.injektFqNames
 
 inline fun trace(@Inject ctx: Context) = ctx.trace

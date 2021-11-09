@@ -141,7 +141,7 @@ class ComponentInjectable(
     isLazy = true
   )
 
-  val componentAndEntryPointInjectables = entryPoints
+  private val componentAndEntryPointInjectables = entryPoints
     .map {
       it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
     } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
@@ -204,11 +204,7 @@ class ComponentInjectable(
             else
               ComponentValueParameterDescriptor(it.cast())
           }
-          .map {
-            with(componentScope.ctx) {
-              it.toCallableRef()
-            }
-          }
+          .map { it.toCallableRef(componentScope.ctx) }
       )
     }
 
@@ -401,10 +397,8 @@ class TypeKeyInjectable(
 fun CallableRef.getInjectableRequests(
   ignoreInject: Boolean = false,
   @Inject ctx: Context
-): List<InjectableRequest> = (callable.allParameters
-  .filter {
-    callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-  } + injectNParameters)
+): List<InjectableRequest> = callable.allParameters
+  .filter { callable !is ClassConstructorDescriptor || it.name.asString() != "<this>" }
   .filter {
     ignoreInject ||
         it === callable.dispatchReceiverParameter ||
@@ -428,19 +422,15 @@ data class InjectableRequest(
 fun ParameterDescriptor.toInjectableRequest(
   callable: CallableRef,
   @Inject ctx: Context
-): InjectableRequest {
-  val index = injektIndex()
-  return InjectableRequest(
-    type = callable.parameterTypes[index]!!,
-    callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
-      ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
-    callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(),
-    parameterIndex = injektIndex(),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
-    isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-        InlineUtil.isInlineParameter(this),
-    customErrorMessages = toCallableRef().customErrorMessages
-      ?: callable.parameterTypes[index]!!.customErrorMessages
-  )
-}
+): InjectableRequest = InjectableRequest(
+  type = callable.parameterTypes[injektIndex()]!!,
+  callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
+    ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
+  callableTypeArguments = callable.typeArguments,
+  parameterName = injektName(),
+  parameterIndex = injektIndex(),
+  isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
+  isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
+      InlineUtil.isInlineParameter(this),
+  customErrorMessages = toCallableRef().customErrorMessages
+)

@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
@@ -144,10 +143,9 @@ import kotlin.collections.set
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjectCallTransformer(
-  @Inject private val localDeclarationCollector: LocalDeclarationCollector,
+  @Inject private val localDeclarations: LocalDeclarations,
   private val irCtx: IrPluginContext,
-  private val ctx: Context,
-  private val symbolRemapper: InjectSymbolRemapper
+  private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
   private inner class GraphContext(
     val graph: InjectionGraph.Success,
@@ -1060,7 +1058,6 @@ class InjectCallTransformer(
       objectExpression(injectable.callable.type.unwrapTags())
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
-    is InjectNParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is VariableDescriptor -> variableExpression(injectable.callable.callable, injectable)
     else -> error("Unsupported callable $injectable")
   }
@@ -1132,16 +1129,7 @@ class InjectCallTransformer(
     injectable: CallableInjectable
   ): IrExpression =
     when (val containingDeclaration = descriptor.containingDeclaration) {
-      is ClassDescriptor -> if (descriptor is InjectNParameterDescriptor) {
-        val irClass = containingDeclaration.irClass()
-        DeclarationIrBuilder(irCtx, symbol)
-          .irGetField(
-            receiverExpression(containingDeclaration.thisAsReceiverParameter),
-            irClass.fields.single { it.name == descriptor.name }
-          )
-      } else {
-        receiverExpression(descriptor)
-      }
+      is ClassDescriptor -> receiverExpression(descriptor)
       is ClassConstructorDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
@@ -1202,7 +1190,7 @@ class InjectCallTransformer(
     injectable: CallableInjectable
   ): IrExpression {
     return if (descriptor is LocalVariableDescriptor && descriptor.isDelegated) {
-      val localFunction = localDeclarationCollector.localFunctions.single { candidateFunction ->
+      val localFunction = localDeclarations.localFunctions.single { candidateFunction ->
         candidateFunction.descriptor
           .safeAs<LocalVariableAccessorDescriptor.Getter>()
           ?.correspondingVariable == descriptor
@@ -1216,7 +1204,7 @@ class InjectCallTransformer(
       DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType().typeOrNull!!,
-          localDeclarationCollector.localVariables.single { it.descriptor == descriptor }.symbol
+          localDeclarations.localVariables.single { it.descriptor == descriptor }.symbol
         )
     }
   }
@@ -1254,7 +1242,7 @@ class InjectCallTransformer(
         }
       )
     }
-    if (declaration.isLocal) localDeclarationCollector.localFunctions += declaration
+    if (declaration.isLocal) localDeclarations.localFunctions += declaration
     val result = super.visitFunctionNew(declaration)
     if (dispatchReceiver != null) receiverAccessors.pop()
     if (extensionReceiver != null) receiverAccessors.pop()

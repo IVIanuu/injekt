@@ -16,37 +16,14 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.module
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptorVisitor
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.descriptors.impl.DeclarationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeSubstitutor
 
 class ComponentConstructorDescriptor(
   clazz: ClassDescriptor
@@ -96,66 +73,4 @@ class EntryPointConstructorDescriptor(
     p4: Annotations,
     p5: SourceElement
   ): FunctionDescriptorImpl = TODO()
-}
-
-class InjectNParameterDescriptor(
-  private val _containingDeclaration: DeclarationDescriptor,
-  val index: Int,
-  val typeRef: TypeRef,
-  @Inject val ctx: Context
-) : DeclarationDescriptorImpl(
-  Annotations.create(
-    listOf(
-      AnnotationDescriptorImpl(
-        module().findClassAcrossModuleDependencies(
-          ClassId.topLevel(injektFqNames().inject)
-        )!!.defaultType,
-        emptyMap(),
-        SourceElement.NO_SOURCE
-      )
-    )
-  ),
-  "_inject$index".asNameId()
-), ParameterDescriptor {
-  override fun getOriginal(): ParameterDescriptor = this
-
-  override fun <R : Any?, D : Any?> accept(p0: DeclarationDescriptorVisitor<R, D>?, p1: D): R =
-    TODO()
-
-  override fun getContainingDeclaration(): DeclarationDescriptor = _containingDeclaration
-
-  override fun getDispatchReceiverParameter(): ReceiverParameterDescriptor? = null
-
-  override fun getExtensionReceiverParameter(): ReceiverParameterDescriptor? = null
-
-  override fun getOverriddenDescriptors(): MutableCollection<out CallableDescriptor> =
-    mutableListOf()
-
-  override fun getReturnType(): KotlinType = type
-
-  override fun getSource(): SourceElement = SourceElement.NO_SOURCE
-
-  override fun getType(): KotlinType = module.builtIns.nullableAnyType
-
-  override fun getTypeParameters(): List<TypeParameterDescriptor> = emptyList()
-
-  override fun <V : Any?> getUserData(p0: CallableDescriptor.UserDataKey<V>?): V? = null
-
-  override fun getValueParameters(): MutableList<ValueParameterDescriptor> = mutableListOf()
-
-  override fun getVisibility(): DescriptorVisibility = DescriptorVisibilities.PRIVATE
-
-  override fun hasStableParameterNames(): Boolean = true
-
-  override fun hasSynthesizedParameterNames(): Boolean = false
-
-  override fun substitute(substitutor: TypeSubstitutor): CallableDescriptor = this
-}
-
-fun InjectNParameterDescriptor.substitute(
-  map: Map<ClassifierRef, TypeRef>,
-  @Inject ctx: Context
-): InjectNParameterDescriptor {
-  if (map.isEmpty()) return this
-  return InjectNParameterDescriptor(containingDeclaration, index, typeRef.substitute(map))
 }

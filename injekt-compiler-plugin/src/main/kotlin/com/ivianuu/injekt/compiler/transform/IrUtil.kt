@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -49,12 +48,10 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
-import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -70,34 +67,29 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 fun ClassDescriptor.irClass(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector,
-  symbolRemapper: InjectSymbolRemapper
+  localDeclarations: LocalDeclarations
 ): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
-    return localDeclarationCollector.localClasses
+    return localDeclarations.localClasses
       .single { it.descriptor.uniqueKey() == uniqueKey() }
 
-  return irCtx.referenceClass(fqNameSafe)!!
-    .let { symbolRemapper.getReferencedClass(it) }
-    .owner
+  return irCtx.referenceClass(fqNameSafe)!!.owner
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassConstructorDescriptor.irConstructor(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector,
-  symbolRemapper: InjectSymbolRemapper,
+  localDeclarations: LocalDeclarations
 ): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
-    return localDeclarationCollector.localClasses
+    return localDeclarations.localClasses
       .single { it.descriptor.uniqueKey() == constructedClass.uniqueKey() }
       .constructors
       .single { it.descriptor.uniqueKey() == uniqueKey() }
 
   return irCtx.referenceConstructors(constructedClass.fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
-    .let { symbolRemapper.getReferencedConstructor(it) }
     .owner
 }
 
@@ -105,23 +97,21 @@ fun ClassConstructorDescriptor.irConstructor(
 fun FunctionDescriptor.irFunction(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector,
-  symbolRemapper: InjectSymbolRemapper
+  localDeclarations: LocalDeclarations
 ): IrFunction {
   if (visibility == DescriptorVisibilities.LOCAL)
-    return localDeclarationCollector.localFunctions.single {
+    return localDeclarations.localFunctions.single {
       it.descriptor.uniqueKey() == uniqueKey()
     }
 
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
-        return localDeclarationCollector.localClasses.flatMap { it.declarations }
+        return localDeclarations.localClasses.flatMap { it.declarations }
           .single { it.descriptor.uniqueKey() == uniqueKey() }
           .cast()
 
   return irCtx.referenceFunctions(fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
-    .let { symbolRemapper.getReferencedSimpleFunction(it) }
     .owner
 }
 
@@ -129,27 +119,24 @@ fun FunctionDescriptor.irFunction(
 fun PropertyDescriptor.irProperty(
   @Inject ctx: Context,
   irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector,
-  symbolRemapper: InjectSymbolRemapper
+  localDeclarations: LocalDeclarations
 ): IrProperty {
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
-        return localDeclarationCollector.localClasses.flatMap { it.declarations }
+        return localDeclarations.localClasses.flatMap { it.declarations }
           .single { it.descriptor.uniqueKey() == uniqueKey() }
           .cast()
 
   return irCtx.referenceProperties(fqNameSafe)
     .single { it.descriptor.uniqueKey() == uniqueKey() }
-    .let { symbolRemapper.getReferencedProperty(it) }
     .owner
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
   @Inject irCtx: IrPluginContext,
-  localDeclarationCollector: LocalDeclarationCollector,
-  ctx: Context,
-  symbolRemapper: InjectSymbolRemapper
+  localDeclarations: LocalDeclarations,
+  ctx: Context
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
@@ -158,7 +145,6 @@ fun TypeRef.toIrType(
       .cast<IrSimpleType>()
       .let { type ->
         val tagConstructor = irCtx.referenceClass(classifier.fqName)!!
-          .let { symbolRemapper.getReferencedClass(it) }
           .constructors.single()
         IrSimpleTypeImpl(
           type.originalKotlinType,
@@ -193,32 +179,20 @@ fun TypeRef.toIrType(
     else -> {
       val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
-      val irClassifier = localDeclarationCollector.localClasses.singleOrNull {
+      val irClassifier = localDeclarations.localClasses.singleOrNull {
         it.descriptor.uniqueKey() == key
       }
         ?.symbol
         ?: irCtx.referenceClass(fqName)
-          ?.let { symbolRemapper.getReferencedClass(it) }
         ?: irCtx.referenceFunctions(fqName.parent())
-          .flatMap {
-            symbolRemapper.getReferencedFunction(it).owner.typeParameters
-              .zip(it.owner.typeParameters)
-          }
-          .singleOrNull { it.second.descriptor.uniqueKey() == key }
-          ?.first
+          .flatMap { it.owner.typeParameters }
+          .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: irCtx.referenceProperties(fqName.parent())
-          .flatMap {
-            symbolRemapper.getReferencedProperty(it).owner.getter!!.typeParameters
-              .zip(it.owner.getter!!.typeParameters)
-          }
-          .singleOrNull { it.second.descriptor.uniqueKey() == key }
-          ?.first
+          .flatMap { it.owner.getter!!.typeParameters }
+          .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
-        ?: (irCtx.referenceClass(fqName.parent())
-          ?.let { symbolRemapper.getReferencedClass(it) }
-          ?: irCtx.referenceTypeAlias(fqName.parent())
-            ?.let { symbolRemapper.getReferencedTypeAlias(it) })
+        ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
           ?.owner
           ?.typeParameters
           ?.singleOrNull { it.descriptor.uniqueKey() == key }

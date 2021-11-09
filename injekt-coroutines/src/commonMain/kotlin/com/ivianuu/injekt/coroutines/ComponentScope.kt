@@ -21,7 +21,6 @@ import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.Scoped
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel

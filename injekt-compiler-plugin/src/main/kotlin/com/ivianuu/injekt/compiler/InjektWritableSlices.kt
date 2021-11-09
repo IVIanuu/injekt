@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
@@ -55,7 +54,6 @@ object InjektWritableSlices {
   val TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val FIXED_TYPE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
-  val INJECT_N_PARAMETERS = BasicWritableSlice<CallableDescriptor, List<InjectNParameterDescriptor>>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
   val UNIQUE_KEY = BasicWritableSlice<DeclarationDescriptor, String>(RewritePolicy.DO_NOTHING)
 }

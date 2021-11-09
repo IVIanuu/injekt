@@ -20,21 +20,13 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
-import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.getSubstitutionMap
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
@@ -44,23 +36,15 @@ import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
-import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.callUtil.getVariableResolvedCallWithAssert
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
-import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() {
   override fun visitCallExpression(expression: KtCallExpression) {
@@ -88,72 +72,40 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
     checkedCalls += resolvedCall
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor &&
-      !resultingDescriptor.hasAnnotation(injektFqNames().inject2) &&
-      !resultingDescriptor.hasAnnotation(injektFqNames().injectNInfo) &&
-      (resolvedCall !is VariableAsFunctionResolvedCall ||
-          (!resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().inject2) &&
-              !resolvedCall.variableCall.resultingDescriptor.type.hasAnnotation(injektFqNames().injectNInfo))) &&
-      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().inject2) != true &&
-      resolvedCall.dispatchReceiver?.type?.hasAnnotation(injektFqNames().injectNInfo) != true) return
+    if (resultingDescriptor !is InjectFunctionDescriptor) return
 
     val callExpression = resolvedCall.call.callElement
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = resolvedCall.getSubstitutionMap()
-
-    val injectLambdaType = resolvedCall
-      .safeAs<VariableAsFunctionResolvedCall>()
-      ?.variableCall
-      ?.resultingDescriptor
-      ?.callableInfo()
-      ?.type
-      ?: resolvedCall.dispatchReceiver
-        ?.safeAs<ExpressionReceiver>()
-        ?.expression
-        ?.getResolvedCall(trace()!!.bindingContext)
-        ?.let {
-          it.resultingDescriptor
-            .toCallableRef()
-            .substitute(it.getSubstitutionMap())
-        }
-        ?.type
-      ?: resolvedCall.dispatchReceiver
-        ?.type
-        ?.takeIf { it.hasAnnotation(injektFqNames().inject2) }
-        ?.toTypeRef()
-
-    val lambdaInjectParameters = injectLambdaType
-      ?.injectNTypes
-      ?.mapIndexed { index, injectNType ->
-        InjectNParameterDescriptor(
-          resultingDescriptor.containingDeclaration,
-          resultingDescriptor.valueParameters.size + index,
-          injectNType.substitute(substitutionMap)
-        )
-      }
+    val substitutionMap = resolvedCall.typeArguments
+      .mapKeys { it.key.toClassifierRef() }
+      .mapValues { it.value.toTypeRef() }
+      .filter { it.key != it.value.classifier } +
+        (resolvedCall.dispatchReceiver?.type?.toTypeRef()?.let {
+          it.classifier.typeParameters
+            .zip(it.arguments)
+            .filter { it.first != it.second.classifier }
+            .toMap()
+        } ?: emptyMap()) +
+        (resolvedCall.extensionReceiver?.type?.toTypeRef()?.let {
+          it.classifier.typeParameters
+            .zip(it.arguments)
+            .filter { it.first != it.second.classifier }
+            .toMap()
+        } ?: emptyMap())
 
     val callee = resultingDescriptor
       .toCallableRef()
-      .let {
-        if (lambdaInjectParameters == null) it
-        else it.copy(
-          parameterTypes = it.parameterTypes + lambdaInjectParameters
-            .map { it.index to it.typeRef }
-        )
-      }
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
 
-    val requests = (callee.callable.valueParameters +
-        callee.injectNParameters +
-        (lambdaInjectParameters ?: emptyList()))
+    val requests = callee.callable.valueParameters
       .filter {
-        val argument = valueArgumentsByIndex[it.injektIndex()]
-        (argument == null || argument is DefaultValueArgument) && it.isInject()
+        valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument
+            && it.isInject()
       }
       .map { it.toInjectableRequest(callee) }
 

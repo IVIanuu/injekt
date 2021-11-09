@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
@@ -54,34 +53,13 @@ class InjektIrGenerationExtension(
       injektFqNames,
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
-    @Provide var localClassCollector = LocalDeclarationCollector()
-    moduleFragment.transform(localClassCollector, null)
-
-    @Provide val symbolRemapper = InjectSymbolRemapper()
-
-    @Provide val injectNTransformer = InjectNTransformer()
-    moduleFragment.transform(injectNTransformer, null)
-
-    moduleFragment.acceptVoid(symbolRemapper)
-
-    val typeRemapper = InjectNTypeRemapper(symbolRemapper)
-    // for each declaration, we create a deepCopy transformer It is important here that we
-    // use the "preserving metadata" variant since we are using this copy to *replace* the
-    // originals, or else the module we would produce wouldn't have any metadata in it.
-    val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
-      typeRemapper,
-      symbolRemapper
-    ).also { typeRemapper.deepCopy = it }
-    moduleFragment.transformChildren(transformer, null)
-    moduleFragment.patchDeclarationParents()
-
-    localClassCollector = LocalDeclarationCollector()
+    @Provide val localClassCollector = LocalDeclarations()
     moduleFragment.transform(localClassCollector, null)
 
     moduleFragment.transform(InjectCallTransformer(), null)
 
     moduleFragment.patchDeclarationParents()
-    moduleFragment.dumpToFiles(dumpDir, pluginContext)
+    moduleFragment.dumpToFiles(dumpDir)
   }
 
   @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -101,10 +79,8 @@ class InjektIrGenerationExtension(
   }
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class) fun IrModuleFragment.dumpToFiles(
-  dumpDir: File,
-  irCtx: IrPluginContext
-) {
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun IrModuleFragment.dumpToFiles(dumpDir: File, @Inject irCtx: IrPluginContext) {
   files
     .filter {
       dumpAllFiles || irCtx.bindingContext[InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,

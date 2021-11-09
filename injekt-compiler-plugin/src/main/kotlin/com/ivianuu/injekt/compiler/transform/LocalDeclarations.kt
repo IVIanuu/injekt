@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
-class LocalDeclarationCollector : IrElementTransformerVoid() {
+class LocalDeclarations : IrElementTransformerVoid() {
   val localClasses = mutableSetOf<IrClass>()
   val localFunctions = mutableSetOf<IrFunction>()
   val localVariables = mutableSetOf<IrVariable>()
