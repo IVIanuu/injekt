@@ -37,18 +37,28 @@ fun Iterable<AnnotationDescriptor>.customErrorMessages(
     allValueArguments["message".asNameId()]!!
       .value
       .cast<String>()
-      .formatMessage(substitutions)
+      .format(substitutions)
 
   val notFoundMessage = (firstOrNull { it.fqName == injektFqNames().injectableNotFound })
     ?.extractMessage()
   val ambiguousMessage = (firstOrNull { it.fqName == injektFqNames().ambiguousInjectable })
     ?.extractMessage()
+
   return if (notFoundMessage == null && ambiguousMessage == null) null
   else CustomErrorMessages(notFoundMessage, ambiguousMessage)
 }
 
-private fun String.formatMessage(substitutions: List<Pair<String, String>>): String =
-  substitutions.fold(this) { acc, nextReplacement ->
+fun CustomErrorMessages.format(substitutionMap: Map<ClassifierRef, TypeRef>): CustomErrorMessages =
+  format(substitutionMap.map { it.key.fqName.asString() to it.value.renderToString() })
+
+fun CustomErrorMessages.format(substitutions: List<Pair<String, String>>): CustomErrorMessages =
+  CustomErrorMessages(
+    notFoundMessage = notFoundMessage?.format(substitutions),
+    ambiguousMessage = ambiguousMessage?.format(substitutions)
+  )
+
+private fun String.format(substitutions: List<Pair<String, String>>): String =
+  substitutions.toList().fold(this) { acc, nextReplacement ->
     acc.replace(nextReplacement.first, nextReplacement.second)
   }
 

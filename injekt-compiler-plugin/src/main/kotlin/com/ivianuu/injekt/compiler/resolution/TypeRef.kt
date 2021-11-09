@@ -61,10 +61,12 @@ class ClassifierRef(
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
-  val customErrorMessages: CustomErrorMessages? = null,
+  val lazyCustomErrorMessages: Lazy<CustomErrorMessages?> = lazyOf(null),
   val declaresInjectables: Boolean = false
 ) {
   val superTypes by lazySuperTypes
+
+  val customErrorMessages by lazyCustomErrorMessages
 
   val untaggedType: TypeRef = TypeRef(
     classifier = this,
@@ -90,12 +92,12 @@ class ClassifierRef(
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
-    customErrorMessages: CustomErrorMessages? = this.customErrorMessages,
+    lazyCustomErrorMessages: Lazy<CustomErrorMessages?> = this.lazyCustomErrorMessages,
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
-    tags, isSpread, primaryConstructorPropertyParameters, variance, customErrorMessages,
+    tags, isSpread, primaryConstructorPropertyParameters, variance, lazyCustomErrorMessages,
     declaresInjectables
   )
 
@@ -157,7 +159,14 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      customErrorMessages = annotations.customErrorMessages(typeParameters),
+      lazyCustomErrorMessages = lazy {
+        annotations.customErrorMessages(typeParameters)
+          ?: info.lazySuperTypes.value.firstNotNullOf {
+            it.classifier.customErrorMessages?.format(
+              it.classifier.typeParameters.zip(it.arguments).toMap()
+            )
+          }
+      },
       declaresInjectables = info.declaresInjectables
     )
   }

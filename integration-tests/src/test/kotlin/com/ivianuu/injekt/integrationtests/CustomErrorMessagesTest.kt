@@ -33,6 +33,20 @@ class CustomErrorMessagesTest {
     compilationShouldHaveFailed("custom message kotlin.String")
   }
 
+  @Test fun testInjectableNotFoundOnSuperType() = singleAndMultiCodegen(
+    """
+      @InjectableNotFound("custom message [T]")
+      interface DepInterface<T>
+
+      class Dep<T> : DepInterface<T>
+    """,
+    """
+      fun invoke() = inject<Dep<String>>() 
+    """
+  ) {
+    compilationShouldHaveFailed("custom message kotlin.String")
+  }
+
   @Test fun testInjectableNotFoundOnTag() = singleAndMultiCodegen(
     """
       @InjectableNotFound("custom message [T] [${"\\$"}TT]")
