@@ -327,7 +327,7 @@ class InjectableDeclarationTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testImportedOProvideFunctionInCompanionObject() = singleAndMultiCodegen(
+  @Test fun testImportedProvideFunctionInCompanionObject() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
