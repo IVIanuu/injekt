@@ -220,6 +220,14 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
     }
   }
 
+inline fun <T, R> Collection<T>.fastFlatMap(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> {
+  if (isEmpty()) return emptyList()
+  return buildList {
+    for (item in this@fastFlatMap)
+      block(item)
+  }
+}
+
 private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
   return buildString {
@@ -354,12 +362,12 @@ fun classifierDescriptorForKey(key: String, @Inject ctx: Context): ClassifierDes
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.takeIf { it.uniqueKey() == key }
       ?: functionDescriptorsForFqName(fqName.parent())
-        .flatMap { it.typeParameters }
+        .fastFlatMap { addAll(it.typeParameters) }
         .firstOrNull {
           it.uniqueKey() == key
         }
       ?: propertyDescriptorsForFqName(fqName.parent())
-        .flatMap { it.typeParameters }
+        .fastFlatMap { addAll(it.typeParameters) }
         .firstOrNull {
           it.uniqueKey() == key
         }

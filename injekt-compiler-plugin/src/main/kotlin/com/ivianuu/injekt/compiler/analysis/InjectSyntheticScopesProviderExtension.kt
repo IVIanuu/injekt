@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -88,13 +89,13 @@ private class InjectSyntheticScope(@Inject private val ctx: Context) : Synthetic
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
-      .flatMap { receiverType ->
-        receiverType.memberScope.getContributedDescriptors()
-          .flatMap { declaration ->
-            if (declaration is ClassDescriptor && declaration.isInner) {
-              declaration.constructors
-            } else listOfNotNull(declaration as? FunctionDescriptor)
-          }
+      .fastFlatMap { receiverType ->
+        receiverType.memberScope.getContributedDescriptors().forEach { declaration ->
+          if (declaration is ClassDescriptor && declaration.isInner) {
+            addAll(declaration.constructors)
+          } else
+            declaration.safeAs<FunctionDescriptor>()?.let { add(it) }
+        }
       }
       .mapNotNull { it.toInjectFunctionDescriptor() }
 
@@ -103,13 +104,13 @@ private class InjectSyntheticScope(@Inject private val ctx: Context) : Synthetic
     name: Name,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = receiverTypes
-    .flatMap { receiverType ->
-      receiverType.memberScope.getContributedFunctions(name, location) +
-          (receiverType.memberScope.getContributedClassifier(name, location)
-            ?.safeAs<ClassDescriptor>()
-            ?.takeIf { it.isInner }
-            ?.constructors
-            ?: emptyList())
+    .fastFlatMap { receiverType ->
+      addAll(receiverType.memberScope.getContributedFunctions(name, location))
+      receiverType.memberScope.getContributedClassifier(name, location)
+        ?.safeAs<ClassDescriptor>()
+        ?.takeIf { it.isInner }
+        ?.constructors
+        ?.let { addAll(it) }
     }
     .mapNotNull { it.toInjectFunctionDescriptor() }
 

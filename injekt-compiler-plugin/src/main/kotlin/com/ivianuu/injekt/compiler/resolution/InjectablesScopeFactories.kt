@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.analysis.substitute
 import com.ivianuu.injekt.compiler.descriptor
+import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.getSubstitutionMap
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -650,7 +651,10 @@ fun TypeInjectablesScope(
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
   val allInjectables = parent.allScopes
-    .flatMap { it.injectables + it.spreadingInjectables.map { it.callable }}
+    .fastFlatMap {
+      addAll(it.injectables)
+      it.spreadingInjectables.forEach { add(it.callable) }
+    }
     .map { it.callable.uniqueKey() to it.originalType.withFrameworkKey(0) }
 
   val externalInjectables = mutableListOf<CallableRef>()

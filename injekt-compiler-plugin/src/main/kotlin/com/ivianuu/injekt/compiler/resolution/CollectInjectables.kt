@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.fixTypes
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
@@ -74,6 +75,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import java.util.LinkedList
 
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
@@ -156,24 +158,25 @@ fun ResolutionScope.collectInjectables(
   name: Name? = null,
   @Inject ctx: Context
 ): List<CallableRef> = getContributedDescriptors()
-  .flatMap { declaration ->
+  .fastFlatMap { declaration ->
     onEach(declaration)
-    if (name != null && declaration.name != name) return@flatMap emptyList()
+    if (name != null && declaration.name != name) return@fastFlatMap
     when (declaration) {
       is ClassDescriptor -> {
         if (declaration.kind == ClassKind.OBJECT &&
-          (!classBodyView || !declaration.isCompanionObject)) listOfNotNull(
+          (!classBodyView || !declaration.isCompanionObject))
           declaration
             .takeIf { it.isProvide() || it.classifierInfo().declaresInjectables }
             ?.injectableReceiver(!classBodyView)
-        )
-        else (declaration.injectableConstructors() + listOfNotNull(
+            ?.let { add(it) }
+        else {
+          addAll(declaration.injectableConstructors())
           if (!classBodyView)
             declaration.companionObjectDescriptor
               ?.takeIf { it.classifierInfo().declaresInjectables }
               ?.injectableReceiver(false)
-        else null
-        ))
+              ?.let { add(it) }
+        }
       }
       is CallableMemberDescriptor -> {
         if (declaration.isProvide() &&
@@ -182,13 +185,13 @@ fun ResolutionScope.collectInjectables(
               declaration.hasAnnotation(injektFqNames().provide) ||
               declaration.primaryConstructorPropertyValueParameter()
                 ?.hasAnnotation(injektFqNames().provide) == true)) {
-          listOf(declaration.toCallableRef())
-        } else emptyList()
+          add(declaration.toCallableRef())
+        }
       }
-      is VariableDescriptor -> if (declaration.isProvide()) {
-        listOf(declaration.toCallableRef())
-      } else emptyList()
-      else -> emptyList()
+      is VariableDescriptor -> {
+        if (declaration.isProvide())
+          add(declaration.toCallableRef())
+      }
     }
   }
 
@@ -371,33 +374,31 @@ fun CallableRef.collectInjectables(
 @OptIn(ExperimentalStdlibApi::class)
 fun List<ProviderImport>.collectImportedInjectables(
   @Inject ctx: Context
-): List<CallableRef> = flatMap { import ->
-  buildList<CallableRef> {
-    if (!import.isValidImport()) return@buildList
+): List<CallableRef> = fastFlatMap { import ->
+  if (!import.isValidImport()) return@fastFlatMap
 
-    if (import.importPath!!.endsWith("*")) {
-      val packageFqName = FqName(import.importPath.removeSuffix(".*"))
+  if (import.importPath!!.endsWith("*")) {
+    val packageFqName = FqName(import.importPath.removeSuffix(".*"))
 
-      // import all injectables in the package
-      memberScopeForFqName(packageFqName, import.element.lookupLocation)
-        ?.takeIf {
-          it.getContributedFunctions(injectablesLookupName, NoLookupLocation.FROM_BACKEND)
-            .isNotEmpty()
-        }
-        ?.collectInjectables(false)
-        ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
-        ?.let { this += it }
-    } else {
-      val fqName = FqName(import.importPath)
-      val parentFqName = fqName.parent()
-      val name = fqName.shortName()
+    // import all injectables in the package
+    memberScopeForFqName(packageFqName, import.element.lookupLocation)
+      ?.takeIf {
+        it.getContributedFunctions(injectablesLookupName, NoLookupLocation.FROM_BACKEND)
+          .isNotEmpty()
+      }
+      ?.collectInjectables(false)
+      ?.map { it.copy(import = import.toResolvedImport(packageFqName)) }
+      ?.let { addAll(it) }
+  } else {
+    val fqName = FqName(import.importPath)
+    val parentFqName = fqName.parent()
+    val name = fqName.shortName()
 
-      // import all injectables with the specified name
-      memberScopeForFqName(parentFqName, import.element.lookupLocation)
-        ?.collectInjectables(false, name = name)
-        ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
-        ?.let { this += it }
-    }
+    // import all injectables with the specified name
+    memberScopeForFqName(parentFqName, import.element.lookupLocation)
+      ?.collectInjectables(false, name = name)
+      ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
+      ?.let { addAll(it) }
   }
 }
 
@@ -407,7 +408,7 @@ fun TypeRef.collectTypeScopeInjectables(@Inject ctx: Context): InjectablesWithLo
     val lookedUpPackages = mutableSetOf<FqName>()
 
     val processedTypes = mutableSetOf<TypeRef>()
-    val nextTypes = allTypes.toMutableList()
+    val nextTypes = allTypes.toCollection(LinkedList())
 
     while (nextTypes.isNotEmpty()) {
       val currentType = nextTypes.removeFirst()
@@ -420,8 +421,7 @@ fun TypeRef.collectTypeScopeInjectables(@Inject ctx: Context): InjectablesWithLo
       injectables += resultForType.injectables
       lookedUpPackages += resultForType.lookedUpPackages
 
-      nextTypes += resultForType.injectables
-        .flatMap { it.type.allTypes }
+      resultForType.injectables.forEach { nextTypes.addAll(it.type.allTypes) }
     }
 
     InjectablesWithLookups(
