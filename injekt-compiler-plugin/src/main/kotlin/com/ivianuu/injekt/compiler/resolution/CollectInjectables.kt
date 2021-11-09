@@ -63,6 +63,7 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -152,13 +153,12 @@ fun TypeRef.collectInjectables(
 fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
   onEach: (DeclarationDescriptor) -> Unit = {},
-  predicate: (DeclarationDescriptor) -> Boolean = { true },
+  name: Name? = null,
   @Inject ctx: Context
 ): List<CallableRef> = getContributedDescriptors()
   .flatMap { declaration ->
     onEach(declaration)
-    if (!predicate(declaration))
-      return@flatMap emptyList()
+    if (declaration.name != name) return@flatMap emptyList()
     when (declaration) {
       is ClassDescriptor -> {
         if (declaration.kind == ClassKind.OBJECT &&
@@ -394,7 +394,7 @@ fun List<ProviderImport>.collectImportedInjectables(
 
       // import all injectables with the specified name
       memberScopeForFqName(parentFqName, import.element.lookupLocation)
-        ?.collectInjectables(false, predicate = { it.name == name })
+        ?.collectInjectables(false, name = name)
         ?.map { it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) }
         ?.let { this += it }
     }
@@ -510,24 +510,20 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
 
     val injectables = mutableListOf<CallableRef>()
 
-    fun collectInjectables(
-      scope: MemberScope,
-      predicate: (DeclarationDescriptor) -> Boolean
-    ) {
+    fun collectInjectables(scope: MemberScope) {
       injectables += scope.collectInjectables(
         onEach = { declaration ->
-          if (declaration is ClassDescriptor) {
-            collectInjectables(declaration.unsubstitutedMemberScope) {
-              if (declaration.kind == ClassKind.OBJECT) true
-              else it is ClassDescriptor
-            }
-          }
+          if (declaration is ClassDescriptor)
+            collectInjectables(
+              if (declaration.kind == ClassKind.OBJECT)
+                declaration.unsubstitutedMemberScope
+              else declaration.unsubstitutedInnerClassesScope
+            )
         },
-        predicate = predicate,
         classBodyView = false
       )
     }
-    packageFragments.forEach { collectInjectables(it.getMemberScope()) { true } }
+    packageFragments.forEach { collectInjectables(it.getMemberScope()) }
 
     InjectablesWithLookups(injectables, lookedUpPackages)
   }
