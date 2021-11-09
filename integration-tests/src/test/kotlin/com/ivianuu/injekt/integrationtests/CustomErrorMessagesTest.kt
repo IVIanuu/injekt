@@ -92,7 +92,7 @@ class CustomErrorMessagesTest {
         fun <S> func(@Inject @InjectableNotFound("custom message [T] [S]") value: T)
       }
       class MyImpl : MyInterface<String> {
-        override fun func(@Inject value: String) {
+        override fun <S> func(@Inject value: String) {
         }
       }
     """,
@@ -109,7 +109,7 @@ class CustomErrorMessagesTest {
         fun <S> func(@Inject @InjectableNotFound("custom message [T] [S]") value: T)
       }
       class MyImpl : MyInterface<String> {
-        override fun <S> func(@Inject value: @InjectableNotFound("overridden custom message [S]") String) {
+        override fun <S> func(@Inject @InjectableNotFound("overridden custom message [S]") value: String) {
         }
       }
     """,
@@ -117,7 +117,7 @@ class CustomErrorMessagesTest {
       fun invoke() = MyImpl().func<Int>()
     """
   ) {
-    compilationShouldHaveFailed("overridden custom message kotlin.String")
+    compilationShouldHaveFailed("overridden custom message kotlin.Int")
   }
 
   @Test fun testInjectableAmbiguous() = singleAndMultiCodegen(
