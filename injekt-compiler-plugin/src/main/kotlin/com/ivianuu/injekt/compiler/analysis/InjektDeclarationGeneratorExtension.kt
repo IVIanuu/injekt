@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -30,7 +29,6 @@ import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
@@ -38,26 +36,19 @@ import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.File
@@ -226,61 +217,46 @@ class InjektDeclarationGeneratorExtension(
 
     if (injectables.isEmpty()) return emptyList()
 
-    val markerName = "_${
-      module.moduleName()
-        .filter { it.isLetterOrDigit() }
-    }_${
-      file.name.removeSuffix(".kt")
-        .substringAfterLast(".")
-        .substringAfterLast("/")
-    }_Marker"
-
-    val markerCode = buildString {
+    val code = buildString {
       appendLine("package ${file.packageFqName}")
 
       appendLine()
 
+      val markerName = "_${
+        module.moduleName()
+          .filter { it.isLetterOrDigit() }
+      }_${
+        file.name.removeSuffix(".kt")
+          .substringAfterLast(".")
+          .substringAfterLast("/")
+      }_ProvidersMarker"
+
       appendLine("object $markerName")
-    }
 
-    val markerFile = srcDir.resolve(
-      (file.packageFqName.pathSegments().joinToString("/") +
-          "/${file.name.removeSuffix(".kt")}Marker.kt")
-    )
-    markerFile.parentFile.mkdirs()
-    markerFile.createNewFile()
-    markerFile.writeText(markerCode)
-
-    val indicesCode = buildString {
-      appendLine("package ${injektFqNames.indexPackage}")
+      appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        val functionName = injectablesLookupName(file.packageFqName)
+        val functionName = injectablesLookupName
 
-        appendLine()
         appendLine("fun $functionName(")
-        appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
+        appendLine("  marker: $markerName,")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
         }
 
         fun DeclarationDescriptor.hash(): String = when (this) {
           is ClassDescriptor ->
-            "class" +
-                fqNameSafe +
+            uniqueKey() +
                 visibility +
                 annotations.joinToString { it.type.toTypeRef().renderToString() } +
-                uniqueKey() +
                 constructors.joinToString { it.hash() }
           is CallableDescriptor ->
-            if (this is FunctionDescriptor) "function" else "property" +
-                fqNameSafe +
+            uniqueKey() +
                 visibility +
                 callContext() +
                 annotations.joinToString { it.type.toTypeRef().renderToString() } +
-                safeAs<PropertyGetterDescriptor>()?.annotations
-                  ?.joinToString { it.type.toTypeRef().renderToString() }.orEmpty() +
-                uniqueKey()
+                safeAs<PropertyDescriptor>()
+                  ?.let { it.getter?.hash().orEmpty() + it.setter?.hash().orEmpty() }
           else -> throw AssertionError()
         }
 
@@ -307,8 +283,8 @@ class InjektDeclarationGeneratorExtension(
     )
     indicesFile.parentFile.mkdirs()
     indicesFile.createNewFile()
-    indicesFile.writeText(indicesCode)
+    indicesFile.writeText(code)
 
-    return listOf(markerFile, indicesFile)
+    return listOf(indicesFile)
   }
 }
