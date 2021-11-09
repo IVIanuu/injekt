@@ -236,9 +236,7 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        val functionName = injectablesLookupName
-
-        appendLine("fun $functionName(")
+        appendLine("fun $injectablesLookupName(")
         appendLine("  marker: $markerName,")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
