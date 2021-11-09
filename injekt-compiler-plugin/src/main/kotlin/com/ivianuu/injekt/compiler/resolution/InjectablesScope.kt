@@ -304,7 +304,7 @@ class InjectablesScope(
       }
   }
 
-  fun entryPointsForType(componentType: TypeRef): List<CallableRef> {
+  private fun entryPointsForType(componentType: TypeRef): List<CallableRef> {
     if (entryPoints.isEmpty()) return emptyList()
     return entryPoints
       .mapNotNull { candidate ->
