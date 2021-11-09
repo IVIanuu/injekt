@@ -203,7 +203,7 @@ fun InjectablesScope.resolveRequests(
     when (val result = resolveRequest(request, lookupLocation, false)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
-        if (request.isRequired || result !is ResolutionResult.Failure.NoCandidates) {
+        if (request.isRequired || result.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity) {
           if (compareResult(result, failure) < 0) {
             failureRequest = request
             failure = result
@@ -222,6 +222,11 @@ fun InjectablesScope.resolveRequests(
   ).also { it.postProcess(onEachResult, usages) }
   else InjectionGraph.Error(this, callee, failureRequest!!, failure)
 }
+
+private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult.Failure =
+  if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
+    dependencyFailure.unwrapDependencyFailure()
+  else this
 
 private fun InjectablesScope.resolveRequest(
   request: InjectableRequest,
@@ -447,10 +452,11 @@ private fun InjectablesScope.resolveCandidate(
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
-          dependency.isRequired && candidate is ProviderInjectable &&
+          candidate is ProviderInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates
-          dependency.isRequired || dependencyResult !is ResolutionResult.Failure.NoCandidates ->
+          dependency.isRequired ||
+              dependencyResult.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
               candidate,
               dependency,

@@ -446,7 +446,7 @@ class InjectableResolutionTest {
     invokeSingleFile("a") shouldBe "a"
   }
 
-  @Test fun testUsesDefaultValueIfNoCandidateExists() = codegen(
+  @Test fun testUsesDefaultValueOnNonAmbiguityError() = codegen(
     """
       fun invoke(_foo: Foo): Foo {
         fun inner(foo: Foo = _foo) = foo
@@ -458,16 +458,51 @@ class InjectableResolutionTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testDoesNotUseDefaultValueIfCandidateHasFailures() = codegen(
+  @Test fun testDoesNotUseDefaultValueOnAmbiguityError() = codegen(
     """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-      fun invoke() {
-        fun inner(@Inject bar: Bar = Bar(Foo())) = bar
+      @Provide fun foo1() = Foo()
+      @Provide fun foo2() = Foo()
+
+      fun invoke(): Foo {
+        fun inner(@Inject foo: Foo = Foo()) = foo
         return inner()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed(
+      "ambiguous injectables:\n" +
+          "com.ivianuu.injekt.integrationtests.foo1\n" +
+          "com.ivianuu.injekt.integrationtests.foo2\n" +
+          "do all match type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
+    )
+  }
+
+  @Test fun testDoesNotUseDefaultValueOnNestedAmbiguityError() = codegen(
+    """
+      @Provide fun foo1() = Foo()
+      @Provide fun foo2() = Foo()
+      @Provide fun bar(foo: Foo) = Bar(foo)
+
+      fun invoke(): Bar {
+        fun inner(@Inject bar: Bar = Bar(foo)) = bar
+        return inner()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar\n" +
+          "I found:\n" +
+          "\n" +
+          "    com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
+          "        bar = com.ivianuu.injekt.integrationtests.bar(\n" +
+          "            foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ inject<com.ivianuu.injekt.test.Foo>()\n" +
+          "        )\n" +
+          "    )\n" +
+          "\n" +
+          "but com.ivianuu.injekt.integrationtests.foo1\n" +
+          "com.ivianuu.injekt.integrationtests.foo2\n" +
+          "do all match type com.ivianuu.injekt.test.Foo"
+    )
   }
 
   @Test fun testPrefersNearerImport() = singleAndMultiCodegen(
