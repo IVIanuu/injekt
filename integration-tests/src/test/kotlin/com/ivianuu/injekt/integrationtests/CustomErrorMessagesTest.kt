@@ -47,6 +47,21 @@ class CustomErrorMessagesTest {
     compilationShouldHaveFailed("custom message kotlin.String")
   }
 
+  @Test fun testPrefersSubTypeInjectableNotFoundMessageOnClass() = singleAndMultiCodegen(
+    """
+      @InjectableNotFound("custom message [T]")
+      interface DepInterface<T>
+
+      @InjectableNotFound("overridden custom message [T]")
+      class Dep<T> : DepInterface<T>
+    """,
+    """
+      fun invoke() = inject<Dep<String>>() 
+    """
+  ) {
+    compilationShouldHaveFailed("overridden custom message kotlin.String")
+  }
+
   @Test fun testInjectableNotFoundOnTag() = singleAndMultiCodegen(
     """
       @InjectableNotFound("custom message [T] [${"\\$"}TT]")
@@ -71,11 +86,62 @@ class CustomErrorMessagesTest {
     compilationShouldHaveFailed("custom message kotlin.String")
   }
 
+  @Test fun testInjectableNotFoundOnSuperTypeParameter() = singleAndMultiCodegen(
+    """
+      interface MyInterface<T> {
+        fun <S> func(@Inject @InjectableNotFound("custom message [T] [S]") value: T)
+      }
+      class MyImpl : MyInterface<String> {
+        override fun func(@Inject value: String) {
+        }
+      }
+    """,
+    """
+      fun invoke() = MyImpl().func<Int>()
+    """
+  ) {
+    compilationShouldHaveFailed("custom message kotlin.String kotlin.Int")
+  }
+
+  @Test fun testPrefersSubTypeInjectableNotFoundMessageOnParameter() = singleAndMultiCodegen(
+    """
+      interface MyInterface<T> {
+        fun <S> func(@Inject @InjectableNotFound("custom message [T] [S]") value: T)
+      }
+      class MyImpl : MyInterface<String> {
+        override fun <S> func(@Inject value: @InjectableNotFound("overridden custom message [S]") String) {
+        }
+      }
+    """,
+    """
+      fun invoke() = MyImpl().func<Int>()
+    """
+  ) {
+    compilationShouldHaveFailed("overridden custom message kotlin.String")
+  }
+
   @Test fun testInjectableAmbiguous() = singleAndMultiCodegen(
     """
       @AmbiguousInjectable("custom message [T]")
       @Provide fun <T> amb1(): T = TODO()
       @Provide fun <T> amb2(): T = TODO()
+    """,
+    """
+      fun invoke() = inject<String>() 
+    """
+  ) {
+    compilationShouldHaveFailed("custom message kotlin.String")
+  }
+
+  @Test fun testInjectableAmbiguousOnSuperType() = singleAndMultiCodegen(
+    """
+      interface MyInterface<T> {
+        @AmbiguousInjectable("custom message [T]")
+        @Provide fun amb1(): T = TODO()
+        @Provide fun amb2(): T = TODO()
+      }
+
+      @Provide class MyImpl<T> : MyInterface<T>
     """,
     """
       fun invoke() = inject<String>() 
