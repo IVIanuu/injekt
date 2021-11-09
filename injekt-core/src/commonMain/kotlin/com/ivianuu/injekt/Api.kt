@@ -117,7 +117,6 @@ annotation class Spread
 @Target(
   AnnotationTarget.CLASS,
   AnnotationTarget.ANNOTATION_CLASS,
-  AnnotationTarget.TYPE,
   AnnotationTarget.VALUE_PARAMETER
 )
 annotation class InjectableNotFound(val message: String)
@@ -131,7 +130,6 @@ annotation class InjectableNotFound(val message: String)
   AnnotationTarget.CONSTRUCTOR,
   AnnotationTarget.FUNCTION,
   AnnotationTarget.PROPERTY,
-  AnnotationTarget.TYPE,
   AnnotationTarget.LOCAL_VARIABLE
 )
 annotation class AmbiguousInjectable(val message: String)
