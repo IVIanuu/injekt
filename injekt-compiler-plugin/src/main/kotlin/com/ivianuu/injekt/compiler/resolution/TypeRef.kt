@@ -161,7 +161,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
       lazyCustomErrorMessages = lazy {
         annotations.customErrorMessages(typeParameters)
-          ?: info.lazySuperTypes.value.firstNotNullOf {
+          ?: info.lazySuperTypes.value.firstNotNullOfOrNull {
             it.classifier.customErrorMessages?.format(
               it.classifier.typeParameters.zip(it.arguments).toMap()
             )
