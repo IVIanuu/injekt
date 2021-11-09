@@ -51,12 +51,7 @@ interface InjektErrors {
 
     @JvmField val IMPORT_RENDERER = object : DiagnosticParameterRenderer<PsiElement> {
       override fun render(obj: PsiElement, renderingContext: RenderingContext): String =
-        obj.text.removeSurrounding("\"")
-    }
-
-    @JvmField val TYPE_RENDERER = object : DiagnosticParameterRenderer<TypeRef> {
-      override fun render(obj: TypeRef, renderingContext: RenderingContext): String =
-        obj.renderToString()
+        "'${obj.text.removeSurrounding("\"")}'"
     }
 
     @JvmField val UNRESOLVED_INJECTION =
@@ -172,7 +167,7 @@ interface InjektErrors {
         .also {
           MAP.put(
             it,
-            "cannot read injectable import: '{0}'",
+            "cannot read injectable import: {0}",
             IMPORT_RENDERER
           )
         }
@@ -182,7 +177,7 @@ interface InjektErrors {
         .also {
           MAP.put(
             it,
-            "unresolved injectable import: '{0}'",
+            "unresolved injectable import: {0}",
             IMPORT_RENDERER
           )
         }
@@ -192,7 +187,7 @@ interface InjektErrors {
         .also {
           MAP.put(
             it,
-            "duplicated injectable import: '{0}'",
+            "duplicated injectable import: {0}",
             IMPORT_RENDERER
           )
         }
@@ -202,7 +197,7 @@ interface InjektErrors {
         .also {
           MAP.put(
             it,
-            "unused injectable import: '{0}'",
+            "unused injectable import: {0}",
             IMPORT_RENDERER
           )
         }
@@ -212,7 +207,7 @@ interface InjektErrors {
         .also {
           MAP.put(
             it,
-            "injectables of the same package are automatically imported: '{0}'",
+            "injectables of the same package are automatically imported: {0}",
             IMPORT_RENDERER
           )
         }
@@ -240,10 +235,6 @@ interface InjektErrors {
     @JvmField val FILE_DECOY =
       DiagnosticFactory0.create<KtFile>(Severity.ERROR)
         .also { MAP.put(it, "decoy") }
-
-    @JvmField val INJECT_N_TYPE_MISMATCH =
-      DiagnosticFactory0.create<KtElement>(Severity.ERROR)
-        .also { MAP.put(it, "Inject n param types not compatible") }
 
     @JvmField val INJECT_N_OBJECT =
       DiagnosticFactory0.create<KtElement>(Severity.ERROR)
