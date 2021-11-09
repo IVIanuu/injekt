@@ -45,6 +45,11 @@ import kotlin.reflect.KClass
       workerClass: KClass<S>
     ): Pair<String, @SingleWorkerFactory (Context, WorkerParameters) -> ListenableWorker> =
       workerClass.java.name to factory
+
+    @Provide val defaultWorkers: Collection<Pair<String, @SingleWorkerFactory (
+      Context,
+      WorkerParameters
+    ) -> ListenableWorker>> get() = emptyList()
   }
 }
 
