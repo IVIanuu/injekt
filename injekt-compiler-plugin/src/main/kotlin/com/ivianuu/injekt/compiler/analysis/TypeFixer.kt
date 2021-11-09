@@ -30,21 +30,12 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
 class TypeFixer(@Inject private val baseCtx: Context) : DeclarationChecker {
-  private val seenFiles = mutableSetOf<KtFile>()
-
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
     @Provide val ctx = baseCtx.withTrace(context.trace)
-    if (!isIde) {
-      val file = declaration.containingKtFile
-      if (file !in seenFiles) {
-        seenFiles += file
-        trace()!!.report(InjektErrors.FILE_DECOY.on(file))
-      }
-    }
     descriptor.annotations.forEach {
       fixTypes(it.type, declaration)
     }

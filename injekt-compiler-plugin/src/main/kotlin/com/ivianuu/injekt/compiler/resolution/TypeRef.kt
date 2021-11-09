@@ -18,14 +18,11 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.analysis.InjectNParameterDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.ctx
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectNTypes
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -68,7 +65,6 @@ class ClassifierRef(
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
-  val injectNParameters: List<InjectNParameterDescriptor> = emptyList(),
   val customErrorMessages: CustomErrorMessages? = null,
   val declaresInjectables: Boolean = false
 ) {
@@ -98,14 +94,12 @@ class ClassifierRef(
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
-    injectNParameters: List<InjectNParameterDescriptor> = this.injectNParameters,
     customErrorMessages: CustomErrorMessages? = this.customErrorMessages,
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
     isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
-    tags, isSpread, primaryConstructorPropertyParameters, variance, injectNParameters,
-    customErrorMessages,
+    tags, isSpread, primaryConstructorPropertyParameters, variance, customErrorMessages,
     declaresInjectables
   )
 
@@ -167,7 +161,6 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      injectNParameters = info.injectNParameters,
       customErrorMessages = annotations.customErrorMessages(typeParameters),
       declaresInjectables = info.declaresInjectables
     )
@@ -214,10 +207,8 @@ fun KotlinType.toTypeRef(
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      injectNTypes = injectNTypes(),
       scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef(),
-      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true,
-      customErrorMessages = annotations.customErrorMessages(emptyList())
+      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
@@ -255,10 +246,8 @@ class TypeRef(
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
-  val injectNTypes: List<TypeRef> = emptyList(),
   val scopeComponentType: TypeRef? = null,
   val isEager: Boolean = false,
-  val customErrorMessages: CustomErrorMessages? = null,
   val source: ClassifierRef? = null
 ) {
   override fun toString(): String = renderToString()
@@ -309,7 +298,6 @@ class TypeRef(
         allTypes += inner
         inner.arguments.forEach { collect(it) }
         inner.superTypes.forEach { collect(it) }
-        inner.injectNTypes.forEach { collect(it) }
       }
       collect(this)
       _allTypes = allTypes
@@ -353,10 +341,8 @@ class TypeRef(
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
-      result = 31 * result + injectNTypes.hashCode()
       result = 31 * result + scopeComponentType.hashCode()
       result = 31 * result + isEager.hashCode()
-      result = 31 * result + customErrorMessages.hashCode()
       _hashCode = result
       return result
     }
@@ -392,10 +378,8 @@ fun TypeRef.copy(
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
-  injectNTypes: List<TypeRef> = this.injectNTypes,
   scopeComponentType: TypeRef? = this.scopeComponentType,
   isEager: Boolean = this.isEager,
-  customErrorMessages: CustomErrorMessages? = this.customErrorMessages,
   source: ClassifierRef? = this.source
 ) = TypeRef(
   classifier,
@@ -407,10 +391,8 @@ fun TypeRef.copy(
   isStarProjection,
   frameworkKey,
   variance,
-  injectNTypes,
   scopeComponentType,
   isEager,
-  customErrorMessages,
   source
 )
 
@@ -470,15 +452,13 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     } else substitution
   }
 
-  if (arguments.isEmpty() && injectNTypes.isEmpty() && scopeComponentType == null) return this
+  if (arguments.isEmpty() && scopeComponentType == null) return this
 
   val newArguments = arguments.map { it.substitute(map) }
-  val newInjectNTypes = injectNTypes.map { it.substitute(map) }
   val newScopeComponentType = scopeComponentType?.substitute(map)
   if (newArguments != arguments ||
-    newInjectNTypes != injectNTypes ||
     newScopeComponentType != scopeComponentType)
-    return copy(arguments = newArguments, injectNTypes = newInjectNTypes, scopeComponentType = newScopeComponentType)
+    return copy(arguments = newArguments, scopeComponentType = newScopeComponentType)
 
   return this
 }
@@ -497,15 +477,6 @@ fun TypeRef.render(
     if (!renderType(this)) return
 
     if (isMarkedComposable) append("@Composable ")
-
-    if (injectNTypes.isNotEmpty()) {
-      append("@Inject<")
-      injectNTypes.forEachIndexed { index, injectNType ->
-        injectNType.render(depth = depth + 1, renderType, append)
-        if (index != injectNTypes.size - 1) append(", ")
-      }
-      append("> ")
-    }
 
     when {
       isStarProjection -> append("*")

@@ -232,14 +232,6 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "entry point cannot contain a abstract var property") }
 
-    @JvmField val FILE_DECOY =
-      DiagnosticFactory0.create<KtFile>(Severity.ERROR)
-        .also { MAP.put(it, "decoy") }
-
-    @JvmField val INJECT_N_OBJECT =
-      DiagnosticFactory0.create<KtElement>(Severity.ERROR)
-        .also { MAP.put(it, "object cannot have @Inject parameters") }
-
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,

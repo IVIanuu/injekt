@@ -33,10 +33,8 @@ import kotlinx.serialization.Serializable
   val isMarkedComposable: Boolean,
   val isProvide: Boolean,
   val isInject: Boolean,
-  val injectNTypes: List<PersistedTypeRef>,
   val scopeComponentType: PersistedTypeRef?,
-  val isEager: Boolean,
-  val customErrorMessages: CustomErrorMessages?
+  val isEager: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
@@ -48,10 +46,8 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
-    injectNTypes = injectNTypes.map { it.toPersistedTypeRef() },
     scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
-    isEager = isEager,
-    customErrorMessages = customErrorMessages
+    isEager = isEager
   )
 
 fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
@@ -73,9 +69,7 @@ fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
     isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
-    injectNTypes = injectNTypes.map { it.toTypeRef() },
     scopeComponentType = scopeComponentType?.toTypeRef(),
-    isEager = isEager,
-    customErrorMessages = customErrorMessages
+    isEager = isEager
   )
 }

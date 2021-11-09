@@ -401,10 +401,8 @@ class TypeKeyInjectable(
 fun CallableRef.getInjectableRequests(
   ignoreInject: Boolean = false,
   @Inject ctx: Context
-): List<InjectableRequest> = (callable.allParameters
-  .filter {
-    callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"
-  } + injectNParameters)
+): List<InjectableRequest> = callable.allParameters
+  .filter { callable !is ClassConstructorDescriptor || it.name.asString() != "<this>" }
   .filter {
     ignoreInject ||
         it === callable.dispatchReceiverParameter ||
@@ -441,6 +439,5 @@ fun ParameterDescriptor.toInjectableRequest(
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this),
     customErrorMessages = toCallableRef().customErrorMessages
-      ?: callable.parameterTypes[index]!!.customErrorMessages
   )
 }
