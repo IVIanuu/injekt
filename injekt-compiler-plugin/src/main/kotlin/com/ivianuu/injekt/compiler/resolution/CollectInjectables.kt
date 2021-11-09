@@ -315,8 +315,8 @@ fun CallableRef.collectInjectables(
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
-  addComponent: (TypeRef) -> Unit,
-  addEntryPoint: (TypeRef) -> Unit,
+  addComponent: (CallableRef) -> Unit,
+  addEntryPoint: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf(),
   @Inject ctx: Context
@@ -331,12 +331,12 @@ fun CallableRef.collectInjectables(
   }
 
   if (callable is ComponentConstructorDescriptor) {
-    addComponent(type)
+    addComponent(this)
     return
   }
 
   if (callable is EntryPointConstructorDescriptor) {
-    addEntryPoint(type)
+    addEntryPoint(this)
     return
   }
 

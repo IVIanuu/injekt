@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
@@ -98,17 +99,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
 
     val callExpression = resolvedCall.call.callElement
 
-    val file = try {
-      callExpression.containingKtFile
-    } catch (e: Throwable) {
-      return
-    }
-
-    val filePath: String? = try {
-      file.virtualFilePath
-    } catch (e: Throwable) {
-      null
-    }
+    val file = callExpression.containingKtFile
 
     val substitutionMap = resolvedCall.getSubstitutionMap()
 
@@ -169,33 +160,52 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(callExpression)
-    val graph = scope.resolveRequests(callee, requests, callExpression.lookupLocation) { _, result ->
-      if (result is ResolutionResult.Success.WithCandidate.Value &&
-        result.candidate is CallableInjectable
-      ) {
-        if (filePath != null) {
+    val graph = scope.resolveRequests(
+      callee,
+      requests,
+      callExpression.lookupLocation
+    ) { _, result ->
+      if (result is ResolutionResult.Success.WithCandidate.Value) {
+        if (result.candidate is CallableInjectable) {
           result.candidate.callable.import?.element?.let {
             trace()!!.record(
               InjektWritableSlices.USED_IMPORT,
-              SourcePosition(filePath, it.startOffset, it.endOffset),
+              SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
               Unit
             )
+          }
+        } else if (result.candidate is ComponentInjectable) {
+          result.candidate.component.import?.element?.let {
+            trace()!!.record(
+              InjektWritableSlices.USED_IMPORT,
+              SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
+              Unit
+            )
+          }
+          result.candidate.entryPoints.forEach {
+            it.import?.element?.let {
+              trace()!!.record(
+                InjektWritableSlices.USED_IMPORT,
+                SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
+                Unit
+              )
+            }
           }
         }
       }
     }
 
     when (graph) {
-      is InjectionGraph.Success -> if (filePath != null) {
+      is InjectionGraph.Success -> {
         trace()!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
-          filePath,
+          file.virtualFilePath,
           Unit
         )
         trace()!!.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
-            filePath,
+            file.virtualFilePath,
             callExpression.startOffset,
             callExpression.endOffset
           ),

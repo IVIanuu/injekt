@@ -81,7 +81,8 @@ class CallableInjectable(
 }
 
 class ComponentInjectable(
-  override val type: TypeRef,
+  val component: CallableRef,
+  val entryPoints: List<CallableRef>,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
   val superConstructor = type.unwrapTags()
@@ -94,8 +95,6 @@ class ComponentInjectable(
     ?.substitute(type.classifier.typeParameters.zip(type.arguments).toMap())
 
   override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
-
-  val entryPoints = ownerScope.entryPointsForType(type)
 
   @OptIn(ExperimentalStdlibApi::class)
   val requestCallables: List<CallableRef> = buildList<CallableRef> {
@@ -120,7 +119,7 @@ class ComponentInjectable(
 
     visit(type)
 
-    entryPoints.forEach { visit(it) }
+    entryPoints.forEach { visit(it.type) }
   }
 
   val superConstructorDependencies = superConstructor
@@ -144,7 +143,7 @@ class ComponentInjectable(
 
   val componentAndEntryPointInjectables = entryPoints
     .map {
-      it.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+      it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
     } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
 
   val componentInitScope = InjectablesScope(
@@ -226,6 +225,8 @@ class ComponentInjectable(
 
   override val callContext: CallContext
     get() = CallContext.DEFAULT
+  override val type: TypeRef
+    get() = component.type
   override val originalType: TypeRef
     get() = type
   override val scopeComponentType: TypeRef?

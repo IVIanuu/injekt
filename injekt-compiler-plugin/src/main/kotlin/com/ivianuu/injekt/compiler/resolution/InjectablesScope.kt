@@ -29,7 +29,6 @@ import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -88,10 +87,10 @@ class InjectablesScope(
 
   private val listElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
 
-  private val componentTypes: MutableList<TypeRef> =
-    parent?.componentTypes?.toMutableList() ?: mutableListOf()
-  private val entryPointTypes: MutableList<TypeRef> =
-    parent?.entryPointTypes?.toMutableList() ?: mutableListOf()
+  private val components: MutableList<CallableRef> =
+    parent?.components?.toMutableList() ?: mutableListOf()
+  private val entryPoints: MutableList<CallableRef> =
+    parent?.entryPoints?.toMutableList() ?: mutableListOf()
 
   init {
     initialInjectables
@@ -115,12 +114,13 @@ class InjectablesScope(
           addSpreadingInjectable = { callable ->
             spreadingInjectables += SpreadingInjectable(callable)
           },
-          addComponent = { componentType ->
-            componentTypes += componentType
-            val typeWithFrameworkKey = componentType.copy(frameworkKey = generateFrameworkKey())
+          addComponent = { component ->
+            this.components += component
+            val typeWithFrameworkKey = component.type
+              .copy(frameworkKey = generateFrameworkKey())
             spreadingInjectableCandidateTypes += typeWithFrameworkKey
           },
-          addEntryPoint = { entryPointTypes += it }
+          addEntryPoint = { entryPoints += it }
         )
       }
 
@@ -241,7 +241,7 @@ class InjectablesScope(
         return SourceKeyInjectable(request.type, this)
       request.type.unwrapTags().classifier.isComponent ->
         return componentForType(request.type)?.let {
-          ComponentInjectable(it, this)
+          ComponentInjectable(it, entryPointsForType(it.type), this)
         }
       else -> return null
     }
@@ -285,39 +285,41 @@ class InjectablesScope(
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef> {
-    if (componentTypes.isEmpty()) return emptyList()
-    return componentTypes
+    if (components.isEmpty()) return emptyList()
+    return components
       .mapNotNull { candidate ->
         var context =
-          candidate.buildContext(singleElementType, key.staticTypeParameters)
+          candidate.type.buildContext(singleElementType, key.staticTypeParameters)
         if (!context.isOk) {
-          context = candidate.buildContext(collectionElementType, key.staticTypeParameters)
+          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
         }
         if (!context.isOk) return@mapNotNull null
         candidate.substitute(context.fixedTypeVariables)
       }
-      .map { componentType ->
-        componentType.copy(frameworkKey = generateFrameworkKey())
-          .also { componentTypes += it }
+      .map { candidate ->
+        val typeWithFrameworkKey = candidate.type.copy(frameworkKey = generateFrameworkKey())
+        components +=
+          candidate.copy(type = typeWithFrameworkKey, originalType = typeWithFrameworkKey)
+        typeWithFrameworkKey
       }
   }
 
-  fun entryPointsForType(componentType: TypeRef): List<TypeRef> {
-    if (entryPointTypes.isEmpty()) return emptyList()
-    return entryPointTypes
+  fun entryPointsForType(componentType: TypeRef): List<CallableRef> {
+    if (entryPoints.isEmpty()) return emptyList()
+    return entryPoints
       .mapNotNull { candidate ->
-        val context = candidate.classifier.entryPointComponentType!!
+        val context = candidate.type.classifier.entryPointComponentType!!
           .buildContext(componentType, allStaticTypeParameters)
         if (!context.isOk) return@mapNotNull null
         candidate.substitute(context.fixedTypeVariables)
       }
   }
 
-  private fun componentForType(type: TypeRef): TypeRef? {
-    if (componentTypes.isEmpty()) return null
-    return componentTypes
+  private fun componentForType(type: TypeRef): CallableRef? {
+    if (components.isEmpty()) return null
+    return components
       .firstNotNullOfOrNull { candidate ->
-        val context = candidate.buildContext(type, allStaticTypeParameters)
+        val context = candidate.type.buildContext(type, allStaticTypeParameters)
         if (!context.isOk) return@firstNotNullOfOrNull null
         candidate.substitute(context.fixedTypeVariables)
       }

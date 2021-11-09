@@ -89,7 +89,7 @@ class InjectablesImportsTest {
     shouldContainMessage("unused injectable import")
   }
 
-  @Test fun testUsedImport() = singleAndMultiCodegen(
+  @Test fun testUsedInjectableImport() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -104,6 +104,60 @@ class InjectablesImportsTest {
           """
             @Providers("injectables.foo")
             fun invoke() = inject<Foo>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    shouldNotContainMessage("unused injectable import")
+  }
+
+  @Test fun testUsedComponentImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Component interface MyComponent
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("injectables.MyComponent")
+            fun invoke() = inject<injectables.MyComponent>()
+          """,
+          name = "File.kt"
+        )
+      )
+    )
+  ) {
+    shouldNotContainMessage("unused injectable import")
+  }
+
+  @Test fun testUsedEntryPointImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Component interface MyComponent
+          """,
+          packageFqName = FqName("component")
+        ),
+        source(
+          """
+            @EntryPoint<component.MyComponent> interface MyEntryPoint
+          """,
+          packageFqName = FqName("entrypoint")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Providers("entrypoint.MyEntryPoint")
+            fun invoke() = inject<component.MyComponent>()
           """,
           name = "File.kt"
         )
