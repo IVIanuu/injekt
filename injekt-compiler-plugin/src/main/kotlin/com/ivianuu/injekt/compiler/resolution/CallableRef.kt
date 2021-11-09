@@ -47,7 +47,7 @@ fun CallableRef.substitute(
   map: Map<ClassifierRef, TypeRef>,
   @Inject ctx: Context
 ): CallableRef {
-  if (map.isEmpty()) return this
+  if (map == typeArguments) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
     it.defaultType

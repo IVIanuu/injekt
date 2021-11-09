@@ -714,7 +714,7 @@ private fun ImportInjectablesScopes(
   val internalStarInjectables = mutableListOf<CallableRef>()
   val internalByNameInjectables = mutableListOf<CallableRef>()
 
-  imports.collectImportedInjectables().forEach { callable ->
+  imports.collectImportedInjectables { callable ->
     if (callable.callable.isExternalDeclaration()) {
       if (callable.import!!.importPath!!.endsWith(".*")) {
         externalStarInjectables += callable
