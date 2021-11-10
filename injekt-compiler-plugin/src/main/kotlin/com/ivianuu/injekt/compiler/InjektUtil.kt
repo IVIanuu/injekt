@@ -275,6 +275,16 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
 private var currentFrameworkKey = 0
 fun generateFrameworkKey() = ++currentFrameworkKey
 
+fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
+  val field = clazz.java.declaredFields
+    .single { it.name == fieldName }
+  field.isAccessible = true
+  val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+  modifiersField.isAccessible = true
+  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+  return field.get(this) as T
+}
+
 fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }

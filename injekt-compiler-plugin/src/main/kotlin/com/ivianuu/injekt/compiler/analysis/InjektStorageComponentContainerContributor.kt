@@ -19,13 +19,18 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isIde
+import com.ivianuu.injekt.compiler.readPrivateFinalField
+import com.ivianuu.injekt.compiler.updatePrivateFinalField
 import com.ivianuu.shaded_injekt.Provide
+import org.jetbrains.kotlin.container.ComponentStorage
+import org.jetbrains.kotlin.container.SingletonTypeComponentDescriptor
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useImpl
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
+import org.jetbrains.kotlin.synthetic.JavaSyntheticScopes
 
 class InjektStorageComponentContainerContributor(
   private val injektFqNames: (ModuleDescriptor) -> InjektFqNames
@@ -37,7 +42,22 @@ class InjektStorageComponentContainerContributor(
   ) {
     @Provide val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
 
-    if (platform.componentPlatforms.any { it.platformName != "JVM" }) {
+    val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
+      StorageComponentContainer::class,
+      "componentStorage"
+    )
+      .readPrivateFinalField<Set<Any>>(
+        ComponentStorage::class,
+        "descriptors"
+      )
+      .let { descriptors ->
+        descriptors.any {
+          it is SingletonTypeComponentDescriptor &&
+              it.klass == JavaSyntheticScopes::class.java
+        }
+      }
+
+    if (!hasSyntheticScopesExtension) {
       container.useInstance(ctx)
       container.useImpl<InjectSyntheticScopes>()
     }
