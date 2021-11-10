@@ -117,25 +117,29 @@ class InjektDeclarationGeneratorExtension(
       //
       // `java.nio.file.Files.copy(path1, path2, options...)` keeps last-modified-time (if supported) according to
       // https://docs.oracle.com/javase/7/docs/api/java/nio/file/Files.html
-      fun copy(src: File, dst: File) {
+      fun copy(src: File, dst: File, overwrite: Boolean) {
         if (!dst.parentFile.exists())
-          copy(src.parentFile, dst.parentFile)
-        Files.copy(
-          src.toPath(),
-          dst.toPath(),
-          StandardCopyOption.COPY_ATTRIBUTES,
-          StandardCopyOption.REPLACE_EXISTING
-        )
+          copy(src.parentFile, dst.parentFile, false)
+        if (overwrite) {
+          Files.copy(
+            src.toPath(),
+            dst.toPath(),
+            StandardCopyOption.COPY_ATTRIBUTES,
+            StandardCopyOption.REPLACE_EXISTING
+          )
+        } else {
+          Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.COPY_ATTRIBUTES)
+        }
       }
 
       if (modifiedFiles == null || file.virtualFilePath in modifiedFiles.map { it.absolutePath }) {
         processFile(module, file).forEach { generatedFile ->
           fileMap.getOrPut(file.virtualFilePath) { mutableSetOf() } += generatedFile.absolutePath
-          copy(generatedFile, generatedFile.backupFile())
+          copy(generatedFile, generatedFile.backupFile(), true)
         }
       } else {
         fileMap[file.virtualFilePath]?.forEach { outputFile ->
-          copy(File(outputFile).backupFile(), File(outputFile))
+          copy(File(outputFile).backupFile(), File(outputFile), false)
         }
       }
     }

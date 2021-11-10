@@ -79,7 +79,6 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           getSubpluginOptions(project, sourceSetName, extension, true)
         }
       )
-      injektTask.srcDir = srcDir
       injektTask.outputDir = outputDir
       injektTask.cacheDir = getCacheDir(project, sourceSetName)
 
@@ -88,10 +87,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       injektTask.destinationDirectory.set(outputDir)
       (injektTask as InjektTask).outputs.dirs(outputDir, srcDir)
       injektTask.source(kotlinCompileTask.source)
-      injektTask.source.filter {
-        !it.absolutePath.startsWith(outputDir.absolutePath) &&
-            !it.absolutePath.startsWith(srcDir.absolutePath)
-      }
+      injektTask.source.filter { !it.absolutePath.startsWith(srcDir.absolutePath) }
     }
 
     val injektTaskProvider = when (kotlinCompileTask) {
@@ -157,7 +153,6 @@ interface InjektTask : Task {
   @get:Internal val options: ListProperty<SubpluginOption>
 
   @get:OutputDirectory var outputDir: File
-  @get:OutputDirectory var srcDir: File
 
   @get:LocalState var cacheDir: File
 
@@ -217,8 +212,6 @@ interface InjektTask : Task {
     args.addChangedFiles(changedFiles)
     super.callCompilerAsync(args, sourceRoots, changedFiles)
   }
-
-  override fun skipCondition(): Boolean = false
 }
 
 @CacheableTask abstract class InjektTaskJS @Inject constructor(
