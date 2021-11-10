@@ -37,11 +37,9 @@ class NotProvided<out T> private constructor() {
 }
 
 @InjectableNotFound("Cannot proof that [A] is sub type of [B]")
-sealed interface IsSubType<A, B> : (A) -> B {
+sealed interface IsSubType<A, B> {
   companion object {
-    private object Instance : IsSubType<Any?, Any?> {
-      override fun invoke(p1: Any?): Any? = p1
-    }
+    private object Instance : IsSubType<Any?, Any?>
 
     @Suppress("UNCHECKED_CAST")
     @Provide
@@ -68,11 +66,9 @@ sealed interface IsNotSubType<A, B> {
 }
 
 @InjectableNotFound("Cannot proof that [A] is equal to [B]")
-sealed interface IsEqual<A, B> : (A) -> B {
+sealed interface IsEqual<A, B> {
   companion object {
-    private object Instance : IsEqual<Any?, Any?> {
-      override fun invoke(p1: Any?): Any? = p1
-    }
+    private object Instance : IsEqual<Any?, Any?>
 
     @Suppress("UNCHECKED_CAST")
     @Provide
