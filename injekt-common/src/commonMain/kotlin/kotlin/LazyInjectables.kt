@@ -24,4 +24,3 @@ object LazyInjectables {
    */
   @Provide inline fun <T> lazyOf(noinline init: () -> T): Lazy<T> = lazy(init)
 }
-
