@@ -55,6 +55,8 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
+    kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xallow-kotlin-package"
+
     val project = kotlinCompilation.target.project
 
     val extension = project.extensions.getByType(InjektExtension::class.java)
@@ -201,8 +203,9 @@ interface InjektTask : Task {
       )
     )
     args.addPluginOptions(options.get())
-    args.destinationAsFile = srcDir
+    args.destinationAsFile = outputDir
     args.allowNoSourceFiles = true
+    args.freeArgs += "-Xallow-kotlin-package"
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
@@ -256,7 +259,8 @@ interface InjektTask : Task {
       )
     )
     args.addPluginOptions(options.get())
-    args.outputFile = File(srcDir, "dummyOutput.js").canonicalPath
+    args.outputFile = File(outputDir, "dummyOutput.js").canonicalPath
+    args.freeArgs += "-Xallow-kotlin-package"
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
@@ -306,11 +310,12 @@ interface InjektTask : Task {
       )
     )
     args.addPluginOptions(options.get())
-    args.destination = srcDir.canonicalPath
+    args.destination = outputDir.canonicalPath
     val classpathList = classpath.files.filter { it.exists() }.toMutableList()
     args.classpath = classpathList.joinToString(File.pathSeparator)
     args.friendPaths = friendPaths.files.map { it.absolutePath }.toTypedArray()
     args.refinesPaths = refinesMetadataPaths.map { it.absolutePath }.toTypedArray()
+    args.freeArgs += "-Xallow-kotlin-package"
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
@@ -328,7 +333,8 @@ interface InjektTask : Task {
   injected: KotlinNativeCompilationData<*>,
 ) : KotlinNativeCompile(injected), InjektTask {
   override fun buildCompilerArgs(): List<String> =
-    super.buildCompilerArgs() + options.get().flatMap { listOf("-P", it.toArg()) }
+    super.buildCompilerArgs() + options.get().flatMap { listOf("-P", it.toArg()) } +
+        "-Xallow-kotlin-package"
 
   override fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,
