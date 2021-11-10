@@ -60,6 +60,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     val extension = project.extensions.getByType(InjektExtension::class.java)
 
     val sourceSetName = kotlinCompilation.defaultSourceSetName
+    val outputDir = outputDir(project, sourceSetName)
     val srcDir = srcDir(project, sourceSetName)
 
     val kotlinCompileProvider: TaskProvider<AbstractCompile> =
@@ -77,16 +78,18 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         }
       )
       injektTask.srcDir = srcDir
+      injektTask.outputDir = outputDir
       injektTask.cacheDir = getCacheDir(project, sourceSetName)
 
-      injektTask as AbstractKotlinCompile<*>
+      injektTask as AbstractCompile
 
-      injektTask.destinationDirectory.set(srcDir)
-      injektTask.outputs.dirs(srcDir)
+      injektTask.destinationDirectory.set(outputDir)
+      (injektTask as InjektTask).outputs.dirs(srcDir)
       injektTask.source(kotlinCompileTask.source)
-      if (injektTask !is InjektTaskNative)
-        kotlinCompilation.output.classesDirs.from(srcDir)
-      injektTask.source.filter { it.absolutePath.startsWith(srcDir.absolutePath) }
+      injektTask.source.filter {
+        !it.absolutePath.startsWith(outputDir.absolutePath) &&
+            !it.absolutePath.startsWith(srcDir.absolutePath)
+      }
     }
 
     val injektTaskProvider = when (kotlinCompileTask) {
@@ -151,6 +154,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 interface InjektTask : Task {
   @get:Internal val options: ListProperty<SubpluginOption>
 
+  @get:OutputDirectory var outputDir: File
   @get:OutputDirectory var srcDir: File
 
   @get:LocalState var cacheDir: File
@@ -234,7 +238,8 @@ interface InjektTask : Task {
       Property<CompilerArgumentsContributor<K2JSCompilerArguments>>
 
   init {
-    incremental = true
+    // todo
+    incremental = false
   }
 
   override fun setupCompilerArgs(
@@ -348,6 +353,9 @@ private fun getSubpluginOptions(
   }
   return options
 }
+
+private fun outputDir(project: Project, sourceSetName: String) =
+  File(project.project.buildDir, "injekt/output/$sourceSetName")
 
 private fun srcDir(project: Project, sourceSetName: String) =
   File(project.project.buildDir, "injekt/src/$sourceSetName")
