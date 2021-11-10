@@ -23,8 +23,6 @@ import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -35,8 +33,7 @@ data class CallableRef(
   val scopeComponentType: TypeRef?,
   val isEager: Boolean,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val import: ResolvedProviderImport?,
-  val customErrorMessages: CustomErrorMessages?
+  val import: ResolvedProviderImport?
 )
 
 fun CallableRef.substitute(
@@ -72,18 +69,6 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
     val info = callableInfo()
     val typeParameters = typeParameters.map { it.toClassifierRef() }
 
-    val typeParametersForErrorMessages = typeParameters
-      .takeIf { it.isNotEmpty() }
-      ?: containingDeclaration
-        .safeAs<CallableDescriptor>()
-        ?.typeParameters
-        ?.map { it.toClassifierRef() }
-      ?: emptyList()
-
-    val customErrorMessages = (annotations + (safeAs<ConstructorDescriptor>()
-      ?.constructedClass?.annotations?.toList() ?: emptyList()))
-      .customErrorMessages(typeParametersForErrorMessages)
-
     CallableRef(
       callable = this,
       type = info.type,
@@ -95,7 +80,6 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       typeArguments = typeParameters
         .map { it to it.defaultType }
         .toMap(),
-      import = null,
-      customErrorMessages = customErrorMessages
+      import = null
     )
   }

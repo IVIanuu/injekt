@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.callContext
+import com.ivianuu.injekt.compiler.resolution.customErrorMessages
 import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.shaded_injekt.Provide
@@ -314,7 +315,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
             ?.callable
             ?.let { callable ->
               callable
-                .customErrorMessages
+                .customErrorMessages()
                 ?.ambiguousMessage
                 ?.formatErrorMessage(callable.type, callable.typeArguments)
             }
@@ -336,9 +337,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
     is ResolutionResult.Failure.NoCandidates,
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
-      val errorMessage = (unwrappedFailureRequest.customErrorMessages
+      val errorMessage = (unwrappedFailureRequest.customErrorMessages()
         ?.notFoundMessage
-        ?: unwrappedFailureRequest.type.classifier.customErrorMessages?.notFoundMessage)
+        ?: unwrappedFailureRequest.type.classifier.customErrorMessages()?.notFoundMessage)
         ?.formatErrorMessage(unwrappedFailureRequest.type, unwrappedFailureRequest.callableTypeArguments)
         ?: "no injectable found of type " +
         "${unwrappedFailureRequest.type.renderToString()} for parameter " +

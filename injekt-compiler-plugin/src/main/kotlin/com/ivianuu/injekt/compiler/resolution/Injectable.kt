@@ -416,7 +416,7 @@ data class InjectableRequest(
   val isRequired: Boolean = true,
   val isInline: Boolean = false,
   val isLazy: Boolean = false,
-  val customErrorMessages: CustomErrorMessages? = null
+  val customErrorMessages: () -> CustomErrorMessages? = { null }
 )
 
 fun ParameterDescriptor.toInjectableRequest(
@@ -432,5 +432,5 @@ fun ParameterDescriptor.toInjectableRequest(
   isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
   isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
       InlineUtil.isInlineParameter(this),
-  customErrorMessages = toCallableRef().customErrorMessages
+  customErrorMessages = { toCallableRef().customErrorMessages() }
 )

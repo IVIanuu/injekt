@@ -17,39 +17,142 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.shaded_injekt.Inject
-import kotlinx.serialization.Serializable
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@Serializable
 data class CustomErrorMessages(val notFoundMessage: String?, val ambiguousMessage: String?)
+
+@OptIn(ExperimentalStdlibApi::class)
+fun CallableRef.customErrorMessages(@Inject ctx: Context): CustomErrorMessages? {
+  val typeParametersForErrorMessages = when (callable) {
+    is CallableMemberDescriptor -> typeParameters +
+        (callable.containingDeclaration
+          .safeAs<ClassDescriptor>()?.toClassifierRef()?.typeParameters ?: emptyList())
+    is ParameterDescriptor -> {
+      (callable.containingDeclaration.safeAs<CallableMemberDescriptor>()
+        ?.toCallableRef()
+        ?.typeParameters ?: emptyList()) +
+          (callable.containingDeclaration.containingDeclaration
+            ?.safeAs<ClassDescriptor>()
+            ?.toClassifierRef()
+            ?.typeParameters ?: emptyList())
+    }
+    else -> emptyList()
+  }
+
+  return (if (callable is CallableMemberDescriptor &&
+    callable.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) null
+  else (callable.annotations + (callable.safeAs<ConstructorDescriptor>()
+    ?.constructedClass?.annotations?.toList() ?: emptyList()))
+    .customErrorMessages(typeParametersForErrorMessages, emptyMap()))
+    ?: callable.safeAs<CallableMemberDescriptor>()
+      ?.overriddenTreeAsSequence(false)
+      ?.drop(1)
+      ?.firstOrNull()
+      ?.original
+      ?.toCallableRef()
+      ?.let { superCallable ->
+        val superErrorMessages = superCallable.customErrorMessages() ?: return@let null
+
+        val substitutions = buildMap<ClassifierRef, TypeRef> {
+          val superDispatchReceiver = superCallable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!
+
+          superCallable.typeParameters.forEachIndexed { index, superTypeParameter ->
+            val argument = typeArguments[typeParameters[index]]!!
+            this[superTypeParameter] = argument
+          }
+
+          superDispatchReceiver
+            .buildContext(parameterTypes[DISPATCH_RECEIVER_INDEX]!!
+              .subtypeView(superDispatchReceiver.classifier)!!, emptyList())
+            .fixedTypeVariables
+            .forEach { this[it.key] = it.value }
+        }
+
+        superErrorMessages.format(substitutions)
+      }
+    ?: callable.safeAs<ParameterDescriptor>()
+      ?.containingDeclaration
+      ?.safeAs<CallableMemberDescriptor>()
+      ?.toCallableRef()
+      ?.let { callable ->
+        callable.callable.cast<CallableMemberDescriptor>()
+          .overriddenTreeAsSequence(false)
+          .drop(1)
+          .firstOrNull()
+          ?.original
+          ?.toCallableRef()
+          ?.let { superCallable ->
+            val superErrorMessages = superCallable.callable.cast<CallableDescriptor>()
+              .valueParameters
+              .first { it.index == this.callable.cast<ValueParameterDescriptor>().index }
+              .toCallableRef()
+              .customErrorMessages()
+              ?: return@let null
+
+            val substitutions = buildMap<ClassifierRef, TypeRef> {
+              val superDispatchReceiver = superCallable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!
+
+              superCallable.typeParameters.forEachIndexed { index, superTypeParameter ->
+                val argument = callable.typeArguments[callable.typeParameters[index]]!!
+                this[superTypeParameter] = argument
+              }
+
+              superDispatchReceiver
+                .buildContext(callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!
+                  .subtypeView(superDispatchReceiver.classifier)!!, emptyList())
+                .fixedTypeVariables
+                .forEach { this[it.key] = it.value }
+            }
+
+            superErrorMessages.format(substitutions)
+          }
+      }
+}
+
+fun ClassifierRef.customErrorMessages(@Inject ctx: Context): CustomErrorMessages? =
+  descriptor?.annotations?.customErrorMessages(typeParameters, emptyMap())
+    ?: superTypes.firstNotNullOfOrNull {
+      it.classifier.customErrorMessages()
+        ?.format(it.classifier.typeParameters.zip(it.arguments).toMap())
+    }
 
 fun Iterable<AnnotationDescriptor>.customErrorMessages(
   typeParameters: List<ClassifierRef>,
+  substitutionMap: Map<ClassifierRef, TypeRef>,
   @Inject ctx: Context
 ): CustomErrorMessages? {
-  val substitutions = typeParameters.toSubstitutions()
-
   fun AnnotationDescriptor.extractMessage(): String =
     allValueArguments["message".asNameId()]!!
       .value
       .cast<String>()
-      .format(substitutions)
+      .format(typeParameters.toSubstitutions())
 
   val notFoundMessage = (firstOrNull { it.fqName == injektFqNames().injectableNotFound })
     ?.extractMessage()
+    ?.format(substitutionMap)
   val ambiguousMessage = (firstOrNull { it.fqName == injektFqNames().ambiguousInjectable })
     ?.extractMessage()
+    ?.format(substitutionMap)
 
   return if (notFoundMessage == null && ambiguousMessage == null) null
   else CustomErrorMessages(notFoundMessage, ambiguousMessage)
 }
 
 fun CustomErrorMessages.format(substitutionMap: Map<ClassifierRef, TypeRef>): CustomErrorMessages =
-  format(substitutionMap.map { it.key.fqName.asString() to it.value.renderToString() })
+  format(substitutionMap.toSubstitutions())
 
 fun CustomErrorMessages.format(substitutions: List<Pair<String, String>>): CustomErrorMessages =
   CustomErrorMessages(
@@ -62,5 +165,12 @@ private fun String.format(substitutions: List<Pair<String, String>>): String =
     acc.replace(nextReplacement.first, nextReplacement.second)
   }
 
-private fun List<ClassifierRef>.toSubstitutions() =
+private fun Map<ClassifierRef, TypeRef>.toSubstitutions() =
+  map {
+    "[${it.key.fqName.asString()}]" to
+        if (it.value.classifier.isTypeParameter) "[${it.value.classifier.fqName}]"
+        else it.value.renderToString()
+  }
+
+private fun Collection<ClassifierRef>.toSubstitutions() =
   map { "[${it.fqName.shortName()}]" to "[${it.fqName}]" }
