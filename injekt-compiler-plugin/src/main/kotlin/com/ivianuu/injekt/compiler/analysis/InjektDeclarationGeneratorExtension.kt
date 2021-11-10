@@ -276,8 +276,9 @@ class InjektDeclarationGeneratorExtension(
     }
 
     val indicesFile = srcDir.resolve(
-      (file.packageFqName.pathSegments().joinToString("/") +
-          "/${file.name.removeSuffix(".kt")}Indices.kt")
+      (if (!file.packageFqName.isRoot)
+        "${file.packageFqName.pathSegments().joinToString("/")}/"
+          else "") + "${file.name.removeSuffix(".kt")}Indices.kt"
     )
     indicesFile.parentFile.mkdirs()
     indicesFile.createNewFile()
