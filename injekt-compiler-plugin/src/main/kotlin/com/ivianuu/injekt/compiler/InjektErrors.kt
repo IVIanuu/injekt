@@ -255,7 +255,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
   }
 
   fun indent() = buildString {
-    repeat(indent) { append("    ") }
+    repeat(indent) { append("  ") }
   }
 
   val (unwrappedFailureRequest, unwrappedFailure) = failure.unwrapDependencyFailure(failureRequest)
