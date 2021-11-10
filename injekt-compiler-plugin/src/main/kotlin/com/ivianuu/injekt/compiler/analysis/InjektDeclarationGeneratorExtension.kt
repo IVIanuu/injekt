@@ -192,11 +192,11 @@ class InjektDeclarationGeneratorExtension(
 
         when (declaration) {
           is KtClassOrObject -> {
-            if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide) ||
-              declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
-              declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) } ||
-              declaration.hasAnnotation(injektFqNames.component) ||
-              declaration.hasAnnotation(injektFqNames.entryPoint))
+            if (!declaration.isLocal && (declaration.hasAnnotation(injektFqNames.provide) ||
+                  declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
+                  declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) } ||
+                  declaration.hasAnnotation(injektFqNames.component) ||
+                  declaration.hasAnnotation(injektFqNames.entryPoint)))
               addInjectable()
           }
           is KtNamedFunction -> {
