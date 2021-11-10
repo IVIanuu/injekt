@@ -48,7 +48,7 @@ kotlin {
   tvosX64()*/
 
   sourceSets {
-    val commonMain by getting {
+    commonMain {
       dependencies {
         api(project(":injekt-common"))
         api(Deps.Coroutines.core)

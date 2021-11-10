@@ -17,11 +17,9 @@
 package kotlinx.coroutines
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.coroutines.ComponentScope
 import com.ivianuu.injekt.coroutines.DefaultDispatcher
 
-@Provide inline fun coroutineScope(scope: ComponentScope<*>): CoroutineScope =
-  scope
-
-@Provide inline fun dispatcher(dispatcher: DefaultDispatcher): CoroutineDispatcher =
-  dispatcher
+object CoroutinesInjectables {
+  @Provide inline fun dispatcher(dispatcher: DefaultDispatcher): CoroutineDispatcher =
+    dispatcher
+}
