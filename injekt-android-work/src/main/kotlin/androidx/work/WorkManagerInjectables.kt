@@ -25,4 +25,3 @@ object WorkManagerInjectables {
 
   @Provide inline fun workerFactory(factory: InjektWorkerFactory): WorkerFactory = factory
 }
-
