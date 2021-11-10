@@ -14,38 +14,12 @@
  * limitations under the License.
  */
 
-plugins {
-  kotlin("multiplatform")
+package com.ivianuu.injekt.coroutines
+
+import com.ivianuu.injekt.Provide
+import kotlinx.coroutines.Dispatchers
+
+actual object IOInjectables {
+  @Provide actual inline val dispatcher: IODispatcher
+    get() = Dispatchers.Main
 }
-
-kotlin {
-  jvm {
-    withJava()
-    compilations.forEach {
-      it.kotlinOptions {
-        jvmTarget = "1.8"
-      }
-    }
-  }
-  js {
-    nodejs()
-    browser()
-  }
-
-  sourceSets {
-    commonMain {
-      dependencies {
-        api(project(":injekt-common"))
-        api(Deps.Coroutines.core)
-      }
-    }
-    named("jvmTest") {
-      dependencies {
-        implementation(Deps.junit)
-        implementation(Deps.kotestAssertions)
-      }
-    }
-  }
-}
-
-plugins.apply("com.vanniktech.maven.publish")

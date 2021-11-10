@@ -27,6 +27,10 @@ kotlin {
       }
     }
   }
+  js {
+    nodejs()
+    browser()
+  }
 
   sourceSets {
     named("jvmTest") {

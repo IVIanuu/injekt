@@ -27,13 +27,11 @@ kotlin {
       }
     }
   }
-  targets
-    .flatMap { it.compilations }
-    .forEach {
-      it.kotlinOptions {
-        freeCompilerArgs += "-Xallow-kotlin-package"
-      }
-    }
+  js {
+    nodejs()
+    browser()
+  }
+
   sourceSets {
     commonMain {
       dependencies {
