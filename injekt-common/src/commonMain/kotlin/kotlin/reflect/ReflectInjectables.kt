@@ -17,10 +17,21 @@
 package kotlin.reflect
 
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 
 object ReflectInjectables {
   /**
    * Provides a [KClass] of [T]
    */
   @Provide inline fun <reified T : Any> kClass(): KClass<T> = T::class
+
+  /**
+   * Provides a [KTypeT] of [T]
+   */
+  @OptIn(ExperimentalStdlibApi::class)
+  @Provide inline fun <reified T : Any> kTypeT(): KTypeT<T> = typeOf<T>()
 }
+
+@Tag annotation class KTypeTTag<T>
+
+typealias KTypeT<T> = @KTypeTTag<T> KType

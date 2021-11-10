@@ -21,9 +21,10 @@ import com.ivianuu.injekt.inject
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import kotlin.reflect.KClass
+import kotlin.reflect.KTypeT
 
 class CommonInjectablesTest {
-  @Test fun testCanResolveMapForSetOfPairs() {
+  @Test fun testCanResolveMap() {
     @Provide val elementsA = listOf("a" to "a")
     @Provide val elementB = "b" to "b"
     val map = inject<Map<String, String>>()
@@ -40,7 +41,11 @@ class CommonInjectablesTest {
     inject<KClass<Foo>>()
   }
 
-  @Test fun testCanResolveType() {
+  @Test fun testCanResolveKType() {
+    inject<KTypeT<Foo>>()
+  }
+
+  @Test fun testCanResolveTypeKey() {
     inject<TypeKey<Foo>>()
   }
 

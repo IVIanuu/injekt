@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package kotlin.collections
+package kotlin
 
 import com.ivianuu.injekt.Provide
 
-object MapInjectables {
+object StandardInjectables {
   /**
-   * Provides a Map<K, V> for each List<Pair<K, V>>
+   * Provides a [Lazy] of [T]
    */
-  @Provide inline fun <K, V> mapOfPairs(pairs: List<Pair<K, V>>): Map<K, V> = pairs.toMap()
+  @Provide inline fun <T> lazy(noinline init: () -> T): Lazy<T> = kotlin.lazy(init)
 }
