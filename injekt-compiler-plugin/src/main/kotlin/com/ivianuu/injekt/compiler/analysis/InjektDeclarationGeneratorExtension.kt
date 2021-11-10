@@ -218,9 +218,10 @@ class InjektDeclarationGeneratorExtension(
     if (injectables.isEmpty()) return emptyList()
 
     val code = buildString {
-      appendLine("package ${file.packageFqName}")
-
-      appendLine()
+      if (!file.packageFqName.isRoot) {
+        appendLine("package ${file.packageFqName}")
+        appendLine()
+      }
 
       val markerName = "_${
         module.moduleName()
