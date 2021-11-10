@@ -37,7 +37,8 @@ class InjektStorageComponentContainerContributor(
   ) {
     @Provide val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
     container.useInstance(ctx)
-    if (platform.componentPlatforms.size > 1)
+    if (platform.componentPlatforms.size > 1 ||
+        platform.componentPlatforms.all { it.platformName == "JS" })
       container.useImpl<InjectSyntheticScopes>()
     container.useInstance(TypeFixer())
     container.useInstance(ComponentChecker())
