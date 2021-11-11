@@ -39,25 +39,6 @@ class PersistenceTest {
     invokeSingleFile() shouldBe "42"
   }
 
-  @Test fun testNonProvideFunctionWithInjectParameters() = singleAndMultiCodegen(
-    """
-      fun myFunction(@Inject unit: Unit) {
-      }
-    """,
-    """ 
-      fun invoke(@Provide unit: Unit) = myFunction()
-    """
-  )
-
-  @Test fun testNonInjectablePrimaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
-    """
-      class MyClass(@Inject unit: Unit)
-    """,
-    """
-      fun invoke(@Inject unit: Unit) = MyClass()
-    """
-  )
-
   @Test fun testNonInjectableSecondaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
     """
       class MyClass {

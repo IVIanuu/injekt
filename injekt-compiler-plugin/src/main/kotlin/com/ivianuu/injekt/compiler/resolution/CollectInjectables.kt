@@ -190,13 +190,8 @@ fun Annotated.isProvide(@Inject ctx: Context): Boolean {
           containingDeclaration.safeAs<FunctionDescriptor>()
             ?.let { containingFunction ->
               containingFunction.isProvide() ||
-                  (this is ValueParameterDescriptor && (if (containingFunction.isDeserializedDeclaration())
-                    containingFunction.callableInfo().injectParameterIndex?.let {
-                      injektIndex() >= it
-                    } == true
-                  else
-                    containingFunction.valueParameters.getOrNull(injektIndex() - 1)
-                      ?.isInject() == true))
+                  containingFunction.valueParameters.getOrNull(injektIndex() - 1)
+                    ?.isInject() == true
             } == true
 
     if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
@@ -220,13 +215,8 @@ fun Annotated.isInject(@Inject ctx: Context): Boolean {
           containingDeclaration.safeAs<FunctionDescriptor>()
             ?.let { containingFunction ->
               containingFunction.isProvide() ||
-                  (this is ValueParameterDescriptor && (if (containingFunction.isDeserializedDeclaration())
-                    containingFunction.callableInfo().injectParameterIndex?.let {
-                      injektIndex() >= it
-                    } == true
-                  else
-                    containingFunction.valueParameters.getOrNull(injektIndex() - 1)
-                      ?.isInject() == true))
+                  containingFunction.valueParameters.getOrNull(injektIndex() - 1)
+                      ?.isInject() == true
             } == true
 
     if (!isInject && this is ClassConstructorDescriptor && isPrimary)
@@ -498,7 +488,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName() == this.ctx.module.moduleName()) ||
+          callable.callable.moduleName() == ctx.module.moduleName()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->

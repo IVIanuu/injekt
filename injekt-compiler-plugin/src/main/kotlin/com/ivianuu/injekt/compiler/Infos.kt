@@ -81,7 +81,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 data class CallableInfo(
   val type: TypeRef,
   val parameterTypes: Map<Int, TypeRef>,
-  val injectParameterIndex: Int?,
   val scopeComponentType: TypeRef?,
   val isEager: Boolean
 )
@@ -150,21 +149,6 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
       .map { it.injektIndex() to it.type.toTypeRef() }
       .toMap()
 
-    val injectParameterIndex = if (hasAnnotation(injektFqNames().provide))
-      dispatchReceiverParameter?.let { DISPATCH_RECEIVER_INDEX }
-        ?: extensionReceiverParameter?.let { EXTENSION_RECEIVER_INDEX }
-        ?: 0
-    else
-      valueParameters
-        .firstOrNull {
-          it.hasAnnotation(injektFqNames().inject) ||
-              ((this is FunctionInvokeDescriptor ||
-                  (this is InjectFunctionDescriptor &&
-                      underlyingDescriptor is FunctionInvokeDescriptor)) &&
-                  it.type.hasAnnotation(injektFqNames().inject))
-        }
-        ?.injektIndex()
-
     val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped) ?:
     safeAs<ConstructorDescriptor>()?.constructedClass?.annotations?.findAnnotation(injektFqNames().scoped)
 
@@ -174,7 +158,6 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
     val info = CallableInfo(
       type = type,
       parameterTypes = parameterTypes,
-      injectParameterIndex = injectParameterIndex,
       scopeComponentType = scopeComponentType,
       isEager = isEager
     )
@@ -197,15 +180,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
   if (hasAnnotation(injektFqNames().callableInfo))
     return
 
-  val shouldPersistInfo = hasAnnotation(injektFqNames().provide) ||
-      containingDeclaration.hasAnnotation(injektFqNames().component) ||
-      containingDeclaration.hasAnnotation(injektFqNames().entryPoint) ||
-      safeAs<ConstructorDescriptor>()?.constructedClass
-        ?.hasAnnotation(injektFqNames().provide) == true ||
-      safeAs<PropertyDescriptor>()?.primaryConstructorPropertyValueParameter()
-        ?.isProvide() == true ||
-      valueParameters.any { it.hasAnnotation(injektFqNames().inject) } ||
-      info.type.shouldBePersisted() ||
+  val shouldPersistInfo = info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) -> parameterType.shouldBePersisted() } ||
       info.scopeComponentType != null
 
@@ -227,7 +202,6 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
 @Serializable data class PersistedCallableInfo(
   val type: PersistedTypeRef,
   val parameterTypes: Map<Int, PersistedTypeRef>,
-  val injectParameterIndex: Int?,
   val scopeComponentType: PersistedTypeRef?,
   val isEager: Boolean
 )
@@ -236,7 +210,6 @@ fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallab
   type = type.toPersistedTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toPersistedTypeRef() },
-  injectParameterIndex = injectParameterIndex,
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
   isEager = isEager
 )
@@ -245,7 +218,6 @@ fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) = CallableInfo(
   type = type.toTypeRef(),
   parameterTypes = parameterTypes
     .mapValues { it.value.toTypeRef() },
-  injectParameterIndex = injectParameterIndex,
   scopeComponentType = scopeComponentType?.toTypeRef(),
   isEager = isEager
 )
@@ -306,9 +278,12 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
       }
     }
 
+    val tags = getAnnotatedAnnotations(injektFqNames().tag)
+      .map { it.type.toTypeRef() }
+
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
       ClassifierInfo(
-        tags = emptyList(),
+        tags = tags,
         scopeComponentType = null,
         isEager = false,
         entryPointComponentType = null,
@@ -341,9 +316,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           lazyDeclaresInjectables = lazyOf(false)
         )
       } else {
-        val tags = getAnnotatedAnnotations(injektFqNames().tag)
-          .map { it.type.toTypeRef() }
-
         val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
         val scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef()
         val isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
@@ -467,17 +439,12 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
   } else if (this is DeclarationDescriptorWithVisibility) {
     if (!visibility.shouldPersistInfo()) return
 
-    if (info.tags.isEmpty() &&
+    if (info.tags.none { it.shouldBePersisted() } &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
-      !hasAnnotation(injektFqNames().provide) &&
-      !hasAnnotation(injektFqNames().component) &&
-      (this !is ClassDescriptor ||
-          constructors.none { it.hasAnnotation(injektFqNames().provide) }) &&
       info.superTypes.none { it.shouldBePersisted() } &&
       info.entryPointComponentType == null &&
       info.scopeComponentType == null &&
-      !info.declaresInjectables
-    ) return
+      !info.declaresInjectables) return
 
     if (hasAnnotation(injektFqNames().classifierInfo)) return
 

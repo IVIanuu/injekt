@@ -483,7 +483,7 @@ class InjectableResolutionTest {
       @Provide fun foo2() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      fun invoke(): Bar {
+      fun invoke(foo: Foo): Bar {
         fun inner(@Inject bar: Bar = Bar(foo)) = bar
         return inner()
       }
@@ -493,11 +493,11 @@ class InjectableResolutionTest {
       "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar\n" +
           "I found:\n" +
           "\n" +
-          "    com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
-          "        bar = com.ivianuu.injekt.integrationtests.bar(\n" +
-          "            foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ inject<com.ivianuu.injekt.test.Foo>()\n" +
-          "        )\n" +
+          "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
+          "    bar = com.ivianuu.injekt.integrationtests.bar(\n" +
+          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ inject<com.ivianuu.injekt.test.Foo>()\n" +
           "    )\n" +
+          "  )\n" +
           "\n" +
           "but com.ivianuu.injekt.integrationtests.foo1\n" +
           "com.ivianuu.injekt.integrationtests.foo2\n" +
