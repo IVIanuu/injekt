@@ -233,6 +233,8 @@ class InjektDeclarationGeneratorExtension(
 
     if (injectables.isEmpty()) return emptyList()
 
+    val generatedFiles = mutableListOf<File>()
+
     val markerName = "_${
       module.moduleName()
         .filter { it.isLetterOrDigit() }
@@ -296,7 +298,7 @@ class InjektDeclarationGeneratorExtension(
       (if (!file.packageFqName.isRoot)
         "${file.packageFqName.pathSegments().joinToString("/")}/"
           else "") + "${file.name.removeSuffix(".kt")}Injectables.kt"
-    )
+    ).also { generatedFiles += it }
     injectablesFile.parentFile.mkdirs()
     injectablesFile.createNewFile()
     injectablesFile.writeText(hashesCode)
@@ -338,11 +340,11 @@ class InjektDeclarationGeneratorExtension(
       "${injektFqNames.indicesPackage.pathSegments().joinToString("/")}/" +
           (if (file.packageFqName.isRoot) "" else file.packageFqName.pathSegments().joinToString("_").plus("_")) +
           "${file.name.removeSuffix(".kt")}Indices_${injectablesKeyHash}.kt"
-    )
+    ).also { generatedFiles += it }
     indicesFile.parentFile.mkdirs()
     indicesFile.createNewFile()
     indicesFile.writeText(indicesCode)
 
-    return listOf(injectablesFile, indicesFile)
+    return generatedFiles
   }
 }
