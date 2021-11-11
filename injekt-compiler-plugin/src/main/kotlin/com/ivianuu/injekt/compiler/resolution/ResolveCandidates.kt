@@ -585,7 +585,11 @@ private fun InjectablesScope.compareCallable(
   return 0
 }
 
-private fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
+private fun InjectablesScope.compareType(
+  a: TypeRef?,
+  b: TypeRef?,
+  comparedTypes: MutableSet<Pair<TypeRef, TypeRef>> = mutableSetOf()
+): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
@@ -602,6 +606,10 @@ private fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
   if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
   if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
+  val pair = a to b
+  if (pair in comparedTypes) return 0
+  comparedTypes += pair
+
   fun compareSameClassifier(a: TypeRef?, b: TypeRef?): Int {
     if (a == b) return 0
 
@@ -612,7 +620,7 @@ private fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
 
     var diff = 0
     a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
-      diff += compareType(aTypeArgument, bTypeArgument)
+      diff += compareType(aTypeArgument, bTypeArgument, comparedTypes)
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
@@ -626,7 +634,7 @@ private fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
     if (bSubTypeOfA && !aSubTypeOfB) return 1
     val aCommonSuperType = commonSuperType(a.superTypes)
     val bCommonSuperType = commonSuperType(b.superTypes)
-    val diff = compareType(aCommonSuperType, bCommonSuperType)
+    val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
     if (diff < 0) return -1
     if (diff > 0) return 1
   } else {
