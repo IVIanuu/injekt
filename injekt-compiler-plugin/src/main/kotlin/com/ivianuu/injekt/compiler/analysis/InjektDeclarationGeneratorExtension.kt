@@ -244,7 +244,7 @@ class InjektDeclarationGeneratorExtension(
         .substringAfterLast("/")
     }_ProvidersMarker"
 
-    val hashesCode = buildString {
+    val injectablesCode = buildString {
       if (!file.packageFqName.isRoot) {
         appendLine("package ${file.packageFqName}")
         appendLine()
@@ -301,7 +301,7 @@ class InjektDeclarationGeneratorExtension(
     ).also { generatedFiles += it }
     injectablesFile.parentFile.mkdirs()
     injectablesFile.createNewFile()
-    injectablesFile.writeText(hashesCode)
+    injectablesFile.writeText(injectablesCode)
 
     val indicesCode = buildString {
       appendLine("package ${injektFqNames.indicesPackage}")
