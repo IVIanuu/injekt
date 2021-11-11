@@ -203,12 +203,10 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
       safeAs<ConstructorDescriptor>()?.constructedClass
         ?.hasAnnotation(injektFqNames().provide) == true ||
       safeAs<PropertyDescriptor>()?.primaryConstructorPropertyValueParameter()
-        ?.isProvide() == true
+        ?.isProvide() == true ||
       valueParameters.any { it.hasAnnotation(injektFqNames().inject) } ||
       info.type.shouldBePersisted() ||
-      info.parameterTypes.any { (_, parameterType) ->
-        parameterType.shouldBePersisted()
-      } ||
+      info.parameterTypes.any { (_, parameterType) -> parameterType.shouldBePersisted() } ||
       info.scopeComponentType != null
 
   if (!shouldPersistInfo) return
