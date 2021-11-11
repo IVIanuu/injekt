@@ -69,7 +69,7 @@ object AppScope : Scope
 
 @Tag annotation class FakeScoped<S : Scope> {
   companion object {
-    @Provide inline fun <@Spread T : @FakeScoped<S> U, U : Any, S : Scope> scopedValue(
+    inline fun <T : @FakeScoped<S> U, U : Any, S : Scope> scopedValue(
       factory: () -> T,
       scope: S,
       key: TypeKey<U>

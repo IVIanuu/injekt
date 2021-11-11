@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -36,6 +37,7 @@ import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -47,12 +49,12 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.toVisibility
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.File
@@ -231,20 +233,20 @@ class InjektDeclarationGeneratorExtension(
 
     if (injectables.isEmpty()) return emptyList()
 
-    val code = buildString {
+    val markerName = "_${
+      module.moduleName()
+        .filter { it.isLetterOrDigit() }
+    }_${
+      file.name.removeSuffix(".kt")
+        .substringAfterLast(".")
+        .substringAfterLast("/")
+    }_ProvidersMarker"
+
+    val hashesCode = buildString {
       if (!file.packageFqName.isRoot) {
         appendLine("package ${file.packageFqName}")
         appendLine()
       }
-
-      val markerName = "_${
-        module.moduleName()
-          .filter { it.isLetterOrDigit() }
-      }_${
-        file.name.removeSuffix(".kt")
-          .substringAfterLast(".")
-          .substringAfterLast("/")
-      }_ProvidersMarker"
 
       appendLine("object $markerName")
 
@@ -290,15 +292,57 @@ class InjektDeclarationGeneratorExtension(
       }
     }
 
-    val indicesFile = srcDir.resolve(
+    val hashesFile = srcDir.resolve(
       (if (!file.packageFqName.isRoot)
         "${file.packageFqName.pathSegments().joinToString("/")}/"
-          else "") + "${file.name.removeSuffix(".kt")}Indices.kt"
+          else "") + "${file.name.removeSuffix(".kt")}Hashes.kt"
+    )
+    hashesFile.parentFile.mkdirs()
+    hashesFile.createNewFile()
+    hashesFile.writeText(hashesCode)
+
+    val indicesCode = buildString {
+      appendLine("package ${injektFqNames.indicesPackage}")
+      appendLine()
+
+      appendLine("import ${injektFqNames.index}")
+
+      appendLine()
+
+      for ((i, injectable) in injectables.withIndex()) {
+        appendLine("@Index(")
+        appendLine("  fqName = \"${
+          if (injectable is ConstructorDescriptor) injectable.constructedClass.fqNameSafe
+          else injectable.fqNameSafe
+        }\",")
+        appendLine("  uniqueKey = \"${injectable.uniqueKey()}\"")
+        appendLine(")")
+        appendLine("fun index(")
+        appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
+        repeat(i + 1) {
+          appendLine("  index$it: Byte,")
+        }
+        appendLine(") {")
+        appendLine("}")
+        appendLine()
+      }
+    }
+
+    val injectablesKeyHash = injectables
+      .joinToString { it.uniqueKey() }
+      .hashCode()
+      .toString()
+      .filter { it.isLetterOrDigit() }
+
+    val indicesFile = srcDir.resolve(
+      "${injektFqNames.indicesPackage.pathSegments().joinToString("/")}/" +
+          (if (file.packageFqName.isRoot) "" else file.packageFqName.pathSegments().joinToString("_").plus("_")) +
+          "${file.name.removeSuffix(".kt")}Indices_${injectablesKeyHash}.kt"
     )
     indicesFile.parentFile.mkdirs()
     indicesFile.createNewFile()
-    indicesFile.writeText(code)
+    indicesFile.writeText(indicesCode)
 
-    return listOf(indicesFile)
+    return listOf(hashesFile)
   }
 }

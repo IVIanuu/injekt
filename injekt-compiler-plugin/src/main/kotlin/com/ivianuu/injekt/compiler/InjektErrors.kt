@@ -32,6 +32,7 @@ import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
@@ -41,6 +42,7 @@ import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Locale
 
@@ -337,15 +339,34 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
     is ResolutionResult.Failure.NoCandidates,
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
-      val errorMessage = (unwrappedFailureRequest.customErrorMessages()
-        ?.notFoundMessage
-        ?: unwrappedFailureRequest.type.classifier.customErrorMessages()?.notFoundMessage)
-        ?.formatErrorMessage(unwrappedFailureRequest.type, unwrappedFailureRequest.callableTypeArguments)
-        ?: "no injectable found of type " +
-        "${unwrappedFailureRequest.type.renderToString()} for parameter " +
-        "${unwrappedFailureRequest.parameterName} of function " +
-        "${unwrappedFailureRequest.callableFqName}"
-      appendLine(errorMessage)
+      appendLine(
+        (unwrappedFailureRequest.customErrorMessages()
+          ?.notFoundMessage
+          ?: unwrappedFailureRequest.type.classifier.customErrorMessages()?.notFoundMessage)
+          ?.formatErrorMessage(unwrappedFailureRequest.type, unwrappedFailureRequest.callableTypeArguments)
+          ?: "no injectable found of type " +
+          "${unwrappedFailureRequest.type.renderToString()} for parameter " +
+          "${unwrappedFailureRequest.parameterName} of function " +
+          "${unwrappedFailureRequest.callableFqName}"
+      )
+
+      if (importSuggestions.isNotEmpty()) {
+        appendLine()
+        appendLine(
+          if (importSuggestions.size == 1)
+            "The following import might fix the problem:"
+          else
+            "One of the following imports might fix the problem:"
+        )
+        appendLine()
+        importSuggestions.forEach {
+          val importableFqName = if (it.callable is ConstructorDescriptor)
+            it.callable.constructedClass.fqNameSafe
+          else
+            it.callable.fqNameSafe
+          appendLine("  @Providers(\"$importableFqName\")")
+        }
+      } else Unit
     }
   }.let { }
 

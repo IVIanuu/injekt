@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import java.util.LinkedList
 import kotlin.reflect.KClass
 
 sealed class InjectionGraph {
@@ -44,7 +46,8 @@ sealed class InjectionGraph {
     override val scope: InjectablesScope,
     override val callee: CallableRef,
     val failureRequest: InjectableRequest,
-    val failure: ResolutionResult.Failure
+    val failure: ResolutionResult.Failure,
+    val importSuggestions: List<CallableRef>
   ) : InjectionGraph()
 }
 
@@ -168,7 +171,7 @@ sealed class ResolutionResult {
         get() = 0
     }
 
-    object NoCandidates : Failure() {
+    data class NoCandidates(val scope: InjectablesScope) : Failure() {
       override val failureOrdering: Int
         get() = 2
     }
@@ -220,13 +223,20 @@ fun InjectablesScope.resolveRequests(
     successes,
     usages
   ).also { it.postProcess(onEachResult, usages) }
-  else InjectionGraph.Error(this, callee, failureRequest!!, failure)
+  else {
+    val unwrappedFailure = failure.unwrapDependencyFailure()
+    val importSuggestions = if (unwrappedFailure is ResolutionResult.Failure.NoCandidates)
+      computeImportSuggestions(failureRequest!!, lookupLocation)
+    else emptyList()
+    InjectionGraph.Error(
+      this,
+      callee,
+      failureRequest!!,
+      failure,
+      importSuggestions
+    )
+  }
 }
-
-private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult.Failure =
-  if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
-    dependencyFailure.unwrapDependencyFailure()
-  else this
 
 private fun InjectablesScope.resolveRequest(
   request: InjectableRequest,
@@ -257,7 +267,7 @@ private fun InjectablesScope.resolveRequest(
           ?: userResult
       else
         userResult
-    } ?: ResolutionResult.Failure.NoCandidates
+    } ?: ResolutionResult.Failure.NoCandidates(this)
 
   resultsByType[request.type] = result
   return result
@@ -353,9 +363,9 @@ private fun InjectablesScope.resolveCandidates(
       if (it is CallableInjectable) it.callable.callable.uniqueKey()
       else it
     }
-    .toMutableList()
+    .toCollection(LinkedList())
   while (remaining.isNotEmpty()) {
-    val candidate = remaining.removeAt(0)
+    val candidate = remaining.removeFirst()
     if (compareCandidate(
         successes.firstOrNull()
           ?.safeAs<ResolutionResult.Success.WithCandidate>()?.candidate, candidate
@@ -454,7 +464,7 @@ private fun InjectablesScope.resolveCandidate(
         when {
           dependency.isRequired && candidate is ProviderInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
-            return@computeForCandidate ResolutionResult.Failure.NoCandidates
+            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependencyScope)
           dependency.isRequired ||
               dependencyResult.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
@@ -527,6 +537,32 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (aScopeNesting > bScopeNesting) return -1
   if (bScopeNesting > aScopeNesting) return 1
 
+  return compareCallable(
+    a.safeAs<CallableInjectable>()?.callable,
+    b.safeAs<CallableInjectable>()?.callable,
+    false
+  )
+}
+
+private fun InjectablesScope.compareCallable(
+  a: CallableRef?,
+  b: CallableRef?,
+  compareCompilation: Boolean
+): Int {
+  if (a == b) return 0
+
+  if (a != null && b == null) return -1
+  if (b != null && a == null) return 1
+  a!!
+  b!!
+
+  if (compareCompilation) {
+    val isAExternal = a.callable.isExternalDeclaration()
+    val isBExternal = b.callable.isExternalDeclaration()
+    if (!isAExternal && isBExternal) return -1
+    if (!isBExternal && isAExternal) return 1
+  }
+
   val ownerA = a.safeAs<CallableInjectable>()?.callable?.callable?.containingDeclaration
   val ownerB = b.safeAs<CallableInjectable>()?.callable?.callable?.containingDeclaration
   if (ownerA != null && ownerA == ownerB) {
@@ -546,7 +582,7 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   return 0
 }
 
-fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
+private fun InjectablesScope.compareType(a: TypeRef?, b: TypeRef?): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
@@ -651,3 +687,64 @@ fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) 
       result.visitRecursive(request, action)
     }
 }
+
+
+
+private fun InjectablesScope.computeImportSuggestions(
+  failureRequest: InjectableRequest,
+  lookupLocation: LookupLocation
+): List<CallableRef> {
+  val candidates = collectImportSuggestionInjectables()
+    .sortedWith { a, b -> compareCallable(a, b, true) }
+
+  val successes = mutableListOf<ResolutionResult.Success>()
+  val remaining = candidates.toCollection(LinkedList())
+  while (remaining.isNotEmpty()) {
+    if (successes.size >= 10) break
+
+    val candidate = remaining.removeFirst()
+    val scope = ImportSuggestionInjectablesScope(this, candidate)
+
+    if (compareCallable(
+        successes.firstOrNull()
+          ?.safeAs<ResolutionResult.Success.WithCandidate>()
+          ?.candidate?.safeAs<CallableInjectable>()?.callable,
+        candidate,
+        true
+      ) < 0
+    ) {
+      // we cannot get a better result
+      break
+    }
+
+    val candidateResult = scope.resolveRequest(failureRequest, lookupLocation, false)
+    if (candidateResult is ResolutionResult.Success) {
+      val firstSuccessResult = successes.firstOrNull()
+      when (compareResult(candidateResult, firstSuccessResult)) {
+        -1 -> {
+          successes.clear()
+          successes += candidateResult
+        }
+        0 -> successes += candidateResult
+      }
+    }
+  }
+
+  return successes
+    .map {
+      it.cast<ResolutionResult.Success.WithCandidate.Value>()
+        .candidate.cast<CallableInjectable>().callable
+    }
+    .takeIf { it.isNotEmpty() }
+    ?: candidates
+      .filter {
+        it.type.buildContext(failureRequest.type, allStaticTypeParameters)
+          .isOk
+      }
+      .take(10)
+}
+
+private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult.Failure =
+  if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
+    dependencyFailure.unwrapDependencyFailure()
+  else this

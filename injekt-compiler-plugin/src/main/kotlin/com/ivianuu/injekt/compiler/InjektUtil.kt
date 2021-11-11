@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
+import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.shaded_injekt.Inject
@@ -56,6 +58,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
+import org.jetbrains.kotlin.psi.psiUtil.safeNameForLazyResolve
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -353,6 +356,33 @@ fun classifierDescriptorForKey(key: String, @Inject ctx: Context): ClassifierDes
     classifier
   }
 
+fun callableForUniqueKey(
+  fqName: FqName,
+  uniqueKey: String,
+  @Inject ctx: Context
+): CallableDescriptor? =
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+    ?.getContributedDescriptors(nameFilter = { it == fqName.shortName() })
+    ?.mapNotNull { declaration ->
+      when (declaration) {
+        is ClassDescriptor -> declaration.constructors
+          .singleOrNull { it.uniqueKey() == uniqueKey }
+          ?: if (declaration.uniqueKey() == uniqueKey)
+            when {
+              declaration.hasAnnotation(injektFqNames().component) ->
+                ComponentConstructorDescriptor(declaration)
+              declaration.hasAnnotation(injektFqNames().entryPoint) ->
+                EntryPointConstructorDescriptor(declaration)
+              else -> declaration.unsubstitutedPrimaryConstructor
+            }
+        else null
+        is CallableDescriptor -> declaration
+          .takeIf { it.uniqueKey() == uniqueKey }
+        else -> null
+      }
+    }
+    ?.singleOrNull()
+
 private fun functionDescriptorsForFqName(
   fqName: FqName,
   @Inject ctx: Context
@@ -380,11 +410,10 @@ fun memberScopeForFqName(
 
   val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation) ?: return null
 
-  val classDescriptor =
-    parentMemberScope.getContributedClassifier(
-      fqName.shortName(),
-      lookupLocation
-    ) as? ClassDescriptor ?: return null
+  val classDescriptor = parentMemberScope.getContributedClassifier(
+    fqName.shortName(),
+    lookupLocation
+  ) as? ClassDescriptor ?: return null
 
   return classDescriptor.unsubstitutedMemberScope
 }

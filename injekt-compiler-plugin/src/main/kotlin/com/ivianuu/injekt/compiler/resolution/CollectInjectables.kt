@@ -22,21 +22,22 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.callableForUniqueKey
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.isDeserializedDeclaration
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
@@ -51,7 +52,6 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -526,3 +526,34 @@ fun TypeRef.collectComponentCallables(@Inject ctx: Context): List<CallableRef> =
       } else classifier.typeParameters.zip(arguments).toMap()
       it.substitute(substitutionMap)
     }
+
+fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: Context): List<CallableRef> {
+  val existingInjectables = scope.allScopes
+    .fastFlatMap {
+      addAll(it.injectables)
+      it.spreadingInjectables.forEach { add(it.callable) }
+    }
+    .map { it.callable.uniqueKey() to it.originalType.withFrameworkKey(0) }
+
+  return filter { callable ->
+    val uniqueKey = callable.callable.uniqueKey()
+    existingInjectables.none { it.first == uniqueKey && it.second == callable.originalType }
+  }
+}
+
+fun InjectablesScope.collectImportSuggestionInjectables(@Inject ctx: Context): List<CallableRef> =
+  collectAllInjectables().filterNotExistingIn(this)
+
+fun collectAllInjectables(@Inject ctx: Context): List<CallableRef> =
+  trace()!!.getOrPut(InjektWritableSlices.ALL_INJECTABLES, Unit) {
+    memberScopeForFqName(injektFqNames().indicesPackage, NoLookupLocation.FROM_BACKEND)
+      ?.getContributedFunctions("index".asNameId(), NoLookupLocation.FROM_BACKEND)
+      ?.mapNotNull {
+        val annotation = it.annotations.findAnnotation(injektFqNames().index)
+          ?: return@mapNotNull null
+        val fqName = FqName(annotation.allValueArguments["fqName".asNameId()]!!.value.toString())
+        val uniqueKey = annotation.allValueArguments["uniqueKey".asNameId()]!!.value.toString()
+        callableForUniqueKey(fqName, uniqueKey)!!.toCallableRef()
+      }
+      ?: emptyList()
+  }

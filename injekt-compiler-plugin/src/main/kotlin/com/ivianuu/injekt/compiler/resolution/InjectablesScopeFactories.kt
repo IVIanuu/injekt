@@ -623,6 +623,18 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
+fun ImportSuggestionInjectablesScope(
+  parent: InjectablesScope,
+  candidate: CallableRef,
+  @Inject ctx: Context
+) = InjectablesScope(
+  name = "IMPORT SUGGESTION ${candidate.callable.fqNameSafe}",
+  parent = parent,
+  callContext = parent.callContext,
+  isDeclarationContainer = false,
+  initialInjectables = listOf(candidate)
+)
+
 fun TypeInjectablesScope(
   type: TypeRef,
   parent: InjectablesScope,
@@ -630,29 +642,21 @@ fun TypeInjectablesScope(
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
-  val allInjectables = parent.allScopes
-    .fastFlatMap {
-      addAll(it.injectables)
-      it.spreadingInjectables.forEach { add(it.callable) }
-    }
-    .map { it.callable.uniqueKey() to it.originalType.withFrameworkKey(0) }
-
   val externalInjectables = mutableListOf<CallableRef>()
   val typeInjectables = mutableListOf<CallableRef>()
   val internalInjectables = mutableListOf<CallableRef>()
 
   val thisModuleName = module().moduleName()
   val typeModuleName = type.classifier.descriptor!!.moduleName()
-  injectablesWithLookups.injectables.forEach { callable ->
-    val uniqueKey = callable.callable.uniqueKey()
-    if (allInjectables.none { it.first == uniqueKey && it.second == callable.originalType }) {
+  injectablesWithLookups.injectables
+    .filterNotExistingIn(parent)
+    .forEach { callable ->
       when (callable.callable.moduleName()) {
         thisModuleName -> internalInjectables += callable
         typeModuleName -> typeInjectables += callable
         else -> externalInjectables += callable
       }
     }
-  }
 
   InjectablesScope(
     name = "INTERNAL TYPE ${type.renderToString()}",
