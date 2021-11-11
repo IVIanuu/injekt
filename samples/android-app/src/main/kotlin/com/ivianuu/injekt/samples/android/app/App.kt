@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 
-@file:Providers(
-  "com.ivianuu.injekt.coroutines.*",
-  "com.ivianuu.injekt.android.*",
-  "com.ivianuu.injekt.samples.android.data.*",
-  "com.ivianuu.injekt.samples.android.domain.*",
-  "com.ivianuu.injekt.samples.android.ui.*"
-)
-
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
@@ -34,7 +26,7 @@ class App : Application(), AppComponentOwner {
   override lateinit var appComponent: AppComponent
 
   override fun onCreate() {
-    appComponent = createAppComponent()
+    appComponent = @Providers(".**") createAppComponent()
     super.onCreate()
   }
 }

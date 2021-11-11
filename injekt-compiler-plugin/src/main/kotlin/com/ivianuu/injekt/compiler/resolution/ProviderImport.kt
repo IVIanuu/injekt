@@ -43,16 +43,14 @@ fun ProviderImport.toResolvedImport(packageFqName: FqName) = ResolvedProviderImp
 
 fun ProviderImport.resolve(@Inject ctx: Context): ResolvedProviderImport? {
   if (!isValidImport()) return null
-  val packageFqName: FqName = if (importPath!!.endsWith(".*")) {
-    val packageFqName = FqName(importPath.removeSuffix(".*"))
-    val objectForFqName = classifierDescriptorForFqName(packageFqName,
-      element.lookupLocation)
+  val packageFqName: FqName = if (importPath!!.endsWith(".*") || importPath.endsWith(".**")) {
+    val packageFqName = FqName(importPath.removeSuffix(".**").removeSuffix(".*"))
+    val objectForFqName = classifierDescriptorForFqName(packageFqName, element.lookupLocation)
     objectForFqName?.findPackage()?.fqName ?: packageFqName
   } else {
     val fqName = FqName(importPath)
     val parentFqName = fqName.parent()
-    val objectForFqName = classifierDescriptorForFqName(
-      parentFqName, NoLookupLocation.FROM_BACKEND)
+    val objectForFqName = classifierDescriptorForFqName(parentFqName, NoLookupLocation.FROM_BACKEND)
     objectForFqName?.findPackage()?.fqName ?: parentFqName
   }
 
@@ -68,10 +66,12 @@ fun ValueArgument.toProviderImport() = ProviderImport(
   getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")
 )
 
-fun ProviderImport.isValidImport() = importPath != null && importPath.isNotEmpty() && importPath
-  .none {
-    !it.isLetterOrDigit() &&
-        it != '.' &&
-        it != '_' &&
-        it != '*'
-  }
+fun ProviderImport.isValidImport() = importPath != null &&
+    importPath.isNotEmpty() &&
+    importPath
+      .none {
+        !it.isLetterOrDigit() &&
+            it != '.' &&
+            it != '_' &&
+            it != '*'
+      }

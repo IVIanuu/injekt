@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.callableForUniqueKey
+import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.generateFrameworkKey
@@ -33,6 +34,7 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
+import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
@@ -145,7 +147,7 @@ fun ResolutionScope.collectInjectables(
         if (declaration.kind == ClassKind.OBJECT &&
           (!classBodyView || !declaration.isCompanionObject))
           declaration
-            .takeIf { it.isProvide() || it.classifierInfo().declaresInjectables }
+            .takeIf { it.isProvide() }
             ?.injectableReceiver(!classBodyView)
             ?.let(consumer)
         else {
@@ -331,28 +333,80 @@ fun List<ProviderImport>.collectImportedInjectables(
   for (import in this) {
     if (!import.isValidImport()) continue
 
-    if (import.importPath!!.endsWith("*")) {
-      val packageFqName = FqName(import.importPath.removeSuffix(".*"))
+    when {
+      import.importPath!!.endsWith(".**") -> {
+        val basePackage = FqName(import.importPath.removeSuffix(".**"))
+        val resolvedImport = import.toResolvedImport(basePackage)
 
-      // import all injectables in the package
-      memberScopeForFqName(packageFqName, import.element.lookupLocation)
-        ?.takeIf {
-          it.getContributedFunctions(injectablesLookupName, NoLookupLocation.FROM_BACKEND)
-            .isNotEmpty()
-        }
-        ?.collectInjectables(false) {
-          consumer(it.copy(import = import.toResolvedImport(packageFqName)))
-        }
-    } else {
-      val fqName = FqName(import.importPath)
-      val parentFqName = fqName.parent()
-      val name = fqName.shortName()
+        val nextPackages = LinkedList<FqName>().also { it.add(basePackage) }
 
-      // import all injectables with the specified name
-      memberScopeForFqName(parentFqName, import.element.lookupLocation)
-        ?.collectInjectables(false, name = name) {
-          consumer(it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)) )
+        val lookupLocation = import.element.lookupLocation
+
+        while (nextPackages.isNotEmpty()) {
+          val currentPackage = nextPackages.removeFirst()
+
+          val (scope, packageObject) = memberScopeForFqName(currentPackage, lookupLocation)
+            ?: continue
+
+          fun collectInjectables(
+            currentScope: MemberScope,
+            currentPackageObject: ClassDescriptor?
+          ) {
+            if ((currentPackageObject != null &&
+                  currentPackageObject.toClassifierRef().declaresInjectables) ||
+              (currentPackageObject == null &&
+                  injectablesLookupName in currentScope.getFunctionNames()))
+              currentScope.collectInjectables(
+                false,
+                onEach = { declaration ->
+                  if (declaration is ClassDescriptor)
+                    collectInjectables(
+                      if (declaration.kind == ClassKind.OBJECT) declaration.unsubstitutedMemberScope
+                      else declaration.unsubstitutedInnerClassesScope,
+                      declaration
+                    )
+                },
+              ) {
+                consumer(it.copy(import = resolvedImport))
+              }
+          }
+
+          collectInjectables(scope, packageObject)
+
+          nextPackages += module().getSubPackagesOf(currentPackage) { true }
         }
+      }
+      import.importPath.endsWith("*") -> {
+        val packageFqName = FqName(import.importPath.removeSuffix(".*"))
+        val resolvedImport = import.toResolvedImport(packageFqName)
+
+        val (scope, packageObject) = memberScopeForFqName(packageFqName, import.element.lookupLocation)
+          ?: continue
+
+        // import all injectables in the package
+        if ((packageObject != null && packageObject.toClassifierRef().declaresInjectables) ||
+          (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
+          scope.collectInjectables(false) {
+            consumer(it.copy(import = resolvedImport))
+          }
+        }
+      }
+      else -> {
+        val fqName = FqName(import.importPath)
+        val parentFqName = fqName.parent()
+        val name = fqName.shortName()
+
+        val (scope, packageObject) = memberScopeForFqName(parentFqName, import.element.lookupLocation)
+          ?: continue
+
+        // import all injectables with the specified name
+        if ((packageObject != null && packageObject.toClassifierRef().declaresInjectables) ||
+          (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
+          scope.collectInjectables(false, name = name) {
+            consumer(it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)))
+          }
+        }
+      }
     }
   }
 }
@@ -457,10 +511,7 @@ private fun TypeRef.collectPackageTypeScopeInjectables(
       .filterNot { it is BuiltInsPackageFragment }
 
     if (packageFragments.none {
-        it.getMemberScope().getContributedFunctions(
-          injectablesLookupName,
-          NoLookupLocation.FROM_BACKEND
-        ).isNotEmpty()
+        injectablesLookupName in it.getMemberScope().getFunctionNames()
       }) return@getOrPut InjectablesWithLookups(emptyList(), lookedUpPackages)
 
     val injectables = mutableListOf<CallableRef>()
@@ -547,6 +598,7 @@ fun InjectablesScope.collectImportSuggestionInjectables(@Inject ctx: Context): L
 fun collectAllInjectables(@Inject ctx: Context): List<CallableRef> =
   trace()!!.getOrPut(InjektWritableSlices.ALL_INJECTABLES, Unit) {
     memberScopeForFqName(injektFqNames().indicesPackage, NoLookupLocation.FROM_BACKEND)
+      ?.first
       ?.getContributedFunctions("index".asNameId(), NoLookupLocation.FROM_BACKEND)
       ?.mapNotNull {
         val annotation = it.annotations.findAnnotation(injektFqNames().index)

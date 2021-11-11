@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
@@ -52,12 +53,11 @@ class InjectableResolveTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             fun invoke() = inject<Foo>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -73,12 +73,11 @@ class InjectableResolveTest {
         """,
         packageFqName = FqName("injectables")
       ),
-      source(
+      invokableSource(
         """
           @Providers("injectables.*")
           fun invoke() = inject<Foo>()
-        """,
-        name = "File.kt"
+        """
       )
     )
   ) {
@@ -227,7 +226,7 @@ class InjectableResolveTest {
       fun invoke() = inject<Bar>() 
     """
   ) {
-    compilationShouldHaveFailed(" no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
   @Test fun testGenericInjectable() = singleAndMultiCodegen(

@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.shouldPersistInfo
+import com.ivianuu.injekt.compiler.subInjectablesLookupName
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
@@ -41,6 +42,7 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
@@ -180,6 +182,7 @@ class InjektDeclarationGeneratorExtension(
     }
   }
 
+  @OptIn(ExperimentalStdlibApi::class)
   private fun processFile(
     module: ModuleDescriptor,
     file: KtFile,
@@ -233,8 +236,6 @@ class InjektDeclarationGeneratorExtension(
 
     if (injectables.isEmpty()) return emptyList()
 
-    val generatedFiles = mutableListOf<File>()
-
     val markerName = "_${
       module.moduleName()
         .filter { it.isLetterOrDigit() }
@@ -244,6 +245,19 @@ class InjektDeclarationGeneratorExtension(
         .substringAfterLast("/")
     }_ProvidersMarker"
 
+    return buildList {
+      this += injectablesFile(file, markerName, injectables)
+      subInjectableFiles(file, markerName, injectables)
+      this += indicesFile(file, markerName, injectables)
+    }
+  }
+
+  private fun injectablesFile(
+    file: KtFile,
+    markerName: String,
+    injectables: List<DeclarationDescriptor>,
+    @Inject ctx: Context
+  ): File {
     val injectablesCode = buildString {
       if (!file.packageFqName.isRoot) {
         appendLine("package ${file.packageFqName}")
@@ -297,12 +311,95 @@ class InjektDeclarationGeneratorExtension(
     val injectablesFile = srcDir.resolve(
       (if (!file.packageFqName.isRoot)
         "${file.packageFqName.pathSegments().joinToString("/")}/"
-          else "") + "${file.name.removeSuffix(".kt")}Injectables.kt"
-    ).also { generatedFiles += it }
+      else "") + "${file.name.removeSuffix(".kt")}Injectables.kt"
+    )
     injectablesFile.parentFile.mkdirs()
     injectablesFile.createNewFile()
     injectablesFile.writeText(injectablesCode)
+    return injectablesFile
+  }
 
+  private fun MutableList<File>.subInjectableFiles(
+    file: KtFile,
+    markerName: String,
+    injectables: List<DeclarationDescriptor>,
+    @Inject ctx: Context
+  ) {
+    if (file.packageFqName.isRoot) return
+    var current = file.packageFqName
+    while (!current.isRoot) {
+      current = current.parent()
+
+      val injectablesCode = buildString {
+        if (!current.isRoot) {
+          appendLine("package $current")
+          appendLine()
+        }
+
+        for ((i, injectable) in injectables.withIndex()) {
+          appendLine("fun $subInjectablesLookupName(")
+          appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
+          repeat(i + 1) {
+            appendLine("  index$it: Byte,")
+          }
+
+          fun DeclarationDescriptor.hash(): String = when (this) {
+            is ClassDescriptor ->
+              uniqueKey() +
+                  visibility +
+                  annotations.joinToString { it.type.toTypeRef().renderToString() } +
+                  constructors.joinToString { it.hash() }
+            is CallableDescriptor ->
+              uniqueKey() +
+                  visibility +
+                  callContext() +
+                  annotations.joinToString { it.type.toTypeRef().renderToString() } +
+                  safeAs<PropertyDescriptor>()
+                    ?.let { it.getter?.hash().orEmpty() + it.setter?.hash().orEmpty() }
+            else -> throw AssertionError()
+          }
+
+          val hash = injectable.hash()
+
+          val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
+
+          finalHash
+            .filter { it.isLetterOrDigit() }
+            .chunked(256)
+            .forEachIndexed { index, value ->
+              appendLine("  hash_${index}_$value: Int,")
+            }
+
+          appendLine(") {")
+          appendLine("}")
+          appendLine()
+        }
+      }
+
+      val injectablesKeyHash = injectables
+        .joinToString { it.uniqueKey() }
+        .hashCode()
+        .toString()
+        .filter { it.isLetterOrDigit() }
+
+      val subInjectablesFile = srcDir.resolve(
+        (if (!current.isRoot)
+          "${current.pathSegments().joinToString("/")}/"
+        else "") + "${file.name.removeSuffix(".kt")}SubInjectables_${injectablesKeyHash}.kt"
+      )
+      subInjectablesFile.parentFile.mkdirs()
+      subInjectablesFile.createNewFile()
+      subInjectablesFile.writeText(injectablesCode)
+      this += subInjectablesFile
+    }
+  }
+
+  private fun indicesFile(
+    file: KtFile,
+    markerName: String,
+    injectables: List<DeclarationDescriptor>,
+    @Inject ctx: Context
+  ): File {
     val indicesCode = buildString {
       appendLine("package ${injektFqNames.indicesPackage}")
       appendLine()
@@ -340,11 +437,11 @@ class InjektDeclarationGeneratorExtension(
       "${injektFqNames.indicesPackage.pathSegments().joinToString("/")}/" +
           (if (file.packageFqName.isRoot) "" else file.packageFqName.pathSegments().joinToString("_").plus("_")) +
           "${file.name.removeSuffix(".kt")}Indices_${injectablesKeyHash}.kt"
-    ).also { generatedFiles += it }
+    )
     indicesFile.parentFile.mkdirs()
     indicesFile.createNewFile()
     indicesFile.writeText(indicesCode)
 
-    return generatedFiles
+    return indicesFile
   }
 }

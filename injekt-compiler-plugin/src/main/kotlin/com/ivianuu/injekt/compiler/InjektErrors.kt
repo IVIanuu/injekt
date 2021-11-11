@@ -532,11 +532,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(
-          "but ${
+          "but\n\n${
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\ndo all match type ${unwrappedFailureRequest.type.renderToString()}."
+          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()

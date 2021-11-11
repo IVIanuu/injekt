@@ -700,13 +700,15 @@ private fun ImportInjectablesScopes(
 
   imports.collectImportedInjectables { callable ->
     if (callable.callable.isExternalDeclaration()) {
-      if (callable.import!!.importPath!!.endsWith(".*")) {
+      if (callable.import!!.importPath!!.endsWith(".*") ||
+          callable.import.importPath!!.endsWith(".**")) {
         externalStarInjectables += callable
       } else {
         externalByNameInjectables += callable
       }
     } else {
-      if (callable.import!!.importPath!!.endsWith(".*")) {
+      if (callable.import!!.importPath!!.endsWith(".*") ||
+        callable.import.importPath!!.endsWith(".**")) {
         internalStarInjectables += callable
       } else {
         internalByNameInjectables += callable

@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.shouldContainMessage
 import com.ivianuu.injekt.test.shouldNotContainMessage
@@ -42,6 +44,16 @@ class InjectablesImportsTest {
   @Test fun testUnresolvedStarImport() = codegen(
     """
       @Providers("a.*")
+      fun invoke() {
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("unresolved injectable import")
+  }
+
+  @Test fun testUnresolvedDoubleStarImport() = codegen(
+    """
+      @Providers("a.**")
       fun invoke() {
       }
     """
@@ -100,12 +112,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.foo")
             fun invoke() = inject<Foo>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -124,12 +135,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.MyComponent")
             fun invoke() = inject<injectables.MyComponent>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -154,12 +164,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("entrypoint.MyEntryPoint")
             fun invoke() = inject<component.MyComponent>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -184,12 +193,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.MyClass")
             fun invoke() = inject<Foo>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -208,12 +216,34 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             fun invoke() = inject<Foo>()
+          """
+        )
+      )
+    )
+  ) {
+    shouldNotContainMessage("unused injectable import")
+  }
+
+  @Test fun testUsedDoubleStarImport() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
           """,
-          name = "File.kt"
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            @Providers("injectables.**")
+            fun invoke() = inject<Foo>()
+          """
         )
       )
     )
@@ -238,12 +268,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("explicit.value", "star.*")
             fun invoke() = inject<String>()
-        """,
-          name = "File.kt"
+        """
         )
       )
     )
@@ -251,9 +280,48 @@ class InjectablesImportsTest {
     shouldContainMessage("unused injectable import: 'star.*'")
   }
 
+  @Test fun testExplicitAndDoubleStarImportMarksDoubleStarAsUnused() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val value = "explicit"
+          """,
+          packageFqName = FqName("explicit")
+        ),
+        source(
+          """
+            @Provide val value = "star"
+          """,
+          packageFqName = FqName("star")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            @Providers("explicit.value", "star.**")
+            fun invoke() = inject<String>()
+        """
+        )
+      )
+    )
+  ) {
+    shouldContainMessage("unused injectable import: 'star.**'")
+  }
+
   @Test fun testStarImportSamePackage() = codegen(
     """
       @Providers("com.ivianuu.injekt.integrationtests.*")
+      fun invoke() {
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("injectables of the same package are automatically imported")
+  }
+
+  @Test fun testDoubleStarImportSamePackage() = codegen(
+    """
+      @Providers("com.ivianuu.injekt.integrationtests.**")
       fun invoke() {
       }
     """
@@ -283,15 +351,14 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             class MyClass {
               fun invoke() = inject<Foo>()
             }
             fun invoke() = MyClass().invoke()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -310,7 +377,7 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             class MyClass {
@@ -321,8 +388,7 @@ class InjectablesImportsTest {
             }
 
             fun invoke() = MyClass().foo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -341,15 +407,14 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             class MyClass {
               val foo: Foo = inject()
             }
             fun invoke() = MyClass().foo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -374,13 +439,12 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             class MyClass : injectables.FooHolder by injectables.FooHolder()
             fun invoke() = MyClass().foo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -405,13 +469,12 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             object MyObject : injectables.FooHolder by injectables.FooHolder()
             fun invoke() = MyObject.foo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -436,12 +499,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             class MyClass @Providers("injectables.*") constructor() : injectables.FooHolder by injectables.FooHolder()
             fun invoke() = MyClass().foo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -460,12 +522,11 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             fun invoke() = inject<Foo>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -484,13 +545,12 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             @JvmOverloads
             fun invoke(foo: Foo = inject()) = foo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -509,13 +569,12 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*")
             val injectableFoo = inject<Foo>()
             fun invoke() = injectableFoo
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -534,15 +593,14 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             fun invoke(): Foo {
               @Providers("injectables.*")
               val injectableFoo = inject<Foo>()
               return injectableFoo
             }
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -561,18 +619,109 @@ class InjectablesImportsTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             fun invoke(): Foo {
               @Providers("injectables.*")
               return inject<Foo>()
             }
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testSingleStarImportNotImportsSubObjects() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            object FooModule {
+              @Provide val foo = Foo()
+              
+              object BarModule {
+                @Provide fun bar(foo: Foo) = Bar(foo)
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke(): Bar {
+              @Providers("injectables.*")
+              return inject<Bar>()
+            }
+          """
+        )
+      )
+    )
+  ) {
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.inject.")
+  }
+
+  @Test fun testDoubleStarImportImportsSubPackages() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide val foo = Foo()
+          """,
+          packageFqName = FqName("injectables.foo")
+        ),
+        source(
+          """
+            @Provide fun bar(foo: Foo) = Bar(foo)
+          """,
+          packageFqName = FqName("injectables.foo.bar")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke(): Bar {
+              @Providers(".**")
+              return inject<Bar>()
+            }
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testDoubleStarImportImportsSubObjects() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            object FooModule {
+              @Provide val foo = Foo()
+              object BarModule {
+                @Provide fun bar(foo: Foo) = Bar(foo)
+              }
+            }
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke(): Bar {
+              @Providers(".**")
+              return inject<Bar>()
+            }
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 }

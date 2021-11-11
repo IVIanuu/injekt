@@ -302,6 +302,7 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
 }
 
 val injectablesLookupName = "_injectables".asNameId()
+val subInjectablesLookupName = "_subInjectables".asNameId()
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
@@ -328,7 +329,7 @@ fun classifierDescriptorForFqName(
   @Inject ctx: Context
 ): ClassifierDescriptor? {
   return if (fqName.isRoot) null
-  else memberScopeForFqName(fqName.parent(), lookupLocation)
+  else memberScopeForFqName(fqName.parent(), lookupLocation)?.first
     ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
 
@@ -336,6 +337,7 @@ fun classifierDescriptorForKey(key: String, @Inject ctx: Context): ClassifierDes
   trace().getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+      ?.first
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.takeIf { it.uniqueKey() == key }
       ?: functionDescriptorsForFqName(fqName.parent())
@@ -362,6 +364,7 @@ fun callableForUniqueKey(
   @Inject ctx: Context
 ): CallableDescriptor? =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+    ?.first
     ?.getContributedDescriptors(nameFilter = { it == fqName.shortName() })
     ?.mapNotNull { declaration ->
       when (declaration) {
@@ -387,39 +390,39 @@ private fun functionDescriptorsForFqName(
   fqName: FqName,
   @Inject ctx: Context
 ): Collection<FunctionDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedFunctions(
-    fqName.shortName(), NoLookupLocation.FROM_BACKEND
-  ) ?: emptyList()
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
+    ?.first
+    ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+    ?: emptyList()
 
 private fun propertyDescriptorsForFqName(
   fqName: FqName,
   @Inject ctx: Context
 ): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.getContributedVariables(
-    fqName.shortName(), NoLookupLocation.FROM_BACKEND
-  ) ?: emptyList()
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)?.first
+    ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+    ?: emptyList()
 
 fun memberScopeForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
   @Inject ctx: Context
-): MemberScope? {
+): Pair<MemberScope, ClassDescriptor?>? {
   val pkg = module().getPackage(fqName)
 
-  if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
+  if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope to null
 
-  val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation) ?: return null
+  val (parentMemberScope) = memberScopeForFqName(fqName.parent(), lookupLocation) ?: return null
 
   val classDescriptor = parentMemberScope.getContributedClassifier(
     fqName.shortName(),
     lookupLocation
   ) as? ClassDescriptor ?: return null
 
-  return classDescriptor.unsubstitutedMemberScope
+  return classDescriptor.unsubstitutedMemberScope to classDescriptor
 }
 
 fun packageFragmentsForFqName(
   fqName: FqName,
   @Inject ctx: Context
 ): List<PackageFragmentDescriptor> = module().getPackage(fqName).fragments
-

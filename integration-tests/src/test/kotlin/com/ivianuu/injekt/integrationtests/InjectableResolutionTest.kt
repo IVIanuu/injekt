@@ -490,7 +490,9 @@ class InjectableResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar\n\n" +
+      " \n" +
+          "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
+          "\n" +
           "I found:\n" +
           "\n" +
           "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
@@ -499,9 +501,12 @@ class InjectableResolutionTest {
           "    )\n" +
           "  )\n" +
           "\n" +
-          "but com.ivianuu.injekt.integrationtests.foo1\n" +
+          "but\n" +
+          "\n" +
+          "com.ivianuu.injekt.integrationtests.foo1\n" +
           "com.ivianuu.injekt.integrationtests.foo2\n" +
-          "do all match type com.ivianuu.injekt.test.Foo"
+          "\n" +
+          "do all match type com.ivianuu.injekt.test.Foo."
     )
   }
 
@@ -578,12 +583,11 @@ class InjectableResolutionTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("explicit.value", "star.*")
             fun invoke() = inject<String>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -608,12 +612,11 @@ class InjectableResolutionTest {
           """,
           packageFqName = FqName("internal")
         ),
-        source(
+        invokableSource(
           """
             @Providers("explicit.value", "internal.*")
             fun invoke() = inject<String>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )
@@ -649,12 +652,11 @@ class InjectableResolutionTest {
         )
       ),
       listOf(
-        source(
+        invokableSource(
           """
             @Providers("injectables.*", "injectables.AndroidLogger.Companion.logger")
             fun invoke(@Inject scope: AppScope) = inject<injectables.Logger>()
-          """,
-          name = "File.kt"
+          """
         )
       )
     )

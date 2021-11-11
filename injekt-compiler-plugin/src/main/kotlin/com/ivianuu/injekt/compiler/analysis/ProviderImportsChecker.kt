@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.annotationEntryRecursiveVisitor
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
@@ -89,8 +90,8 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
         return@forEach
       }
       importPath!!
-      if (importPath.endsWith(".*")) {
-        val packageFqName = FqName(importPath.removeSuffix(".*"))
+      if (importPath.endsWith(".*") || importPath.endsWith(".**")) {
+        val packageFqName = FqName(importPath.removeSuffix(".**").removeSuffix(".*"))
         if (packageFqName == currentPackage) {
           trace()!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
@@ -116,8 +117,11 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
           return@forEach
         }
         val shortName = fqName.shortName()
-        val importedDeclarations = memberScopeForFqName(parentFqName,
-          import.element.lookupLocation)
+        val importedDeclarations = memberScopeForFqName(
+          parentFqName,
+          import.element.lookupLocation
+        )
+          ?.first
           ?.getContributedDescriptors()
           ?.filter {
             it !is PackageViewDescriptor &&
