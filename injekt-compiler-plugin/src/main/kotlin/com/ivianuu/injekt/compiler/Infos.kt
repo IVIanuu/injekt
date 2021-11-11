@@ -190,9 +190,9 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
 private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject ctx: Context) {
   if (isExternalDeclaration() || isDeserializedDeclaration()) return
 
-  if ((this !is ConstructorDescriptor && !visibility.shouldPersistInfo()) ||
-    (this is ConstructorDescriptor && !constructedClass.visibility.shouldPersistInfo()))
-      return
+  if (!visibility.shouldPersistInfo() &&
+      safeAs<ConstructorDescriptor>()?.visibility?.shouldPersistInfo() != true)
+        return
 
   if (hasAnnotation(injektFqNames().callableInfo))
     return
@@ -200,13 +200,11 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
   val shouldPersistInfo = hasAnnotation(injektFqNames().provide) ||
       containingDeclaration.hasAnnotation(injektFqNames().component) ||
       containingDeclaration.hasAnnotation(injektFqNames().entryPoint) ||
-      (this is ConstructorDescriptor &&
-          constructedClass.hasAnnotation(injektFqNames().provide)) ||
-      (this is PropertyDescriptor &&
-          primaryConstructorPropertyValueParameter()?.isProvide() == true) ||
-      safeAs<FunctionDescriptor>()
-        ?.valueParameters
-        ?.any { it.hasAnnotation(injektFqNames().inject) } == true ||
+      safeAs<ConstructorDescriptor>()?.constructedClass
+        ?.hasAnnotation(injektFqNames().provide) == true ||
+      safeAs<PropertyDescriptor>()?.primaryConstructorPropertyValueParameter()
+        ?.isProvide() == true
+      valueParameters.any { it.hasAnnotation(injektFqNames().inject) } ||
       info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) ->
         parameterType.shouldBePersisted()
@@ -470,7 +468,6 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     }
   } else if (this is DeclarationDescriptorWithVisibility) {
     if (!visibility.shouldPersistInfo()) return
-    if (hasAnnotation(injektFqNames().classifierInfo)) return
 
     if (info.tags.isEmpty() &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
@@ -483,6 +480,8 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       info.scopeComponentType == null &&
       !info.declaresInjectables
     ) return
+
+    if (hasAnnotation(injektFqNames().classifierInfo)) return
 
     val serializedInfo = info.toPersistedClassifierInfo().encode()
 
