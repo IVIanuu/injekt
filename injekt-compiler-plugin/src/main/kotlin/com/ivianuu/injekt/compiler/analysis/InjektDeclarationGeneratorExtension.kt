@@ -292,14 +292,14 @@ class InjektDeclarationGeneratorExtension(
       }
     }
 
-    val hashesFile = srcDir.resolve(
+    val injectablesFile = srcDir.resolve(
       (if (!file.packageFqName.isRoot)
         "${file.packageFqName.pathSegments().joinToString("/")}/"
-          else "") + "${file.name.removeSuffix(".kt")}Hashes.kt"
+          else "") + "${file.name.removeSuffix(".kt")}Injectables.kt"
     )
-    hashesFile.parentFile.mkdirs()
-    hashesFile.createNewFile()
-    hashesFile.writeText(hashesCode)
+    injectablesFile.parentFile.mkdirs()
+    injectablesFile.createNewFile()
+    injectablesFile.writeText(hashesCode)
 
     val indicesCode = buildString {
       appendLine("package ${injektFqNames.indicesPackage}")
@@ -343,6 +343,6 @@ class InjektDeclarationGeneratorExtension(
     indicesFile.createNewFile()
     indicesFile.writeText(indicesCode)
 
-    return listOf(hashesFile)
+    return listOf(injectablesFile, indicesFile)
   }
 }
