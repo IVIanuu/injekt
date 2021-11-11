@@ -100,6 +100,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
                 }
 
                 memberScopeForFqName(finalFqName.parent(), NoLookupLocation.FROM_IDE, ctx)
+                  ?.first
                   ?.getContributedDescriptors { it == finalFqName.shortName() }
                   ?.firstOrNull()
                   ?.findPsiDeclarations(element.project, element.resolveScope)
@@ -151,6 +152,7 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
       NoLookupLocation.FROM_IDE,
       ctx
     )
+      ?.first
       ?.getContributedDescriptors()
       ?.filter { declaration ->
         declaration.name.asString().startsWith(prefix) &&
