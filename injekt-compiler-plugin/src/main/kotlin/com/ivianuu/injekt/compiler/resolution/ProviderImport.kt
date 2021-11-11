@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.ValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
 data class ProviderImport(val element: KtElement?, val importPath: String?)
 
@@ -61,6 +62,12 @@ fun KtAnnotated.getProviderImports(@Inject ctx: Context): List<ProviderImport> =
   findAnnotation(injektFqNames().providers)
     ?.valueArguments
     ?.map { it.toProviderImport() } ?: emptyList()
+
+fun ResolvedCall<*>.getProviderImports(@Inject ctx: Context): List<ProviderImport> =
+  valueArguments
+    .values
+    .flatMap { it.arguments }
+    .map { it.toProviderImport() }
 
 fun ValueArgument.toProviderImport() = ProviderImport(
   getArgumentExpression(), getArgumentExpression()?.text?.removeSurrounding("\"")

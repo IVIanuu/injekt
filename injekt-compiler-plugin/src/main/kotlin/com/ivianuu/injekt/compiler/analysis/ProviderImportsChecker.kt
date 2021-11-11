@@ -29,43 +29,35 @@ import com.ivianuu.injekt.compiler.resolution.isValidImport
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.annotationEntryRecursiveVisitor
+import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
+import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ProviderImportsChecker(@Inject private val baseCtx: Context) : DeclarationChecker {
-  private val checkedFiles = mutableSetOf<KtFile>()
-
+class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker {
   override fun check(
-    declaration: KtDeclaration,
-    descriptor: DeclarationDescriptor,
-    context: DeclarationCheckerContext
+    resolvedCall: ResolvedCall<*>,
+    reportOn: PsiElement,
+    context: CallCheckerContext
   ) {
+    val resulting = resolvedCall.resultingDescriptor
+    if (resulting !is ConstructorDescriptor ||
+        resulting.constructedClass.fqNameSafe != injektFqNames().providers)
+          return
     @Provide val ctx = baseCtx.withTrace(context.trace)
-    val file = declaration.containingKtFile
-    checkFile(file)
-    if (!declaration.hasAnnotation(injektFqNames().providers)) return
-    checkImports(file.packageFqName, declaration.getProviderImports())
-  }
-
-  private fun checkFile(file: KtFile, @Inject ctx: Context) {
-    if (file in checkedFiles) return
-    checkedFiles += file
-    checkImports(file.packageFqName, file.getProviderImports())
-  }
-
-  private fun checkImports(
-    currentPackage: FqName,
-    imports: List<ProviderImport>,
-    @Inject ctx: Context
-  ) {
-    if (imports.isEmpty()) return
+    val imports = resolvedCall.getProviderImports()
 
     imports
       .filter { it.importPath != null }
@@ -80,14 +72,16 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
         }
       }
 
-    imports.forEach { import ->
+    val currentPackage = context.scope.ownerDescriptor.findPackage().fqName
+
+    for (import in imports) {
       val (element, importPath) = import
       if (!import.isValidImport()) {
         trace()!!.report(
           InjektErrors.MALFORMED_INJECTABLE_IMPORT
             .on(element!!, element)
         )
-        return@forEach
+        continue
       }
       importPath!!
       if (importPath.endsWith(".*") || importPath.endsWith(".**")) {
@@ -97,14 +91,14 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!, element)
           )
-          return@forEach
+          continue
         }
         if (memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
           trace()!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!, element)
           )
-          return@forEach
+          continue
         }
       } else {
         val fqName = FqName(importPath.removeSuffix(".*"))
@@ -114,7 +108,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!, element)
           )
-          return@forEach
+          continue
         }
         val shortName = fqName.shortName()
         val importedDeclarations = memberScopeForFqName(
@@ -134,7 +128,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : Declaration
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!, element)
           )
-          return@forEach
+          continue
         }
       }
 
