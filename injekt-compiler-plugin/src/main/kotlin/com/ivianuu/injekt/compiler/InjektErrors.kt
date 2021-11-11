@@ -262,6 +262,8 @@ private fun InjectionGraph.Error.render(): String = buildString {
 
   val (unwrappedFailureRequest, unwrappedFailure) = failure.unwrapDependencyFailure(failureRequest)
 
+  appendLine()
+
   when (unwrappedFailure) {
     is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
       if (failure == unwrappedFailure) {
@@ -269,12 +271,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
           "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is a ${unwrappedFailure.candidate.callContext.name.lowercase(Locale.getDefault())} function " +
-              "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase(
-                Locale.getDefault()
-              )}"
+              "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}."
         )
       } else {
-        appendLine("call context mismatch")
+        appendLine("call context mismatch.")
       }
     }
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
@@ -284,29 +284,29 @@ private fun InjectionGraph.Error.render(): String = buildString {
               "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is reified but type argument " +
-              "${unwrappedFailure.argument.fqName} is not reified"
+              "${unwrappedFailure.argument.fqName} is not reified."
         )
       } else {
-        appendLine("type argument kind mismatch")
+        appendLine("type argument kind mismatch.")
       }
     }
     is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
       if (failure == unwrappedFailure) {
         appendLine(
           "${unwrappedFailure.candidate.type.renderToString()} has clashing super types " +
-              "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()}"
+              "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()}."
         )
       } else {
-        appendLine("clashing component super types")
+        appendLine("clashing component super types.")
       }
     }
     is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "no enclosing component matches ${unwrappedFailure.scopeComponent.renderToString()}"
+          "no enclosing component matches ${unwrappedFailure.scopeComponent.renderToString()}."
         )
       } else {
-        appendLine("component not found")
+        appendLine("component not found.")
       }
     }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
@@ -328,10 +328,10 @@ private fun InjectionGraph.Error.render(): String = buildString {
               it.candidate.callableFqName.asString()
             }
           }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
-              "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
+              "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
         } else {
           "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
-              "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
+              "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
         }
 
       appendLine(errorMessage)
@@ -347,7 +347,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           ?: "no injectable found of type " +
           "${unwrappedFailureRequest.type.renderToString()} for parameter " +
           "${unwrappedFailureRequest.parameterName} of function " +
-          "${unwrappedFailureRequest.callableFqName}"
+          "${unwrappedFailureRequest.callableFqName}."
       )
     }
   }.let { }
@@ -370,7 +370,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
           CallContext.SUSPEND -> append("suspend ")
         }
       } else {
-        append("${request.callableFqName}")
+        if (candidate is ComponentInjectable) {
+          append("object : ${request.callableFqName}")
+        } else {
+          append("${request.callableFqName}")
+        }
         if (request.callableTypeArguments.isNotEmpty()) {
           append(request.callableTypeArguments.values.joinToString(", ", "<", ">") {
             it.renderToString()
@@ -514,17 +518,17 @@ private fun InjectionGraph.Error.render(): String = buildString {
 
     when (unwrappedFailure) {
       is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}")
+        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}.")
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified")
+        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified.")
       }
       is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
         appendLine("but component super types " +
-            "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()} do clash")
+            "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()} do clash.")
       }
       is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
-        appendLine("but no enclosing component matches type ${unwrappedFailure.scopeComponent.renderToString()}")
+        appendLine("but no enclosing component matches type ${unwrappedFailure.scopeComponent.renderToString()}.")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(
@@ -532,18 +536,18 @@ private fun InjectionGraph.Error.render(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\ndo all match type ${unwrappedFailureRequest.type.renderToString()}"
+          }\ndo all match type ${unwrappedFailureRequest.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
       is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
         appendLine(
           "but injectable ${unwrappedFailure.candidate.callableFqName} " +
-              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}"
+              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderToString()}")
+        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderToString()}.")
       }
     }.let { }
   }

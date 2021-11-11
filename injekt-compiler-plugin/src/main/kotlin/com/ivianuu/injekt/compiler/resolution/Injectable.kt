@@ -94,7 +94,7 @@ class ComponentInjectable(
     ?.toCallableRef()
     ?.substitute(type.classifier.typeParameters.zip(type.arguments).toMap())
 
-  override val callableFqName: FqName = FqName(type.classifier.fqName.asString() + "Impl")
+  override val callableFqName: FqName = type.classifier.fqName
 
   @OptIn(ExperimentalStdlibApi::class)
   val requestCallables: List<CallableRef> = buildList<CallableRef> {
@@ -280,9 +280,9 @@ class ProviderInjectable(
   dependencyCallContext: CallContext
 ) : Injectable() {
   override val callableFqName: FqName = when (type.callContext) {
-    CallContext.DEFAULT -> FqName("com.ivianuu.injekt.providerOf")
-    CallContext.COMPOSABLE -> FqName("com.ivianuu.injekt.composableProviderOf")
-    CallContext.SUSPEND -> FqName("com.ivianuu.injekt.suspendProviderOf")
+    CallContext.DEFAULT -> FqName("providerOf")
+    CallContext.COMPOSABLE -> FqName("composableProviderOf")
+    CallContext.SUSPEND -> FqName("suspendProviderOf")
   }
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
