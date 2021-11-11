@@ -85,6 +85,7 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.builders.irComposite
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irEqeqeq
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -112,6 +113,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
+import org.jetbrains.kotlin.ir.expressions.IrComposite
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
@@ -394,7 +396,7 @@ class InjectCallTransformer(
 
           val expression: ScopeContext.() -> IrExpression = {
             DeclarationIrBuilder(irCtx, symbol).run {
-              irBlock {
+              irComposite {
                 val tmp = irTemporary(
                   value = irGetField(receiverExpression(componentReceiverParameter), instanceField),
                   nameHint = "${graphContext.variableIndex++}",
@@ -420,11 +422,11 @@ class InjectCallTransformer(
                           .typeWith(result.candidate.type.toIrType().typeOrNull ?: irCtx.irBuiltIns.anyNType),
                         parameterNameProvider = { "p${graphContext.variableIndex++}" }
                       ) {
-                        irBlock {
+                        irComposite {
                           +irSet(tmp.symbol, irGetField(receiverExpression(componentReceiverParameter), instanceField))
                           +irIfThen(
                             irEqeqeq(irGet(tmp), irGetField(receiverExpression(componentReceiverParameter), lockField)),
-                            irBlock {
+                            irComposite {
                               +irSet(tmp.symbol, rawExpressionProvider())
                               +irSetField(receiverExpression(componentReceiverParameter), instanceField, irGet(tmp))
                             }
@@ -842,7 +844,7 @@ class InjectCallTransformer(
           }
           if (dependencyScopeContext.statements.isEmpty()) expression
           else {
-            irBlock {
+            irComposite {
               dependencyScopeContext.statements.forEach { +it }
               +expression
             }
@@ -911,7 +913,7 @@ class InjectCallTransformer(
       }
     }
     else -> {
-      DeclarationIrBuilder(irCtx, symbol).irBlock {
+      DeclarationIrBuilder(irCtx, symbol).irComposite {
         val tmpSet = irTemporary(
           irCall(mutableListOf)
             .apply {
@@ -1268,7 +1270,7 @@ class InjectCallTransformer(
       return result
 
     return DeclarationIrBuilder(irCtx, result.symbol)
-      .irBlock {
+      .irComposite {
         val graphContext = GraphContext(graph, result.startOffset)
         try {
           ScopeContext(
