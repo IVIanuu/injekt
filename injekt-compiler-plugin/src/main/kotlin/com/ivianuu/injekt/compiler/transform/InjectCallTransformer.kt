@@ -526,7 +526,7 @@ class InjectCallTransformer(
     injectable: ComponentInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol).irBlock {
     val clazz = IrFactoryImpl.buildClass {
-      name = injectable.callableFqName.shortName()
+      name = (injectable.callableFqName.shortName().asString() + "Impl").asNameId()
       visibility = DescriptorVisibilities.LOCAL
     }.apply clazz@{
       parent = scope.getLocalDeclarationParent()
