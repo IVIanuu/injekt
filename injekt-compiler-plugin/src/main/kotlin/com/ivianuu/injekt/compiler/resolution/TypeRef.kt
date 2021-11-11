@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.isError
 import org.jetbrains.kotlin.types.model.TypeVariance
 import org.jetbrains.kotlin.types.model.convertVariance
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -201,7 +202,8 @@ fun KotlinType.toTypeRef(
       frameworkKey = 0,
       variance = variance,
       scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef(),
-      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
+      isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true,
+      isError = isError
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
@@ -241,7 +243,8 @@ class TypeRef(
   val variance: TypeVariance = TypeVariance.INV,
   val scopeComponentType: TypeRef? = null,
   val isEager: Boolean = false,
-  val source: ClassifierRef? = null
+  val source: ClassifierRef? = null,
+  val isError: Boolean = false
 ) {
   override fun toString(): String = renderToString()
 
@@ -336,6 +339,7 @@ class TypeRef(
       result = 31 * result + variance.hashCode()
       result = 31 * result + scopeComponentType.hashCode()
       result = 31 * result + isEager.hashCode()
+      result = 31 * result + isError.hashCode()
       _hashCode = result
       return result
     }
@@ -373,7 +377,8 @@ fun TypeRef.copy(
   variance: TypeVariance = this.variance,
   scopeComponentType: TypeRef? = this.scopeComponentType,
   isEager: Boolean = this.isEager,
-  source: ClassifierRef? = this.source
+  source: ClassifierRef? = this.source,
+  isError: Boolean = this.isError
 ) = TypeRef(
   classifier,
   isMarkedNullable,
@@ -386,13 +391,17 @@ fun TypeRef.copy(
   variance,
   scopeComponentType,
   isEager,
-  source
+  source,
+  isError
 )
 
 val STAR_PROJECTION_TYPE = TypeRef(
   classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
   isStarProjection = true,
 )
+
+val TypeRef.hasErrors: Boolean
+  get() = isError || arguments.any { it.hasErrors } || scopeComponentType?.hasErrors == true
 
 fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
   action(this) || arguments.any { it.anyType(action) }

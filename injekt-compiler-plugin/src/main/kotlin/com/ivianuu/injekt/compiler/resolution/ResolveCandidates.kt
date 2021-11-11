@@ -228,7 +228,8 @@ fun InjectablesScope.resolveRequests(
   ).also { it.postProcess(onEachResult, usages) }
   else {
     val unwrappedFailure = failure.unwrapDependencyFailure()
-    val importSuggestions = if (unwrappedFailure is ResolutionResult.Failure.NoCandidates)
+    val importSuggestions = if (unwrappedFailure is ResolutionResult.Failure.NoCandidates &&
+       !unwrappedFailure.request.type.hasErrors)
       computeImportSuggestions(unwrappedFailure.request, lookupLocation)
     else emptyList()
     InjectionGraph.Error(
@@ -246,6 +247,9 @@ private fun InjectablesScope.resolveRequest(
   lookupLocation: LookupLocation,
   fromTypeScope: Boolean
 ): ResolutionResult {
+  if (request.type.hasErrors)
+    return ResolutionResult.Failure.NoCandidates(this, request)
+
   resultsByType[request.type]?.let { return it }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation)
