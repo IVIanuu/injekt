@@ -104,9 +104,7 @@ fun CallableDescriptor.spreadingInjectables(
   results
 }
 
-private fun CallableRef.spreadInjectables(
-  @Inject ctx: Context
-): List<CallableRef> {
+private fun CallableRef.spreadInjectables(@Inject ctx: Context): List<CallableRef> {
   val lookedUpPackages = mutableSetOf<FqName>()
   val spreadingInjectables = type.collectTypeScopeInjectables()
     .let {
@@ -115,13 +113,15 @@ private fun CallableRef.spreadInjectables(
       it.injectables
         .filter { it.typeParameters.any { it.isSpread } }
     }
+    .map { SpreadingInjectable(it) }
+    .toList()
 
   val lookupLocation = KotlinLookupLocation(callable.findPsi()!!.cast())
 
   fun recordLookups() {
     lookedUpPackages
       .map { memberScopeForFqName(it, lookupLocation)!! }
-      .forEach { it.recordLookup(injectablesLookupName, lookupLocation) }
+      .forEach { it.first.recordLookup(injectablesLookupName, lookupLocation) }
   }
 
   if (spreadingInjectables.isEmpty()) {
@@ -132,7 +132,7 @@ private fun CallableRef.spreadInjectables(
   val result = mutableListOf<CallableRef>()
 
   fun spreadInjectablesForCandidate(candidate: CallableRef) {
-    val (context, substitutionMap) = buildContextForSpreadingInjectable(
+    /*val (context, substitutionMap) = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
       candidateType,
       allStaticTypeParameters
@@ -151,7 +151,7 @@ private fun CallableRef.spreadInjectables(
         typeArguments = spreadingInjectable.callable
           .typeArguments
           .mapValues { it.value.substitute(substitutionMap) }
-      )
+      )*/
   }
 
   spreadInjectablesForCandidate(this)
