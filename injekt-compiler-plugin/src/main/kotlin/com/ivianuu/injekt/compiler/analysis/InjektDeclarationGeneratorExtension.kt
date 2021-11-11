@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.shouldPersistInfo
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
@@ -45,6 +46,9 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.toVisibility
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
@@ -196,7 +200,9 @@ class InjektDeclarationGeneratorExtension(
 
         when (declaration) {
           is KtClassOrObject -> {
-            if (!declaration.isLocal && (declaration.hasAnnotation(injektFqNames.provide) ||
+            if (!declaration.isLocal &&
+              declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
+              (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
                   declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) } ||
                   declaration.hasAnnotation(injektFqNames.component) ||
@@ -204,13 +210,17 @@ class InjektDeclarationGeneratorExtension(
               addInjectable()
           }
           is KtNamedFunction -> {
-            if (!declaration.isLocal && (declaration.hasAnnotation(injektFqNames.provide) ||
+            if (!declaration.isLocal &&
+              declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
+              (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.component) == true ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.entryPoint) == true))
               addInjectable()
           }
           is KtProperty -> {
-            if (!declaration.isLocal && (declaration.hasAnnotation(injektFqNames.provide) ||
+            if (!declaration.isLocal &&
+              declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
+              (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.component) == true ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.entryPoint) == true))
               addInjectable()

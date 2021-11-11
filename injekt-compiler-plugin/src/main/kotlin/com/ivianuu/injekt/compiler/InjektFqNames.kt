@@ -31,7 +31,7 @@ class InjektFqNames(injektPackage: FqName) {
   val internalPackage = injektPackage.child("internal".asNameId())
   val callableInfo = internalPackage.child("CallableInfo".asNameId())
   val classifierInfo = internalPackage.child("ClassifierInfo".asNameId())
-  val typeParameterInfos = internalPackage.child("TypeParameterInfos".asNameId())
+  val typeParameterInfo = internalPackage.child("TypeParameterInfo".asNameId())
 
   val commonPackage = injektPackage.child("common".asNameId())
   val component = commonPackage.child("Component".asNameId())

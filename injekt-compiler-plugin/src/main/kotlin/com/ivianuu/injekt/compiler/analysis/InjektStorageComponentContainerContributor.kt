@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.readPrivateFinalField
-import com.ivianuu.injekt.compiler.updatePrivateFinalField
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.container.ComponentStorage
 import org.jetbrains.kotlin.container.SingletonTypeComponentDescriptor
@@ -68,6 +67,6 @@ class InjektStorageComponentContainerContributor(
     container.useInstance(TagChecker())
     container.useInstance(ProviderImportsChecker())
     if (!isIde)
-      container.useInstance(InfoAnnotationPatcher())
+      container.useInstance(InfoPatcher())
   }
 }

@@ -278,7 +278,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
       (if (this is TypeParameterDescriptor) {
         containingDeclaration
           .annotations
-          .findAnnotation(injektFqNames().typeParameterInfos)
+          .findAnnotation(injektFqNames().typeParameterInfo)
           ?.readChunkedValue()
           ?.split("=:=")
           ?.get(cast<TypeParameterDescriptor>().index)
@@ -436,7 +436,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (!info.isSpread && info.superTypes.none { it.shouldBePersisted() }) return
 
     fun loadTypeParameterInfos() = (container.annotations
-      .findAnnotation(injektFqNames().typeParameterInfos)
+      .findAnnotation(injektFqNames().typeParameterInfo)
       ?.readChunkedValue()
       ?.split("=:=")
       ?: run {
@@ -448,20 +448,20 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       }).toMutableList()
 
     val initialInfosAnnotation = container.annotations
-      .findAnnotation(injektFqNames().typeParameterInfos)
+      .findAnnotation(injektFqNames().typeParameterInfo)
     val initialTypeParameterInfos = loadTypeParameterInfos()
     if (initialTypeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo().encode()
       // load again if the annotation has changed
       val finalTypeParameterInfos =
-        if (container.annotations.findAnnotation(injektFqNames().typeParameterInfos) !=
+        if (container.annotations.findAnnotation(injektFqNames().typeParameterInfo) !=
           initialInfosAnnotation) loadTypeParameterInfos()
       else initialTypeParameterInfos
       finalTypeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           module().findClassAcrossModuleDependencies(
-            ClassId.topLevel(injektFqNames().typeParameterInfos)
+            ClassId.topLevel(injektFqNames().typeParameterInfo)
           )?.defaultType ?: return,
           mapOf("values".asNameId() to finalTypeParameterInfos.joinToString("=:=").toChunkedArrayValue()),
           SourceElement.NO_SOURCE
@@ -537,7 +537,7 @@ val json = Json { ignoreUnknownKeys = true }
 inline fun <reified T> T.encode(): String = json.encodeToString(this)
 inline fun <reified T> String.decode(): T = json.decodeFromString(this)
 
-private fun DescriptorVisibility.shouldPersistInfo() = this ==
+fun DescriptorVisibility.shouldPersistInfo() = this ==
     DescriptorVisibilities.PUBLIC ||
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED

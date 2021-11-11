@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.classifierInfo
+import com.ivianuu.injekt.compiler.shouldPersistInfo
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -29,7 +30,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class InfoAnnotationPatcher(@Inject private val baseCtx: Context) : DeclarationChecker {
+class InfoPatcher(@Inject private val baseCtx: Context) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
@@ -40,21 +41,27 @@ class InfoAnnotationPatcher(@Inject private val baseCtx: Context) : DeclarationC
     // requesting infos triggers saving them
     when (descriptor) {
       is ClassDescriptor -> {
-        descriptor.classifierInfo()
-        descriptor.declaredTypeParameters
-          .forEach { it.classifierInfo() }
-        descriptor.constructors
-          .forEach { it.callableInfo() }
+        if (descriptor.visibility.shouldPersistInfo()) {
+          descriptor.classifierInfo()
+          descriptor.declaredTypeParameters
+            .forEach { it.classifierInfo() }
+          descriptor.constructors
+            .forEach { it.callableInfo() }
+        }
       }
       is CallableDescriptor -> {
-        descriptor.callableInfo()
-        descriptor.typeParameters
-          .forEach { it.classifierInfo() }
+        if (descriptor.visibility.shouldPersistInfo()) {
+          descriptor.callableInfo()
+          descriptor.typeParameters
+            .forEach { it.classifierInfo() }
+        }
       }
       is TypeAliasDescriptor -> {
-        descriptor.classifierInfo()
-        descriptor.declaredTypeParameters
-          .forEach { it.classifierInfo() }
+        if (descriptor.visibility.shouldPersistInfo()) {
+          descriptor.classifierInfo()
+          descriptor.declaredTypeParameters
+            .forEach { it.classifierInfo() }
+        }
       }
     }
   }
