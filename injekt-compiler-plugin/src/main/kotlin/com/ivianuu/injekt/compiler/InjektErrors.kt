@@ -323,11 +323,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
             }
         }
         ?: if (failure == unwrappedFailure) {
-          "ambiguous injectables:\n${
+          "ambiguous injectables:\n\n${
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
+          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
               "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}"
         } else {
           "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
@@ -349,28 +349,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
           "${unwrappedFailureRequest.parameterName} of function " +
           "${unwrappedFailureRequest.callableFqName}"
       )
-
-      if (importSuggestions.isNotEmpty()) {
-        appendLine()
-        appendLine(
-          if (importSuggestions.size == 1)
-            "The following import might fix the problem:"
-          else
-            "One of the following imports might fix the problem:"
-        )
-        appendLine()
-        importSuggestions.forEach {
-          val importableFqName = if (it.callable is ConstructorDescriptor)
-            it.callable.constructedClass.fqNameSafe
-          else
-            it.callable.fqNameSafe
-          appendLine("  @Providers(\"$importableFqName\")")
-        }
-      } else Unit
     }
   }.let { }
 
   if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
+    appendLine()
     appendLine("I found:")
     appendLine()
 
@@ -564,6 +547,24 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
     }.let { }
   }
+
+  if (importSuggestions.isNotEmpty()) {
+    appendLine()
+    appendLine(
+      if (importSuggestions.size == 1)
+        "The following import might fix the problem:"
+      else
+        "One of the following imports might fix the problem:"
+    )
+    appendLine()
+    importSuggestions.forEach {
+      val importableFqName = if (it.callable is ConstructorDescriptor)
+        it.callable.constructedClass.fqNameSafe
+      else
+        it.callable.fqNameSafe
+      appendLine("  @Providers(\"$importableFqName\")")
+    }
+  } else Unit
 }
 
 private fun ResolutionResult.Failure.unwrapDependencyFailure(

@@ -311,9 +311,9 @@ class InjectableResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n" +
+      "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.a\n" +
-          "com.ivianuu.injekt.integrationtests.b\n" +
+          "com.ivianuu.injekt.integrationtests.b\n\n" +
           "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
     )
   }
@@ -328,9 +328,9 @@ class InjectableResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n" +
+      "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.invoke.injectableA\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableB\n" +
+          "com.ivianuu.injekt.integrationtests.invoke.injectableB\n\n" +
           "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
     )
   }
@@ -470,9 +470,9 @@ class InjectableResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n" +
+      "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo1\n" +
-          "com.ivianuu.injekt.integrationtests.foo2\n" +
+          "com.ivianuu.injekt.integrationtests.foo2\n\n" +
           "do all match type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
     )
   }
@@ -490,7 +490,7 @@ class InjectableResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar\n" +
+      "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar\n\n" +
           "I found:\n" +
           "\n" +
           "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
@@ -675,9 +675,9 @@ class InjectableResolutionTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n" +
+      "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo\n" +
-          "com.ivianuu.injekt.integrationtests.otherFoo\n" +
+          "com.ivianuu.injekt.integrationtests.otherFoo\n\n" +
           "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject"
     )
   }

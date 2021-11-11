@@ -171,7 +171,10 @@ sealed class ResolutionResult {
         get() = 0
     }
 
-    data class NoCandidates(val scope: InjectablesScope) : Failure() {
+    data class NoCandidates(
+      val scope: InjectablesScope,
+      val request: InjectableRequest
+    ) : Failure() {
       override val failureOrdering: Int
         get() = 2
     }
@@ -226,7 +229,7 @@ fun InjectablesScope.resolveRequests(
   else {
     val unwrappedFailure = failure.unwrapDependencyFailure()
     val importSuggestions = if (unwrappedFailure is ResolutionResult.Failure.NoCandidates)
-      computeImportSuggestions(failureRequest!!, lookupLocation)
+      computeImportSuggestions(unwrappedFailure.request, lookupLocation)
     else emptyList()
     InjectionGraph.Error(
       this,
@@ -267,7 +270,7 @@ private fun InjectablesScope.resolveRequest(
           ?: userResult
       else
         userResult
-    } ?: ResolutionResult.Failure.NoCandidates(this)
+    } ?: ResolutionResult.Failure.NoCandidates(this, request)
 
   resultsByType[request.type] = result
   return result
@@ -464,7 +467,7 @@ private fun InjectablesScope.resolveCandidate(
         when {
           dependency.isRequired && candidate is ProviderInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
-            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependencyScope)
+            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependencyScope, dependency)
           dependency.isRequired ||
               dependencyResult.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
@@ -563,13 +566,13 @@ private fun InjectablesScope.compareCallable(
     if (!isBExternal && isAExternal) return 1
   }
 
-  val ownerA = a.safeAs<CallableInjectable>()?.callable?.callable?.containingDeclaration
-  val ownerB = b.safeAs<CallableInjectable>()?.callable?.callable?.containingDeclaration
-  if (ownerA != null && ownerA == ownerB) {
-    val aSubClassNesting = a.safeAs<CallableInjectable>()?.callable?.callable
-      ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
-    val bSubClassNesting = b.safeAs<CallableInjectable>()?.callable?.callable
-      ?.overriddenTreeUniqueAsSequence(false)?.count()?.dec() ?: 0
+  val ownerA = a.callable.containingDeclaration
+  val ownerB = b.callable.containingDeclaration
+  if (ownerA == ownerB) {
+    val aSubClassNesting = a.callable
+      .overriddenTreeUniqueAsSequence(false).count().dec()
+    val bSubClassNesting = b.callable
+      .overriddenTreeUniqueAsSequence(false).count().dec()
 
     if (aSubClassNesting < bSubClassNesting) return -1
     if (bSubClassNesting < aSubClassNesting) return 1
@@ -731,9 +734,10 @@ private fun InjectablesScope.computeImportSuggestions(
   }
 
   return successes
-    .map {
+    .mapNotNull {
       it.cast<ResolutionResult.Success.WithCandidate.Value>()
-        .candidate.cast<CallableInjectable>().callable
+        .candidate.safeAs<CallableInjectable>()
+        ?.callable
     }
     .takeIf { it.isNotEmpty() }
     ?: candidates

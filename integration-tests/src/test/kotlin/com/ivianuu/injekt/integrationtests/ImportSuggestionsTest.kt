@@ -74,4 +74,30 @@ class ImportSuggestionsTest {
     compilationShouldHaveFailed()
     shouldNotContainMessage("might fix the problem")
   }
+
+  @Test fun testShowsUsefulImportSuggestionForNestedError() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            object FooModule {
+              @Provide fun foo() = Foo()
+            }
+          """,
+          packageFqName = FqName("modules")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide fun bar(foo: Foo) = Bar(foo)
+            fun invoke() = inject<Bar>()
+          """
+        )
+      )
+    )
+  ) {
+    compilationShouldHaveFailed()
+    shouldContainMessage("@Providers(\"modules.FooModule.foo\")")
+  }
 }
