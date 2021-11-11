@@ -59,25 +59,6 @@ class InjectablesScope(
 
   val injectables = mutableListOf<CallableRef>()
 
-  val spreadingInjectables = mutableListOf<SpreadingInjectable>()
-  private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
-
-  data class SpreadingInjectable(
-    val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeParameters.single {
-      it.isSpread
-    }.defaultType.substitute(callable.typeArguments),
-    val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
-    val resultingFrameworkKeys: MutableSet<Int> = mutableSetOf()
-  ) {
-    fun copy() = SpreadingInjectable(
-      callable,
-      constraintType,
-      processedCandidateTypes.toMutableSet(),
-      resultingFrameworkKeys.toMutableSet()
-    )
-  }
-
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
@@ -105,44 +86,11 @@ class InjectablesScope(
               packageFqName
             )
           },
-          addInjectable = { callable ->
-            injectables += callable
-            val typeWithFrameworkKey = callable.type
-              .copy(frameworkKey = generateFrameworkKey())
-            injectables += callable.copy(type = typeWithFrameworkKey)
-            spreadingInjectableCandidateTypes += typeWithFrameworkKey
-          },
-          addSpreadingInjectable = { callable ->
-            spreadingInjectables += SpreadingInjectable(callable)
-          },
-          addComponent = { component ->
-            this.components += component
-            val typeWithFrameworkKey = component.type
-              .copy(frameworkKey = generateFrameworkKey())
-            spreadingInjectableCandidateTypes += typeWithFrameworkKey
-          },
+          addInjectable = { injectables += it },
+          addComponent = { components += it },
           addEntryPoint = { entryPoints += it }
         )
       }
-
-    val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
-    val hasSpreadingInjectableCandidates = spreadingInjectableCandidateTypes.isNotEmpty()
-    if (parent != null) {
-      spreadingInjectables.addAll(
-        0,
-        parent.spreadingInjectables
-          .map { if (hasSpreadingInjectableCandidates) it.copy() else it }
-      )
-      spreadingInjectableCandidateTypes.addAll(0, parent.spreadingInjectableCandidateTypes)
-    }
-
-    if ((hasSpreadingInjectables && spreadingInjectableCandidateTypes.isNotEmpty()) ||
-      (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
-    ) {
-      spreadingInjectableCandidateTypes
-        .toList()
-        .forEach { spreadInjectables(it) }
-    }
   }
 
   fun recordLookup(lookupLocation: LookupLocation) {
@@ -165,7 +113,7 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.frameworkKey == 0 &&
+    if (request.type.frameworkKey == null &&
       request.type.classifier == ctx.listClassifier) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
@@ -327,76 +275,6 @@ class InjectablesScope(
         if (!context.isOk) return@firstNotNullOfOrNull null
         candidate.substitute(context.fixedTypeVariables)
       }
-  }
-
-  private fun spreadInjectables(candidateType: TypeRef) {
-    for (spreadingInjectable in spreadingInjectables.toList())
-      spreadInjectables(spreadingInjectable, candidateType)
-  }
-
-  private fun spreadInjectables(
-    spreadingInjectable: SpreadingInjectable,
-    candidateType: TypeRef
-  ) {
-    if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
-    if (candidateType in spreadingInjectable.processedCandidateTypes) return
-    spreadingInjectable.processedCandidateTypes += candidateType
-    val (context, substitutionMap) = buildContextForSpreadingInjectable(
-      spreadingInjectable.constraintType,
-      candidateType,
-      allStaticTypeParameters
-    )
-    if (!context.isOk) return
-
-    val newInjectableType = spreadingInjectable.callable.type
-      .substitute(substitutionMap)
-      .copy(frameworkKey = 0)
-    val newInjectable = spreadingInjectable.callable
-      .copy(
-        type = newInjectableType,
-        originalType = newInjectableType,
-        parameterTypes = spreadingInjectable.callable.parameterTypes
-          .mapValues { it.value.substitute(substitutionMap) },
-        typeArguments = spreadingInjectable.callable
-          .typeArguments
-          .mapValues { it.value.substitute(substitutionMap) }
-      )
-
-    newInjectable.collectInjectables(
-      scope = this,
-      addImport = { importFqName, packageFqName ->
-        this.imports += ResolvedProviderImport(
-          null,
-          "${importFqName}.*",
-          packageFqName
-        )
-      },
-      addInjectable = { newInnerInjectable ->
-        val finalNewInnerInjectable = newInnerInjectable
-          .copy(originalType = newInnerInjectable.type)
-        injectables += finalNewInnerInjectable
-        val newInnerInjectableWithFrameworkKey = finalNewInnerInjectable.copy(
-          type = finalNewInnerInjectable.type.copy(
-            frameworkKey = generateFrameworkKey()
-              .also { spreadingInjectable.resultingFrameworkKeys += it }
-          )
-        )
-        injectables += newInnerInjectableWithFrameworkKey
-        spreadingInjectableCandidateTypes += newInnerInjectableWithFrameworkKey.type
-        spreadInjectables(newInnerInjectableWithFrameworkKey.type)
-      },
-      addSpreadingInjectable = { newInnerInjectable ->
-        val finalNewInnerInjectable = newInnerInjectable
-          .copy(originalType = newInnerInjectable.type)
-        val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
-        spreadingInjectables += newSpreadingInjectable
-        spreadingInjectableCandidateTypes
-          .toList()
-          .forEach { spreadInjectables(newSpreadingInjectable, it) }
-      },
-      addComponent = { throw AssertionError("Wtf") },
-      addEntryPoint = { throw AssertionError("Wtf") }
-    )
   }
 
   /**

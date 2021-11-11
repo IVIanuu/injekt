@@ -198,7 +198,7 @@ fun KotlinType.toTypeRef(
       isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
       isInject = kotlinType.hasAnnotation(injektFqNames().inject),
       isStarProjection = false,
-      frameworkKey = 0,
+      frameworkKey = null,
       variance = variance,
       scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef(),
       isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
@@ -237,7 +237,7 @@ class TypeRef(
   val isProvide: Boolean = false,
   val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
-  val frameworkKey: Int = 0,
+  val frameworkKey: String? = null,
   val variance: TypeVariance = TypeVariance.INV,
   val scopeComponentType: TypeRef? = null,
   val isEager: Boolean = false,
@@ -357,7 +357,7 @@ fun TypeRef.withVariance(variance: TypeVariance) =
   if (this.variance == variance) this
   else copy(variance = variance)
 
-fun TypeRef.withFrameworkKey(frameworkKey: Int): TypeRef =
+fun TypeRef.withFrameworkKey(frameworkKey: String?): TypeRef =
   if (this.frameworkKey == frameworkKey) this
   else copy(frameworkKey = frameworkKey)
 
@@ -369,7 +369,7 @@ fun TypeRef.copy(
   isProvide: Boolean = this.isProvide,
   isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
-  frameworkKey: Int = this.frameworkKey,
+  frameworkKey: String? = this.frameworkKey,
   variance: TypeVariance = this.variance,
   scopeComponentType: TypeRef? = this.scopeComponentType,
   isEager: Boolean = this.isEager,

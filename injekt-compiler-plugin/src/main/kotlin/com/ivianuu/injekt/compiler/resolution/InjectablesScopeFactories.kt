@@ -642,6 +642,10 @@ fun TypeInjectablesScope(
 ): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
+  val allInjectables = parent.allScopes
+    .flatMap { it.injectables }
+    .map { it.callable.uniqueKey() to it.originalType.withFrameworkKey(null) }
+
   val externalInjectables = mutableListOf<CallableRef>()
   val typeInjectables = mutableListOf<CallableRef>()
   val internalInjectables = mutableListOf<CallableRef>()

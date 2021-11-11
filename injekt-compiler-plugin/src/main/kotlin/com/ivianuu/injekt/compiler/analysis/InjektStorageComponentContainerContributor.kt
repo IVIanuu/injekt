@@ -41,10 +41,11 @@ class InjektStorageComponentContainerContributor(
   ) {
     @Provide val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
 
-    val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
-      StorageComponentContainer::class,
-      "componentStorage"
-    )
+    val hasSyntheticScopesExtension = container
+      .readPrivateFinalField<ComponentStorage>(
+        StorageComponentContainer::class,
+        "componentStorage"
+      )
       .readPrivateFinalField<Set<Any>>(
         ComponentStorage::class,
         "descriptors"

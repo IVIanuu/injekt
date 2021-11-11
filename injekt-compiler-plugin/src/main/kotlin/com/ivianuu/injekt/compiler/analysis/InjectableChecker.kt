@@ -23,8 +23,11 @@ import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
+import com.ivianuu.injekt.compiler.resolution.spreadingInjectables
+import com.ivianuu.injekt.compiler.shouldPersistInfo
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
@@ -83,6 +86,9 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration)
       checkSpreadingInjectable(declaration, descriptor.typeParameters)
+
+      if (!isIde && descriptor.visibility.shouldPersistInfo())
+        descriptor.spreadingInjectables()
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
     }
@@ -179,6 +185,12 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     }
 
     checkExceptActual(declaration, descriptor)
+
+    if (!isIde)
+      provideConstructors.forEach {
+        if (it.callable.visibility.shouldPersistInfo())
+          it.callable.spreadingInjectables()
+      }
   }
 
   private fun checkConstructor(
@@ -202,7 +214,12 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     descriptor: PropertyDescriptor,
     @Inject ctx: Context
   ) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
+    if (descriptor.isProvide()) {
+      if (!isIde && descriptor.visibility.shouldPersistInfo())
+        descriptor.spreadingInjectables()
+    } else {
+      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters)
+    }
     checkReceiver(descriptor, declaration)
     checkOverrides(declaration, descriptor)
     checkExceptActual(declaration, descriptor)

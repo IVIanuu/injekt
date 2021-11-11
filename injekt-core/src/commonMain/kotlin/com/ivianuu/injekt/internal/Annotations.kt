@@ -22,4 +22,6 @@ internal annotation class CallableInfo(val values: Array<String>)
 
 internal annotation class ClassifierInfo(val values: Array<String>)
 
+internal annotation class SpreadingInfo(val values: Array<String>)
+
 internal annotation class TypeParameterInfo(val values: Array<String>)

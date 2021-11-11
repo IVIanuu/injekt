@@ -462,13 +462,13 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
   }
 }
 
-private fun AnnotationDescriptor.readChunkedValue() = allValueArguments
+fun AnnotationDescriptor.readChunkedValue() = allValueArguments
   .values
   .single()
   .cast<ArrayValue>()
   .value.joinToString("") { it.value.toString() }
 
-private fun String.toChunkedArrayValue() = ArrayValue(
+fun String.toChunkedArrayValue() = ArrayValue(
   chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
 ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
@@ -477,7 +477,7 @@ private fun TypeRef.shouldBePersisted(): Boolean = anyType {
       it.scopeComponentType != null
 }
 
-private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
+fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
   val newAnnotations = Annotations.create(
     annotations
       .filter { it.type != annotation.type } + annotation

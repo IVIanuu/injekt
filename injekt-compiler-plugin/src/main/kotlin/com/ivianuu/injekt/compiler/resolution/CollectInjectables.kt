@@ -268,7 +268,6 @@ fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
-  addSpreadingInjectable: (CallableRef) -> Unit,
   addComponent: (CallableRef) -> Unit,
   addEntryPoint: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
@@ -279,11 +278,6 @@ fun CallableRef.collectInjectables(
   seen += this
 
   if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
-
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
-    addSpreadingInjectable(this)
-    return
-  }
 
   if (callable is ComponentConstructorDescriptor) {
     addComponent(this)
@@ -316,7 +310,6 @@ fun CallableRef.collectInjectables(
         scope = scope,
         addImport = addImport,
         addInjectable = addInjectable,
-        addSpreadingInjectable = addSpreadingInjectable,
         addComponent = addComponent,
         addEntryPoint = addEntryPoint,
         import = import,

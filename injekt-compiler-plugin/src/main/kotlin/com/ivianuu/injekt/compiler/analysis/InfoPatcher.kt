@@ -25,6 +25,7 @@ import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -37,6 +38,10 @@ class InfoPatcher(@Inject private val baseCtx: Context) : DeclarationChecker {
     context: DeclarationCheckerContext
   ) {
     @Provide val ctx = baseCtx.withTrace(context.trace)
+
+    if (descriptor !is DeclarationDescriptorWithVisibility ||
+        !descriptor.visibility.shouldPersistInfo())
+      return
 
     // requesting infos triggers saving them
     when (descriptor) {

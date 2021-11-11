@@ -57,6 +57,8 @@ object InjektWritableSlices {
   val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
   val UNIQUE_KEY = BasicWritableSlice<DeclarationDescriptor, String>(RewritePolicy.DO_NOTHING)
   val ALL_INJECTABLES = BasicWritableSlice<Unit, List<CallableRef>>(RewritePolicy.DO_NOTHING)
+  val SPREADING_INJECTABLES =
+    BasicWritableSlice<DeclarationDescriptor, List<CallableRef>>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)

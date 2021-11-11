@@ -32,6 +32,7 @@ class InjektFqNames(injektPackage: FqName) {
   val callableInfo = internalPackage.child("CallableInfo".asNameId())
   val classifierInfo = internalPackage.child("ClassifierInfo".asNameId())
   val index = internalPackage.child("Index".asNameId())
+  val spreadingInfo = internalPackage.child("SpreadingInfo".asNameId())
   val typeParameterInfo = internalPackage.child("TypeParameterInfo".asNameId())
   val indicesPackage = internalPackage.child("indices".asNameId())
 
