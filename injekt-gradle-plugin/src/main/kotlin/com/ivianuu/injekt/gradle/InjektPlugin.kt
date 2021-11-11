@@ -86,8 +86,11 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
       injektTask.destinationDirectory.set(outputDir)
       (injektTask as InjektTask).outputs.dirs(outputDir, srcDir)
-      injektTask.source(kotlinCompileTask.source)
-      injektTask.source.filter { !it.absolutePath.startsWith(srcDir.absolutePath) }
+      injektTask.source(
+        kotlinCompileTask.source.filter {
+          !it.absolutePath.startsWith(srcDir.absolutePath)
+        }
+      )
     }
 
     val injektTaskProvider = when (kotlinCompileTask) {
