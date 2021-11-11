@@ -79,9 +79,10 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 
           fun resolveFqName(fqName: String, endOffset: Int) {
             if (fqName.isEmpty()) return
-            if (fqName.endsWith(".*")) {
+            if (fqName.endsWith(".*"))
               return resolveFqName(fqName.removeSuffix(".*"), endOffset - 2)
-            }
+            if (fqName.endsWith(".**"))
+              return resolveFqName(fqName.removeSuffix(".**"), endOffset - 3)
             val startOffset = fqName.lastIndexOf(".") + 1
 
             val range = TextRange.create(
