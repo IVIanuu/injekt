@@ -32,7 +32,7 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
-class InjectableListTest {
+class ListTest {
   @Test fun testList() = singleAndMultiCodegen(
     """
       @Provide fun commandA() = CommandA()

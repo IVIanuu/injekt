@@ -31,7 +31,7 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class InjectableResolutionTest {
+class ResolutionTest {
   @Test fun testPrefersInternalInjectableOverExternal() = multiCodegen(
     """
       @Provide lateinit var externalFoo: Foo

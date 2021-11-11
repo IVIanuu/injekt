@@ -209,26 +209,10 @@ class InjectablesScope(
         val collectionElementType = ctx.collectionClassifier.defaultType
           .withArguments(listOf(singleElementType))
 
-        var key = CallableRequestKey(request.type, allStaticTypeParameters)
+        val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-        var elements = listElementsForType(singleElementType, collectionElementType, key) +
+        val elements = listElementsForType(singleElementType, collectionElementType, key) +
             frameworkListElementsForType(singleElementType, collectionElementType, key)
-        if (elements.isEmpty() && singleElementType.isFunctionType) {
-          val providerReturnType = singleElementType.arguments.last()
-          key = CallableRequestKey(providerReturnType, allStaticTypeParameters)
-
-          elements = (listElementsForType(
-            providerReturnType, ctx.collectionClassifier
-              .defaultType.withArguments(listOf(providerReturnType)), key) +
-              frameworkListElementsForType(providerReturnType, ctx.collectionClassifier
-                .defaultType.withArguments(listOf(providerReturnType)), key))
-            .map { elementType ->
-              singleElementType.copy(
-                arguments = singleElementType.arguments
-                  .dropLast(1) + elementType
-              )
-            }
-        }
 
         return if (elements.isEmpty()) null
         else ListInjectable(
@@ -289,7 +273,23 @@ class InjectablesScope(
     collectionElementType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef> {
-    if (components.isEmpty()) return emptyList()
+    if (singleElementType.isFunctionType) {
+      val providerReturnType = singleElementType.arguments.last()
+      val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
+
+      return (listElementsForType(
+        providerReturnType, ctx.collectionClassifier
+          .defaultType.withArguments(listOf(providerReturnType)), innerKey) +
+          frameworkListElementsForType(providerReturnType, ctx.collectionClassifier
+            .defaultType.withArguments(listOf(providerReturnType)), innerKey))
+        .map { elementType ->
+          singleElementType.copy(
+            arguments = singleElementType.arguments
+              .dropLast(1) + elementType
+          )
+        }
+    }
+
     return components
       .mapNotNull { candidate ->
         var context =

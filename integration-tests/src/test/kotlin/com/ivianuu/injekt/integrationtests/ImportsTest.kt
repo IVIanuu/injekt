@@ -30,7 +30,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class InjectablesImportsTest {
+class ImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
       @Providers("a")

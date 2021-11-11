@@ -30,7 +30,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class InjectableResolveTest {
+class ResolveTest {
   @Test fun testResolvesExternalInjectableInSamePackage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
