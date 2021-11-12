@@ -29,6 +29,8 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,7 +46,7 @@ import kotlinx.coroutines.launch
 @Tag annotation class AppUiTag
 typealias AppUi = @AppUiTag @Composable () -> Unit
 
-@Provide fun appUi(viewModel: CounterViewModel): AppUi = {
+@Provide fun appUi(modelProvider: @Composable () -> CounterModel): AppUi = {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -53,37 +55,44 @@ typealias AppUi = @AppUiTag @Composable () -> Unit
       )
     }
   ) {
-    val state by viewModel.state.collectAsState(0)
+    val model = modelProvider()
     Column(
       modifier = Modifier.fillMaxSize(),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Text("Count $state", style = MaterialTheme.typography.subtitle1)
+      Text("Count ${model.state}", style = MaterialTheme.typography.subtitle1)
       Spacer(Modifier.height(8.dp))
-      Button(onClick = { viewModel.inc() }) {
+      Button(onClick = model.incCounter) {
         Text("Inc")
       }
       Spacer(Modifier.height(8.dp))
-      Button(onClick = { viewModel.dec() }) {
+      Button(onClick = model.decCounter) {
         Text("Dec")
       }
     }
   }
 }
 
-@Provide @Scoped<ActivityComponent> class CounterViewModel(
-  private val usecases: CounterUsecases,
-  private val scope: ComponentScope<ActivityComponent>
-) {
-  val state: Flow<Int>
-    get() = usecases.counter()
+data class CounterModel(
+  val state: Int,
+  val incCounter: () -> Unit,
+  val decCounter: () -> Unit
+)
 
-  fun inc() {
-    scope.launch { usecases.incCounter() }
-  }
-
-  fun dec() {
-    scope.launch { usecases.decCounter() }
-  }
+@Provide @Composable fun counterModel(usecases: CounterUsecases): CounterModel {
+  val scope = rememberCoroutineScope()
+  return CounterModel(
+    state = usecases.counter().collectAsState(0).value,
+    incCounter = {
+      scope.launch {
+        usecases.incCounter()
+      }
+    },
+    decCounter = {
+      scope.launch {
+        usecases.decCounter()
+      }
+    }
+  )
 }
