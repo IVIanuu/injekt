@@ -252,14 +252,14 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           ?.get(cast<TypeParameterDescriptor>().index)
           ?.takeIf { it.isNotEmpty() }
           ?.decode<PersistedClassifierInfo>()
-          ?.toClassifierInfo(this)
+          ?.toClassifierInfo()
       } else {
         annotations
           .findAnnotation(injektFqNames().classifierInfo)
           ?.readChunkedValue()
           ?.cast<String>()
           ?.decode<PersistedClassifierInfo>()
-          ?.toClassifierInfo(this)
+          ?.toClassifierInfo()
       })?.let {
         return@getOrPut it
       }
@@ -368,10 +368,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   val declaresInjectables: Boolean
 )
 
-fun PersistedClassifierInfo.toClassifierInfo(
-  descriptor: ClassifierDescriptor,
-  @Inject ctx: Context
-) = ClassifierInfo(
+fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
   scopeComponentType = scopeComponentType?.toTypeRef(),
   isEager = isEager,
