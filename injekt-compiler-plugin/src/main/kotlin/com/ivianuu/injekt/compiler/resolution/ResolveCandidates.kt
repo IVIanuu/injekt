@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequenc
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.LinkedList
+import kotlin.math.sign
 import kotlin.reflect.KClass
 
 sealed class InjectionGraph {
@@ -230,7 +231,7 @@ fun InjectablesScope.resolveRequests(
     val unwrappedFailure = failure.unwrapDependencyFailure()
     val importSuggestions = if (unwrappedFailure is ResolutionResult.Failure.NoCandidates &&
        !unwrappedFailure.request.type.hasErrors)
-      computeImportSuggestions(unwrappedFailure.request, lookupLocation)
+         unwrappedFailure.scope.computeImportSuggestions(unwrappedFailure.request, lookupLocation)
     else emptyList()
     InjectionGraph.Error(
       this,
@@ -359,13 +360,7 @@ private fun InjectablesScope.resolveCandidates(
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
-    .let {
-      try {
-        it.sortedWith { a, b -> compareCandidate(a, b) }
-      } catch (e: Throwable) {
-        throw IllegalStateException("Wtf $request\n${candidates.joinToString("\n")}", e)
-      }
-    }
+    .sortedWithValidation { a, b -> compareCandidate(a, b) }
     .distinctBy {
       if (it is CallableInjectable) it.callable.callable.uniqueKey()
       else it
@@ -710,7 +705,10 @@ private fun InjectablesScope.computeImportSuggestions(
   lookupLocation: LookupLocation
 ): List<CallableRef> {
   val candidates = collectImportSuggestionInjectables()
-    .sortedWith { a, b -> compareCallable(a, b, true) }
+    .filter {
+      it.type.buildContext(failureRequest.type, allStaticTypeParameters).isOk
+    }
+    .sortedWithValidation { a, b -> compareCallable(a, b, true) }
 
   val successes = mutableListOf<ResolutionResult.Success>()
   val remaining = candidates.toCollection(LinkedList())
@@ -753,10 +751,6 @@ private fun InjectablesScope.computeImportSuggestions(
     }
     .takeIf { it.isNotEmpty() }
     ?: candidates
-      .filter {
-        it.type.buildContext(failureRequest.type, allStaticTypeParameters)
-          .isOk
-      }
       .take(10)
 }
 
@@ -764,3 +758,57 @@ private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult
   if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
     dependencyFailure.unwrapDependencyFailure()
   else this
+
+private fun <T> List<T>.sortedWithValidation(comparator: Comparator<T>) = try {
+  sortedWith(comparator)
+} catch (e: IllegalArgumentException) {
+  comparator.validate(this)
+  throw e
+}
+
+private fun <T> Comparator<T>.validate(candidates: List<T>) {
+  for (x in candidates) {
+    for (y in candidates) {
+      val cmpXY = compare(x, y).sign
+      val cmpYX = compare(y, x).sign
+      for (z in candidates) {
+        val cmpXZ = compare(x, z).sign
+        val cmpYZ = compare(y, z).sign
+
+        if (cmpXY != -cmpYX) {
+          error(
+            """signum(cmp(x, y)) == -signum(cmp(y, x)) given:
+                 |x = $x
+                 |y = $y
+                 |cmpXY = $cmpXY
+                 |cmpYX = $cmpYX"""
+          )
+        }
+
+        if (cmpXY != 0 && cmpXY == cmpYZ && cmpXZ != cmpXY) {
+          error(
+            """transitivity given:
+                 |x = $x
+                 |y = $y
+                 |z = $z
+                 |cmpXY = $cmpXY
+                 |cmpXZ = $cmpXZ
+                 |cmpYZ = $cmpYZ"""
+          )
+        }
+
+        if (cmpXY == 0 && cmpXZ != cmpYZ) {
+          error(
+            """cmp(x, y) == 0 implies that signum(cmp(x, z)) == signum(cmp(y, z)) given:
+                 |x = $x
+                 |y = $y
+                 |z = $z
+                 |cmpXY = $cmpXY
+                 |cmpXZ = $cmpXZ
+                 |cmpYZ = $cmpYZ"""
+          )
+        }
+      }
+    }
+  }
+}
