@@ -88,7 +88,8 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       (injektTask as InjektTask).outputs.dirs(outputDir, srcDir)
       injektTask.source(
         kotlinCompileTask.source.filter {
-          !it.absolutePath.startsWith(srcDir.absolutePath)
+          it.extension == "kt" &&
+              !it.absolutePath.startsWith(srcDir.absolutePath)
         }
       )
     }
@@ -185,6 +186,9 @@ interface InjektTask : Task {
   init {
     incremental = true
     useClasspathSnapshot.set(true)
+    // Mute a warning from ScriptingGradleSubplugin, which tries to get `sourceSetName` before this task is
+    // configured.
+    sourceSetName.set("main")
   }
 
   override fun setupCompilerArgs(
