@@ -111,7 +111,7 @@ class InjektDeclarationGeneratorExtension(
 
     fun File.backupFile() = File(backupDir, toRelativeString(srcDir))
 
-    removedFiles?.forEach {
+    ((removedFiles ?: emptyList()) + (modifiedFiles ?: emptyList())).forEach {
       fileMap.remove(it.absolutePath)?.forEach { outputFile ->
         File(outputFile).backupFile().delete()
       }
