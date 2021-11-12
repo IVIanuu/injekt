@@ -68,7 +68,7 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev658"
+  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev659"
   const val injektGradlePluginShaded = "com.ivianuu.injekt:injekt-gradle-plugin-shaded:0.0.1-dev649"
 
   const val junit = "junit:junit:4.12"
