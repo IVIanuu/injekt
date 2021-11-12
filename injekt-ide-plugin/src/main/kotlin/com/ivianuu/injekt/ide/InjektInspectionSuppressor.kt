@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -32,7 +33,9 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.bindingContextUtil.getAbbreviatedTypeOrType
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 import org.jetbrains.kotlin.types.getAbbreviation
@@ -60,15 +63,18 @@ class InjektInspectionSuppressor : InspectionSuppressor {
       "RemoveExplicitTypeArguments" -> {
         if (element !is KtTypeArgumentList) return false
         val call = element.parent as? KtCallExpression
-        val resolvedCall = call?.resolveToCall(BodyResolveMode.FULL)
-          ?: return false
+        val bindingContext = call?.analyze() ?: return false
+        val resolvedCall = call.getResolvedCall(bindingContext) ?: return false
         return resolvedCall.typeArguments
           .any { (typeParameter, typeArgument) ->
             val abbreviation = typeArgument.getAbbreviation()
             (abbreviation != null && typeParameter.defaultType.supertypes()
               .none { it.getAbbreviation() == typeArgument }) ||
                 typeArgument.toTypeRef(ctx = Context(
-                  resolvedCall.candidateDescriptor.module, injektFqNames, null))
+                  resolvedCall.candidateDescriptor.module,
+                  injektFqNames,
+                  DelegatingBindingTrace(bindingContext, "injekt")
+                ))
                   .anyType { it.classifier.isTag }
           }
       }
