@@ -269,10 +269,10 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        appendLine("fun $injectablesLookupName(")
-        appendLine("  marker: $markerName,")
+        appendLine("@Suppress(\"unused\") fun $injectablesLookupName(")
+        appendLine(" @Suppress(\"UNUSED_PARAMETER\") marker: $markerName,")
         repeat(i + 1) {
-          appendLine("  index$it: Byte,")
+          appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
         }
 
         fun DeclarationDescriptor.hash(): String = when (this) {
@@ -299,7 +299,7 @@ class InjektDeclarationGeneratorExtension(
           .filter { it.isLetterOrDigit() }
           .chunked(256)
           .forEachIndexed { index, value ->
-            appendLine("  hash_${index}_$value: Int,")
+            appendLine("  @Suppress(\"UNUSED_PARAMETER\") hash_${index}_$value: Int,")
           }
 
         appendLine(") {")
@@ -337,10 +337,10 @@ class InjektDeclarationGeneratorExtension(
         }
 
         for ((i, injectable) in injectables.withIndex()) {
-          appendLine("fun $subInjectablesLookupName(")
-          appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
+          appendLine("@Suppress(\"unused\") fun $subInjectablesLookupName(")
+          appendLine("  @Suppress(\"UNUSED_PARAMETER\") marker: ${file.packageFqName.child(markerName.asNameId())},")
           repeat(i + 1) {
-            appendLine("  index$it: Byte,")
+            appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
           }
 
           fun DeclarationDescriptor.hash(): String = when (this) {
@@ -367,7 +367,7 @@ class InjektDeclarationGeneratorExtension(
             .filter { it.isLetterOrDigit() }
             .chunked(256)
             .forEachIndexed { index, value ->
-              appendLine("  hash_${index}_$value: Int,")
+              appendLine("  @Suppress(\"UNUSED_PARAMETER\") hash_${index}_$value: Int,")
             }
 
           appendLine(") {")
@@ -416,10 +416,10 @@ class InjektDeclarationGeneratorExtension(
         }\",")
         appendLine("  uniqueKey = \"${injectable.uniqueKey()}\"")
         appendLine(")")
-        appendLine("fun index(")
-        appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
+        appendLine("@Suppress(\"unused\") fun index(")
+        appendLine("  @Suppress(\"UNUSED_PARAMETER\") marker: ${file.packageFqName.child(markerName.asNameId())},")
         repeat(i + 1) {
-          appendLine("  index$it: Byte,")
+          appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
         }
         appendLine(") {")
         appendLine("}")
