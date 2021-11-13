@@ -52,6 +52,7 @@ class ClassifierRef(
   val lazySuperTypes: Lazy<List<TypeRef>> = lazyOf(emptyList()),
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
+  val isTypeAlias: Boolean = false,
   val isTag: Boolean = false,
   val isComponent: Boolean = false,
   val scopeComponentType: TypeRef? = null,
@@ -80,6 +81,7 @@ class ClassifierRef(
     lazySuperTypes: Lazy<List<TypeRef>> = this.lazySuperTypes,
     isTypeParameter: Boolean = this.isTypeParameter,
     isObject: Boolean = this.isObject,
+    isTypeAlias: Boolean = this.isTypeAlias,
     isTag: Boolean = this.isTag,
     isComponent: Boolean = this.isComponent,
     scopeComponentType: TypeRef? = this.scopeComponentType,
@@ -92,7 +94,7 @@ class ClassifierRef(
     variance: TypeVariance = this.variance,
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
-    key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
+    key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject, isTypeAlias,
     isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
     tags, isSpread, primaryConstructorPropertyParameters, variance,
     declaresInjectables
@@ -146,6 +148,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       lazySuperTypes = info.lazySuperTypes,
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+      isTypeAlias = this is TypeAliasDescriptor,
       isTag = isTag,
       isComponent = hasAnnotation(injektFqNames().component),
       scopeComponentType = info.scopeComponentType,
@@ -207,7 +210,7 @@ fun KotlinType.toTypeRef(
     )
 
     val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
-    var r = if (tagAnnotations.isNotEmpty()) {
+    if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }
         .map {
@@ -220,14 +223,6 @@ fun KotlinType.toTypeRef(
         }
         .wrap(rawType)
     } else rawType
-
-    // expand the type
-    while (r.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
-      val expanded = r.unwrapTags().superTypes.single()
-      r = if (r.classifier.isTag) r.wrap(expanded) else expanded
-    }
-
-    r
   }
 }
 
@@ -542,6 +537,9 @@ val TypeRef.isFunctionType: Boolean
   get() =
     classifier.fqName.asString().startsWith("kotlin.Function") ||
         classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+
+val TypeRef.isSuspendFunctionType: Boolean
+  get() = classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
 
 fun effectiveVariance(
   declared: TypeVariance,

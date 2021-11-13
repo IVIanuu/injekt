@@ -48,10 +48,12 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
+import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -140,6 +142,18 @@ fun TypeRef.toIrType(
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
+    classifier.isTypeAlias -> superTypes.single()
+      .toIrType()
+      .let {
+        it as IrSimpleType
+        IrSimpleTypeImpl(
+          it.classifier,
+          it.hasQuestionMark,
+          it.arguments,
+          it.annotations,
+          toIrAbbreviation()
+        )
+      }
     classifier.isTag -> arguments.last().toIrType()
       .typeOrNull!!
       .cast<IrSimpleType>()
@@ -213,6 +227,20 @@ fun TypeRef.toIrType(
       )
     }
   }
+}
+
+private fun TypeRef.toIrAbbreviation(
+  @Inject irCtx: IrPluginContext,
+  localDeclarations: LocalDeclarations,
+  ctx: Context
+): IrTypeAbbreviation {
+  val typeAlias = irCtx.referenceTypeAlias(classifier.fqName)!!
+  return IrTypeAbbreviationImpl(
+    typeAlias,
+    isMarkedNullable,
+    arguments.map { it.toIrType() },
+    emptyList()
+  )
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)

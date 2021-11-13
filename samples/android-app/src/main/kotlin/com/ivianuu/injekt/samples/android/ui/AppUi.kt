@@ -43,8 +43,7 @@ import com.ivianuu.injekt.samples.android.domain.CounterUsecases
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-@Tag annotation class AppUiTag
-typealias AppUi = @AppUiTag @Composable () -> Unit
+typealias AppUi = @Composable () -> Unit
 
 @Provide fun appUi(modelProvider: @Composable () -> CounterModel): AppUi = {
   Scaffold(

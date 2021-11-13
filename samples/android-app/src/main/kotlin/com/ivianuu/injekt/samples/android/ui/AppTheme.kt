@@ -23,8 +23,7 @@ import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
 
-@Tag annotation class AppThemeTag
-typealias AppTheme = @AppThemeTag @Composable (@Composable () -> Unit) -> Unit
+typealias AppTheme = @Composable (@Composable () -> Unit) -> Unit
 
 @Provide val appTheme: AppTheme = { content ->
   MaterialTheme(colors = darkColors()) {
