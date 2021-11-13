@@ -19,13 +19,7 @@ plugins {
 }
 
 kotlin {
-  jvm {
-    compilations.forEach {
-      it.kotlinOptions {
-        jvmTarget = "1.8"
-      }
-    }
-  }
+  jvm()
   js {
     nodejs()
     browser()
