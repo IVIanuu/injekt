@@ -20,7 +20,6 @@ plugins {
 
 kotlin {
   jvm {
-    withJava()
     compilations.forEach {
       it.kotlinOptions {
         jvmTarget = "1.8"

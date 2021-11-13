@@ -89,7 +89,7 @@ object Deps {
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
-  const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.14.2"
+  const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.18.0"
 
   const val mockk = "io.mockk:mockk:1.11.0"
 

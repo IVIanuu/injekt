@@ -16,6 +16,8 @@
 
 import com.ivianuu.injekt.gradle.InjektExtension
 import com.ivianuu.injekt.gradle.InjektPlugin
+import com.vanniktech.maven.publish.MavenPublishPluginExtension
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 
@@ -47,6 +49,11 @@ allprojects {
     jcenter()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://plugins.gradle.org/m2")
+  }
+
+  plugins.withId("com.vanniktech.maven.publish") {
+    extensions.getByType<MavenPublishPluginExtension>()
+      .sonatypeHost = SonatypeHost.S01
   }
 
   if (project.name == "injekt-compiler-plugin" ||
