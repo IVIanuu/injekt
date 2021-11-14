@@ -515,4 +515,18 @@ class ComponentTest {
   ) {
     compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.MyComponent has clashing super types com.ivianuu.injekt.integrationtests.EntryPointA and com.ivianuu.injekt.integrationtests.EntryPointB")
   }
+
+  @Test fun testComponentObserverWithErrors() = singleAndMultiCodegen(
+    """ 
+      @Component interface MyComponent
+
+      @Provide fun corruptObserver(foo: Foo) = object : ComponentObserver<MyComponent> {
+      }
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    compilationShouldHaveFailed()
+  }
 }

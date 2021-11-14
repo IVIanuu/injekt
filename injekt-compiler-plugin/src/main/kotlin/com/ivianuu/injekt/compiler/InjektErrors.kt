@@ -413,26 +413,26 @@ private fun InjectionGraph.Error.render(): String = buildString {
         if (candidate !is ProviderInjectable) {
           if (candidate is ComponentInjectable) {
             val requestCallable = candidate.requestsByRequestCallables.entries
-              .single { it.value == request }
-              .key
+              .singleOrNull { it.value == request }
+              ?.key
 
-            when (requestCallable.callable.callContext()) {
-              CallContext.DEFAULT -> {}
+            when (requestCallable?.callable?.callContext()) {
               CallContext.COMPOSABLE -> append("@Composable ")
               CallContext.SUSPEND -> append("suspend ")
+              else -> {}
             }
 
-            if (requestCallable.callable is FunctionDescriptor)
+            if (requestCallable?.callable is FunctionDescriptor)
               append("fun ")
             else
               append("val ")
 
-            if (requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX] != null)
+            if (requestCallable?.parameterTypes?.get(EXTENSION_RECEIVER_INDEX) != null)
               append("${requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX]!!.renderToString()}.")
 
             append("${request.parameterName}")
 
-            if (requestCallable.callable is FunctionDescriptor)
+            if (requestCallable?.callable is FunctionDescriptor)
               append(
                 requestCallable.parameterTypes
                   .filter {

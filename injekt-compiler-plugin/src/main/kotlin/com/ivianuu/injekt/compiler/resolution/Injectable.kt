@@ -133,11 +133,12 @@ class ComponentInjectable(
         )
       )
     ),
-    callableFqName = callableFqName.child("observers".asNameId()),
+    callableFqName = callableFqName,
     callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
     parameterName = "observers".asNameId(),
     parameterIndex = 0,
     isRequired = false,
+    failOnAllCandidateErrors = true,
     isLazy = true
   )
 
@@ -413,6 +414,7 @@ data class InjectableRequest(
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true,
+  val failOnAllCandidateErrors: Boolean = false,
   val isInline: Boolean = false,
   val isLazy: Boolean = false,
   val customErrorMessages: () -> CustomErrorMessages? = { null }
