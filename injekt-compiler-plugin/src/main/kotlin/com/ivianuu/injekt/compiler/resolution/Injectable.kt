@@ -261,8 +261,7 @@ class ListInjectable(
     }
   override val callContext: CallContext
     get() = CallContext.DEFAULT
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope>
-    get() = emptyMap()
+  override val dependencyScopes = dependencies.associateWith { ownerScope }
   override val originalType: TypeRef
     get() = type.classifier.defaultType
   override val scopeComponentType: TypeRef?

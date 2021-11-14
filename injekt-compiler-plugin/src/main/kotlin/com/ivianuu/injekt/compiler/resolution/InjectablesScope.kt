@@ -41,7 +41,7 @@ class InjectablesScope(
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
   val componentType: TypeRef? = null,
-  val isTypeScope: Boolean = false,
+  val typeScopeType: TypeRef? = null,
   val isDeclarationContainer: Boolean = true,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
@@ -205,23 +205,28 @@ class InjectablesScope(
         )
       }
       request.type.classifier == ctx.listClassifier -> {
-        val singleElementType = request.type.arguments[0]
-        val collectionElementType = ctx.collectionClassifier.defaultType
-          .withArguments(listOf(singleElementType))
+        if (typeScopeType == request.type) {
+          val singleElementType = request.type.arguments[0]
+          val collectionElementType = ctx.collectionClassifier.defaultType
+            .withArguments(listOf(singleElementType))
 
-        val key = CallableRequestKey(request.type, allStaticTypeParameters)
+          val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-        val elements = listElementsForType(singleElementType, collectionElementType, key) +
-            frameworkListElementsForType(singleElementType, collectionElementType, key)
+          val elements = listElementsForType(singleElementType, collectionElementType, key) +
+              frameworkListElementsForType(singleElementType, collectionElementType, key)
 
-        return if (elements.isEmpty()) null
-        else ListInjectable(
-          type = request.type,
-          ownerScope = this,
-          elements = elements,
-          singleElementType = singleElementType,
-          collectionElementType = collectionElementType
-        )
+          return if (elements.isEmpty()) null
+          else ListInjectable(
+            type = request.type,
+            ownerScope = this,
+            elements = elements,
+            singleElementType = singleElementType,
+            collectionElementType = collectionElementType
+          )
+        } else {
+          return TypeInjectablesScope(request.type, this)
+            .frameworkInjectableForRequest(request)
+        }
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
         return TypeKeyInjectable(request.type, this)

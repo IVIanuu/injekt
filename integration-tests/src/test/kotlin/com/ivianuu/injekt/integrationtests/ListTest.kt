@@ -23,13 +23,16 @@ import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.source
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class ListTest {
@@ -186,4 +189,34 @@ class ListTest {
       fun invoke(): List<() -> MyComponent> = inject()
     """
   )
+
+  @Test fun testIncludesTypeScopeInList() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide fun commandB() = CommandB()
+          """,
+          packageFqName = FqName("com.ivianuu.injekt.test")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide fun commandsA() = listOf(CommandA())
+          """
+        ),
+        invokableSource(
+          """
+            fun invoke() = inject<List<Command>>() 
+          """
+        )
+      )
+    )
+  ) {
+    val list = invokeSingleFile<List<Command>>()
+    list.size shouldBe 2
+    list[0].shouldBeTypeOf<CommandA>()
+    list[1].shouldBeTypeOf<CommandB>()
+  }
 }

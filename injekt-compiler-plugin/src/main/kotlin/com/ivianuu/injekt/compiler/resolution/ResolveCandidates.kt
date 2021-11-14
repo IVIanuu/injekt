@@ -529,8 +529,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   a!!
   b!!
 
-  val aIsFromTypeScope = a.ownerScope.isTypeScope
-  val bIsFromTypeScope = b.ownerScope.isTypeScope
+  val aIsFromTypeScope = a.ownerScope.typeScopeType != null
+  val bIsFromTypeScope = b.ownerScope.typeScopeType != null
   if (!aIsFromTypeScope && bIsFromTypeScope) return -1
   if (!bIsFromTypeScope && aIsFromTypeScope) return 1
 
