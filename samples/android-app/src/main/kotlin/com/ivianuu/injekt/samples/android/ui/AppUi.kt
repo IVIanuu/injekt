@@ -28,19 +28,14 @@ import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.android.ActivityComponent
-import com.ivianuu.injekt.common.Scoped
-import com.ivianuu.injekt.coroutines.ComponentScope
-import com.ivianuu.injekt.samples.android.domain.CounterUsecases
-import kotlinx.coroutines.flow.Flow
+import com.ivianuu.injekt.samples.android.domain.Counter
+import com.ivianuu.injekt.samples.android.domain.DecCounter
+import com.ivianuu.injekt.samples.android.domain.IncCounter
 import kotlinx.coroutines.launch
 
 typealias AppUi = @Composable () -> Unit
@@ -79,18 +74,22 @@ data class CounterModel(
   val decCounter: () -> Unit
 )
 
-@Provide @Composable fun counterModel(usecases: CounterUsecases): CounterModel {
+@Provide @Composable fun counterModel(
+  counter: Counter,
+  incCounter: IncCounter,
+  decCounter: DecCounter
+): CounterModel {
   val scope = rememberCoroutineScope()
   return CounterModel(
-    state = usecases.counter().collectAsState(0).value,
+    state = counter.collectAsState(0).value,
     incCounter = {
       scope.launch {
-        usecases.incCounter()
+        incCounter()
       }
     },
     decCounter = {
       scope.launch {
-        usecases.decCounter()
+        decCounter()
       }
     }
   )

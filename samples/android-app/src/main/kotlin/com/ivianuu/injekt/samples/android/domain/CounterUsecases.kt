@@ -20,14 +20,18 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.samples.android.data.CounterDb
 import kotlinx.coroutines.flow.Flow
 
-@Provide class CounterUsecases(private val db: CounterDb) {
-  fun counter(): Flow<Int> = db.counterState
+typealias Counter = Flow<Int>
 
-  suspend fun incCounter() {
-    db.updateCounter { inc() }
-  }
+@Provide fun counter(db: CounterDb): Counter = db.counterState
 
-  suspend fun decCounter() {
-    db.updateCounter { dec() }
-  }
+typealias IncCounter = suspend () -> Unit
+
+@Provide fun incCounter(db: CounterDb): IncCounter = {
+  db.updateCounter { inc() }
+}
+
+typealias DecCounter = suspend () -> Unit
+
+@Provide fun decCounter(db: CounterDb): DecCounter = {
+  db.updateCounter { dec() }
 }
