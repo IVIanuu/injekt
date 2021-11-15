@@ -541,6 +541,9 @@ val TypeRef.isFunctionType: Boolean
 val TypeRef.isSuspendFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
 
+val TypeRef.fullExpandedType: TypeRef
+  get() = if (classifier.isTypeAlias) superTypes.single().fullExpandedType else this
+
 fun effectiveVariance(
   declared: TypeVariance,
   useSite: TypeVariance,

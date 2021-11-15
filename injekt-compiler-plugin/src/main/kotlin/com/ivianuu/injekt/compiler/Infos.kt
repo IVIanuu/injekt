@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
+import com.ivianuu.injekt.compiler.resolution.fullExpandedType
 import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.isSuspendFunctionType
@@ -33,7 +34,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.builtins.functions.FunctionInvokeDescriptor
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -44,9 +44,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -473,7 +471,7 @@ private fun String.toChunkedArrayValue() = ArrayValue(
 
 private fun TypeRef.shouldBePersisted(): Boolean = anyType {
   (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      (it.classifier.isTypeAlias && it.isSuspendFunctionType) ||
+      (it.fullExpandedType.isSuspendFunctionType) ||
       it.scopeComponentType != null
 }
 
