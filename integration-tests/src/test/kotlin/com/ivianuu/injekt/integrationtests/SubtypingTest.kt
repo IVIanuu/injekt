@@ -108,24 +108,6 @@ class SubtypingTest {
     listType.withArguments(stringType) shouldNotBeAssignableTo listType.withArguments(intType)
   }
 
-  @Test fun testTypeAliasIsNotAssignableToOtherTypeAliasOfTheSameExpandedType() =
-    withTypeCheckerContext {
-      typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
-    }
-
-  @Test fun testTypeAliasIsAssignableToOtherTypeAliasOfTheSameExpandedType() =
-    withTypeCheckerContext {
-      typeAlias(stringType) shouldNotBeAssignableTo typeAlias(stringType)
-    }
-
-  @Test fun testTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
-    typeAlias(stringType) shouldBeSubTypeOf stringType
-  }
-
-  @Test fun testNestedTypeAliasIsSubTypeOfExpandedType() = withTypeCheckerContext {
-    typeAlias(typeAlias(stringType)) shouldBeSubTypeOf stringType
-  }
-
   @Test fun testInvariant() = withTypeCheckerContext {
     val typeClass = classType(
       typeParameters = listOf(typeParameter(variance = TypeVariance.IN).classifier)

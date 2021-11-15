@@ -17,20 +17,24 @@
 package com.ivianuu.injekt.samples.android.domain
 
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.samples.android.data.CounterDb
 import kotlinx.coroutines.flow.Flow
 
-typealias Counter = Flow<Int>
+@Tag annotation class CounterTag
+typealias Counter = @CounterTag Flow<Int>
 
 @Provide fun counter(db: CounterDb): Counter = db.counterState
 
-typealias IncCounter = suspend () -> Unit
+@Tag annotation class IncCounterTag
+typealias IncCounter = @IncCounterTag suspend () -> Unit
 
 @Provide fun incCounter(db: CounterDb): IncCounter = {
   db.updateCounter { inc() }
 }
 
-typealias DecCounter = suspend () -> Unit
+@Tag annotation class DecCounterTag
+typealias DecCounter = @DecCounterTag suspend () -> Unit
 
 @Provide fun decCounter(db: CounterDb): DecCounter = {
   db.updateCounter { dec() }

@@ -564,7 +564,7 @@ fun TypeRef.collectComponentCallables(@Inject ctx: Context): List<CallableRef> =
     .map { it.toCallableRef() }
     .map {
       val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-        CallableMemberDescriptor.Kind.FAKE_OVERRIDE|| classifier.isTypeAlias) {
+        CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
         val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
           .overriddenTreeAsSequence(false)
           .last()

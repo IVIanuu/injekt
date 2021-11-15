@@ -93,50 +93,6 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testTypeAliasModuleTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            typealias Dep = String
-            object DepModule {
-              @Provide val default: Dep = ""
-            }
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testTypeAliasPackageTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            typealias Dep = String
-            @Provide val dep: Dep = ""
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
   @Test fun testTagTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(

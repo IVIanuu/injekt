@@ -142,18 +142,6 @@ fun TypeRef.toIrType(
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
-    classifier.isTypeAlias -> superTypes.single()
-      .toIrType()
-      .let {
-        it as IrSimpleType
-        IrSimpleTypeImpl(
-          it.classifier,
-          it.hasQuestionMark,
-          it.arguments,
-          it.annotations,
-          toIrAbbreviation()
-        )
-      }
     classifier.isTag -> arguments.last().toIrType()
       .typeOrNull!!
       .cast<IrSimpleType>()
@@ -227,20 +215,6 @@ fun TypeRef.toIrType(
       )
     }
   }
-}
-
-private fun TypeRef.toIrAbbreviation(
-  @Inject irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations,
-  ctx: Context
-): IrTypeAbbreviation {
-  val typeAlias = irCtx.referenceTypeAlias(classifier.fqName)!!
-  return IrTypeAbbreviationImpl(
-    typeAlias,
-    isMarkedNullable,
-    arguments.map { it.toIrType() },
-    emptyList()
-  )
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)

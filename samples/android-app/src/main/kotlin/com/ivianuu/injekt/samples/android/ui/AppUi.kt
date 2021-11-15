@@ -33,12 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
 import com.ivianuu.injekt.samples.android.domain.IncCounter
 import kotlinx.coroutines.launch
 
-typealias AppUi = @Composable () -> Unit
+@Tag annotation class AppUiTag
+typealias AppUi = @AppUiTag @Composable () -> Unit
 
 @Provide fun appUi(modelProvider: @Composable () -> CounterModel): AppUi = {
   Scaffold(

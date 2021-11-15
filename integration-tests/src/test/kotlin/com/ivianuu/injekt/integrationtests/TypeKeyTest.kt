@@ -51,33 +51,6 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
   }
 
-  @Test fun testTypeKeyWithTypeAliasWithNullableExpandedType() = codegen(
-    """
-      typealias MyAlias = String?
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
-  }
-
-  @Test fun testTypeKeyWithTypeAlias() = codegen(
-    """
-      typealias MyAlias = String
-      fun invoke() = inject<TypeKey<MyAlias>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias"
-  }
-
-  @Test fun testTypeKeyWithNullableTypeAlias() = codegen(
-    """
-      typealias MyAlias = String
-      fun invoke() = inject<TypeKey<MyAlias?>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyAlias?"
-  }
-
   @Test fun testTypeKeyWithComposableType() = codegen(
     """
       fun invoke() = inject<TypeKey<@Composable () -> Unit>>()
