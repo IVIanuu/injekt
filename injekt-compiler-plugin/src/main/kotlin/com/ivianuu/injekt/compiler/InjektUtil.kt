@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.shaded_injekt.Inject
+import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -154,7 +155,8 @@ fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is Deseria
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
     (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor ||
-    this is JavaClassDescriptor
+    this is JavaClassDescriptor ||
+    this is FunctionClassDescriptor
 
 fun String.asNameId() = Name.identifier(this)
 
