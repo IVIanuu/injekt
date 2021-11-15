@@ -62,5 +62,4 @@ import kotlin.reflect.KClass
   ): ListenableWorker? = workers[workerClassName]?.invoke(appContext, workerParameters)
 }
 
-@Tag private annotation class SingleWorkerFactoryTag
-private typealias SingleWorkerFactory = @SingleWorkerFactoryTag (Context, WorkerParameters) -> ListenableWorker
+private typealias SingleWorkerFactory = (Context, WorkerParameters) -> ListenableWorker

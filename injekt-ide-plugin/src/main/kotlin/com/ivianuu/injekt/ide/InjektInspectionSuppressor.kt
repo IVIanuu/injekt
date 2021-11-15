@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtTypeReference
@@ -83,6 +84,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         val typeParameter = element.parent.safeAs<KtTypeParameter>()
           ?: return false
         return typeParameter.hasAnnotation(injektFqNames.spread) ||
+            typeParameter.parent.parent is KtTypeAlias ||
             typeParameter.parent.parent.safeAs<KtClass>()
               ?.hasAnnotation(injektFqNames.tag) == true
       }

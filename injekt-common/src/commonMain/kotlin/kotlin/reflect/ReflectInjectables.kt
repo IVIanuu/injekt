@@ -32,6 +32,4 @@ object ReflectInjectables {
   @Provide inline fun <reified T : Any> kTypeT(): KTypeT<T> = typeOf<T>()
 }
 
-@Tag annotation class KTypeTTag<T>
-
-typealias KTypeT<T> = @KTypeTTag<T> KType
+typealias KTypeT<T> = KType
