@@ -19,6 +19,10 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
+import com.ivianuu.injekt.compiler.resolution.CallableRef
+import com.ivianuu.injekt.compiler.resolution.injectableConstructors
+import com.ivianuu.injekt.compiler.resolution.isProvide
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -178,34 +182,56 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
       }}"
-      is FunctionDescriptor -> "function:$fqNameSafe:${
-        listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-          .plus(original.valueParameters)
-          .joinToString(",") { parameter ->
+      is FunctionDescriptor -> "function:$fqNameSafe:" +
+          original.typeParameters.joinToString {
             buildString {
-              when {
-                parameter === original.dispatchReceiverParameter -> append("d:")
-                parameter === original.extensionReceiverParameter -> append("e:")
-                else -> append("p:")
+              append(it.name.asString())
+              it.upperBounds.forEach { upperBound ->
+                append(
+                  upperBound
+                    .fullyAbbreviatedType
+                    .uniqueTypeKey()
+                )
               }
-              append(
-                parameter.type
-                  .fullyAbbreviatedType
-                  .uniqueTypeKey()
-              )
             }
-          }
-      }"
-      is PropertyDescriptor -> "property:$fqNameSafe:${
-        listOfNotNull(
-          original.dispatchReceiverParameter, original.extensionReceiverParameter
-        )
-          .joinToString(",") {
-            it.type
-              .fullyAbbreviatedType
-              .uniqueTypeKey()
-          }
-      }"
+          } +
+          listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+            .plus(original.valueParameters)
+            .joinToString(",") { parameter ->
+              buildString {
+                when {
+                  parameter === original.dispatchReceiverParameter -> append("d:")
+                  parameter === original.extensionReceiverParameter -> append("e:")
+                  else -> append("p:")
+                }
+                append(
+                  parameter.type
+                    .fullyAbbreviatedType
+                    .uniqueTypeKey()
+                )
+              }
+            }
+      is PropertyDescriptor -> "property:$fqNameSafe:" +
+          original.typeParameters.joinToString {
+            buildString {
+              append(it.name.asString())
+              it.upperBounds.forEach { upperBound ->
+                append(
+                  upperBound
+                    .fullyAbbreviatedType
+                    .uniqueTypeKey()
+                )
+              }
+            }
+          } +
+          listOfNotNull(
+            original.dispatchReceiverParameter, original.extensionReceiverParameter
+          )
+            .joinToString(",") {
+              it.type
+                .fullyAbbreviatedType
+                .uniqueTypeKey()
+            }
       is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
@@ -358,33 +384,23 @@ fun classifierDescriptorForKey(key: String, @Inject ctx: Context): ClassifierDes
     classifier
   }
 
-fun callableForUniqueKey(
+fun injectablesForFqName(
   fqName: FqName,
-  uniqueKey: String,
   @Inject ctx: Context
-): CallableDescriptor? =
+): List<CallableRef> =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
     ?.first
     ?.getContributedDescriptors(nameFilter = { it == fqName.shortName() })
-    ?.mapNotNull { declaration ->
+    ?.fastFlatMap { declaration ->
       when (declaration) {
-        is ClassDescriptor -> declaration.constructors
-          .singleOrNull { it.uniqueKey() == uniqueKey }
-          ?: if (declaration.uniqueKey() == uniqueKey)
-            when {
-              declaration.hasAnnotation(injektFqNames().component) ->
-                ComponentConstructorDescriptor(declaration)
-              declaration.hasAnnotation(injektFqNames().entryPoint) ->
-                EntryPointConstructorDescriptor(declaration)
-              else -> declaration.unsubstitutedPrimaryConstructor
-            }
-        else null
-        is CallableDescriptor -> declaration
-          .takeIf { it.uniqueKey() == uniqueKey }
-        else -> null
+        is ClassDescriptor -> addAll(declaration.injectableConstructors())
+        is CallableDescriptor -> {
+          if (declaration.isProvide())
+            this += declaration.toCallableRef()
+        }
       }
     }
-    ?.singleOrNull()
+    ?: emptyList()
 
 private fun functionDescriptorsForFqName(
   fqName: FqName,

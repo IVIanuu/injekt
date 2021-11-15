@@ -22,8 +22,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.callableForUniqueKey
-import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
+import com.ivianuu.injekt.compiler.injectablesForFqName
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.generateFrameworkKey
@@ -600,12 +599,11 @@ fun collectAllInjectables(@Inject ctx: Context): List<CallableRef> =
     memberScopeForFqName(injektFqNames().indicesPackage, NoLookupLocation.FROM_BACKEND)
       ?.first
       ?.getContributedFunctions("index".asNameId(), NoLookupLocation.FROM_BACKEND)
-      ?.mapNotNull {
+      ?.flatMap {
         val annotation = it.annotations.findAnnotation(injektFqNames().index)
-          ?: return@mapNotNull null
+          ?: return@flatMap emptyList()
         val fqName = FqName(annotation.allValueArguments["fqName".asNameId()]!!.value.toString())
-        val uniqueKey = annotation.allValueArguments["uniqueKey".asNameId()]!!.value.toString()
-        callableForUniqueKey(fqName, uniqueKey)!!.toCallableRef()
+        injectablesForFqName(fqName)
       }
       ?: emptyList()
   }

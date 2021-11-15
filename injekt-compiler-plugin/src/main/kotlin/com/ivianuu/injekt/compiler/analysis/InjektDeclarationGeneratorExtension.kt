@@ -42,15 +42,22 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtConstructor
+import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.toVisibility
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -121,7 +128,6 @@ class InjektDeclarationGeneratorExtension(
     }
 
     @Provide val ctx = Context(module, injektFqNames, bindingTrace)
-    @Provide val analyzer = componentProvider.get<LazyTopDownAnalyzer>()
 
     files.forEach { file ->
       // Copy recursively, including last-modified-time of file and its parent dirs.
@@ -172,7 +178,7 @@ class InjektDeclarationGeneratorExtension(
       fileMapFile.delete()
     }
 
-    return if (finished && !withCompilation) {
+    return if (!withCompilation) {
       AnalysisResult.success(BindingContext.EMPTY, module, shouldGenerateCode = false)
     } else {
       AnalysisResult.RetryWithAdditionalRoots(
@@ -189,22 +195,13 @@ class InjektDeclarationGeneratorExtension(
   private fun processFile(
     module: ModuleDescriptor,
     file: KtFile,
-    @Inject ctx: Context,
-    lazyTopDownAnalyzer: LazyTopDownAnalyzer
+    @Inject ctx: Context
   ): List<File> {
-    val injectables = mutableListOf<DeclarationDescriptor>()
+    val injectables = mutableListOf<KtNamedDeclaration>()
 
     file.accept(
       namedDeclarationRecursiveVisitor { declaration ->
         if (declaration.fqName == null) return@namedDeclarationRecursiveVisitor
-
-        fun addInjectable() {
-          lazyTopDownAnalyzer.analyzeDeclarations(
-            TopDownAnalysisMode.TopLevelDeclarations,
-            listOf(declaration)
-          )
-          injectables += declaration.descriptor<DeclarationDescriptor>()!!
-        }
 
         when (declaration) {
           is KtClassOrObject -> {
@@ -215,7 +212,7 @@ class InjektDeclarationGeneratorExtension(
                   declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) } ||
                   declaration.hasAnnotation(injektFqNames.component) ||
                   declaration.hasAnnotation(injektFqNames.entryPoint)))
-              addInjectable()
+                    injectables += declaration
           }
           is KtNamedFunction -> {
             if (!declaration.isLocal &&
@@ -223,7 +220,7 @@ class InjektDeclarationGeneratorExtension(
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.component) == true ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.entryPoint) == true))
-              addInjectable()
+              injectables += declaration
           }
           is KtProperty -> {
             if (!declaration.isLocal &&
@@ -231,7 +228,7 @@ class InjektDeclarationGeneratorExtension(
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.component) == true ||
                   declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.entryPoint) == true))
-              addInjectable()
+              injectables += declaration
           }
         }
       }
@@ -258,7 +255,7 @@ class InjektDeclarationGeneratorExtension(
   private fun injectablesFile(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
+    injectables: List<KtNamedDeclaration>,
     @Inject ctx: Context
   ): File {
     val injectablesCode = buildString {
@@ -276,22 +273,6 @@ class InjektDeclarationGeneratorExtension(
         appendLine(" @Suppress(\"UNUSED_PARAMETER\") marker: $markerName,")
         repeat(i + 1) {
           appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
-        }
-
-        fun DeclarationDescriptor.hash(): String = when (this) {
-          is ClassDescriptor ->
-            uniqueKey() +
-                visibility +
-                annotations.joinToString { it.type.toTypeRef().renderToString() } +
-                constructors.joinToString { it.hash() }
-          is CallableDescriptor ->
-            uniqueKey() +
-                visibility +
-                callContext() +
-                annotations.joinToString { it.type.toTypeRef().renderToString() } +
-                safeAs<PropertyDescriptor>()
-                  ?.let { it.getter?.hash().orEmpty() + it.setter?.hash().orEmpty() }
-          else -> throw AssertionError()
         }
 
         val hash = injectable.hash()
@@ -325,7 +306,7 @@ class InjektDeclarationGeneratorExtension(
   private fun MutableList<File>.subInjectableFiles(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
+    injectables: List<KtNamedDeclaration>,
     @Inject ctx: Context
   ) {
     if (file.packageFqName.isRoot) return
@@ -346,22 +327,6 @@ class InjektDeclarationGeneratorExtension(
             appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
           }
 
-          fun DeclarationDescriptor.hash(): String = when (this) {
-            is ClassDescriptor ->
-              uniqueKey() +
-                  visibility +
-                  annotations.joinToString { it.type.toTypeRef().renderToString() } +
-                  constructors.joinToString { it.hash() }
-            is CallableDescriptor ->
-              uniqueKey() +
-                  visibility +
-                  callContext() +
-                  annotations.joinToString { it.type.toTypeRef().renderToString() } +
-                  safeAs<PropertyDescriptor>()
-                    ?.let { it.getter?.hash().orEmpty() + it.setter?.hash().orEmpty() }
-            else -> throw AssertionError()
-          }
-
           val hash = injectable.hash()
 
           val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
@@ -380,7 +345,7 @@ class InjektDeclarationGeneratorExtension(
       }
 
       val injectablesKeyHash = injectables
-        .joinToString { it.uniqueKey() }
+        .joinToString { it.hash() }
         .hashCode()
         .toString()
         .filter { it.isLetterOrDigit() }
@@ -400,7 +365,7 @@ class InjektDeclarationGeneratorExtension(
   private fun indicesFile(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
+    injectables: List<KtNamedDeclaration>,
     @Inject ctx: Context
   ): File {
     val indicesCode = buildString {
@@ -412,13 +377,11 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        appendLine("@Index(")
-        appendLine("  fqName = \"${
-          if (injectable is ConstructorDescriptor) injectable.constructedClass.fqNameSafe
-          else injectable.fqNameSafe
-        }\",")
-        appendLine("  uniqueKey = \"${injectable.uniqueKey()}\"")
-        appendLine(")")
+        append("@Index(fqName = ")
+        appendLine("\"${
+          if (injectable is KtConstructor<*>) injectable.getContainingClassOrObject().fqName!!
+          else injectable.fqName!!
+        }\")")
         appendLine("@Suppress(\"unused\") fun index(")
         appendLine("  @Suppress(\"UNUSED_PARAMETER\") marker: ${file.packageFqName.child(markerName.asNameId())},")
         repeat(i + 1) {
@@ -431,7 +394,7 @@ class InjektDeclarationGeneratorExtension(
     }
 
     val injectablesKeyHash = injectables
-      .joinToString { it.uniqueKey() }
+      .joinToString { it.hash() }
       .hashCode()
       .toString()
       .filter { it.isLetterOrDigit() }
@@ -446,5 +409,45 @@ class InjektDeclarationGeneratorExtension(
     indicesFile.writeText(indicesCode)
 
     return indicesFile
+  }
+
+  private fun KtDeclaration.hash(): String = when (this) {
+    is KtClassOrObject ->
+      "class" +
+          name.orEmpty() +
+          visibilityModifier()?.text.orEmpty() +
+          annotationEntries.joinToString { it.text } +
+          primaryConstructor
+            ?.let {
+              "primary constructor" +
+                  it.valueParameters
+                    .joinToString { it.text }
+            } + secondaryConstructors
+        .mapIndexed { index, it ->
+          "secondary_constructor_$index" +
+              it.valueParameters
+                .joinToString(it.text)
+        } + superTypeListEntries
+        .joinToString { it.text }
+    is KtFunction ->
+      "function" +
+          name.orEmpty() +
+          visibilityModifier()?.text.orEmpty() +
+          hasModifier(KtTokens.SUSPEND_KEYWORD).toString() +
+          modifierList +
+          annotationEntries.joinToString { it.text } +
+          receiverTypeReference?.text.orEmpty() +
+          valueParameters
+            .joinToString { it.text } +
+          typeReference?.text.orEmpty()
+    is KtProperty ->
+      "property" +
+          name.orEmpty() +
+          visibilityModifier()?.text.orEmpty() +
+          annotationEntries.joinToString { it.text } +
+          getter?.annotationEntries?.joinToString { it.text }.orEmpty() +
+          receiverTypeReference?.text.orEmpty() +
+          typeReference?.text.orEmpty()
+    else -> throw AssertionError()
   }
 }

@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.internal
 
-annotation class Index(val fqName: String, val uniqueKey: String)
+annotation class Index(val fqName: String)
 
 internal annotation class CallableInfo(val values: Array<String>)
 
