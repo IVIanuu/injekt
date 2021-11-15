@@ -22,13 +22,13 @@ import androidx.activity.compose.setContent
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.`as`
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = activityComponent.entryPoint<MainActivityDependencies>()
+    val dependencies: MainActivityDependencies = activityComponent.`as`()
     // display ui
     setContent {
       dependencies.theme {

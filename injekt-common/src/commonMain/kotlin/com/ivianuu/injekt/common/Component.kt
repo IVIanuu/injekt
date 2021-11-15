@@ -16,14 +16,13 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Inject
+
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class Component
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 annotation class EntryPoint<C : @Component Any>
-
-@Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
-inline fun <E> (@Component Any).entryPoint(): E = this as E
 
 @Target(
   AnnotationTarget.CLASS,
@@ -40,8 +39,8 @@ fun interface Disposable {
   fun dispose()
 }
 
-fun <C : @Component Any> C.dispose() {
-  (this as Disposable).dispose()
+inline fun <T> T.dispose(@Inject conversion: Conversion<T, Disposable>) {
+  `as`<T, Disposable>().dispose()
 }
 
 interface ComponentObserver<C : @Component Any> : Disposable {
@@ -53,3 +52,5 @@ interface ComponentObserver<C : @Component Any> : Disposable {
 }
 
 @Component interface AppComponent
+
+internal val componentConversion = Conversion<@Component Any, Any> { it }

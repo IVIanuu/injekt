@@ -23,8 +23,8 @@ import androidx.lifecycle.LifecycleOwner
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
+import com.ivianuu.injekt.common.`as`
 import com.ivianuu.injekt.common.dispose
-import com.ivianuu.injekt.common.entryPoint
 
 /**
  * Returns the [ActivityComponent] of this [ComponentActivity]
@@ -34,7 +34,7 @@ val ComponentActivity.activityComponent: ActivityComponent
   get() = synchronized(activityComponents) {
     activityComponents[this]?.let { return it }
     val component = appComponent
-      .entryPoint<ActivityComponentFactory>()
+      .`as`<AppComponent, ActivityComponentFactory>()
       .activityComponent(this)
     activityComponents[this] = component
 

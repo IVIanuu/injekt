@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
+import com.ivianuu.injekt.compiler.resolution.ComponentConversionInjectable
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
@@ -112,7 +113,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrComposite
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
@@ -311,6 +311,7 @@ class InjectCallTransformer(
           when (result.candidate) {
             is CallableInjectable -> callableExpression(result, result.candidate.cast())
             is ComponentInjectable -> componentExpression(result, result.candidate.cast())
+            is ComponentConversionInjectable -> componentConversionExpression()
             is ProviderInjectable -> providerExpression(result, result.candidate.cast())
             is ListInjectable -> listExpression(result, result.candidate.cast())
             is SourceKeyInjectable -> sourceKeyExpression()
@@ -814,6 +815,15 @@ class InjectCallTransformer(
     +clazz
     +irCall(clazz.constructors.single())
   }
+
+  private fun ScopeContext.componentConversionExpression(): IrExpression = DeclarationIrBuilder(irCtx, symbol)
+    .irCall(
+      irCtx.referenceProperties(FqName("com.ivianuu.injekt.common.componentConversion"))
+        .single()
+        .owner
+        .getter!!
+        .symbol
+    )
 
   private fun ScopeContext.providerExpression(
     result: ResolutionResult.Success.WithCandidate.Value,

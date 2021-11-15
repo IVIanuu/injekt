@@ -20,13 +20,15 @@ import android.app.Service
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.`as`
 
 /**
  * Returns a new [ServiceComponent] which must be manually stored and disposed
  */
 fun Service.createServiceComponent(): ServiceComponent =
-  appComponent.entryPoint<ServiceComponentFactory>().serviceComponent(this)
+  appComponent
+    .`as`<AppComponent, ServiceComponentFactory>()
+    .serviceComponent(this)
 
 @Component interface ServiceComponent
 

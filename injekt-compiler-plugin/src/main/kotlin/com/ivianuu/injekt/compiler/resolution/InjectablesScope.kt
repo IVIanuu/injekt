@@ -236,6 +236,12 @@ class InjectablesScope(
         return componentForType(request.type)?.let {
           ComponentInjectable(it, entryPointsForType(it.type), this)
         }
+      request.type.classifier.fqName == injektFqNames().conversion &&
+          request.type.arguments[0].classifier.isComponent &&
+          (request.type.arguments[1].classifier.entryPointComponentType
+            ?.buildContext(request.type.arguments[0], allStaticTypeParameters)?.isOk == true ||
+              request.type.arguments[1].classifier.fqName == injektFqNames().disposable) ->
+        return ComponentConversionInjectable(request.type, this)
       else -> return null
     }
   }

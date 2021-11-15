@@ -242,6 +242,25 @@ class ComponentInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
+class ComponentConversionInjectable(
+  override val type: TypeRef,
+  override val ownerScope: InjectablesScope
+) : Injectable() {
+  override val callableFqName: FqName = FqName("com.ivianuu.injekt.conversion")
+  override val dependencies: List<InjectableRequest> = emptyList()
+  override val callContext: CallContext
+    get() = CallContext.DEFAULT
+  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = emptyMap()
+  override val originalType: TypeRef
+    get() = type.classifier.defaultType
+  override val scopeComponentType: TypeRef?
+    get() = null
+  override val isEager: Boolean
+    get() = false
+  override val usageKey: Any
+    get() = type
+}
+
 class ListInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope,

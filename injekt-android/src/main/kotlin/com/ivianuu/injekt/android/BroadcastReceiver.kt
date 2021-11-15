@@ -22,7 +22,7 @@ import android.content.Intent
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.`as`
 
 /**
  * Returns a new [ReceiverComponent] which must be manually stored and disposed
@@ -31,7 +31,7 @@ fun BroadcastReceiver.createReceiverComponent(
   context: Context,
   intent: Intent,
 ): ReceiverComponent = context.appComponent
-  .entryPoint<ReceiverComponentFactory>()
+  .`as`<AppComponent, ReceiverComponentFactory>()
   .receiverComponent(this, context, intent)
 
 @Component interface ReceiverComponent
