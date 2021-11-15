@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.bindingContextUtil.getAbbreviatedTypeOrType
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -61,6 +62,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
             }
         else return false
       }
+      "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
       "RemoveExplicitTypeArguments" -> {
         if (element !is KtTypeArgumentList) return false
         val call = element.parent as? KtCallExpression
