@@ -23,8 +23,7 @@ import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.resolve.BindingTrace
 
 inline fun injektFqNames(@Inject ctx: Context) = ctx.injektFqNames
@@ -45,26 +44,37 @@ class Context(
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
-  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }
-  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef() }
-  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef() }
+  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) {
+    module.builtIns.nullableNothingType.toTypeRef()
+  }
+  val anyType by lazy(LazyThreadSafetyMode.NONE) {
+    module.builtIns.anyType.toTypeRef()
+  }
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().typeKey)
-    )!!.toClassifierRef()
+    classifierDescriptorForFqName(injektFqNames.typeKey, NoLookupLocation.FROM_BACKEND)!!
+      .toClassifierRef()
+  }
+  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    module.builtIns.collection.toClassifierRef()
   }
   val componentObserverClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().componentObserver)
-    )!!.toClassifierRef()
+    classifierDescriptorForFqName(injektFqNames.componentObserver, NoLookupLocation.FROM_BACKEND)!!
+      .toClassifierRef()
   }
   val disposableClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().disposable)
-    )!!.toClassifierRef()
+    classifierDescriptorForFqName(injektFqNames.disposable, NoLookupLocation.FROM_BACKEND)!!
+      .toClassifierRef()
   }
+  val incrementalClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    classifierDescriptorForFqName(injektFqNames.incremental, NoLookupLocation.FROM_BACKEND)!!
+      .toClassifierRef()
+  }
+  val incrementalFactoryClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    classifierDescriptorForFqName(injektFqNames.incrementalFactory, NoLookupLocation.FROM_BACKEND)!!
+      .toClassifierRef()
+  }
+  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
 }

@@ -242,24 +242,43 @@ class ComponentInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-class ListInjectable(
+class IncrementalInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope,
-  elements: List<TypeRef>,
-  val singleElementType: TypeRef,
-  val collectionElementType: TypeRef
+  val elements: List<TypeRef>,
+  val factoryType: TypeRef,
+  val elementType: TypeRef,
+  val collectionType: TypeRef,
+  val combinedType: TypeRef
 ) : Injectable() {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.injectListOf")
-  override val dependencies: List<InjectableRequest> = elements
-    .mapIndexed { index, element ->
+  override val callableFqName: FqName = FqName("com.ivianuu.injekt.incrementalOf")
+
+  @OptIn(ExperimentalStdlibApi::class)
+  override val dependencies: List<InjectableRequest> = buildList {
+    add(
       InjectableRequest(
-        type = element,
+        type = factoryType,
         callableFqName = callableFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-        parameterName = "element$index".asNameId(),
-        parameterIndex = index
+        parameterName = "factory".asNameId(),
+        parameterIndex = 0,
+        failOnAllCandidateErrors = true
+      )
+    )
+
+    for ((elementIndex, element) in elements.withIndex()) {
+      add(
+        InjectableRequest(
+          type = element,
+          callableFqName = callableFqName,
+          callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
+          parameterName = "element$elementIndex".asNameId(),
+          parameterIndex = elementIndex,
+          failOnAllCandidateErrors = true
+        )
       )
     }
+  }
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val dependencyScopes = dependencies.associateWith { ownerScope }

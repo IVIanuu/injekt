@@ -32,7 +32,7 @@ import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
-import com.ivianuu.injekt.compiler.resolution.ListInjectable
+import com.ivianuu.injekt.compiler.resolution.IncrementalInjectable
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
@@ -99,6 +99,7 @@ import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.builders.irVararg
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
@@ -112,7 +113,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrComposite
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
@@ -312,7 +312,7 @@ class InjectCallTransformer(
             is CallableInjectable -> callableExpression(result, result.candidate.cast())
             is ComponentInjectable -> componentExpression(result, result.candidate.cast())
             is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-            is ListInjectable -> listExpression(result, result.candidate.cast())
+            is IncrementalInjectable -> incrementalExpression(result, result.candidate.cast())
             is SourceKeyInjectable -> sourceKeyExpression()
             is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
           }
@@ -852,97 +852,80 @@ class InjectCallTransformer(
       }
     }
 
-  private val mutableListOf = irCtx.referenceFunctions(
-    FqName("kotlin.collections.mutableListOf")
-  ).single { it.owner.valueParameters.isEmpty() }
-  private val listAdd = mutableListOf.owner.returnType
-    .classOrNull!!
-    .owner
-    .functions
-    .single { it.name.asString() == "add" && it.valueParameters.size == 1 }
-  private val listAddAll = mutableListOf.owner.returnType
-    .classOrNull!!
-    .owner
-    .functions
-    .single { it.name.asString() == "addAll" && it.valueParameters.size == 1 }
-  private val listOf = irCtx.referenceFunctions(
-    FqName("kotlin.collections.listOf")
-  ).single { it.owner.valueParameters.singleOrNull()?.isVararg == false }
-  private val iterableToList = irCtx.referenceFunctions(
-    FqName("kotlin.collections.toList")
-  ).single {
-    it.owner.extensionReceiverParameter?.type?.classifierOrNull?.descriptor ==
-        irCtx.builtIns.iterable
+  private val factoryCreate by lazy(LazyThreadSafetyMode.NONE) {
+    irCtx.referenceClass(injektFqNames().incrementalFactory)!!
+      .owner
+      .functions
+      .single { it.name.asString() == "create" }
   }
+  private val arrayOf = irCtx.referenceFunctions(
+    FqName("kotlin.arrayOf")
+  ).first { it.owner.valueParameters.singleOrNull()?.isVararg == true }
 
-  private fun ScopeContext.listExpression(
+  private fun ScopeContext.incrementalExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
-    injectable: ListInjectable
-  ): IrExpression = when (injectable.dependencies.size) {
-    1 -> {
-      val singleDependency = result.dependencyResults.values.single()
-        .cast<ResolutionResult.Success.WithCandidate.Value>()
-      when {
-        singleDependency.candidate.type.isSubTypeOf(injectable.type) ->
-          expressionFor(result.dependencyResults.values.single().cast())
-        singleDependency.candidate.type.isSubTypeOf(injectable.collectionElementType) -> {
-          DeclarationIrBuilder(irCtx, symbol)
-            .irCall(iterableToList)
-            .apply {
-              extensionReceiver =
-                expressionFor(result.dependencyResults.values.single().cast())
-              putTypeArgument(
-                0,
-                injectable.singleElementType.toIrType().typeOrNull
-              )
-            }
+    injectable: IncrementalInjectable
+  ): IrExpression = DeclarationIrBuilder(irCtx, symbol).run {
+    irCall(factoryCreate).apply {
+      dispatchReceiver = expressionFor(result.dependencyResults.values.first().cast())
+      val singleResults = mutableListOf<ResolutionResult.Success.WithCandidate>()
+      val collectionResults = mutableListOf<ResolutionResult.Success.WithCandidate>()
+      val combinedResults = mutableListOf<ResolutionResult.Success.WithCandidate>()
+
+      result.dependencyResults.toList()
+        .drop(1)
+        .forEach {
+          when {
+            it.first.type.isSubTypeOf(injectable.combinedType) -> combinedResults.add(it.second.cast())
+            it.first.type.isSubTypeOf(injectable.collectionType) -> collectionResults.add(it.second.cast())
+            else -> singleResults.add(it.second.cast())
+          }
         }
-        else -> DeclarationIrBuilder(irCtx, symbol)
-          .irCall(listOf)
-          .apply {
-            putTypeArgument(
-              0,
-              injectable.singleElementType.toIrType().typeOrNull
-            )
-            putValueArgument(
-              0,
-              expressionFor(result.dependencyResults.values.single().cast())
-            )
-          }
-      }
-    }
-    else -> {
-      DeclarationIrBuilder(irCtx, symbol).irBlock {
-        val tmpSet = irTemporary(
-          irCall(mutableListOf)
-            .apply {
-              putTypeArgument(
-                0,
-                injectable.singleElementType.toIrType().typeOrNull
-              )
-            },
-          nameHint = "${graphContext.variableIndex++}"
-        )
 
-        result.dependencyResults
-          .forEach { (_, dependency) ->
-            if (dependency !is ResolutionResult.Success.WithCandidate.Value)
-              return@forEach
-            if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType)) {
-              +irCall(listAddAll).apply {
-                dispatchReceiver = irGet(tmpSet)
-                putValueArgument(0, expressionFor(dependency))
-              }
-            } else {
-              +irCall(listAdd).apply {
-                dispatchReceiver = irGet(tmpSet)
-                putValueArgument(0, expressionFor(dependency))
-              }
-            }
-          }
+      putValueArgument(
+        0,
+        if (combinedResults.isEmpty()) irNull()
+        else irCall(arrayOf).apply {
+          putValueArgument(
+            0,
+            irVararg(
+              injectable.combinedType.toIrType().typeOrNull!!,
+              combinedResults
+                .map { expressionFor(it) }
+            )
+          )
+        }
+      )
 
-        +irGet(tmpSet)
-      }
+      putValueArgument(
+        1,
+        if (singleResults.isEmpty()) irNull()
+        else irCall(arrayOf).apply {
+          putValueArgument(
+            0,
+            irVararg(
+              injectable.elementType.toIrType().typeOrNull!!,
+              singleResults
+                .map { expressionFor(it) }
+            )
+          )
+        }
+      )
+
+      putValueArgument(
+        2,
+        if (collectionResults.isEmpty()) irNull()
+        else irCall(arrayOf).apply {
+          putValueArgument(
+            0,
+            irVararg(
+              injectable.collectionType.toIrType().typeOrNull!!,
+              collectionResults
+                .map { expressionFor(it) }
+            )
+          )
+        }
+      )
     }
   }
 

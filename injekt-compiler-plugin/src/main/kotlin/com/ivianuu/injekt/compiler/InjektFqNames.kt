@@ -40,6 +40,8 @@ class InjektFqNames(injektPackage: FqName) {
   val componentObserver = commonPackage.child("ComponentObserver".asNameId())
   val disposable = commonPackage.child("Disposable".asNameId())
   val entryPoint = commonPackage.child("EntryPoint".asNameId())
+  val incremental = commonPackage.child("Incremental".asNameId())
+  val incrementalFactory = incremental.child("Factory".asNameId())
   val scoped = commonPackage.child("Scoped".asNameId())
   val sourceKey = commonPackage.child("SourceKey".asNameId())
   val typeKey = commonPackage.child("TypeKey".asNameId())

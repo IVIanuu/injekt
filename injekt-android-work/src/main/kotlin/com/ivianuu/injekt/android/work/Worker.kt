@@ -23,6 +23,7 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.common.Incremental
 import kotlin.reflect.KClass
 
 /**
@@ -45,7 +46,7 @@ import kotlin.reflect.KClass
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
 
-    @Provide val defaultWorkers: Collection<Pair<String, SingleWorkerFactory>> get() = emptyList()
+    @Provide val defaultWorkers: List<Pair<String, SingleWorkerFactory>> get() = emptyList()
   }
 }
 
@@ -53,7 +54,7 @@ import kotlin.reflect.KClass
  * Factory which is able to create [ListenableWorker]s installed via [InjektWorker]
  */
 @Provide class InjektWorkerFactory(
-  private val workers: Map<String, SingleWorkerFactory>
+  private val workers: @Incremental Map<String, SingleWorkerFactory>
 ) : WorkerFactory() {
   override fun createWorker(
     appContext: Context,

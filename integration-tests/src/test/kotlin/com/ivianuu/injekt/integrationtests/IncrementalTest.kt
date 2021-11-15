@@ -35,20 +35,20 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class ListTest {
+class IncrementalTest {
   @Test fun testList() = singleAndMultiCodegen(
     """
       @Provide fun commandA() = CommandA()
       @Provide fun commandsB() = listOf(CommandB())
     """,
     """
-      fun invoke() = inject<List<Command>>() 
+      fun invoke() = inject<@Incremental List<Command>>() 
     """
   ) {
     val list = invokeSingleFile<List<Command>>()
     list.size shouldBe 2
-    list[0].shouldBeTypeOf<CommandA>()
-    list[1].shouldBeTypeOf<CommandB>()
+    list[0].shouldBeTypeOf<CommandB>()
+    list[1].shouldBeTypeOf<CommandA>()
   }
 
   @Test fun testNestedList() = singleAndMultiCodegen(
@@ -219,4 +219,38 @@ class ListTest {
     list[0].shouldBeTypeOf<CommandA>()
     list[1].shouldBeTypeOf<CommandB>()
   }
+
+  @Test fun testInvoke() = codegen(
+    """
+      @Tag private annotation class StackedKeyTag
+      typealias StackedKey = @Incremental @StackedKeyTag String
+      
+      @Provide fun stackedKey(sourceKey: SourceKey): @StackedKeyTag String = sourceKey.value
+      
+      @Provide
+      val StackedKeyIncrementalFactory = Incremental.Factory<@StackedKeyTag String, @StackedKeyTag String> { combined, elements ->
+        buildString {
+          combined?.forEach { append(it) }
+          elements?.forEach { append(it) }
+        }
+      }
+
+      fun memo(@Inject key: StackedKey) {
+        
+      }
+
+      fun memoScope(@Inject key: StackedKey) {
+        memo()
+      }
+
+      fun memoLaunch(@Inject key: StackedKey) {
+        memo()
+        memoScope()
+      }
+
+      fun invoke() {
+        memoScope()
+      }
+    """
+  )
 }

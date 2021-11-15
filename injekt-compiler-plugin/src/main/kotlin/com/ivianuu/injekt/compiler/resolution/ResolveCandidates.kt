@@ -268,10 +268,10 @@ private fun InjectablesScope.resolveRequest(
               else -> if (compareResult(userResult, typeScopeResult) < 0) userResult else typeScopeResult
             }
           }
-          ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
+          ?: tryToResolveRequestWithFrameworkInjectables(request, lookupLocation)
           ?: userResult
       } else if (request.type.unwrapTags().classifier.isComponent)
-        tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
+        tryToResolveRequestWithFrameworkInjectables(request, lookupLocation)
           ?: userResult
       else
         userResult
@@ -304,11 +304,13 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   else null
 }
 
-private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
+private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectables(
   request: InjectableRequest,
   lookupLocation: LookupLocation
 ): ResolutionResult? =
-  frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it, lookupLocation) }
+  frameworkInjectablesForRequest(request)
+    .takeIf { it.isNotEmpty() }
+    ?.let { resolveCandidates(request, it, lookupLocation) }
 
 private fun InjectablesScope.computeForCandidate(
   request: InjectableRequest,

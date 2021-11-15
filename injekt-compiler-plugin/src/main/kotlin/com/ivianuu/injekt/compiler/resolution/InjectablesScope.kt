@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
+import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -86,7 +87,8 @@ class InjectablesScope(
 
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val listElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
+  private val incrementalFactoriesByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
+  private val incrementalElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
 
   private val components: MutableList<CallableRef> =
     parent?.components?.toMutableList() ?: mutableListOf()
@@ -164,9 +166,8 @@ class InjectablesScope(
     request: InjectableRequest,
     requestingScope: InjectablesScope
   ): List<Injectable> {
-    // we return merged collections
-    if (request.type.frameworkKey == 0 &&
-      request.type.classifier == ctx.listClassifier) return emptyList()
+    if (request.type.classifier.fqName == injektFqNames().incremental &&
+      request.type.frameworkKey == 0) return emptyList()
 
     return injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { it.isValidObjectRequest(request) }
@@ -192,70 +193,121 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
+  fun frameworkInjectablesForRequest(request: InjectableRequest): List<Injectable> {
     when {
       request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext
-        return ProviderInjectable(
-          type = request.type,
-          ownerScope = this,
-          dependencyCallContext = finalCallContext,
-          isInline = request.isInline
-        )
-      }
-      request.type.classifier == ctx.listClassifier -> {
-        if (typeScopeType == request.type) {
-          val singleElementType = request.type.arguments[0]
-          val collectionElementType = ctx.collectionClassifier.defaultType
-            .withArguments(listOf(singleElementType))
-
-          val key = CallableRequestKey(request.type, allStaticTypeParameters)
-
-          val elements = listElementsForType(singleElementType, collectionElementType, key) +
-              frameworkListElementsForType(singleElementType, collectionElementType, key)
-
-          return if (elements.isEmpty()) null
-          else ListInjectable(
+        return listOf(
+          ProviderInjectable(
             type = request.type,
             ownerScope = this,
-            elements = elements,
-            singleElementType = singleElementType,
-            collectionElementType = collectionElementType
+            dependencyCallContext = finalCallContext,
+            isInline = request.isInline
           )
+        )
+      }
+      request.type.frameworkKey == 0 &&
+          request.type.classifier.fqName == injektFqNames().incremental -> {
+        val factoryType = ctx.incrementalFactoryClassifier.defaultType.withArguments(
+          listOf(
+            request.type.arguments.single(),
+            STAR_PROJECTION_TYPE
+          )
+        )
+
+        if (typeScopeType == factoryType) {
+          val key = CallableRequestKey(request.type, allStaticTypeParameters)
+
+          return incrementalFactoriesFor(factoryType, key)
+            .mapNotNull { candidateFactoryType ->
+              val combinedType = ctx.incrementalClassifier.defaultType.wrap(
+                candidateFactoryType.arguments[0]
+              )
+              val elementType = candidateFactoryType.arguments[1]
+              val collectionType = ctx.collectionClassifier
+                .defaultType.withArguments(listOf(elementType))
+
+              val elements = incrementalElementsForType(combinedType, elementType, collectionType, key) +
+                  frameworkIncrementalElementsForType(combinedType, elementType, key)
+
+              if (elements.isEmpty()) null
+              else IncrementalInjectable(
+                type = request.type,
+                ownerScope = this,
+                elements = elements,
+                factoryType = candidateFactoryType,
+                combinedType = combinedType,
+                elementType = elementType,
+                collectionType = collectionType
+              )
+            }
         } else {
-          return TypeInjectablesScope(request.type, this)
-            .frameworkInjectableForRequest(request)
+          return TypeInjectablesScope(factoryType, this)
+            .frameworkInjectablesForRequest(request)
         }
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
-        return TypeKeyInjectable(request.type, this)
+        return listOf(TypeKeyInjectable(request.type, this))
       request.type.classifier.fqName == injektFqNames().sourceKey ->
-        return SourceKeyInjectable(request.type, this)
+        return listOf(SourceKeyInjectable(request.type, this))
       request.type.unwrapTags().classifier.isComponent ->
-        return componentForType(request.type)?.let {
-          ComponentInjectable(it, entryPointsForType(it.type), this)
-        }
-      else -> return null
+        return listOfNotNull(
+          componentForType(request.type)?.let {
+            ComponentInjectable(it, entryPointsForType(it.type), this)
+          }
+        )
+      else -> return emptyList()
     }
   }
 
-  private fun listElementsForType(
-    singleElementType: TypeRef,
-    collectionElementType: TypeRef,
+  private fun incrementalFactoriesFor(factoryType: TypeRef, key: CallableRequestKey): List<TypeRef> {
+    if (injectables.isEmpty())
+      return parent?.incrementalFactoriesFor(factoryType, key) ?: emptyList()
+    return incrementalFactoriesByType.getOrPut(key) {
+      val thisFactories: List<TypeRef> = injectables
+        .mapNotNull { candidate ->
+          if (candidate.type.frameworkKey != key.type.frameworkKey)
+            return@mapNotNull null
+          val context = candidate.type.buildContext(factoryType, key.staticTypeParameters)
+          if (!context.isOk) return@mapNotNull null
+          candidate.substitute(context.fixedTypeVariables)
+        }
+        // todo remove once duplicated type scope collection is fixed
+        .distinctBy { it.callable.uniqueKey() }
+        .map { callable ->
+          val typeWithFrameworkKey = callable.type.copy(
+            frameworkKey = generateFrameworkKey()
+          )
+          injectables += callable.copy(type = typeWithFrameworkKey)
+          typeWithFrameworkKey
+        }
+      val parentFactories = parent?.incrementalFactoriesFor(factoryType, key)
+      if (parentFactories != null) parentFactories + thisFactories
+      else thisFactories
+    }
+  }
+
+  private fun incrementalElementsForType(
+    combinedType: TypeRef,
+    elementType: TypeRef,
+    collectionType: TypeRef,
     key: CallableRequestKey
   ): List<TypeRef> {
     if (injectables.isEmpty())
-      return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
-    return listElementsByType.getOrPut(key) {
+      return parent?.incrementalElementsForType(combinedType, elementType, collectionType, key) ?: emptyList()
+    return incrementalElementsByType.getOrPut(key) {
       val thisElements: List<TypeRef> = injectables
         .mapNotNull { candidate ->
           if (candidate.type.frameworkKey != key.type.frameworkKey)
             return@mapNotNull null
           var context =
-            candidate.type.buildContext(singleElementType, key.staticTypeParameters)
+            candidate.type.buildContext(elementType, key.staticTypeParameters)
           if (!context.isOk) {
-            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
+            context = candidate.type.buildContext(collectionType, key.staticTypeParameters)
+          }
+          if (!context.isOk) {
+            context = candidate.type.buildContext(combinedType, key.staticTypeParameters)
           }
           if (!context.isOk) return@mapNotNull null
           candidate.substitute(context.fixedTypeVariables)
@@ -267,51 +319,32 @@ class InjectablesScope(
           injectables += callable.copy(type = typeWithFrameworkKey)
           typeWithFrameworkKey
         }
-      val parentElements = parent?.listElementsForType(singleElementType, collectionElementType, key)
+      val parentElements = parent?.incrementalElementsForType(combinedType, elementType, collectionType, key)
       if (parentElements != null) parentElements + thisElements
       else thisElements
     }
   }
 
-  private fun frameworkListElementsForType(
-    singleElementType: TypeRef,
-    collectionElementType: TypeRef,
+  private fun frameworkIncrementalElementsForType(
+    combinedType: TypeRef,
+    elementType: TypeRef,
     key: CallableRequestKey
-  ): List<TypeRef> {
-    if (singleElementType.isFunctionType) {
-      val providerReturnType = singleElementType.arguments.last()
-      val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
-
-      return (listElementsForType(
-        providerReturnType, ctx.collectionClassifier
-          .defaultType.withArguments(listOf(providerReturnType)), innerKey) +
-          frameworkListElementsForType(providerReturnType, ctx.collectionClassifier
-            .defaultType.withArguments(listOf(providerReturnType)), innerKey))
-        .map { elementType ->
-          singleElementType.copy(
-            arguments = singleElementType.arguments
-              .dropLast(1) + elementType
-          )
-        }
+  ): List<TypeRef> = components
+    .mapNotNull { candidate ->
+      var context =
+        candidate.type.buildContext(elementType, key.staticTypeParameters)
+      if (!context.isOk) {
+        context = candidate.type.buildContext(combinedType, key.staticTypeParameters)
+      }
+      if (!context.isOk) return@mapNotNull null
+      candidate.substitute(context.fixedTypeVariables)
     }
-
-    return components
-      .mapNotNull { candidate ->
-        var context =
-          candidate.type.buildContext(singleElementType, key.staticTypeParameters)
-        if (!context.isOk) {
-          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
-        }
-        if (!context.isOk) return@mapNotNull null
-        candidate.substitute(context.fixedTypeVariables)
-      }
-      .map { candidate ->
-        val typeWithFrameworkKey = candidate.type.copy(frameworkKey = generateFrameworkKey())
-        components +=
-          candidate.copy(type = typeWithFrameworkKey, originalType = typeWithFrameworkKey)
-        typeWithFrameworkKey
-      }
-  }
+    .map { candidate ->
+      val typeWithFrameworkKey = candidate.type.copy(frameworkKey = generateFrameworkKey())
+      components +=
+        candidate.copy(type = typeWithFrameworkKey, originalType = typeWithFrameworkKey)
+      typeWithFrameworkKey
+    }
 
   private fun entryPointsForType(componentType: TypeRef): List<CallableRef> {
     if (entryPoints.isEmpty()) return emptyList()
