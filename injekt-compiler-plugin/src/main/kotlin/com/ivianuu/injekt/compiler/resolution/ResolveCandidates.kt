@@ -469,7 +469,8 @@ private fun InjectablesScope.resolveCandidate(
             return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependencyScope, dependency)
           dependency.isRequired ||
               dependencyResult.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity ||
-              dependency.failOnAllCandidateErrors ->
+              (dependency.failOnAllCandidateErrors &&
+                  dependencyResult is ResolutionResult.Failure.WithCandidate.DependencyFailure) ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
               candidate,
               dependency,
