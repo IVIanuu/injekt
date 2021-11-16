@@ -284,8 +284,11 @@ class InjectablesScope(
       val providerReturnType = singleElementType.arguments.last()
       val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
-      return listElementsForType(providerReturnType, ctx.collectionClassifier
-        .defaultType.withArguments(listOf(providerReturnType)), innerKey)
+      return (listElementsForType(
+        providerReturnType, ctx.collectionClassifier
+          .defaultType.withArguments(listOf(providerReturnType)), innerKey) +
+          frameworkListElementsForType(providerReturnType, ctx.collectionClassifier
+            .defaultType.withArguments(listOf(providerReturnType)), innerKey))
         .map { elementType ->
           singleElementType.copy(
             arguments = singleElementType.arguments
