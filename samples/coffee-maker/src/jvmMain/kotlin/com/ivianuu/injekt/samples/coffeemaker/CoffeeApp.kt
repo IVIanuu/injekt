@@ -26,7 +26,7 @@ fun main() {
 
 private fun makeCoffee(@Inject heater: Heater, pump: Pump) {
   heater.on()
-  pump()
+  pump.pump()
   println(" [_]P coffee! [_]P ")
   heater.off()
 }
@@ -53,9 +53,11 @@ interface Heater {
   }
 }
 
-typealias Pump = () -> Unit
+fun interface Pump {
+  fun pump()
+}
 
-@Provide fun thermosiphon(heater: Heater): Pump = {
+@Provide fun thermosiphon(heater: Heater) = Pump {
   if (heater.isHot) {
     println("=> => pumping => =>")
   }
