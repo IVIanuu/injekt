@@ -89,10 +89,6 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
   val nullableNothing = nothing.nullable()
 
-  fun composableFunction(parameterCount: Int) = typeFor(
-    FqName("kotlin.Function$parameterCount")
-  ).copy(isMarkedComposable = true)
-
   fun function(parameterCount: Int) = typeFor(
     FqName("kotlin.Function$parameterCount")
   )

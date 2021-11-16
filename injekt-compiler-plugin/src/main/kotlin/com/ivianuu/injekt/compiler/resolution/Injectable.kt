@@ -279,24 +279,25 @@ class ProviderInjectable(
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable() {
-  override val callableFqName: FqName = when (type.callContext) {
+  override val callableFqName: FqName = when (type.callContext()) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")
   }
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
-      type = type.arguments.last(),
+      type = type.unwrapTags().arguments.last(),
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
       isInline = isInline,
       isLazy = !isInline,
-      isRequired = !type.arguments.last().isNullableType
+      isRequired = !type.unwrapTags().arguments.last().isNullableType
     )
   )
 
   val parameterDescriptors = type
+    .unwrapTags()
     .classifier
     .descriptor!!
     .cast<ClassDescriptor>()
@@ -316,14 +317,14 @@ class ProviderInjectable(
         .mapIndexed { index, parameter ->
           parameter
             .toCallableRef()
-            .copy(type = type.arguments[index])
+            .copy(type = type.unwrapTags().arguments[index])
         }
     )
   )
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val originalType: TypeRef
-    get() = type.classifier.defaultType
+    get() = type.unwrapTags().classifier.defaultType
   override val scopeComponentType: TypeRef?
     get() = null
   override val isEager: Boolean

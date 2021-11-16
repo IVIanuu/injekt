@@ -127,13 +127,12 @@ private fun CallableDescriptor.callContextOfThis(@Inject ctx: Context): CallCont
   else -> CallContext.DEFAULT
 }
 
-val TypeRef.callContext: CallContext
-  get() = when {
-    classifier.fqName.asString()
-      .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
-    isComposableType -> CallContext.COMPOSABLE
-    else -> CallContext.DEFAULT
-  }
+fun TypeRef.callContext(@Inject ctx: Context): CallContext = when {
+  classifier.fqName.asString()
+    .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
+  classifier.fqName == injektFqNames().composable -> CallContext.COMPOSABLE
+  else -> CallContext.DEFAULT
+}
 
 private val composeCompilerInClasspath = try {
   Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")

@@ -204,14 +204,7 @@ fun TypeRef.toIrType(
         irClassifier,
         isMarkedNullable,
         arguments.map { it.toIrType() },
-        if (isMarkedComposable) {
-          val composableConstructor = irCtx.referenceConstructors(injektFqNames().composable)
-            .single()
-          listOf(
-            DeclarationIrBuilder(irCtx, composableConstructor)
-              .irCall(composableConstructor)
-          )
-        } else emptyList()
+        emptyList()
       )
     }
   }

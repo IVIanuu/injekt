@@ -163,10 +163,10 @@ fun String.asNameId() = Name.identifier(this)
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
 
-fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+fun Annotated.getAnnotatedAnnotations(annotation: FqName, @Inject ctx: Context): List<AnnotationDescriptor> =
   annotations.filter {
     val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(annotation)
+    inner.hasAnnotation(annotation) || it.fqName == injektFqNames().composable
   }
 
 fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =

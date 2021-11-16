@@ -28,29 +28,21 @@ class SubtypingTest {
     stringType shouldBeSubTypeOf nullableAny
     stringType.nullable() shouldBeSubTypeOf nullableAny
     tag1.wrap(stringType) shouldBeSubTypeOf nullableAny
-    stringType.copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
-    stringType.nullable().copy(isMarkedComposable = true) shouldBeSubTypeOf nullableAny
   }
 
   @Test fun testNonNullAnyIsSuperTypeOfEveryOtherNonNullType() = withTypeCheckerContext {
     stringType shouldBeSubTypeOf any
     stringType.nullable() shouldNotBeSubTypeOf any
-    stringType.copy(isMarkedComposable = true) shouldBeSubTypeOf any
-    stringType.nullable().copy(isMarkedComposable = true) shouldNotBeSubTypeOf any
   }
 
   @Test fun testNonNullNothingIsSubTypeOfEveryOtherNonNullType() = withTypeCheckerContext {
     nothing shouldBeSubTypeOf stringType
     nothing shouldBeSubTypeOf stringType.nullable()
-    nothing shouldBeSubTypeOf stringType.copy(isMarkedComposable = true)
-    nothing shouldBeSubTypeOf stringType.nullable().copy(isMarkedComposable = true)
   }
 
   @Test fun testNullableNothingIsSubTypeOfEveryOtherNullableType() = withTypeCheckerContext {
     nullableNothing shouldNotBeSubTypeOf stringType
     nullableNothing shouldBeSubTypeOf stringType.nullable()
-    nullableNothing shouldNotBeSubTypeOf stringType.copy(isMarkedComposable = true)
-    nullableNothing shouldBeSubTypeOf stringType.nullable().copy(isMarkedComposable = true)
   }
 
   @Test fun testSimpleTypeWithSameClassifierIsAssignable() = withTypeCheckerContext {
@@ -117,10 +109,6 @@ class SubtypingTest {
     charSequenceTypeClass shouldBeAssignableTo stringTypeClass
   }
 
-  @Test fun testSameComposabilityIsAssignable() = withTypeCheckerContext {
-    composableFunction(0) shouldBeAssignableTo composableFunction(0)
-  }
-
   @Test fun testSameTagsIsAssignable() = withTypeCheckerContext {
     tag1.wrap(stringType) shouldBeAssignableTo tag1.wrap(stringType)
   }
@@ -160,15 +148,6 @@ class SubtypingTest {
       superTypeParameter,
       listOf(superTypeParameter.classifier, subTypeParameter.classifier)
     )
-  }
-
-  @Test fun testComposableSubTypeOfTypeParameterWithNullableAnyUpperBound() =
-    withTypeCheckerContext {
-      composableFunction(0) shouldBeAssignableTo typeParameter()
-    }
-
-  @Test fun testComposableIsNotSubTypeOfNonComposable() = withTypeCheckerContext {
-    composableFunction(0) shouldNotBeAssignableTo typeParameter(function(0))
   }
 
   @Test fun testSubTypeOfTypeParameterWithNonNullAnyUpperBound() = withTypeCheckerContext {

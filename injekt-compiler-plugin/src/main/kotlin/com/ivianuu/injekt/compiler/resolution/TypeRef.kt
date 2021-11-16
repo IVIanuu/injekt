@@ -127,7 +127,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       ?.toMutableList()
       ?: mutableListOf()
 
-    val isTag = hasAnnotation(injektFqNames().tag)
+    val isTag = hasAnnotation(injektFqNames().tag) || fqNameSafe == injektFqNames().composable
 
     if (isTag) {
       typeParameters += ClassifierRef(
@@ -195,7 +195,6 @@ fun KotlinType.toTypeRef(
             it + ctx.nullableAnyType
           else it
         },
-      isMarkedComposable = kotlinType.hasAnnotation(injektFqNames().composable),
       isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
       isInject = kotlinType.hasAnnotation(injektFqNames().inject),
       isStarProjection = false,
@@ -235,7 +234,6 @@ class TypeRef(
   val classifier: ClassifierRef,
   val isMarkedNullable: Boolean = false,
   val arguments: List<TypeRef> = emptyList(),
-  val isMarkedComposable: Boolean = false,
   val isProvide: Boolean = false,
   val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
@@ -331,7 +329,6 @@ class TypeRef(
       var result = classifier.hashCode()
       result = 31 * result + isMarkedNullable.hashCode()
       result = 31 * result + arguments.hashCode()
-      result = 31 * result + isMarkedComposable.hashCode()
       result = 31 * result + isProvide.hashCode()
       result = 31 * result + isInject.hashCode()
       result = 31 * result + isStarProjection.hashCode()
@@ -369,7 +366,6 @@ fun TypeRef.copy(
   classifier: ClassifierRef = this.classifier,
   isMarkedNullable: Boolean = this.isMarkedNullable,
   arguments: List<TypeRef> = this.arguments,
-  isMarkedComposable: Boolean = this.isMarkedComposable,
   isProvide: Boolean = this.isProvide,
   isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
@@ -383,7 +379,6 @@ fun TypeRef.copy(
   classifier,
   isMarkedNullable,
   arguments,
-  isMarkedComposable,
   isProvide,
   isInject,
   isStarProjection,
@@ -478,8 +473,6 @@ fun TypeRef.render(
   fun TypeRef.inner() {
     if (!renderType(this)) return
 
-    if (isMarkedComposable) append("@Composable ")
-
     when {
       isStarProjection -> append("*")
       else -> append(classifier.fqName.asString())
@@ -527,24 +520,12 @@ val TypeRef.coveringSet: Set<ClassifierRef>
 
 val TypeRef.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
-val TypeRef.isComposableType: Boolean
-  get() {
-    if (isMarkedComposable) return true
-    for (superType in superTypes)
-      if (superType.isComposableType) return true
-    return false
-  }
-
 val TypeRef.isProvideFunctionType: Boolean
   get() = isProvide && isFunctionType
 
 val TypeRef.isFunctionType: Boolean
-  get() =
-    classifier.fqName.asString().startsWith("kotlin.Function") ||
-        classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
-
-val TypeRef.isSuspendFunctionType: Boolean
-  get() = classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+  get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
+      classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
 
 fun effectiveVariance(
   declared: TypeVariance,

@@ -28,7 +28,6 @@ import kotlinx.serialization.Serializable
   val arguments: List<PersistedTypeRef> = emptyList(),
   val isStarProjection: Boolean,
   val isMarkedNullable: Boolean,
-  val isMarkedComposable: Boolean,
   val isProvide: Boolean,
   val isInject: Boolean,
   val scopeComponentType: PersistedTypeRef?,
@@ -41,7 +40,6 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
     arguments = arguments.map { it.toPersistedTypeRef() },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
-    isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
     scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
@@ -64,7 +62,6 @@ fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
   return classifier.untaggedType.copy(
     arguments = arguments,
     isMarkedNullable = isMarkedNullable,
-    isMarkedComposable = isMarkedComposable,
     isProvide = isProvide,
     isInject = isInject,
     scopeComponentType = scopeComponentType?.toTypeRef(),
