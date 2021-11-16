@@ -57,7 +57,7 @@ class TypeKeyTest {
     """,
     config = { withCompose() }
   ) {
-    invokeSingleFile() shouldBe "@Composable kotlin.Function0<kotlin.Unit>"
+    invokeSingleFile() shouldBe "androidx.compose.runtime.Composable<kotlin.Function0<kotlin.Unit>>"
   }
 
   @Test fun testTypeKeyWithTags() = codegen(

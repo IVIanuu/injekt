@@ -33,7 +33,6 @@ fun TypeRef.isEqualTo(other: TypeRef, @Inject ctx: TypeCheckerContext): Boolean 
     if (classifier != other.classifier) return false
 
     if (isMarkedNullable != other.isMarkedNullable) return false
-    if (isMarkedComposable != other.isMarkedComposable) return false
 
     for (i in arguments.indices) {
       val thisParameter = arguments[i]
@@ -83,7 +82,6 @@ private fun TypeRef.isSubTypeOfSameClassifier(
   @Inject ctx: TypeCheckerContext
 ): Boolean {
   if (!superType.isMarkedNullable && isMarkedNullable) return false
-  if (isMarkedComposable != superType.isMarkedComposable) return false
 
   for (i in arguments.indices) {
     val argument = arguments[i]
