@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.resolution.DescriptorWithParentScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesWithLookups
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.TypeRefKey
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -52,7 +53,8 @@ object InjektWritableSlices {
   val DECLARATION_SCOPE = BasicWritableSlice<DescriptorWithParentScope, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
-  val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
+  val TYPE_INJECTABLES = BasicWritableSlice<Pair<TypeRef, Boolean>, List<CallableRef>>(RewritePolicy.DO_NOTHING)
+  val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val FIXED_TYPE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
   val UNIQUE_KEY = BasicWritableSlice<DeclarationDescriptor, String>(RewritePolicy.DO_NOTHING)
