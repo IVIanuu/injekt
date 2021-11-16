@@ -21,13 +21,16 @@ import com.ivianuu.injekt.Tag
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
+typealias DefaultDispatcher = @DefaultDispatcherTag CoroutineDispatcher
+
 @Tag annotation class DefaultDispatcherTag {
   companion object {
     @Provide inline val dispatcher: DefaultDispatcher
       get() = Dispatchers.Default
   }
 }
-typealias DefaultDispatcher = @DefaultDispatcherTag CoroutineDispatcher
+
+typealias MainDispatcher = @MainDispatcherTag CoroutineDispatcher
 
 @Tag annotation class MainDispatcherTag {
   companion object {
@@ -35,7 +38,8 @@ typealias DefaultDispatcher = @DefaultDispatcherTag CoroutineDispatcher
       get() = Dispatchers.Main
   }
 }
-typealias MainDispatcher = @MainDispatcherTag CoroutineDispatcher
+
+typealias ImmediateMainDispatcher = @ImmediateMainDispatcherTag CoroutineDispatcher
 
 @Tag annotation class ImmediateMainDispatcherTag {
   companion object {
@@ -43,10 +47,10 @@ typealias MainDispatcher = @MainDispatcherTag CoroutineDispatcher
       get() = Dispatchers.Main.immediate
   }
 }
-typealias ImmediateMainDispatcher = @ImmediateMainDispatcherTag CoroutineDispatcher
+
+typealias IODispatcher = @IODispatcherTag CoroutineDispatcher
 
 @Tag annotation class IODispatcherTag
-typealias IODispatcher = @IODispatcherTag CoroutineDispatcher
 
 expect object IOInjectables {
   @Provide val dispatcher: IODispatcher
