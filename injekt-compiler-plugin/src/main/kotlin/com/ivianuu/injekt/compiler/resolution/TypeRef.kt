@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -205,7 +205,7 @@ fun KotlinType.toTypeRef(
       isError = isError
     )
 
-    val tagAnnotations = unwrapped.getAnnotatedAnnotations(injektFqNames().tag)
+    val tagAnnotations = unwrapped.getTags(injektFqNames())
     var r = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef() }

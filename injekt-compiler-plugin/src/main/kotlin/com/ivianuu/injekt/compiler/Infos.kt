@@ -136,7 +136,7 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
     val type = run {
       val tags = if (this is ConstructorDescriptor)
         constructedClass.classifierInfo().tags +
-            getAnnotatedAnnotations(injektFqNames().tag)
+            getTags(injektFqNames())
               .map { it.type.toTypeRef() }
       else emptyList()
       tags.wrap(returnType?.toTypeRef() ?: ctx.nullableAnyType)
@@ -275,7 +275,7 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
       }
     }
 
-    val tags = getAnnotatedAnnotations(injektFqNames().tag)
+    val tags = getTags(injektFqNames())
       .map { it.type.toTypeRef() }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {

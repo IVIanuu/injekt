@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
-import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
@@ -63,7 +61,6 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
-import org.jetbrains.kotlin.psi.psiUtil.safeNameForLazyResolve
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -163,10 +160,10 @@ fun String.asNameId() = Name.identifier(this)
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
 
-fun Annotated.getAnnotatedAnnotations(annotation: FqName): List<AnnotationDescriptor> =
+fun Annotated.getTags(injektFqNames: InjektFqNames): List<AnnotationDescriptor> =
   annotations.filter {
     val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(annotation) || it.fqName == InjektFqNames.Default.composable
+    inner.hasAnnotation(injektFqNames.tag) || it.fqName == injektFqNames.composable
   }
 
 fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =

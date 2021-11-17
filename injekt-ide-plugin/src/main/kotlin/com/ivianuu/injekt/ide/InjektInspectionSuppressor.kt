@@ -21,13 +21,12 @@ import com.intellij.codeInspection.SuppressQuickFix
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
-import org.jetbrains.kotlin.idea.caches.resolve.resolveToCall
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtTypeAlias
@@ -50,20 +49,19 @@ class InjektInspectionSuppressor : InspectionSuppressor {
 
   override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
     if (!element.isInjektEnabled()) return false
-    val injektFqNames = element.injektFqNames()
     when (toolId) {
       "RedundantExplicitType" -> {
         if (element is KtTypeReference)
           element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
             .let { element.getAbbreviatedTypeOrType(it) }
             .let {
-              return it?.getAnnotatedAnnotations(injektFqNames.tag)
-                ?.isNotEmpty() == true
+              return it?.getTags(element.injektFqNames())?.isNotEmpty() == true
             }
         else return false
       }
       "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
       "RemoveExplicitTypeArguments" -> {
+        val injektFqNames = element.injektFqNames()
         if (element !is KtTypeArgumentList) return false
         val call = element.parent as? KtCallExpression
         val bindingContext = call?.analyze() ?: return false
@@ -85,6 +83,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         if (element !is LeafPsiElement) return false
         val typeParameter = element.parent.safeAs<KtTypeParameter>()
           ?: return false
+        val injektFqNames = element.injektFqNames()
         return typeParameter.hasAnnotation(injektFqNames.spread) ||
             typeParameter.parent.parent is KtTypeAlias ||
             typeParameter.parent.parent.safeAs<KtClass>()
