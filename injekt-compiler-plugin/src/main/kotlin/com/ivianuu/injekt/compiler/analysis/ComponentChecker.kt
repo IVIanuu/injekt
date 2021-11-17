@@ -62,8 +62,8 @@ class ComponentChecker(@Inject private val baseCtx: Context) : DeclarationChecke
       }
       is ClassDescriptor -> {
         if (descriptor.hasAnnotation(injektFqNames().component)) {
-          if (descriptor.modality != Modality.ABSTRACT)
-            trace()!!.report(InjektErrors.NON_ABSTRACT_COMPONENT.on(declaration))
+          if (descriptor.kind != ClassKind.INTERFACE)
+            trace()!!.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
           if (descriptor.isSealed())
             trace()!!.report(InjektErrors.SEALED_COMPONENT.on(declaration))
 

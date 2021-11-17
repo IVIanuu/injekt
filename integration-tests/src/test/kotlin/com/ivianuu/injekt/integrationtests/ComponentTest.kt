@@ -417,35 +417,6 @@ class ComponentTest {
     )
   }
 
-  @Test fun testAbstractComponentClass() = singleAndMultiCodegen(
-    """ 
-      @Component abstract class FooComponent {
-        abstract val foo: Foo
-        @Provide protected fun foo() = Foo()
-      }
-    """,
-    """
-      fun invoke() = inject<FooComponent>().foo
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testAbstractComponentClassWithConstructorDependencies() = singleAndMultiCodegen(
-    """ 
-      @Component abstract class FooComponent(private val _foo: Foo) {
-        abstract val foo: Foo
-        @Provide protected fun foo() = _foo
-      }
-    """,
-    """
-      fun invoke(@Provide foo: Foo) = inject<(Foo) -> FooComponent>()(foo).foo
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testComponentCannotUseItsOwnInjectables() = singleAndMultiCodegen(
     """
       @Component interface FooComponent {
@@ -481,12 +452,12 @@ class ComponentTest {
     )
   )
 
-  @Test fun testNonAbstractComponent() = codegen(
+  @Test fun testNonInterfaceComponent() = codegen(
     """ 
       @Component class FooComponent
     """
   ) {
-    compilationShouldHaveFailed("component must be either a abstract class or a interface")
+    compilationShouldHaveFailed("component must be a interface")
   }
 
   @Test fun testNonAbstractEntryPoint() = codegen(
