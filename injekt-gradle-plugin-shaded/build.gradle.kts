@@ -19,7 +19,6 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
   kotlin("jvm")
   id("com.github.johnrengelman.shadow")
-  id("com.vanniktech.maven.publish")
 }
 
 dependencies {
@@ -38,3 +37,5 @@ artifacts {
   runtimeOnly(shadowJar)
   archives(shadowJar)
 }
+
+plugins.apply("com.vanniktech.maven.publish")
