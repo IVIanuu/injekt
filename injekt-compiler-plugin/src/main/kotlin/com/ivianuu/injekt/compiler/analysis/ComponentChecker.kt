@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.isSealed
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -63,11 +64,15 @@ class ComponentChecker(@Inject private val baseCtx: Context) : DeclarationChecke
         if (descriptor.hasAnnotation(injektFqNames().component)) {
           if (descriptor.modality != Modality.ABSTRACT)
             trace()!!.report(InjektErrors.NON_ABSTRACT_COMPONENT.on(declaration))
+          if (descriptor.isSealed())
+            trace()!!.report(InjektErrors.SEALED_COMPONENT.on(declaration))
 
           descriptor.checkComponentCallables(InjektErrors.COMPONENT_MEMBER_VAR)
         } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
           if (descriptor.kind != ClassKind.INTERFACE)
             trace()!!.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
+          if (descriptor.isSealed())
+            trace()!!.report(InjektErrors.SEALED_ENTRY_POINT.on(declaration))
 
           descriptor.checkComponentCallables(InjektErrors.ENTRY_POINT_MEMBER_VAR)
         }

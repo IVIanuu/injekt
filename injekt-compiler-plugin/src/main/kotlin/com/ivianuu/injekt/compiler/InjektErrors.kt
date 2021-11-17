@@ -233,6 +233,14 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "entry point cannot contain a abstract var property") }
 
+    @JvmField val SEALED_COMPONENT =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "component cannot be sealed") }
+
+    @JvmField val SEALED_ENTRY_POINT =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "entry point cannot be sealed") }
+
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,

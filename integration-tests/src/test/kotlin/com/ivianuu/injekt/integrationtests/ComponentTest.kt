@@ -529,4 +529,20 @@ class ComponentTest {
   ) {
     compilationShouldHaveFailed()
   }
+
+  @Test fun testSealedComponent() = codegen(
+    """ 
+      @Component sealed interface MyComponent
+    """
+  ) {
+    compilationShouldHaveFailed("component cannot be sealed")
+  }
+
+  @Test fun testSealedEntryPoint() = codegen(
+    """ 
+      @EntryPoint<Any> sealed interface MyComponent
+    """
+  ) {
+    compilationShouldHaveFailed("entry point cannot be sealed")
+  }
 }
