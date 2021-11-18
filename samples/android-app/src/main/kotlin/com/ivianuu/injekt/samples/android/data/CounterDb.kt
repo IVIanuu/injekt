@@ -25,17 +25,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 interface CounterDb {
-  val counterState: Flow<Int>
+  val counter: Flow<Int>
 
   suspend fun updateCounter(transform: Int.() -> Int)
 }
 
 @Provide @Scoped<AppComponent> class CounterDbImpl : CounterDb {
-  private val _counterState = MutableStateFlow(0)
-  override val counterState: Flow<Int> by this::_counterState
-  private val counterMutex = Mutex()
+  private val _counter = MutableStateFlow(0)
+  override val counter: Flow<Int> by this::_counter
+  private val lock = Mutex()
 
-  override suspend fun updateCounter(transform: Int.() -> Int) = counterMutex.withLock {
-    _counterState.value = transform(_counterState.value)
+  override suspend fun updateCounter(transform: Int.() -> Int) = lock.withLock {
+    _counter.value = transform(_counter.value)
   }
 }

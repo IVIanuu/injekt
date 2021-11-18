@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
 @Tag annotation class CounterTag
 typealias Counter = @CounterTag Flow<Int>
 
-@Provide fun counter(db: CounterDb): Counter = db.counterState
+@Provide fun counter(db: CounterDb): Counter = db.counter
 
 @Tag annotation class IncCounterTag
 typealias IncCounter = @IncCounterTag suspend () -> Unit
