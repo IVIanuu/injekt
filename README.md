@@ -36,7 +36,7 @@ fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
 class MyService(@Inject private val logger: Logger)
 
 fun main() {
-  // automatically injects comparator if provided
+  // automatically injects provided comparator
   "a".compareTo("b")
   
   // uses explicit arg
@@ -164,8 +164,7 @@ fun main() {
 All elements which match the T or Collection\<T\> will be included in the resulting list.
 
 # Components
-Component's allows you 
-
+TODO
 ```kotlin
 @Component interface AppComponent {
   val api: Api
