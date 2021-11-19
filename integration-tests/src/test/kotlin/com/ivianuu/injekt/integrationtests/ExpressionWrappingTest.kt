@@ -78,7 +78,7 @@ class ExpressionWrappingTest {
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
-      @Component interface BarComponent {
+      @Provide interface BarComponent : Component {
         val bar: Bar
       }
       @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
@@ -95,7 +95,7 @@ class ExpressionWrappingTest {
       @Provide @Scoped<MyComponent> val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val bar: Bar
         val bar2: Bar
       }
@@ -112,7 +112,7 @@ class ExpressionWrappingTest {
     """
       @Provide @Scoped<MyComponent> val foo: Foo = Foo()
 
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val foo: Foo
         val foo2: Foo
       }
@@ -134,7 +134,7 @@ class ExpressionWrappingTest {
       @Provide @Scoped<MyComponent> fun androidLogger(factory: () -> AndroidLogger): Logger =
         factory()
 
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val loggerFactory: () -> Logger
         val loggerFactory2: () -> Logger
       }

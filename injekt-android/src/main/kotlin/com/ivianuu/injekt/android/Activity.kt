@@ -20,13 +20,13 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.dispose
 import com.ivianuu.injekt.common.entryPoint
 
-/**
+/**¹
  * Returns the [ActivityComponent] of this [ComponentActivity]
  * whose lifecycle is bound to the activity
  */
@@ -34,7 +34,7 @@ val ComponentActivity.activityComponent: ActivityComponent
   get() = synchronized(activityComponents) {
     activityComponents[this]?.let { return it }
     val component = appComponent
-      .entryPoint<ActivityComponentFactory>()
+      .entryPoint<AppComponent, ActivityComponentFactory>()
       .activityComponent(this)
     activityComponents[this] = component
 
@@ -50,9 +50,9 @@ val ComponentActivity.activityComponent: ActivityComponent
     component
   }
 
-@Component interface ActivityComponent
+@Provide interface ActivityComponent : Component
 
-@EntryPoint<AppComponent> interface ActivityComponentFactory {
+@Provide interface ActivityComponentFactory : EntryPoint<AppComponent> {
   fun activityComponent(activity: ComponentActivity): ActivityComponent
 }
 

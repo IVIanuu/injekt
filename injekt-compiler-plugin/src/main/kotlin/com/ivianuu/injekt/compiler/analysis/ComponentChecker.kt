@@ -22,22 +22,18 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.callContext
-import com.ivianuu.injekt.compiler.resolution.collectComponentCallables
 import com.ivianuu.injekt.compiler.resolution.isProvide
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.isSealed
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -61,36 +57,18 @@ class ComponentChecker(@Inject private val baseCtx: Context) : DeclarationChecke
         }
       }
       is ClassDescriptor -> {
-        if (descriptor.hasAnnotation(injektFqNames().component)) {
-          if (descriptor.kind != ClassKind.INTERFACE)
-            trace()!!.report(InjektErrors.COMPONENT_WITHOUT_INTERFACE.on(declaration))
-          if (descriptor.isSealed())
-            trace()!!.report(InjektErrors.SEALED_COMPONENT.on(declaration))
+        if (ctx.componentClassifier != null) {
+          val classifier = descriptor.toClassifierRef()
 
-          descriptor.checkComponentCallables(InjektErrors.COMPONENT_MEMBER_VAR)
-        } else if (descriptor.hasAnnotation(injektFqNames().entryPoint)) {
-          if (descriptor.kind != ClassKind.INTERFACE)
-            trace()!!.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
-          if (descriptor.isSealed())
-            trace()!!.report(InjektErrors.SEALED_ENTRY_POINT.on(declaration))
-
-          descriptor.checkComponentCallables(InjektErrors.ENTRY_POINT_MEMBER_VAR)
+          if (classifier.defaultType.isSubTypeOf(ctx.componentClassifier!!.defaultType)) {
+            if (descriptor.modality != Modality.ABSTRACT)
+              trace()!!.report(InjektErrors.NON_ABSTRACT_COMPONENT.on(declaration))
+          } else if (classifier.defaultType.isSubTypeOf(ctx.entryPointClassifier!!.defaultType)) {
+            if (descriptor.kind != ClassKind.INTERFACE)
+              trace()!!.report(InjektErrors.ENTRY_POINT_WITHOUT_INTERFACE.on(declaration))
+          }
         }
       }
     }
-  }
-
-  private fun ClassDescriptor.checkComponentCallables(
-    factory: DiagnosticFactory0<PsiElement>,
-    @Inject ctx: Context
-  ) {
-    defaultType.toTypeRef()
-      .collectComponentCallables()
-      .map { it.callable }
-      .forEach {
-        if (it is PropertyDescriptor && it.isVar) {
-          trace()!!.report(factory.on(it.findPsi() ?: findPsi()!!))
-        }
-      }
   }
 }

@@ -59,6 +59,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -233,29 +234,35 @@ fun Annotated.isInject(@Inject ctx: Context): Boolean {
 
 fun ClassDescriptor.injectableConstructors(@Inject ctx: Context): List<CallableRef> =
   trace()!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
-    (when {
-      hasAnnotation(injektFqNames().component) ->
-        listOf(
-          ComponentConstructorDescriptor(this)
-            .toCallableRef()
-            .let { callable ->
-              val info = classifierInfo()
-              if (info.tags.isEmpty()) callable
-              else {
-                val taggedType = info.tags.wrap(callable.type)
-                callable.copy(type = taggedType, originalType = taggedType)
+    val injectableConstructors = constructors
+      .filter { constructor ->
+        constructor.hasAnnotation(injektFqNames().provide) ||
+            (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
+      }
+      .map { it.toCallableRef() }
+
+    if (injectableConstructors.isNotEmpty()) injectableConstructors
+    else {
+      val type = defaultType.toTypeRef()
+      when {
+        type.isComponent() ->
+          listOf(
+            ComponentConstructorDescriptor(this)
+              .toCallableRef()
+              .let { callable ->
+                val info = classifierInfo()
+                if (info.tags.isEmpty()) callable
+                else {
+                  val taggedType = info.tags.wrap(callable.type)
+                  callable.copy(type = taggedType, originalType = taggedType)
+                }
               }
-            }
-        )
-      classifierInfo().entryPointComponentType != null ->
-        listOf(EntryPointConstructorDescriptor(this).toCallableRef())
-      else -> constructors
-        .filter { constructor ->
-          constructor.hasAnnotation(injektFqNames().provide) ||
-              (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
-        }
-        .map { it.toCallableRef() }
-    })
+          )
+        type.entryPointComponentType() != null ->
+          listOf(EntryPointConstructorDescriptor(this).toCallableRef())
+        else -> emptyList()
+      }
+    }
   }
 
 fun ClassDescriptor.injectableReceiver(tagged: Boolean, @Inject ctx: Context): CallableRef {
@@ -272,7 +279,6 @@ fun CallableRef.collectInjectables(
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
-  addComponent: (CallableRef) -> Unit,
   addEntryPoint: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf(),
@@ -285,11 +291,6 @@ fun CallableRef.collectInjectables(
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
-    return
-  }
-
-  if (callable is ComponentConstructorDescriptor) {
-    addComponent(this)
     return
   }
 
@@ -321,7 +322,6 @@ fun CallableRef.collectInjectables(
         addImport = addImport,
         addInjectable = addInjectable,
         addSpreadingInjectable = addSpreadingInjectable,
-        addComponent = addComponent,
         addEntryPoint = addEntryPoint,
         import = import,
         seen = seen
@@ -507,14 +507,16 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
           ?.containingFile
       })
 
-fun TypeRef.collectComponentCallables(@Inject ctx: Context): List<CallableRef> =
+fun TypeRef.collectAbstractInjectableCallables(@Inject ctx: Context): List<CallableRef> =
   classifier.descriptor!!.defaultType.memberScope
     .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
     .filterIsInstance<CallableMemberDescriptor>()
     .filter { it.modality != Modality.FINAL }
     .filter {
       it.overriddenTreeAsSequence(false).none {
-        it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true
+        it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() == true ||
+            it.dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
+              ?.fqNameSafe == injektFqNames().disposable
       }
     }
     .map { it.toCallableRef() }

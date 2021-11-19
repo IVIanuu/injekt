@@ -53,10 +53,8 @@ class ClassifierRef(
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
   val isTag: Boolean = false,
-  val isComponent: Boolean = false,
   val scopeComponentType: TypeRef? = null,
   val isEager: Boolean = false,
-  val entryPointComponentType: TypeRef? = null,
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
@@ -81,10 +79,8 @@ class ClassifierRef(
     isTypeParameter: Boolean = this.isTypeParameter,
     isObject: Boolean = this.isObject,
     isTag: Boolean = this.isTag,
-    isComponent: Boolean = this.isComponent,
     scopeComponentType: TypeRef? = this.scopeComponentType,
     isEager: Boolean = this.isEager,
-    entryPointComponentType: TypeRef? = this.entryPointComponentType,
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
@@ -93,7 +89,7 @@ class ClassifierRef(
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
-    isTag, isComponent, scopeComponentType, isEager, entryPointComponentType, descriptor,
+    isTag, scopeComponentType, isEager, descriptor,
     tags, isSpread, primaryConstructorPropertyParameters, variance,
     declaresInjectables
   )
@@ -147,9 +143,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
-      isComponent = hasAnnotation(injektFqNames().component),
       scopeComponentType = info.scopeComponentType,
-      entryPointComponentType = info.entryPointComponentType,
       descriptor = this,
       tags = info.tags,
       isSpread = info.isSpread,
@@ -526,6 +520,13 @@ val TypeRef.isProvideFunctionType: Boolean
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
       classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+
+fun TypeRef.isComponent(@Inject ctx: Context): Boolean = ctx.componentClassifier != null &&
+    isSubTypeOf(ctx.componentClassifier!!.defaultType)
+
+fun TypeRef.entryPointComponentType(@Inject ctx: Context): TypeRef? =
+  if (ctx.entryPointClassifier == null) null
+  else subtypeView(ctx.entryPointClassifier!!)?.arguments?.single()
 
 fun effectiveVariance(
   declared: TypeVariance,

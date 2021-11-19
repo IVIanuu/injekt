@@ -126,7 +126,7 @@ sealed class ResolutionResult {
       data class ClashingSuperTypes(
         val superTypeA: TypeRef,
         val superTypeB: TypeRef,
-        override val candidate: ComponentInjectable
+        override val candidate: AbstractInjectable
       ) : WithCandidate() {
         override val failureOrdering: Int
           get() = 1
@@ -270,7 +270,7 @@ private fun InjectablesScope.resolveRequest(
           }
           ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
           ?: userResult
-      } else if (request.type.unwrapTags().classifier.isComponent)
+      } else if (request.type.unwrapTags().isComponent())
         tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
           ?: userResult
       else
@@ -415,7 +415,7 @@ private fun InjectablesScope.resolveCandidate(
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
           candidate, candidate.scopeComponentType!!)
 
-  if (candidate is ComponentInjectable) {
+  if (candidate is AbstractInjectable) {
     candidate.requestCallables
       .forEach { callable ->
         candidate.requestCallables

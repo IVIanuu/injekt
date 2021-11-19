@@ -80,8 +80,8 @@ class CallableInjectable(
     get() = listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
 }
 
-class ComponentInjectable(
-  val component: CallableRef,
+class AbstractInjectable(
+  val callable: CallableRef,
   val entryPoints: List<CallableRef>,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
@@ -94,7 +94,7 @@ class ComponentInjectable(
       if (type in seen) return
       seen += type
 
-      type.collectComponentCallables()
+      type.collectAbstractInjectableCallables()
         .forEach { callable ->
           if (none {
               it.callable.name == callable.callable.name &&
@@ -113,10 +113,13 @@ class ComponentInjectable(
     entryPoints.forEach { visit(it.type) }
   }
 
-  val componentObserversRequest = InjectableRequest(
+  val superConstructorDependencies = callable.getInjectableRequests(true)
+
+  val componentObserversRequest = if (!isComponent) null
+  else InjectableRequest(
     type = ownerScope.ctx.listClassifier.defaultType.copy(
       arguments = listOf(
-        ownerScope.ctx.componentObserverClassifier.defaultType.copy(
+        ownerScope.ctx.componentObserverClassifier!!.defaultType.copy(
           arguments = listOf(type)
         )
       )
@@ -132,8 +135,8 @@ class ComponentInjectable(
 
   private val componentAndEntryPointInjectables = entryPoints
     .map {
-      it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
-    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+      it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(false)
+    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(false)
 
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
@@ -165,7 +168,13 @@ class ComponentInjectable(
     .mapKeys { it.key.value }
     .mapValues { it.value }
 
-  override val dependencies = requestsByRequestCallables.values + componentObserversRequest
+  @OptIn(ExperimentalStdlibApi::class)
+  override val dependencies = buildList {
+    addAll(superConstructorDependencies)
+    addAll(requestsByRequestCallables.values)
+    if (componentObserversRequest != null)
+      add(componentObserversRequest)
+  }
 
   val dependencyScopesByRequestCallable = requestCallables
     .associateWith { requestCallable ->
@@ -179,11 +188,11 @@ class ComponentInjectable(
           .filter { it != requestCallable.callable.dispatchReceiverParameter }
           .map {
             if (it is ReceiverParameterDescriptor)
-              ComponentReceiverParameterDescriptor(it)
+              AbstractInjectableReceiverParameterDescriptor(it)
             else
-              ComponentValueParameterDescriptor(it.cast())
+              AbstractInjectableValueParameterDescriptor(it.cast())
           }
-          .map { it.toCallableRef(componentScope.ctx) }
+          .map { it.toCallableRef(bodyScope.ctx) }
       )
     }
 
@@ -192,13 +201,14 @@ class ComponentInjectable(
     dependencyScopesByRequestCallable.forEach {
       this[requestsByRequestCallables[it.key]!!] = it.value
     }
-    this[componentObserversRequest] = componentScope
+    if (componentObserversRequest != null)
+      this[componentObserversRequest] = bodyScope
   }
 
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val type: TypeRef
-    get() = component.type
+    get() = callable.type
   override val originalType: TypeRef
     get() = type
   override val scopeComponentType: TypeRef?
@@ -209,10 +219,10 @@ class ComponentInjectable(
     get() = type
 
   // required to distinct between individual components in codegen
-  class ComponentReceiverParameterDescriptor(
+  class AbstractInjectableReceiverParameterDescriptor(
     private val delegate: ReceiverParameterDescriptor
   ) : ReceiverParameterDescriptor by delegate
-  class ComponentValueParameterDescriptor(
+  class AbstractInjectableValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
   ) : ValueParameterDescriptor by delegate
 }

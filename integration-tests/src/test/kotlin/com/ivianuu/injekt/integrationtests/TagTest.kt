@@ -162,18 +162,18 @@ class TagTest {
 
   @Test fun testGenericTagTypeAliasPattern() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
       typealias ComponentScope<C> = @ComponentScopeTag<C> String
 
-      @Tag annotation class ComponentScopeTag<C : @Component Any> {
+      @Tag annotation class ComponentScopeTag<C : Component> {
         companion object {
-          @Provide @Scoped<C> fun <C : @Component Any> scope(): ComponentScope<C> = ""
+          @Provide @Scoped<C> fun <C : Component> scope(): ComponentScope<C> = ""
         }
       }
     """,
     """
-      @EntryPoint<MyComponent> interface MyEntryPoint {
+      @Provide interface MyEntryPoint : EntryPoint<MyComponent> {
         val scope: ComponentScope<MyComponent>
       }
 

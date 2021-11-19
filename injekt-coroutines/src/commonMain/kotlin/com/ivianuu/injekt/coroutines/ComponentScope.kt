@@ -28,9 +28,9 @@ import kotlin.coroutines.CoroutineContext
 
 typealias ComponentScope<C> = @ComponentScopeTag<C> CoroutineScope
 
-@Tag annotation class ComponentScopeTag<C : @Component Any> {
+@Tag annotation class ComponentScopeTag<C : Component> {
   companion object {
-    @Provide @Scoped<C> fun <C : @Component Any> scope(
+    @Provide @Scoped<C> fun <C : Component> scope(
       context: ComponentContext<C>
     ): ComponentScope<C> = object : CoroutineScope, Disposable {
       override val coroutineContext: CoroutineContext = context + SupervisorJob()
@@ -43,9 +43,9 @@ typealias ComponentScope<C> = @ComponentScopeTag<C> CoroutineScope
 
 typealias ComponentContext<C> = @ComponentContextTag<C> CoroutineContext
 
-@Tag annotation class ComponentContextTag<C : @Component Any> {
+@Tag annotation class ComponentContextTag<C : Component> {
   companion object {
-    @Provide inline fun <C : @Component Any> context(
+    @Provide inline fun <C : Component> context(
       dispatcher: DefaultDispatcher
     ): ComponentContext<C> = dispatcher
   }

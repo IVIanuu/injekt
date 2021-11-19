@@ -186,7 +186,7 @@ class ProofsTest {
 
   @Test fun testInComponentTrue() = codegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val foo: Foo
       }
 
@@ -210,7 +210,7 @@ class ProofsTest {
 
   @Test fun testNotInComponentTrue() = codegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
       @Provide fun foo(ev: NotInComponent<MyComponent>) = Foo()
 

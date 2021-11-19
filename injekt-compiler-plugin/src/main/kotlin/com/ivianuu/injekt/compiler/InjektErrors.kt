@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
+import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
@@ -119,14 +119,6 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "inner class cannot be injectable") }
 
-    @JvmField val PROVIDE_ABSTRACT_CLASS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract class cannot be injectable") }
-
-    @JvmField val PROVIDE_INTERFACE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "interface cannot be injectable") }
-
     @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
@@ -213,13 +205,17 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val COMPONENT_WITHOUT_INTERFACE =
+    @JvmField val NON_ABSTRACT_COMPONENT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component must be a interface") }
+        .also { MAP.put(it, "component must be either a abstract class or a interface") }
 
-    @JvmField val COMPONENT_MEMBER_VAR =
+    @JvmField val ABSTRACT_INJECTABLE_MEMBER_VAR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component cannot contain a abstract var property") }
+        .also { MAP.put(it, "abstract injectable cannot contain a abstract var property") }
+
+    @JvmField val PROVIDE_SEALED_ABSTRACT_INJECTABLE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "injectable cannot be sealed") }
 
     @JvmField val SCOPED_WITHOUT_DEFAULT_CALL_CONTEXT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
@@ -228,18 +224,6 @@ interface InjektErrors {
     @JvmField val ENTRY_POINT_WITHOUT_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "entry point must be a interface") }
-
-    @JvmField val ENTRY_POINT_MEMBER_VAR =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "entry point cannot contain a abstract var property") }
-
-    @JvmField val SEALED_COMPONENT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component cannot be sealed") }
-
-    @JvmField val SEALED_ENTRY_POINT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "entry point cannot be sealed") }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
@@ -378,7 +362,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           CallContext.SUSPEND -> append("suspend ")
         }
       } else {
-        if (candidate is ComponentInjectable) {
+        if (candidate is AbstractInjectable) {
           append("object : ${request.callableFqName}")
         } else {
           append("${request.callableFqName}")
@@ -405,7 +389,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           }
           appendLine()
         }
-        is ComponentInjectable -> {
+        is AbstractInjectable -> {
           appendLine(" {")
         }
         else -> {
@@ -419,7 +403,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
         append(indent())
         if (candidate !is ProviderInjectable) {
-          if (candidate is ComponentInjectable) {
+          if (candidate is AbstractInjectable) {
             val requestCallable = candidate.requestsByRequestCallables.entries
               .singleOrNull { it.value == request }
               ?.key
@@ -502,7 +486,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
       }
       append(indent())
-      if (candidate is ProviderInjectable || candidate is ComponentInjectable) {
+      if (candidate is ProviderInjectable || candidate is AbstractInjectable) {
         appendLine("}")
       } else {
         appendLine(")")

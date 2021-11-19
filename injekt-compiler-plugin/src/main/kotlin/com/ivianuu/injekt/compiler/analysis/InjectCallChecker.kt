@@ -23,7 +23,7 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
-import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
+import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
@@ -126,8 +126,8 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
               Unit
             )
           }
-        } else if (result.candidate is ComponentInjectable) {
-          result.candidate.component.import?.element?.let {
+        } else if (result.candidate is AbstractInjectable) {
+          result.candidate.callable.import?.element?.let {
             trace()!!.record(
               InjektWritableSlices.USED_IMPORT,
               SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),

@@ -50,7 +50,7 @@ class TestDisposable : Disposable {
   }
 }
 
-class TestComponentObserver<C : @Component Any> : ComponentObserver<C> {
+class TestComponentObserver<C : Component> : ComponentObserver<C> {
   var initCalls = 0
   var disposeCalls = 0
 

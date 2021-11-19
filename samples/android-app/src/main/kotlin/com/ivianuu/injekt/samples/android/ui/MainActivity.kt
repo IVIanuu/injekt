@@ -19,6 +19,7 @@ package com.ivianuu.injekt.samples.android.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.common.EntryPoint
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // retrieve our dependencies
-    val dependencies = activityComponent.entryPoint<MainActivityDependencies>()
+    val dependencies: MainActivityDependencies = activityComponent.entryPoint()
     // display ui
     setContent {
       dependencies.theme {
@@ -38,7 +39,7 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@EntryPoint<ActivityComponent> interface MainActivityDependencies {
+@Provide interface MainActivityDependencies : EntryPoint<ActivityComponent> {
   val theme: AppTheme
   val appUi: AppUi
 }

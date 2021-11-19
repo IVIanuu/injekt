@@ -21,13 +21,15 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.analysis.ComponentConstructorDescriptor
+import com.ivianuu.injekt.compiler.analysis.EntryPointConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
+import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
@@ -39,6 +41,7 @@ import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.callContext
+import com.ivianuu.injekt.compiler.resolution.isComponent
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
@@ -239,13 +242,13 @@ class InjectCallTransformer(
     }
 
     fun pushComponentReceivers(expression: () -> IrExpression) {
-      component!!.superTypes.dropLast(1).forEach {
+      component!!.superTypes.forEach {
         receiverAccessors.push(it.classOrNull!!.owner to expression)
       }
     }
 
     fun popComponentReceivers() {
-      repeat(component!!.superTypes.size - 1) {
+      repeat(component!!.superTypes.size) {
         receiverAccessors.pop()
       }
     }
@@ -309,7 +312,7 @@ class InjectCallTransformer(
         scopeExpressionIfNeeded(result) {
           when (result.candidate) {
             is CallableInjectable -> callableExpression(result, result.candidate.cast())
-            is ComponentInjectable -> componentExpression(result, result.candidate.cast())
+            is AbstractInjectable -> abstractInjectableExpression(result, result.candidate.cast())
             is ProviderInjectable -> providerExpression(result, result.candidate.cast())
             is ListInjectable -> listExpression(result, result.candidate.cast())
             is SourceKeyInjectable -> sourceKeyExpression()
@@ -521,9 +524,9 @@ class InjectCallTransformer(
     DeclarationIrBuilder(irCtx, symbol)
       .irGetObject(irCtx.referenceClass(type.classifier.fqName)!!)
 
-  private fun ScopeContext.componentExpression(
+  private fun ScopeContext.abstractInjectableExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
-    injectable: ComponentInjectable
+    injectable: AbstractInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol).irBlock {
     val clazz = IrFactoryImpl.buildClass {
       name = (injectable.callableFqName.shortName().asString() + "Impl").asNameId()
@@ -533,15 +536,13 @@ class InjectCallTransformer(
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
       superTypes += injectable.entryPoints.map { it.type.toIrType().typeOrNull!! }
-      superTypes += inject<Context>().disposableClassifier.defaultType
-        .toIrType().typeOrNull!!
 
-      val componentScope = ScopeContext(
-        this@componentExpression,
-        graphContext, injectable.componentScope, scope, this@clazz
+      val bodyScope = ScopeContext(
+        this@abstractInjectableExpression,
+        graphContext, injectable.bodyScope, scope, this@clazz
       )
 
-      componentScope.pushComponentReceivers { irGet(thisReceiver!!) }
+      bodyScope.pushComponentReceivers { irGet(thisReceiver!!) }
 
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
@@ -572,11 +573,11 @@ class InjectCallTransformer(
 
           body = DeclarationIrBuilder(irCtx, symbol).irBlockBody {
             val dependencyScopeContext = ScopeContext(
-              componentScope,
+              bodyScope,
               graphContext, injectable.dependencyScopesByRequestCallable[requestCallable]!!, scope,
               null
             )
-            componentScope.pushComponentReceivers { irGet(dispatchReceiverParameter!!) }
+            bodyScope.pushComponentReceivers { irGet(dispatchReceiverParameter!!) }
             val expression = with(dependencyScopeContext) {
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
@@ -607,7 +608,7 @@ class InjectCallTransformer(
                 }
               }
             }
-            componentScope.popComponentReceivers()
+            bodyScope.popComponentReceivers()
             dependencyScopeContext.statements.forEach { +it }
             +irReturn(expression)
           }
@@ -651,13 +652,13 @@ class InjectCallTransformer(
 
       val observersField = if (observersResult == null) null
       else addField(
-        "${injectable.componentObserversRequest.parameterName}${graphContext.variableIndex++}",
+        "${injectable.componentObserversRequest!!.parameterName}${graphContext.variableIndex++}",
         injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
         DescriptorVisibilities.PRIVATE
       ).apply {
         initializer = DeclarationIrBuilder(irCtx, symbol).run {
           irExprBody(
-            with(componentScope) {
+            with(bodyScope) {
               expressionFor(observersResult)
             }
           )
@@ -734,50 +735,53 @@ class InjectCallTransformer(
         }
       }
 
-      addFunction {
-        returnType = irCtx.irBuiltIns.unitType
-        name = "dispose".asNameId()
-      }.apply {
-        addDispatchReceiver { type = defaultType }
-        overriddenSymbols = overriddenSymbols + inject<Context>().disposableClassifier
-          .defaultType.toIrType().typeOrNull!!.classOrNull!!
-          .functions
-          .single { it.owner.name == name }
-        body = DeclarationIrBuilder(irCtx, symbol).run {
-          irBlockBody {
-            if (observersField != null) {
-              +forEachObserver(
-                observerFunctionName = "dispose",
-                thisExpression = { irGet(dispatchReceiverParameter!!) }
-              )
-            }
-
-            val disposableClass = irCtx.referenceClass(injektFqNames().disposable)!!
-            fields
-              .filter { it.name.asString().endsWith("Instance") }
-              .forEach { field ->
-                +irIfThen(
-                  irIs(
-                    irGetField(irGet(dispatchReceiverParameter!!), field),
-                    disposableClass.defaultType
-                  ),
-                  irCall(
-                    disposableClass
-                      .functions
-                      .single { it.owner.name.asString() == "dispose" }
-                  ).apply {
-                    dispatchReceiver = irAs(
-                      irGetField(irGet(dispatchReceiverParameter!!), field),
-                      disposableClass.defaultType
-                    )
-                  }
+      if (ctx.disposableClassifier != null &&
+        injectable.type.isSubTypeOf(ctx.disposableClassifier!!.defaultType)) {
+        addFunction {
+          returnType = irCtx.irBuiltIns.unitType
+          name = "dispose".asNameId()
+        }.apply {
+          addDispatchReceiver { type = defaultType }
+          overriddenSymbols = overriddenSymbols + inject<Context>().disposableClassifier!!
+            .defaultType.toIrType().typeOrNull!!.classOrNull!!
+            .functions
+            .single { it.owner.name == name }
+          body = DeclarationIrBuilder(irCtx, symbol).run {
+            irBlockBody {
+              if (observersField != null) {
+                +forEachObserver(
+                  observerFunctionName = "dispose",
+                  thisExpression = { irGet(dispatchReceiverParameter!!) }
                 )
               }
+
+              val disposableClass = irCtx.referenceClass(injektFqNames().disposable)!!
+              fields
+                .filter { it.name.asString().endsWith("Instance") }
+                .forEach { field ->
+                  +irIfThen(
+                    irIs(
+                      irGetField(irGet(dispatchReceiverParameter!!), field),
+                      disposableClass.defaultType
+                    ),
+                    irCall(
+                      disposableClass
+                        .functions
+                        .single { it.owner.name.asString() == "dispose" }
+                    ).apply {
+                      dispatchReceiver = irAs(
+                        irGetField(irGet(dispatchReceiverParameter!!), field),
+                        disposableClass.defaultType
+                      )
+                    }
+                  )
+                }
+            }
           }
         }
       }
 
-      componentScope.popComponentReceivers()
+      bodyScope.popComponentReceivers()
     }
 
     +clazz
@@ -1090,9 +1094,10 @@ class InjectCallTransformer(
 
   private fun ScopeContext.receiverExpression(
     descriptor: ParameterDescriptor
-  ) = receiverAccessors.last {
+  ) = receiverAccessors.lastOrNull {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-  }.second()
+  }?.second?.invoke()
+    ?: error("")
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,

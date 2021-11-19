@@ -1141,7 +1141,7 @@ class ResolveTest {
 
   @Test fun testCannotResolveScopedInjectableWithoutEnclosingComponent() = singleAndMultiCodegen(
     """
-      interface ScopeComponent {
+      interface ScopeComponent : Component {
         val foo: Foo
       }
       @Provide @Scoped<ScopeComponent> val foo: Foo = Foo() 
@@ -1156,11 +1156,11 @@ class ResolveTest {
   @Test fun testScopedValueCannotResolveInjectablesInScopesBelowIt() = singleAndMultiCodegen(
     """
       @Provide @Scoped<ParentComponent> fun bar(foo: Foo): Bar = Bar(foo)
-      @Component interface ParentComponent {
+      @Provide interface ParentComponent : Component {
         fun childComponent(foo: Foo): ChildComponent
       } 
 
-      @Component interface ChildComponent {
+      @Provide interface ChildComponent : Component {
         val bar: Bar
       }
     """,

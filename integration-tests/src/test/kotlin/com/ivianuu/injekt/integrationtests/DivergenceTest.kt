@@ -127,7 +127,7 @@ class DivergenceTest {
     """
       @Provide class A(b: B)
       @Provide class B(aComponent: AComponent)
-      @Component interface AComponent {
+      @Provide interface AComponent : Component {
         val a: A
       }
       fun invoke() = inject<B>()

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
+import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
@@ -26,10 +27,10 @@ import com.ivianuu.injekt.common.entryPoint
  * Returns a new [ServiceComponent] which must be manually stored and disposed
  */
 fun Service.createServiceComponent(): ServiceComponent =
-  appComponent.entryPoint<ServiceComponentFactory>().serviceComponent(this)
+  appComponent.entryPoint<AppComponent, ServiceComponentFactory>().serviceComponent(this)
 
-@Component interface ServiceComponent
+@Provide interface ServiceComponent : Component
 
-@EntryPoint<AppComponent> interface ServiceComponentFactory {
+@Provide interface ServiceComponentFactory : EntryPoint<AppComponent> {
   fun serviceComponent(service: Service): ServiceComponent
 }

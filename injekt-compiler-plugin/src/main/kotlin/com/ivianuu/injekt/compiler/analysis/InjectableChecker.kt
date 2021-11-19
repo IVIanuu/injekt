@@ -23,8 +23,10 @@ import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.resolution.collectAbstractInjectableCallables
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import com.ivianuu.injekt.compiler.resolution.isProvide
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
@@ -43,13 +45,13 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
+import org.jetbrains.kotlin.descriptors.isSealed
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.psiUtil.modalityModifier
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
@@ -126,26 +128,10 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       )
     }
 
-    if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(injektFqNames().provide)) {
-      trace()!!.report(
-        InjektErrors.PROVIDE_INTERFACE
-          .on(
-            declaration.findAnnotation(injektFqNames().provide)
-              ?: declaration
-          )
-      )
-    }
-
-    if (isProvider && descriptor.modality == Modality.ABSTRACT &&
-        !descriptor.hasAnnotation(injektFqNames().component)) {
-      trace()!!.report(
-        InjektErrors.PROVIDE_ABSTRACT_CLASS
-          .on(
-            declaration.modalityModifier()
-              ?: declaration
-          )
-      )
+    if (isProvider &&
+      descriptor.modality == Modality.ABSTRACT &&
+      descriptor.isSealed()) {
+      trace()!!.report(InjektErrors.PROVIDE_SEALED_ABSTRACT_INJECTABLE.on(declaration))
     }
 
     if (isProvider && descriptor.isInner) {
@@ -177,6 +163,9 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters)
     }
+
+    if (isProvider && descriptor.modality == Modality.ABSTRACT)
+      descriptor.checkAbstractInjectableCallables()
 
     checkExceptActual(declaration, descriptor)
   }
@@ -396,6 +385,17 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
           InjektErrors.MULTIPLE_INJECT_PARAMETERS
             .on(it.findPsi() ?: declaration)
         )
+      }
+  }
+
+  private fun ClassDescriptor.checkAbstractInjectableCallables(@Inject ctx: Context) {
+    defaultType.toTypeRef()
+      .collectAbstractInjectableCallables()
+      .map { it.callable }
+      .forEach {
+        if (it is PropertyDescriptor && it.isVar) {
+          trace()!!.report(InjektErrors.ABSTRACT_INJECTABLE_MEMBER_VAR.on(it.findPsi() ?: findPsi()!!))
+        }
       }
   }
 }

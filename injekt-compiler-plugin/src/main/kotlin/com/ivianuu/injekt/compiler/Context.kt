@@ -57,14 +57,24 @@ class Context(
       ClassId.topLevel(injektFqNames().typeKey)
     )!!.toClassifierRef()
   }
+  val componentClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    module.findClassAcrossModuleDependencies(
+      ClassId.topLevel(injektFqNames().component)
+    )?.toClassifierRef()
+  }
   val componentObserverClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().componentObserver)
-    )!!.toClassifierRef()
+    )?.toClassifierRef()
   }
   val disposableClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().disposable)
-    )!!.toClassifierRef()
+    )?.toClassifierRef()
+  }
+  val entryPointClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    module.findClassAcrossModuleDependencies(
+      ClassId.topLevel(injektFqNames().entryPoint)
+    )?.toClassifierRef()
   }
 }

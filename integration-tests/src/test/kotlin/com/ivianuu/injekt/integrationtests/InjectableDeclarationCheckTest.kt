@@ -55,30 +55,6 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("inner class cannot be injectable")
   }
 
-  @Test fun testProvideAbstractClass() = codegen(
-    """
-      @Provide abstract class MyClass
-    """
-  ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
-  }
-
-  @Test fun testProvideConstructorAbstractClass() = codegen(
-    """
-      abstract class MyClass @Provide constructor()
-    """
-  ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
-  }
-
-  @Test fun testProvideInterface() = codegen(
-    """
-      @Provide interface MyInterface
-    """
-  ) {
-    compilationShouldHaveFailed("interface cannot be injectable")
-  }
-
   @Test fun testInjectValueParameterOnProvideFunction() = codegen(
     """
       @Provide fun bar(@Inject foo: Foo) = Bar(foo)
