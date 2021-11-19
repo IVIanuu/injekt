@@ -544,6 +544,11 @@ class InjectCallTransformer(
 
       bodyScope.pushComponentReceivers { irGet(thisReceiver!!) }
 
+      val initScope = ScopeContext(
+        this@abstractInjectableExpression,
+        graphContext, injectable.initScope, scope, null
+      )
+
       injectable.requestCallables.forEach { requestCallable ->
         fun IrSimpleFunction.setupFunction() {
           if (requestCallable.callable.callContext() == CallContext.COMPOSABLE) {
@@ -718,7 +723,33 @@ class InjectCallTransformer(
           irCtx,
           symbol
         ).irBlockBody {
-          +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+          if (injectable.callable.callable !is ComponentConstructorDescriptor &&
+              injectable.callable.callable !is EntryPointConstructorDescriptor) {
+            val constructor = injectable.callable
+              .callable
+              .cast<ClassConstructorDescriptor>()
+              .irConstructor()
+            +IrDelegatingConstructorCallImpl(
+              UNDEFINED_OFFSET,
+              UNDEFINED_OFFSET,
+              injectable.type.toIrType().typeOrNull!!,
+              constructor.symbol,
+              injectable.type.arguments.size,
+              constructor.valueParameters.size
+            ).apply {
+              fillTypeParameters(injectable.callable)
+              with(initScope) {
+                inject(
+                  this,
+                  result.dependencyResults.filterKeys {
+                    it in injectable.superConstructorDependencies
+                  }
+                )
+              }
+            }
+          } else {
+            +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+          }
           +IrInstanceInitializerCallImpl(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,

@@ -85,6 +85,8 @@ class AbstractInjectable(
   val entryPoints: List<CallableRef>,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
+  private val isComponent: Boolean get() = callable.type.isComponent()
+
   override val callableFqName: FqName = type.classifier.fqName
 
   @OptIn(ExperimentalStdlibApi::class)
@@ -138,8 +140,16 @@ class AbstractInjectable(
       it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(false)
     } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(false)
 
-  val componentScope = InjectablesScope(
-    name = "COMPONENT $callableFqName",
+  val initScope = InjectablesScope(
+    name = "ABSTRACT INJECTABLE INIT $callableFqName",
+    parent = ownerScope,
+    ctx = ownerScope.ctx,
+    componentType = type,
+    ownerDescriptor = type.unwrapTags().classifier.descriptor
+  )
+
+  val bodyScope = InjectablesScope(
+    name = "ABSTRACT INJECTABLE $callableFqName",
     parent = ownerScope,
     ctx = ownerScope.ctx,
     componentType = type,
@@ -179,9 +189,9 @@ class AbstractInjectable(
   val dependencyScopesByRequestCallable = requestCallables
     .associateWith { requestCallable ->
       InjectablesScope(
-        name = "COMPONENT CALLABLE ${callableFqName.child(requestCallable.callable.name)}",
-        parent = componentScope,
-        ctx = componentScope.ctx,
+        name = "ABSTRACT INJECTABLE CALLABLE ${callableFqName.child(requestCallable.callable.name)}",
+        parent = bodyScope,
+        ctx = bodyScope.ctx,
         callContext = requestCallable.callable.callContext(),
         ownerDescriptor = requestCallable.callable,
         initialInjectables = requestCallable.callable.allParameters
@@ -198,6 +208,9 @@ class AbstractInjectable(
 
   @OptIn(ExperimentalStdlibApi::class)
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = buildMap {
+    superConstructorDependencies.forEach {
+      this[it] = initScope
+    }
     dependencyScopesByRequestCallable.forEach {
       this[requestsByRequestCallables[it.key]!!] = it.value
     }
