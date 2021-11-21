@@ -127,7 +127,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
             )
           }
         } else if (result.candidate is ComponentInjectable) {
-          result.candidate.component.import?.element?.let {
+          result.candidate.constructor.import?.element?.let {
             trace()!!.record(
               InjektWritableSlices.USED_IMPORT,
               SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),

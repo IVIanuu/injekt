@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.TestComponentObserver
@@ -39,7 +40,7 @@ class ComponentTest {
     """
       @Provide val foo = Foo()      
       
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         val foo: Foo
       }
     """,
@@ -54,7 +55,7 @@ class ComponentTest {
     """
       @Provide val foo = Foo()      
       
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         fun foo(): Foo
       }
     """,
@@ -65,21 +66,11 @@ class ComponentTest {
     invokeSingleFile()
   }
 
-  @Test fun testComponentWithVar() = codegen(
-    """
-      @Component interface MyComponent {
-        var foo: Foo
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("component cannot contain a abstract var property")
-  }
-
   @Test fun testComponentFunctionWithParameters() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      @Component interface BarComponent {
+      @Provide interface BarComponent : Component {
         fun bar(foo: Foo): Bar
       } 
     """,
@@ -94,7 +85,7 @@ class ComponentTest {
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      @Component interface BarComponent {
+      @Provide interface BarComponent : Component {
         fun Foo.bar(): Bar
       } 
     """,
@@ -113,7 +104,7 @@ class ComponentTest {
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      @Component interface BarComponent {
+      @Provide interface BarComponent : Component {
         val Foo.bar: Bar
       } 
     """,
@@ -130,7 +121,7 @@ class ComponentTest {
 
   @Test fun testComponentWithUnexistingRequestButDefaultImplementationIsNoError() = singleAndMultiCodegen(
     """
-      @Component interface BarComponent {
+      @Provide interface BarComponent : Component {
         fun bar(foo: Foo): Bar = Bar(foo)
       }
   
@@ -145,7 +136,7 @@ class ComponentTest {
 
   @Test fun testComponentWithErrorRequestButDefaultImplementationIsNoError() = singleAndMultiCodegen(
     """
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         fun foo(): Foo = Foo()
       }
     """,
@@ -158,7 +149,7 @@ class ComponentTest {
 
   @Test fun testComponentWithTypeParameters() = singleAndMultiCodegen(
     """
-      @Component interface ParameterizedComponent<T> {
+      @Provide interface ParameterizedComponent<T> : Component {
         val value: T
       }
   
@@ -173,7 +164,7 @@ class ComponentTest {
 
   @Test fun testComponentWithSuspendFunction() = singleAndMultiCodegen(
     """
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         suspend fun foo(): Foo
       }
   
@@ -188,7 +179,7 @@ class ComponentTest {
 
   @Test fun testComponentWithComposableFunction() = singleAndMultiCodegen(
     """
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         @Composable fun foo(): Foo
       }
   
@@ -202,7 +193,7 @@ class ComponentTest {
 
   @Test fun testComponentWithComposableProperty() = singleAndMultiCodegen(
     """
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         @Composable fun foo(): Foo
       }
   
@@ -216,7 +207,7 @@ class ComponentTest {
 
   @Test fun testComponentIsCreatedOnTheFly() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent { 
+      @Provide interface MyComponent : Component { 
         val foo: Foo
       }
     """,
@@ -229,7 +220,7 @@ class ComponentTest {
 
   @Test fun testGenericComponent() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent<T> {
+      @Provide interface MyComponent<T> : Component {
         val value: T
       }
       @Provide val foo = Foo()
@@ -241,9 +232,9 @@ class ComponentTest {
 
   @Test fun testEntryPoint() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
-      @EntryPoint<MyComponent> interface MyEntryPoint {
+      @Provide interface MyEntryPoint : EntryPoint<MyComponent> {
         val foo: Foo
       } 
 
@@ -258,9 +249,9 @@ class ComponentTest {
 
   @Test fun testGenericEntryPoint() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
-      @EntryPoint<C> interface MyEntryPoint<C : @Component Any> {
+      @Provide interface MyEntryPoint<C : Component> : EntryPoint<C> {
         val foo: Foo
       }
 
@@ -275,9 +266,9 @@ class ComponentTest {
 
   @Test fun testGenericScopeCallable() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
-      @EntryPoint<C> interface CoroutineScopeComponent<C : @Component Any> {
+      @Provide interface CoroutineScopeComponent<C : Component> : EntryPoint<C> {
         val coroutineScope: com.ivianuu.injekt.coroutines.ComponentScope<C>
       }
     """,
@@ -289,7 +280,7 @@ class ComponentTest {
 
   @Test fun testComponentIsDisposable() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
     """,
     """
       fun invoke() = inject<MyComponent>()
@@ -300,7 +291,7 @@ class ComponentTest {
 
   @Test fun testComponentObserver() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
     """,
     """
       fun invoke(@Inject observer: ComponentObserver<MyComponent>): () -> MyComponent = {
@@ -308,7 +299,7 @@ class ComponentTest {
       }
     """
   ) {
-    val observer = TestComponentObserver<Any>()
+    val observer = TestComponentObserver<Component>()
     val componentFactory = invokeSingleFile<() -> Disposable>(observer)
     observer.initCalls shouldBe 0
     observer.disposeCalls shouldBe 0
@@ -322,10 +313,10 @@ class ComponentTest {
 
   @Test fun testComponentObserverWhoUsesScopedInjectables() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
     """,
     """
-      class MyObserver<C : @Component Any> @Provide @Scoped<C> constructor() : ComponentObserver<C>
+      class MyObserver<C : Component> @Provide @Scoped<C> constructor() : ComponentObserver<C>
 
       fun invoke(): MyComponent = inject<MyComponent>()
     """
@@ -335,7 +326,7 @@ class ComponentTest {
 
   @Test fun testCanInjectComponent() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val dep: Dep
       }
 
@@ -350,11 +341,11 @@ class ComponentTest {
 
   @Test fun testCanInjectEntryPoint() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val dep: Dep
       }
 
-      @EntryPoint<MyComponent> interface MyEntryPoint
+      @Provide interface MyEntryPoint : EntryPoint<MyComponent>
 
       @Provide class Dep(val entryPoint: MyEntryPoint)
     """,
@@ -374,7 +365,7 @@ class ComponentTest {
         val foo: Foo
       }
 
-      @Component interface MyComponent : BaseComponent1, BaseComponent2
+      @Provide interface MyComponent : Component, BaseComponent1, BaseComponent2
 
       @Provide val foo = Foo()
     """,
@@ -387,7 +378,7 @@ class ComponentTest {
 
   @Test fun testComponentDisposeWithUninitializedScopedValue() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val foo: Foo
       }
 
@@ -400,7 +391,7 @@ class ComponentTest {
 
   @Test fun testTaggedComponent() = singleAndMultiCodegen(
     """
-      @Component @Tag1 interface MyComponent
+      @Provide @Tag1 interface MyComponent : Component
     """,
     """
       fun invoke() {
@@ -419,7 +410,7 @@ class ComponentTest {
 
   @Test fun testAbstractComponentClass() = singleAndMultiCodegen(
     """ 
-      @Component abstract class FooComponent {
+      @Provide abstract class FooComponent : Component {
         abstract val foo: Foo
         @Provide protected fun foo() = Foo()
       }
@@ -433,7 +424,7 @@ class ComponentTest {
 
   @Test fun testAbstractComponentClassWithConstructorDependencies() = singleAndMultiCodegen(
     """ 
-      @Component abstract class FooComponent(private val _foo: Foo) {
+      @Provide abstract class FooComponent(private val _foo: Foo) : Component {
         abstract val foo: Foo
         @Provide protected fun foo() = _foo
       }
@@ -448,7 +439,7 @@ class ComponentTest {
 
   @Test fun testComponentCannotUseItsOwnInjectables() = singleAndMultiCodegen(
     """
-      @Component interface FooComponent {
+      @Provide interface FooComponent : Component {
         @Provide val foo: Foo
       }
     """,
@@ -466,7 +457,7 @@ class ComponentTest {
       listOf(
         source(
           """
-            @Component interface MyComponent
+            @Provide interface MyComponent : Component
           """,
           packageFqName = FqName("component")
         )
@@ -481,31 +472,15 @@ class ComponentTest {
     )
   )
 
-  @Test fun testNonAbstractComponent() = codegen(
-    """ 
-      @Component class FooComponent
-    """
-  ) {
-    compilationShouldHaveFailed("component must be either a abstract class or a interface")
-  }
-
-  @Test fun testNonAbstractEntryPoint() = codegen(
-    """ 
-      @EntryPoint<Any> class FooComponent
-    """
-  ) {
-    compilationShouldHaveFailed("entry point must be a interface")
-  }
-
   @Test fun testComponentWithClashingEntryPoints() = singleAndMultiCodegen(
     """ 
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
-      @EntryPoint<MyComponent> interface EntryPointA {
+      @Provide interface EntryPointA : EntryPoint<MyComponent> {
         fun a(): String
       }
 
-      @EntryPoint<MyComponent> interface EntryPointB {
+      @Provide interface EntryPointB : EntryPoint<MyComponent> {
         fun a(): Int
       }
     """,
@@ -530,19 +505,11 @@ class ComponentTest {
     compilationShouldHaveFailed()
   }
 
-  @Test fun testSealedComponent() = codegen(
+  @Test fun testSealedAbstractInjectable() = codegen(
     """ 
-      @Component sealed interface MyComponent
+      @Provide sealed interface MyComponent : Component
     """
   ) {
-    compilationShouldHaveFailed("component cannot be sealed")
-  }
-
-  @Test fun testSealedEntryPoint() = codegen(
-    """ 
-      @EntryPoint<Any> sealed interface MyComponent
-    """
-  ) {
-    compilationShouldHaveFailed("entry point cannot be sealed")
+    compilationShouldHaveFailed("abstract injectable cannot be sealed")
   }
 }

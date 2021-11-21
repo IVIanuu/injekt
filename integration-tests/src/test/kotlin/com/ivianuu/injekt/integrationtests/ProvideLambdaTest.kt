@@ -62,7 +62,7 @@ class ProvideLambdaTest {
 
   @Test fun testScopedProvideLambda() = codegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val foo: Foo
       }
   

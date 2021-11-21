@@ -166,7 +166,7 @@ class ListTest {
 
   @Test fun testListWithComponent() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val foo: Foo
       }
 
@@ -179,7 +179,7 @@ class ListTest {
 
   @Test fun testProviderListWithComponent() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val foo: Foo
       }
 

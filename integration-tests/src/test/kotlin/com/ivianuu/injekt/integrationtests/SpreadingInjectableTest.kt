@@ -317,7 +317,7 @@ class SpreadingInjectableTest {
       @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
 
-      @Component @Trigger interface FooComponent { 
+      @Provide @Trigger interface FooComponent : Component { 
         val foo: Foo
       }
   

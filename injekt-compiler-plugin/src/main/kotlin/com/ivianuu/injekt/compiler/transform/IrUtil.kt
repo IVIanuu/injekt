@@ -113,8 +113,9 @@ fun FunctionDescriptor.irFunction(
           .cast()
 
   return irCtx.referenceFunctions(fqNameSafe)
-    .single { it.descriptor.uniqueKey() == uniqueKey() }
-    .owner
+    .singleOrNull { it.descriptor.uniqueKey() == uniqueKey() }
+    ?.owner
+    ?: error("")
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)

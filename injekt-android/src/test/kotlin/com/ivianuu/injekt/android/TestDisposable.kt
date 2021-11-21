@@ -22,7 +22,7 @@ import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.Scoped
 
-@Provide @Scoped<C>() class TestDisposable<C : @Component Any> : Disposable {
+@Provide @Scoped<C>() class TestDisposable<C : Component> : Disposable {
   var disposed = false
 
   override fun dispose() {
@@ -30,6 +30,6 @@ import com.ivianuu.injekt.common.Scoped
   }
 }
 
-@EntryPoint<C> interface TestDisposableComponent<C : @Component Any> {
+@EntryPoint<C> interface TestDisposableComponent<C : Component> {
   val disposable: TestDisposable<C>
 }

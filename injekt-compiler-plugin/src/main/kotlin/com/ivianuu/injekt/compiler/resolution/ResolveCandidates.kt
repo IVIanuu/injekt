@@ -270,7 +270,7 @@ private fun InjectablesScope.resolveRequest(
           }
           ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
           ?: userResult
-      } else if (request.type.unwrapTags().classifier.isComponent)
+      } else if (request.type.unwrapTags().isComponent())
         tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
           ?: userResult
       else

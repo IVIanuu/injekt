@@ -192,25 +192,31 @@ class InjektDeclarationGeneratorExtension(
               declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
-                  declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) } ||
-                  declaration.hasAnnotation(injektFqNames.component) ||
-                  declaration.hasAnnotation(injektFqNames.entryPoint)))
+                  declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) }))
                     injectables += declaration
           }
           is KtNamedFunction -> {
             if (!declaration.isLocal &&
               declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
-                  declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.component) == true ||
-                  declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.entryPoint) == true))
+                  declaration.getParentOfType<KtClass>(false)
+                    ?.superTypeListEntries
+                    ?.any { it.text.contains(injektFqNames.component.shortName().asString()) } == true ||
+                  declaration.getParentOfType<KtClass>(false)
+                    ?.superTypeListEntries
+                    ?.any { it.text.contains(injektFqNames.entryPoint.shortName().asString()) } == true))
               injectables += declaration
           }
           is KtProperty -> {
             if (!declaration.isLocal &&
               declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
-                  declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.component) == true ||
-                  declaration.getParentOfType<KtClass>(false)?.hasAnnotation(injektFqNames.entryPoint) == true))
+                  declaration.getParentOfType<KtClass>(false)
+                    ?.superTypeListEntries
+                    ?.any { it.text.contains(injektFqNames.component.shortName().asString()) } == true ||
+                  declaration.getParentOfType<KtClass>(false)
+                    ?.superTypeListEntries
+                    ?.any { it.text.contains(injektFqNames.entryPoint.shortName().asString()) } == true))
               injectables += declaration
           }
         }

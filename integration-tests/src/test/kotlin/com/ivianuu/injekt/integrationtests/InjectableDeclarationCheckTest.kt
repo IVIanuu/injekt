@@ -55,30 +55,6 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("inner class cannot be injectable")
   }
 
-  @Test fun testProvideAbstractClass() = codegen(
-    """
-      @Provide abstract class MyClass
-    """
-  ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
-  }
-
-  @Test fun testProvideConstructorAbstractClass() = codegen(
-    """
-      abstract class MyClass @Provide constructor()
-    """
-  ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
-  }
-
-  @Test fun testProvideInterface() = codegen(
-    """
-      @Provide interface MyInterface
-    """
-  ) {
-    compilationShouldHaveFailed("interface cannot be injectable")
-  }
-
   @Test fun testInjectValueParameterOnProvideFunction() = codegen(
     """
       @Provide fun bar(@Inject foo: Foo) = Bar(foo)
@@ -173,5 +149,15 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed(
       "parameters after the first @Inject parameter are automatically treated as inject parameters"
     )
+  }
+
+  @Test fun testAbstractInjectableWithVar() = codegen(
+    """
+      @Provide interface MyComponent : Component {
+        var foo: Foo
+      }
+    """
+  ) {
+    compilationShouldHaveFailed("abstract injectable cannot contain a abstract var property")
   }
 }

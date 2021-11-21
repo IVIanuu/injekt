@@ -227,7 +227,6 @@ class ClassifierInfo(
   val tags: List<TypeRef>,
   val scopeComponentType: TypeRef?,
   val isEager: Boolean,
-  val entryPointComponentType: TypeRef?,
   val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
@@ -283,7 +282,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
         tags = tags,
         scopeComponentType = null,
         isEager = false,
-        entryPointComponentType = null,
         lazySuperTypes = lazySuperTypes,
         primaryConstructorPropertyParameters = emptyList(),
         isSpread = false,
@@ -306,7 +304,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           tags = emptyList(),
           scopeComponentType = null,
           isEager = false,
-          entryPointComponentType = null,
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = emptyList(),
           isSpread = isSpread,
@@ -316,9 +313,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
         val scopeAnnotation = annotations.findAnnotation(injektFqNames().scoped)
         val scopeComponentType = scopeAnnotation?.type?.arguments?.single()?.type?.toTypeRef()
         val isEager = scopeAnnotation?.allValueArguments?.values?.singleOrNull()?.value == true
-
-        val entryPointComponentType = annotations.findAnnotation(injektFqNames().entryPoint)
-          ?.type?.arguments?.single()?.type?.toTypeRef()
 
         val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
           ?.unsubstitutedPrimaryConstructor
@@ -330,7 +324,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
           tags = tags,
           scopeComponentType = scopeComponentType,
           isEager = isEager,
-          entryPointComponentType = entryPointComponentType,
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
             .map { it.name.asString() },
@@ -358,7 +351,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
   val tags: List<PersistedTypeRef>,
   val scopeComponentType: PersistedTypeRef?,
   val isEager: Boolean,
-  val entryPointComponentType: PersistedTypeRef?,
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
@@ -369,7 +361,6 @@ fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: Context) = ClassifierI
   tags = tags.map { it.toTypeRef() },
   scopeComponentType = scopeComponentType?.toTypeRef(),
   isEager = isEager,
-  entryPointComponentType = entryPointComponentType?.toTypeRef(),
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
@@ -380,7 +371,6 @@ fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: Context) = PersistedCl
   tags = tags.map { it.toPersistedTypeRef() },
   scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
   isEager = isEager,
-  entryPointComponentType = entryPointComponentType?.toPersistedTypeRef(),
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
@@ -436,7 +426,6 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (info.tags.none { it.shouldBePersisted() } &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       info.superTypes.none { it.shouldBePersisted() } &&
-      info.entryPointComponentType == null &&
       info.scopeComponentType == null &&
       !info.declaresInjectables) return
 

@@ -234,7 +234,7 @@ class InjectablesScope(
         return TypeKeyInjectable(request.type, this)
       request.type.classifier.fqName == injektFqNames().sourceKey ->
         return SourceKeyInjectable(request.type, this)
-      request.type.unwrapTags().classifier.isComponent ->
+      request.type.unwrapTags().isComponent() ->
         return componentForType(request.type)?.let {
           ComponentInjectable(it, entryPointsForType(it.type), this)
         }
@@ -319,7 +319,7 @@ class InjectablesScope(
     if (entryPoints.isEmpty()) return emptyList()
     return entryPoints
       .mapNotNull { candidate ->
-        val context = candidate.type.classifier.entryPointComponentType!!
+        val context = candidate.type.entryPointComponentType()!!
           .buildContext(componentType, allStaticTypeParameters)
         if (!context.isOk) return@mapNotNull null
         candidate.substitute(context.fixedTypeVariables)

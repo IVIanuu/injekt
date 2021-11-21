@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.EntryPoint
@@ -31,12 +32,12 @@ fun BroadcastReceiver.createReceiverComponent(
   context: Context,
   intent: Intent,
 ): ReceiverComponent = context.appComponent
-  .entryPoint<ReceiverComponentFactory>()
+  .entryPoint<AppComponent, ReceiverComponentFactory>()
   .receiverComponent(this, context, intent)
 
-@Component interface ReceiverComponent
+@Provide interface ReceiverComponent : Component
 
-@EntryPoint<AppComponent> interface ReceiverComponentFactory {
+@Provide interface ReceiverComponentFactory : EntryPoint<AppComponent>{
   fun receiverComponent(
     receiver: BroadcastReceiver,
     context: Context,

@@ -81,19 +81,10 @@ class CallableInjectable(
 }
 
 class ComponentInjectable(
-  val component: CallableRef,
+  val constructor: CallableRef,
   val entryPoints: List<CallableRef>,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
-  val superConstructor = type.unwrapTags()
-    .classifier
-    .descriptor
-    .cast<ClassDescriptor>()
-    .constructors
-    .firstOrNull()
-    ?.toCallableRef()
-    ?.substitute(type.classifier.typeParameters.zip(type.arguments).toMap())
-
   override val callableFqName: FqName = type.classifier.fqName
 
   @OptIn(ExperimentalStdlibApi::class)
@@ -103,7 +94,7 @@ class ComponentInjectable(
       if (type in seen) return
       seen += type
 
-      type.collectComponentCallables()
+      type.collectAbstractInjectableCallables()
         .forEach { callable ->
           if (none {
               it.callable.name == callable.callable.name &&
@@ -122,8 +113,7 @@ class ComponentInjectable(
     entryPoints.forEach { visit(it.type) }
   }
 
-  val superConstructorDependencies = superConstructor
-    ?.getInjectableRequests(true) ?: emptyList()
+  val constructorDependencies = constructor.getInjectableRequests(true)
 
   val componentObserversRequest = InjectableRequest(
     type = ownerScope.ctx.listClassifier.defaultType.copy(
@@ -185,7 +175,7 @@ class ComponentInjectable(
     .mapKeys { it.key.value }
     .mapValues { it.value }
 
-  override val dependencies = superConstructorDependencies +
+  override val dependencies = constructorDependencies +
       requestsByRequestCallables.values +
       componentObserversRequest
 
@@ -211,7 +201,7 @@ class ComponentInjectable(
 
   @OptIn(ExperimentalStdlibApi::class)
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = buildMap {
-    superConstructorDependencies.forEach {
+    constructorDependencies.forEach {
       this[it] = componentInitScope
     }
     dependencyScopesByRequestCallable.forEach {
@@ -223,7 +213,7 @@ class ComponentInjectable(
   override val callContext: CallContext
     get() = CallContext.DEFAULT
   override val type: TypeRef
-    get() = component.type
+    get() = constructor.type
   override val originalType: TypeRef
     get() = type
   override val scopeComponentType: TypeRef?

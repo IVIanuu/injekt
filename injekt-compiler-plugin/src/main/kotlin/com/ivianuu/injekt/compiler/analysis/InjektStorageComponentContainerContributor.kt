@@ -62,7 +62,6 @@ class InjektStorageComponentContainerContributor(
     }
 
     container.useInstance(TypeFixer())
-    container.useInstance(ComponentChecker())
     container.useInstance(InjectableChecker())
     container.useInstance(TagChecker())
     container.useInstance(ProviderImportsChecker())

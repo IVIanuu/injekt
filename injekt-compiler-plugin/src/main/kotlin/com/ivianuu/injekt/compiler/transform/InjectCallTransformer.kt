@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
@@ -722,8 +723,8 @@ class InjectCallTransformer(
           irCtx,
           symbol
         ).irBlockBody {
-          if (injectable.superConstructor != null) {
-            val constructor = injectable.superConstructor
+          if (injectable.constructor.callable !is SyntheticInterfaceConstructorDescriptor) {
+            val constructor = injectable.constructor
               .callable
               .cast<ClassConstructorDescriptor>()
               .irConstructor()
@@ -735,12 +736,12 @@ class InjectCallTransformer(
               injectable.type.arguments.size,
               constructor.valueParameters.size
             ).apply {
-              fillTypeParameters(injectable.superConstructor)
+              fillTypeParameters(injectable.constructor)
               with(componentInitScope) {
                 inject(
                   this,
                   result.dependencyResults.filterKeys {
-                    it in injectable.superConstructorDependencies
+                    it in injectable.constructorDependencies
                   }
                 )
               }
@@ -1108,10 +1109,7 @@ class InjectCallTransformer(
   ): IrExpression {
     val function = descriptor.irFunction()
     return DeclarationIrBuilder(irCtx, symbol)
-      .irCall(
-        function.symbol,
-        injectable.type.toIrType().typeOrNull!!
-      )
+      .irCall(function.symbol, injectable.type.toIrType().typeOrNull!!)
       .apply {
         fillTypeParameters(injectable.callable)
         inject(this@functionExpression, result.dependencyResults)

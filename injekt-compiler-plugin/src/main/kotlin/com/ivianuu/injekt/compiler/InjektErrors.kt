@@ -119,14 +119,6 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "inner class cannot be injectable") }
 
-    @JvmField val PROVIDE_ABSTRACT_CLASS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract class cannot be injectable") }
-
-    @JvmField val PROVIDE_INTERFACE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "interface cannot be injectable") }
-
     @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
@@ -135,6 +127,14 @@ interface InjektErrors {
             "injectable variable must be initialized, delegated or marked with lateinit"
           )
         }
+
+    @JvmField val ABSTRACT_INJECTABLE_MEMBER_VAR =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "abstract injectable cannot contain a abstract var property") }
+
+    @JvmField val SEALED_ABSTRACT_INJECTABLE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "abstract_injectable cannot be sealed") }
 
     @JvmField val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
@@ -213,33 +213,9 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val NON_ABSTRACT_COMPONENT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component must be either a abstract class or a interface") }
-
-    @JvmField val COMPONENT_MEMBER_VAR =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component cannot contain a abstract var property") }
-
     @JvmField val SCOPED_WITHOUT_DEFAULT_CALL_CONTEXT =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "a scoped declarations call context must be default") }
-
-    @JvmField val ENTRY_POINT_WITHOUT_INTERFACE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "entry point must be a interface") }
-
-    @JvmField val ENTRY_POINT_MEMBER_VAR =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "entry point cannot contain a abstract var property") }
-
-    @JvmField val SEALED_COMPONENT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "component cannot be sealed") }
-
-    @JvmField val SEALED_ENTRY_POINT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "entry point cannot be sealed") }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(

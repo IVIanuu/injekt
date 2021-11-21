@@ -16,14 +16,14 @@
 
 package com.ivianuu.injekt.common
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
-annotation class Component
+import com.ivianuu.injekt.Provide
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
-annotation class EntryPoint<C : @Component Any>
+interface Component : Disposable
+
+interface EntryPoint<C : Component>
 
 @Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
-inline fun <E> (@Component Any).entryPoint(): E = this as E
+inline fun <C : Component, E : EntryPoint<C>> C.entryPoint(): E = this as E
 
 @Target(
   AnnotationTarget.CLASS,
@@ -34,17 +34,13 @@ inline fun <E> (@Component Any).entryPoint(): E = this as E
   AnnotationTarget.VALUE_PARAMETER,
   AnnotationTarget.TYPE
 )
-annotation class Scoped<C : @Component Any>(val eager: Boolean = false)
+annotation class Scoped<C : Component>(val eager: Boolean = false)
 
 fun interface Disposable {
   fun dispose()
 }
 
-fun <C : @Component Any> C.dispose() {
-  (this as Disposable).dispose()
-}
-
-interface ComponentObserver<C : @Component Any> : Disposable {
+interface ComponentObserver<C : Component> : Disposable {
   fun init() {
   }
 
@@ -52,4 +48,4 @@ interface ComponentObserver<C : @Component Any> : Disposable {
   }
 }
 
-@Component interface AppComponent
+@Provide interface AppComponent : Component

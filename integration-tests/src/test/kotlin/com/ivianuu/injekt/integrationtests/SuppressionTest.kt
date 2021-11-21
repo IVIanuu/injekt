@@ -94,7 +94,7 @@ class SuppressionTest {
     """
       typealias ComponentScope<C> = @ComponentScopeTag<C> String
 
-      @Tag annotation class ComponentScopeTag<C : @Component Any>
+      @Tag annotation class ComponentScopeTag<C : Component>
     """
   ) {
     shouldNotContainMessage("Type alias parameter C is not used in the expanded type String and does not affect type checking")

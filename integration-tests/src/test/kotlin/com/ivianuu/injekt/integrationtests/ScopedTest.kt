@@ -33,7 +33,7 @@ import org.junit.Test
 class ScopedTest {
   @Test fun testScopedFunction() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val foo: Foo
       } 
 
@@ -49,7 +49,7 @@ class ScopedTest {
 
   @Test fun testScopedProperty() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val foo: Foo
       } 
 
@@ -65,7 +65,7 @@ class ScopedTest {
 
   @Test fun testScopedClass() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val dep: Dep
       } 
 
@@ -81,7 +81,7 @@ class ScopedTest {
 
   @Test fun testScopedPrimaryConstructor() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val dep: Dep
       } 
 
@@ -97,7 +97,7 @@ class ScopedTest {
 
   @Test fun testScopedSecondaryConstructor() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val dep: Dep
       } 
 
@@ -115,16 +115,16 @@ class ScopedTest {
 
   @Test fun testScopedGenericConstructor() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent
+      @Provide interface ScopeComponent : Component
 
-      @EntryPoint<C> interface GenericEntryPoint<C : @Component Any> {
+      @Provide interface GenericEntryPoint<C : Component> : EntryPoint<C> {
         val dep: Dep<C>
       }
 
-      class Dep<C : @Component Any> @Provide @Scoped<C> constructor()
+      class Dep<C : Component> @Provide @Scoped<C> constructor()
     """,
     """
-      val component = inject<ScopeComponent>().entryPoint<GenericEntryPoint<ScopeComponent>>()
+      val component = inject<ScopeComponent>().entryPoint<ScopeComponent, GenericEntryPoint<ScopeComponent>>()
       fun invoke() = component.dep
     """
   ) {
@@ -133,10 +133,10 @@ class ScopedTest {
 
   @Test fun testAccessScopedInjectableFromNestedScoped() = singleAndMultiCodegen(
     """
-      @Component interface ParentComponent {
+      @Provide interface ParentComponent : Component {
         fun childComponent(): ChildComponent
       }
-      @Component interface ChildComponent {
+      @Provide interface ChildComponent : Component {
         val dep: Dep
       }
 
@@ -152,7 +152,7 @@ class ScopedTest {
 
   @Test fun testCannotResolveScopedInjectableWithoutEnclosingComponent() = singleAndMultiCodegen(
     """
-      interface ScopeComponent
+      interface ScopeComponent : Component
       @Provide @Scoped<ScopeComponent> val foo: Foo = Foo() 
     """,
     """
@@ -164,7 +164,7 @@ class ScopedTest {
 
   @Test fun testScopedValueAccessedBySubType() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val dep: Dep
         val subType: SubType
       } 
@@ -183,7 +183,7 @@ class ScopedTest {
 
   @Test fun testScopedValueWillBeDisposed() = singleAndMultiCodegen(
     """
-      @Component interface MyComponent {
+      @Provide interface MyComponent : Component {
         val disposable: Disposable
       }
     """,
@@ -201,7 +201,7 @@ class ScopedTest {
 
   @Test fun testScopedSuspendFunction() = codegen(
     """
-      @Provide @Scoped<Any> suspend fun foo() = Foo() 
+      @Provide @Scoped<Component> suspend fun foo() = Foo() 
     """
   ) {
     compilationShouldHaveFailed("a scoped declarations call context must be default")
@@ -209,7 +209,7 @@ class ScopedTest {
 
   @Test fun testScopedComposableFunction() = codegen(
     """
-      @Provide @Scoped<Any> @Composable fun foo() = Foo() 
+      @Provide @Scoped<Component> @Composable fun foo() = Foo() 
     """,
     config = { withCompose() }
   ) {
@@ -218,7 +218,7 @@ class ScopedTest {
 
   @Test fun testScopedEager() = singleAndMultiCodegen(
     """
-      @Component interface ScopeComponent {
+      @Provide interface ScopeComponent : Component {
         val foo: Foo
       }
     """,
