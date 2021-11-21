@@ -85,6 +85,15 @@ class ComponentInjectable(
   val entryPoints: List<CallableRef>,
   @Provide override val ownerScope: InjectablesScope
 ) : Injectable() {
+  val superConstructor = type.unwrapTags()
+    .classifier
+    .descriptor
+    .cast<ClassDescriptor>()
+    .constructors
+    .firstOrNull()
+    ?.toCallableRef()
+    ?.substitute(type.classifier.typeParameters.zip(type.arguments).toMap())
+
   override val callableFqName: FqName = type.classifier.fqName
 
   @OptIn(ExperimentalStdlibApi::class)
@@ -113,6 +122,9 @@ class ComponentInjectable(
     entryPoints.forEach { visit(it.type) }
   }
 
+  val superConstructorDependencies = superConstructor
+    ?.getInjectableRequests(true) ?: emptyList()
+
   val componentObserversRequest = InjectableRequest(
     type = ownerScope.ctx.listClassifier.defaultType.copy(
       arguments = listOf(
@@ -134,6 +146,14 @@ class ComponentInjectable(
     .map {
       it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
     } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+
+  val componentInitScope = InjectablesScope(
+    name = "COMPONENT INIT $callableFqName",
+    parent = ownerScope,
+    ctx = ownerScope.ctx,
+    componentType = type,
+    ownerDescriptor = type.unwrapTags().classifier.descriptor
+  )
 
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
@@ -165,12 +185,14 @@ class ComponentInjectable(
     .mapKeys { it.key.value }
     .mapValues { it.value }
 
-  override val dependencies = requestsByRequestCallables.values + componentObserversRequest
+  override val dependencies = superConstructorDependencies +
+      requestsByRequestCallables.values +
+      componentObserversRequest
 
   val dependencyScopesByRequestCallable = requestCallables
     .associateWith { requestCallable ->
       InjectablesScope(
-        name = "COMPONENT CALLABLE ${callableFqName.child(requestCallable.callable.name)}",
+        name = "COMPONENT FUNCTION ${callableFqName.child(requestCallable.callable.name)}",
         parent = componentScope,
         ctx = componentScope.ctx,
         callContext = requestCallable.callable.callContext(),
@@ -189,6 +211,9 @@ class ComponentInjectable(
 
   @OptIn(ExperimentalStdlibApi::class)
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = buildMap {
+    superConstructorDependencies.forEach {
+      this[it] = componentInitScope
+    }
     dependencyScopesByRequestCallable.forEach {
       this[requestsByRequestCallables[it.key]!!] = it.value
     }
