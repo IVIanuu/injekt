@@ -184,11 +184,11 @@ class ScopedTest {
   @Test fun testScopedValueWillBeDisposed() = singleAndMultiCodegen(
     """
       @Provide interface MyComponent : Component {
-        val disposable: Disposable
+        val disposable: TestDisposable
       }
     """,
     """
-      fun invoke(@Inject @Scoped<MyComponent> disposable: Disposable) = inject<MyComponent>()
+      fun invoke(@Inject @Scoped<MyComponent> disposable: TestDisposable) = inject<MyComponent>()
         .also { it.disposable }
     """
   ) {

@@ -313,7 +313,10 @@ fun CallableRef.collectInjectables(
       }
     }
     .collectInjectables(
-      scope.allScopes.any { it.ownerDescriptor == nextCallable.type.classifier.descriptor }
+      scope.allScopes.any {
+        it.ownerDescriptor == nextCallable.type.classifier.descriptor ||
+            it.componentType == nextCallable.type
+      }
     )
     .map { it.copy(import = import) }
     .forEach { innerCallable ->
@@ -504,8 +507,12 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
       callable.callable.containingDeclaration is PackageFragmentDescriptor &&
       run {
         val scopeFile = allScopes.firstNotNullOfOrNull { it.file }
-        scopeFile == callable.callable.findPsi()
-          ?.containingFile
+        scopeFile == callable.callable.findPsi()?.containingFile
+      }) ||
+      (callable.callable.visibility == DescriptorVisibilities.PROTECTED && run {
+        val ownerType = callable.callable.containingDeclaration
+          .cast<ClassDescriptor>().toClassifierRef().defaultType
+        allScopes.any { it.componentType?.isSubTypeOf(ownerType) == true }
       })
 
 fun TypeRef.collectAbstractInjectableCallables(@Inject ctx: Context): List<CallableRef> =

@@ -424,13 +424,12 @@ class ComponentTest {
 
   @Test fun testAbstractComponentClassWithConstructorDependencies() = singleAndMultiCodegen(
     """ 
-      @Provide abstract class FooComponent(private val _foo: Foo) : Component {
+      @Provide abstract class FooComponent(protected val _foo: Foo) : Component {
         abstract val foo: Foo
-        @Provide protected fun foo() = _foo
       }
     """,
     """
-      fun invoke(@Provide foo: Foo) = inject<(Foo) -> FooComponent>()(foo).foo
+      fun invoke(foo: Foo) = inject<(Foo) -> FooComponent>()(foo).foo
     """
   ) {
     val foo = Foo()

@@ -433,6 +433,18 @@ class ResolveTest {
     """
   )
 
+  @Test fun testCanResolveProtectedInjectableFromComponentImplementation() = singleAndMultiCodegen(
+    """
+      @Provide abstract class FooComponent : Component {
+        abstract val foo: Foo
+        @Provide protected fun foo() = Foo()
+      }
+    """,
+    """
+      fun invoke() = inject<FooComponent>().foo
+    """
+  )
+
   @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
     """
       @Provide private val foo = Foo()

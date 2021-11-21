@@ -134,7 +134,7 @@ interface InjektErrors {
 
     @JvmField val SEALED_ABSTRACT_INJECTABLE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract_injectable cannot be sealed") }
+        .also { MAP.put(it, "abstract injectable cannot be sealed") }
 
     @JvmField val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)

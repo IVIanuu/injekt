@@ -141,8 +141,7 @@ class ComponentInjectable(
     name = "COMPONENT INIT $callableFqName",
     parent = ownerScope,
     ctx = ownerScope.ctx,
-    componentType = type,
-    ownerDescriptor = type.unwrapTags().classifier.descriptor
+    componentType = type
   )
 
   val componentScope = InjectablesScope(
@@ -153,8 +152,7 @@ class ComponentInjectable(
     initialInjectables = componentAndEntryPointInjectables,
     injectablesPredicate = { candidate ->
       requestCallables.none { it.callable == candidate.callable }
-    },
-    ownerDescriptor = type.unwrapTags().classifier.descriptor
+    }
   )
 
   val requestsByRequestCallables = requestCallables
@@ -186,7 +184,6 @@ class ComponentInjectable(
         parent = componentScope,
         ctx = componentScope.ctx,
         callContext = requestCallable.callable.callContext(),
-        ownerDescriptor = requestCallable.callable,
         initialInjectables = requestCallable.callable.allParameters
           .filter { it != requestCallable.callable.dispatchReceiverParameter }
           .map {

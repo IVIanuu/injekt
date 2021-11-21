@@ -660,7 +660,6 @@ fun TypeInjectablesScope(
 
   InjectablesScope(
     name = "INTERNAL TYPE ${type.renderToString()}",
-    ownerDescriptor = type.classifier.descriptor,
     initialInjectables = internalInjectables,
     imports = injectablesWithLookups.lookedUpPackages
       .map { ResolvedProviderImport(null, "$it.*", it) },
@@ -675,7 +674,6 @@ fun TypeInjectablesScope(
       parent = InjectablesScope(
         name = "EXTERNAL TYPE ${type.renderToString()}",
         parent = parent,
-        ownerDescriptor = type.classifier.descriptor,
         initialInjectables = externalInjectables,
         typeScopeType = type,
         callContext = parent.callContext,
