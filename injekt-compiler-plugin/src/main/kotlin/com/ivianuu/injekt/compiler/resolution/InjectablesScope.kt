@@ -86,8 +86,6 @@ class InjectablesScope(
 
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val listElementsByType = mutableMapOf<CallableRequestKey, List<TypeRef>>()
-
   private val components: MutableList<CallableRef> =
     parent?.components?.toMutableList() ?: mutableListOf()
 
@@ -248,30 +246,30 @@ class InjectablesScope(
   ): List<TypeRef> {
     if (injectables.isEmpty())
       return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
-    return listElementsByType.getOrPut(key) {
-      val thisElements: List<TypeRef> = injectables
-        .mapNotNull { candidate ->
-          if (candidate.type.frameworkKey != key.type.frameworkKey)
-            return@mapNotNull null
-          var context =
-            candidate.type.buildContext(singleElementType, key.staticTypeParameters)
-          if (!context.isOk) {
-            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
-          }
-          if (!context.isOk) return@mapNotNull null
-          candidate.substitute(context.fixedTypeVariables)
+
+    val thisElements: List<TypeRef> = injectables
+      .mapNotNull { candidate ->
+        if (candidate.type.frameworkKey != key.type.frameworkKey)
+          return@mapNotNull null
+        var context =
+          candidate.type.buildContext(singleElementType, key.staticTypeParameters)
+        if (!context.isOk) {
+          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
         }
-        .map { callable ->
-          val typeWithFrameworkKey = callable.type.copy(
-            frameworkKey = generateFrameworkKey()
-          )
-          injectables += callable.copy(type = typeWithFrameworkKey)
-          typeWithFrameworkKey
-        }
-      val parentElements = parent?.listElementsForType(singleElementType, collectionElementType, key)
-      if (parentElements != null) parentElements + thisElements
-      else thisElements
-    }
+        if (!context.isOk) return@mapNotNull null
+        candidate.substitute(context.fixedTypeVariables)
+      }
+      .map { callable ->
+        val typeWithFrameworkKey = callable.type.copy(
+          frameworkKey = generateFrameworkKey()
+        )
+        injectables += callable.copy(type = typeWithFrameworkKey)
+        typeWithFrameworkKey
+      }
+    val parentElements = parent?.listElementsForType(singleElementType, collectionElementType, key)
+
+    return if (parentElements != null) parentElements + thisElements
+    else thisElements
   }
 
   private fun frameworkListElementsForType(
