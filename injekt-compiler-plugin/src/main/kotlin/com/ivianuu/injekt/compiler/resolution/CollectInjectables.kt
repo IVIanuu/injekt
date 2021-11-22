@@ -272,7 +272,6 @@ fun CallableRef.collectInjectables(
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
   addComponent: (CallableRef) -> Unit,
-  addEntryPoint: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf(),
   @Inject ctx: Context
@@ -290,12 +289,6 @@ fun CallableRef.collectInjectables(
   if ((callable is ConstructorDescriptor ||
         callable is SyntheticInterfaceConstructorDescriptor) && type.unwrapTags().isComponent()) {
     addComponent(this)
-    return
-  }
-
-  if (callable is SyntheticInterfaceConstructorDescriptor &&
-    type.entryPointComponentType() != null) {
-    addEntryPoint(this)
     return
   }
 
@@ -326,7 +319,6 @@ fun CallableRef.collectInjectables(
         addInjectable = addInjectable,
         addSpreadingInjectable = addSpreadingInjectable,
         addComponent = addComponent,
-        addEntryPoint = addEntryPoint,
         import = import,
         seen = seen
       )

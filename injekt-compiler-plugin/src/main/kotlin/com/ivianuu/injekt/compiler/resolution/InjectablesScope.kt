@@ -90,8 +90,6 @@ class InjectablesScope(
 
   private val components: MutableList<CallableRef> =
     parent?.components?.toMutableList() ?: mutableListOf()
-  private val entryPoints: MutableList<CallableRef> =
-    parent?.entryPoints?.toMutableList() ?: mutableListOf()
 
   init {
     initialInjectables
@@ -120,8 +118,7 @@ class InjectablesScope(
             val typeWithFrameworkKey = component.type
               .copy(frameworkKey = generateFrameworkKey())
             spreadingInjectableCandidateTypes += typeWithFrameworkKey
-          },
-          addEntryPoint = { entryPoints += it }
+          }
         )
       }
 
@@ -236,7 +233,9 @@ class InjectablesScope(
         return SourceKeyInjectable(request.type, this)
       request.type.unwrapTags().isComponent() ->
         return componentForType(request.type)?.let {
-          ComponentInjectable(it, entryPointsForType(it.type), this)
+          ComponentInjectable(it, entryPointsForType(
+            ctx.entryPointClassifier!!.defaultType.withArguments(listOf(it.type))
+          ), this)
         }
       else -> return null
     }
@@ -315,17 +314,6 @@ class InjectablesScope(
       }
   }
 
-  private fun entryPointsForType(componentType: TypeRef): List<CallableRef> {
-    if (entryPoints.isEmpty()) return emptyList()
-    return entryPoints
-      .mapNotNull { candidate ->
-        val context = candidate.type.entryPointComponentType()!!
-          .buildContext(componentType, allStaticTypeParameters)
-        if (!context.isOk) return@mapNotNull null
-        candidate.substitute(context.fixedTypeVariables)
-      }
-  }
-
   private fun componentForType(type: TypeRef): CallableRef? {
     if (components.isEmpty()) return null
     return components
@@ -334,6 +322,24 @@ class InjectablesScope(
         if (!context.isOk) return@firstNotNullOfOrNull null
         candidate.substitute(context.fixedTypeVariables)
       }
+  }
+
+  private fun entryPointsForType(entryPointType: TypeRef): List<CallableRef> {
+    if (injectables.isEmpty())
+      return parent?.entryPointsForType(entryPointType) ?: emptyList()
+
+    val thisEntryPoints = injectables
+      .mapNotNull { candidate ->
+        if (candidate.type.frameworkKey != candidate.type.frameworkKey)
+          return@mapNotNull null
+        val context = candidate.type.buildContext(entryPointType, allStaticTypeParameters)
+        if (!context.isOk) return@mapNotNull null
+        candidate.substitute(context.fixedTypeVariables)
+      }
+
+    val parentEntryPoints = parent?.entryPointsForType(entryPointType)
+    return if (parentEntryPoints != null) parentEntryPoints + thisEntryPoints
+    else thisEntryPoints
   }
 
   private fun spreadInjectables(candidateType: TypeRef) {
@@ -401,8 +407,7 @@ class InjectablesScope(
           .toList()
           .forEach { spreadInjectables(newSpreadingInjectable, it) }
       },
-      addComponent = { throw AssertionError("Wtf") },
-      addEntryPoint = { throw AssertionError("Wtf") }
+      addComponent = { throw AssertionError("Wtf") }
     )
   }
 

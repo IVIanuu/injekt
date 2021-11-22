@@ -523,10 +523,6 @@ val TypeRef.isFunctionType: Boolean
 fun TypeRef.isComponent(@Inject ctx: Context): Boolean = ctx.componentClassifier != null &&
     isSubTypeOf(ctx.componentClassifier!!.defaultType)
 
-fun TypeRef.entryPointComponentType(@Inject ctx: Context): TypeRef? =
-  if (ctx.entryPointClassifier == null) null
-  else subtypeView(ctx.entryPointClassifier!!)?.arguments?.single()
-
 fun effectiveVariance(
   declared: TypeVariance,
   useSite: TypeVariance,
