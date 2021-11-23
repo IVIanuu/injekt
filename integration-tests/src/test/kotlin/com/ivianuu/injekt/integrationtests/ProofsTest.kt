@@ -21,6 +21,25 @@ import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import org.junit.Test
 
 class ProofsTest {
+  @Test fun testProvidedTrue() = codegen(
+    """
+      @Provide fun bar() = Bar(Foo())
+      fun foo(@Inject ev: Provided<Bar>) = Foo()
+
+      fun invoke() = foo()
+    """
+  )
+
+  @Test fun testProvidedFalse() = codegen(
+    """
+      fun foo(@Inject ev: Provided<Bar>) = Foo()
+
+      fun invoke() = foo()
+    """
+  ) {
+    compilationShouldHaveFailed()
+  }
+
   @Test fun testNotProvidedTrue() = codegen(
     """
       fun foo(@Inject ev: NotProvided<Bar>) = Foo()

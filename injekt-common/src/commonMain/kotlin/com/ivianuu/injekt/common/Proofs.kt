@@ -20,6 +20,15 @@ import com.ivianuu.injekt.AmbiguousInjectable
 import com.ivianuu.injekt.InjectableNotFound
 import com.ivianuu.injekt.Provide
 
+class Provided<out T> private constructor() {
+  @Suppress("UNUSED_PARAMETER")
+  companion object {
+    @PublishedApi internal val instance: Provided<Nothing> = Provided()
+
+    @Provide inline fun <T> instance(x: () -> T): Provided<T> = instance
+  }
+}
+
 class NotProvided<out T> private constructor() {
   sealed class LowPriorityModule {
     private val instance: NotProvided<Nothing> = NotProvided()
