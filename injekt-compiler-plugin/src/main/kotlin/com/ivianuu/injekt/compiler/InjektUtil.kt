@@ -241,15 +241,6 @@ fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
     }
   }
 
-@OptIn(ExperimentalTypeInference::class, ExperimentalStdlibApi::class)
-inline fun <T, R> Collection<T>.fastFlatMap(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> {
-  if (isEmpty()) return emptyList()
-  return buildList {
-    for (item in this@fastFlatMap)
-      block(item)
-  }
-}
-
 private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
   return buildString {
@@ -264,6 +255,15 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   }
 }
 
+@OptIn(ExperimentalTypeInference::class, ExperimentalStdlibApi::class)
+inline fun <T, R> Collection<T>.fastFlatMap(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> {
+  if (isEmpty()) return emptyList()
+  return buildList {
+    for (item in this@fastFlatMap)
+      block(item)
+  }
+}
+
 private val KotlinType.fullyAbbreviatedType: KotlinType
   get() {
     val abbreviatedType = getAbbreviatedType()
@@ -273,16 +273,10 @@ private val KotlinType.fullyAbbreviatedType: KotlinType
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(): Name = if (this is ValueParameterDescriptor) {
-  name
-} else {
-  val callable = containingDeclaration as? CallableDescriptor
-  when {
-    original == callable?.dispatchReceiverParameter?.original ||
-        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_NAME
-    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_NAME
-    else -> throw AssertionError("Unexpected descriptor $this")
-  }
+fun ParameterDescriptor.injektName(): Name = when (injektIndex()) {
+  DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+  EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+  else -> name
 }
 
 const val DISPATCH_RECEIVER_INDEX = -2

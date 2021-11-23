@@ -52,7 +52,6 @@ object InjektWritableSlices {
   val ELEMENT_SCOPE = BasicWritableSlice<KtElement, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val DECLARATION_SCOPE = BasicWritableSlice<DescriptorWithParentScope, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
-  val TYPE_SCOPE_INJECTABLES_FOR_SINGLE_TYPE = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val TYPE_INJECTABLES = BasicWritableSlice<Pair<TypeRef, Boolean>, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val FIXED_TYPE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
