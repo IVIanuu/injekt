@@ -26,26 +26,27 @@ import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
 
 class MainActivity : ComponentActivity() {
-  private val activityComponent by lazy { createActivityComponent() }
+  private val component: MainActivityComponent by lazy {
+    createActivityComponent()
+      .entryPoint()
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    val dependencies: MainActivityDependencies = activityComponent.entryPoint()
-
     setContent {
-      dependencies.theme {
-        dependencies.appUi()
+      component.theme {
+        component.appUi()
       }
     }
   }
 
   override fun onDestroy() {
-    activityComponent.dispose()
+    component.dispose()
     super.onDestroy()
   }
 }
 
-@Provide interface MainActivityDependencies : EntryPoint<ActivityComponent> {
+@Provide interface MainActivityComponent : EntryPoint<ActivityComponent> {
   val theme: AppTheme
   val appUi: AppUi
 }

@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Provide
 
 interface Component : Disposable
 
-interface EntryPoint<C : Component>
+interface EntryPoint<C : Component> : Disposable
 
 @Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
 inline fun <C : Component, E : EntryPoint<C>> C.entryPoint(): E = this as E
