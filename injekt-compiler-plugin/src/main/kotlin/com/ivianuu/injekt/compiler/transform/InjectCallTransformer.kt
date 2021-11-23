@@ -337,17 +337,16 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.WithCandidate.Value,
     rawExpressionProvider: () -> IrExpression
   ): IrExpression {
-    val scopeComponent = result.candidate.scopeComponentType
-      ?: return rawExpressionProvider()
-    val scope = scope.allScopes.last { it.componentType == scopeComponent }
+    val scopeInfo = result.candidate.scopeInfo ?: return rawExpressionProvider()
+    val scope = scope.allScopes.last { it.componentType == scopeInfo.scopeComponent }
     return with(findScopeContext(scope)) {
       scopedExpressions.getOrPut(result.candidate.usageKey) {
         val fieldNameIndex = graphContext.variableIndex++
 
         val componentReceiverParameter =
-          scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
+          scopeInfo.scopeComponent.classifier.descriptor!!.cast<ClassDescriptor>().thisAsReceiverParameter
 
-        val expression: ScopeContext.() -> IrExpression = if (result.candidate.isEager) {
+        val expression: ScopeContext.() -> IrExpression = if (scopeInfo.isEager) {
           val instanceField = component!!.addField(
             "_${fieldNameIndex}Instance",
             result.candidate.type.toIrType().typeOrNull!!,
@@ -453,7 +452,7 @@ class InjectCallTransformer(
   private fun ResolutionResult.Success.WithCandidate.Value.shouldWrap(
     ctx: GraphContext
   ): Boolean = (candidate !is ProviderInjectable || !candidate.isInline) &&
-      (candidate.scopeComponentType != null ||
+      (candidate.scopeInfo != null ||
           (dependencyResults.isNotEmpty() && ctx.graph.usages[this.usageKey]!!.size > 1)) &&
       !ctx.isInBetweenCircularDependency(this)
 

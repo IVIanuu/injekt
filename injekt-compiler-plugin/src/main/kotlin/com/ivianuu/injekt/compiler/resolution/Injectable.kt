@@ -46,15 +46,14 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed class Injectable {
   abstract val type: TypeRef
-  abstract val originalType: TypeRef
-  abstract val scopeComponentType: TypeRef?
-  abstract val isEager: Boolean
-  abstract val dependencies: List<InjectableRequest>
-  abstract val dependencyScopes: Map<InjectableRequest, InjectablesScope>
+  open val originalType: TypeRef get() = type
+  open val scopeInfo: ScopeInfo? get() = null
+  open val dependencies: List<InjectableRequest> get() = emptyList()
+  open val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
   abstract val callableFqName: FqName
-  abstract val callContext: CallContext
+  open val callContext: CallContext get() = CallContext.DEFAULT
   abstract val ownerScope: InjectablesScope
-  abstract val usageKey: Any
+  open val usageKey: Any get() = type
 }
 
 class CallableInjectable(
@@ -69,13 +68,10 @@ class CallableInjectable(
   else callable.callable.fqNameSafe
   override val callContext: CallContext
     get() = callable.callable.callContext()
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = emptyMap()
   override val originalType: TypeRef
     get() = callable.originalType
-  override val scopeComponentType: TypeRef?
-    get() = callable.scopeComponentType
-  override val isEager: Boolean
-    get() = callable.isEager
+  override val scopeInfo: ScopeInfo?
+    get() = callable.scopeInfo
   override val usageKey: Any =
     listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
 
@@ -216,18 +212,8 @@ class AbstractInjectable(
       this[componentObserversRequest] = scope
   }
 
-  override val callContext: CallContext
-    get() = CallContext.DEFAULT
   override val type: TypeRef
     get() = constructor.type
-  override val originalType: TypeRef
-    get() = type
-  override val scopeComponentType: TypeRef?
-    get() = null
-  override val isEager: Boolean
-    get() = false
-  override val usageKey: Any
-    get() = type
 
   // required to distinct between individual components in codegen
   class ComponentReceiverParameterDescriptor(
@@ -256,17 +242,9 @@ class ListInjectable(
         parameterIndex = index
       )
     }
-  override val callContext: CallContext
-    get() = CallContext.DEFAULT
   override val dependencyScopes = dependencies.associateWith { ownerScope }
   override val originalType: TypeRef
     get() = type.classifier.defaultType
-  override val scopeComponentType: TypeRef?
-    get() = null
-  override val isEager: Boolean
-    get() = false
-  override val usageKey: Any
-    get() = type
 }
 
 class ProviderInjectable(
@@ -317,16 +295,8 @@ class ProviderInjectable(
         }
     )
   )
-  override val callContext: CallContext
-    get() = CallContext.DEFAULT
   override val originalType: TypeRef
     get() = type.unwrapTags().classifier.defaultType
-  override val scopeComponentType: TypeRef?
-    get() = null
-  override val isEager: Boolean
-    get() = false
-  override val usageKey: Any
-    get() = type
 
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(
@@ -339,19 +309,6 @@ class SourceKeyInjectable(
   override val ownerScope: InjectablesScope
 ) : Injectable() {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
-  override val dependencies: List<InjectableRequest> = emptyList()
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope>
-    get() = emptyMap()
-  override val callContext: CallContext
-    get() = CallContext.DEFAULT
-  override val originalType: TypeRef
-    get() = type
-  override val scopeComponentType: TypeRef?
-    get() = null
-  override val isEager: Boolean
-    get() = false
-  override val usageKey: Any
-    get() = type
 }
 
 class TypeKeyInjectable(
@@ -379,16 +336,6 @@ class TypeKeyInjectable(
   }
   override val dependencyScopes: Map<InjectableRequest, InjectablesScope> =
     dependencies.associateWith { ownerScope }
-  override val callContext: CallContext
-    get() = CallContext.DEFAULT
-  override val originalType: TypeRef
-    get() = type
-  override val scopeComponentType: TypeRef?
-    get() = null
-  override val isEager: Boolean
-    get() = false
-  override val usageKey: Any
-    get() = type
 }
 
 fun CallableRef.getInjectableRequests(

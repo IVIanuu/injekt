@@ -90,8 +90,7 @@ fun TypeRef.collectInjectables(
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           },
-          scopeComponentType = scopeComponentType,
-          isEager = isEager
+          scopeInfo = scopeInfo
         ).substitute(classifier.typeParameters.zip(arguments).toMap())
       }
 

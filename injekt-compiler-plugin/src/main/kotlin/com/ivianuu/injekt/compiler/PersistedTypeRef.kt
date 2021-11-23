@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
+import com.ivianuu.injekt.compiler.resolution.ScopeInfo
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -42,8 +43,8 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
     isInject = isInject,
-    scopeComponentType = scopeComponentType?.toPersistedTypeRef(),
-    isEager = isEager
+    scopeComponentType = scopeInfo?.scopeComponent?.toPersistedTypeRef(),
+    isEager = scopeInfo?.isEager ?: false
   )
 
 fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
@@ -64,7 +65,6 @@ fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
     isInject = isInject,
-    scopeComponentType = scopeComponentType?.toTypeRef(),
-    isEager = isEager
+    scopeInfo = scopeComponentType?.let { ScopeInfo(it.toTypeRef(), isEager) }
   )
 }

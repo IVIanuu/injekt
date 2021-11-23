@@ -35,8 +35,7 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
-  val scopeComponentType: TypeRef?,
-  val isEager: Boolean,
+  val scopeInfo: ScopeInfo?,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val import: ResolvedProviderImport?
 )
@@ -65,7 +64,7 @@ fun CallableRef.substitute(
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
       },
-    scopeComponentType = scopeComponentType?.substitute(map)
+    scopeInfo = scopeInfo?.substitute(map)?.substitute(typeParameterSubstitutionMap)
   )
 }
 
@@ -80,8 +79,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
-      scopeComponentType = info.scopeComponentType,
-      isEager = info.isEager,
+      scopeInfo = info.scopeInfo,
       typeArguments = typeParameters
         .map { it to it.defaultType }
         .toMap(),

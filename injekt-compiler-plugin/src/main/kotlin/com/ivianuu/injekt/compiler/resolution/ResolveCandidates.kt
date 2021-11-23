@@ -71,11 +71,11 @@ sealed class ResolutionResult {
         val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
         val highestScope: InjectablesScope = run {
-          if (candidate.scopeComponentType != null)
+          if (candidate.scopeInfo != null)
             return@run scope.allScopes.lastOrNull { candidateScope ->
               candidateScope.isDeclarationContainer &&
                   candidateScope.canSeeInjectablesOf(candidate.ownerScope) &&
-                  candidateScope.componentType == candidate.scopeComponentType
+                  candidateScope.componentType == candidate.scopeInfo!!.scopeComponent
             } ?: scope
 
           val anchorScopes = mutableSetOf<InjectablesScope>()
@@ -186,8 +186,8 @@ private fun InjectablesScope.canSeeInjectablesOf(other: InjectablesScope): Boole
   other in allScopes
 
 private fun Injectable.scopeComponentOrNull(scope: InjectablesScope): InjectablesScope? =
-  scopeComponentType?.let {
-    scope.allScopes.last { it.componentType == scopeComponentType }
+  scopeInfo?.let { scopeInfo ->
+    scope.allScopes.last { it.componentType == scopeInfo.scopeComponent }
   }
 
 data class UsageKey(
@@ -422,10 +422,10 @@ private fun InjectablesScope.resolveCandidate(
   if (!callContext.canCall(candidate.callContext))
     return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
 
-  if (candidate.scopeComponentType != null &&
-      allScopes.none { it.componentType == candidate.scopeComponentType })
+  if (candidate.scopeInfo != null &&
+      allScopes.none { it.componentType == candidate.scopeInfo!!.scopeComponent })
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
-          candidate, candidate.scopeComponentType!!)
+          candidate, candidate.scopeInfo!!.scopeComponent)
 
   if (candidate is AbstractInjectable) {
     candidate.requestCallables
@@ -469,8 +469,8 @@ private fun InjectablesScope.resolveCandidate(
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
     val dependencyScope = candidate.dependencyScopes[dependency] ?:
-      candidate.scopeComponentType?.let {
-        allScopes.last { it.componentType == candidate.scopeComponentType }
+      candidate.scopeInfo?.let { scopeInfo ->
+        allScopes.last { it.componentType == scopeInfo.scopeComponent }
       } ?: this
     when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
