@@ -201,7 +201,7 @@ class InjektDeclarationGeneratorExtension(
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)
                     ?.let { it.hasAnnotation(injektFqNames.provide) && it.isInterface() } == true))
-              injectables += declaration
+                      injectables += declaration
           }
           is KtProperty -> {
             if (!declaration.isLocal &&
@@ -209,7 +209,7 @@ class InjektDeclarationGeneratorExtension(
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)
                     ?.let { it.hasAnnotation(injektFqNames.provide) && it.isInterface() } == true))
-              injectables += declaration
+                      injectables += declaration
           }
         }
       }
