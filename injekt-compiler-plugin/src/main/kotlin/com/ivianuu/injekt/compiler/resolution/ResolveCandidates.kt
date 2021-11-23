@@ -372,7 +372,7 @@ private fun InjectablesScope.resolveCandidates(
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
-    .sortedWithValidation { a, b -> compareCandidate(a, b) }
+    .sortedWith { a, b -> compareCandidate(a, b) }
     .distinctBy {
       if (it is CallableInjectable) it.callable.callable.uniqueKey()
       else it
@@ -722,7 +722,7 @@ private fun InjectablesScope.computeImportSuggestions(
     .filter {
       it.type.buildContext(failureRequest.type, allStaticTypeParameters).isOk
     }
-    .sortedWithValidation { a, b -> compareCallable(a, b, true) }
+    .sortedWith { a, b -> compareCallable(a, b, true) }
 
   val successes = mutableListOf<ResolutionResult.Success>()
   val remaining = candidates.toCollection(LinkedList())
@@ -772,57 +772,3 @@ private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult
   if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
     dependencyFailure.unwrapDependencyFailure()
   else this
-
-private fun <T> List<T>.sortedWithValidation(comparator: Comparator<T>) = try {
-  sortedWith(comparator)
-} catch (e: IllegalArgumentException) {
-  comparator.validate(this)
-  throw e
-}
-
-private fun <T> Comparator<T>.validate(candidates: List<T>) {
-  for (x in candidates) {
-    for (y in candidates) {
-      val cmpXY = compare(x, y).sign
-      val cmpYX = compare(y, x).sign
-      for (z in candidates) {
-        val cmpXZ = compare(x, z).sign
-        val cmpYZ = compare(y, z).sign
-
-        if (cmpXY != -cmpYX) {
-          error(
-            """signum(cmp(x, y)) == -signum(cmp(y, x)) given:
-                 |x = $x
-                 |y = $y
-                 |cmpXY = $cmpXY
-                 |cmpYX = $cmpYX"""
-          )
-        }
-
-        if (cmpXY != 0 && cmpXY == cmpYZ && cmpXZ != cmpXY) {
-          error(
-            """transitivity given:
-                 |x = $x
-                 |y = $y
-                 |z = $z
-                 |cmpXY = $cmpXY
-                 |cmpXZ = $cmpXZ
-                 |cmpYZ = $cmpYZ"""
-          )
-        }
-
-        if (cmpXY == 0 && cmpXZ != cmpYZ) {
-          error(
-            """cmp(x, y) == 0 implies that signum(cmp(x, z)) == signum(cmp(y, z)) given:
-                 |x = $x
-                 |y = $y
-                 |z = $z
-                 |cmpXY = $cmpXY
-                 |cmpXZ = $cmpXZ
-                 |cmpYZ = $cmpYZ"""
-          )
-        }
-      }
-    }
-  }
-}
