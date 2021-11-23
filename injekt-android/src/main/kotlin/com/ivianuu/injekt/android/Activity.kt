@@ -16,10 +16,7 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.activity.ComponentActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
+import android.app.Activity
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
@@ -27,33 +24,13 @@ import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
 
 /**
- * Returns the [ActivityComponent] of this [ComponentActivity]
- * whose lifecycle is bound to the activity
+ * Returns a new [ActivityComponent] which must be manually stored and disposed
  */
-val ComponentActivity.activityComponent: ActivityComponent
-  get() = synchronized(activityComponents) {
-    activityComponents[this]?.let { return it }
-    val component = appComponent
-      .entryPoint<AppComponent, ActivityComponentFactory>()
-      .activityComponent(this)
-    activityComponents[this] = component
-
-    lifecycle.addObserver(object : LifecycleEventObserver {
-      override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-        if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-          synchronized(activityComponents) { activityComponents.remove(this@activityComponent) }
-          component.dispose()
-        }
-      }
-    })
-
-    component
-  }
+fun Activity.createActivityComponent(): ActivityComponent =
+  appComponent.entryPoint<AppComponent, ActivityComponentFactory>().activityComponent(this)
 
 @Provide interface ActivityComponent : Component
 
 @Provide interface ActivityComponentFactory : EntryPoint<AppComponent> {
-  fun activityComponent(activity: ComponentActivity): ActivityComponent
+  fun activityComponent(activity: Activity): ActivityComponent
 }
-
-private val activityComponents = mutableMapOf<ComponentActivity, ActivityComponent>()

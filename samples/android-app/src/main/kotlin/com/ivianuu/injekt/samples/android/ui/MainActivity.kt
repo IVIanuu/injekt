@@ -21,21 +21,28 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.android.ActivityComponent
-import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.android.createActivityComponent
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
 
 class MainActivity : ComponentActivity() {
+  private var activityComponent: ActivityComponent? = null
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    // retrieve our dependencies
-    val dependencies: MainActivityDependencies = activityComponent.entryPoint()
-    // display ui
+    activityComponent = createActivityComponent()
+    val dependencies: MainActivityDependencies = activityComponent!!.entryPoint()
+
     setContent {
       dependencies.theme {
         dependencies.appUi()
       }
     }
+  }
+
+  override fun onDestroy() {
+    activityComponent?.dispose()
+    super.onDestroy()
   }
 }
 
