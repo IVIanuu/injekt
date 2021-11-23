@@ -16,17 +16,13 @@
 
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.inject
 
 fun main() {
-  // make coffee with automatically injected parameters
-  makeCoffee()
-}
-
-private fun makeCoffee(@Inject heater: Heater, pump: Pump) {
+  val heater = inject<Heater>()
   heater.on()
-  pump.pump()
+  inject<Pump>().pump()
   println(" [_]P coffee! [_]P ")
   heater.off()
 }
