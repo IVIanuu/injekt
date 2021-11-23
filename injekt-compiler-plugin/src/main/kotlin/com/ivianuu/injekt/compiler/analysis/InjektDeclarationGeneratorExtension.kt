@@ -240,6 +240,9 @@ class InjektDeclarationGeneratorExtension(
     @Inject ctx: Context
   ): File {
     val injectablesCode = buildString {
+      appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
+      appendLine()
+
       if (!file.packageFqName.isRoot) {
         appendLine("package ${file.packageFqName}")
         appendLine()
@@ -250,10 +253,10 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        appendLine("@Suppress(\"unused\") fun $injectablesLookupName(")
-        appendLine(" @Suppress(\"UNUSED_PARAMETER\") marker: $markerName,")
+        appendLine("fun $injectablesLookupName(")
+        appendLine(" marker: $markerName,")
         repeat(i + 1) {
-          appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
+          appendLine("  index$it: Byte,")
         }
 
         val hash = injectable.hash()
@@ -264,7 +267,7 @@ class InjektDeclarationGeneratorExtension(
           .filter { it.isLetterOrDigit() }
           .chunked(256)
           .forEachIndexed { index, value ->
-            appendLine("  @Suppress(\"UNUSED_PARAMETER\") hash_${index}_$value: Int,")
+            appendLine("  hash_${index}_$value: Int,")
           }
 
         appendLine(") {")
@@ -296,16 +299,19 @@ class InjektDeclarationGeneratorExtension(
       current = current.parent()
 
       val injectablesCode = buildString {
+        appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
+        appendLine()
+
         if (!current.isRoot) {
           appendLine("package $current")
           appendLine()
         }
 
         for ((i, injectable) in injectables.withIndex()) {
-          appendLine("@Suppress(\"unused\") fun $subInjectablesLookupName(")
-          appendLine("  @Suppress(\"UNUSED_PARAMETER\") marker: ${file.packageFqName.child(markerName.asNameId())},")
+          appendLine("fun $subInjectablesLookupName(")
+          appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
           repeat(i + 1) {
-            appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
+            appendLine("  index$it: Byte,")
           }
 
           val hash = injectable.hash()
@@ -316,7 +322,7 @@ class InjektDeclarationGeneratorExtension(
             .filter { it.isLetterOrDigit() }
             .chunked(256)
             .forEachIndexed { index, value ->
-              appendLine("  @Suppress(\"UNUSED_PARAMETER\") hash_${index}_$value: Int,")
+              appendLine("  hash_${index}_$value: Int,")
             }
 
           appendLine(") {")
@@ -350,6 +356,9 @@ class InjektDeclarationGeneratorExtension(
     @Inject ctx: Context
   ): File {
     val indicesCode = buildString {
+      appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")
+      appendLine()
+
       appendLine("package ${injektFqNames.indicesPackage}")
       appendLine()
 
@@ -363,10 +372,10 @@ class InjektDeclarationGeneratorExtension(
           if (injectable is KtConstructor<*>) injectable.getContainingClassOrObject().fqName!!
           else injectable.fqName!!
         }\")")
-        appendLine("@Suppress(\"unused\") fun index(")
-        appendLine("  @Suppress(\"UNUSED_PARAMETER\") marker: ${file.packageFqName.child(markerName.asNameId())},")
+        appendLine("fun index(")
+        appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
         repeat(i + 1) {
-          appendLine("  @Suppress(\"UNUSED_PARAMETER\") index$it: Byte,")
+          appendLine("  index$it: Byte,")
         }
         appendLine(") {")
         appendLine("}")
