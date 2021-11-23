@@ -497,7 +497,7 @@ class ComponentTest {
 
   @Test fun testComponentObserverWithErrors() = singleAndMultiCodegen(
     """ 
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
       @Provide fun corruptObserver(foo: Foo) = object : ComponentObserver<MyComponent> {
       }
