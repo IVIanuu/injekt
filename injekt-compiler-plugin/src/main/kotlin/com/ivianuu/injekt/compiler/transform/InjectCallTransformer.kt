@@ -240,13 +240,13 @@ class InjectCallTransformer(
     }
 
     fun pushComponentReceivers(expression: () -> IrExpression) {
-      component!!.superTypes.dropLast(1).forEach {
+      component!!.superTypes.forEach {
         receiverAccessors.push(it.classOrNull!!.owner to expression)
       }
     }
 
     fun popComponentReceivers() {
-      repeat(component!!.superTypes.size - 1) {
+      repeat(component!!.superTypes.size) {
         receiverAccessors.pop()
       }
     }
@@ -1116,9 +1116,10 @@ class InjectCallTransformer(
 
   private fun ScopeContext.receiverExpression(
     descriptor: ParameterDescriptor
-  ) = receiverAccessors.last {
+  ) = receiverAccessors.lastOrNull {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-  }.second()
+  }?.second?.invoke()
+    ?: error("")
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
