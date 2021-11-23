@@ -129,7 +129,7 @@ class ImportsTest {
       listOf(
         source(
           """
-            @Component interface MyComponent
+            @Provide interface MyComponent : Component
           """,
           packageFqName = FqName("injectables")
         )
@@ -152,7 +152,7 @@ class ImportsTest {
       listOf(
         source(
           """
-            @Component interface MyComponent
+            @Provide interface MyComponent : Component
           """,
           packageFqName = FqName("component")
         ),

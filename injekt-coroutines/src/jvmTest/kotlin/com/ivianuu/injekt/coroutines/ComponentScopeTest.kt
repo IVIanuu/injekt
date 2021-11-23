@@ -18,7 +18,6 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.dispose
 import com.ivianuu.injekt.inject
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -28,7 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import org.junit.Test
 
-@Component interface CoroutinesComponent {
+@Provide interface CoroutinesComponent : Component {
   val scope: ComponentScope<CoroutinesComponent>
 }
 

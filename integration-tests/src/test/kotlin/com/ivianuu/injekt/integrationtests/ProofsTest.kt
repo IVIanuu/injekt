@@ -198,7 +198,7 @@ class ProofsTest {
 
   @Test fun testInComponentFalse() = codegen(
     """
-      @Component interface MyComponent
+      @Provide interface MyComponent : Component
 
       @Provide fun foo(ev: InComponent<MyComponent>) = Foo()
 
