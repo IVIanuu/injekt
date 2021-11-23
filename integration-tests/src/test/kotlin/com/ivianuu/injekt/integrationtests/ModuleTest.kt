@@ -138,4 +138,17 @@ class ModuleTest {
       fun invoke() = inject<Bar>() 
     """
   )
+
+  @Test fun testModuleWithNestedClass() = singleAndMultiCodegen(
+    """
+      interface Dep
+
+      @Provide class DepModule {
+        @Provide class DepImpl : Dep
+      }
+    """,
+    """
+      fun invoke() = inject<Dep>() 
+    """
+  )
 }
