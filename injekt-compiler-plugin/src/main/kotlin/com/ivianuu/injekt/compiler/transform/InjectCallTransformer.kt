@@ -675,9 +675,7 @@ class InjectCallTransformer(
         observerFunctionName: String,
         thisExpression: () -> IrExpression
       ): IrExpression = irCall(
-        irCtx.referenceFunctions(
-          FqName("kotlin.collections.forEach")
-        ).first {
+        irCtx.referenceFunctions(FqName("kotlin.collections.forEach")).first {
           it.owner.extensionReceiverParameter?.type?.classFqName ==
               StandardNames.FqNames.iterable
         }
@@ -971,6 +969,10 @@ class InjectCallTransformer(
   private val typeKeyValue = typeKey?.owner?.properties
     ?.single { it.name.asString() == "value" }
   private val typeKeyConstructor = typeKey?.constructors?.single()
+  private val stringPlus = irCtx.irBuiltIns.stringClass
+    .functions
+    .map { it.owner }
+    .first { it.name.asString() == "plus" }
 
   private fun ScopeContext.typeKeyExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
@@ -1018,10 +1020,6 @@ class InjectCallTransformer(
     val stringExpression = if (expressions.size == 1) {
       expressions.single()
     } else {
-      val stringPlus = irCtx.irBuiltIns.stringClass
-        .functions
-        .map { it.owner }
-        .first { it.name.asString() == "plus" }
       expressions.reduce { acc, expression ->
         irCall(stringPlus).apply {
           dispatchReceiver = acc
