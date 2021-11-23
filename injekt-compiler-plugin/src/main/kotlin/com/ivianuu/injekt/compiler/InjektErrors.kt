@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ComponentInjectable
+import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
@@ -354,7 +354,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           CallContext.SUSPEND -> append("suspend ")
         }
       } else {
-        if (candidate is ComponentInjectable) {
+        if (candidate is AbstractInjectable) {
           append("object : ${request.callableFqName}")
         } else {
           append("${request.callableFqName}")
@@ -381,7 +381,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           }
           appendLine()
         }
-        is ComponentInjectable -> {
+        is AbstractInjectable -> {
           appendLine(" {")
         }
         else -> {
@@ -395,7 +395,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
         append(indent())
         if (candidate !is ProviderInjectable) {
-          if (candidate is ComponentInjectable) {
+          if (candidate is AbstractInjectable) {
             val requestCallable = candidate.requestsByRequestCallables.entries
               .singleOrNull { it.value == request }
               ?.key
@@ -478,7 +478,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
       }
       append(indent())
-      if (candidate is ProviderInjectable || candidate is ComponentInjectable) {
+      if (candidate is ProviderInjectable || candidate is AbstractInjectable) {
         appendLine("}")
       } else {
         appendLine(")")

@@ -24,7 +24,10 @@ import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -86,6 +89,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
     )
   }
 
-fun CallableRef.isComponentConstructor(@Inject ctx: Context): Boolean =
+fun CallableRef.isAbstractInjectableConstructor(@Inject ctx: Context): Boolean =
   (callable is ConstructorDescriptor ||
-      callable is SyntheticInterfaceConstructorDescriptor) && type.unwrapTags().isComponent()
+      callable is SyntheticInterfaceConstructorDescriptor) &&
+      type.unwrapTags().classifier.descriptor.cast<ClassDescriptor>().modality == Modality.ABSTRACT

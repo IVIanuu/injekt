@@ -371,13 +371,17 @@ class InjectablesScope(
     requestingScope: InjectablesScope,
     ownerScope: InjectablesScope
   ): Injectable =
-    if (!isComponentConstructor()) CallableInjectable(ownerScope, this)
+    if (!isAbstractInjectableConstructor()) CallableInjectable(ownerScope, this)
     else {
-      val entryPointType = ctx.entryPointClassifier!!.defaultType
-        .withArguments(listOf(type))
-      val entryPoints = TypeInjectablesScope(entryPointType, requestingScope)
-        .entryPointsForType(entryPointType)
-      ComponentInjectable(this, entryPoints, ownerScope, requestingScope)
+      val isComponent = type.isComponent()
+      val entryPoints = if (!isComponent) emptyList()
+      else {
+        val entryPointType = ctx.entryPointClassifier!!.defaultType
+          .withArguments(listOf(type))
+        TypeInjectablesScope(entryPointType, requestingScope)
+          .entryPointsForType(entryPointType)
+      }
+      AbstractInjectable(this, entryPoints, ownerScope, isComponent, requestingScope)
     }
 
   /**

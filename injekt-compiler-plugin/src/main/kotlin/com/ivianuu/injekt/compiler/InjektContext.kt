@@ -55,7 +55,7 @@ class Context(
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().typeKey)
-    )!!.toClassifierRef()
+    )?.toClassifierRef()
   }
   val componentClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
@@ -65,12 +65,12 @@ class Context(
   val componentObserverClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().componentObserver)
-    )!!.toClassifierRef()
+    )?.toClassifierRef()
   }
   val disposableClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().disposable)
-    )!!.toClassifierRef()
+    )?.toClassifierRef()
   }
   val entryPointClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
