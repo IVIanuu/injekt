@@ -441,21 +441,6 @@ class ComponentTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testComponentCannotUseItsOwnInjectables() = singleAndMultiCodegen(
-    """
-      @Provide interface FooComponent : Component {
-        @Provide val foo: Foo
-      }
-    """,
-    """
-      fun invoke() = inject<FooComponent>()
-    """
-  ) {
-    compilationShouldHaveFailed(
-      "no injectable found of type com.ivianuu.injekt.test.Foo"
-    )
-  }
-
   @Test fun testComponentTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(

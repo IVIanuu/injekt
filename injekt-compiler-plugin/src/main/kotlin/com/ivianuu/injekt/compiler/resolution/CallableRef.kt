@@ -18,11 +18,13 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -83,3 +85,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       import = null
     )
   }
+
+fun CallableRef.isComponentConstructor(@Inject ctx: Context): Boolean =
+  (callable is ConstructorDescriptor ||
+      callable is SyntheticInterfaceConstructorDescriptor) && type.unwrapTags().isComponent()

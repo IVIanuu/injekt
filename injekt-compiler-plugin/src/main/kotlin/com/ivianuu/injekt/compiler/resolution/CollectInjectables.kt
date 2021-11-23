@@ -271,7 +271,6 @@ fun CallableRef.collectInjectables(
   addImport: (FqName, FqName) -> Unit,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
-  addComponent: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   seen: MutableSet<CallableRef> = mutableSetOf(),
   @Inject ctx: Context
@@ -283,12 +282,6 @@ fun CallableRef.collectInjectables(
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
-    return
-  }
-
-  if ((callable is ConstructorDescriptor ||
-        callable is SyntheticInterfaceConstructorDescriptor) && type.unwrapTags().isComponent()) {
-    addComponent(this)
     return
   }
 
@@ -318,7 +311,6 @@ fun CallableRef.collectInjectables(
         addImport = addImport,
         addInjectable = addInjectable,
         addSpreadingInjectable = addSpreadingInjectable,
-        addComponent = addComponent,
         import = import,
         seen = seen
       )
@@ -543,7 +535,6 @@ fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: 
   val existingInjectables = scope.allScopes
     .fastFlatMap {
       addAll(it.injectables)
-      addAll(it.components)
       it.spreadingInjectables.forEach { add(it.callable) }
     }
     .mapTo(mutableSetOf()) { it.callable.uniqueKey() to it.originalType }

@@ -76,14 +76,20 @@ class CallableInjectable(
     get() = callable.scopeComponentType
   override val isEager: Boolean
     get() = callable.isEager
-  override val usageKey: Any
-    get() = listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
+  override val usageKey: Any =
+    listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
+
+  override fun equals(other: Any?): Boolean =
+    other is CallableInjectable && other.usageKey == usageKey
+
+  override fun hashCode(): Int = usageKey.hashCode()
 }
 
 class ComponentInjectable(
   val constructor: CallableRef,
   val entryPoints: List<CallableRef>,
-  @Provide override val ownerScope: InjectablesScope
+  @Provide override val ownerScope: InjectablesScope,
+  val parentScope: InjectablesScope
 ) : Injectable() {
   override val callableFqName: FqName = type.classifier.fqName
 
@@ -139,14 +145,14 @@ class ComponentInjectable(
 
   val componentInitScope = InjectablesScope(
     name = "COMPONENT INIT $callableFqName",
-    parent = ownerScope,
+    parent = parentScope,
     ctx = ownerScope.ctx,
     componentType = type
   )
 
   val componentScope = InjectablesScope(
     name = "COMPONENT $callableFqName",
-    parent = ownerScope,
+    parent = parentScope,
     ctx = ownerScope.ctx,
     componentType = type,
     initialInjectables = componentAndEntryPointInjectables,
