@@ -18,10 +18,14 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
+import com.ivianuu.injekt.test.Command
+import com.ivianuu.injekt.test.CommandA
+import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.TestComponentObserver
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.irShouldContain
 import com.ivianuu.injekt.test.shouldContainMessage
@@ -29,6 +33,7 @@ import com.ivianuu.injekt.test.shouldNotContainMessage
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
 import com.ivianuu.injekt.test.withCompose
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -510,5 +515,40 @@ class ComponentTest {
     """
   ) {
     compilationShouldHaveFailed("abstract injectable cannot be sealed")
+  }
+
+  @Test fun testIncludesTypeScopeEntryPoints() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            @Provide interface MyComponent : Component
+
+            @Provide interface ComponentPackageEntryPoint : EntryPoint<MyComponent>
+          """,
+          packageFqName = FqName("component")
+        )
+      ),
+      listOf(
+        source(
+          """
+            @Provide interface EntryPointPackageEntryPoint<C : Component> : EntryPoint<C>
+          """,
+          packageFqName = FqName("com.ivianuu.injekt.common")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            fun invoke() = (inject<component.MyComponent>() as? component.ComponentPackageEntryPoint) to
+              (inject<component.MyComponent>() as? EntryPointPackageEntryPoint<*>)
+          """
+        )
+      )
+    )
+  ) {
+    val (a, b) = invokeSingleFile<Pair<Any?, Any?>>()
+    a.shouldNotBeNull()
+    b.shouldNotBeNull()
   }
 }

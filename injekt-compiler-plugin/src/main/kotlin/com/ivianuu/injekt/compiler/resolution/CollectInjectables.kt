@@ -540,13 +540,18 @@ fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: 
   val existingInjectables = scope.allScopes
     .fastFlatMap {
       addAll(it.injectables)
+      addAll(it.components)
       it.spreadingInjectables.forEach { add(it.callable) }
     }
-    .map { it.callable.uniqueKey() to it.originalType.withFrameworkKey(0) }
+    .mapTo(mutableSetOf()) { it.callable.uniqueKey() to it.originalType }
 
   return filter { callable ->
     val uniqueKey = callable.callable.uniqueKey()
-    existingInjectables.none { it.first == uniqueKey && it.second == callable.originalType }
+    existingInjectables.none {
+      it.first == uniqueKey && it.second == callable.originalType
+    }.also {
+      if (it) existingInjectables += uniqueKey to callable.originalType
+    }
   }
 }
 

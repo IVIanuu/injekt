@@ -534,8 +534,6 @@ class InjectCallTransformer(
       createImplicitParameterDeclarationWithWrappedDescriptor()
       superTypes += injectable.type.toIrType().typeOrNull!!
       superTypes += injectable.entryPoints.map { it.type.toIrType().typeOrNull!! }
-      superTypes += inject<Context>().disposableClassifier.defaultType
-        .toIrType().typeOrNull!!
 
       val componentScope = ScopeContext(
         this@componentExpression,

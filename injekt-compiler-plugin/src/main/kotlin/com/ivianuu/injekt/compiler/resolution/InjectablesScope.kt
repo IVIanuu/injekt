@@ -86,7 +86,7 @@ class InjectablesScope(
 
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val components: MutableList<CallableRef> =
+  val components: MutableList<CallableRef> =
     parent?.components?.toMutableList() ?: mutableListOf()
 
   init {
@@ -202,7 +202,7 @@ class InjectablesScope(
         )
       }
       request.type.classifier == ctx.listClassifier -> {
-        if (typeScopeType == request.type) {
+        return if (typeScopeType == request.type) {
           val singleElementType = request.type.arguments[0]
           val collectionElementType = ctx.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
@@ -212,7 +212,7 @@ class InjectablesScope(
           val elements = listElementsForType(singleElementType, collectionElementType, key) +
               frameworkListElementsForType(singleElementType, collectionElementType, key)
 
-          return if (elements.isEmpty()) null
+          if (elements.isEmpty()) null
           else ListInjectable(
             type = request.type,
             ownerScope = this,
@@ -221,7 +221,7 @@ class InjectablesScope(
             collectionElementType = collectionElementType
           )
         } else {
-          return TypeInjectablesScope(request.type, this)
+          TypeInjectablesScope(request.type, this)
             .frameworkInjectableForRequest(request)
         }
       }
@@ -229,12 +229,18 @@ class InjectablesScope(
         return TypeKeyInjectable(request.type, this)
       request.type.classifier.fqName == injektFqNames().sourceKey ->
         return SourceKeyInjectable(request.type, this)
-      request.type.unwrapTags().isComponent() ->
-        return componentForType(request.type)?.let {
-          ComponentInjectable(it, entryPointsForType(
-            ctx.entryPointClassifier!!.defaultType.withArguments(listOf(it.type))
-          ), this)
+      request.type.unwrapTags().isComponent() -> {
+        val entryPointType = ctx.entryPointClassifier!!.defaultType
+          .withArguments(listOf(request.type))
+        return if (typeScopeType == entryPointType) {
+          componentForType(request.type)?.let {
+            ComponentInjectable(it, entryPointsForType(entryPointType), this)
+          }
+        } else {
+          TypeInjectablesScope(entryPointType, this)
+            .frameworkInjectableForRequest(request)
         }
+      }
       else -> return null
     }
   }
@@ -328,8 +334,7 @@ class InjectablesScope(
 
     val thisEntryPoints = injectables
       .mapNotNull { candidate ->
-        if (candidate.type.frameworkKey != candidate.type.frameworkKey)
-          return@mapNotNull null
+        if (candidate.type.frameworkKey != 0) return@mapNotNull null
         val context = candidate.type.buildContext(entryPointType, allStaticTypeParameters)
         if (!context.isOk) return@mapNotNull null
         candidate.substitute(context.fixedTypeVariables)
