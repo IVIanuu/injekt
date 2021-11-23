@@ -200,11 +200,7 @@ class InjektDeclarationGeneratorExtension(
               declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)
-                    ?.superTypeListEntries
-                    ?.any { it.text.contains(injektFqNames.component.shortName().asString()) } == true ||
-                  declaration.getParentOfType<KtClass>(false)
-                    ?.superTypeListEntries
-                    ?.any { it.text.contains(injektFqNames.entryPoint.shortName().asString()) } == true))
+                    ?.let { it.hasAnnotation(injektFqNames.provide) && it.isInterface() } == true))
               injectables += declaration
           }
           is KtProperty -> {
@@ -212,11 +208,7 @@ class InjektDeclarationGeneratorExtension(
               declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)
-                    ?.superTypeListEntries
-                    ?.any { it.text.contains(injektFqNames.component.shortName().asString()) } == true ||
-                  declaration.getParentOfType<KtClass>(false)
-                    ?.superTypeListEntries
-                    ?.any { it.text.contains(injektFqNames.entryPoint.shortName().asString()) } == true))
+                    ?.let { it.hasAnnotation(injektFqNames.provide) && it.isInterface() } == true))
               injectables += declaration
           }
         }
