@@ -135,4 +135,28 @@ class DivergenceTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testUnresolvableComponentDivergence() = singleAndMultiCodegen(
+    """
+      @Provide interface MyComponent {
+        @Provide val string: String
+      }
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  ) {
+    compilationShouldHaveFailed("diverging")
+  }
+
+  @Test fun testResolvableComponentDivergence() = singleAndMultiCodegen(
+    """
+      @Provide interface MyComponent {
+        @Provide val string: String get() = ""
+      }
+    """,
+    """
+      fun invoke() = inject<MyComponent>()
+    """
+  )
 }

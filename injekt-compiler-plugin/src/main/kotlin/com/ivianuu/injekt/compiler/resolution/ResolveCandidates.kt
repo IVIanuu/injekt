@@ -316,18 +316,30 @@ private fun InjectablesScope.computeForCandidate(
   compute: () -> ResolutionResult,
 ): ResolutionResult {
   resultsByCandidate[candidate]?.let { return it }
-  if (candidate.dependencies.isEmpty())
+  val isAbstractInjectable = candidate.originalType.isAbstractInjectable()
+  if (candidate.dependencies.isEmpty() && !isAbstractInjectable)
     return compute().also { resultsByCandidate[candidate] = it }
+
+  val abstractInjectable = if (!isAbstractInjectable) null
+  else chain.lastOrNull {
+    it.first.type == request.type &&
+        it.second is AbstractInjectable
+  }?.second.safeAs<AbstractInjectable>()
 
   if (chain.isNotEmpty()) {
     var isLazy = false
     for (i in chain.lastIndex downTo 0) {
       val prev = chain[i]
       isLazy = isLazy || prev.first.isLazy
-      if (prev.second.callableFqName == candidate.callableFqName &&
+
+      if ((prev.second.callableFqName == candidate.callableFqName &&
         prev.second.type.coveringSet == candidate.type.coveringSet &&
         (prev.second.type.typeSize < candidate.type.typeSize ||
-            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))
+            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))) ||
+        (abstractInjectable != null &&
+            request.parameterIndex == DISPATCH_RECEIVER_INDEX &&
+            prev.second.safeAs<CallableInjectable>()?.callable?.callable?.uniqueKey() in
+            abstractInjectable.requestCallables.map { it.callable.uniqueKey() })
       ) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result

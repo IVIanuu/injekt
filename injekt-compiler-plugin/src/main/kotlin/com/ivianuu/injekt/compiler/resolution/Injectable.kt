@@ -157,10 +157,7 @@ class AbstractInjectable(
     parent = parentScope,
     ctx = ownerScope.ctx,
     componentType = if (isComponent) type else null,
-    initialInjectables = abstractInjectableAndEntryPointInjectables,
-    injectablesPredicate = { candidate ->
-      requestCallables.none { it.callable == candidate.callable }
-    }
+    initialInjectables = abstractInjectableAndEntryPointInjectables
   )
 
   val requestsByRequestCallables = requestCallables

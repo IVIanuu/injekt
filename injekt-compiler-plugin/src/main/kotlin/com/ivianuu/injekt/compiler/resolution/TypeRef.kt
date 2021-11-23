@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
+import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -522,6 +524,13 @@ val TypeRef.isFunctionType: Boolean
 
 fun TypeRef.isComponent(@Inject ctx: Context): Boolean = ctx.componentClassifier != null &&
     isSubTypeOf(ctx.componentClassifier!!.defaultType)
+
+fun TypeRef.isAbstractInjectable(@Inject ctx: Context): Boolean =
+  classifier.descriptor?.let {
+    it is ClassDescriptor &&
+        it.modality == Modality.ABSTRACT &&
+        it.isProvide()
+  } == true
 
 fun effectiveVariance(
   declared: TypeVariance,
