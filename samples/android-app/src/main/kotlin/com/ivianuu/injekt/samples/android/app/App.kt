@@ -20,13 +20,9 @@ import android.app.Application
 import com.ivianuu.injekt.Providers
 import com.ivianuu.injekt.android.AppComponentOwner
 import com.ivianuu.injekt.android.createAppComponent
-import com.ivianuu.injekt.common.AppComponent
 
 class App : Application(), AppComponentOwner {
-  override lateinit var appComponent: AppComponent
-
-  override fun onCreate() {
-    appComponent = @Providers(".**") createAppComponent()
-    super.onCreate()
+  override val appComponent by lazy {
+    @Providers(".**") createAppComponent()
   }
 }

@@ -26,12 +26,11 @@ import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
 
 class MainActivity : ComponentActivity() {
-  private var activityComponent: ActivityComponent? = null
+  private val activityComponent by lazy { createActivityComponent() }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    activityComponent = createActivityComponent()
-    val dependencies: MainActivityDependencies = activityComponent!!.entryPoint()
+    val dependencies: MainActivityDependencies = activityComponent.entryPoint()
 
     setContent {
       dependencies.theme {
@@ -41,7 +40,7 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onDestroy() {
-    activityComponent?.dispose()
+    activityComponent.dispose()
     super.onDestroy()
   }
 }
