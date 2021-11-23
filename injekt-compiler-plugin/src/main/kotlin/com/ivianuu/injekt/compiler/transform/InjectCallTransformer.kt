@@ -1116,10 +1116,9 @@ class InjectCallTransformer(
 
   private fun ScopeContext.receiverExpression(
     descriptor: ParameterDescriptor
-  ) = receiverAccessors.lastOrNull {
+  ) = receiverAccessors.last {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-  }?.second?.invoke()
-    ?: error("")
+  }.second()
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
