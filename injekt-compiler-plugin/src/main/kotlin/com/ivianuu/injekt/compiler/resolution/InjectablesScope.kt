@@ -140,9 +140,16 @@ class InjectablesScope(
     }
   }
 
-  fun recordLookup(lookupLocation: LookupLocation) {
+  fun recordLookup(
+    lookupLocation: LookupLocation,
+    visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
+  ) {
     if (isIde) return
-    parent?.recordLookup(lookupLocation)
+    if (this in visitedScopes) return
+    visitedScopes += this
+
+    parent?.recordLookup(lookupLocation, visitedScopes)
+    typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
     for (import in imports) {
       memberScopeForFqName(import.packageFqName, lookupLocation)
         ?.first

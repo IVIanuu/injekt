@@ -471,6 +471,7 @@ private fun collectPackageTypeScopeInjectables(
 
     val injectables = mutableListOf<CallableRef>()
 
+    val import = ResolvedProviderImport(null, "$packageFqName.*", packageFqName)
     fun collectInjectables(scope: MemberScope) {
       scope.collectInjectables(
         onEach = { declaration ->
@@ -479,7 +480,9 @@ private fun collectPackageTypeScopeInjectables(
         },
         classBodyView = false,
         includeNonProvideObjectsWithInjectables = true
-      ) { injectables += it }
+      ) {
+        injectables += it.copy(import = import)
+      }
     }
     packageFragments.forEach { collectInjectables(it.getMemberScope()) }
 
