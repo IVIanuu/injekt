@@ -31,6 +31,7 @@ buildscript {
   }
   dependencies {
     classpath(Deps.androidGradlePlugin)
+    classpath(Deps.atomicFuGradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
     classpath(Deps.injektGradlePlugin)
     classpath(Deps.injektGradlePluginShaded)

@@ -16,6 +16,7 @@
 
 plugins {
   kotlin("multiplatform")
+  id("kotlinx-atomicfu")
 }
 
 kotlin {

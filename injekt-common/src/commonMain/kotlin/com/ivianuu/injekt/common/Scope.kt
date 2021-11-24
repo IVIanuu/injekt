@@ -19,23 +19,25 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
+import kotlinx.atomicfu.locks.ReentrantLock
+import kotlinx.atomicfu.locks.reentrantLock
+import kotlinx.atomicfu.locks.withLock
 
 interface Scope<N : ComponentName> {
-  fun <T> scope(key: TypeKey<T>, init: () -> T): T
+  fun <T : Any> scope(key: TypeKey<T>, init: () -> T): T
 }
 
 @Provide @ComponentElement<N> class ScopeImpl<N : ComponentName> : Scope<N> {
   private val map = mutableMapOf<String, Any>()
+  private val lock = reentrantLock()
 
-  override fun <T> scope(key: TypeKey<T>, init: () -> T): T =
-    map.getOrPut(key.value) { init() ?: Null }.takeIf { it !is Null } as T
-
-  private object Null
+  override fun <T : Any> scope(key: TypeKey<T>, init: () -> T): T =
+    lock.withLock { map.getOrPut(key.value) { init() } as T }
 }
 
 @Tag annotation class Scoped<N : ComponentName> {
   companion object {
-    @Provide fun <@Spread T : @Scoped<N> S, S, N : ComponentName> scoped(
+    @Provide fun <@Spread T : @Scoped<N> S, S : Any, N : ComponentName> scoped(
       init: () -> T,
       scope: Scope<N>,
       key: TypeKey<S>

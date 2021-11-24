@@ -57,6 +57,8 @@ object Deps {
     const val work = "androidx.work:work-runtime-ktx:2.7.0"
   }
 
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.17.0"
+
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Coroutines {

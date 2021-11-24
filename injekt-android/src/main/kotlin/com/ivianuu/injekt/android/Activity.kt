@@ -28,12 +28,10 @@ import com.ivianuu.injekt.common.ComponentName
  * Returns a new [ActivityComponent] which must be manually stored and disposed
  */
 fun Activity.createActivityComponent(): Component<ActivityComponent> =
-  appComponent.element<ActivityComponentFactory>()(this)
+  appComponent.element<@ComponentFactory (Activity) -> Component<ActivityComponent>>()(this)
 
 object ActivityComponent : ComponentName
 
-typealias ActivityComponentFactory = @ComponentFactory (Activity) -> Component<ActivityComponent>
-
 @Provide fun activityComponentFactory(
   factory: (Activity) -> Component<ActivityComponent>
-): @ComponentElement<AppComponent> ActivityComponentFactory = factory
+): @ComponentElement<AppComponent> @ComponentFactory (Activity) -> Component<ActivityComponent> = factory

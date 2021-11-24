@@ -28,13 +28,13 @@ interface Component<N : ComponentName> : Disposable {
   elements: (Component<N>) -> List<ProvidedElement<N>>
 ) : Component<N> {
   @OptIn(ExperimentalStdlibApi::class)
-  private val scopeElements = buildMap<String, Any> {
-    for ((key, element) in elements(this@ComponentImpl))
-      this[key.value] = element
+  private val scopeElements = buildMap<String, () -> Any> {
+    for ((key, factory) in elements(this@ComponentImpl))
+      this[key.value] = factory
   }
 
   override fun <T> element(@Inject key: TypeKey<T>): T =
-    scopeElements[key.value] as? T ?: error("No element found for ${key.value}")
+    scopeElements[key.value]?.invoke() as T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
     scopeElements.forEach { (it.value as? Disposable)?.dispose() }
@@ -48,8 +48,8 @@ interface Component<N : ComponentName> : Disposable {
     @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
       @Provide fun providedElement(
         key: TypeKey<S>,
-        element: T
-      ) = ProvidedElement<N>(key, element as Any)
+        factory: () -> T
+      ) = ProvidedElement<N>(key, factory as () -> Any)
 
       @Provide inline fun elementAccessor(
         component: Component<N>,
@@ -59,7 +59,10 @@ interface Component<N : ComponentName> : Disposable {
   }
 }
 
-data class ProvidedElement<N : ComponentName>(val key: TypeKey<*>, val element: Any)
+data class ProvidedElement<N : ComponentName>(
+  val key: TypeKey<*>,
+  val factory: () -> Any
+)
 
 interface ComponentName
 
