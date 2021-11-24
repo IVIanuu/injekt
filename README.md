@@ -166,7 +166,7 @@ All elements which match the T or Collection\<T\> will be included in the result
 # Components
 TODO
 ```kotlin
-@Component interface AppComponent {
+@Provide interface AppComponent : Component {
   val api: Api
 
   suspend fun imageLoader(): ImageLoader
