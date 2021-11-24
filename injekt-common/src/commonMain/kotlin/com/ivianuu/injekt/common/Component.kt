@@ -40,12 +40,4 @@ fun interface Disposable {
   fun dispose()
 }
 
-interface ComponentObserver<C : Component> : Disposable {
-  fun init() {
-  }
-
-  override fun dispose() {
-  }
-}
-
 @Provide interface AppComponent : Component

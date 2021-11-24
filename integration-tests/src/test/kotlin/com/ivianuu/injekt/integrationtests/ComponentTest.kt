@@ -16,13 +16,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.Disposable
-import com.ivianuu.injekt.test.Command
-import com.ivianuu.injekt.test.CommandA
-import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.TestComponentObserver
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokableSource
@@ -34,7 +29,6 @@ import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
 import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.jetbrains.kotlin.name.FqName
@@ -294,41 +288,6 @@ class ComponentTest {
     invokeSingleFile<Disposable>().dispose()
   }
 
-  @Test fun testComponentObserver() = singleAndMultiCodegen(
-    """
-      @Provide interface MyComponent : Component
-    """,
-    """
-      fun invoke(@Inject observer: ComponentObserver<MyComponent>): () -> MyComponent = {
-        inject<MyComponent>()
-      }
-    """
-  ) {
-    val observer = TestComponentObserver<Component>()
-    val componentFactory = invokeSingleFile<() -> Disposable>(observer)
-    observer.initCalls shouldBe 0
-    observer.disposeCalls shouldBe 0
-    val component = componentFactory()
-    observer.initCalls shouldBe 1
-    observer.disposeCalls shouldBe 0
-    component.dispose()
-    observer.initCalls shouldBe 1
-    observer.disposeCalls shouldBe 1
-  }
-
-  @Test fun testComponentObserverWhoUsesScopedInjectables() = singleAndMultiCodegen(
-    """
-      @Provide interface MyComponent : Component
-    """,
-    """
-      class MyObserver<C : Component> @Provide @Scoped<C> constructor() : ComponentObserver<C>
-
-      fun invoke(): MyComponent = inject<MyComponent>()
-    """
-  ) {
-    invokeSingleFile()
-  }
-
   @Test fun testCanInjectComponent() = singleAndMultiCodegen(
     """
       @Provide interface MyComponent : Component {
@@ -478,20 +437,6 @@ class ComponentTest {
     """
   ) {
     compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.MyComponent has clashing super types com.ivianuu.injekt.integrationtests.EntryPointA and com.ivianuu.injekt.integrationtests.EntryPointB")
-  }
-
-  @Test fun testComponentObserverWithErrors() = singleAndMultiCodegen(
-    """ 
-      @Provide interface MyComponent : Component
-
-      @Provide fun corruptObserver(foo: Foo) = object : ComponentObserver<MyComponent> {
-      }
-    """,
-    """
-      fun invoke() = inject<MyComponent>()
-    """
-  ) {
-    compilationShouldHaveFailed()
   }
 
   @Test fun testSealedAbstractInjectable() = codegen(

@@ -654,65 +654,6 @@ class InjectCallTransformer(
         }
       }
 
-      val observersResult = result.dependencyResults[injectable.componentObserversRequest]
-        .safeAs<ResolutionResult.Success.WithCandidate>()
-
-      val observersField = if (observersResult == null) null
-      else addField(
-        "${injectable.componentObserversRequest!!.parameterName}${graphContext.variableIndex++}",
-        injectable.componentObserversRequest.type.toIrType().typeOrNull!!,
-        DescriptorVisibilities.PRIVATE
-      ).apply {
-        initializer = DeclarationIrBuilder(irCtx, symbol).run {
-          irExprBody(
-            with(scope) {
-              expressionFor(observersResult)
-            }
-          )
-        }
-
-        // we do this AFTER creating the initializer expression
-        // because it's important that all other fields are initialized at this point
-        placeAfterFields(this)
-      }
-      fun forEachObserver(
-        observerFunctionName: String,
-        thisExpression: () -> IrExpression
-      ): IrExpression = irCall(
-        irCtx.referenceFunctions(FqName("kotlin.collections.forEach")).first {
-          it.owner.extensionReceiverParameter?.type?.classFqName ==
-              StandardNames.FqNames.iterable
-        }
-      ).apply {
-        putTypeArgument(
-          0,
-          observersField!!.type.cast<IrSimpleType>().arguments.single().typeOrNull
-        )
-
-        extensionReceiver = irGetField(thisExpression(), observersField)
-
-        putValueArgument(
-          0,
-          irLambda(
-            irCtx.irBuiltIns.function(1)
-              .typeWith(
-                observersField.type.cast<IrSimpleType>().arguments.single().typeOrNull!!,
-                irCtx.irBuiltIns.unitType
-              ),
-            parameterNameProvider = { "p${graphContext.variableIndex++}" }
-          ) {
-            irCall(
-              observersField.type.cast<IrSimpleType>().arguments.single().typeOrNull!!
-                .classOrNull!!
-                .functions
-                .single { it.owner.name.asString() == observerFunctionName }
-            ).apply {
-              dispatchReceiver = irGet(it.valueParameters.single())
-            }
-          }
-        )
-      }
-
       addConstructor {
         returnType = defaultType
         isPrimary = true
@@ -755,13 +696,6 @@ class InjectCallTransformer(
             this@clazz.symbol,
             context.irBuiltIns.unitType
           )
-
-          if (observersField != null) {
-            +forEachObserver(
-              observerFunctionName = "init",
-              thisExpression = { irGet(thisReceiver!!) }
-            )
-          }
         }
       }
 
@@ -777,13 +711,6 @@ class InjectCallTransformer(
             .single { it.owner.name == name }
           body = DeclarationIrBuilder(irCtx, symbol).run {
             irBlockBody {
-              if (observersField != null) {
-                +forEachObserver(
-                  observerFunctionName = "dispose",
-                  thisExpression = { irGet(dispatchReceiverParameter!!) }
-                )
-              }
-
               val disposableClass = irCtx.referenceClass(injektFqNames().disposable)!!
               fields
                 .filter { it.name.asString().endsWith("Instance") }

@@ -62,11 +62,6 @@ class Context(
       ClassId.topLevel(injektFqNames().component)
     )?.toClassifierRef()
   }
-  val componentObserverClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().componentObserver)
-    )?.toClassifierRef()
-  }
   val disposableClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().disposable)

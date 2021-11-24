@@ -119,24 +119,6 @@ class AbstractInjectable(
 
   val constructorDependencies = constructor.getInjectableRequests(true)
 
-  val componentObserversRequest: InjectableRequest? = if (!isComponent) null
-  else InjectableRequest(
-    type = ownerScope.ctx.listClassifier.defaultType.copy(
-      arguments = listOf(
-        ownerScope.ctx.componentObserverClassifier!!.defaultType.copy(
-          arguments = listOf(type)
-        )
-      )
-    ),
-    callableFqName = callableFqName,
-    callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-    parameterName = "observers".asNameId(),
-    parameterIndex = 0,
-    isRequired = false,
-    failOnAllCandidateErrors = true,
-    isLazy = true
-  )
-
   private val abstractInjectableAndEntryPointInjectables = buildList {
     add(type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true))
     for (entryPoint in entryPoints)
@@ -179,8 +161,6 @@ class AbstractInjectable(
   override val dependencies = buildList<InjectableRequest> {
     this += constructorDependencies
     this += requestsByRequestCallables.values
-    if (componentObserversRequest != null)
-      this += componentObserversRequest
   }
 
   val dependencyScopesByRequestCallable = requestCallables
@@ -212,8 +192,6 @@ class AbstractInjectable(
     dependencyScopesByRequestCallable.forEach {
       this[requestsByRequestCallables[it.key]!!] = it.value
     }
-    if (componentObserversRequest != null)
-      this[componentObserversRequest] = scope
   }
 
   override val type: TypeRef
