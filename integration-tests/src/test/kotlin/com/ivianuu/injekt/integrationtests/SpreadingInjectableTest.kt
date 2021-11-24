@@ -47,7 +47,26 @@ class SpreadingInjectableTest {
   @Test fun testSpreadingInjectableClass() = singleAndMultiCodegen(
     """
       @Provide class MyModule<@Spread T : @Trigger S, S> {
-          @Provide fun intoSet(instance: T): @Final S = instance
+        @Provide fun intoSet(instance: T): @Final S = instance
+      }
+      @Tag annotation class Trigger
+
+      @Tag annotation class Final
+
+      @Provide fun foo(): @Trigger Foo = Foo()
+      @Provide fun string(): @Trigger String = ""
+    """,
+    """
+      fun invoke() = inject<List<@Final Foo>>() 
+    """
+  ) {
+    invokeSingleFile<List<Foo>>().size shouldBe 1
+  }
+
+  @Test fun testSpreadingAbstractInjectableClass() = singleAndMultiCodegen(
+    """
+      @Provide abstract class MyModule<@Spread T : @Trigger S, S>(private val instance: T) {
+        @Provide fun intoSet(): @Final S = instance
       }
       @Tag annotation class Trigger
 
@@ -215,7 +234,7 @@ class SpreadingInjectableTest {
       ): UiDecorator = instance
 
       @Provide @UiDecoratorBinding class RootSystemBarsProvider : UiDecorator {
-        @Composable override fun invoke(content: @Composable () -> Unit){
+        @Composable override fun invoke(content: @Composable () -> Unit) {
         }
       }
     """,
