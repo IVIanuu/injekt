@@ -73,6 +73,9 @@ interface ComponentName
         key: TypeKey<S>
       ) = component.element<S>()
     }
+
+    @Provide
+    fun <N : ComponentName> defaultElements(): Collection<ComponentElement<N>> = emptyList()
   }
 }
 

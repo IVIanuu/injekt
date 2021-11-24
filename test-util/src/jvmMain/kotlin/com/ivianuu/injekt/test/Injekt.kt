@@ -35,7 +35,3 @@ class CommandB : Command
 @Tag annotation class Tag2
 
 @Tag annotation class TypedTag<T>
-
-interface Scope
-
-object AppScope : Scope

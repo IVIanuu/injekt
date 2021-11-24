@@ -1129,11 +1129,11 @@ class ResolveTest {
     """
       fun <T> produceState(
         vararg keys: Any?,
-        @Inject scope: Scope,
+        @Inject scope: String,
         Nkey: SourceKey
       ): State<T> = TODO()
 
-      fun invoke(@Inject scope: Scope) {
+      fun invoke(@Inject scope: String) {
         val scope by produceState<Int>()
       }
     """
