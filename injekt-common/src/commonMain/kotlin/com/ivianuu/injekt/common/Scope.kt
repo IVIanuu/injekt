@@ -16,22 +16,22 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
-import kotlinx.atomicfu.locks.ReentrantLock
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 
 interface Scope<N : ComponentName> {
-  fun <T : Any> scope(key: TypeKey<T>, init: () -> T): T
+  fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T
 }
 
 @Provide @ComponentElement<N> class ScopeImpl<N : ComponentName> : Scope<N> {
   private val map = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 
-  override fun <T : Any> scope(key: TypeKey<T>, init: () -> T): T =
+  override fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T =
     lock.withLock { map.getOrPut(key.value) { init() } as T }
 }
 
@@ -50,10 +50,9 @@ interface Scope<N : ComponentName> {
     @Provide class Module<@Spread T : @Eager<N> S, S : Any, N : ComponentName>() {
       @Provide fun scoped(value: T): @Scoped<N> S = value
 
-      @Provide inline fun initializer(
-        crossinline init: () -> S
-      ): ComponentInitializer<N> = { init() }
+      @Provide fun initializer(value: S): @ComponentElement<N> @Initializer S = value
+
+      @Tag private annotation class Initializer
     }
   }
 }
-

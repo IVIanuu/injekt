@@ -25,25 +25,24 @@ interface Component<N : ComponentName> : Disposable {
 }
 
 @Provide class ComponentImpl<N : ComponentName>(
-  elements: (Component<N>) -> List<ProvidedElement<N>>,
-  initializers: (Component<N>) -> List<ComponentInitializer<N>>
+  elements: (Component<N>) -> List<ProvidedElement<N>>
 ) : Component<N> {
   @OptIn(ExperimentalStdlibApi::class)
-  private val scopeElements = buildMap<String, Lazy<Any>> {
+  private val elements = buildMap<String, Lazy<Any>> {
     for ((key, lazyElement) in elements(this@ComponentImpl))
       this[key.value] = lazyElement
   }
 
   init {
-    for (initializer in initializers(this))
-      initializer()
+    for (element in this.elements)
+      element.value.value
   }
 
   override fun <T> element(@Inject key: TypeKey<T>): T =
-    scopeElements[key.value]?.value as T ?: error("No element found for ${key.value}")
+    elements[key.value]?.value as T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
-    scopeElements.forEach { (it.value as? Disposable)?.dispose() }
+    elements.forEach { (it.value as? Disposable)?.dispose() }
   }
 }
 
@@ -69,13 +68,5 @@ data class ProvidedElement<N : ComponentName>(
   val key: TypeKey<*>,
   val lazyElement: Lazy<Any>
 )
-
-@Tag annotation class ComponentInitializerTag<N : ComponentName> {
-  companion object {
-    @Provide fun <N : ComponentName> defaultInitializers(): Collection<ComponentInitializer<N>> =
-      emptyList()
-  }
-}
-typealias ComponentInitializer<N> = @ComponentInitializerTag<N> () -> Unit
 
 object AppComponent : ComponentName
