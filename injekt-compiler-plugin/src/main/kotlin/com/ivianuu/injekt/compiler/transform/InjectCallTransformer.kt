@@ -585,10 +585,14 @@ class InjectCallTransformer(
               val request = injectable.requestsByRequestCallables[requestCallable]!!
               val requestResult = result.dependencyResults[request]!!
               if (requestResult is ResolutionResult.Success.WithCandidate.Value) {
-                dependencyScopeContext.scope.initialInjectables
-                  .map { it.callable as ParameterDescriptor }
-                  .zip(listOfNotNull(extensionReceiverParameter) + valueParameters)
-                  .forEach { (a, b) -> parameterMap[a] = b }
+                for ((index, initialInjectable) in
+                dependencyScopeContext.scope.initialInjectables.withIndex()) {
+                  parameterMap[initialInjectable.callable.cast()] =
+                    if (index == 0 && extensionReceiverParameter != null)
+                      extensionReceiverParameter!!
+                    else valueParameters[if (extensionReceiverParameter != null) index - 1 else index]
+                }
+
                 expressionFor(requestResult)
                   .also {
                     dependencyScopeContext.scope.initialInjectables.forEach {
@@ -829,9 +833,8 @@ class InjectCallTransformer(
             injectable.dependencyScopes.values.single(), scope, null
           )
           val expression = with(dependencyScopeContext) {
-            injectable.parameterDescriptors
-              .zip(function.valueParameters)
-              .forEach { (a, b) -> parameterMap[a] = b }
+            for ((index, a) in injectable.parameterDescriptors.withIndex())
+              parameterMap[a] = function.valueParameters[index]
             expressionFor(dependencyResult)
               .also {
                 injectable.parameterDescriptors.forEach {

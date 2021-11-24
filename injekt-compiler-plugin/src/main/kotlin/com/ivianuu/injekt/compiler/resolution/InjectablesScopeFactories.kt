@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.descriptor
-import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -29,6 +28,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.module
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
@@ -253,10 +253,14 @@ private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: Context):
 
   val visibleInjectableDeclarations = file
     .declarations
-    .filter { it.endOffset < position.startOffset }
-    .filterIsInstance<KtNamedDeclaration>()
-    .mapNotNull { it.descriptor() }
-    .filter { it.isProvide() }
+    .transform { declaration ->
+      if (declaration.endOffset < position.startOffset &&
+          declaration is KtNamedDeclaration) {
+        declaration.descriptor<DeclarationDescriptor>()
+          ?.takeIf { it.isProvide() }
+          ?.let { add(it) }
+      }
+    }
 
   return ImportInjectablesScopes(
     file = file,
@@ -325,10 +329,14 @@ private fun ClassInitInjectablesScope(
   val visibleInjectableDeclarations = psiClass
     .cast<KtClassOrObject>()
     .declarations
-    .filter { it.endOffset < position.startOffset }
-    .filterIsInstance<KtNamedDeclaration>()
-    .mapNotNull { it.descriptor() }
-    .filter { it.isProvide() }
+    .transform { declaration ->
+      if (declaration.endOffset < position.startOffset &&
+        declaration is KtNamedDeclaration) {
+        declaration.descriptor<DeclarationDescriptor>()
+          ?.takeIf { it.isProvide() }
+          ?.let { add(it) }
+      }
+    }
   val finalParent = ClassImportsInjectablesScope(clazz, parent)
 
   val injectableDeclaration = visibleInjectableDeclarations.lastOrNull()
@@ -449,11 +457,11 @@ private fun FunctionParameterInjectablesScopes(
   val maxIndex = until?.injektIndex()
 
   return function.allParameters
-    .filter {
-      (maxIndex == null || it.injektIndex() < maxIndex) &&
-          (it.isProvide() || it === function.extensionReceiverParameter)
+    .transform {
+      if ((maxIndex == null || it.injektIndex() < maxIndex) &&
+        (it.isProvide() || it === function.extensionReceiverParameter))
+          add(it.toCallableRef())
     }
-    .map { it.toCallableRef() }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
         parent = acc,
@@ -596,10 +604,14 @@ private fun BlockExpressionInjectablesScope(
   @Inject ctx: Context
 ): InjectablesScope {
   val visibleInjectableDeclarations = block.statements
-    .filter { it.endOffset < position.startOffset }
-    .filterIsInstance<KtNamedDeclaration>()
-    .mapNotNull { it.descriptor() }
-    .filter { it.isProvide() }
+    .transform { declaration ->
+      if (declaration.endOffset < position.startOffset &&
+        declaration is KtNamedDeclaration) {
+        declaration.descriptor<DeclarationDescriptor>()
+          ?.takeIf { it.isProvide() }
+          ?.let { add(it) }
+      }
+    }
   if (visibleInjectableDeclarations.isEmpty()) return parent
   val injectableDeclaration = visibleInjectableDeclarations.last()
   val key = block to injectableDeclaration

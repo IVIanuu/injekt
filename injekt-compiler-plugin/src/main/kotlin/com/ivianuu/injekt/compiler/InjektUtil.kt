@@ -132,8 +132,7 @@ fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
   // Look for star imports and make a guess.
   val hasStarImport = importPaths
-    .filter { it.isAllUnder }
-    .any { fqName.asString().startsWith(it.fqName.asString()) }
+    .any { it.isAllUnder && fqName.asString().startsWith(it.fqName.asString()) }
   if (hasStarImport) return annotationEntryShort
 
   val isSamePackage = fqName.parent() == annotationEntryShort.containingKtFile.packageFqName
@@ -255,13 +254,23 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   }
 }
 
-@OptIn(ExperimentalTypeInference::class, ExperimentalStdlibApi::class)
-inline fun <T, R> Collection<T>.fastFlatMap(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> {
-  if (isEmpty()) return emptyList()
-  return buildList {
-    for (item in this@fastFlatMap)
-      block(item)
-  }
+@OptIn(ExperimentalTypeInference::class)
+inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> =
+  transformTo(mutableListOf(), block)
+
+@OptIn(ExperimentalStdlibApi::class)
+fun <K, V> Collection<K>.zipToMap(values: List<V>): Map<K, V> = buildMap {
+  for ((index, key) in withIndex())
+    this[key] = values[index]
+}
+
+@OptIn(ExperimentalTypeInference::class)
+inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
+  destination: C,
+  @BuilderInference block: C.(T) -> Unit
+) = destination.apply {
+  for (item in this@transformTo)
+    block(item)
 }
 
 private val KotlinType.fullyAbbreviatedType: KotlinType
@@ -360,15 +369,13 @@ fun classifierDescriptorForKey(key: String, @Inject ctx: Context): ClassifierDes
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.takeIf { it.uniqueKey() == key }
       ?: functionDescriptorsForFqName(fqName.parent())
-        .fastFlatMap { addAll(it.typeParameters) }
+        .transform { addAll(it.typeParameters) }
         .firstOrNull {
           it.uniqueKey() == key
         }
       ?: propertyDescriptorsForFqName(fqName.parent())
-        .fastFlatMap { addAll(it.typeParameters) }
-        .firstOrNull {
-          it.uniqueKey() == key
-        }
+        .transform { addAll(it.typeParameters) }
+        .firstOrNull { it.uniqueKey() == key }
       ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
         .safeAs<ClassifierDescriptorWithTypeParameters>()
         ?.declaredTypeParameters
@@ -384,7 +391,7 @@ fun injectablesForFqName(
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
     ?.first
     ?.getContributedDescriptors(nameFilter = { it == fqName.shortName() })
-    ?.fastFlatMap { declaration ->
+    ?.transform { declaration ->
       when (declaration) {
         is ClassDescriptor -> addAll(declaration.injectableConstructors())
         is CallableDescriptor -> {

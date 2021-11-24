@@ -326,6 +326,8 @@ private fun InjectablesScope.computeForCandidate(
         it.second is AbstractInjectable
   }?.second.safeAs<AbstractInjectable>()
 
+  val requestCallableKeys = abstractInjectable?.requestCallables?.map { it.callable.uniqueKey() }
+
   if (chain.isNotEmpty()) {
     var isLazy = false
     for (i in chain.lastIndex downTo 0) {
@@ -336,10 +338,10 @@ private fun InjectablesScope.computeForCandidate(
         prev.second.type.coveringSet == candidate.type.coveringSet &&
         (prev.second.type.typeSize < candidate.type.typeSize ||
             (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))) ||
-        (abstractInjectable != null &&
+        (requestCallableKeys != null &&
             request.parameterIndex == DISPATCH_RECEIVER_INDEX &&
             prev.second.safeAs<CallableInjectable>()?.callable?.callable?.uniqueKey() in
-            abstractInjectable.requestCallables.map { it.callable.uniqueKey() })
+            requestCallableKeys)
       ) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
@@ -428,20 +430,17 @@ private fun InjectablesScope.resolveCandidate(
           candidate, candidate.scopeInfo!!.scopeComponent)
 
   if (candidate is AbstractInjectable) {
-    candidate.requestCallables
-      .forEach { callable ->
-        candidate.requestCallables
-          .filter { it != callable }
-          .forEach { other ->
-            if (callable.clashesWith(other)) {
-              return@computeForCandidate ResolutionResult.Failure.WithCandidate.ClashingSuperTypes(
-                callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
-                other.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
-                candidate
-              )
-            }
-          }
+    for (callable in candidate.requestCallables) {
+      for (other in candidate.requestCallables) {
+        if (other != callable && callable.clashesWith(other)) {
+          return@computeForCandidate ResolutionResult.Failure.WithCandidate.ClashingSuperTypes(
+            callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
+            other.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
+            candidate
+          )
+        }
       }
+    }
   }
 
   if (candidate is CallableInjectable) {

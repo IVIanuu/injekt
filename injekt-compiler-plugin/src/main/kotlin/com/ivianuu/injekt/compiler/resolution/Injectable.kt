@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
+import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
@@ -136,10 +137,11 @@ class AbstractInjectable(
     isLazy = true
   )
 
-  private val abstractInjectableAndEntryPointInjectables = entryPoints
-    .map {
-      it.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
-    } + type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true)
+  private val abstractInjectableAndEntryPointInjectables = buildList {
+    add(type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true))
+    for (entryPoint in entryPoints)
+      add(entryPoint.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true))
+  }
 
   val initScope = InjectablesScope(
     name = "ABSTRACT INJECTABLE INIT $callableFqName",
@@ -189,14 +191,16 @@ class AbstractInjectable(
         ctx = scope.ctx,
         callContext = requestCallable.callable.callContext(),
         initialInjectables = requestCallable.callable.allParameters
-          .filter { it != requestCallable.callable.dispatchReceiverParameter }
-          .map {
-            if (it is ReceiverParameterDescriptor)
-              ComponentReceiverParameterDescriptor(it)
-            else
-              ComponentValueParameterDescriptor(it.cast())
+          .transform {
+            if (it != requestCallable.callable.dispatchReceiverParameter)
+              add(
+                (if (it is ReceiverParameterDescriptor)
+                  ComponentReceiverParameterDescriptor(it)
+                else
+                  ComponentValueParameterDescriptor(it.cast()))
+                  .toCallableRef(scope.ctx)
+              )
           }
-          .map { it.toCallableRef(scope.ctx) }
       )
     }
 
@@ -342,14 +346,14 @@ fun CallableRef.getInjectableRequests(
   ignoreInject: Boolean = false,
   @Inject ctx: Context
 ): List<InjectableRequest> = callable.allParameters
-  .filter { callable !is ClassConstructorDescriptor || it.name.asString() != "<this>" }
-  .filter {
-    ignoreInject ||
+  .transform {
+    if ((callable !is ClassConstructorDescriptor || it.name.asString() != "<this>") &&
+        ignoreInject ||
         it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isProvide()
+        it.isProvide())
+          add(it.toInjectableRequest(this@getInjectableRequests))
   }
-  .map { it.toInjectableRequest(this) }
 
 data class InjectableRequest(
   val type: TypeRef,

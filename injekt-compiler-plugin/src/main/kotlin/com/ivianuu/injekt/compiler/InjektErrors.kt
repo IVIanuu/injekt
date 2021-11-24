@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.customErrorMessages
 import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.renderToString
+import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -369,13 +370,12 @@ private fun InjectionGraph.Error.render(): String = buildString {
         is ProviderInjectable -> {
           append("{ ")
           if (candidate.parameterDescriptors.isNotEmpty()) {
-            append(
-              candidate.parameterDescriptors
-                .zip(candidate.type.arguments.dropLast(1))
-                .joinToString {
-                  "${it.first.name}: ${it.second.renderToString()}"
-                }
-            )
+            for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
+              val argument = candidate.type.unwrapTags().arguments[index]
+              append("${parameter.name}: ${argument.renderToString()}")
+              if (index != candidate.parameterDescriptors.lastIndex)
+                append(",")
+            }
 
             append(" -> ")
           }

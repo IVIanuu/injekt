@@ -64,10 +64,10 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
       .groupBy { it.importPath }
       .filter { it.value.size > 1 }
       .forEach { (_, imports) ->
-        imports.forEach {
+        for (import in imports) {
           trace()!!.report(
             InjektErrors.DUPLICATED_INJECTABLE_IMPORT
-              .on(it.element!!, it.element)
+              .on(import.element!!, import.element)
           )
         }
       }

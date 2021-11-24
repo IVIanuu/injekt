@@ -68,6 +68,7 @@ fun CallableRef.substitute(
   )
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
   trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo()
@@ -80,9 +81,10 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
       scopeInfo = info.scopeInfo,
-      typeArguments = typeParameters
-        .map { it to it.defaultType }
-        .toMap(),
+      typeArguments = buildMap {
+        for (typeParameter in typeParameters)
+          this[typeParameter] = typeParameter.defaultType
+      },
       import = null
     )
   }

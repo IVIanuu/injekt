@@ -257,11 +257,13 @@ class TypeRef(
   }
 
   private var _superTypes: List<TypeRef>? = null
+  @OptIn(ExperimentalStdlibApi::class)
   val superTypes: List<TypeRef> get() {
     if (_superTypes == null) {
-      val substitutionMap = classifier.typeParameters
-        .zip(arguments)
-        .toMap()
+      val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+        for ((index, parameter) in classifier.typeParameters.withIndex())
+          this[parameter] = arguments[index]
+      }
       _superTypes = if (substitutionMap.isEmpty()) classifier.superTypes
         .map { it.withNullability(isMarkedNullable) }
       else classifier.superTypes.map {

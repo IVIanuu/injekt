@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.types.model.TypeVariance
 
@@ -368,8 +369,10 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
 
   private fun getFixedType(variableWithConstraints: VariableWithConstraints): TypeRef {
     variableWithConstraints.constraints
-      .filter { it.kind == ConstraintKind.EQUAL }
-      .map { it.type }
+      .transform {
+        if (it.kind == ConstraintKind.EQUAL)
+          add(it.type)
+      }
       .singleBestRepresentative()
       ?.let { return it }
 
@@ -421,23 +424,24 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
     ConstraintKind.UPPER -> resultType.isSubTypeOf(constraintType)
   }
 
-  private fun findSuperType(variableWithConstraints: VariableWithConstraints): TypeRef? {
-    val upperConstraints = variableWithConstraints
+  private fun findSuperType(variableWithConstraints: VariableWithConstraints): TypeRef? =
+    variableWithConstraints
       .constraints
-      .filter { it.kind == ConstraintKind.UPPER }
-    return if (upperConstraints.isNotEmpty()) {
-      intersectTypes(upperConstraints.map { it.type })
-    } else null
-  }
+      .transform {
+        if (it.kind == ConstraintKind.UPPER)
+          add(it.type)
+      }
+      .takeIf { it.isNotEmpty() }
+      ?.let { intersectTypes(it) }
 
-  private fun findSubType(variableWithConstraints: VariableWithConstraints): TypeRef? {
-    val lowerConstraintTypes = variableWithConstraints.constraints
-      .filter { it.kind == ConstraintKind.LOWER }
-      .map { it.type }
-    return if (lowerConstraintTypes.isNotEmpty()) {
-      commonSuperType(lowerConstraintTypes, ctx = ctx)
-    } else null
-  }
+  private fun findSubType(variableWithConstraints: VariableWithConstraints): TypeRef? =
+    variableWithConstraints.constraints
+      .transform {
+        if (it.kind == ConstraintKind.LOWER)
+          add(it.type)
+      }
+      .takeIf { it.isNotEmpty() }
+      ?.let { commonSuperType(it, ctx = ctx) }
 
   private fun List<TypeRef>.singleBestRepresentative(): TypeRef? {
     if (size == 1) return first()
@@ -529,12 +533,10 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
   private fun insideOtherConstraint(typeVariable: ClassifierRef, constraint: Constraint) {
     for (typeVariableWithConstraint in typeVariables.values) {
       if (!isOk) break
-      val constraintsWhichConstraintMyVariable = typeVariableWithConstraint.constraints.filter {
-        it.type.anyType { it.classifier == typeVariable }
-      }
-      constraintsWhichConstraintMyVariable.forEach {
-        if (!isOk) return@forEach
-        generateNewConstraint(typeVariableWithConstraint.typeVariable, it, typeVariable, constraint)
+      for (variableConstraint in typeVariableWithConstraint.constraints) {
+        if (!isOk) break
+        if (variableConstraint.type.anyType { it.classifier == typeVariable })
+          generateNewConstraint(typeVariableWithConstraint.typeVariable, variableConstraint, typeVariable, constraint)
       }
     }
   }

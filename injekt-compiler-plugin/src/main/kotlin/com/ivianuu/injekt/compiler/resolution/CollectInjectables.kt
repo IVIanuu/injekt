@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescrip
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injectablesForFqName
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.fastFlatMap
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -37,6 +36,8 @@ import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt.compiler.transform
+import com.ivianuu.injekt.compiler.transformTo
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
@@ -59,6 +60,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.addRemoveModifier.addAnnotationEntry
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -234,11 +236,11 @@ fun Annotated.isInject(@Inject ctx: Context): Boolean {
 fun ClassDescriptor.injectableConstructors(@Inject ctx: Context): List<CallableRef> =
   trace()!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
     constructors
-      .filter { constructor ->
-        constructor.hasAnnotation(injektFqNames().provide) ||
-            (constructor.isPrimary && hasAnnotation(injektFqNames().provide))
+      .transform { constructor ->
+        if (constructor.hasAnnotation(injektFqNames().provide) ||
+          (constructor.isPrimary && hasAnnotation(injektFqNames().provide)))
+            add(constructor.toCallableRef())
       }
-      .map { it.toCallableRef() }
       .takeIf { it.isNotEmpty() }
       ?: if (isProvide() && kind == ClassKind.INTERFACE)
         listOf(
@@ -303,16 +305,17 @@ fun CallableRef.collectInjectables(
             it.componentType == nextCallable.type
       }
     )
-    .map { it.copy(import = import) }
     .forEach { innerCallable ->
-      innerCallable.collectInjectables(
-        scope = scope,
-        addImport = addImport,
-        addInjectable = addInjectable,
-        addSpreadingInjectable = addSpreadingInjectable,
-        import = import,
-        seen = seen
-      )
+      innerCallable
+        .copy(import = import)
+        .collectInjectables(
+          scope = scope,
+          addImport = addImport,
+          addInjectable = addInjectable,
+          addSpreadingInjectable = addSpreadingInjectable,
+          import = import,
+          seen = seen
+        )
     }
 }
 
@@ -501,51 +504,54 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
         allScopes.any { it.componentType?.isSubTypeOf(ownerType) == true }
       })
 
+@OptIn(ExperimentalStdlibApi::class)
 fun TypeRef.collectAbstractInjectableCallables(@Inject ctx: Context): List<CallableRef> =
   classifier.descriptor!!.defaultType.memberScope
     .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
-    .filterIsInstance<CallableMemberDescriptor>()
-    .filter { it.modality != Modality.FINAL }
-    .filter {
-      it.overriddenTreeAsSequence(false).none {
-        val dispatchReceiverType = it.dispatchReceiverParameter?.type
-        dispatchReceiverType?.isAnyOrNullableAny() == true ||
-            dispatchReceiverType?.constructor?.declarationDescriptor?.fqNameSafe ==
-            injektFqNames().disposable
+    .transform { candidate ->
+      if (candidate is CallableMemberDescriptor &&
+          candidate.modality != Modality.FINAL &&
+        candidate.overriddenTreeAsSequence(false).none {
+          val dispatchReceiverType = it.dispatchReceiverParameter?.type
+          dispatchReceiverType?.isAnyOrNullableAny() == true ||
+              dispatchReceiverType?.constructor?.declarationDescriptor?.fqNameSafe ==
+              injektFqNames().disposable
+        }) {
+        val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+          for ((index, parameter) in classifier.typeParameters.withIndex())
+            this[parameter] = arguments[index]
+
+          if (candidate.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+            val originalClassifier = candidate
+              .overriddenTreeAsSequence(false)
+              .last()
+              .containingDeclaration
+              .cast<ClassDescriptor>()
+              .toClassifierRef()
+
+            val subtypeView = subtypeView(originalClassifier)!!
+
+            for ((index, parameter) in originalClassifier.typeParameters.withIndex())
+              this[parameter] = subtypeView.arguments[index]
+          }
+        }
+
+        add(candidate.toCallableRef().substitute(substitutionMap))
       }
-    }
-    .map { it.toCallableRef() }
-    .map {
-      val substitutionMap = if (it.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-        CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-        val originalClassifier = it.callable.cast<CallableMemberDescriptor>()
-          .overriddenTreeAsSequence(false)
-          .last()
-          .containingDeclaration
-          .cast<ClassDescriptor>()
-          .toClassifierRef()
-        classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
-          .zip(subtypeView(originalClassifier)!!.arguments)
-      } else classifier.typeParameters.zip(arguments).toMap()
-      it.substitute(substitutionMap)
     }
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: Context): List<CallableRef> {
-  val existingInjectables = scope.allScopes
-    .fastFlatMap {
-      addAll(it.injectables)
-      it.spreadingInjectables.forEach { add(it.callable) }
+  val existingInjectables: MutableSet<Pair<String, TypeRef>> = scope.allScopes
+    .transformTo(mutableSetOf()) {
+      // todo remove once inference bug is fixed
+      val thiz: MutableSet<Pair<String, TypeRef>> = this
+      for (injectable in it.injectables)
+        thiz.add(injectable.callable.uniqueKey() to injectable.originalType)
+      for (injectable in it.spreadingInjectables)
+        thiz.add(injectable.callable.callable.uniqueKey() to injectable.callable.originalType)
     }
-    .mapTo(mutableSetOf()) { it.callable.uniqueKey() to it.originalType }
 
-  return filter { callable ->
-    val uniqueKey = callable.callable.uniqueKey()
-    existingInjectables.none {
-      it.first == uniqueKey && it.second == callable.originalType
-    }.also {
-      if (it) existingInjectables += uniqueKey to callable.originalType
-    }
-  }
+  return filter { existingInjectables.add(it.callable.uniqueKey() to it.originalType) }
 }
 
 fun InjectablesScope.collectImportSuggestionInjectables(@Inject ctx: Context): List<CallableRef> =

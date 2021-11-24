@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.fastFlatMap
+import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -89,30 +89,34 @@ private class InjectSyntheticScope(@Inject private val ctx: Context) : Synthetic
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
-      .fastFlatMap { receiverType ->
-        receiverType.memberScope.getContributedDescriptors().forEach { declaration ->
+      .transform { receiverType ->
+        for (declaration in receiverType.memberScope.getContributedDescriptors()) {
           if (declaration is ClassDescriptor && declaration.isInner) {
-            addAll(declaration.constructors)
+            for (constructor in declaration.constructors)
+              constructor.toInjectFunctionDescriptor()
+                ?.let { add(it) }
           } else
-            declaration.safeAs<FunctionDescriptor>()?.let { add(it) }
+            declaration.safeAs<FunctionDescriptor>()?.toInjectFunctionDescriptor()
+              ?.let { add(it) }
         }
       }
-      .mapNotNull { it.toInjectFunctionDescriptor() }
 
   override fun getSyntheticMemberFunctions(
     receiverTypes: Collection<KotlinType>,
     name: Name,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = receiverTypes
-    .fastFlatMap { receiverType ->
-      addAll(receiverType.memberScope.getContributedFunctions(name, location))
+    .transform { receiverType ->
+      for (function in receiverType.memberScope.getContributedFunctions(name, location))
+        function.toInjectFunctionDescriptor()?.let { add(it) }
       receiverType.memberScope.getContributedClassifier(name, location)
         ?.safeAs<ClassDescriptor>()
         ?.takeIf { it.isInner }
         ?.constructors
-        ?.let { addAll(it) }
+        ?.forEach { constructor ->
+          constructor.toInjectFunctionDescriptor()?.let { add(it) }
+        }
     }
-    .mapNotNull { it.toInjectFunctionDescriptor() }
 
   override fun getSyntheticStaticFunctions(
     contributedFunctions: Collection<FunctionDescriptor>,

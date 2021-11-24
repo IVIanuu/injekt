@@ -24,9 +24,11 @@ import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
@@ -35,6 +37,7 @@ import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.trace
+import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
@@ -67,6 +70,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
 
   private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
 
+  @OptIn(ExperimentalStdlibApi::class)
   private fun checkCall(resolvedCall: ResolvedCall<*>) {
     if (resolvedCall in checkedCalls) return
     checkedCalls += resolvedCall
@@ -78,22 +82,21 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = resolvedCall.typeArguments
-      .mapKeys { it.key.toClassifierRef() }
-      .mapValues { it.value.toTypeRef() }
-      .filter { it.key != it.value.classifier } +
-        (resolvedCall.dispatchReceiver?.type?.toTypeRef()?.let {
-          it.classifier.typeParameters
-            .zip(it.arguments)
-            .filter { it.first != it.second.classifier }
-            .toMap()
-        } ?: emptyMap()) +
-        (resolvedCall.extensionReceiver?.type?.toTypeRef()?.let {
-          it.classifier.typeParameters
-            .zip(it.arguments)
-            .filter { it.first != it.second.classifier }
-            .toMap()
-        } ?: emptyMap())
+    val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+      for ((parameter, argument) in resolvedCall.typeArguments)
+        this[parameter.toClassifierRef()] = argument.toTypeRef()
+
+      fun TypeRef.putAll() {
+        for ((index, parameter) in classifier.typeParameters.withIndex()) {
+          val argument = arguments[index]
+          if (argument.classifier != parameter)
+            this@buildMap[parameter] = arguments[index]
+        }
+      }
+
+      resolvedCall.dispatchReceiver?.type?.toTypeRef()?.putAll()
+      resolvedCall.extensionReceiver?.type?.toTypeRef()?.putAll()
+    }
 
     val callee = resultingDescriptor
       .toCallableRef()
@@ -103,11 +106,10 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
       .mapKeys { it.key.injektIndex() }
 
     val requests = callee.callable.valueParameters
-      .filter {
-        valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument
-            && it.isInject()
+      .transform {
+        if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject())
+          add(it.toInjectableRequest(callee))
       }
-      .map { it.toInjectableRequest(callee) }
 
     if (requests.isEmpty()) return
 

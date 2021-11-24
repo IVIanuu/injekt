@@ -302,14 +302,14 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     }
 
     if (descriptor is CallableMemberDescriptor) {
-      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters
-        .zip(descriptor.valueParameters)
-        .forEach { (overriddenValueParameter, valueParameter) ->
-          if (overriddenValueParameter.hasAnnotation(injektFqNames().inject) !=
-            valueParameter.hasAnnotation(injektFqNames().inject)) {
-            return false
-          }
+      for ((index, overriddenValueParameter) in
+      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
+        val valueParameter = descriptor.valueParameters[index]
+        if (overriddenValueParameter.hasAnnotation(injektFqNames().inject) !=
+          valueParameter.hasAnnotation(injektFqNames().inject)) {
+          return false
         }
+      }
     }
 
     val (typeParameters, overriddenTypeParameters) = when (descriptor) {
@@ -322,14 +322,13 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       else -> emptyList<TypeParameterDescriptor>() to emptyList()
     }
 
-    overriddenTypeParameters
-      .zip(typeParameters)
-      .forEach  { (overriddenTypeParameter, typeParameter) ->
-        if (typeParameter.classifierInfo().isSpread !=
-          overriddenTypeParameter.classifierInfo().isSpread) {
-          return false
-        }
+    for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
+      val typeParameter = typeParameters[index]
+      if (typeParameter.classifierInfo().isSpread !=
+        overriddenTypeParameter.classifierInfo().isSpread) {
+        return false
       }
+    }
 
     return true
   }
@@ -339,14 +338,13 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     @Inject ctx: Context
   ) {
     if (typeParameters.isEmpty()) return
-    typeParameters
-      .filter { it.classifierInfo().isSpread }
-      .forEach { typeParameter ->
+    for (typeParameter in typeParameters) {
+      if (typeParameter.classifierInfo().isSpread)
         trace()!!.report(
           InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
             .on(typeParameter.findPsi()!!)
         )
-      }
+    }
   }
 
   private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ScopeInfo
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
@@ -83,6 +84,7 @@ data class CallableInfo(
   val scopeInfo: ScopeInfo?
 )
 
+@OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
   if (this is PropertyAccessorDescriptor) correspondingProperty.callableInfo()
   else trace()!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
@@ -108,12 +110,13 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
           val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
             it.classifier == rootClassifier
           }!!
-          val substitutionMap = rootClassifier.typeParameters
-            .zip(superType.arguments)
-            .toMap() + rootOverriddenCallable
-            .typeParameters
-            .map { it.toClassifierRef() }
-            .zip(typeParameters.map { it.defaultType.toTypeRef() })
+          val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+            for ((index, typeParameter) in rootClassifier.typeParameters.withIndex())
+              this[typeParameter] = superType.arguments[index]
+
+            for ((index, typeParameter) in rootOverriddenCallable.typeParameters.withIndex())
+              this[typeParameter.toClassifierRef()] = typeParameters[index].defaultType.toTypeRef()
+          }
           info.copy(
             type = info.type.substitute(substitutionMap),
             parameterTypes = info.parameterTypes.mapValues {
@@ -136,16 +139,19 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
 
     val type = run {
       val tags = if (this is ConstructorDescriptor)
-        constructedClass.classifierInfo().tags +
-            getTags(injektFqNames())
-              .map { it.type.toTypeRef() }
+        buildList {
+          addAll(constructedClass.classifierInfo().tags)
+          for (tagAnnotation in getTags(injektFqNames()))
+            add(tagAnnotation.type.toTypeRef())
+        }
       else emptyList()
       tags.wrap(returnType?.toTypeRef() ?: ctx.nullableAnyType)
     }
 
-    val parameterTypes = allParameters
-      .map { it.injektIndex() to it.type.toTypeRef() }
-      .toMap()
+    val parameterTypes = buildMap<Int, TypeRef> {
+      for (parameter in allParameters)
+        this[parameter.injektIndex()] = parameter.type.toTypeRef()
+    }
 
     val info = CallableInfo(
       type = type,
@@ -303,17 +309,19 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
         val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
           ?.unsubstitutedPrimaryConstructor
           ?.valueParameters
-          ?.filter { it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true }
+          ?.transform {
+            if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
+              add(it.name.asString())
+          }
           ?: emptyList()
 
         ClassifierInfo(
           tags = tags,
           scopeInfo = scopeInfo(),
           lazySuperTypes = lazySuperTypes,
-          primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
-            .map { it.name.asString() },
+          primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
           isSpread = false,
-          lazyDeclaresInjectables = lazy {
+          lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
             defaultType
               .memberScope
               .getContributedDescriptors()
@@ -444,10 +452,15 @@ private fun TypeRef.shouldBePersisted(): Boolean = anyType {
       it.scopeInfo != null
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
   val newAnnotations = Annotations.create(
-    annotations
-      .filter { it.type != annotation.type } + annotation
+    buildList {
+      for (existing in annotations)
+        if (existing.type != annotation.type)
+          add(existing)
+      add(annotation)
+    }
   )
   when (this) {
     is AnnotatedImpl -> updatePrivateFinalField<Annotations>(
