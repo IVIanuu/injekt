@@ -322,8 +322,9 @@ private fun InjectablesScope.computeForCandidate(
 
   val abstractInjectable = if (!isAbstractInjectable) null
   else chain.lastOrNull {
-    it.first.type == request.type &&
-        it.second is AbstractInjectable
+    it.second is AbstractInjectable &&
+        (it.second.type == request.type ||
+        it.second.originalType == request.type)
   }?.second.safeAs<AbstractInjectable>()
 
   val requestCallableKeys = abstractInjectable?.requestCallables?.map { it.callable.uniqueKey() }
