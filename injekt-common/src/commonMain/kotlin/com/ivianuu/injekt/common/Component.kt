@@ -19,6 +19,9 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
+import kotlinx.atomicfu.locks.ReentrantLock
+import kotlinx.atomicfu.locks.reentrantLock
+import kotlinx.atomicfu.locks.withLock
 
 interface Component<N : ComponentName> : Disposable {
   fun <T> element(@Inject key: TypeKey<T>): T
@@ -33,6 +36,9 @@ interface Component<N : ComponentName> : Disposable {
       this[key.value] = lazyElement
   }
 
+  private var isDisposed = false
+  private val lock = reentrantLock()
+
   init {
     for (element in this.elements)
       element.value.value
@@ -42,7 +48,13 @@ interface Component<N : ComponentName> : Disposable {
     elements[key.value]?.value as T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
-    elements.forEach { (it.value as? Disposable)?.dispose() }
+    lock.withLock {
+      if (!isDisposed) {
+        isDisposed = true
+        elements.values
+          .mapNotNull { it.value as? Disposable }
+      } else null
+    }?.forEach { it.dispose() }
   }
 }
 

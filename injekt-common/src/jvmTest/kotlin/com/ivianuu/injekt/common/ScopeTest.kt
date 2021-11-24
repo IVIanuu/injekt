@@ -29,6 +29,21 @@ class ScopeTest {
     scope.scope { "b" } shouldBe "a"
   }
 
+  @Test fun testDispose() {
+    val scope = ScopeImpl<ComponentName>()
+    var disposeCalls = 0
+    scope.scope {
+      Disposable {
+        disposeCalls++
+      }
+    }
+    disposeCalls shouldBe 0
+    scope.dispose()
+    disposeCalls shouldBe 1
+    scope.dispose()
+    disposeCalls shouldBe 1
+  }
+
   @Test fun testScoped() {
     var callCount = 0
 

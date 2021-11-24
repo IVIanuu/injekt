@@ -27,12 +27,23 @@ interface Scope<N : ComponentName> {
   fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T
 }
 
-@Provide @ComponentElement<N> class ScopeImpl<N : ComponentName> : Scope<N> {
+@Provide @ComponentElement<N> class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
   private val map = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 
+  private var isDisposed = false
+
   override fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T =
     lock.withLock { map.getOrPut(key.value) { init() } as T }
+
+  override fun dispose() {
+    lock.withLock {
+      if (!isDisposed) {
+        isDisposed = true
+        map.values.filterIsInstance<Disposable>()
+      } else null
+    }?.forEach { it.dispose() }
+  }
 }
 
 @Tag annotation class Scoped<N : ComponentName> {
