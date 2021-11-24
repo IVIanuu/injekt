@@ -294,8 +294,7 @@ fun CallableRef.collectInjectables(
     }
     .collectInjectables(
       scope.allScopes.any {
-        it.ownerDescriptor == nextCallable.type.classifier.descriptor ||
-            it.componentType == nextCallable.type
+        it.ownerDescriptor == nextCallable.type.classifier.descriptor
       }
     )
     .forEach { innerCallable ->
@@ -490,11 +489,6 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
       run {
         val scopeFile = allScopes.firstNotNullOfOrNull { it.file }
         scopeFile == callable.callable.findPsi()?.containingFile
-      }) ||
-      (callable.callable.visibility == DescriptorVisibilities.PROTECTED && run {
-        val ownerType = callable.callable.containingDeclaration
-          .cast<ClassDescriptor>().toClassifierRef().defaultType
-        allScopes.any { it.componentType?.isSubTypeOf(ownerType) == true }
       })
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: Context): List<CallableRef> {

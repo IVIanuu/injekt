@@ -169,8 +169,7 @@ class InjectCallTransformer(
     val parent: ScopeContext?,
     val graphContext: GraphContext,
     val scope: InjectablesScope,
-    val irScope: Scope,
-    val component: IrClass?
+    val irScope: Scope
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
@@ -200,18 +199,6 @@ class InjectCallTransformer(
       val irExpression = expression.run { get() }
       initializingExpressions -= result.candidate
       return irExpression
-    }
-
-    fun pushComponentReceivers(expression: () -> IrExpression) {
-      component!!.superTypes.forEach {
-        receiverAccessors.push(it.classOrNull!!.owner to expression)
-      }
-    }
-
-    fun popComponentReceivers() {
-      repeat(component!!.superTypes.size) {
-        receiverAccessors.pop()
-      }
     }
   }
 
@@ -311,11 +298,10 @@ class InjectCallTransformer(
         name = "function${graphContext.variableIndex++}".asNameId()
         returnType = result.candidate.type.toIrType()
           .typeOrNull!!
-        visibility = if (component != null) DescriptorVisibilities.PUBLIC
-        else DescriptorVisibilities.LOCAL
+        visibility = DescriptorVisibilities.LOCAL
         isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
-        parent = component ?: irScope.getLocalDeclarationParent()
+        parent = irScope.getLocalDeclarationParent()
 
         if (result.candidate.callContext == CallContext.COMPOSABLE) {
           annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
@@ -326,21 +312,13 @@ class InjectCallTransformer(
             )
         }
 
-        if (component != null)
-          addDispatchReceiver { type = component.defaultType }
-
         this.body = DeclarationIrBuilder(irCtx, symbol).run {
           irBlockBody {
-            if (dispatchReceiverParameter != null)
-              pushComponentReceivers { irGet(dispatchReceiverParameter!!) }
             +irReturn(rawExpressionProvider())
-            if (dispatchReceiverParameter != null)
-              popComponentReceivers()
           }
         }
 
-        if (component != null) component.declarations += this
-        else statements += this
+        statements += this
       }
 
       val expression: ScopeContext.() -> IrExpression = {
@@ -348,13 +326,7 @@ class InjectCallTransformer(
           .irCall(
             function.symbol,
             result.candidate.type.toIrType().typeOrNull!!
-          ).apply {
-            if (this@with.component != null)
-              dispatchReceiver = receiverExpression(
-                this@with.scope.componentType!!.classifier.descriptor!!
-                  .cast<ClassDescriptor>().thisAsReceiverParameter
-              )
-          }
+          )
       }
       expression
     }
@@ -377,7 +349,7 @@ class InjectCallTransformer(
         is ResolutionResult.Success.WithCandidate -> {
           val dependencyScopeContext = ScopeContext(
             this@providerExpression, graphContext,
-            injectable.dependencyScopes.values.single(), scope, null
+            injectable.dependencyScopes.values.single(), scope
           )
           val expression = with(dependencyScopeContext) {
             for ((index, a) in injectable.parameterDescriptors.withIndex())
@@ -809,8 +781,7 @@ class InjectCallTransformer(
             parent = null,
             graphContext = graphContext,
             scope = graph.scope,
-            irScope = scope,
-            component = null
+            irScope = scope
           ).run { result.inject(this, graph.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)

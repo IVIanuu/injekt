@@ -16,14 +16,13 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
 
 /**
  * Returns a new [ReceiverComponent] which must be manually stored and disposed
@@ -44,3 +43,4 @@ fun BroadcastReceiver.createReceiverComponent(
     intent: Intent
   ): ReceiverComponent
 }
+*/

@@ -18,8 +18,10 @@ package com.ivianuu.injekt.android
 
 import android.app.Activity
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentElement
+import com.ivianuu.injekt.common.ComponentFactory
 import com.ivianuu.injekt.common.ComponentName
 
 /**
@@ -30,8 +32,8 @@ fun Activity.createActivityComponent(): Component<ActivityComponent> =
 
 object ActivityComponent : ComponentName
 
-typealias ActivityComponentFactory = (Activity) -> Component<ActivityComponent>
+typealias ActivityComponentFactory = @ComponentFactory (Activity) -> Component<ActivityComponent>
 
 @Provide fun activityComponentFactory(
-  factory: ActivityComponentFactory
-): @ComponentElement<ActivityComponent> ActivityComponentFactory = factory
+  factory: (Activity) -> Component<ActivityComponent>
+): @ComponentElement<AppComponent> ActivityComponentFactory = factory

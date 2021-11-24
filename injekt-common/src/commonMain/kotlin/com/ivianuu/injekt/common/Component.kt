@@ -18,7 +18,6 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
 
 interface Component<N : ComponentName> : Disposable {
@@ -26,32 +25,41 @@ interface Component<N : ComponentName> : Disposable {
 }
 
 @Provide class ComponentImpl<N : ComponentName>(
-  elements: List<ComponentElement.Keyed<N>>
+  elements: (Component<N>) -> List<ProvidedElement<N>>
 ) : Component<N> {
   @OptIn(ExperimentalStdlibApi::class)
   private val scopeElements = buildMap<String, Any> {
-    for ((key, element) in elements)
+    for ((key, element) in elements(this@ComponentImpl))
       this[key.value] = element
   }
 
   override fun <T> element(@Inject key: TypeKey<T>): T =
-    scopeElements[key.value] as T ?: error("No element found for ${key.value}")
+    scopeElements[key.value] as? T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
     scopeElements.forEach { (it.value as? Disposable)?.dispose() }
   }
 }
 
-@Tag annotation class ComponentElement<N : ComponentName> {
-  data class Keyed<N : ComponentName>(val key: TypeKey<*>, val element: Any)
+@Tag annotation class ComponentFactory
 
+@Tag annotation class ComponentElement<N : ComponentName> {
   companion object {
-    @Provide inline fun <@Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> keyed(
-      key: TypeKey<S>,
-      element: T
-    ) = Keyed<N>(key, element as Any)
+    @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
+      @Provide fun providedElement(
+        key: TypeKey<S>,
+        element: T
+      ) = ProvidedElement<N>(key, element as Any)
+
+      @Provide inline fun elementAccessor(
+        component: Component<N>,
+        key: TypeKey<S>
+      ) = component.element<S>()
+    }
   }
 }
+
+data class ProvidedElement<N : ComponentName>(val key: TypeKey<*>, val element: Any)
 
 interface ComponentName
 

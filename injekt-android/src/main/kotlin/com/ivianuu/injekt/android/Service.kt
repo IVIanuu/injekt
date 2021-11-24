@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.android
 
+/**
 import android.app.Service
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
@@ -34,3 +35,4 @@ fun Service.createServiceComponent(): ServiceComponent =
 @Provide interface ServiceComponentFactory : EntryPoint<AppComponent> {
   fun serviceComponent(service: Service): ServiceComponent
 }
+*/
