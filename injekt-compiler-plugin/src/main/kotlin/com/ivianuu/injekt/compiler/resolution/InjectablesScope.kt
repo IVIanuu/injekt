@@ -41,7 +41,6 @@ class InjectablesScope(
   val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
-  val componentType: TypeRef? = null,
   val typeScopeType: TypeRef? = null,
   val isDeclarationContainer: Boolean = true,
   val initialInjectables: List<CallableRef> = emptyList(),

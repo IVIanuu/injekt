@@ -82,10 +82,10 @@ class ExpressionWrappingTest {
 
       @Provide fun androidLogger(factory: () -> AndroidLogger): Logger = factory()
 
-      @Provide interface MyComponent : Component {
-        val loggerFactory: () -> Logger
+      @Provide data class MyComponent(
+        val loggerFactory: () -> Logger,
         val loggerFactory2: () -> Logger
-      }
+      )
 
       fun invoke() {
         inject<MyComponent>()

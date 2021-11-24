@@ -174,14 +174,4 @@ class InjectableDeclarationCheckTest {
       "parameters after the first @Inject parameter are automatically treated as inject parameters"
     )
   }
-
-  @Test fun testAbstractInjectableWithVar() = codegen(
-    """
-      @Provide interface MyComponent : Component {
-        var foo: Foo
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("abstract injectable cannot contain a abstract var property")
-  }
 }
