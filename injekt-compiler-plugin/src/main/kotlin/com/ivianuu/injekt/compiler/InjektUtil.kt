@@ -258,12 +258,6 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
 inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> =
   transformTo(mutableListOf(), block)
 
-@OptIn(ExperimentalStdlibApi::class)
-fun <K, V> Collection<K>.zipToMap(values: List<V>): Map<K, V> = buildMap {
-  for ((index, key) in withIndex())
-    this[key] = values[index]
-}
-
 @OptIn(ExperimentalTypeInference::class)
 inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
   destination: C,

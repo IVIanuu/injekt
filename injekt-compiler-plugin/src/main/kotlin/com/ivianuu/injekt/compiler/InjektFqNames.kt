@@ -36,10 +36,6 @@ class InjektFqNames(injektPackage: FqName) {
   val indicesPackage = internalPackage.child("indices".asNameId())
 
   val commonPackage = injektPackage.child("common".asNameId())
-  val component = commonPackage.child("Component".asNameId())
-  val disposable = commonPackage.child("Disposable".asNameId())
-  val entryPoint = commonPackage.child("EntryPoint".asNameId())
-  val scoped = commonPackage.child("Scoped".asNameId())
   val sourceKey = commonPackage.child("SourceKey".asNameId())
   val typeKey = commonPackage.child("TypeKey".asNameId())
 

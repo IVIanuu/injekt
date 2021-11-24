@@ -164,32 +164,6 @@ class ListTest {
     list[1] shouldBe "b"
   }
 
-  @Test fun testListWithComponent() = singleAndMultiCodegen(
-    """
-      @Provide interface MyComponent : Component {
-        val foo: Foo
-      }
-
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke(): List<MyComponent> = inject()
-    """
-  )
-
-  @Test fun testProviderListWithComponent() = singleAndMultiCodegen(
-    """
-      @Provide interface MyComponent : Component {
-        val foo: Foo
-      }
-
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke(): List<() -> MyComponent> = inject()
-    """
-  )
-
   @Test fun testIncludesTypeScopeInList() = singleAndMultiCodegen(
     listOf(
       listOf(

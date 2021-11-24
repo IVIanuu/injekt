@@ -20,8 +20,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.createActivityComponent
+import com.ivianuu.injekt.common.ComponentElement
 import com.ivianuu.injekt.common.EntryPoint
 import com.ivianuu.injekt.common.entryPoint
 
@@ -46,7 +48,8 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@Provide interface MainActivityComponent : EntryPoint<ActivityComponent> {
-  val theme: AppTheme
+@Provide @ComponentElement<ActivityComponent>
+data class MainActivityComponent(
+  val theme: AppTheme,
   val appUi: AppUi
-}
+)

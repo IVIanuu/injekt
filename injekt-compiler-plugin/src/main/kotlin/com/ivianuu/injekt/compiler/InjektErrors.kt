@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
@@ -34,7 +33,6 @@ import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -120,6 +118,14 @@ interface InjektErrors {
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also { MAP.put(it, "inner class cannot be injectable") }
 
+    @JvmField val PROVIDE_ABSTRACT_CLASS =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "abstract class cannot be injectable") }
+
+    @JvmField val PROVIDE_INTERFACE =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "interface cannot be injectable") }
+
     @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
@@ -128,14 +134,6 @@ interface InjektErrors {
             "injectable variable must be initialized, delegated or marked with lateinit"
           )
         }
-
-    @JvmField val ABSTRACT_INJECTABLE_MEMBER_VAR =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract injectable cannot contain a abstract var property") }
-
-    @JvmField val SEALED_ABSTRACT_INJECTABLE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract injectable cannot be sealed") }
 
     @JvmField val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
@@ -214,10 +212,6 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val SCOPED_WITHOUT_DEFAULT_CALL_CONTEXT =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "a scoped declarations call context must be default") }
-
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
         InjektErrors::class.java,
@@ -273,25 +267,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
         )
       } else {
         appendLine("type argument kind mismatch.")
-      }
-    }
-    is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
-      if (failure == unwrappedFailure) {
-        appendLine(
-          "${unwrappedFailure.candidate.type.renderToString()} has clashing super types " +
-              "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()}."
-        )
-      } else {
-        appendLine("clashing component super types.")
-      }
-    }
-    is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
-      if (failure == unwrappedFailure) {
-        appendLine(
-          "no enclosing component matches ${unwrappedFailure.scopeComponent.renderToString()}."
-        )
-      } else {
-        appendLine("component not found.")
       }
     }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
@@ -355,11 +330,8 @@ private fun InjectionGraph.Error.render(): String = buildString {
           CallContext.SUSPEND -> append("suspend ")
         }
       } else {
-        if (candidate is AbstractInjectable) {
-          append("object : ${request.callableFqName}")
-        } else {
-          append("${request.callableFqName}")
-        }
+        append("${request.callableFqName}")
+
         if (request.callableTypeArguments.isNotEmpty()) {
           append(request.callableTypeArguments.values.joinToString(", ", "<", ">") {
             it.renderToString()
@@ -381,9 +353,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
           }
           appendLine()
         }
-        is AbstractInjectable -> {
-          appendLine(" {")
-        }
         else -> {
           appendLine("(")
         }
@@ -395,45 +364,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
         append(indent())
         if (candidate !is ProviderInjectable) {
-          if (candidate is AbstractInjectable) {
-            val requestCallable = candidate.requestsByRequestCallables.entries
-              .singleOrNull { it.value == request }
-              ?.key
-
-            when (requestCallable?.callable?.callContext()) {
-              CallContext.COMPOSABLE -> append("@Composable ")
-              CallContext.SUSPEND -> append("suspend ")
-              else -> {}
-            }
-
-            if (requestCallable?.callable is FunctionDescriptor)
-              append("fun ")
-            else
-              append("val ")
-
-            if (requestCallable?.parameterTypes?.get(EXTENSION_RECEIVER_INDEX) != null)
-              append("${requestCallable.parameterTypes[EXTENSION_RECEIVER_INDEX]!!.renderToString()}.")
-
-            append("${request.parameterName}")
-
-            if (requestCallable?.callable is FunctionDescriptor)
-              append(
-                requestCallable.parameterTypes
-                  .filter {
-                    it.key != DISPATCH_RECEIVER_INDEX &&
-                        it.key != EXTENSION_RECEIVER_INDEX
-                  }
-                  .entries
-                  .joinToString(", ", "(", ")") {
-                    "${requestCallable.callable.valueParameters[it.key].name}: " +
-                        it.value.renderToString()
-                  }
-              )
-          } else {
-            append("${request.parameterName}")
-          }
-
-          append(" = ")
+          append("${request.parameterName} = ")
         }
         if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
           printCall(
@@ -449,12 +380,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
             }
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
-            }
-            is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
-              append("${failure.candidate.callableFqName} requested")
-            }
-            is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
-              append("${failure.candidate.callableFqName} is scoped to ${failure.scopeComponent.renderToString()}")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
@@ -478,11 +403,8 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
       }
       append(indent())
-      if (candidate is ProviderInjectable || candidate is AbstractInjectable) {
-        appendLine("}")
-      } else {
-        appendLine(")")
-      }
+      if (candidate is ProviderInjectable) appendLine("}")
+      else appendLine(")")
     }
 
     withIndent {
@@ -506,13 +428,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified.")
-      }
-      is ResolutionResult.Failure.WithCandidate.ClashingSuperTypes -> {
-        appendLine("but component super types " +
-            "${unwrappedFailure.superTypeA.renderToString()} and ${unwrappedFailure.superTypeB.renderToString()} do clash.")
-      }
-      is ResolutionResult.Failure.WithCandidate.ScopeNotFound -> {
-        appendLine("but no enclosing component matches type ${unwrappedFailure.scopeComponent.renderToString()}.")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(

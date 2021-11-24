@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.ScopeInfo
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -30,9 +29,7 @@ import kotlinx.serialization.Serializable
   val isStarProjection: Boolean,
   val isMarkedNullable: Boolean,
   val isProvide: Boolean,
-  val isInject: Boolean,
-  val scopeComponentType: PersistedTypeRef?,
-  val isEager: Boolean
+  val isInject: Boolean
 )
 
 fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
@@ -42,9 +39,7 @@ fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
-    isInject = isInject,
-    scopeComponentType = scopeInfo?.scopeComponent?.toPersistedTypeRef(),
-    isEager = scopeInfo?.isEager ?: false
+    isInject = isInject
   )
 
 fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
@@ -64,7 +59,6 @@ fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
     arguments = arguments,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
-    isInject = isInject,
-    scopeInfo = scopeComponentType?.let { ScopeInfo(it.toTypeRef(), isEager) }
+    isInject = isInject
   )
 }

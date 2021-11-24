@@ -18,16 +18,11 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescriptor
 import com.ivianuu.injekt.compiler.callableInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.trace
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -35,7 +30,6 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
-  val scopeInfo: ScopeInfo?,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val import: ResolvedProviderImport?
 )
@@ -63,8 +57,7 @@ fun CallableRef.substitute(
         it.value
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
-      },
-    scopeInfo = scopeInfo?.substitute(map)?.substitute(typeParameterSubstitutionMap)
+      }
   )
 }
 
@@ -80,7 +73,6 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
-      scopeInfo = info.scopeInfo,
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType
@@ -88,8 +80,3 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
       import = null
     )
   }
-
-fun CallableRef.isAbstractInjectableConstructor(@Inject ctx: Context): Boolean =
-  (callable is ConstructorDescriptor ||
-      callable is SyntheticInterfaceConstructorDescriptor) &&
-      type.unwrapTags().classifier.descriptor.cast<ClassDescriptor>().modality == Modality.ABSTRACT

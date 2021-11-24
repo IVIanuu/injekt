@@ -20,11 +20,12 @@ import android.app.Application
 import android.content.Context
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.common.AppComponent
+import com.ivianuu.injekt.common.Component
 
 /**
  * Returns the [AppComponent] hosted in the application
  */
-val Context.appComponent: AppComponent
+val Context.appComponent: Component<AppComponent>
   get() = (applicationContext as? AppComponentOwner)?.appComponent
     ?: error("application does not implement AppComponentOwner")
 
@@ -47,12 +48,12 @@ interface AppComponentOwner {
   /**
    * The [AppComponent] which is typically created via [createAppComponent]
    */
-  val appComponent: AppComponent
+  val appComponent: Component<AppComponent>
 }
 
 /**
  * Creates the [AppComponent] which must be manually stored
  */
 inline fun Application.createAppComponent(
-  @Inject x: (Application) -> AppComponent
-): AppComponent = x(this)
+  @Inject x: (Application) -> Component<AppComponent>
+): Component<AppComponent> = x(this)

@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
@@ -27,15 +26,11 @@ import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -48,7 +43,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 sealed class Injectable {
   abstract val type: TypeRef
   open val originalType: TypeRef get() = type
-  open val scopeInfo: ScopeInfo? get() = null
   open val dependencies: List<InjectableRequest> get() = emptyList()
   open val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
   abstract val callableFqName: FqName
@@ -71,8 +65,6 @@ class CallableInjectable(
     get() = callable.callable.callContext()
   override val originalType: TypeRef
     get() = callable.originalType
-  override val scopeInfo: ScopeInfo?
-    get() = callable.scopeInfo
   override val usageKey: Any =
     listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
 
@@ -80,130 +72,6 @@ class CallableInjectable(
     other is CallableInjectable && other.usageKey == usageKey
 
   override fun hashCode(): Int = usageKey.hashCode()
-}
-
-@OptIn(ExperimentalStdlibApi::class)
-class AbstractInjectable(
-  val constructor: CallableRef,
-  val entryPoints: List<CallableRef>,
-  @Provide override val ownerScope: InjectablesScope,
-  val isComponent: Boolean,
-  parentScope: InjectablesScope
-) : Injectable() {
-  override val callableFqName: FqName = type.classifier.fqName
-
-  val requestCallables: List<CallableRef> = buildList<CallableRef> {
-    val seen = mutableListOf<TypeRef>()
-    fun visit(type: TypeRef) {
-      if (type in seen) return
-      seen += type
-
-      type.collectAbstractInjectableCallables()
-        .forEach { callable ->
-          if (none {
-              it.callable.name == callable.callable.name &&
-                  it.callable is PropertyDescriptor == callable.callable is PropertyDescriptor &&
-                  it.type == callable.type &&
-                  it.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX } ==
-                  callable.parameterTypes.filter { it.key != DISPATCH_RECEIVER_INDEX }
-            }) this += callable
-        }
-
-      type.superTypes.forEach { visit(it) }
-    }
-
-    visit(type)
-
-    entryPoints.forEach { visit(it.type) }
-  }
-
-  val constructorDependencies = constructor.getInjectableRequests(true)
-
-  private val abstractInjectableAndEntryPointInjectables = buildList {
-    add(type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true))
-    for (entryPoint in entryPoints)
-      add(entryPoint.type.classifier.descriptor.cast<ClassDescriptor>().injectableReceiver(true))
-  }
-
-  val initScope = InjectablesScope(
-    name = "ABSTRACT INJECTABLE INIT $callableFqName",
-    parent = parentScope,
-    ctx = ownerScope.ctx,
-    componentType = if (isComponent) type else null
-  )
-
-  val scope = InjectablesScope(
-    name = "ABSTRACT INJECTABLE $callableFqName",
-    parent = parentScope,
-    ctx = ownerScope.ctx,
-    componentType = if (isComponent) type else null,
-    initialInjectables = abstractInjectableAndEntryPointInjectables
-  )
-
-  val requestsByRequestCallables = requestCallables
-    .withIndex()
-    .associateWith { (index, requestCallable) ->
-      InjectableRequest(
-        type = requestCallable.type,
-        callableFqName = callableFqName,
-        callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-        parameterName = requestCallable.callable.name,
-        parameterIndex = index,
-        isRequired = requestCallable.callable
-          .cast<CallableMemberDescriptor>()
-          .modality == Modality.ABSTRACT,
-        isLazy = true
-      )
-    }
-    .mapKeys { it.key.value }
-    .mapValues { it.value }
-
-  override val dependencies = buildList<InjectableRequest> {
-    this += constructorDependencies
-    this += requestsByRequestCallables.values
-  }
-
-  val dependencyScopesByRequestCallable = requestCallables
-    .associateWith { requestCallable ->
-      InjectablesScope(
-        name = "ABSTRACT INJECTABLE CALLABLE ${callableFqName.child(requestCallable.callable.name)}",
-        parent = scope,
-        ctx = scope.ctx,
-        callContext = requestCallable.callable.callContext(),
-        initialInjectables = requestCallable.callable.allParameters
-          .transform {
-            if (it != requestCallable.callable.dispatchReceiverParameter)
-              add(
-                (if (it is ReceiverParameterDescriptor)
-                  ComponentReceiverParameterDescriptor(it)
-                else
-                  ComponentValueParameterDescriptor(it.cast()))
-                  .toCallableRef(scope.ctx)
-              )
-          }
-      )
-    }
-
-  @OptIn(ExperimentalStdlibApi::class)
-  override val dependencyScopes: Map<InjectableRequest, InjectablesScope> = buildMap {
-    constructorDependencies.forEach {
-      this[it] = initScope
-    }
-    dependencyScopesByRequestCallable.forEach {
-      this[requestsByRequestCallables[it.key]!!] = it.value
-    }
-  }
-
-  override val type: TypeRef
-    get() = constructor.type
-
-  // required to distinct between individual components in codegen
-  class ComponentReceiverParameterDescriptor(
-    private val delegate: ReceiverParameterDescriptor
-  ) : ReceiverParameterDescriptor by delegate
-  class ComponentValueParameterDescriptor(
-    private val delegate: ValueParameterDescriptor
-  ) : ValueParameterDescriptor by delegate
 }
 
 class ListInjectable(

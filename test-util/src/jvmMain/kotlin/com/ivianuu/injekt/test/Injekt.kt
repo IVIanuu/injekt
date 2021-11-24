@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.common.Disposable
-import com.ivianuu.injekt.common.TypeKey
 
 class Foo
 
@@ -38,24 +36,6 @@ class CommandB : Command
 
 @Tag annotation class TypedTag<T>
 
-class TestDisposable : Disposable {
-  var disposeCalls = 0
-
-  override fun dispose() {
-    disposeCalls++
-  }
-}
-
 interface Scope
 
 object AppScope : Scope
-
-@Tag annotation class FakeScoped<S : Scope> {
-  companion object {
-    inline fun <T : @FakeScoped<S> U, U : Any, S : Scope> scopedValue(
-      factory: () -> T,
-      scope: S,
-      key: TypeKey<U>
-    ): U = factory()
-  }
-}

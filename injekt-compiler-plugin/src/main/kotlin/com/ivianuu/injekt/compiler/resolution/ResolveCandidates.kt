@@ -16,20 +16,15 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.LinkedList
-import kotlin.math.sign
 import kotlin.reflect.KClass
 
 sealed class InjectionGraph {
@@ -71,20 +66,11 @@ sealed class ResolutionResult {
         val dependencyResults: Map<InjectableRequest, Success>
       ) : Success.WithCandidate() {
         val highestScope: InjectablesScope = run {
-          if (candidate.scopeInfo != null)
-            return@run scope.allScopes.lastOrNull { candidateScope ->
-              candidateScope.isDeclarationContainer &&
-                  candidateScope.canSeeInjectablesOf(candidate.ownerScope) &&
-                  candidateScope.componentType == candidate.scopeInfo!!.scopeComponent
-            } ?: scope
-
           val anchorScopes = mutableSetOf<InjectablesScope>()
 
           fun collectScopesRecursive(result: Value) {
-            if (result.candidate is CallableInjectable) {
+            if (result.candidate is CallableInjectable)
               anchorScopes += result.candidate.ownerScope
-              result.candidate.scopeComponentOrNull(result.scope)?.let { anchorScopes += it }
-            }
             result.dependencyResults.values
               .filterIsInstance<Value>()
               .forEach { collectScopesRecursive(it) }
@@ -123,15 +109,6 @@ sealed class ResolutionResult {
           get() = 1
       }
 
-      data class ClashingSuperTypes(
-        val superTypeA: TypeRef,
-        val superTypeB: TypeRef,
-        override val candidate: AbstractInjectable
-      ) : WithCandidate() {
-        override val failureOrdering: Int
-          get() = 1
-      }
-
       data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
         override val failureOrdering: Int
           get() = 1
@@ -141,14 +118,6 @@ sealed class ResolutionResult {
         val parameter: ClassifierRef,
         val argument: ClassifierRef,
         override val candidate: Injectable
-      ) : WithCandidate() {
-        override val failureOrdering: Int
-          get() = 1
-      }
-
-      data class ScopeNotFound(
-        override val candidate: Injectable,
-        val scopeComponent: TypeRef
       ) : WithCandidate() {
         override val failureOrdering: Int
           get() = 1
@@ -184,11 +153,6 @@ sealed class ResolutionResult {
 
 private fun InjectablesScope.canSeeInjectablesOf(other: InjectablesScope): Boolean =
   other in allScopes
-
-private fun Injectable.scopeComponentOrNull(scope: InjectablesScope): InjectablesScope? =
-  scopeInfo?.let { scopeInfo ->
-    scope.allScopes.last { it.componentType == scopeInfo.scopeComponent }
-  }
 
 data class UsageKey(
   val key: Any,
@@ -270,11 +234,7 @@ private fun InjectablesScope.resolveRequest(
           }
           ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
           ?: userResult
-      } else if (request.type.unwrapTags().isComponent())
-        tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
-          ?: userResult
-      else
-        userResult
+      } else userResult
     } ?: ResolutionResult.Failure.NoCandidates(this, request)
 
   resultsByType[request.type] = result
@@ -316,18 +276,9 @@ private fun InjectablesScope.computeForCandidate(
   compute: () -> ResolutionResult,
 ): ResolutionResult {
   resultsByCandidate[candidate]?.let { return it }
-  val isAbstractInjectable = candidate.originalType.isAbstractInjectable()
-  if (candidate.dependencies.isEmpty() && !isAbstractInjectable)
+
+  if (candidate.dependencies.isEmpty())
     return compute().also { resultsByCandidate[candidate] = it }
-
-  val abstractInjectable = if (!isAbstractInjectable) null
-  else chain.lastOrNull {
-    it.second is AbstractInjectable &&
-        (it.second.type == request.type ||
-        it.second.originalType == request.type)
-  }?.second.safeAs<AbstractInjectable>()
-
-  val requestCallableKeys = abstractInjectable?.requestCallables?.map { it.callable.uniqueKey() }
 
   if (chain.isNotEmpty()) {
     var isLazy = false
@@ -335,15 +286,10 @@ private fun InjectablesScope.computeForCandidate(
       val prev = chain[i]
       isLazy = isLazy || prev.first.isLazy
 
-      if ((prev.second.callableFqName == candidate.callableFqName &&
+      if (prev.second.callableFqName == candidate.callableFqName &&
         prev.second.type.coveringSet == candidate.type.coveringSet &&
         (prev.second.type.typeSize < candidate.type.typeSize ||
-            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))) ||
-        (requestCallableKeys != null &&
-            request.parameterIndex == DISPATCH_RECEIVER_INDEX &&
-            prev.second.safeAs<CallableInjectable>()?.callable?.callable?.uniqueKey() in
-            requestCallableKeys)
-      ) {
+            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
         return result
@@ -425,25 +371,6 @@ private fun InjectablesScope.resolveCandidate(
   if (!callContext.canCall(candidate.callContext))
     return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
 
-  if (candidate.scopeInfo != null &&
-      allScopes.none { it.componentType == candidate.scopeInfo!!.scopeComponent })
-        return@computeForCandidate ResolutionResult.Failure.WithCandidate.ScopeNotFound(
-          candidate, candidate.scopeInfo!!.scopeComponent)
-
-  if (candidate is AbstractInjectable) {
-    for (callable in candidate.requestCallables) {
-      for (other in candidate.requestCallables) {
-        if (other != callable && callable.clashesWith(other)) {
-          return@computeForCandidate ResolutionResult.Failure.WithCandidate.ClashingSuperTypes(
-            callable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
-            other.parameterTypes[DISPATCH_RECEIVER_INDEX]!!,
-            candidate
-          )
-        }
-      }
-    }
-  }
-
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
@@ -468,10 +395,7 @@ private fun InjectablesScope.resolveCandidate(
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
-    val dependencyScope = candidate.dependencyScopes[dependency] ?:
-      candidate.scopeInfo?.let { scopeInfo ->
-        allScopes.last { it.componentType == scopeInfo.scopeComponent }
-      } ?: this
+    val dependencyScope = candidate.dependencyScopes[dependency] ?: this
     when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
@@ -681,23 +605,6 @@ fun ResolutionResult.visitRecursive(
         result.visitRecursive(request, action)
       }
   }
-}
-
-private fun CallableRef.clashesWith(other: CallableRef, @Inject ctx: Context): Boolean {
-  if (callable.name != other.callable.name) return false
-  if (parameterTypes.size != other.parameterTypes.size) return false
-  if (callable is PropertyDescriptor != other.callable is PropertyDescriptor)
-    return false
-
-  val receiver = parameterTypes[DISPATCH_RECEIVER_INDEX]!!
-  val otherReceiver = other.parameterTypes[DISPATCH_RECEIVER_INDEX]!!
-  if (receiver.isSubTypeOf(otherReceiver) || otherReceiver.isSubTypeOf(receiver))
-    return false
-
-  if (type.isSubTypeOf(other.type) || other.type.isSubTypeOf(type))
-    return false
-
-  return true
 }
 
 fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) -> Unit) {

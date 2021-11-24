@@ -16,28 +16,43 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
 
-interface Component : Disposable
-
-interface EntryPoint<C : Component> : Disposable
-
-@Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
-inline fun <C : Component, E : EntryPoint<C>> C.entryPoint(): E = this as E
-
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.CONSTRUCTOR,
-  AnnotationTarget.FUNCTION,
-  AnnotationTarget.PROPERTY,
-  AnnotationTarget.LOCAL_VARIABLE,
-  AnnotationTarget.VALUE_PARAMETER,
-  AnnotationTarget.TYPE
-)
-annotation class Scoped<C : Component>(val eager: Boolean = false)
-
-fun interface Disposable {
-  fun dispose()
+interface Component<N : ComponentName> : Disposable {
+  fun <T> element(@Inject key: TypeKey<T>): T
 }
 
-@Provide interface AppComponent : Component
+@Provide class ComponentImpl<N : ComponentName>(
+  elements: List<ComponentElement.Keyed<N>>
+) : Component<N> {
+  @OptIn(ExperimentalStdlibApi::class)
+  private val scopeElements = buildMap<String, Any> {
+    for ((key, element) in elements)
+      this[key.value] = element
+  }
+
+  override fun <T> element(@Inject key: TypeKey<T>): T =
+    scopeElements[key.value] as T ?: error("No element found for ${key.value}")
+
+  override fun dispose() {
+    scopeElements.forEach { (it.value as? Disposable)?.dispose() }
+  }
+}
+
+@Tag annotation class ComponentElement<N : ComponentName> {
+  data class Keyed<N : ComponentName>(val key: TypeKey<*>, val element: Any)
+
+  companion object {
+    @Provide inline fun <@Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> keyed(
+      key: TypeKey<S>,
+      element: T
+    ) = Keyed<N>(key, element as Any)
+  }
+}
+
+interface ComponentName
+
+object AppComponent : ComponentName

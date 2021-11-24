@@ -330,19 +330,4 @@ class SpreadingInjectableTest {
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
-
-  @Test fun testSpreadingInjectableWithComponent() = codegen(
-    """
-      @Tag annotation class Trigger
-      @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
-
-      @Provide @Trigger interface FooComponent : Component { 
-        val foo: Foo
-      }
-  
-      @Provide val foo = Foo()
-  
-      fun invoke() = inject<FooComponent>()
-    """
-  )
 }

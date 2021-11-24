@@ -83,9 +83,9 @@ class TypeSubstitutionTest {
   }
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
-    val scoped = typeFor(FqName("com.ivianuu.injekt.test.FakeScoped"))
+    val scoped = typeFor(FqName("com.ivianuu.injekt.common.Scoped"))
     val (scopedT, scopedU, scopedN) = memberScopeForFqName(
-      FqName("com.ivianuu.injekt.test.FakeScoped.Companion"),
+      FqName("com.ivianuu.injekt.common.Scoped.Companion"),
       NoLookupLocation.FROM_BACKEND,
       ctx
     )!!.first

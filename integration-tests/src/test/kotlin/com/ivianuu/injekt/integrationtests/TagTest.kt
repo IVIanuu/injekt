@@ -168,7 +168,7 @@ class TagTest {
 
       @Tag annotation class ComponentScopeTag<C : Component> {
         companion object {
-          @Provide @Scoped<C> fun <C : Component> scope(): ComponentScope<C> = ""
+          @Provide fun <C : Component> scope(): ComponentScope<C> = ""
         }
       }
     """,

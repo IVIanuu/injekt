@@ -21,11 +21,11 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.injectablesForFqName
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injectablesForFqName
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.injektIndex
@@ -46,11 +46,9 @@ import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -60,15 +58,11 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.addRemoveModifier.addAnnotationEntry
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.LinkedList
@@ -91,8 +85,7 @@ fun TypeRef.collectInjectables(
           type = arguments.last(),
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
-          },
-          scopeInfo = scopeInfo
+          }
         ).substitute(classifier.typeParameters.zip(arguments).toMap())
       }
 
@@ -503,42 +496,6 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
           .cast<ClassDescriptor>().toClassifierRef().defaultType
         allScopes.any { it.componentType?.isSubTypeOf(ownerType) == true }
       })
-
-@OptIn(ExperimentalStdlibApi::class)
-fun TypeRef.collectAbstractInjectableCallables(@Inject ctx: Context): List<CallableRef> =
-  classifier.descriptor!!.defaultType.memberScope
-    .getContributedDescriptors(DescriptorKindFilter.CALLABLES)
-    .transform { candidate ->
-      if (candidate is CallableMemberDescriptor &&
-          candidate.modality != Modality.FINAL &&
-        candidate.overriddenTreeAsSequence(false).none {
-          val dispatchReceiverType = it.dispatchReceiverParameter?.type
-          dispatchReceiverType?.isAnyOrNullableAny() == true ||
-              dispatchReceiverType?.constructor?.declarationDescriptor?.fqNameSafe ==
-              injektFqNames().disposable
-        }) {
-        val substitutionMap = buildMap<ClassifierRef, TypeRef> {
-          for ((index, parameter) in classifier.typeParameters.withIndex())
-            this[parameter] = arguments[index]
-
-          if (candidate.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-            val originalClassifier = candidate
-              .overriddenTreeAsSequence(false)
-              .last()
-              .containingDeclaration
-              .cast<ClassDescriptor>()
-              .toClassifierRef()
-
-            val subtypeView = subtypeView(originalClassifier)!!
-
-            for ((index, parameter) in originalClassifier.typeParameters.withIndex())
-              this[parameter] = subtypeView.arguments[index]
-          }
-        }
-
-        add(candidate.toCallableRef().substitute(substitutionMap))
-      }
-    }
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: Context): List<CallableRef> {
   val existingInjectables: MutableSet<Pair<String, TypeRef>> = scope.allScopes

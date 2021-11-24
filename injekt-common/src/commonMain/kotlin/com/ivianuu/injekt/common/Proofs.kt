@@ -156,35 +156,3 @@ sealed interface NotReified<out T> {
 
     @Provide inline fun <reified T> amb2(): NotReified<T> = throw AssertionError() }
 }
-
-sealed interface InComponent<out C : Component> {
-  sealed interface LowPriorityModule {
-    @AmbiguousInjectable("Cannot proof enclosing [C]")
-    @Provide fun <C : Component> amb1(): InComponent<C> = throw AssertionError()
-
-    @Provide fun <C : Component> amb2(): InComponent<C> = throw AssertionError()
-  }
-
-  companion object : LowPriorityModule {
-    private object Instance : InComponent<Nothing>
-
-    @Provide @Scoped<C>(eager = true)
-    fun <C : Component> instance(): InComponent<C> = Instance
-  }
-}
-
-sealed interface NotInComponent<out C : Component> {
-  sealed class LowPriorityModule {
-    private object Instance : NotInComponent<Nothing>
-    @Provide fun <C : Component> instance(): NotInComponent<C> = Instance
-  }
-
-  companion object : LowPriorityModule() {
-    @AmbiguousInjectable("Cannot proof [C] is not a enclosing component")
-    @Provide @Scoped<C>()
-    fun <C : Component> amb1(): NotInComponent<C> = throw AssertionError()
-
-    @Provide @Scoped<C>()
-    fun <C : Component> amb2(): NotInComponent<C> = throw AssertionError()
-  }
-}

@@ -16,5 +16,6 @@
 
 package com.ivianuu.injekt.common
 
-actual inline fun <R> synchronized(lock: Any, block: () -> R): R =
-  kotlin.synchronized(lock, block)
+fun interface Disposable {
+  fun dispose()
+}

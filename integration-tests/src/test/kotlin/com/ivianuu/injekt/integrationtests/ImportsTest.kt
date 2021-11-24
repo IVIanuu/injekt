@@ -124,58 +124,6 @@ class ImportsTest {
     shouldNotContainMessage("unused injectable import")
   }
 
-  @Test fun testUsedComponentImport() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            @Provide interface MyComponent : Component
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            @Providers("injectables.MyComponent")
-            fun invoke() = inject<injectables.MyComponent>()
-          """
-        )
-      )
-    )
-  ) {
-    shouldNotContainMessage("unused injectable import")
-  }
-
-  @Test fun testUsedEntryPointImport() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            @Provide interface MyComponent : Component
-          """,
-          packageFqName = FqName("component")
-        ),
-        source(
-          """
-            @EntryPoint<component.MyComponent> interface MyEntryPoint
-          """,
-          packageFqName = FqName("entrypoint")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            @Providers("entrypoint.MyEntryPoint")
-            fun invoke() = inject<component.MyComponent>()
-          """
-        )
-      )
-    )
-  ) {
-    shouldNotContainMessage("unused injectable import")
-  }
-
   @Test fun testClassImportIsNotMarkedUnusedIfACompanionClassInjectableWasUsed() = singleAndMultiCodegen(
     listOf(
       listOf(
