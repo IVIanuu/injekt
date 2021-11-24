@@ -30,8 +30,8 @@ import com.ivianuu.injekt.common.ComponentName
 fun Activity.createActivityComponent(): Component<ActivityComponent> =
   appComponent.element<@ComponentFactory (Activity) -> Component<ActivityComponent>>()(this)
 
-object ActivityComponent : ComponentName
-
-@Provide fun activityComponentFactory(
-  factory: (Activity) -> Component<ActivityComponent>
-): @ComponentElement<AppComponent> @ComponentFactory (Activity) -> Component<ActivityComponent> = factory
+object ActivityComponent : ComponentName {
+  @Provide fun factoryElement(
+    factory: (Activity) -> Component<ActivityComponent>
+  ): @ComponentElement<AppComponent> @ComponentFactory (Activity) -> Component<ActivityComponent> = factory
+}

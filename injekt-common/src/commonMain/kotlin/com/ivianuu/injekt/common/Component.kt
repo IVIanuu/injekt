@@ -25,31 +25,37 @@ interface Component<N : ComponentName> : Disposable {
 }
 
 @Provide class ComponentImpl<N : ComponentName>(
-  elements: (Component<N>) -> List<ProvidedElement<N>>
+  elements: (Component<N>) -> List<ProvidedElement<N>>,
+  initializers: (Component<N>) -> List<ComponentInitializer<N>>
 ) : Component<N> {
   @OptIn(ExperimentalStdlibApi::class)
-  private val scopeElements = buildMap<String, () -> Any> {
-    for ((key, factory) in elements(this@ComponentImpl))
-      this[key.value] = factory
+  private val scopeElements = buildMap<String, Lazy<Any>> {
+    for ((key, lazyElement) in elements(this@ComponentImpl))
+      this[key.value] = lazyElement
+  }
+
+  init {
+    for (initializer in initializers(this))
+      initializer()
   }
 
   override fun <T> element(@Inject key: TypeKey<T>): T =
-    scopeElements[key.value]?.invoke() as T ?: error("No element found for ${key.value}")
+    scopeElements[key.value]?.value as T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
     scopeElements.forEach { (it.value as? Disposable)?.dispose() }
   }
 }
 
-@Tag annotation class ComponentFactory
+interface ComponentName
 
 @Tag annotation class ComponentElement<N : ComponentName> {
   companion object {
     @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
       @Provide fun providedElement(
         key: TypeKey<S>,
-        factory: () -> T
-      ) = ProvidedElement<N>(key, factory as () -> Any)
+        factory: Lazy<T>
+      ) = ProvidedElement<N>(key, factory)
 
       @Provide inline fun elementAccessor(
         component: Component<N>,
@@ -61,9 +67,17 @@ interface Component<N : ComponentName> : Disposable {
 
 data class ProvidedElement<N : ComponentName>(
   val key: TypeKey<*>,
-  val factory: () -> Any
+  val lazyElement: Lazy<Any>
 )
 
-interface ComponentName
+@Tag annotation class ComponentInitializerTag<N : ComponentName> {
+  companion object {
+    @Provide fun <N : ComponentName> defaultInitializers(): Collection<ComponentInitializer<N>> =
+      emptyList()
+  }
+}
+typealias ComponentInitializer<N> = @ComponentInitializerTag<N> () -> Unit
+
+@Tag annotation class ComponentFactory
 
 object AppComponent : ComponentName
