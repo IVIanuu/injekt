@@ -78,6 +78,4 @@ data class ProvidedElement<N : ComponentName>(
 }
 typealias ComponentInitializer<N> = @ComponentInitializerTag<N> () -> Unit
 
-@Tag annotation class ComponentFactory
-
 object AppComponent : ComponentName

@@ -21,17 +21,15 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentElement
-import com.ivianuu.injekt.common.ComponentFactory
 import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ServiceComponent] which must be manually stored and disposed
  */
 fun Service.createServiceComponent(): Component<ServiceComponent> =
-  appComponent.element<@ComponentFactory (Service) -> Component<ServiceComponent>>()(this)
+  appComponent.element<ServiceComponent.FactoryElement>().factory(this)
 
 object ServiceComponent : ComponentName {
-  @Provide fun factoryElement(
-    factory: (Service) -> Component<ServiceComponent>
-  ): @ComponentElement<AppComponent> @ComponentFactory (Service) -> Component<ServiceComponent> = factory
+  @Provide @ComponentElement<AppComponent>
+  data class FactoryElement(val factory: (Service) -> Component<ServiceComponent>)
 }
