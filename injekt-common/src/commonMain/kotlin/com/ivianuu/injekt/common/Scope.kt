@@ -24,12 +24,20 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 
-interface Scope<N : ComponentName> {
+interface Scope<N : ComponentName> : Disposable {
   fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T
+
+  companion object {
+    @Provide fun <N : ComponentName> componentScope(
+      component: Component<N>,
+      nameKey: TypeKey<N>
+    ): Scope<N> = component.element()
+  }
 }
 
-@Provide @ComponentElement<N>
-class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
+fun <N : ComponentName> Scope(): Scope<N> = ScopeImpl()
+
+private class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
   private val values = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 

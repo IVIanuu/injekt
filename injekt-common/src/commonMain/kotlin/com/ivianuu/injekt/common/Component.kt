@@ -25,21 +25,10 @@ interface Component<N : ComponentName> : Disposable {
   fun <T> element(@Inject key: TypeKey<T>): T
 }
 
-@Provide class ComponentImpl<N : ComponentName>(
-  elements: (Component<N>) -> List<ProvidedElement<N>>
+class ComponentImpl<N : ComponentName> private constructor(
+  private val elements: Map<String, Lazy<Any>>
 ) : Component<N> {
-  @OptIn(ExperimentalStdlibApi::class)
-  private val elements = buildMap<String, Lazy<Any>> {
-    for ((key, lazyElement) in elements(this@ComponentImpl))
-      this[key.value] = lazyElement
-  }
-
   private val isDisposed = atomic(false)
-
-  init {
-    for (element in this.elements)
-      element.value.value
-  }
 
   override fun <T> element(@Inject key: TypeKey<T>): T =
     elements[key.value]?.value as T ?: error("No element found for ${key.value}")
@@ -48,6 +37,30 @@ interface Component<N : ComponentName> : Disposable {
     if (isDisposed.compareAndSet(false, true)) {
       for (lazyElement in elements.values)
           (lazyElement.value as? Disposable)?.dispose()
+    }
+  }
+
+  companion object {
+    @OptIn(ExperimentalStdlibApi::class)
+    @Provide
+    fun <N : ComponentName> create(
+      nameKey: TypeKey<N>,
+      elementsFactory: (Component<N>) -> List<ProvidedElement<N>>
+    ): Component<N> {
+      val scope = Scope<N>()
+
+      val elements = mutableMapOf<String, Lazy<Any>>()
+
+      val component = ComponentImpl<N>(elements)
+
+      elements[typeKeyOf<Scope<N>>().value] = lazyOf(scope)
+      for ((key, lazyElement) in elementsFactory(component))
+        elements[key.value] = lazyElement
+
+      for (element in elements)
+        element.value.value
+
+      return component
     }
   }
 }
@@ -62,20 +75,19 @@ interface ComponentName
         lazyElement: Lazy<T>
       ) = ProvidedElement<N>(key, lazyElement)
 
-      @Provide inline fun elementAccessor(
-        component: Component<N>,
-        key: TypeKey<S>
-      ) = component.element<S>()
+      @Provide inline fun elementAccessor(value: T): S = value
     }
-
-    @Provide
-    fun <N : ComponentName> defaultElements(): Collection<ComponentElement<N>> = emptyList()
   }
 }
 
 data class ProvidedElement<N : ComponentName>(
   val key: TypeKey<*>,
   val lazyElement: Lazy<Any>
-)
+) {
+  companion object {
+    @Provide
+    fun <N : ComponentName> defaultElements(): Collection<ProvidedElement<N>> = emptyList()
+  }
+}
 
 object AppComponent : ComponentName
