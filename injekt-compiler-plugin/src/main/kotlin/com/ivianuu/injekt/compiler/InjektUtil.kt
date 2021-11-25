@@ -436,3 +436,10 @@ fun packageFragmentsForFqName(
   fqName: FqName,
   @Inject ctx: Context
 ): List<PackageFragmentDescriptor> = module().getPackage(fqName).fragments
+
+val composeCompilerInClasspath = try {
+  Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
+  true
+} catch (e: ClassNotFoundException) {
+  false
+}

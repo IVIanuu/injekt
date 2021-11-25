@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.resolution
 import androidx.compose.compiler.plugins.kotlin.isComposableCallable
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.composeCompilerInClasspath
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
@@ -132,11 +133,4 @@ fun TypeRef.callContext(@Inject ctx: Context): CallContext = when {
     .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
   classifier.fqName == injektFqNames().composable -> CallContext.COMPOSABLE
   else -> CallContext.DEFAULT
-}
-
-private val composeCompilerInClasspath = try {
-  Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
-  true
-} catch (e: ClassNotFoundException) {
-  false
 }
