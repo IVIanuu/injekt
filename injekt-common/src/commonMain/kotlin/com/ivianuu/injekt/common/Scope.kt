@@ -57,7 +57,7 @@ interface Scope<N : ComponentName> {
 
 @Tag annotation class Eager<N : ComponentName> {
   companion object {
-    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N : ComponentName>() {
+    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N : ComponentName> {
       @Provide fun scoped(value: T): @Scoped<N> S = value
 
       @Provide fun initializer(value: S): @ComponentElement<N> @Initializer S = value
