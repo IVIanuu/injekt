@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
+import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 
@@ -28,21 +29,19 @@ interface Scope<N : ComponentName> {
 }
 
 @Provide @ComponentElement<N> class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
-  private val map = mutableMapOf<String, Any>()
+  private val values = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 
-  private var isDisposed = false
+  private val isDisposed = atomic(false)
 
   override fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T =
-    lock.withLock { map.getOrPut(key.value) { init() } as T }
+    lock.withLock { values.getOrPut(key.value, init) as T }
 
   override fun dispose() {
-    lock.withLock {
-      if (!isDisposed) {
-        isDisposed = true
-        map.values.filterIsInstance<Disposable>()
-      } else null
-    }?.forEach { it.dispose() }
+    if (isDisposed.compareAndSet(false, true)) {
+      for (value in values.values)
+        (value as? Disposable)?.dispose()
+    }
   }
 }
 

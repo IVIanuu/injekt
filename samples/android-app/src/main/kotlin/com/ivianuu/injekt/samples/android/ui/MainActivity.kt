@@ -26,13 +26,13 @@ import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentElement
 
 class MainActivity : ComponentActivity() {
-  private val component: Component<ActivityComponent> by lazy {
+  private val dependencies by lazy {
     createActivityComponent()
+      .element<MainActivityDependencies>()
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    val dependencies = component.element<MainActivityDependencies>()
     setContent {
       dependencies.theme {
         dependencies.appUi()
@@ -41,10 +41,14 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onDestroy() {
-    component.dispose()
+    dependencies.component.dispose()
     super.onDestroy()
   }
 }
 
 @Provide @ComponentElement<ActivityComponent>
-data class MainActivityDependencies(val theme: AppTheme, val appUi: AppUi)
+data class MainActivityDependencies(
+  val theme: AppTheme,
+  val appUi: AppUi,
+  val component: Component<ActivityComponent>
+)

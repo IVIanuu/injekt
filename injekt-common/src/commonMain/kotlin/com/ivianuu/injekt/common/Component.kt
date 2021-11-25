@@ -19,9 +19,7 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
-import kotlinx.atomicfu.locks.ReentrantLock
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import kotlinx.atomicfu.atomic
 
 interface Component<N : ComponentName> : Disposable {
   fun <T> element(@Inject key: TypeKey<T>): T
@@ -36,8 +34,7 @@ interface Component<N : ComponentName> : Disposable {
       this[key.value] = lazyElement
   }
 
-  private var isDisposed = false
-  private val lock = reentrantLock()
+  private val isDisposed = atomic(false)
 
   init {
     for (element in this.elements)
@@ -48,13 +45,10 @@ interface Component<N : ComponentName> : Disposable {
     elements[key.value]?.value as T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
-    lock.withLock {
-      if (!isDisposed) {
-        isDisposed = true
-        elements.values
-          .mapNotNull { it.value as? Disposable }
-      } else null
-    }?.forEach { it.dispose() }
+    if (isDisposed.getAndSet(true)) {
+      for (lazyElement in elements.values)
+          (lazyElement.value as? Disposable)?.dispose()
+    }
   }
 }
 
@@ -62,11 +56,11 @@ interface ComponentName
 
 @Tag annotation class ComponentElement<N : ComponentName> {
   companion object {
-    @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
+    @Provide class Module<@Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
       @Provide fun providedElement(
         key: TypeKey<S>,
-        factory: Lazy<T>
-      ) = ProvidedElement<N>(key, factory)
+        lazyElement: Lazy<T>
+      ) = ProvidedElement<N>(key, lazyElement)
 
       @Provide inline fun elementAccessor(
         component: Component<N>,
