@@ -83,20 +83,20 @@ class TypeSubstitutionTest {
   }
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
-    val scoped = typeFor(FqName("com.ivianuu.injekt.test.FakeScoped"))
+    val scoped = typeFor(FqName("com.ivianuu.injekt.common.Scoped"))
     val (scopedT, scopedU, scopedN) = memberScopeForFqName(
-      FqName("com.ivianuu.injekt.test.FakeScoped.Companion"),
+      FqName("com.ivianuu.injekt.common.Scoped.Companion"),
       NoLookupLocation.FROM_BACKEND,
       ctx
     )!!.first
-      .getContributedFunctions("scopedValue".asNameId(), NoLookupLocation.FROM_BACKEND)
+      .getContributedFunctions("scoped".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
       .map { it.toClassifierRef(ctx) }
-    val namedScope = typeFor(FqName("com.ivianuu.injekt.test.AppScope"))
+    val appComponent = typeFor(FqName("com.ivianuu.injekt.common.AppComponent"))
     val substitutionType = scoped.wrap(stringType)
       .let {
-        it.withArguments(listOf(namedScope) + it.arguments.drop(1))
+        it.withArguments(listOf(appComponent) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
       scopedT.defaultType,
@@ -106,7 +106,7 @@ class TypeSubstitutionTest {
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
-    map[scopedN] shouldBe namedScope
+    map[scopedN] shouldBe appComponent
   }
 
   @Test fun todoExtractToTypeOnlyTest() = codegen(

@@ -22,31 +22,33 @@ import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.createActivityComponent
-import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.ComponentElement
 
 class MainActivity : ComponentActivity() {
-  private val component: MainActivityComponent by lazy {
+  private val dependencies by lazy {
     createActivityComponent()
-      .entryPoint()
+      .element<MainActivityDependencies>()
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
-      component.theme {
-        component.appUi()
+      dependencies.theme {
+        dependencies.appUi()
       }
     }
   }
 
   override fun onDestroy() {
-    component.dispose()
+    dependencies.component.dispose()
     super.onDestroy()
   }
 }
 
-@Provide interface MainActivityComponent : EntryPoint<ActivityComponent> {
-  val theme: AppTheme
-  val appUi: AppUi
-}
+@Provide @ComponentElement<ActivityComponent>
+data class MainActivityDependencies(
+  val theme: AppTheme,
+  val appUi: AppUi,
+  val component: Component<ActivityComponent>
+)

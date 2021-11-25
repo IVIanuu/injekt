@@ -20,8 +20,8 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.getOrPut
+import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -54,7 +53,6 @@ class ClassifierRef(
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
   val isTag: Boolean = false,
-  val scopeInfo: ScopeInfo? = null,
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
@@ -79,7 +77,6 @@ class ClassifierRef(
     isTypeParameter: Boolean = this.isTypeParameter,
     isObject: Boolean = this.isObject,
     isTag: Boolean = this.isTag,
-    scopeInfo: ScopeInfo? = this.scopeInfo,
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
@@ -88,8 +85,7 @@ class ClassifierRef(
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject, isTag,
-    scopeInfo, descriptor, tags, isSpread,
-    primaryConstructorPropertyParameters, variance, declaresInjectables
+    descriptor, tags, isSpread, primaryConstructorPropertyParameters, variance, declaresInjectables
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -141,7 +137,6 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
-      scopeInfo = scopeInfo(),
       descriptor = this,
       tags = info.tags,
       isSpread = info.isSpread,
@@ -191,7 +186,6 @@ fun KotlinType.toTypeRef(
       isStarProjection = false,
       frameworkKey = 0,
       variance = variance,
-      scopeInfo = unwrapped.scopeInfo(),
       isError = isError
     )
 
@@ -229,7 +223,6 @@ class TypeRef(
   val isStarProjection: Boolean = false,
   val frameworkKey: Int = 0,
   val variance: TypeVariance = TypeVariance.INV,
-  val scopeInfo: ScopeInfo? = null,
   val source: ClassifierRef? = null,
   val isError: Boolean = false
 ) {
@@ -325,7 +318,6 @@ class TypeRef(
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
-      result = 31 * result + scopeInfo.hashCode()
       result = 31 * result + isError.hashCode()
       _hashCode = result
       return result
@@ -348,10 +340,6 @@ fun TypeRef.withVariance(variance: TypeVariance) =
   if (this.variance == variance) this
   else copy(variance = variance)
 
-fun TypeRef.withFrameworkKey(frameworkKey: Int): TypeRef =
-  if (this.frameworkKey == frameworkKey) this
-  else copy(frameworkKey = frameworkKey)
-
 fun TypeRef.copy(
   classifier: ClassifierRef = this.classifier,
   isMarkedNullable: Boolean = this.isMarkedNullable,
@@ -361,7 +349,6 @@ fun TypeRef.copy(
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: Int = this.frameworkKey,
   variance: TypeVariance = this.variance,
-  scopeInfo: ScopeInfo? = this.scopeInfo,
   source: ClassifierRef? = this.source,
   isError: Boolean = this.isError
 ) = TypeRef(
@@ -373,7 +360,6 @@ fun TypeRef.copy(
   isStarProjection,
   frameworkKey,
   variance,
-  scopeInfo,
   source,
   isError
 )
@@ -384,7 +370,7 @@ val STAR_PROJECTION_TYPE = TypeRef(
 )
 
 val TypeRef.hasErrors: Boolean
-  get() = isError || arguments.any { it.hasErrors } || scopeInfo?.scopeComponent?.hasErrors == true
+  get() = isError || arguments.any { it.hasErrors }
 
 fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
   action(this) || arguments.any { it.anyType(action) }
@@ -437,12 +423,11 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     } else substitution
   }
 
-  if (arguments.isEmpty() && scopeInfo == null) return this
+  if (arguments.isEmpty()) return this
 
   val newArguments = arguments.map { it.substitute(map) }
-  val newScopeInfo = scopeInfo?.substitute(map)
-  if (newArguments != arguments || newScopeInfo != scopeInfo)
-    return copy(arguments = newArguments, scopeInfo = newScopeInfo)
+  if (newArguments != arguments)
+    return copy(arguments = newArguments)
 
   return this
 }
@@ -513,16 +498,6 @@ val TypeRef.isProvideFunctionType: Boolean
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
       classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
-
-fun TypeRef.isComponent(@Inject ctx: Context): Boolean = ctx.componentClassifier != null &&
-    isSubTypeOf(ctx.componentClassifier!!.defaultType)
-
-fun TypeRef.isAbstractInjectable(@Inject ctx: Context): Boolean =
-  classifier.descriptor?.let {
-    it is ClassDescriptor &&
-        it.modality == Modality.ABSTRACT &&
-        it.isProvide()
-  } == true
 
 fun effectiveVariance(
   declared: TypeVariance,

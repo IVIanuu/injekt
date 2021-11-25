@@ -18,12 +18,10 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt.compiler.resolution.ProviderImport
 import com.ivianuu.injekt.compiler.resolution.getProviderImports
 import com.ivianuu.injekt.compiler.resolution.isValidImport
 import com.ivianuu.injekt.compiler.trace
@@ -33,17 +31,11 @@ import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.annotationEntryRecursiveVisitor
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
-import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker {

@@ -18,12 +18,10 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ScopeInfo
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
 import com.ivianuu.injekt.compiler.resolution.isProvide
-import com.ivianuu.injekt.compiler.resolution.scopeInfo
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
@@ -78,11 +76,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  * Stores information about a callable which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-data class CallableInfo(
-  val type: TypeRef,
-  val parameterTypes: Map<Int, TypeRef>,
-  val scopeInfo: ScopeInfo?
-)
+data class CallableInfo(val type: TypeRef, val parameterTypes: Map<Int, TypeRef>)
 
 @OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
@@ -121,8 +115,7 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
             type = info.type.substitute(substitutionMap),
             parameterTypes = info.parameterTypes.mapValues {
               it.value.substitute(substitutionMap)
-            },
-            scopeInfo = info.scopeInfo?.substitute(substitutionMap)
+            }
           )
         }
 
@@ -153,11 +146,7 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
         this[parameter.injektIndex()] = parameter.type.toTypeRef()
     }
 
-    val info = CallableInfo(
-      type = type,
-      parameterTypes = parameterTypes,
-      scopeInfo = scopeInfo()
-    )
+    val info = CallableInfo(type, parameterTypes)
 
     // important to cache the info before persisting it
     trace()!!.record(InjektWritableSlices.CALLABLE_INFO, this, info)
@@ -178,8 +167,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
     return
 
   val shouldPersistInfo = info.type.shouldBePersisted() ||
-      info.parameterTypes.any { (_, parameterType) -> parameterType.shouldBePersisted() } ||
-      info.scopeInfo != null
+      info.parameterTypes.any { (_, parameterType) -> parameterType.shouldBePersisted() }
 
   if (!shouldPersistInfo) return
 
@@ -198,24 +186,19 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, @Inject c
 
 @Serializable data class PersistedCallableInfo(
   val type: PersistedTypeRef,
-  val parameterTypes: Map<Int, PersistedTypeRef>,
-  val scopeComponentType: PersistedTypeRef?,
-  val isEager: Boolean
+  val parameterTypes: Map<Int, PersistedTypeRef>
 )
 
 fun CallableInfo.toPersistedCallableInfo(@Inject ctx: Context) = PersistedCallableInfo(
   type = type.toPersistedTypeRef(),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toPersistedTypeRef() },
-  scopeComponentType = scopeInfo?.scopeComponent?.toPersistedTypeRef(),
-  isEager = scopeInfo?.isEager ?: false
+    .mapValues { it.value.toPersistedTypeRef() }
 )
 
 fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) = CallableInfo(
   type = type.toTypeRef(),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toTypeRef() },
-  scopeInfo = scopeComponentType?.let { ScopeInfo(it.toTypeRef(), isEager) }
+    .mapValues { it.value.toTypeRef() }
 )
 
 /**
@@ -224,7 +207,6 @@ fun PersistedCallableInfo.toCallableInfo(@Inject ctx: Context) = CallableInfo(
  */
 class ClassifierInfo(
   val tags: List<TypeRef>,
-  val scopeInfo: ScopeInfo?,
   val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
@@ -278,7 +260,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
       ClassifierInfo(
         tags = tags,
-        scopeInfo = null,
         lazySuperTypes = lazySuperTypes,
         primaryConstructorPropertyParameters = emptyList(),
         isSpread = false,
@@ -299,7 +280,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
 
         ClassifierInfo(
           tags = emptyList(),
-          scopeInfo = null,
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = emptyList(),
           isSpread = isSpread,
@@ -317,7 +297,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
 
         ClassifierInfo(
           tags = tags,
-          scopeInfo = scopeInfo(),
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
           isSpread = false,
@@ -342,8 +321,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
 
 @Serializable data class PersistedClassifierInfo(
   val tags: List<PersistedTypeRef>,
-  val scopeComponentType: PersistedTypeRef?,
-  val isEager: Boolean,
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
   val isSpread: Boolean,
@@ -352,7 +329,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
 
 fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef() },
-  scopeInfo = scopeComponentType?.let { ScopeInfo(it.toTypeRef(), isEager) },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef() } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
@@ -361,8 +337,6 @@ fun PersistedClassifierInfo.toClassifierInfo(@Inject ctx: Context) = ClassifierI
 
 fun ClassifierInfo.toPersistedClassifierInfo(@Inject ctx: Context) = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef() },
-  scopeComponentType = scopeInfo?.scopeComponent?.toPersistedTypeRef(),
-  isEager = scopeInfo?.isEager ?: false,
   superTypes = superTypes.map { it.toPersistedTypeRef() },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   isSpread = isSpread,
@@ -418,7 +392,6 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (info.tags.none { it.shouldBePersisted() } &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       info.superTypes.none { it.shouldBePersisted() } &&
-      info.scopeInfo == null &&
       !info.declaresInjectables) return
 
     if (hasAnnotation(injektFqNames().classifierInfo)) return
@@ -448,8 +421,7 @@ private fun String.toChunkedArrayValue() = ArrayValue(
 ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
 private fun TypeRef.shouldBePersisted(): Boolean = anyType {
-  (it.classifier.isTag && it.classifier.typeParameters.size > 1) ||
-      it.scopeInfo != null
+  it.classifier.isTag && it.classifier.typeParameters.size > 1
 }
 
 @OptIn(ExperimentalStdlibApi::class)

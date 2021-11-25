@@ -63,25 +63,6 @@ class SpreadingInjectableTest {
     invokeSingleFile<List<Foo>>().size shouldBe 1
   }
 
-  @Test fun testSpreadingAbstractInjectableClass() = singleAndMultiCodegen(
-    """
-      @Provide abstract class MyModule<@Spread T : @Trigger S, S>(private val instance: T) {
-        @Provide fun intoSet(): @Final S = instance
-      }
-      @Tag annotation class Trigger
-
-      @Tag annotation class Final
-
-      @Provide fun foo(): @Trigger Foo = Foo()
-      @Provide fun string(): @Trigger String = ""
-    """,
-    """
-      fun invoke() = inject<List<@Final Foo>>() 
-    """
-  ) {
-    invokeSingleFile<List<Foo>>().size shouldBe 1
-  }
-
   @Test fun testSpreadingNonInjectableClass() = codegen(
     """
       class MyModule<@Spread T>
@@ -330,19 +311,4 @@ class SpreadingInjectableTest {
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
-
-  @Test fun testSpreadingInjectableWithComponent() = codegen(
-    """
-      @Tag annotation class Trigger
-      @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
-
-      @Provide @Trigger interface FooComponent : Component { 
-        val foo: Foo
-      }
-  
-      @Provide val foo = Foo()
-  
-      fun invoke() = inject<FooComponent>()
-    """
-  )
 }

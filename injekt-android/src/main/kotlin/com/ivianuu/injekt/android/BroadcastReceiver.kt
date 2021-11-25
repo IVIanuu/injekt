@@ -22,8 +22,8 @@ import android.content.Intent
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.ComponentElement
+import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ReceiverComponent] which must be manually stored and disposed
@@ -31,16 +31,14 @@ import com.ivianuu.injekt.common.entryPoint
 fun BroadcastReceiver.createReceiverComponent(
   context: Context,
   intent: Intent,
-): ReceiverComponent = context.appComponent
-  .entryPoint<AppComponent, ReceiverComponentFactory>()
-  .receiverComponent(this, context, intent)
+): Component<ReceiverComponent> =
+  context.appComponent
+    .element<ReceiverComponent.FactoryElement>()
+    .factory(this, context, intent)
 
-@Provide interface ReceiverComponent : Component
-
-@Provide interface ReceiverComponentFactory : EntryPoint<AppComponent>{
-  fun receiverComponent(
-    receiver: BroadcastReceiver,
-    context: Context,
-    intent: Intent
-  ): ReceiverComponent
+object ReceiverComponent : ComponentName {
+  @Provide @ComponentElement<AppComponent>
+  data class FactoryElement(
+    val factory: (BroadcastReceiver, Context, Intent) -> Component<ReceiverComponent>
+  )
 }

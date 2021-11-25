@@ -18,7 +18,7 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.ComponentName
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.Scoped
 import kotlinx.coroutines.CoroutineScope
@@ -26,13 +26,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
-typealias ComponentScope<C> = @ComponentScopeTag<C> CoroutineScope
+typealias ComponentScope<N> = @ComponentScopeTag<N> CoroutineScope
 
-@Tag annotation class ComponentScopeTag<C : Component> {
+@Tag annotation class ComponentScopeTag<N : ComponentName> {
   companion object {
-    @Provide @Scoped<C> fun <C : Component> scope(
-      context: ComponentContext<C>
-    ): ComponentScope<C> = object : CoroutineScope, Disposable {
+    @Provide fun <N : ComponentName> scope(
+      context: ComponentContext<N>
+    ): @Scoped<N> ComponentScope<N> = object : CoroutineScope, Disposable {
       override val coroutineContext: CoroutineContext = context + SupervisorJob()
       override fun dispose() {
         coroutineContext.cancel()
@@ -41,12 +41,12 @@ typealias ComponentScope<C> = @ComponentScopeTag<C> CoroutineScope
   }
 }
 
-typealias ComponentContext<C> = @ComponentContextTag<C> CoroutineContext
+typealias ComponentContext<N> = @ComponentContextTag<N> CoroutineContext
 
-@Tag annotation class ComponentContextTag<C : Component> {
+@Tag annotation class ComponentContextTag<N : ComponentName> {
   companion object {
-    @Provide inline fun <C : Component> context(
+    @Provide inline fun <N : ComponentName> context(
       dispatcher: DefaultDispatcher
-    ): ComponentContext<C> = dispatcher
+    ): ComponentContext<N> = dispatcher
   }
 }

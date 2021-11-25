@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
-import com.ivianuu.injekt.compiler.resolution.AbstractInjectable
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
@@ -119,32 +118,14 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
       requests,
       callExpression.lookupLocation
     ) { _, result ->
-      if (result is ResolutionResult.Success.WithCandidate.Value) {
-        if (result.candidate is CallableInjectable) {
-          result.candidate.callable.import?.element?.let {
-            trace()!!.record(
-              InjektWritableSlices.USED_IMPORT,
-              SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-              Unit
-            )
-          }
-        } else if (result.candidate is AbstractInjectable) {
-          result.candidate.constructor.import?.element?.let {
-            trace()!!.record(
-              InjektWritableSlices.USED_IMPORT,
-              SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-              Unit
-            )
-          }
-          result.candidate.entryPoints.forEach {
-            it.import?.element?.let {
-              trace()!!.record(
-                InjektWritableSlices.USED_IMPORT,
-                SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-                Unit
-              )
-            }
-          }
+      if (result is ResolutionResult.Success.WithCandidate.Value &&
+        result.candidate is CallableInjectable) {
+        result.candidate.callable.import?.element?.let {
+          trace()!!.record(
+            InjektWritableSlices.USED_IMPORT,
+            SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
+            Unit
+          )
         }
       }
     }

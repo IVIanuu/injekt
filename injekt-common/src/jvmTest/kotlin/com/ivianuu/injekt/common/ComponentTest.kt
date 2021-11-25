@@ -16,5 +16,28 @@
 
 package com.ivianuu.injekt.common
 
-actual inline fun <R> synchronized(lock: Any, block: () -> R): R =
-  kotlin.synchronized(lock, block)
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.inject
+import io.kotest.matchers.shouldBe
+import org.junit.Test
+
+class ComponentTest {
+  @Test fun testDispose() {
+    var disposeCalls = 0
+    @Provide val disposable: @ComponentElement<AppComponent> Disposable = Disposable {
+      disposeCalls++
+    }
+
+    val component = inject<Component<AppComponent>>()
+
+    disposeCalls shouldBe 0
+
+    component.dispose()
+
+    disposeCalls shouldBe 1
+
+    component.dispose()
+
+    disposeCalls shouldBe 1
+  }
+}

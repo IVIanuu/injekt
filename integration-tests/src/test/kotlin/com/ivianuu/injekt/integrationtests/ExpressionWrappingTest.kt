@@ -74,70 +74,18 @@ class ExpressionWrappingTest {
     irShouldNotContain("local fun <anonymous>(): Foo {")
   }
 
-  @Test fun testDoesFunctionWrapComponentWithMultipleUsages() = codegen(
-    """
-      @Provide val foo = Foo()
-      @Provide fun bar(foo: Foo) = Bar(foo)
-      @Provide interface BarComponent : Component {
-        val bar: Bar
-      }
-      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
-      fun invoke() {
-        inject<Pair<BarComponent, BarComponent>>()
-      }
-    """
-  ) {
-    irShouldContain(1, "local class BarComponentImpl")
-  }
-
-  @Test fun testFunctionWrapScopedInjectable() = codegen(
-    """
-      @Provide @Scoped<MyComponent> val foo = Foo()
-      @Provide fun bar(foo: Foo) = Bar(foo)
-
-      @Provide interface MyComponent : Component {
-        val bar: Bar
-        val bar2: Bar
-      }
-
-      fun invoke() {
-        inject<MyComponent>()
-      }
-    """
-  ) {
-    irShouldContain(1, "fun function0(): Bar {")
-  }
-
-  @Test fun testFunctionWrapScopedInjectableWithoutDependencies() = codegen(
-    """
-      @Provide @Scoped<MyComponent> val foo: Foo = Foo()
-
-      @Provide interface MyComponent : Component {
-        val foo: Foo
-        val foo2: Foo
-      }
-
-      fun invoke() {
-        inject<MyComponent>()
-      }
-    """
-  ) {
-    irShouldContain(1, "fun function0(): Foo {")
-  }
-
   @Test fun testSearchBetterName() = codegen(
     """
       interface Logger
 
       @Provide object AndroidLogger : Logger
 
-      @Provide @Scoped<MyComponent> fun androidLogger(factory: () -> AndroidLogger): Logger =
-        factory()
+      @Provide fun androidLogger(factory: () -> AndroidLogger): Logger = factory()
 
-      @Provide interface MyComponent : Component {
-        val loggerFactory: () -> Logger
+      @Provide data class MyComponent(
+        val loggerFactory: () -> Logger,
         val loggerFactory2: () -> Logger
-      }
+      )
 
       fun invoke() {
         inject<MyComponent>()

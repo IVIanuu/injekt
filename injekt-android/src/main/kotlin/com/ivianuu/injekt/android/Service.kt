@@ -20,17 +20,16 @@ import android.app.Service
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.ComponentElement
+import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ServiceComponent] which must be manually stored and disposed
  */
-fun Service.createServiceComponent(): ServiceComponent =
-  appComponent.entryPoint<AppComponent, ServiceComponentFactory>().serviceComponent(this)
+fun Service.createServiceComponent(): Component<ServiceComponent> =
+  appComponent.element<ServiceComponent.FactoryElement>().factory(this)
 
-@Provide interface ServiceComponent : Component
-
-@Provide interface ServiceComponentFactory : EntryPoint<AppComponent> {
-  fun serviceComponent(service: Service): ServiceComponent
+object ServiceComponent : ComponentName {
+  @Provide @ComponentElement<AppComponent>
+  data class FactoryElement(val factory: (Service) -> Component<ServiceComponent>)
 }

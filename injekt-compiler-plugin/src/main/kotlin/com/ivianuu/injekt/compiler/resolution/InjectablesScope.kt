@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
-import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -42,7 +41,6 @@ class InjectablesScope(
   val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
-  val componentType: TypeRef? = null,
   val typeScopeType: TypeRef? = null,
   val isDeclarationContainer: Boolean = true,
   val initialInjectables: List<CallableRef> = emptyList(),
@@ -86,9 +84,7 @@ class InjectablesScope(
 
   data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
 
-  data class InjectableWithOwner(val callable: CallableRef, val ownerScope: InjectablesScope)
-
-  private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<InjectableWithOwner>>()
+  private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   init {
     for (injectable in initialInjectables) {
@@ -167,13 +163,10 @@ class InjectablesScope(
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
-    ).transform {
-      if (it.callable.isValidObjectRequest(request))
-        this += it.callable.toInjectable(requestingScope, it.ownerScope)
-    }
+    ).filter { it.callable.isValidObjectRequest(request) }
   }
 
-  private fun injectablesForType(key: CallableRequestKey): List<InjectableWithOwner> {
+  private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
     if (injectables.isEmpty())
       return parent?.injectablesForType(key) ?: emptyList()
     return injectablesByRequest.getOrPut(key) {
@@ -184,9 +177,9 @@ class InjectablesScope(
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
           val context = candidate.type.buildContext(key.type, key.staticTypeParameters)
           if (!context.isOk) continue
-          this += InjectableWithOwner(
-            candidate.substitute(context.fixedTypeVariables),
-            this@InjectablesScope
+          this += CallableInjectable(
+            this@InjectablesScope,
+            candidate.substitute(context.fixedTypeVariables)
           )
         }
       }
@@ -296,21 +289,6 @@ class InjectablesScope(
       }
     } else emptyList()
 
-  private fun entryPointsForType(entryPointType: TypeRef): List<CallableRef> {
-    if (injectables.isEmpty())
-      return parent?.entryPointsForType(entryPointType) ?: emptyList()
-
-    return buildList {
-      parent?.entryPointsForType(entryPointType)?.let { addAll(it) }
-      for (candidate in injectables) {
-        if (candidate.type.frameworkKey != 0) continue
-        val context = candidate.type.buildContext(entryPointType, allStaticTypeParameters)
-        if (!context.isOk) continue
-        this += candidate.substitute(context.fixedTypeVariables)
-      }
-    }
-  }
-
   private fun spreadInjectables(candidateType: TypeRef) {
     for (spreadingInjectable in spreadingInjectables.toList())
       spreadInjectables(spreadingInjectable, candidateType)
@@ -378,23 +356,6 @@ class InjectablesScope(
       }
     )
   }
-
-  private fun CallableRef.toInjectable(
-    requestingScope: InjectablesScope,
-    ownerScope: InjectablesScope
-  ): Injectable =
-    if (!isAbstractInjectableConstructor()) CallableInjectable(ownerScope, this)
-    else {
-      val isComponent = type.isComponent()
-      val entryPoints = if (!isComponent) emptyList()
-      else {
-        val entryPointType = ctx.entryPointClassifier!!.defaultType
-          .withArguments(listOf(type))
-        TypeInjectablesScope(entryPointType, requestingScope)
-          .entryPointsForType(entryPointType)
-      }
-      AbstractInjectable(this, entryPoints, ownerScope, isComponent, requestingScope)
-    }
 
   /**
    * We add implicit injectables for objects under some circumstances to allow

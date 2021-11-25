@@ -16,28 +16,66 @@
 
 package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
+import kotlinx.atomicfu.atomic
 
-interface Component : Disposable
-
-interface EntryPoint<C : Component> : Disposable
-
-@Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
-inline fun <C : Component, E : EntryPoint<C>> C.entryPoint(): E = this as E
-
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.CONSTRUCTOR,
-  AnnotationTarget.FUNCTION,
-  AnnotationTarget.PROPERTY,
-  AnnotationTarget.LOCAL_VARIABLE,
-  AnnotationTarget.VALUE_PARAMETER,
-  AnnotationTarget.TYPE
-)
-annotation class Scoped<C : Component>(val eager: Boolean = false)
-
-fun interface Disposable {
-  fun dispose()
+interface Component<N : ComponentName> : Disposable {
+  fun <T> element(@Inject key: TypeKey<T>): T
 }
 
-@Provide interface AppComponent : Component
+@Provide class ComponentImpl<N : ComponentName>(
+  elements: (Component<N>) -> List<ProvidedElement<N>>
+) : Component<N> {
+  @OptIn(ExperimentalStdlibApi::class)
+  private val elements = buildMap<String, Lazy<Any>> {
+    for ((key, lazyElement) in elements(this@ComponentImpl))
+      this[key.value] = lazyElement
+  }
+
+  private val isDisposed = atomic(false)
+
+  init {
+    for (element in this.elements)
+      element.value.value
+  }
+
+  override fun <T> element(@Inject key: TypeKey<T>): T =
+    elements[key.value]?.value as T ?: error("No element found for ${key.value}")
+
+  override fun dispose() {
+    if (isDisposed.getAndSet(true)) {
+      for (lazyElement in elements.values)
+          (lazyElement.value as? Disposable)?.dispose()
+    }
+  }
+}
+
+interface ComponentName
+
+@Tag annotation class ComponentElement<N : ComponentName> {
+  companion object {
+    @Provide class Module<@Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
+      @Provide fun providedElement(
+        key: TypeKey<S>,
+        lazyElement: Lazy<T>
+      ) = ProvidedElement<N>(key, lazyElement)
+
+      @Provide inline fun elementAccessor(
+        component: Component<N>,
+        key: TypeKey<S>
+      ) = component.element<S>()
+    }
+
+    @Provide
+    fun <N : ComponentName> defaultElements(): Collection<ComponentElement<N>> = emptyList()
+  }
+}
+
+data class ProvidedElement<N : ComponentName>(
+  val key: TypeKey<*>,
+  val lazyElement: Lazy<Any>
+)
+
+object AppComponent : ComponentName

@@ -433,18 +433,6 @@ class ResolveTest {
     """
   )
 
-  @Test fun testCanResolveProtectedInjectableFromComponentImplementation() = singleAndMultiCodegen(
-    """
-      @Provide abstract class FooComponent : Component {
-        abstract val foo: Foo
-        @Provide protected fun foo() = Foo()
-      }
-    """,
-    """
-      fun invoke() = inject<FooComponent>().foo
-    """
-  )
-
   @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
     """
       @Provide private val foo = Foo()
@@ -1141,45 +1129,13 @@ class ResolveTest {
     """
       fun <T> produceState(
         vararg keys: Any?,
-        @Inject scope: Scope,
+        @Inject scope: String,
         Nkey: SourceKey
       ): State<T> = TODO()
 
-      fun invoke(@Inject scope: Scope) {
+      fun invoke(@Inject scope: String) {
         val scope by produceState<Int>()
       }
     """
   )
-
-  @Test fun testCannotResolveScopedInjectableWithoutEnclosingComponent() = singleAndMultiCodegen(
-    """
-      interface ScopeComponent : Component {
-        val foo: Foo
-      }
-      @Provide @Scoped<ScopeComponent> val foo: Foo = Foo() 
-    """,
-    """
-      fun invoke() = inject<Foo>()
-    """
-  ) {
-    compilationShouldHaveFailed("no enclosing component matches com.ivianuu.injekt.integrationtests.ScopeComponent")
-  }
-
-  @Test fun testScopedValueCannotResolveInjectablesInScopesBelowIt() = singleAndMultiCodegen(
-    """
-      @Provide @Scoped<ParentComponent> fun bar(foo: Foo): Bar = Bar(foo)
-      @Provide interface ParentComponent : Component {
-        fun childComponent(foo: Foo): ChildComponent
-      } 
-
-      @Provide interface ChildComponent : Component {
-        val bar: Bar
-      }
-    """,
-    """
-      fun invoke() = inject<ParentComponent>()
-    """
-  ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
-  }
 }

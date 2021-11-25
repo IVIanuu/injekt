@@ -20,17 +20,16 @@ import android.app.Activity
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.EntryPoint
-import com.ivianuu.injekt.common.entryPoint
+import com.ivianuu.injekt.common.ComponentElement
+import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ActivityComponent] which must be manually stored and disposed
  */
-fun Activity.createActivityComponent(): ActivityComponent =
-  appComponent.entryPoint<AppComponent, ActivityComponentFactory>().activityComponent(this)
+fun Activity.createActivityComponent(): Component<ActivityComponent> =
+  appComponent.element<ActivityComponent.FactoryElement>().factory(this)
 
-@Provide interface ActivityComponent : Component
-
-@Provide interface ActivityComponentFactory : EntryPoint<AppComponent> {
-  fun activityComponent(activity: Activity): ActivityComponent
+object ActivityComponent : ComponentName {
+  @Provide @ComponentElement<AppComponent>
+  data class FactoryElement(val factory: (Activity) -> Component<ActivityComponent>)
 }
