@@ -28,7 +28,8 @@ interface Scope<N : ComponentName> {
   fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T
 }
 
-@Provide @ComponentElement<N> class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
+@Provide @ComponentElement<N>
+class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
   private val values = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 

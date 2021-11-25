@@ -45,7 +45,7 @@ interface Component<N : ComponentName> : Disposable {
     elements[key.value]?.value as T ?: error("No element found for ${key.value}")
 
   override fun dispose() {
-    if (isDisposed.getAndSet(true)) {
+    if (isDisposed.compareAndSet(false, true)) {
       for (lazyElement in elements.values)
           (lazyElement.value as? Disposable)?.dispose()
     }
