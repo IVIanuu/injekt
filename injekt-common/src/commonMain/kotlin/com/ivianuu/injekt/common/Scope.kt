@@ -60,7 +60,7 @@ interface Scope<N : ComponentName> {
     @Provide class Module<@Spread T : @Eager<N> S, S : Any, N : ComponentName> {
       @Provide fun scoped(value: T): @Scoped<N> S = value
 
-      @Provide fun initializer(value: S): @ComponentElement<N> @Initializer S = value
+      @Provide fun element(value: S): @ComponentElement<N> @Initializer S = value
 
       @Tag private annotation class Initializer
     }
