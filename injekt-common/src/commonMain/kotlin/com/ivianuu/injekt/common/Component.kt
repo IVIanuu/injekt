@@ -56,7 +56,7 @@ interface ComponentName
 
 @Tag annotation class ComponentElement<N : ComponentName> {
   companion object {
-    @Provide class Module<@Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
+    @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
       @Provide fun providedElement(
         key: TypeKey<S>,
         lazyElement: Lazy<T>
