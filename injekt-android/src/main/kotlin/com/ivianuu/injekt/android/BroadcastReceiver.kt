@@ -33,12 +33,12 @@ fun BroadcastReceiver.createReceiverComponent(
   intent: Intent,
 ): Component<ReceiverComponent> =
   context.appComponent
-    .element<ReceiverComponent.FactoryElement>()
-    .factory(this, context, intent)
+    .element<ReceiverComponent.Factory>()
+    .create(this, context, intent)
 
 object ReceiverComponent : ComponentName {
   @Provide @ComponentElement<AppComponent>
-  data class FactoryElement(
-    val factory: (BroadcastReceiver, Context, Intent) -> Component<ReceiverComponent>
+  data class Factory(
+    val create: (BroadcastReceiver, Context, Intent) -> Component<ReceiverComponent>
   )
 }
