@@ -37,12 +37,12 @@ import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
 import com.ivianuu.injekt.samples.android.domain.IncCounter
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-@Tag annotation class AppUiTag
-typealias AppUi = @AppUiTag @Composable () -> Unit
+fun interface AppUi : @Composable () -> Unit
 
-@Provide fun appUi(modelProvider: @Composable () -> CounterModel): AppUi = {
+@Provide fun appUi(modelProvider: @Composable () -> CounterModel) = AppUi {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -57,7 +57,7 @@ typealias AppUi = @AppUiTag @Composable () -> Unit
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Text("Count ${model.state}", style = MaterialTheme.typography.subtitle1)
+      Text("Count ${model.state.value}", style = MaterialTheme.typography.subtitle1)
       Spacer(Modifier.height(8.dp))
       Button(onClick = model.incCounter) {
         Text("Inc")
@@ -71,19 +71,19 @@ typealias AppUi = @AppUiTag @Composable () -> Unit
 }
 
 data class CounterModel(
-  val state: Int,
+  val state: Counter,
   val incCounter: () -> Unit,
   val decCounter: () -> Unit
 )
 
 @Provide @Composable fun counterModel(
-  counter: Counter,
+  counter: Flow<Counter>,
   incCounter: IncCounter,
   decCounter: DecCounter
 ): CounterModel {
   val scope = rememberCoroutineScope()
   return CounterModel(
-    state = counter.collectAsState(0).value,
+    state = counter.collectAsState(Counter(0)).value,
     incCounter = {
       scope.launch {
         incCounter()

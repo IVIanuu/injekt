@@ -55,12 +55,19 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     @Provide val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
+    // todo remove on kotlin 1.6.0 update
+    if (diagnostic.factory == Errors.SUPERTYPE_IS_SUSPEND_FUNCTION_TYPE)
+      return true
+
+    // todo remove once compose fun interface support is fixed
+    if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
+      return true
+
     if (diagnostic.factory == Errors.UNRESOLVED_REFERENCE)
       return bindingContext[InjektWritableSlices.FIXED_TYPE, diagnostic.psiElement.text] != null
 
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
-      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER
-    )
+      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
         ?.descriptor<CallableDescriptor>()
         ?.valueParameters
