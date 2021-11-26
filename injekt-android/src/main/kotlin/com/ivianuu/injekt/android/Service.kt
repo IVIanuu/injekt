@@ -21,7 +21,6 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentElement
-import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ServiceComponent] which must be manually stored and disposed
@@ -29,7 +28,7 @@ import com.ivianuu.injekt.common.ComponentName
 fun Service.createServiceComponent(): Component<ServiceComponent> =
   appComponent.element<ServiceComponent.Factory>().create(this)
 
-object ServiceComponent : ComponentName {
+object ServiceComponent {
   @Provide @ComponentElement<AppComponent>
   data class Factory(val create: (Service) -> Component<ServiceComponent>)
 }

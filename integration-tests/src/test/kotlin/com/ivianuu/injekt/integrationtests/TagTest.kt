@@ -164,9 +164,9 @@ class TagTest {
     """
       typealias ComponentScope<N> = @ComponentScopeTag<N> String
 
-      @Tag annotation class ComponentScopeTag<N : ComponentName> {
+      @Tag annotation class ComponentScopeTag<N> {
         companion object {
-          @Provide fun <N : ComponentName> scope(): ComponentScope<N> = ""
+          @Provide fun <N> scope(): ComponentScope<N> = ""
         }
       }
     """,

@@ -21,7 +21,6 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentElement
-import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ActivityComponent] which must be manually stored and disposed
@@ -29,7 +28,7 @@ import com.ivianuu.injekt.common.ComponentName
 fun Activity.createActivityComponent(): Component<ActivityComponent> =
   appComponent.element<ActivityComponent.Factory>().create(this)
 
-object ActivityComponent : ComponentName {
+object ActivityComponent {
   @Provide @ComponentElement<AppComponent>
   data class Factory(val create: (Activity) -> Component<ActivityComponent>)
 }

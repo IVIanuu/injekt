@@ -18,7 +18,6 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.common.ComponentName
 import com.ivianuu.injekt.common.Disposable
 import com.ivianuu.injekt.common.Scoped
 import kotlinx.coroutines.CoroutineScope
@@ -28,9 +27,9 @@ import kotlin.coroutines.CoroutineContext
 
 typealias ComponentScope<N> = @ComponentScopeTag<N> CoroutineScope
 
-@Tag annotation class ComponentScopeTag<N : ComponentName> {
+@Tag annotation class ComponentScopeTag<N> {
   companion object {
-    @Provide fun <N : ComponentName> scope(
+    @Provide fun <N> scope(
       context: ComponentContext<N>
     ): @Scoped<N> ComponentScope<N> = object : CoroutineScope, Disposable {
       override val coroutineContext: CoroutineContext = context + SupervisorJob()
@@ -43,9 +42,9 @@ typealias ComponentScope<N> = @ComponentScopeTag<N> CoroutineScope
 
 typealias ComponentContext<N> = @ComponentContextTag<N> CoroutineContext
 
-@Tag annotation class ComponentContextTag<N : ComponentName> {
+@Tag annotation class ComponentContextTag<N> {
   companion object {
-    @Provide inline fun <N : ComponentName> context(
+    @Provide inline fun <N> context(
       dispatcher: DefaultDispatcher
     ): ComponentContext<N> = dispatcher
   }

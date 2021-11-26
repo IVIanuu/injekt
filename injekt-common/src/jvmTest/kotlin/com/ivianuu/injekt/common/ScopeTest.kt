@@ -24,13 +24,13 @@ import org.junit.Test
 
 class ScopeTest {
   @Test fun testScope() {
-    val scope = Scope<ComponentName>()
+    val scope = Scope<Any>()
     scope.scope { "a" } shouldBe "a"
     scope.scope { "b" } shouldBe "a"
   }
 
   @Test fun testDispose() {
-    val scope = Scope<ComponentName>()
+    val scope = Scope<Any>()
     var disposeCalls = 0
     scope.scope {
       Disposable {
@@ -74,6 +74,7 @@ class ScopeTest {
     }
 
     @Provide val component = inject<Component<AppComponent>>()
+    @Provide val scope = component.element<Scope<AppComponent>>()
     callCount shouldBe 1
     val a = inject<Foo>()
     callCount shouldBe 1

@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Component
 import com.ivianuu.injekt.common.ComponentElement
-import com.ivianuu.injekt.common.ComponentName
 
 /**
  * Returns a new [ReceiverComponent] which must be manually stored and disposed
@@ -36,7 +35,7 @@ fun BroadcastReceiver.createReceiverComponent(
     .element<ReceiverComponent.Factory>()
     .create(this, context, intent)
 
-object ReceiverComponent : ComponentName {
+object ReceiverComponent {
   @Provide @ComponentElement<AppComponent>
   data class Factory(
     val create: (BroadcastReceiver, Context, Intent) -> Component<ReceiverComponent>

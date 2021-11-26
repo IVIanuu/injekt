@@ -24,20 +24,13 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 
-interface Scope<N : ComponentName> : Disposable {
+interface Scope<N> : Disposable {
   fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T
-
-  companion object {
-    @Provide fun <N : ComponentName> componentScope(
-      component: Component<N>,
-      nameKey: TypeKey<N>
-    ): Scope<N> = component.element()
-  }
 }
 
-fun <N : ComponentName> Scope(): Scope<N> = ScopeImpl()
+fun <N> Scope(): Scope<N> = ScopeImpl()
 
-private class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
+private class ScopeImpl<N> : Scope<N>, Disposable {
   private val values = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 
@@ -54,9 +47,9 @@ private class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
   }
 }
 
-@Tag annotation class Scoped<N : ComponentName> {
+@Tag annotation class Scoped<N> {
   companion object {
-    @Provide fun <@Spread T : @Scoped<N> S, S : Any, N : ComponentName> scoped(
+    @Provide fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       init: () -> T,
       scope: Scope<N>,
       key: TypeKey<S>
@@ -64,9 +57,9 @@ private class ScopeImpl<N : ComponentName> : Scope<N>, Disposable {
   }
 }
 
-@Tag annotation class Eager<N : ComponentName> {
+@Tag annotation class Eager<N> {
   companion object {
-    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N : ComponentName> {
+    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N> {
       @Provide fun scoped(value: T): @Scoped<N> S = value
 
       @Provide fun element(value: S): @ComponentElement<N> @Initializer S = value

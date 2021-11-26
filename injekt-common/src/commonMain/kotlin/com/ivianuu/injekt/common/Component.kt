@@ -21,11 +21,11 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
 import kotlinx.atomicfu.atomic
 
-interface Component<N : ComponentName> : Disposable {
+interface Component<N> : Disposable {
   fun <T> element(@Inject key: TypeKey<T>): T
 }
 
-class ComponentImpl<N : ComponentName> private constructor(
+class ComponentImpl<N> private constructor(
   private val elements: Map<String, Lazy<Any>>
 ) : Component<N> {
   private val isDisposed = atomic(false)
@@ -43,9 +43,9 @@ class ComponentImpl<N : ComponentName> private constructor(
   companion object {
     @OptIn(ExperimentalStdlibApi::class)
     @Provide
-    fun <N : ComponentName> create(
+    fun <N> create(
       nameKey: TypeKey<N>,
-      elementsFactory: (Component<N>) -> List<ProvidedElement<N>>
+      elementsFactory: (Component<N>, Scope<N>) -> List<ProvidedElement<N>>
     ): Component<N> {
       val scope = Scope<N>()
 
@@ -54,7 +54,7 @@ class ComponentImpl<N : ComponentName> private constructor(
       val component = ComponentImpl<N>(elements)
 
       elements[typeKeyOf<Scope<N>>().value] = lazyOf(scope)
-      for ((key, lazyElement) in elementsFactory(component))
+      for ((key, lazyElement) in elementsFactory(component, scope))
         elements[key.value] = lazyElement
 
       for (element in elements)
@@ -65,11 +65,9 @@ class ComponentImpl<N : ComponentName> private constructor(
   }
 }
 
-interface ComponentName
-
-@Tag annotation class ComponentElement<N : ComponentName> {
+@Tag annotation class ComponentElement<N> {
   companion object {
-    @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N : ComponentName> {
+    @Provide class Module<@com.ivianuu.injekt.Spread T : @ComponentElement<N> S, S : Any, N> {
       @Provide fun providedElement(
         key: TypeKey<S>,
         lazyElement: Lazy<T>
@@ -80,14 +78,14 @@ interface ComponentName
   }
 }
 
-data class ProvidedElement<N : ComponentName>(
+data class ProvidedElement<N>(
   val key: TypeKey<*>,
   val lazyElement: Lazy<Any>
 ) {
   companion object {
     @Provide
-    fun <N : ComponentName> defaultElements(): Collection<ProvidedElement<N>> = emptyList()
+    fun <N> defaultElements(): Collection<ProvidedElement<N>> = emptyList()
   }
 }
 
-object AppComponent : ComponentName
+object AppComponent
