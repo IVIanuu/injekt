@@ -256,7 +256,8 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   return if (!request.type.isFunctionType &&
     request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
-    request.type.classifier.fqName != injektFqNames().sourceKey)
+    request.type.classifier.fqName != injektFqNames().sourceKey &&
+    allScopes.none { it.typeScopeType == request.type })
       with(TypeInjectablesScope(request.type, this)) {
         recordLookup(lookupLocation)
         resolveRequest(request, lookupLocation, true)
