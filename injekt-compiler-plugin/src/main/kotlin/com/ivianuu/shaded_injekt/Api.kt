@@ -18,6 +18,9 @@
 
 package com.ivianuu.shaded_injekt
 
+/**
+ * Provides this declaration in the current scope
+ */
 @Target(
   // @Provide class MyClass
   AnnotationTarget.CLASS,
@@ -43,6 +46,9 @@ package com.ivianuu.shaded_injekt
 )
 annotation class Provide
 
+/**
+ * Automatically fills in a argument if no explicit argument was provided
+ */
 @Target(
   // fun func(@Inject foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
@@ -56,7 +62,7 @@ annotation class Inject
 /**
  * Returns a provided instance of [T]
  */
-inline fun <T> inject(@Inject value: T): T = value
+inline fun <T> inject(@Inject x: T): T = x
 
 /**
  * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
@@ -104,3 +110,26 @@ annotation class Tag
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
+
+/**
+ * Specify a custom error message if no injectable could be found
+ */
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.ANNOTATION_CLASS,
+  AnnotationTarget.VALUE_PARAMETER
+)
+annotation class InjectableNotFound(val message: String)
+
+/**
+ * Specify a custom error message if ambiguous injectables were found
+ */
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.VALUE_PARAMETER,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.LOCAL_VARIABLE
+)
+annotation class AmbiguousInjectable(val message: String)
