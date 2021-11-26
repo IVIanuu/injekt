@@ -24,10 +24,12 @@ import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.anySuperType
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.updatePrivateFinalField
 import com.ivianuu.shaded_injekt.Inject
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.jvm.ir.getSingleAbstractMethod
 import org.jetbrains.kotlin.compiler.plugin.cliPluginUsageString
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
@@ -49,6 +51,7 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -58,24 +61,21 @@ import org.jetbrains.kotlin.ir.util.isFakeOverriddenFromAny
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.parentAsClass
+import org.jetbrains.kotlin.ir.util.parentClassOrNull
+import org.jetbrains.kotlin.ir.util.superTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.psi.declarationVisitor
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.closure
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-fun IrModuleFragment.fixComposeFunInterfaces(
+fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
   @Inject ctx: Context,
   irCtx: IrPluginContext
 ) {
   if (!composeCompilerInClasspath) return
-
-  fun IrType.isComposableFunInterface(): Boolean {
-    val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
-    return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
-        classifier.defaultType.anySuperType { it.classifier.fqName == injektFqNames().composable }
-  }
 
   transform(
     object : IrElementTransformerVoid() {
@@ -85,14 +85,33 @@ fun IrModuleFragment.fixComposeFunInterfaces(
             expression.type.isComposableFunInterface()) {
           val functionExpression = expression.argument as IrFunctionExpression
           val declaration = functionExpression.function
-          /*if (!declaration.hasComposableAnnotation()) {
+          if (!declaration.hasComposableAnnotation()) {
             declaration.annotations += DeclarationIrBuilder(irCtx, declaration.symbol)
               .irCallConstructor(
                 irCtx.referenceConstructors(injektFqNames().composable)
                   .single(),
                 emptyList()
               )
-          }*/
+          }
+          declaration.overriddenSymbols = listOf(
+            expression.type.classOrNull!!
+              .owner
+              .getSingleAbstractMethod()!!
+              .symbol
+              .also {
+                if (!it.owner.hasComposableAnnotation()) {
+                  it.owner.annotations += DeclarationIrBuilder(irCtx, it.owner.symbol)
+                    .irCallConstructor(
+                      irCtx.referenceConstructors(injektFqNames().composable)
+                        .single(),
+                      emptyList()
+                    )
+                }
+                println()
+              }
+          )
+
+          println()
         }
 
         return super.visitTypeOperator(expression)
@@ -117,6 +136,7 @@ fun IrModuleFragment.fixComposeFunInterfaces(
                   1
             ).owner.functions.first { it.name.asString() == "invoke" }.symbol
           )
+          println()
         }
         return super.visitFunction(declaration)
       }
@@ -144,4 +164,41 @@ fun IrModuleFragment.fixComposeFunInterfaces(
     },
     null
   )
+}
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
+  transform(
+    object : IrElementTransformerVoid() {
+      override fun visitFunction(declaration: IrFunction): IrStatement {
+        if (declaration.hasComposableAnnotation()) {
+          declaration.annotations = declaration.annotations
+            .transform {
+              if (it.type.classifierOrFail.descriptor.fqNameSafe != injektFqNames().composable ||
+                  none { it.type.classifierOrFail.descriptor.fqNameSafe == injektFqNames().composable })
+                    add(it)
+            }
+
+          if (declaration.parentClassOrNull?.defaultType?.superTypes()
+              ?.any { it.isComposableFunInterface() } == true) {
+            (declaration as IrSimpleFunction).overriddenSymbols = listOf(
+              irBuiltins.function(declaration.valueParameters.size)
+                .owner.functions.first { it.name.asString() == "invoke" }.symbol
+            )
+          }
+          println()
+        }
+        return super.visitFunction(declaration)
+      }
+    },
+    null
+  )
+  println()
+}
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+private fun IrType.isComposableFunInterface(@Inject ctx: Context): Boolean {
+  val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
+  return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
+      classifier.defaultType.anySuperType { it.classifier.fqName == injektFqNames().composable }
 }

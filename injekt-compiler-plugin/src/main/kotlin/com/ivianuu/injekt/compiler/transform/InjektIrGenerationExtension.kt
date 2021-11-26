@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -32,9 +31,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
-import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
-import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -60,7 +56,7 @@ class InjektIrGenerationExtension(
 
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir)
-    moduleFragment.fixComposeFunInterfaces()
+    moduleFragment.fixComposeFunInterfacesPreCompose()
   }
 
   @OptIn(ObsoleteDescriptorBasedAPI::class)
