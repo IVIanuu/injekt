@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.composeCompilerInClasspath
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.resolution.anySuperType
 import com.ivianuu.injekt.compiler.resolution.anyType
+import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.updatePrivateFinalField
@@ -66,6 +67,7 @@ import org.jetbrains.kotlin.ir.util.superTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.psi.declarationVisitor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.sam.getSingleAbstractMethodOrNull
 import org.jetbrains.kotlin.types.typeUtil.closure
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -107,11 +109,8 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
                       emptyList()
                     )
                 }
-                println()
               }
           )
-
-          println()
         }
 
         return super.visitTypeOperator(expression)
@@ -129,14 +128,15 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
                 emptyList()
               )
           }
-          (declaration as IrSimpleFunction).overriddenSymbols = listOf(
-            irBuiltins.function(
-              declaration.valueParameters.size +
-                  changedParamCount(declaration.valueParameters.size, 1) +
-                  1
-            ).owner.functions.first { it.name.asString() == "invoke" }.symbol
-          )
-          println()
+          if (declaration.parentAsClass.defaultType.isComposableFunInterfaceWithFunctionSuperType()) {
+            (declaration as IrSimpleFunction).overriddenSymbols = listOf(
+              irBuiltins.function(
+                declaration.valueParameters.size +
+                    changedParamCount(declaration.valueParameters.size, 1) +
+                    1
+              ).owner.functions.first { it.name.asString() == "invoke" }.symbol
+            )
+          }
         }
         return super.visitFunction(declaration)
       }
@@ -168,6 +168,8 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
+  if (!composeCompilerInClasspath) return
+
   transform(
     object : IrElementTransformerVoid() {
       override fun visitFunction(declaration: IrFunction): IrStatement {
@@ -180,25 +182,31 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
             }
 
           if (declaration.parentClassOrNull?.defaultType?.superTypes()
-              ?.any { it.isComposableFunInterface() } == true) {
+              ?.any { it.isComposableFunInterfaceWithFunctionSuperType() } == true) {
             (declaration as IrSimpleFunction).overriddenSymbols = listOf(
               irBuiltins.function(declaration.valueParameters.size)
                 .owner.functions.first { it.name.asString() == "invoke" }.symbol
             )
           }
-          println()
         }
         return super.visitFunction(declaration)
       }
     },
     null
   )
-  println()
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 private fun IrType.isComposableFunInterface(@Inject ctx: Context): Boolean {
   val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
   return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
-      classifier.defaultType.anySuperType { it.classifier.fqName == injektFqNames().composable }
+      getSingleAbstractMethodOrNull(classifier.descriptor.cast())!!.hasComposableAnnotation()
+}
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+private fun IrType.isComposableFunInterfaceWithFunctionSuperType(@Inject ctx: Context): Boolean {
+  val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
+  return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
+      classifier.defaultType.anySuperType { it.classifier.fqName == injektFqNames().composable } &&
+      classifier.defaultType.anySuperType { it.isFunctionType }
 }

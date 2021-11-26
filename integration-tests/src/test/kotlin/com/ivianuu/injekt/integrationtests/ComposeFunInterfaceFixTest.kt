@@ -16,13 +16,14 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.withCompose
 import org.junit.Test
 
 class ComposeFunInterfaceFixTest {
-  @Test fun testComposeFunInterface() = singleAndMultiCodegen(
+  @Test fun testComposeFunInterfaceWithFunctionSuperType() = singleAndMultiCodegen(
     """
       fun interface KeyUi<K> : @Composable () -> Unit
     """,
@@ -34,6 +35,64 @@ class ComposeFunInterfaceFixTest {
     """
       @Composable fun func() {
         testKeyUi()
+      }
+    """,
+    config = { withCompose() }
+  )
+
+  @Test fun testComposableFunInterfaceWithComposableFunction() = multiCodegen(
+    """
+      fun interface ModelKeyUi<K, M> {
+        @Composable operator fun invoke(scope: ModelKeyUiScope<K, M>)
+      }
+
+      interface ModelKeyUiScope<K, M> {
+        val model: M
+      }
+    """,
+    """
+      val testKeyUi = ModelKeyUi<String, Int> {
+        val test = remember { it.model }
+      }
+    """,
+    """
+      @Composable fun func() {
+        testKeyUi.invoke(
+          object : ModelKeyUiScope<String, Int> {
+            override val model: Int get() = 0
+          }
+        )
+      }
+    """,
+    config = { withCompose() }
+  )
+
+  @Test fun testComposableFunInterfaceWithComposableExtensionFunction() = multiCodegen(
+    """
+      fun interface ModelKeyUi<K, M> {
+        @Composable operator fun ModelKeyUiScope<K, M>.invoke()
+      }
+
+      interface ModelKeyUiScope<K, M> {
+        val model: M
+      }
+    """,
+    """
+      val testKeyUi = ModelKeyUi<String, Int> {
+        val test = remember { model }
+      }
+    """,
+    """
+      @Composable fun func() {
+        with(
+          object : ModelKeyUiScope<String, Int> {
+            override val model: Int get() = 0
+          }
+        ) {
+          with(testKeyUi) {
+            invoke()
+          }
+        }
       }
     """,
     config = { withCompose() }

@@ -91,24 +91,22 @@ private fun MockProject.registerAnalysisExtensions(
     LoadingOrder.FIRST,
     InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
   )
-  if (composeCompilerInClasspath) {
-    IrGenerationExtension.registerExtensionWithLoadingOrder(
-      this,
-      LoadingOrder.LAST,
-      object : IrGenerationExtension {
-        @OptIn(ObsoleteDescriptorBasedAPI::class)
-        override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-          moduleFragment.fixComposeFunInterfacesPostCompose(
-            ctx = Context(
-              pluginContext.moduleDescriptor,
-              injektFqNames,
-              DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
-            )
+  IrGenerationExtension.registerExtensionWithLoadingOrder(
+    this,
+    LoadingOrder.LAST,
+    object : IrGenerationExtension {
+      @OptIn(ObsoleteDescriptorBasedAPI::class)
+      override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        moduleFragment.fixComposeFunInterfacesPostCompose(
+          ctx = Context(
+            pluginContext.moduleDescriptor,
+            injektFqNames,
+            DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
           )
-        }
+        )
       }
-    )
-  }
+    }
+  )
 
   AnalysisHandlerExtension.registerExtension(
     this,
