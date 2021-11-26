@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.Component
+import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.inject
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -27,24 +27,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import org.junit.Test
 
-@Provide interface CoroutinesComponent : Component {
-  val scope: ComponentScope<CoroutinesComponent>
-}
+class NamedCoroutineScopeTest {
+  private object MyScope
 
-class ComponentScopeTest {
   @Test fun testComponentScopeLifecycle() {
-    val component = inject<CoroutinesComponent>()
-    val scope = component.scope
-    scope.isActive.shouldBeTrue()
-    component.dispose()
-    scope.isActive.shouldBeFalse()
+    @Provide val scope = Scope<MyScope>()
+    val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
+    coroutineScope.isActive.shouldBeTrue()
+    scope.dispose()
+    coroutineScope.isActive.shouldBeFalse()
   }
 
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val customContext: ComponentContext<CoroutinesComponent> = Dispatchers.Main
-    val component = inject<CoroutinesComponent>()
-    val scope = component.scope
-    scope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
+    @Provide val scope = Scope<MyScope>()
+    @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
+    val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
+    coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
   }
 }

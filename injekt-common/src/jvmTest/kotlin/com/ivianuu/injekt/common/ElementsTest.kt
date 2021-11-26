@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
+package com.ivianuu.injekt.common
 
-import android.app.Service
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.AppComponent
-import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.ComponentElement
+import com.ivianuu.injekt.inject
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
-/**
- * Returns a new [ServiceComponent] which must be manually stored and disposed
- */
-fun Service.createServiceComponent(): Component<ServiceComponent> =
-  appComponent.element<ServiceComponent.Factory>().create(this)
+class ElementsTest {
+  @Test fun testElements() {
+    class MyScope
 
-object ServiceComponent {
-  @Provide @ComponentElement<AppComponent>
-  data class Factory(val create: (Service) -> Component<ServiceComponent>)
+    @Provide val int: @Element<MyScope> Int = 42
+    @Provide val string: @Element<MyScope> String = "42"
+
+    val elements = inject<Elements<MyScope>>()
+
+    elements.get<Int>() shouldBe 42
+    elements.get<String>() shouldBe "42"
+  }
 }

@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed

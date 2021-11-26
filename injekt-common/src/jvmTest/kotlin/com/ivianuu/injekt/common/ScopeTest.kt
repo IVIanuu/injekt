@@ -49,33 +49,15 @@ class ScopeTest {
 
     class Foo
 
-    @Provide fun scopedFoo(): @Scoped<AppComponent> Foo {
+    class MyScope
+
+    @Provide fun scopedFoo(): @Scoped<MyScope> Foo {
       callCount++
       return Foo()
     }
 
-    @Provide val scope = Scope<AppComponent>()
+    @Provide val scope = Scope<MyScope>()
     callCount shouldBe 0
-    val a = inject<Foo>()
-    callCount shouldBe 1
-    val b = inject<Foo>()
-    callCount shouldBe 1
-    a shouldBeSameInstanceAs b
-  }
-
-  @Test fun testEager() {
-    var callCount = 0
-
-    class Foo
-
-    @Provide fun eagerFoo(): @Eager<AppComponent> Foo {
-      callCount++
-      return Foo()
-    }
-
-    @Provide val component = inject<Component<AppComponent>>()
-    @Provide val scope = component.element<Scope<AppComponent>>()
-    callCount shouldBe 1
     val a = inject<Foo>()
     callCount shouldBe 1
     val b = inject<Foo>()

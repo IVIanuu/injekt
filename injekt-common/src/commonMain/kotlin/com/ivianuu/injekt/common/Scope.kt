@@ -25,7 +25,7 @@ import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 
 interface Scope<N> : Disposable {
-  fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T
+  operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T
 }
 
 fun <N> Scope(): Scope<N> = ScopeImpl()
@@ -36,7 +36,7 @@ private class ScopeImpl<N> : Scope<N>, Disposable {
 
   private val isDisposed = atomic(false)
 
-  override fun <T : Any> scope(@Inject key: TypeKey<T>, init: () -> T): T =
+  override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
     lock.withLock { values.getOrPut(key.value, init) as T }
 
   override fun dispose() {
@@ -53,18 +53,6 @@ private class ScopeImpl<N> : Scope<N>, Disposable {
       init: () -> T,
       scope: Scope<N>,
       key: TypeKey<S>
-    ): S = scope.scope(key, init)
-  }
-}
-
-@Tag annotation class Eager<N> {
-  companion object {
-    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N> {
-      @Provide fun scoped(value: T): @Scoped<N> S = value
-
-      @Provide fun element(value: S): @ComponentElement<N> @Initializer S = value
-
-      @Tag private annotation class Initializer
-    }
+    ): S = scope(key, init)
   }
 }
