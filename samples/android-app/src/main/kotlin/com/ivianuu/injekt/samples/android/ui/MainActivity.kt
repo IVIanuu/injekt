@@ -20,35 +20,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.android.ActivityComponent
-import com.ivianuu.injekt.android.createActivityComponent
-import com.ivianuu.injekt.common.Component
-import com.ivianuu.injekt.common.ComponentElement
+import com.ivianuu.injekt.samples.android.app.App
 
 class MainActivity : ComponentActivity() {
-  private val dependencies by lazy {
-    createActivityComponent()
-      .element<MainActivityDependencies>()
-  }
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    val component = (application as App).appComponent.mainActivityComponent()
     setContent {
-      dependencies.theme {
-        dependencies.appUi()
+      component.appTheme {
+        component.appUi()
       }
     }
   }
-
-  override fun onDestroy() {
-    dependencies.component.dispose()
-    super.onDestroy()
-  }
 }
 
-@Provide @ComponentElement<ActivityComponent>
-data class MainActivityDependencies(
-  val theme: AppTheme,
-  val appUi: AppUi,
-  val component: Component<ActivityComponent>
-)
+@Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)

@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Tag
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
 import com.ivianuu.injekt.samples.android.domain.IncCounter

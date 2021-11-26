@@ -17,12 +17,14 @@
 package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
-import com.ivianuu.injekt.Providers
-import com.ivianuu.injekt.android.AppComponentOwner
-import com.ivianuu.injekt.android.createAppComponent
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.Scope
+import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
 
-class App : Application(), AppComponentOwner {
-  override val appComponent by lazy {
-    @Providers(".**") createAppComponent()
-  }
+class App : Application() {
+  @Provide private val scope = Scope<AppComponent>()
+  val appComponent: AppComponent by lazy { inject() }
 }
+
+@Provide data class AppComponent(val mainActivityComponent: () -> MainActivityComponent)

@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.samples.android.data
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.AppComponent
 import com.ivianuu.injekt.common.Scoped
+import com.ivianuu.injekt.samples.android.app.AppComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
