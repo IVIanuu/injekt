@@ -123,13 +123,6 @@ fun CallableDescriptor.callableInfo(@Inject ctx: Context): CallableInfo =
       }
     }
 
-    findPsi()?.safeAs<KtDeclaration>()
-      ?.let { declaration ->
-        annotations.forEach {
-          fixTypes(it.type, declaration)
-        }
-      }
-
     val type = run {
       val tags = if (this is ConstructorDescriptor)
         buildList {
@@ -266,13 +259,6 @@ fun ClassifierDescriptor.classifierInfo(@Inject ctx: Context): ClassifierInfo =
         lazyDeclaresInjectables = lazyOf(false)
       )
     } else {
-      findPsi()?.safeAs<KtDeclaration>()
-        ?.let { declaration ->
-          annotations.forEach {
-            fixTypes(it.type, declaration)
-          }
-        }
-
       val info = if (this is TypeParameterDescriptor) {
         val isSpread = hasAnnotation(injektFqNames().spread) ||
             findPsi()?.safeAs<KtTypeParameter>()
@@ -457,42 +443,3 @@ fun DescriptorVisibility.shouldPersistInfo() = this ==
     DescriptorVisibilities.PUBLIC ||
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
-
-fun fixTypes(type: KotlinType, declaration: KtDeclaration, @Inject ctx: Context) {
-  val typeParameters = when (val descriptor = declaration.descriptor<DeclarationDescriptor>()) {
-    is ClassDescriptor -> descriptor.declaredTypeParameters
-    is CallableDescriptor -> descriptor.typeParameters
-    else -> emptyList()
-  }
-
-  if (typeParameters.isNotEmpty()) {
-    fun fixUnresolved(type: KotlinType) {
-      val arguments = type.arguments as? MutableList<TypeProjection> ?: return
-      val replacements = mutableMapOf<Int, TypeProjection>()
-      for ((i, argument) in type.arguments.withIndex()) {
-        val argumentType = argument.type
-        if (argumentType is ErrorType) {
-          val typeParameter = typeParameters.singleOrNull {
-            it.name.asString() == argumentType.presentableName
-          }
-          if (typeParameter != null) {
-            trace()!!.record(
-              InjektWritableSlices.FIXED_TYPE,
-              argumentType.presentableName,
-              Unit
-            )
-            replacements[i] = typeParameter.defaultType.asTypeProjection()
-          }
-        } else {
-          fixUnresolved(argumentType)
-        }
-      }
-
-      replacements.forEach {
-        arguments[it.key] = it.value
-      }
-    }
-
-    fixUnresolved(type)
-  }
-}

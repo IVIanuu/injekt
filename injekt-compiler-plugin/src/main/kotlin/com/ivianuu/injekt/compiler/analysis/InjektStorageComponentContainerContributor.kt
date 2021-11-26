@@ -61,7 +61,6 @@ class InjektStorageComponentContainerContributor(
       container.useImpl<InjectSyntheticScopes>()
     }
 
-    container.useInstance(TypeFixer())
     container.useInstance(InjectableChecker())
     container.useInstance(TagChecker())
     container.useInstance(ProviderImportsChecker())
