@@ -26,7 +26,7 @@ intellij {
   version.set("2020.3.1")
   pluginName.set("Injekt ide plugin")
   updateSinceUntilBuild.set(false)
-  plugins.addAll("org.jetbrains.kotlin:203-1.5.31-release-550-AS7717.8", "gradle", "gradle-java", "java")
+  plugins.addAll("org.jetbrains.kotlin:203-1.6.0-release-798-AS7717.8", "gradle", "gradle-java", "java")
   localPath.set("/home/manu/android-studio")
 }
 
