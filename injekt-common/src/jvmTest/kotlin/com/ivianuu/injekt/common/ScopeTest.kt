@@ -24,15 +24,15 @@ import org.junit.Test
 
 class ScopeTest {
   @Test fun testScope() {
-    val scope = Scope<Any>()
-    scope.scope { "a" } shouldBe "a"
-    scope.scope { "b" } shouldBe "a"
+    val scope = Scope<TestScope>()
+    scope { "a" } shouldBe "a"
+    scope { "b" } shouldBe "a"
   }
 
   @Test fun testDispose() {
-    val scope = Scope<Any>()
+    val scope = Scope<TestScope>()
     var disposeCalls = 0
-    scope.scope {
+    scope {
       Disposable {
         disposeCalls++
       }
@@ -49,14 +49,12 @@ class ScopeTest {
 
     class Foo
 
-    class MyScope
-
-    @Provide fun scopedFoo(): @Scoped<MyScope> Foo {
+    @Provide fun scopedFoo(): @Scoped<TestScope> Foo {
       callCount++
       return Foo()
     }
 
-    @Provide val scope = Scope<MyScope>()
+    @Provide val scope = Scope<TestScope>()
     callCount shouldBe 0
     val a = inject<Foo>()
     callCount shouldBe 1

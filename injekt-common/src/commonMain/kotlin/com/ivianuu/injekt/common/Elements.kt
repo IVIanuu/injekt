@@ -26,28 +26,39 @@ interface Elements<N> {
 
 @Provide class ElementsImpl<N>(elements: List<ProvidedElement<N, *>>) : Elements<N> {
   @OptIn(ExperimentalStdlibApi::class)
-  private val elements = buildMap<String, () -> Any> {
-    for ((key, factory) in elements)
-      this[key.value] = factory
+  private val elements = buildMap<String, Any> {
+    for ((key, element) in elements)
+      this[key.value] = element
   }
 
   override fun <T> invoke(@Inject key: TypeKey<T>): T =
-    elements[key.value]?.invoke() as T ?: error("No element found for ${key.value}")
+    elements[key.value] as T ?: error("No element found for ${key.value}")
 }
 
 @Tag annotation class Element<N> {
   companion object {
     @Provide class Module<@com.ivianuu.injekt.Spread T : @Element<N> S, S : Any, N> {
-      @Provide fun provided(key: TypeKey<S>, elementFactory: () -> T) =
-        ProvidedElement<N, S>(key, elementFactory)
+      @Provide fun provided(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
 
       @Provide inline fun accessor(value: T): S = value
     }
   }
 }
 
-data class ProvidedElement<N, T : Any>(val key: TypeKey<T>, val elementFactory: () -> T) {
+data class ProvidedElement<N, T : Any>(val key: TypeKey<T>, val element: T) {
   companion object {
     @Provide fun <N> defaultElements(): Collection<ProvidedElement<N, *>> = emptyList()
+  }
+}
+
+@Tag annotation class Eager<N> {
+  companion object {
+    @Provide class Module<@com.ivianuu.injekt.Spread T : @Eager<N> S, S : Any, N> {
+      @Provide fun scoped(value: T): @Scoped<N> S = value
+
+      @Provide fun element(value: S): @Element<N> @Initializer S = value
+
+      @Tag private annotation class Initializer
+    }
   }
 }

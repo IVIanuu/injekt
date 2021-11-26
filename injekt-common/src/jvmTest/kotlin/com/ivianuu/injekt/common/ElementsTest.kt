@@ -19,6 +19,7 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
 
 class ElementsTest {
@@ -30,7 +31,27 @@ class ElementsTest {
 
     val elements = inject<Elements<MyScope>>()
 
-    elements.get<Int>() shouldBe 42
-    elements.get<String>() shouldBe "42"
+    elements<Int>() shouldBe 42
+    elements<String>() shouldBe "42"
+  }
+
+  @Test fun testEager() {
+    var callCount = 0
+
+    class Foo
+
+    @Provide fun eagerFoo(): @Eager<TestScope> Foo {
+      callCount++
+      return Foo()
+    }
+
+    @Provide val scope = Scope<TestScope>()
+    @Provide val elements = inject<Elements<TestScope>>()
+    callCount shouldBe 1
+    val a = inject<Foo>()
+    callCount shouldBe 1
+    val b = inject<Foo>()
+    callCount shouldBe 1
+    a shouldBeSameInstanceAs b
   }
 }
