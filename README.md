@@ -163,29 +163,10 @@ fun main() {
 ```
 All elements which match the T or Collection\<T\> will be included in the resulting list.
 
-# Components
-TODO
-```kotlin
-@Provide interface AppComponent : Component {
-  val api: Api
-
-  suspend fun imageLoader(): ImageLoader
-  
-  fun activityComponent(activity: ComponentActivity): ActivityComponent
-}
-```
-
 # Scoping
-Injectables can be scoped to the lifetime of a component by annotating it with @Scoped<C>
-```kotlin
-@Provide @Scoped<AppComponent> class Repository
-```
-it will be created and cached on the first access.
+TODO
 
-It's also possible to eagerly create the scoped injectable as soon as the component get's created
-by setting the eager flag to true ```@Scoped<AppComponent>(eager = true)```.
-
-# Entry points
+# Elements api
 TODO
 
 # Distinguish between types
@@ -219,9 +200,6 @@ fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId)
 ```
 
 # Injectable chaining
-TODO
-
-# Component lifecycle
 TODO
 
 # Coroutines

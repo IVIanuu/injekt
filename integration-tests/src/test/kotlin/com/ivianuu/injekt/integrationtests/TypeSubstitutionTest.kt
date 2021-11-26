@@ -93,10 +93,9 @@ class TypeSubstitutionTest {
       .single()
       .typeParameters
       .map { it.toClassifierRef(ctx) }
-    val appComponent = typeFor(FqName("com.ivianuu.injekt.common.AppComponent"))
     val substitutionType = scoped.wrap(stringType)
       .let {
-        it.withArguments(listOf(appComponent) + it.arguments.drop(1))
+        it.withArguments(listOf(intType) + it.arguments.drop(1))
       }
     val (_, map) = buildContextForSpreadingInjectable(
       scopedT.defaultType,
@@ -106,7 +105,7 @@ class TypeSubstitutionTest {
     )
     map[scopedT] shouldBe substitutionType
     map[scopedU] shouldBe stringType
-    map[scopedN] shouldBe appComponent
+    map[scopedN] shouldBe intType
   }
 
   @Test fun todoExtractToTypeOnlyTest() = codegen(
@@ -118,7 +117,7 @@ class TypeSubstitutionTest {
       @Tag annotation class KeyUiTag<K : Key<*>>
       typealias KeyUi<K> = @KeyUiTag<K> @Composable () -> Unit
 
-      typealias ModelKeyUi<K, S> = ModelKeyUiScope<K, S>.() -> Unit
+      typealias ModelKeyUi<K, S> = (ModelKeyUiScope<K, S>) -> Unit
       
       interface ModelKeyUiScope<K : Key<*>, S>
       

@@ -35,3 +35,6 @@ class CommandB : Command
 @Tag annotation class Tag2
 
 @Tag annotation class TypedTag<T>
+
+object TestScope1
+object TestScope2
