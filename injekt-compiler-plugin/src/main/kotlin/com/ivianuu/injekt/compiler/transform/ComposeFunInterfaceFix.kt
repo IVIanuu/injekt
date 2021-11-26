@@ -128,7 +128,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
                 emptyList()
               )
           }
-          if (declaration.parentAsClass.defaultType.isComposableFunInterfaceWithFunctionSuperType()) {
+          if (declaration.parentAsClass.defaultType.isComposableFunInterface()) {
             (declaration as IrSimpleFunction).overriddenSymbols = listOf(
               irBuiltins.function(
                 declaration.valueParameters.size +
@@ -182,7 +182,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
             }
 
           if (declaration.parentClassOrNull?.defaultType?.superTypes()
-              ?.any { it.isComposableFunInterfaceWithFunctionSuperType() } == true) {
+              ?.any { it.isComposableFunInterface() } == true) {
             (declaration as IrSimpleFunction).overriddenSymbols = listOf(
               irBuiltins.function(declaration.valueParameters.size)
                 .owner.functions.first { it.name.asString() == "invoke" }.symbol
@@ -200,13 +200,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
 private fun IrType.isComposableFunInterface(@Inject ctx: Context): Boolean {
   val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
   return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
-      getSingleAbstractMethodOrNull(classifier.descriptor.cast())!!.hasComposableAnnotation()
-}
-
-@OptIn(ObsoleteDescriptorBasedAPI::class)
-private fun IrType.isComposableFunInterfaceWithFunctionSuperType(@Inject ctx: Context): Boolean {
-  val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
-  return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
-      classifier.defaultType.anySuperType { it.classifier.fqName == injektFqNames().composable } &&
-      classifier.defaultType.anySuperType { it.isFunctionType }
+      classifier.defaultType.anySuperType {
+        it.classifier.fqName == injektFqNames().composable
+      }
 }
