@@ -24,20 +24,6 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 
 class SuppressionTest {
-  @Test fun testCanUseExtensionFunctionTypeUpperBound() = codegen(
-    """
-      typealias MyBuilder = StringBuilder.() -> Unit
-      fun <T : MyBuilder> toString(builder: MyBuilder) {
-      }
-    """
-  )
-
-  @Test fun testCanUseExtensionFunctionTypeSuperType() = codegen(
-    """
-      fun interface MyBuilder : StringBuilder.() -> Unit
-    """
-  )
-
   @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
     """
       interface Combine<T> {
