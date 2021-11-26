@@ -108,10 +108,11 @@ private fun MockProject.registerAnalysisExtensions(
     }
   )
 
-  AnalysisHandlerExtension.registerExtension(
-    this,
-    InjectCallCheckerExtension(configuration.get(WithCompilationKey) ?: false)
-  )
+  if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
+    AnalysisHandlerExtension.registerExtension(
+      this,
+      InjectCallCheckerExtension(configuration.get(WithCompilationKey) ?: false)
+    )
 
   // extension point does not exist CLI for some reason
   // but it's still queried later

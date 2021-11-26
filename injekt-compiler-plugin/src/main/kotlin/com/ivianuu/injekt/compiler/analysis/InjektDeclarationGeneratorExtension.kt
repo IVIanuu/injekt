@@ -128,6 +128,7 @@ class InjektDeclarationGeneratorExtension(
             StandardCopyOption.REPLACE_EXISTING
           )
         } else {
+          dst.delete()
           Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.COPY_ATTRIBUTES)
         }
       }

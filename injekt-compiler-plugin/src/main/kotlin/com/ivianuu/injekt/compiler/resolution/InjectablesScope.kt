@@ -201,7 +201,7 @@ class InjectablesScope(
         )
       }
       request.type.classifier == ctx.listClassifier -> {
-        return if (typeScopeType == request.type) {
+        return if (allScopes.any { it.typeScopeType == request.type }) {
           val singleElementType = request.type.arguments[0]
           val collectionElementType = ctx.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
