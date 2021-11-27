@@ -205,7 +205,6 @@ data class InjectableRequest(
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true,
-  val failOnAllCandidateErrors: Boolean = false,
   val isInline: Boolean = false,
   val isLazy: Boolean = false,
   val customErrorMessages: () -> CustomErrorMessages? = { null }
