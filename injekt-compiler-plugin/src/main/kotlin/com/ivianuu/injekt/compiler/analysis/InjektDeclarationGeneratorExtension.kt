@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.shouldPersistInfo
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
@@ -190,7 +189,6 @@ class InjektDeclarationGeneratorExtension(
         when (declaration) {
           is KtClassOrObject -> {
             if (!declaration.isLocal &&
-              declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
                   declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) }))
@@ -198,7 +196,6 @@ class InjektDeclarationGeneratorExtension(
           }
           is KtNamedFunction -> {
             if (!declaration.isLocal &&
-              declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)
                     ?.let { it.hasAnnotation(injektFqNames.provide) && it.isInterface() } == true))
@@ -206,7 +203,6 @@ class InjektDeclarationGeneratorExtension(
           }
           is KtProperty -> {
             if (!declaration.isLocal &&
-              declaration.visibilityModifierTypeOrDefault().toVisibility().shouldPersistInfo() &&
               (declaration.hasAnnotation(injektFqNames.provide) ||
                   declaration.getParentOfType<KtClass>(false)
                     ?.let { it.hasAnnotation(injektFqNames.provide) && it.isInterface() } == true))
