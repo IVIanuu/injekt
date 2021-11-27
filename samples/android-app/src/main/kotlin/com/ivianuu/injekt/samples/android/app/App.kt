@@ -23,8 +23,10 @@ import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
 
 class App : Application() {
-  @Provide private val scope = Scope<AppComponent>()
+  @Provide private val scope = Scope<AppScope>()
   val appComponent: AppComponent by lazy { inject() }
 }
+
+object AppScope
 
 @Provide data class AppComponent(val mainActivityComponent: () -> MainActivityComponent)
