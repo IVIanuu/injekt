@@ -43,6 +43,7 @@ class InjectablesScope(
   val file: KtFile? = null,
   val typeScopeType: TypeRef? = null,
   val isDeclarationContainer: Boolean = true,
+  val isEmpty: Boolean = false,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   imports: List<ResolvedProviderImport> = emptyList(),
@@ -221,6 +222,7 @@ class InjectablesScope(
         }
 
         val typeScope = TypeInjectablesScopeOrNull(request.type, this)
+          .takeUnless { it.isEmpty }
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
       }

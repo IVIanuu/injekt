@@ -650,15 +650,23 @@ fun TypeInjectablesScopeOrNull(
   type: TypeRef,
   parent: InjectablesScope,
   @Inject ctx: Context
-): InjectablesScope? = parent.typeScopes.getOrPut(type.key) {
+): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
 
   val newInjectables = injectablesWithLookups.injectables
     .filterNotExistingIn(parent)
 
-  // no need to create anything because we don't contribute anything new to the scope
-  if (newInjectables.isEmpty())
-    return@getOrPut parent
+  val imports = injectablesWithLookups.lookedUpPackages
+    .map { ResolvedProviderImport(null, "$it.*", it) }
+
+  if (newInjectables.isEmpty()) {
+    return@getOrPut InjectablesScope(
+      name = "EMPTY TYPE ${type.renderToString()}",
+      parent = parent,
+      imports = imports,
+      isEmpty = true
+    )
+  }
 
   val externalInjectables = mutableListOf<CallableRef>()
   val typeInjectables = mutableListOf<CallableRef>()
@@ -674,30 +682,44 @@ fun TypeInjectablesScopeOrNull(
     }
   }
 
-  InjectablesScope(
-    name = "INTERNAL TYPE ${type.renderToString()}",
-    initialInjectables = internalInjectables,
-    imports = injectablesWithLookups.lookedUpPackages
-      .map { ResolvedProviderImport(null, "$it.*", it) },
-    typeScopeType = type,
-    isDeclarationContainer = false,
-    callContext = parent.callContext,
-    parent = InjectablesScope(
-      name = "TYPE TYPE ${type.renderToString()}",
-      initialInjectables = typeInjectables,
+  var result = parent
+
+  if (externalInjectables.isNotEmpty()) {
+    result = InjectablesScope(
+      name = "EXTERNAL TYPE ${type.renderToString()}",
+      parent = result,
+      initialInjectables = externalInjectables,
+      callContext = result.callContext,
       typeScopeType = type,
       isDeclarationContainer = false,
-      parent = InjectablesScope(
-        name = "EXTERNAL TYPE ${type.renderToString()}",
-        parent = parent,
-        initialInjectables = externalInjectables,
-        typeScopeType = type,
-        callContext = parent.callContext,
-        isDeclarationContainer = false
-      )
+      imports = imports
     )
-  )
-}.takeUnless { it == parent }
+  }
+  if (typeInjectables.isNotEmpty()) {
+    result = InjectablesScope(
+      name = "TYPE TYPE ${type.renderToString()}",
+      parent = result,
+      initialInjectables = typeInjectables,
+      callContext = result.callContext,
+      typeScopeType = type,
+      isDeclarationContainer = false,
+      imports = imports
+    )
+  }
+  if (internalInjectables.isNotEmpty()) {
+    result = InjectablesScope(
+      name = "INTERNAL TYPE ${type.renderToString()}",
+      parent = result,
+      initialInjectables = internalInjectables,
+      callContext = result.callContext,
+      typeScopeType = type,
+      isDeclarationContainer = false,
+      imports = imports
+    )
+  }
+
+  result
+}
 
 private fun ImportInjectablesScopes(
   file: KtFile?,
@@ -730,36 +752,65 @@ private fun ImportInjectablesScopes(
     }
   }
 
-  return InjectablesScope(
-    name = "$namePrefix INTERNAL BY NAME IMPORTS",
-    file = file,
-    initialInjectables = internalByNameInjectables,
-    isDeclarationContainer = false,
-    injectablesPredicate = injectablesPredicate,
-    imports = imports.mapNotNull { it.resolve() },
-    parent = InjectablesScope(
-      name = "$namePrefix EXTERNAL BY NAME IMPORTS",
-      file = file,
-      initialInjectables = externalByNameInjectables,
-      isDeclarationContainer = false,
-      injectablesPredicate = injectablesPredicate,
-      parent = InjectablesScope(
-        name = "$namePrefix INTERNAL STAR IMPORTS",
-        file = file,
-        initialInjectables = internalStarInjectables,
-        isDeclarationContainer = false,
-        injectablesPredicate = injectablesPredicate,
-        parent = InjectablesScope(
-          name = "$namePrefix EXTERNAL STAR IMPORTS",
-          parent = parent,
-          file = file,
-          initialInjectables = externalStarInjectables,
-          isDeclarationContainer = false,
-          injectablesPredicate = injectablesPredicate
-        )
-      )
+  val resolvedImports = imports.mapNotNull { it.resolve() }
+  if (externalStarInjectables.isEmpty() &&
+      internalStarInjectables.isEmpty() &&
+      externalByNameInjectables.isEmpty() &&
+      internalByNameInjectables.isEmpty()) {
+    return InjectablesScope(
+      name = "$namePrefix EMPTY IMPORTS",
+      parent = parent,
+      file = file
     )
-  )
+  }
+
+  var current = parent
+  if (externalStarInjectables.isNotEmpty()) {
+    current = InjectablesScope(
+      name = "$namePrefix EXTERNAL STAR IMPORTS",
+      parent = current,
+      file = file,
+      imports = resolvedImports,
+      initialInjectables = externalStarInjectables,
+      isDeclarationContainer = false,
+      injectablesPredicate = injectablesPredicate
+    )
+  }
+  if (internalStarInjectables.isNotEmpty()) {
+    current = InjectablesScope(
+      name = "$namePrefix INTERNAL STAR IMPORTS",
+      parent = current,
+      file = file,
+      imports = resolvedImports,
+      initialInjectables = internalStarInjectables,
+      isDeclarationContainer = false,
+      injectablesPredicate = injectablesPredicate
+    )
+  }
+  if (externalByNameInjectables.isNotEmpty()) {
+    current = InjectablesScope(
+      name = "$namePrefix EXTERNAL BY NAME IMPORTS",
+      parent = current,
+      initialInjectables = externalByNameInjectables,
+      file = file,
+      imports = resolvedImports,
+      isDeclarationContainer = false,
+      injectablesPredicate = injectablesPredicate
+    )
+  }
+  if (internalByNameInjectables.isNotEmpty()) {
+    current = InjectablesScope(
+      name = "$namePrefix INTERNAL BY NAME IMPORTS",
+      parent = current,
+      file = file,
+      imports = resolvedImports,
+      initialInjectables = internalByNameInjectables,
+      isDeclarationContainer = false,
+      injectablesPredicate = injectablesPredicate
+    )
+  }
+
+  return current!!
 }
 
 data class DescriptorWithParentScope(
