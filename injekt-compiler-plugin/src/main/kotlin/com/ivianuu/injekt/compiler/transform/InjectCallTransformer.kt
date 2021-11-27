@@ -365,7 +365,7 @@ class InjectCallTransformer(
 
           val expression = dependencyScopeContext?.run { createExpression() } ?: createExpression()
 
-          if (dependencyScopeContext?.statements?.isEmpty() != true) expression
+          if (dependencyScopeContext == null || dependencyScopeContext.statements.isEmpty()) expression
           else irBlock {
             dependencyScopeContext.statements.forEach { +it }
             +expression
