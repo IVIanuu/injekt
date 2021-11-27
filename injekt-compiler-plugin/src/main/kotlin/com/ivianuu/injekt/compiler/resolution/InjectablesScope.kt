@@ -201,7 +201,7 @@ class InjectablesScope(
         )
       }
       request.type.classifier == ctx.listClassifier -> {
-        return if (allScopes.any { it.typeScopeType == request.type }) {
+        fun createInjectable(): ListInjectable? {
           val singleElementType = request.type.arguments[0]
           val collectionElementType = ctx.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
@@ -211,7 +211,7 @@ class InjectablesScope(
           val elements = listElementsForType(singleElementType, collectionElementType, key) +
               frameworkListElementsForType(singleElementType)
 
-          if (elements.isEmpty()) null
+          return if (elements.isEmpty()) null
           else ListInjectable(
             type = request.type,
             ownerScope = this,
@@ -219,10 +219,11 @@ class InjectablesScope(
             singleElementType = singleElementType,
             collectionElementType = collectionElementType
           )
-        } else {
-          TypeInjectablesScope(request.type, this)
-            .frameworkInjectableForRequest(request)
         }
+
+        val typeScope = TypeInjectablesScopeOrNull(request.type, this)
+        return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
+        else createInjectable()
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
         return TypeKeyInjectable(request.type, this)

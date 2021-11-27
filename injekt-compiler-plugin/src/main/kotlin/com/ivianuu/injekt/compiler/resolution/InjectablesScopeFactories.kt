@@ -646,12 +646,19 @@ fun ImportSuggestionInjectablesScope(
   initialInjectables = listOf(candidate)
 )
 
-fun TypeInjectablesScope(
+fun TypeInjectablesScopeOrNull(
   type: TypeRef,
   parent: InjectablesScope,
   @Inject ctx: Context
-): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
+): InjectablesScope? = parent.typeScopes.getOrPut(type.key) {
   val injectablesWithLookups = type.collectTypeScopeInjectables()
+
+  val newInjectables = injectablesWithLookups.injectables
+    .filterNotExistingIn(parent)
+
+  // no need to create anything because we don't contribute anything new to the scope
+  if (newInjectables.isEmpty())
+    return@getOrPut parent
 
   val externalInjectables = mutableListOf<CallableRef>()
   val typeInjectables = mutableListOf<CallableRef>()
@@ -659,15 +666,13 @@ fun TypeInjectablesScope(
 
   val thisModuleName = module().moduleName()
   val typeModuleName = type.classifier.descriptor!!.moduleName()
-  injectablesWithLookups.injectables
-    .filterNotExistingIn(parent)
-    .forEach { callable ->
-      when (callable.callable.moduleName()) {
-        thisModuleName -> internalInjectables += callable
-        typeModuleName -> typeInjectables += callable
-        else -> externalInjectables += callable
-      }
+  for (callable in newInjectables) {
+    when (callable.callable.moduleName()) {
+      thisModuleName -> internalInjectables += callable
+      typeModuleName -> typeInjectables += callable
+      else -> externalInjectables += callable
     }
+  }
 
   InjectablesScope(
     name = "INTERNAL TYPE ${type.renderToString()}",
@@ -692,7 +697,7 @@ fun TypeInjectablesScope(
       )
     )
   )
-}
+}.takeUnless { it == parent }
 
 private fun ImportInjectablesScopes(
   file: KtFile?,

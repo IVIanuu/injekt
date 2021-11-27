@@ -262,13 +262,12 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
         request.type.unwrapTags().isFunctionType) &&
     request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
-    request.type.classifier.fqName != injektFqNames().sourceKey &&
-    allScopes.none { it.typeScopeType == request.type })
-      with(TypeInjectablesScope(request.type, this)) {
+    request.type.classifier.fqName != injektFqNames().sourceKey) {
+      TypeInjectablesScopeOrNull(request.type, this)?.run {
         recordLookup(lookupLocation)
         resolveRequest(request, lookupLocation, true)
       }
-  else null
+    } else null
 }
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
