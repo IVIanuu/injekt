@@ -222,7 +222,10 @@ private fun InjectablesScope.resolveRequest(
       if (userResult is ResolutionResult.Success ||
           userResult is ResolutionResult.Failure.CandidateAmbiguity)
             userResult
-      else if (!fromTypeScope) {
+      else if (!fromTypeScope &&
+        (userResult == null ||
+            userResult.cast<ResolutionResult.Failure>()
+              .unwrapDependencyFailure() is ResolutionResult.Failure.NoCandidates)) {
         tryToResolveRequestInTypeScope(request, lookupLocation)
           ?.takeUnless { it is ResolutionResult.Failure.NoCandidates }
           .let { typeScopeResult ->
@@ -253,7 +256,10 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   lookupLocation: LookupLocation
 ): ResolutionResult? {
   // try the type scope if the requested type is not a framework type
-  return if (!request.type.isFunctionType &&
+  return if (request.type.frameworkKey == 0 &&
+    !request.type.isFunctionType &&
+    !(request.type.classifier.fqName == injektFqNames().composable &&
+        request.type.unwrapTags().isFunctionType) &&
     request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
     request.type.classifier.fqName != injektFqNames().sourceKey &&
