@@ -664,7 +664,8 @@ fun TypeInjectablesScopeOrNull(
       name = "EMPTY TYPE ${type.renderToString()}",
       parent = parent,
       imports = imports,
-      isEmpty = true
+      isEmpty = true,
+      isDeclarationContainer = false
     )
   }
 
@@ -760,7 +761,8 @@ private fun ImportInjectablesScopes(
     return InjectablesScope(
       name = "$namePrefix EMPTY IMPORTS",
       parent = parent,
-      file = file
+      file = file,
+      isDeclarationContainer = false
     )
   }
 
