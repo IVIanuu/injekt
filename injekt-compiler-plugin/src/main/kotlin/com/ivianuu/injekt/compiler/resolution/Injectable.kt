@@ -92,8 +92,7 @@ class ListInjectable(
         parameterIndex = index
       )
     }
-  override val originalType: TypeRef
-    get() = type.classifier.defaultType
+  override val dependencyScopes = dependencies.associateWith { ownerScope }
 }
 
 class ProviderInjectable(
@@ -183,6 +182,7 @@ class TypeKeyInjectable(
         )
       }
   }
+  override val dependencyScopes = dependencies.associateWith { ownerScope }
 }
 
 fun CallableRef.getInjectableRequests(
