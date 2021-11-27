@@ -63,7 +63,6 @@ import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.Scope
-import org.jetbrains.kotlin.ir.builders.declarations.addDispatchReceiver
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -92,7 +91,6 @@ import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isLocal
@@ -347,26 +345,30 @@ class InjectCallTransformer(
       when (val dependencyResult = result.dependencyResults.values.single()) {
         is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
         is ResolutionResult.Success.WithCandidate -> {
-          val dependencyScopeContext = ScopeContext(
+          val dependencyScope = injectable.dependencyScopes.values.single()
+          val dependencyScopeContext = if (dependencyScope == this@providerExpression.scope) null
+          else ScopeContext(
             this@providerExpression, graphContext,
-            injectable.dependencyScopes.values.single(), scope
+            dependencyScope, scope
           )
-          val expression = with(dependencyScopeContext) {
+
+          fun ScopeContext.createExpression(): IrExpression {
             for ((index, a) in injectable.parameterDescriptors.withIndex())
               parameterMap[a] = function.valueParameters[index]
-            expressionFor(dependencyResult)
+            return expressionFor(dependencyResult)
               .also {
                 injectable.parameterDescriptors.forEach {
                   parameterMap -= it
                 }
               }
           }
-          if (dependencyScopeContext.statements.isEmpty()) expression
-          else {
-            irBlock {
-              dependencyScopeContext.statements.forEach { +it }
-              +expression
-            }
+
+          val expression = dependencyScopeContext?.run { createExpression() } ?: createExpression()
+
+          if (dependencyScopeContext?.statements?.isEmpty() != true) expression
+          else irBlock {
+            dependencyScopeContext.statements.forEach { +it }
+            +expression
           }
         }
       }

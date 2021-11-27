@@ -129,8 +129,11 @@ class ProviderInjectable(
     .valueParameters
     .map { ProviderValueParameterDescriptor(it) }
 
+  // only create a new scope if we have parameters or a different call context then our parent
   override val dependencyScopes = mapOf(
-    dependencies.single() to InjectablesScope(
+    dependencies.single() to if (parameterDescriptors.isEmpty() &&
+      ownerScope.callContext == dependencyCallContext) ownerScope
+    else InjectablesScope(
       name = "PROVIDER $type",
       parent = ownerScope,
       ctx = ownerScope.ctx,
@@ -143,6 +146,7 @@ class ProviderInjectable(
         }
     )
   )
+
   override val originalType: TypeRef
     get() = type.unwrapTags().classifier.defaultType
 

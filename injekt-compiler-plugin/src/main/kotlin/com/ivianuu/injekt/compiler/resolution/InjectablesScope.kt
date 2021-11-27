@@ -115,8 +115,7 @@ class InjectablesScope(
     if (parent != null) {
       spreadingInjectables.addAll(
         0,
-        if (hasSpreadingInjectableCandidates) parent.spreadingInjectables
-          .map { it.copy() }
+        if (hasSpreadingInjectableCandidates) parent.spreadingInjectables.map { it.copy() }
         else parent.spreadingInjectables
       )
       spreadingInjectableCandidateTypes.addAll(0, parent.spreadingInjectableCandidateTypes)
