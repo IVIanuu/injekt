@@ -215,6 +215,9 @@ private fun InjectablesScope.resolveRequest(
   if (request.type.hasErrors)
     return ResolutionResult.Failure.NoCandidates(this, request)
 
+  if (scopeToUse != this)
+    return scopeToUse.resolveRequest(request, lookupLocation, fromTypeScope)
+
   resultsByType[request.type]?.let { return it }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation)

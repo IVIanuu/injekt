@@ -120,11 +120,16 @@ class InjectCallTransformer(
 
     @OptIn(ExperimentalStdlibApi::class)
     private val graphContextParents = buildList<InjectablesScope> {
-      var current: InjectablesScope? = graph.scope.parent
-      while (current != null) {
-        this += current
-        current = current.parent
+      val seenScopes = mutableSetOf<InjectablesScope>()
+      fun InjectablesScope.add() {
+        if (this in seenScopes) return
+        seenScopes += this
+        add(this)
+        parent?.add()
+        typeScopes.forEach { it.value.add() }
       }
+
+      graph.scope.add()
     }
 
     private val isInBetweenCircularDependency =

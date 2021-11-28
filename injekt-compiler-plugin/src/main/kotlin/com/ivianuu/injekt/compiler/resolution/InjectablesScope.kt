@@ -87,6 +87,12 @@ class InjectablesScope(
 
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
+  val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
+      typeParameters.isEmpty() &&
+      (isEmpty || (initialInjectables.isEmpty() && callContext == parent.callContext))
+
+  val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
+
   init {
     for (injectable in initialInjectables) {
       injectable.collectInjectables(
@@ -375,3 +381,6 @@ class InjectablesScope(
 
   override fun toString(): String = "InjectablesScope($name)"
 }
+
+private fun InjectablesScope.hasDeclarationContainers(): Boolean =
+  isDeclarationContainer || parent?.hasDeclarationContainers() == true

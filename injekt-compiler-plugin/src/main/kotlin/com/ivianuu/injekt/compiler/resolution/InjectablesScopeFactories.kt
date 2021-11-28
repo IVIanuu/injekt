@@ -650,76 +650,79 @@ fun TypeInjectablesScopeOrNull(
   type: TypeRef,
   parent: InjectablesScope,
   @Inject ctx: Context
-): InjectablesScope = parent.typeScopes.getOrPut(type.key) {
-  val injectablesWithLookups = type.collectTypeScopeInjectables()
+): InjectablesScope {
+  val finalParent = parent.scopeToUse
+  return finalParent.typeScopes.getOrPut(type.key) {
+    val injectablesWithLookups = type.collectTypeScopeInjectables()
 
-  val newInjectables = injectablesWithLookups.injectables
-    .filterNotExistingIn(parent)
+    val newInjectables = injectablesWithLookups.injectables
+      .filterNotExistingIn(finalParent)
 
-  val imports = injectablesWithLookups.lookedUpPackages
-    .map { ResolvedProviderImport(null, "$it.*", it) }
+    val imports = injectablesWithLookups.lookedUpPackages
+      .map { ResolvedProviderImport(null, "$it.*", it) }
 
-  if (newInjectables.isEmpty()) {
-    return@getOrPut InjectablesScope(
-      name = "EMPTY TYPE ${type.renderToString()}",
-      parent = parent,
-      imports = imports,
-      isEmpty = true,
-      isDeclarationContainer = false
-    )
-  }
-
-  val externalInjectables = mutableListOf<CallableRef>()
-  val typeInjectables = mutableListOf<CallableRef>()
-  val internalInjectables = mutableListOf<CallableRef>()
-
-  val thisModuleName = module().moduleName()
-  val typeModuleName = type.classifier.descriptor!!.moduleName()
-  for (callable in newInjectables) {
-    when (callable.callable.moduleName()) {
-      thisModuleName -> internalInjectables += callable
-      typeModuleName -> typeInjectables += callable
-      else -> externalInjectables += callable
+    if (newInjectables.isEmpty()) {
+      return@getOrPut InjectablesScope(
+        name = "EMPTY TYPE ${type.renderToString()}",
+        parent = finalParent,
+        imports = imports,
+        isEmpty = true,
+        isDeclarationContainer = false
+      )
     }
-  }
 
-  var result = parent
+    val externalInjectables = mutableListOf<CallableRef>()
+    val typeInjectables = mutableListOf<CallableRef>()
+    val internalInjectables = mutableListOf<CallableRef>()
 
-  if (externalInjectables.isNotEmpty()) {
-    result = InjectablesScope(
-      name = "EXTERNAL TYPE ${type.renderToString()}",
-      parent = result,
-      initialInjectables = externalInjectables,
-      callContext = result.callContext,
-      typeScopeType = type,
-      isDeclarationContainer = false,
-      imports = imports
-    )
-  }
-  if (typeInjectables.isNotEmpty()) {
-    result = InjectablesScope(
-      name = "TYPE TYPE ${type.renderToString()}",
-      parent = result,
-      initialInjectables = typeInjectables,
-      callContext = result.callContext,
-      typeScopeType = type,
-      isDeclarationContainer = false,
-      imports = imports
-    )
-  }
-  if (internalInjectables.isNotEmpty()) {
-    result = InjectablesScope(
-      name = "INTERNAL TYPE ${type.renderToString()}",
-      parent = result,
-      initialInjectables = internalInjectables,
-      callContext = result.callContext,
-      typeScopeType = type,
-      isDeclarationContainer = false,
-      imports = imports
-    )
-  }
+    val thisModuleName = module().moduleName()
+    val typeModuleName = type.classifier.descriptor!!.moduleName()
+    for (callable in newInjectables) {
+      when (callable.callable.moduleName()) {
+        thisModuleName -> internalInjectables += callable
+        typeModuleName -> typeInjectables += callable
+        else -> externalInjectables += callable
+      }
+    }
 
-  result
+    var result = finalParent
+
+    if (externalInjectables.isNotEmpty()) {
+      result = InjectablesScope(
+        name = "EXTERNAL TYPE ${type.renderToString()}",
+        parent = result,
+        initialInjectables = externalInjectables,
+        callContext = result.callContext,
+        typeScopeType = type,
+        isDeclarationContainer = false,
+        imports = imports
+      )
+    }
+    if (typeInjectables.isNotEmpty()) {
+      result = InjectablesScope(
+        name = "TYPE TYPE ${type.renderToString()}",
+        parent = result,
+        initialInjectables = typeInjectables,
+        callContext = result.callContext,
+        typeScopeType = type,
+        isDeclarationContainer = false,
+        imports = imports
+      )
+    }
+    if (internalInjectables.isNotEmpty()) {
+      result = InjectablesScope(
+        name = "INTERNAL TYPE ${type.renderToString()}",
+        parent = result,
+        initialInjectables = internalInjectables,
+        callContext = result.callContext,
+        typeScopeType = type,
+        isDeclarationContainer = false,
+        imports = imports
+      )
+    }
+
+    result
+  }
 }
 
 private fun ImportInjectablesScopes(
