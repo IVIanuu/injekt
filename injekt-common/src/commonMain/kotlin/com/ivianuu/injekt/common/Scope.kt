@@ -40,10 +40,9 @@ private class ScopeImpl<N> : Scope<N>, Disposable {
     lock.withLock { values.getOrPut(key.value, init) as T }
 
   override fun dispose() {
-    if (isDisposed.compareAndSet(false, true)) {
+    if (isDisposed.compareAndSet(false, true))
       for (value in values.values)
         (value as? Disposable)?.dispose()
-    }
   }
 }
 
