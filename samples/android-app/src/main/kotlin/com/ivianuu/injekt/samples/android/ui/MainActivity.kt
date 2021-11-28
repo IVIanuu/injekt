@@ -20,18 +20,28 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.samples.android.app.App
 
 class MainActivity : ComponentActivity() {
+  private val scope = Scope<ActivityScope>()
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    val component = (application as App).appComponent.mainActivityComponent()
+    val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
       component.appTheme {
         component.appUi()
       }
     }
   }
+
+  override fun onDestroy() {
+    scope.dispose()
+    super.onDestroy()
+  }
 }
 
 @Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)
+
+object ActivityScope

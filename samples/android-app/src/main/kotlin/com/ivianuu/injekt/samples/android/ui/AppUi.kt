@@ -28,11 +28,11 @@ import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.coroutines.NamedCoroutineScope
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
 import com.ivianuu.injekt.samples.android.domain.IncCounter
@@ -78,20 +78,18 @@ data class CounterModel(
 @Provide @Composable fun counterModel(
   counter: Flow<Counter>,
   incCounter: IncCounter,
-  decCounter: DecCounter
-): CounterModel {
-  val scope = rememberCoroutineScope()
-  return CounterModel(
-    state = counter.collectAsState(Counter(0)).value,
-    incCounter = {
-      scope.launch {
-        incCounter()
-      }
-    },
-    decCounter = {
-      scope.launch {
-        decCounter()
-      }
+  decCounter: DecCounter,
+  scope: NamedCoroutineScope<ActivityScope>
+) = CounterModel(
+  state = counter.collectAsState(Counter(0)).value,
+  incCounter = {
+    scope.launch {
+      incCounter()
     }
-  )
-}
+  },
+  decCounter = {
+    scope.launch {
+      decCounter()
+    }
+  }
+)
