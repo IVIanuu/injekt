@@ -22,7 +22,7 @@ import com.ivianuu.injekt.inject
 fun main() {
   val heater = inject<Heater>()
   heater.on()
-  inject<Pump>().pump()
+  inject<Pump>()()
   println(" [_]P coffee! [_]P ")
   heater.off()
 }
@@ -49,12 +49,9 @@ interface Heater {
   }
 }
 
-fun interface Pump {
-  fun pump()
-}
+fun interface Pump : () -> Unit
 
 @Provide fun thermosiphon(heater: Heater) = Pump {
-  if (heater.isHot) {
+  if (heater.isHot)
     println("=> => pumping => =>")
-  }
 }
