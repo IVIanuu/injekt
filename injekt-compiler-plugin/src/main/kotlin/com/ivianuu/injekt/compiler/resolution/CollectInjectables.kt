@@ -532,11 +532,16 @@ fun collectAllInjectables(@Inject ctx: Context): List<CallableRef> =
     memberScopeForFqName(injektFqNames().indicesPackage, NoLookupLocation.FROM_BACKEND)
       ?.first
       ?.getContributedFunctions("index".asNameId(), NoLookupLocation.FROM_BACKEND)
-      ?.flatMap {
+      ?.transform {
         val annotation = it.annotations.findAnnotation(injektFqNames().index)
-          ?: return@flatMap emptyList()
+          ?: return@transform
         val fqName = FqName(annotation.allValueArguments["fqName".asNameId()]!!.value.toString())
-        injectablesForFqName(fqName)
+        for (injectable in injectablesForFqName(fqName)) {
+          val dispatchReceiverType = injectable.parameterTypes[DISPATCH_RECEIVER_INDEX]
+          if (dispatchReceiverType == null ||
+              dispatchReceiverType.classifier.isObject)
+                add(injectable)
+        }
       }
       ?: emptyList()
   }
