@@ -341,20 +341,38 @@ fun List<ProviderImport>.collectImportedInjectables(
             if ((currentPackageObject != null &&
                   currentPackageObject.toClassifierRef().declaresInjectables) ||
               (currentPackageObject == null &&
-                  injectablesLookupName in currentScope.getFunctionNames()))
-              currentScope.collectInjectables(
-                false,
-                onEach = { declaration ->
-                  if (declaration is ClassDescriptor)
-                    collectInjectables(
-                      if (declaration.kind == ClassKind.OBJECT) declaration.unsubstitutedMemberScope
-                      else declaration.unsubstitutedInnerClassesScope,
-                      declaration
-                    )
-                },
-              ) {
-                consumer(it.copy(import = resolvedImport))
+                  injectablesLookupName in currentScope.getFunctionNames())) {
+              if (currentPackageObject != null) {
+                if (currentPackageObject.kind == ClassKind.OBJECT)
+                  consumer(currentPackageObject.injectableReceiver(false).copy(import = resolvedImport))
+
+                fun collectPackageObjects(packageObject: ClassDescriptor) {
+                  for (innerClass in packageObject.unsubstitutedInnerClassesScope
+                    .getContributedDescriptors()) {
+                    innerClass as ClassDescriptor
+                    if (innerClass.kind == ClassKind.OBJECT && !innerClass.isProvide())
+                      consumer(innerClass.injectableReceiver(false).copy(import = resolvedImport))
+                    collectPackageObjects(innerClass)
+                  }
+                }
+
+                collectPackageObjects(currentPackageObject)
+              } else {
+                currentScope.collectInjectables(
+                  false,
+                  onEach = { declaration ->
+                    if (declaration is ClassDescriptor)
+                      collectInjectables(
+                        if (declaration.kind == ClassKind.OBJECT) declaration.unsubstitutedMemberScope
+                        else declaration.unsubstitutedInnerClassesScope,
+                        declaration
+                      )
+                  },
+                ) {
+                  consumer(it.copy(import = resolvedImport))
+                }
               }
+            }
           }
 
           collectInjectables(scope, packageObject)
@@ -372,7 +390,10 @@ fun List<ProviderImport>.collectImportedInjectables(
         // import all injectables in the package
         if ((packageObject != null && packageObject.toClassifierRef().declaresInjectables) ||
           (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
-          scope.collectInjectables(false) {
+          if (packageObject != null) consumer(
+            packageObject.injectableReceiver(false).copy(import = resolvedImport)
+          )
+          else scope.collectInjectables(false) {
             consumer(it.copy(import = resolvedImport))
           }
         }
@@ -453,7 +474,7 @@ private fun collectPackageTypeScopeInjectables(
 
     if (packageFragments.none {
         injectablesLookupName in it.getMemberScope().getFunctionNames()
-      }) return@getOrPut emptyList()
+    }) return@getOrPut emptyList()
 
     val injectables = mutableListOf<CallableRef>()
 
@@ -493,13 +514,11 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: Context): List<CallableRef> {
   val existingInjectables: MutableSet<Pair<String, TypeRef>> = scope.allScopes
-    .transformTo(mutableSetOf()) {
-      // todo remove once inference bug is fixed
-      val thiz: MutableSet<Pair<String, TypeRef>> = this
+    .transformTo<InjectablesScope, Pair<String, TypeRef>, MutableSet<Pair<String, TypeRef>>>(mutableSetOf()) {
       for (injectable in it.injectables)
-        thiz.add(injectable.callable.uniqueKey() to injectable.originalType)
+        add(injectable.callable.uniqueKey() to injectable.originalType)
       for (injectable in it.spreadingInjectables)
-        thiz.add(injectable.callable.callable.uniqueKey() to injectable.callable.originalType)
+        add(injectable.callable.callable.uniqueKey() to injectable.callable.originalType)
     }
 
   return filter { existingInjectables.add(it.callable.uniqueKey() to it.originalType) }

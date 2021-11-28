@@ -71,9 +71,9 @@ sealed class ResolutionResult {
           fun collectScopesRecursive(result: Value) {
             if (result.candidate is CallableInjectable)
               anchorScopes += result.candidate.ownerScope
-            result.dependencyResults.values
-              .filterIsInstance<Value>()
-              .forEach { collectScopesRecursive(it) }
+            for (dependency in result.dependencyResults.values)
+              if (dependency is Value)
+                collectScopesRecursive(dependency)
           }
 
           collectScopesRecursive(this)

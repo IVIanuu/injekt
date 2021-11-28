@@ -166,7 +166,7 @@ fun Annotated.getTags(injektFqNames: InjektFqNames): List<AnnotationDescriptor> 
   }
 
 fun DeclarationDescriptor.uniqueKey(@Inject ctx: Context): String =
-  trace()!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, this) {
+  trace()!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
     when (val original = this.original) {
       is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
         original.valueParameters
