@@ -35,6 +35,22 @@ class ElementsTest {
     elements<String>() shouldBe "42"
   }
 
+  @Test fun testElementsCanAccessParentElements() {
+    class ParentScope
+    class ChildScope
+
+    @Provide @Element<ParentScope> data class ChildElement(
+      val childElements: Elements<ChildScope>
+    )
+
+    @Provide val int: @Element<ParentScope> Int = 42
+
+    val parentElements = inject<Elements<ParentScope>>()
+    val childElements = parentElements<ChildElement>().childElements
+
+    childElements<Int>() shouldBe 42
+  }
+
   @Test fun testEager() {
     var callCount = 0
 
