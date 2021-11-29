@@ -188,13 +188,9 @@ class TypeKeyInjectable(
   }
 }
 
-fun CallableRef.getInjectableRequests(
-  ignoreInject: Boolean = false,
-  @Inject ctx: Context
-): List<InjectableRequest> = callable.allParameters
+fun CallableRef.getInjectableRequests(@Inject ctx: Context): List<InjectableRequest> = callable.allParameters
   .transform {
     if ((callable !is ClassConstructorDescriptor || it.name.asString() != "<this>") &&
-        ignoreInject ||
         it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
         it.isProvide())
