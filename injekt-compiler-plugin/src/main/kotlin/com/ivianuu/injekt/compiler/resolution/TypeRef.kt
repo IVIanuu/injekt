@@ -185,7 +185,7 @@ fun KotlinType.toTypeRef(
       isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
       isInject = kotlinType.hasAnnotation(injektFqNames().inject),
       isStarProjection = false,
-      frameworkKey = 0,
+      frameworkKey = "",
       variance = variance,
       isError = isError
     )
@@ -222,7 +222,7 @@ class TypeRef(
   val isProvide: Boolean = false,
   val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
-  val frameworkKey: Int = 0,
+  val frameworkKey: String = "",
   val variance: TypeVariance = TypeVariance.INV,
   val source: ClassifierRef? = null,
   val isError: Boolean = false
@@ -348,7 +348,7 @@ fun TypeRef.copy(
   isProvide: Boolean = this.isProvide,
   isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
-  frameworkKey: Int = this.frameworkKey,
+  frameworkKey: String = this.frameworkKey,
   variance: TypeVariance = this.variance,
   source: ClassifierRef? = this.source,
   isError: Boolean = this.isError

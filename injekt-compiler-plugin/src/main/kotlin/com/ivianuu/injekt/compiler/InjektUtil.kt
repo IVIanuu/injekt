@@ -297,8 +297,7 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-private var currentFrameworkKey = 0
-fun generateFrameworkKey() = ++currentFrameworkKey
+fun String.nextFrameworkKey(next: String) = "$this:$next"
 
 fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
   val field = clazz.java.declaredFields

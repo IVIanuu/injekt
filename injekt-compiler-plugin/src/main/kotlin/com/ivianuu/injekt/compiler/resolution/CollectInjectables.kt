@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesForFqName
@@ -281,7 +280,7 @@ fun CallableRef.collectInjectables(
 
   val nextCallable = if (type.isProvideFunctionType) {
     addInjectable(this)
-    copy(type = type.copy(frameworkKey = generateFrameworkKey()))
+    copy(type = type.copy(frameworkKey = callable.uniqueKey()))
   } else this
   addInjectable(nextCallable)
 

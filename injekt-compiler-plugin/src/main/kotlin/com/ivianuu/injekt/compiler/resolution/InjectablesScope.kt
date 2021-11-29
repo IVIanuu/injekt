@@ -18,13 +18,14 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
-import com.ivianuu.injekt.compiler.generateFrameworkKey
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.isIde
 import com.ivianuu.injekt.compiler.memberScopeForFqName
+import com.ivianuu.injekt.compiler.nextFrameworkKey
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
+import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import java.util.UUID
 
 @OptIn(ExperimentalStdlibApi::class)
 class InjectablesScope(
@@ -69,7 +71,7 @@ class InjectablesScope(
       it.isSpread
     }.defaultType.substitute(callable.typeArguments),
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
-    val resultingFrameworkKeys: MutableSet<Int> = mutableSetOf()
+    val resultingFrameworkKeys: MutableSet<String> = mutableSetOf()
   ) {
     fun copy() = SpreadingInjectable(
       callable,
@@ -107,7 +109,7 @@ class InjectablesScope(
         addInjectable = { callable ->
           injectables += callable
           val typeWithFrameworkKey = callable.type
-            .copy(frameworkKey = generateFrameworkKey())
+            .copy(frameworkKey = callable.callable.uniqueKey())
           injectables += callable.copy(type = typeWithFrameworkKey)
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
@@ -162,7 +164,7 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.frameworkKey == 0 &&
+    if (request.type.frameworkKey.isEmpty() &&
       request.type.classifier == ctx.listClassifier) return emptyList()
 
     return injectablesForType(
@@ -258,7 +260,7 @@ class InjectablesScope(
           val finalCandidate = candidate.substitute(context.fixedTypeVariables)
 
           val typeWithFrameworkKey = finalCandidate.type.copy(
-            frameworkKey = generateFrameworkKey()
+            frameworkKey = finalCandidate.callable.uniqueKey()
           )
 
           injectables += finalCandidate.copy(type = typeWithFrameworkKey)
@@ -304,7 +306,7 @@ class InjectablesScope(
       }
       singleElementType.classifier.fqName == injektFqNames().sourceKey -> listOf(
         ctx.sourceKeyClassifier!!.defaultType
-          .copy(frameworkKey = generateFrameworkKey())
+          .copy(frameworkKey = UUID.randomUUID().toString())
       )
       singleElementType.classifier.fqName == injektFqNames().typeKey -> listOf(singleElementType)
       else -> emptyList()
@@ -331,7 +333,7 @@ class InjectablesScope(
 
     val newInjectableType = spreadingInjectable.callable.type
       .substitute(substitutionMap)
-      .copy(frameworkKey = 0)
+      .copy(frameworkKey = "")
     val newInjectable = spreadingInjectable.callable
       .copy(
         type = newInjectableType,
@@ -358,7 +360,8 @@ class InjectablesScope(
         injectables += finalNewInnerInjectable
         val newInnerInjectableWithFrameworkKey = finalNewInnerInjectable.copy(
           type = finalNewInnerInjectable.type.copy(
-            frameworkKey = generateFrameworkKey()
+            frameworkKey = spreadingInjectable.callable.type.frameworkKey
+              .nextFrameworkKey(finalNewInnerInjectable.callable.uniqueKey())
               .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
