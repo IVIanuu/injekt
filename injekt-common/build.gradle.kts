@@ -49,6 +49,7 @@ kotlin {
     }
     named("jvmTest") {
       dependencies {
+        implementation(Deps.Coroutines.test)
         implementation(Deps.junit)
         implementation(Deps.kotestAssertions)
       }
