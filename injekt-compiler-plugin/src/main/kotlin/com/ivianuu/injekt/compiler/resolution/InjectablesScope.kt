@@ -111,9 +111,7 @@ class InjectablesScope(
           injectables += callable.copy(type = typeWithFrameworkKey)
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
-        addSpreadingInjectable = { callable ->
-          spreadingInjectables += SpreadingInjectable(callable)
-        }
+        addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) }
       )
     }
 
