@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -529,6 +530,22 @@ class TypeScopeTest {
         )
       )
     )
+  ) {
+    invokeSingleFile<List<*>>() shouldHaveSize 1
+  }
+
+  @Test fun testTypeScopeDoesNotProduceDuplicates2() = codegen(
+    """
+      fun invoke(): List<ProvidedElement<*, *>> {
+        class MyScope
+      
+        @Provide fun unit() = Unit
+      
+        @Provide fun unitElement(unit: Unit): @Element<MyScope> Unit = unit
+      
+        return inject<List<ProvidedElement<*, *>>>()
+      }
+    """
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 1
   }

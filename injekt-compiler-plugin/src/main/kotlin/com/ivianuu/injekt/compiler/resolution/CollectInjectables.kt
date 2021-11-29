@@ -482,7 +482,10 @@ private fun collectPackageTypeScopeInjectables(
     fun collectInjectables(scope: MemberScope) {
       scope.collectInjectables(
         onEach = { declaration ->
-          if (declaration is ClassDescriptor)
+          // only collect in nested scopes if the declaration does NOT declare any injectables
+          if (declaration is ClassDescriptor &&
+            (declaration.kind != ClassKind.OBJECT ||
+                !declaration.toClassifierRef().declaresInjectables))
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
         },
         classBodyView = false,
