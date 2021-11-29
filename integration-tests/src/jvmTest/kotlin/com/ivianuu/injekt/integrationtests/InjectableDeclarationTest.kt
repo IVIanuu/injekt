@@ -457,7 +457,8 @@ class InjectableDeclarationTest {
     """,
     """
       fun invoke(@Inject foo: Foo) = runComposing { lambda() }
-    """
+    """,
+    config = { withCompose() }
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
