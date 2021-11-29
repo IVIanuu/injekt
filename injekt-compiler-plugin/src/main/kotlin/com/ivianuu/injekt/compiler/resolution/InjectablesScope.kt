@@ -194,9 +194,7 @@ class InjectablesScope(
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
     when {
-      request.type.isFunctionType ||
-          (request.type.classifier.fqName == injektFqNames().composable &&
-              request.type.unwrapTags().isFunctionType) -> {
+      request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext()
         return ProviderInjectable(

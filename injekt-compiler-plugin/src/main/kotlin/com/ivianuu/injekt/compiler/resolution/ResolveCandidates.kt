@@ -261,8 +261,6 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   // try the type scope if the requested type is not a framework type
   return if (request.type.frameworkKey == 0 &&
     !request.type.isFunctionType &&
-    !(request.type.classifier.fqName == injektFqNames().composable &&
-        request.type.unwrapTags().isFunctionType) &&
     request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
     request.type.classifier.fqName != injektFqNames().sourceKey) {
