@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.currentComposer
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.compilationShouldHaveFailed

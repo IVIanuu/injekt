@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.compiler.resolution.wrap
 import org.jetbrains.kotlin.name.FqName

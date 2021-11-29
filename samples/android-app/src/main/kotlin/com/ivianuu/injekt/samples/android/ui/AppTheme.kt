@@ -21,7 +21,6 @@ import androidx.compose.material.Surface
 import androidx.compose.material.darkColors
 import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Tag
 
 fun interface AppTheme : @Composable (@Composable () -> Unit) -> Unit
 
