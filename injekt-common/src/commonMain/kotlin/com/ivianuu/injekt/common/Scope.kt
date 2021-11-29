@@ -34,15 +34,16 @@ private class ScopeImpl<N> : Scope<N>, Disposable {
   private val values = mutableMapOf<String, Any>()
   private val lock = reentrantLock()
 
-  private val isDisposed = atomic(false)
-
   override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
     lock.withLock { values.getOrPut(key.value, init) as T }
 
   override fun dispose() {
-    if (isDisposed.compareAndSet(false, true))
-      for (value in values.values)
-        (value as? Disposable)?.dispose()
+    lock.withLock {
+      values.values.toList()
+        .also { values.clear() }
+    }.forEach {
+      (it as? Disposable)?.dispose()
+    }
   }
 }
 
