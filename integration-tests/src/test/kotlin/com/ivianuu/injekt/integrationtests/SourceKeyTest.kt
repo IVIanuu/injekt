@@ -55,4 +55,12 @@ class SourceKeyTest {
         SourceKey("File.kt:15:44")
       )
   }
+
+  @Test fun testSpreadingInjectableWithSourceKeyTarget() = codegen(
+    """
+      @Provide fun <@Spread T : SourceKey> taggedSourceKey(t: T): @Tag1 SourceKey = t
+
+      fun invoke() = inject<@Tag1 SourceKey>()
+    """
+  )
 }

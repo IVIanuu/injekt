@@ -34,7 +34,8 @@ import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ListInjectable
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
+import com.ivianuu.injekt.compiler.resolution.SourceKey
+import com.ivianuu.injekt.compiler.resolution.SourceKeyFakeConstructorDescriptor
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
@@ -110,10 +111,7 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
-  private inner class GraphContext(
-    val graph: InjectionGraph.Success,
-    val startOffset: Int
-  ) {
+  private inner class GraphContext(val graph: InjectionGraph.Success) {
     val statements = mutableListOf<IrStatement>()
 
     var variableIndex = 0
@@ -260,12 +258,11 @@ class InjectCallTransformer(
       initializing = true
 
       val rawExpression = wrapExpressionInFunctionIfNeeded(result) {
-        when (result.candidate) {
-          is CallableInjectable -> callableExpression(result, result.candidate.cast())
-          is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-          is ListInjectable -> listExpression(result, result.candidate.cast())
-          is SourceKeyInjectable -> sourceKeyExpression()
-          is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
+        when (val candidate = result.candidate) {
+          is CallableInjectable -> callableExpression(result, candidate)
+          is ProviderInjectable -> providerExpression(result, candidate)
+          is ListInjectable -> listExpression(result, candidate)
+          is TypeKeyInjectable -> typeKeyExpression(result, candidate)
         }
       }
 
@@ -476,18 +473,18 @@ class InjectCallTransformer(
   private val sourceKeyConstructor = irCtx.referenceClass(injektFqNames().sourceKey)
     ?.constructors?.single()
 
-  private fun ScopeContext.sourceKeyExpression(): IrExpression =
+  private fun ScopeContext.sourceKeyExpression(sourceKey: SourceKey): IrExpression =
     DeclarationIrBuilder(irCtx, symbol).run {
       irCall(sourceKeyConstructor!!).apply {
         putValueArgument(
           0,
           irString(
             buildString {
-              append(currentFile.name)
+              append(sourceKey.fileName)
               append(":")
-              append(currentFile.fileEntry.getLineNumber(graphContext.startOffset) + 1)
+              append(sourceKey.lineNumber)
               append(":")
-              append(currentFile.fileEntry.getColumnNumber(graphContext.startOffset))
+              append(sourceKey.columnNumber)
             }
           )
         )
@@ -577,6 +574,7 @@ class InjectCallTransformer(
       injectable,
       injectable.callable.callable
     )
+    is SourceKeyFakeConstructorDescriptor -> sourceKeyExpression(injectable.callable.callable.sourceKey)
     is FunctionDescriptor -> functionExpression(
       result,
       injectable,
@@ -782,7 +780,7 @@ class InjectCallTransformer(
 
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
-        val graphContext = GraphContext(graph, result.startOffset)
+        val graphContext = GraphContext(graph)
         try {
           ScopeContext(
             parent = null,
