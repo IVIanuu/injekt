@@ -37,6 +37,7 @@ import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
 import com.ivianuu.injekt.samples.android.domain.IncCounter
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 fun interface AppUi : @Composable () -> Unit
 
