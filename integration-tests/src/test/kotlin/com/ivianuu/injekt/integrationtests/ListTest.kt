@@ -190,7 +190,7 @@ class ListTest {
   ) {
     val list = invokeSingleFile<List<Command>>()
     list.size shouldBe 2
-    list[0].shouldBeTypeOf<CommandA>()
-    list[1].shouldBeTypeOf<CommandB>()
+    list[0].shouldBeTypeOf<CommandB>()
+    list[1].shouldBeTypeOf<CommandA>()
   }
 }

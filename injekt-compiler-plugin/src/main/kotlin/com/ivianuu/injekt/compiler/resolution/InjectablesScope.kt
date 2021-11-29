@@ -233,9 +233,9 @@ class InjectablesScope(
         else createInjectable()
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
-        return TypeKeyInjectable(request.type, this)
+        return TypeKeyInjectable(request.type, allScopes.first())
       request.type.classifier.fqName == injektFqNames().sourceKey ->
-        return SourceKeyInjectable(request.type, this)
+        return SourceKeyInjectable(request.type, allScopes.first())
       else -> return null
     }
   }
@@ -249,28 +249,37 @@ class InjectablesScope(
       return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
 
     return buildList {
+      fun addThisInjectables() {
+        for (candidate in injectables.toList()) {
+          if (candidate.type.frameworkKey != key.type.frameworkKey) continue
+
+          var context =
+            candidate.type.buildContext(singleElementType, key.staticTypeParameters)
+          if (!context.isOk)
+            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
+          if (!context.isOk) continue
+
+          val finalCandidate = candidate.substitute(context.fixedTypeVariables)
+
+          val typeWithFrameworkKey = finalCandidate.type.copy(
+            frameworkKey = generateFrameworkKey()
+          )
+
+          injectables += finalCandidate.copy(type = typeWithFrameworkKey)
+
+          this += typeWithFrameworkKey
+        }
+      }
+
+      // if we are a type scope we wanna appear in the list before the other scopes
+      if (typeScopeType != null)
+        addThisInjectables()
+
       parent?.listElementsForType(singleElementType, collectionElementType, key)
         ?.let { addAll(it) }
 
-      for (candidate in injectables.toList()) {
-        if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-
-        var context =
-          candidate.type.buildContext(singleElementType, key.staticTypeParameters)
-        if (!context.isOk)
-          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
-        if (!context.isOk) continue
-
-        val finalCandidate = candidate.substitute(context.fixedTypeVariables)
-
-        val typeWithFrameworkKey = finalCandidate.type.copy(
-          frameworkKey = generateFrameworkKey()
-        )
-
-        injectables += finalCandidate.copy(type = typeWithFrameworkKey)
-
-        this += typeWithFrameworkKey
-      }
+      if (typeScopeType == null)
+        addThisInjectables()
     }
   }
 
