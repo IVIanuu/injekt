@@ -231,9 +231,9 @@ class InjectablesScope(
         else createInjectable()
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
-        return TypeKeyInjectable(request.type, allScopes.first())
+        return TypeKeyInjectable(request.type, this)
       request.type.classifier.fqName == injektFqNames().sourceKey ->
-        return SourceKeyInjectable(request.type, allScopes.first())
+        return SourceKeyInjectable(request.type, this)
       else -> return null
     }
   }

@@ -186,7 +186,6 @@ class TypeKeyInjectable(
         )
       }
   }
-  override val dependencyScopes = dependencies.associateWith { ownerScope }
 }
 
 fun CallableRef.getInjectableRequests(
