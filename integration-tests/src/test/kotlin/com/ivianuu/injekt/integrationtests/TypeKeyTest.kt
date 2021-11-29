@@ -84,4 +84,10 @@ class TypeKeyTest {
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"
   }
+
+  @Test fun testListOfTypeKeys() = codegen(
+    """
+      fun invoke() = inject<List<TypeKey<String>>>()
+    """
+  )
 }
