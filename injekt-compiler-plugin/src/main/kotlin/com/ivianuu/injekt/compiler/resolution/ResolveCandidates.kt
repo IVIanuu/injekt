@@ -627,8 +627,6 @@ fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) 
     }
 }
 
-
-
 private fun InjectablesScope.computeImportSuggestions(
   failureRequest: InjectableRequest,
   lookupLocation: LookupLocation
