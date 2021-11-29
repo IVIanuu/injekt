@@ -51,6 +51,17 @@ class ElementsTest {
     childElements<Int>() shouldBe 42
   }
 
+  @Test fun testElementsCanBeAccessedInElement() {
+    class MyScope
+
+    @Provide fun element(elements: Elements<MyScope>):
+        @Element<MyScope> () -> Elements<MyScope> = { elements }
+
+    val elements = inject<Elements<MyScope>>()
+
+    elements<() -> Elements<MyScope>>()() shouldBeSameInstanceAs elements
+  }
+
   @Test fun testEager() {
     var callCount = 0
 

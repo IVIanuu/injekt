@@ -25,12 +25,12 @@ interface Elements<N> {
 }
 
 @Provide class ElementsImpl<N>(
-  elements: (@Parent Elements<*>) -> List<ProvidedElement<N, *>>,
+  elements: (Elements<N>, @Parent Elements<*>) -> List<ProvidedElement<N, *>>,
   private val parent: @Parent Elements<*>? = null
 ) : Elements<N> {
   @OptIn(ExperimentalStdlibApi::class)
   private val elements = buildMap<String, Any> {
-    for ((key, element) in elements(this@ElementsImpl))
+    for ((key, element) in elements(this@ElementsImpl, this@ElementsImpl))
       this[key.value] = element
   }
 
