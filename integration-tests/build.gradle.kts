@@ -15,23 +15,25 @@
  */
 
 plugins {
-  id("com.android.library")
   id("org.jetbrains.compose")
-  kotlin("android")
+  kotlin("multiplatform")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
+kotlin {
+  jvm()
 
-dependencies {
-  implementation(Deps.AndroidX.Activity.compose)
-  implementation(Deps.Compose.runtime)
-  implementation(project(":injekt-android"))
-  implementation(project(":injekt-android-work"))
-  implementation(project(":injekt-common"))
-  implementation(project(":injekt-core"))
-  implementation(project(":injekt-coroutines"))
-  implementation(project(":test-util"))
+  sourceSets {
+    named("jvmTest") {
+      dependencies {
+        implementation(Deps.AndroidX.Activity.compose)
+        implementation(Deps.Compose.runtime)
+        implementation(project(":injekt-common"))
+        implementation(project(":injekt-core"))
+        implementation(project(":injekt-coroutines"))
+        implementation(project(":test-util"))
+        implementation(Deps.junit)
+        implementation(Deps.kotestAssertions)
+      }
+    }
+  }
 }
