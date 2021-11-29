@@ -100,11 +100,12 @@ class ProviderTest {
       @Provide val foo: Foo @Composable get() = Foo()
     """,
     """
-      fun invoke() = inject<@Composable () -> Foo>() 
+      fun invoke() = runComposing { inject<@Composable () -> Foo>()() }
     """,
     config = { withCompose() }
   ) {
     invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
   }
 
   @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
