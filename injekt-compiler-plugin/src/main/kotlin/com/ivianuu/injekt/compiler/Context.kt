@@ -52,6 +52,11 @@ class Context(
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
+  val sourceKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    module.findClassAcrossModuleDependencies(
+      ClassId.topLevel(injektFqNames().sourceKey)
+    )?.toClassifierRef()
+  }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
       ClassId.topLevel(injektFqNames().typeKey)

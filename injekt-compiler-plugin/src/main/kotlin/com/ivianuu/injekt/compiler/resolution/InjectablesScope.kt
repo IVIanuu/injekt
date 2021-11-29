@@ -275,27 +275,35 @@ class InjectablesScope(
   }
 
   private fun frameworkListElementsForType(singleElementType: TypeRef): List<TypeRef> =
-    if (singleElementType.isFunctionType) {
-      val providerReturnType = singleElementType.arguments.last()
-      val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
+    when {
+      singleElementType.isFunctionType -> {
+        val providerReturnType = singleElementType.arguments.last()
+        val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
-      buildList {
-        fun TypeRef.add() {
-          this@buildList += singleElementType.copy(
-            arguments = singleElementType.arguments
-              .dropLast(1) + this
-          )
+        buildList {
+          fun TypeRef.add() {
+            this@buildList += singleElementType.copy(
+              arguments = singleElementType.arguments
+                .dropLast(1) + this
+            )
+          }
+
+          for (candidateType in listElementsForType(
+            providerReturnType, ctx.collectionClassifier
+              .defaultType.withArguments(listOf(providerReturnType)), innerKey))
+            candidateType.add()
+
+          for (candidateType in frameworkListElementsForType(providerReturnType))
+            candidateType.add()
         }
-
-        for (candidateType in listElementsForType(
-          providerReturnType, ctx.collectionClassifier
-            .defaultType.withArguments(listOf(providerReturnType)), innerKey))
-              candidateType.add()
-
-        for (candidateType in frameworkListElementsForType(providerReturnType))
-          candidateType.add()
       }
-    } else emptyList()
+      singleElementType.classifier.fqName == injektFqNames().sourceKey -> listOf(
+        ctx.sourceKeyClassifier!!.defaultType
+          .copy(frameworkKey = generateFrameworkKey())
+      )
+      singleElementType.classifier.fqName == injektFqNames().typeKey -> listOf(singleElementType)
+      else -> emptyList()
+    }
 
   private fun spreadInjectables(candidateType: TypeRef) {
     for (spreadingInjectable in spreadingInjectables.toList())
@@ -381,6 +389,3 @@ class InjectablesScope(
 
   override fun toString(): String = "InjectablesScope($name)"
 }
-
-private fun InjectablesScope.hasDeclarationContainers(): Boolean =
-  isDeclarationContainer || parent?.hasDeclarationContainers() == true

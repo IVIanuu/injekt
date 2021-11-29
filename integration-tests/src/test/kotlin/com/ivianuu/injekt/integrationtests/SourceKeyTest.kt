@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.common.SourceKey
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
@@ -38,5 +40,19 @@ class SourceKeyTest {
     """
   ) {
     invokeSingleFile() shouldBe "File.kt:16:21"
+  }
+
+  @Test fun testListOfSourceKeys() = codegen(
+    """
+      fun a(@Inject keys: List<SourceKey>) = keys
+      fun b(@Inject key: List<SourceKey>) = a()
+      fun invoke() = b()
+    """
+  ) {
+    invokeSingleFile<List<SourceKey>>()
+      .shouldContainExactly(
+        SourceKey("File.kt:16:21"),
+        SourceKey("File.kt:15:44")
+      )
   }
 }
