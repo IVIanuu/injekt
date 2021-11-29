@@ -197,7 +197,7 @@ fun CallableRef.getInjectableRequests(@Inject ctx: Context): List<InjectableRequ
           add(it.toInjectableRequest(this@getInjectableRequests))
   }
 
-data class InjectableRequest(
+class InjectableRequest(
   val type: TypeRef,
   val callableFqName: FqName,
   val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
@@ -207,7 +207,29 @@ data class InjectableRequest(
   val isInline: Boolean = false,
   val isLazy: Boolean = false,
   val customErrorMessages: () -> CustomErrorMessages? = { null }
-)
+) {
+  override fun equals(other: Any?): Boolean = other is InjectableRequest &&
+      type == other.type &&
+      callableFqName == other.callableFqName &&
+      callableTypeArguments == other.callableTypeArguments &&
+      parameterName == other.parameterName &&
+      parameterIndex == other.parameterIndex &&
+      isRequired == other.isRequired &&
+      isInline == other.isInline &&
+      isLazy == other.isLazy
+
+  override fun hashCode(): Int {
+    var result = type.hashCode()
+    result = 31 * result + callableFqName.hashCode()
+    result = 31 * result + callableTypeArguments.hashCode()
+    result = 31 * result + parameterName.hashCode()
+    result = 31 * result + parameterIndex.hashCode()
+    result = 31 * result + isRequired.hashCode()
+    result = 31 * result + isInline.hashCode()
+    result = 31 * result + isLazy.hashCode()
+    return result
+  }
+}
 
 fun ParameterDescriptor.toInjectableRequest(
   callable: CallableRef,
