@@ -451,6 +451,18 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
+  @Test fun testCanLeaveOutInjectComposableLambdaParameters() = singleAndMultiCodegen(
+    """
+      val lambda: @Composable (@Inject Foo) -> Foo = { inject<Foo>() }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = runComposing { lambda() }
+    """
+  ) {
+    val foo = Foo()
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+  }
+
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
@@ -580,10 +592,13 @@ class InjectableDeclarationTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      @Composable fun invoke() = inject<Foo>() 
+      fun invoke() = runComposing { inject<Foo>()  }
     """,
     config = { withCompose() }
-  )
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
   @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(
     """

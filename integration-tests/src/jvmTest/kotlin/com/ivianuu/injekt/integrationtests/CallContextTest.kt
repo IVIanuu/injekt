@@ -16,9 +16,17 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.currentComposer
+import com.ivianuu.injekt.test.Bar
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.runComposing
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.withCompose
+import io.kotest.matchers.types.shouldBeTypeOf
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class CallContextTest {
@@ -56,7 +64,9 @@ class CallContextTest {
     """
       fun invoke() = runBlocking { inject<Bar>() } 
     """
-  )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Bar>()
+  }
 
   @Test fun testNonComposableInjectableCanReceiveComposableInjectableInComposableContext() = singleAndMultiCodegen(
     """
@@ -64,9 +74,12 @@ class CallContextTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      @Composable fun invoke() { inject<Bar>() } 
-    """
-  )
+      fun invoke() = runComposing { inject<Bar>() } 
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Bar>()
+  }
 
   @Test fun testSuspendProviderCanRequestSuspendDependencyInDefaultContext() =
     singleAndMultiCodegen(
@@ -77,7 +90,13 @@ class CallContextTest {
       """
         fun invoke() = inject<suspend () -> Bar>()
       """
-    )
+    ) {
+      runBlocking {
+        invokeSingleFile<suspend () -> Bar>()
+          .invoke()
+          .shouldBeTypeOf<Bar>()
+      }
+    }
 
   @Test fun testComposableProviderCanRequestComposableDependencyInDefaultContext() =
     singleAndMultiCodegen(
@@ -87,8 +106,15 @@ class CallContextTest {
       """,
       """
         fun invoke() = inject<@Composable () -> Bar>()
-      """
-    )
+      """,
+      config = { withCompose() }
+    ) {
+      runComposing {
+        invokeSingleFile<@Composable () -> Bar>()
+          .invoke()
+          .shouldBeTypeOf<Bar>()
+      }
+    }
   
   @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendLambda() =
     singleAndMultiCodegen(
@@ -99,7 +125,13 @@ class CallContextTest {
       """
         fun invoke() = inject<suspend () -> Bar>()
       """
-    )
+    ) {
+      runBlocking {
+        invokeSingleFile<suspend () -> Bar>()
+          .invoke()
+          .shouldBeTypeOf<Bar>()
+      }
+    }
 
   @Test fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableLambda() =
     singleAndMultiCodegen(
@@ -111,7 +143,13 @@ class CallContextTest {
         fun invoke() = inject<@Composable () -> Bar>()
       """,
       config = { withCompose() }
-    )
+    ) {
+      runComposing {
+        invokeSingleFile<@Composable () -> Bar>()
+          .invoke()
+          .shouldBeTypeOf<Bar>()
+      }
+    }
 
   @Test fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = singleAndMultiCodegen(
     """
@@ -126,7 +164,10 @@ class CallContextTest {
         }
       } 
     """
-  )
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
   @Test fun testComposableCanBeRequestedFromInlineLambdaInComposableContext() =
     singleAndMultiCodegen(
@@ -134,14 +175,19 @@ class CallContextTest {
         @Provide @Composable fun foo() = Foo()
       """,
       """
-        @Composable fun invoke() = run {
+        fun invoke() = runComposing {
           run {
-            inject<Foo>()
+            run {
+              inject<Foo>()
+            }
           }
         }
       """,
       config = { withCompose() }
-    )
+    ) {
+      invokeSingleFile()
+        .shouldBeTypeOf<Foo>()
+    }
 
   @Test fun testSuspendCanBeRequestedFromLocalVariableInitializerInSuspendContext() =
     singleAndMultiCodegen(
@@ -149,11 +195,15 @@ class CallContextTest {
         @Provide suspend fun foo() = Foo()
       """,
       """
-        suspend fun invoke() {
+        fun invoke() = runBlocking {
           val foo = inject<Foo>()
+          foo
         }
       """
-    )
+    ) {
+      invokeSingleFile()
+        .shouldBeTypeOf<Foo>()
+    }
 
   @Test fun testComposableCanBeRequestedFromLocalVariableInitializerInComposableContext() =
     singleAndMultiCodegen(
@@ -161,12 +211,16 @@ class CallContextTest {
         @Provide @Composable fun foo() = Foo()
       """,
       """
-        @Composable fun invoke() {
+        fun invoke() = runComposing {
           val foo = inject<Foo>()
+          foo
         }
       """,
       config = { withCompose() }
-    )
+    ) {
+      invokeSingleFile()
+        .shouldBeTypeOf<Foo>()
+    }
 
   @Test fun testSuspendCanBeRequestedFromLocalVariableDelegateInitializerInSuspendContext() =
     singleAndMultiCodegen(
@@ -199,11 +253,18 @@ class CallContextTest {
         @Provide suspend fun foo() = Foo()
       """,
       """       
-        fun invoke(): suspend () -> Unit = {
+        fun invoke(): suspend () -> Foo = {
           val foo = run { inject<Foo>() }
+          foo
         }
       """
-    )
+    ) {
+      runBlocking {
+        invokeSingleFile<suspend () -> Foo>()
+          .invoke()
+          .shouldBeTypeOf<Foo>()
+      }
+    }
 
   @Test fun testComposableCanBeRequestedFromInlineLambdaInLocalVariableInitializerInComposableContext() =
     singleAndMultiCodegen(
@@ -211,12 +272,19 @@ class CallContextTest {
         @Provide @Composable fun foo() = Foo()
       """,
       """
-        fun invoke(): @Composable () -> Unit = {
+        fun invoke(): @Composable () -> Foo = {
           val foo = run { inject<Foo>() }
+          foo
         }
       """,
       config = { withCompose() }
-    )
+    ) {
+      runComposing {
+        invokeSingleFile<@Composable () -> Foo>()
+          .invoke()
+          .shouldBeTypeOf<Foo>()
+      }
+    }
 
   @Test fun testSuspendCanBeRequestedFromInlineLambdaInLocalVariableDelegateInitializerInSuspendContext() =
     singleAndMultiCodegen(
@@ -246,24 +314,29 @@ class CallContextTest {
   @Test fun testSuspendCanBeRequestedFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun foo() = Foo()
-      suspend inline fun initialize(@Inject provider: () -> Foo) {
-      }
+      suspend inline fun createFoo(@Inject provider: () -> Foo) = provider()
     """,
     """
-     fun invoke() = runBlocking { initialize() } 
+     fun invoke() = runBlocking { createFoo() } 
     """
-  )
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
   @Test fun testComposableCanBeRequestedFromInlineProviderInComposableContext() = singleAndMultiCodegen(
     """
       @Provide @Composable fun foo() = Foo()
-      @Composable inline fun initialize(@Inject provider: () -> Foo) {
-      }
+      @Composable inline fun createFoo(@Inject provider: () -> Foo) = provider()
     """,
     """
-     @Composable fun invoke() { initialize() } 
-    """
-  )
+     fun invoke() = runComposing { createFoo() } 
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
 
   @Test fun testCannotRequestSuspendDependencyInDefaultValueOfFunction() = singleAndMultiCodegen(
     """
@@ -282,11 +355,18 @@ class CallContextTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      @Composable fun invoke(foo: Foo = inject()) {
-      }
+      @Composable fun foo(foo: Foo = inject()) = foo
+
+      fun invoke(): @Composable () -> Foo = { foo() }
     """,
     config = { withCompose() }
-  )
+  ) {
+    runComposing {
+      invokeSingleFile<@Composable () -> Foo>()
+        .invoke()
+        .shouldBeTypeOf<Foo>()
+    }
+  }
 
   @Test fun testCanRequestComposableDependencyInGetterOfComposableProperty() =
     singleAndMultiCodegen(
@@ -296,7 +376,15 @@ class CallContextTest {
       """
         val fooGetter: Foo
           @Composable get() = inject()
+
+        fun invoke(): @Composable () -> Foo = { fooGetter }
       """,
       config = { withCompose() }
-    )
+    ) {
+      runComposing {
+        invokeSingleFile<@Composable () -> Foo>()
+          .invoke()
+          .shouldBeTypeOf<Foo>()
+      }
+    }
 }
