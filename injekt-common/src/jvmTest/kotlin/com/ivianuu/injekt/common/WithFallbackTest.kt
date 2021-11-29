@@ -18,6 +18,7 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.Test
 
