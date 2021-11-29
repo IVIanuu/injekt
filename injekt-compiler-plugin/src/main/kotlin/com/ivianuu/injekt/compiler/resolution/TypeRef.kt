@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
@@ -498,7 +499,7 @@ val TypeRef.isProvideFunctionType: Boolean
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
       classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction") ||
-      (classifier.fqName == injektFqNames().composable && arguments.last().isFunctionType)
+      (classifier.fqName == InjektFqNames.Default.composable && arguments.last().isFunctionType)
 
 fun effectiveVariance(
   declared: TypeVariance,
