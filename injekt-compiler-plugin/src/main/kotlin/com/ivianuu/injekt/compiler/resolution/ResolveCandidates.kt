@@ -69,7 +69,8 @@ sealed class ResolutionResult {
           val anchorScopes = mutableSetOf<InjectablesScope>()
 
           fun collectScopesRecursive(result: Value) {
-            if (result.candidate is CallableInjectable)
+            if (result.candidate is CallableInjectable &&
+                result.candidate.ownerScope.typeScopeType == null)
               anchorScopes += result.candidate.ownerScope
             for (dependency in result.dependencyResults.values)
               if (dependency is Value)
