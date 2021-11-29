@@ -27,11 +27,9 @@ import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
 import com.ivianuu.shaded_injekt.Inject
 import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -236,6 +234,8 @@ class InjectablesScope(
       }
       request.type.classifier.fqName == injektFqNames().typeKey ->
         return TypeKeyInjectable(request.type, this)
+      request.type.classifier.fqName == injektFqNames().sourceKey ->
+        return SourceKeyInjectable(request.type, this)
       else -> return null
     }
   }
@@ -297,6 +297,10 @@ class InjectablesScope(
             candidateType.add()
         }
       }
+      singleElementType.classifier.fqName == injektFqNames().sourceKey -> listOf(
+        ctx.sourceKeyClassifier!!.defaultType
+          .copy(frameworkKey = generateFrameworkKey())
+      )
       singleElementType.classifier.fqName == injektFqNames().typeKey -> listOf(singleElementType)
       else -> emptyList()
     }

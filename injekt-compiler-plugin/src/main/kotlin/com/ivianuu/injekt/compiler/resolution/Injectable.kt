@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
@@ -36,7 +35,6 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -156,6 +154,13 @@ class ProviderInjectable(
   class ProviderValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
   ) : ValueParameterDescriptor by delegate
+}
+
+class SourceKeyInjectable(
+  override val type: TypeRef,
+  override val ownerScope: InjectablesScope
+) : Injectable() {
+  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
 }
 
 class TypeKeyInjectable(

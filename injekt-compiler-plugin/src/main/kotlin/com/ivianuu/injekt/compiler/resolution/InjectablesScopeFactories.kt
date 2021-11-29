@@ -45,14 +45,12 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassInitializer
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
@@ -69,11 +67,9 @@ import org.jetbrains.kotlin.psi.psiUtil.isObjectLiteral
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import kotlin.math.exp
 
 fun ElementInjectablesScope(
   element: KtElement,
@@ -146,8 +142,7 @@ fun ElementInjectablesScope(
       ?.let { FunctionInjectablesScope(it, parentScope!!) }
       ?: parentScope!!
     is KtBlockExpression -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!)
-    is KtAnnotatedExpression -> ExpressionImportInjectablesScope(scopeOwner, parentScope!!)
-    is KtCallExpression -> InjectCallExpressionInjectablesScope(scopeOwner, parentScope!!)
+    is KtAnnotatedExpression -> ExpressionInjectablesScope(scopeOwner, parentScope!!)
     else -> throw AssertionError("Unexpected scope owner $scopeOwner")
   }
 
@@ -181,7 +176,7 @@ private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: Context): B
       if (parentsBetweenInitializerAndPosition.none {
           it is KtNamedDeclaration || it is KtClassOrObject || it is KtFunctionLiteral
         })
-        return false
+          return false
     }
 
     val classInitializer = position.getParentOfType<KtClassInitializer>(false)
@@ -192,7 +187,7 @@ private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: Context): B
         .toList()
       if (parentsBetweenInitializerAndPosition.none {
           it is KtNamedDeclaration || it is KtClassOrObject || it is KtFunctionLiteral
-        })
+      })
         return false
     }
   }
@@ -204,10 +199,6 @@ private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: Context): B
 
   if (this is KtAnnotatedExpression && hasAnnotation(injektFqNames().providers))
     return true
-
-  if (this is KtCallExpression && getResolvedCall(trace()!!.bindingContext)!!
-      .resultingDescriptor.valueParameters.any { it.isInject() })
-        return true
 
   if (this is KtClass && position.getParentOfType<KtSuperTypeList>(false) == null) {
     val constructor = position.getParentOfType<KtConstructor<*>>(false)
@@ -241,7 +232,7 @@ private fun KtElement.isScopeOwner(position: KtElement, @Inject ctx: Context): B
             (parent is KtNamedFunction && parent.parent == this) ||
             (parent is KtPropertyAccessor && parent.property.parent == this)
       })
-    return true
+        return true
 
   return false
 }
@@ -263,7 +254,7 @@ private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: Context):
     .declarations
     .transform { declaration ->
       if (declaration.endOffset < position.startOffset &&
-        declaration is KtNamedDeclaration) {
+          declaration is KtNamedDeclaration) {
         declaration.descriptor<DeclarationDescriptor>()
           ?.takeIf { it.isProvide() }
           ?.let { add(it) }
@@ -468,7 +459,7 @@ private fun FunctionParameterInjectablesScopes(
     .transform {
       if ((maxIndex == null || it.injektIndex() < maxIndex) &&
         (it.isProvide() || it === function.extensionReceiverParameter))
-        add(it.toCallableRef())
+          add(it.toCallableRef())
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -586,31 +577,22 @@ private fun LocalVariableInjectablesScope(
   )
 }
 
-private fun ExpressionImportInjectablesScope(
+private fun ExpressionInjectablesScope(
   expression: KtAnnotatedExpression,
   parent: InjectablesScope,
   @Inject ctx: Context
 ): InjectablesScope = trace()!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
-  expression
+  val finalParent = expression
     .getProviderImports()
     .takeIf { it.isNotEmpty() }
     ?.let { ImportInjectablesScopes(null, it, "EXPRESSION ${expression.startOffset}", parent) }
     ?: parent
-}
 
-private fun InjectCallExpressionInjectablesScope(
-  expression: KtCallExpression,
-  parent: InjectablesScope,
-  @Inject ctx: Context
-): InjectablesScope = trace()!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
   InjectablesScope(
-    name = "INJECT CALL SCOPE",
-    parent = parent,
-    callContext = parent.callContext,
-    initialInjectables = listOf(
-      SourceKeyFakeConstructorDescriptor(expression.toSourceKey())
-        .toCallableRef()
-    )
+    name = "EXPRESSION ${expression.startOffset}",
+    callContext = finalParent.callContext,
+    parent = finalParent,
+    nesting = finalParent.nesting
   )
 }
 
@@ -759,7 +741,7 @@ private fun ImportInjectablesScopes(
   imports.collectImportedInjectables { callable ->
     if (callable.callable.isExternalDeclaration()) {
       if (callable.import!!.importPath!!.endsWith(".*") ||
-        callable.import.importPath!!.endsWith(".**")) {
+          callable.import.importPath!!.endsWith(".**")) {
         externalStarInjectables += callable
       } else {
         externalByNameInjectables += callable
@@ -776,9 +758,9 @@ private fun ImportInjectablesScopes(
 
   val resolvedImports = imports.mapNotNull { it.resolve() }
   if (externalStarInjectables.isEmpty() &&
-    internalStarInjectables.isEmpty() &&
-    externalByNameInjectables.isEmpty() &&
-    internalByNameInjectables.isEmpty()) {
+      internalStarInjectables.isEmpty() &&
+      externalByNameInjectables.isEmpty() &&
+      internalByNameInjectables.isEmpty()) {
     return InjectablesScope(
       name = "$namePrefix EMPTY IMPORTS",
       parent = parent,
