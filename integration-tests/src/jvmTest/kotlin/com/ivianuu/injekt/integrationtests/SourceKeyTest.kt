@@ -29,7 +29,7 @@ class SourceKeyTest {
       fun invoke() = sourceKey()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:14:21"
+    invokeSingleFile() shouldBe "File.kt:12:21"
   }
 
   @Test fun testSourceKeyPassing() = codegen(
@@ -39,7 +39,7 @@ class SourceKeyTest {
       fun invoke() = b()
     """
   ) {
-    invokeSingleFile() shouldBe "File.kt:16:21"
+    invokeSingleFile() shouldBe "File.kt:14:21"
   }
 
   @Test fun testListOfSourceKeys() = codegen(
@@ -51,8 +51,8 @@ class SourceKeyTest {
   ) {
     invokeSingleFile<List<SourceKey>>()
       .shouldContainExactly(
-        SourceKey("File.kt:16:21"),
-        SourceKey("File.kt:15:44")
+        SourceKey("File.kt:14:21"),
+        SourceKey("File.kt:13:44")
       )
   }
 }
