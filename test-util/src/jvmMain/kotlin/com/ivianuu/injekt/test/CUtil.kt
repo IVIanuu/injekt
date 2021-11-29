@@ -26,12 +26,12 @@ import com.ivianuu.injekt.compiler.transform.dumpAllFiles
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
-import com.tschuchort.compiletesting.SourceFileAccessor
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.name.FqName
+import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Files
 import kotlin.reflect.KClass
@@ -242,8 +242,12 @@ fun multiPlatformCodegen(
     kotlincArguments += "-Xmulti-platform=true"
     commonSources
       .map {
-        SourceFileAccessor.writeIfNeeded(it, workingDir.resolve("sources")
-          .also { it.mkdirs() })
+        SourceFile::class.java
+          .getDeclaredMethod(
+            "writeIfNeeded\$kotlin_compile_testing",
+            File::class.java
+          )
+          .invoke(it, workingDir.resolve("sources").also { it.mkdirs() })
       }
       .forEach { kotlincArguments += "-Xcommon-sources=$it" }
     this.sources = platformSources + commonSources

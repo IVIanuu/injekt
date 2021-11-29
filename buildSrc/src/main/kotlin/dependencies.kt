@@ -36,14 +36,6 @@ object Deps {
       const val compose = "androidx.activity:activity-compose:$version"
     }
 
-    object Compose {
-      const val version = "1.0.4"
-      const val compiler = "androidx.compose.compiler:compiler:$version"
-      const val material = "androidx.compose.material:material:$version"
-      const val runtime = "androidx.compose.runtime:runtime:$version"
-      const val test = "androidx.compose.ui:ui-test-junit4:$version"
-    }
-
     object Lifecycle {
       private const val version = "2.3.1"
       const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
@@ -60,6 +52,14 @@ object Deps {
   const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.16.3"
 
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
+
+  object Compose {
+    const val version = "1.0.0-beta5"
+    const val compiler = "org.jetbrains.compose.compiler:compiler:$version"
+    const val gradlePlugin = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin:$version"
+    const val material = "org.jetbrains.compose.material:material:$version"
+    const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
+  }
 
   object Coroutines {
     private const val version = "1.5.2"

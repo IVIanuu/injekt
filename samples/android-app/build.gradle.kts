@@ -16,6 +16,7 @@
 
 plugins {
   id("com.android.application")
+  id("org.jetbrains.compose")
   kotlin("android")
 }
 
@@ -29,7 +30,5 @@ dependencies {
   implementation(Deps.AndroidX.Activity.activity)
   implementation(Deps.AndroidX.Activity.compose)
   implementation(project(":injekt-android"))
-  implementation(Deps.AndroidX.Compose.runtime)
-  kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
-  implementation(Deps.AndroidX.Compose.material)
+  implementation(Deps.Compose.material)
 }

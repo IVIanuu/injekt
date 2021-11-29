@@ -16,6 +16,7 @@
 
 plugins {
   id("com.android.library")
+  id("org.jetbrains.compose")
   kotlin("android")
 }
 
@@ -25,8 +26,8 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
 
 dependencies {
-  implementation(Deps.AndroidX.Compose.runtime)
   implementation(Deps.AndroidX.Activity.compose)
+  implementation(Deps.Compose.runtime)
   implementation(project(":injekt-android"))
   implementation(project(":injekt-android-work"))
   implementation(project(":injekt-common"))

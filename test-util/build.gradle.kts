@@ -16,6 +16,7 @@
 
 plugins {
   kotlin("multiplatform")
+  id("org.jetbrains.compose")
 }
 
 kotlin {
@@ -30,7 +31,8 @@ kotlin {
         api(project(":injekt-common"))
         api(project(":injekt-compiler-plugin"))
 
-        api(Deps.AndroidX.Compose.compiler)
+        api(Deps.Compose.compiler)
+        api(Deps.Compose.runtime)
 
         api(Deps.classGraph)
 

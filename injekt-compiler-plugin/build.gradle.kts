@@ -45,7 +45,7 @@ artifacts {
 
 dependencies {
   compileOnly(Deps.Kotlin.compilerEmbeddable)
-  compileOnly(Deps.AndroidX.Compose.compiler)
+  compileOnly(Deps.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
 }
 
