@@ -552,8 +552,7 @@ private fun InjectablesScope.compareType(
   if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
 
   val pair = a to b
-  if (pair in comparedTypes) return 0
-  comparedTypes += pair
+  if (!comparedTypes.add(pair)) return 0
 
   fun compareSameClassifier(a: TypeRef?, b: TypeRef?): Int {
     if (a == b) return 0

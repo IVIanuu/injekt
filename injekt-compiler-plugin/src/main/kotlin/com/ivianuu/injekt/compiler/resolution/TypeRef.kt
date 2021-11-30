@@ -273,8 +273,7 @@ class TypeRef(
     if (_allTypes == null) {
       val allTypes = mutableSetOf<TypeRef>()
       fun collect(inner: TypeRef) {
-        if (inner in allTypes) return
-        allTypes += inner
+        if (!allTypes.add(inner)) return
         inner.arguments.forEach { collect(it) }
         inner.superTypes.forEach { collect(it) }
       }
@@ -469,9 +468,8 @@ val TypeRef.typeSize: Int
     val seen = mutableSetOf<TypeRef>()
     fun visit(type: TypeRef) {
       typeSize++
-      if (type in seen) return
-      seen += type
-      type.arguments.forEach { visit(it) }
+      if (seen.add(type))
+        type.arguments.forEach { visit(it) }
     }
     visit(this)
     return typeSize
@@ -482,8 +480,7 @@ val TypeRef.coveringSet: Set<ClassifierRef>
     val classifiers = mutableSetOf<ClassifierRef>()
     val seen = mutableSetOf<TypeRef>()
     fun visit(type: TypeRef) {
-      if (type in seen) return
-      seen += type
+      if (!seen.add(type)) return
       classifiers += type.classifier
       type.arguments.forEach { visit(it) }
     }

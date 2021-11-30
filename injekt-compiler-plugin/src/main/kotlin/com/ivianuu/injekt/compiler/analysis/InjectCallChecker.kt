@@ -71,8 +71,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
 
   @OptIn(ExperimentalStdlibApi::class)
   private fun checkCall(resolvedCall: ResolvedCall<*>) {
-    if (resolvedCall in checkedCalls) return
-    checkedCalls += resolvedCall
+    if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return

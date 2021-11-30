@@ -121,8 +121,7 @@ class InjectCallTransformer(
     private val graphContextParents = buildList<InjectablesScope> {
       val seenScopes = mutableSetOf<InjectablesScope>()
       fun InjectablesScope.add() {
-        if (this in seenScopes) return
-        seenScopes += this
+        if (!seenScopes.add(this)) return
         add(this)
         parent?.add()
         typeScopes.forEach { it.value.add() }

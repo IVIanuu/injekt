@@ -142,8 +142,7 @@ class InjectablesScope(
     visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
   ) {
     if (isIde) return
-    if (this in visitedScopes) return
-    visitedScopes += this
+    if (!visitedScopes.add(this)) return
 
     parent?.recordLookup(lookupLocation, visitedScopes)
     typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
@@ -327,8 +326,8 @@ class InjectablesScope(
     candidateType: TypeRef
   ) {
     if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
-    if (candidateType in spreadingInjectable.processedCandidateTypes) return
-    spreadingInjectable.processedCandidateTypes += candidateType
+    if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
+
     val (context, substitutionMap) = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
       candidateType,

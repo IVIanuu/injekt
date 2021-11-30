@@ -252,8 +252,7 @@ fun CallableRef.collectInjectables(
   seen: MutableSet<CallableRef> = mutableSetOf(),
   @Inject ctx: Context
 ) {
-  if (this in seen) return
-  seen += this
+  if (!seen.add(this)) return
 
   if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
 
@@ -409,14 +408,11 @@ fun TypeRef.collectTypeScopeInjectables(@Inject ctx: Context): InjectablesWithLo
     val seenTypes = mutableSetOf<TypeRef>()
 
     fun TypeRef.addNextPackages() {
-      if (this in seenTypes) return
-      seenTypes += this
+      if (!seenTypes.add(this)) return
 
       val packageFqName = classifier.descriptor?.findPackage()?.fqName
-      if (packageFqName != null && packageFqName !in lookedUpPackages) {
-        lookedUpPackages += packageFqName
+      if (packageFqName != null && lookedUpPackages.add(packageFqName))
         nextPackages += packageFqName
-      }
 
       allTypes.forEach { it.addNextPackages() }
       classifier.tags.forEach { it.addNextPackages() }

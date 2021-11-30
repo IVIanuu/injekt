@@ -20,6 +20,7 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.coroutines.DefaultContext
 
 object CoroutinesInjectables {
+  @OptIn(ExperimentalStdlibApi::class)
   @Provide inline fun dispatcher(context: DefaultContext): CoroutineDispatcher =
     context[CoroutineDispatcher] ?: Dispatchers.Default
 }
