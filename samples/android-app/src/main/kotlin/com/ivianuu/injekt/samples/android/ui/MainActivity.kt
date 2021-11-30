@@ -25,6 +25,7 @@ import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.samples.android.app.App
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -32,13 +33,7 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     val scope = Scope<ActivityScope>()
-    lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
-      try {
-        awaitCancellation()
-      } finally {
-        scope.dispose()
-      }
-    }
+    lifecycleScope.coroutineContext.job.invokeOnCompletion { scope.dispose() }
 
     val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
