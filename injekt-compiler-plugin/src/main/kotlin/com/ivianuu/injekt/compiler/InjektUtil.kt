@@ -254,6 +254,12 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   }
 }
 
+private val KotlinType.fullyAbbreviatedType: KotlinType
+  get() {
+    val abbreviatedType = getAbbreviatedType()
+    return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
+  }
+
 @OptIn(ExperimentalTypeInference::class)
 inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> =
   transformTo(mutableListOf(), block)
@@ -266,12 +272,6 @@ inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
   for (item in this@transformTo)
     block(item)
 }
-
-private val KotlinType.fullyAbbreviatedType: KotlinType
-  get() {
-    val abbreviatedType = getAbbreviatedType()
-    return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
-  }
 
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")

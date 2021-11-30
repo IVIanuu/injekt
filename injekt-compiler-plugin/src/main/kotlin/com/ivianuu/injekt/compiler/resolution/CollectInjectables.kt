@@ -363,7 +363,7 @@ fun List<ProviderImport>.collectImportedInjectables(
           nextPackages += module().getSubPackagesOf(currentPackage) { true }
         }
       }
-      import.importPath.endsWith("*") -> {
+      import.importPath.endsWith(".*") -> {
         val packageFqName = FqName(import.importPath.removeSuffix(".*"))
         val resolvedImport = import.toResolvedImport(packageFqName)
 

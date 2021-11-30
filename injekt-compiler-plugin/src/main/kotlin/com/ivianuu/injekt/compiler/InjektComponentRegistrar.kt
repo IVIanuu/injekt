@@ -50,8 +50,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
   ) {
     if (configuration.isKaptCompilation()) return
 
-    configuration.put(CLIConfigurationKeys.ALLOW_KOTLIN_PACKAGE, true)
-
     @Provide val injektFqNames = InjektFqNames(configuration.getNotNull(RootPackageKey))
 
     if (configuration.get(SrcDirKey) != null)

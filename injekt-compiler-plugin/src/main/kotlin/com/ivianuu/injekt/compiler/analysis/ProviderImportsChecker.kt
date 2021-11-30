@@ -76,7 +76,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
         continue
       }
       importPath!!
-      if (importPath.endsWith(".*") || importPath.endsWith(".**")) {
+      if (importPath.endsWith("*")) {
         val packageFqName = FqName(importPath.removeSuffix(".**").removeSuffix(".*"))
         if (packageFqName == currentPackage) {
           trace()!!.report(

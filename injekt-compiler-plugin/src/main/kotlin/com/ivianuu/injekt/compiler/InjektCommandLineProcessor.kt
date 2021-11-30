@@ -94,7 +94,6 @@ val SrcDirOption = CliOption(
   description = "srcDir",
   required = false
 )
-
 val SrcDirKey = CompilerConfigurationKey<File>("srcDir")
 
 val CacheDirOption = CliOption(
@@ -103,7 +102,6 @@ val CacheDirOption = CliOption(
   description = "cacheDir",
   required = false
 )
-
 val CacheDirKey = CompilerConfigurationKey<File>("cacheDir")
 
 val ModifiedFilesOption = CliOption(
