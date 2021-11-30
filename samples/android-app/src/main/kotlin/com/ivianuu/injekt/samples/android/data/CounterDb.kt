@@ -21,8 +21,7 @@ import com.ivianuu.injekt.common.Scoped
 import com.ivianuu.injekt.samples.android.app.AppScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.update
 
 interface CounterDb {
   val counter: Flow<Int>
@@ -33,9 +32,6 @@ interface CounterDb {
 @Provide @Scoped<AppScope> class CounterDbImpl : CounterDb {
   private val _counter = MutableStateFlow(0)
   override val counter: Flow<Int> by this::_counter
-  private val lock = Mutex()
 
-  override suspend fun updateCounter(transform: Int.() -> Int) = lock.withLock {
-    _counter.value = transform(_counter.value)
-  }
+  override suspend fun updateCounter(transform: Int.() -> Int) = _counter.update(transform)
 }
