@@ -13,16 +13,14 @@ interface Scope<N> : Disposable {
 
 fun <N> Scope(): Scope<N> = ScopeImpl()
 
-private class ScopeImpl<N> : Scope<N>, Disposable {
+private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
   private val values = mutableMapOf<Any, Any>()
 
-  private val lock = reentrantLock()
-
   override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
-    lock.withLock { values.getOrPut(key.value, init) as T }
+    synchronized(this) { values.getOrPut(key.value, init) as T }
 
   override fun dispose() {
-    lock.withLock {
+    synchronized(this) {
       values.values.toList()
         .also { values.clear() }
     }.forEach {
