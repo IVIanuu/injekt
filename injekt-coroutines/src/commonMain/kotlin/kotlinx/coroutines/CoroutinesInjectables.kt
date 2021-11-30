@@ -17,9 +17,9 @@
 package kotlinx.coroutines
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.coroutines.DefaultDispatcher
+import com.ivianuu.injekt.coroutines.DefaultContext
 
 object CoroutinesInjectables {
-  @Provide inline fun dispatcher(dispatcher: DefaultDispatcher): CoroutineDispatcher =
-    dispatcher
+  @Provide inline fun dispatcher(context: DefaultContext): CoroutineDispatcher =
+    context[CoroutineDispatcher] ?: Dispatchers.Default
 }

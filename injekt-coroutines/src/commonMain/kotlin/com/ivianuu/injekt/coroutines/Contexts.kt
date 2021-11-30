@@ -18,40 +18,40 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Tag
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
 
-typealias DefaultDispatcher = @DefaultDispatcherTag CoroutineDispatcher
+typealias DefaultContext = @DefaultContextTag CoroutineContext
 
-@Tag annotation class DefaultDispatcherTag {
+@Tag annotation class DefaultContextTag {
   companion object {
-    @Provide inline val dispatcher: DefaultDispatcher
+    @Provide inline val context: DefaultContext
       get() = Dispatchers.Default
   }
 }
 
-typealias MainDispatcher = @MainDispatcherTag CoroutineDispatcher
+typealias MainContext = @MainContextTag CoroutineContext
 
-@Tag annotation class MainDispatcherTag {
+@Tag annotation class MainContextTag {
   companion object {
-    @Provide inline val dispatcher: MainDispatcher
+    @Provide inline val context: MainContext
       get() = Dispatchers.Main
   }
 }
 
-typealias ImmediateMainDispatcher = @ImmediateMainDispatcherTag CoroutineDispatcher
+typealias ImmediateMainContext = @ImmediateMainContextTag CoroutineContext
 
-@Tag annotation class ImmediateMainDispatcherTag {
+@Tag annotation class ImmediateMainContextTag {
   companion object {
-    @Provide inline val dispatcher: @ImmediateMainDispatcherTag CoroutineDispatcher
+    @Provide inline val context: @ImmediateMainContextTag CoroutineContext
       get() = Dispatchers.Main.immediate
   }
 }
 
-typealias IODispatcher = @IODispatcherTag CoroutineDispatcher
+typealias IOContext = @IOContextTag CoroutineContext
 
-@Tag annotation class IODispatcherTag
+@Tag annotation class IOContextTag
 
 expect object IOInjectables {
-  @Provide val dispatcher: IODispatcher
+  @Provide val context: IOContext
 }
