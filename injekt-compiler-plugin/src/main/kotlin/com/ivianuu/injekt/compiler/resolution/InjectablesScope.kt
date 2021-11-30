@@ -374,9 +374,8 @@ class InjectablesScope(
           .copy(originalType = newInnerInjectable.type)
         val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
         spreadingInjectables += newSpreadingInjectable
-        spreadingInjectableCandidateTypes
-          .toList()
-          .forEach { spreadInjectables(newSpreadingInjectable, it) }
+        for (candidate in spreadingInjectableCandidateTypes.toList())
+          spreadInjectables(newSpreadingInjectable, candidate)
       }
     )
   }
