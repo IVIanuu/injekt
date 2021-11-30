@@ -701,25 +701,23 @@ class InjectCallTransformer(
   private fun ScopeContext.variableExpression(
     descriptor: VariableDescriptor,
     injectable: CallableInjectable
-  ): IrExpression {
-    return if (descriptor is LocalVariableDescriptor && descriptor.isDelegated) {
-      val localFunction = localDeclarations.localFunctions.single { candidateFunction ->
-        candidateFunction.descriptor
-          .safeAs<LocalVariableAccessorDescriptor.Getter>()
-          ?.correspondingVariable == descriptor
-      }
-      DeclarationIrBuilder(irCtx, symbol)
-        .irCall(
-          localFunction.symbol,
-          injectable.type.toIrType().typeOrNull!!
-        )
-    } else {
-      DeclarationIrBuilder(irCtx, symbol)
-        .irGet(
-          injectable.type.toIrType().typeOrNull!!,
-          localDeclarations.localVariables.single { it.descriptor == descriptor }.symbol
-        )
+  ): IrExpression = if (descriptor is LocalVariableDescriptor && descriptor.isDelegated) {
+    val localFunction = localDeclarations.localFunctions.single { candidateFunction ->
+      candidateFunction.descriptor
+        .safeAs<LocalVariableAccessorDescriptor.Getter>()
+        ?.correspondingVariable == descriptor
     }
+    DeclarationIrBuilder(irCtx, symbol)
+      .irCall(
+        localFunction.symbol,
+        injectable.type.toIrType().typeOrNull!!
+      )
+  } else {
+    DeclarationIrBuilder(irCtx, symbol)
+      .irGet(
+        injectable.type.toIrType().typeOrNull!!,
+        localDeclarations.localVariables.single { it.descriptor == descriptor }.symbol
+      )
   }
 
   private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
@@ -755,7 +753,6 @@ class InjectCallTransformer(
         }
       )
     }
-    if (declaration.isLocal) localDeclarations.localFunctions += declaration
     val result = super.visitFunctionNew(declaration)
     if (dispatchReceiver != null) receiverAccessors.pop()
     if (extensionReceiver != null) receiverAccessors.pop()
