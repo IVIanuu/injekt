@@ -130,7 +130,8 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
         val result = super.visitCall(expression) as IrCall
         if (result.origin != IrStatementOrigin.INVOKE) return result
 
-        val dispatchReceiverType = result.dispatchReceiver!!.type
+        val dispatchReceiverType = result.dispatchReceiver?.type
+          ?: return result
         if (dispatchReceiverType.isComposableFunInterface() &&
             !dispatchReceiverType.hasComposableAnnotation()) {
           (dispatchReceiverType.annotations as ArrayList<IrConstructorCall>)
