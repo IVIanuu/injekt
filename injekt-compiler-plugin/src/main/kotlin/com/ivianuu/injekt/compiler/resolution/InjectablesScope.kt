@@ -266,7 +266,7 @@ class InjectablesScope(
           val finalCandidate = candidate.substitute(context.fixedTypeVariables)
 
           val typeWithFrameworkKey = finalCandidate.type.copy(
-            frameworkKey = finalCandidate.callable.uniqueKey()
+            frameworkKey = UUID.randomUUID().toString()
           )
 
           injectables += finalCandidate.copy(type = typeWithFrameworkKey)
