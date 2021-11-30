@@ -357,23 +357,22 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     @Inject ctx: Context
   ) {
     if (isEmpty()) return
-    this
-      .forEach { parameter ->
-        if (parameter.hasAnnotation(injektFqNames().inject)) {
-          trace()!!.report(
-            InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
-              .on(parameter.findPsi() ?: declaration)
-          )
-        }
-        if (parameter.hasAnnotation(injektFqNames().provide) &&
-          parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
-        ) {
-          trace()!!.report(
-            InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
-              .on(parameter.findPsi() ?: declaration)
-          )
-        }
+    for (parameter in this) {
+      if (parameter.hasAnnotation(injektFqNames().inject)) {
+        trace()!!.report(
+          InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
+            .on(parameter.findPsi() ?: declaration)
+        )
       }
+      if (parameter.hasAnnotation(injektFqNames().provide) &&
+        parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
+      ) {
+        trace()!!.report(
+          InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
+            .on(parameter.findPsi() ?: declaration)
+        )
+      }
+    }
   }
 
   private fun List<ParameterDescriptor>.checkHasNotMoreThanOneInjectAnnotatedParameter(
