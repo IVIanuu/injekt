@@ -261,10 +261,12 @@ private fun FileInitInjectablesScope(position: KtElement, @Inject ctx: Context):
       }
     }
 
+  val injectableDeclaration = visibleInjectableDeclarations.lastOrNull()
+
   return ImportInjectablesScopes(
     file = file,
     imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
-    namePrefix = "FILE INIT ${file.name} at ",
+    namePrefix = "FILE INIT ${file.name} at ${injectableDeclaration?.name}",
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScopes true
       psiProperty.containingFile != file ||
@@ -458,7 +460,7 @@ private fun FunctionParameterInjectablesScopes(
   return function.allParameters
     .transform {
       if ((maxIndex == null || it.injektIndex() < maxIndex) &&
-        (it.isProvide() || it === function.extensionReceiverParameter))
+        (it === function.extensionReceiverParameter || it.isProvide()))
           add(it.toCallableRef())
     }
     .fold(parent) { acc, nextParameter ->
