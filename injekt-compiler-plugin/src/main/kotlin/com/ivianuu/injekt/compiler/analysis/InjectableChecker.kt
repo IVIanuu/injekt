@@ -99,7 +99,6 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
     @Inject ctx: Context
   ) {
     val provideConstructors = descriptor.injectableConstructors()
-      .filterNot { it.callable is SyntheticInterfaceConstructorDescriptor }
     val isProvider = provideConstructors.isNotEmpty() ||
         descriptor.hasAnnotation(injektFqNames().provide)
 

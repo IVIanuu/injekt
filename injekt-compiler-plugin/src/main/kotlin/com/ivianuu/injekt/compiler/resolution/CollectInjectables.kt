@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.analysis.SyntheticInterfaceConstructorDescriptor
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
@@ -233,21 +232,6 @@ fun ClassDescriptor.injectableConstructors(@Inject ctx: Context): List<CallableR
           (constructor.isPrimary && hasAnnotation(injektFqNames().provide)))
             add(constructor.toCallableRef())
       }
-      .takeIf { it.isNotEmpty() }
-      ?: if (isProvide() && kind == ClassKind.INTERFACE)
-        listOf(
-          SyntheticInterfaceConstructorDescriptor(this)
-            .toCallableRef()
-            .let { callable ->
-              val info = classifierInfo()
-              if (info.tags.isEmpty()) callable
-              else {
-                val taggedType = info.tags.wrap(callable.type)
-                callable.copy(type = taggedType, originalType = taggedType)
-              }
-            }
-        )
-      else emptyList()
   }
 
 fun ClassDescriptor.injectableReceiver(tagged: Boolean, @Inject ctx: Context): CallableRef {

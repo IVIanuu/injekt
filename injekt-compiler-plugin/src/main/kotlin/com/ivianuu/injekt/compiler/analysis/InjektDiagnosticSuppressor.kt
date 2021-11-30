@@ -55,9 +55,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     @Provide val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
-    if (diagnostic.factory == Errors.UNRESOLVED_REFERENCE)
-      return bindingContext[InjektWritableSlices.FIXED_TYPE, diagnostic.psiElement.text] != null
-
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
@@ -70,6 +67,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
+    // todo remove on kotlin 1.6.0
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
       if (typeParameter?.hasAnnotation(injektFqNames().spread) == true) return true
