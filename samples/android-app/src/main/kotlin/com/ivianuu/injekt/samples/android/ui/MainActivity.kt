@@ -19,26 +19,33 @@ package com.ivianuu.injekt.samples.android.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.samples.android.app.App
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-  private val scope = Scope<ActivityScope>()
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    val scope = Scope<ActivityScope>()
+    lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+      try {
+        awaitCancellation()
+      } finally {
+        scope.dispose()
+      }
+    }
+
     val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
       component.appTheme {
         component.appUi()
       }
     }
-  }
-
-  override fun onDestroy() {
-    scope.dispose()
-    super.onDestroy()
   }
 }
 
