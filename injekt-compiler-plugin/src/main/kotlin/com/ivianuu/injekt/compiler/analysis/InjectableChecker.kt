@@ -46,7 +46,9 @@ import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.modalityModifier
@@ -212,8 +214,7 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       !descriptor.isDelegated &&
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
-      trace()!!.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED
-        .on(declaration))
+      trace()!!.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED.on(declaration))
     }
   }
 
@@ -227,8 +228,9 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       trace()!!.report(
         InjektErrors.PROVIDE_RECEIVER
           .on(
-            declaration.safeAs<KtProperty>()
-              ?.receiverTypeReference ?: declaration
+            declaration.safeAs<KtFunction>()?.receiverTypeReference
+              ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
+              ?: declaration
           )
       )
     }
@@ -238,8 +240,9 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       trace()!!.report(
         InjektErrors.INJECT_RECEIVER
           .on(
-            declaration.safeAs<KtProperty>()
-              ?.receiverTypeReference ?: declaration
+            declaration.safeAs<KtFunction>()?.receiverTypeReference
+              ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
+              ?: declaration
           )
       )
     }
@@ -259,7 +262,13 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
         .forEach {
           trace()!!.report(
             InjektErrors.MULTIPLE_SPREADS
-              .on(it.findPsi() ?: declaration)
+              .on(
+                it.findPsi()
+                  ?.safeAs<KtAnnotated>()
+                  ?.findAnnotation(injektFqNames().spread)
+                  ?: it.findPsi()
+                  ?: declaration
+              )
           )
         }
     }
@@ -292,7 +301,11 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       .forEach {
         trace()!!.report(
           Errors.ACTUAL_WITHOUT_EXPECT
-            .on(declaration.cast(), descriptor, emptyMap())
+            .on(
+              declaration.cast(),
+              descriptor,
+              emptyMap()
+            )
         )
       }
   }
@@ -347,7 +360,12 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       if (typeParameter.classifierInfo().isSpread)
         trace()!!.report(
           InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
-            .on(typeParameter.findPsi()!!)
+            .on(
+              typeParameter.findPsi()
+                ?.safeAs<KtAnnotated>()
+                ?.findAnnotation(injektFqNames().spread)
+                ?: typeParameter.findPsi()!!
+            )
         )
     }
   }
@@ -361,7 +379,13 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       if (parameter.hasAnnotation(injektFqNames().inject)) {
         trace()!!.report(
           InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(parameter.findPsi() ?: declaration)
+            .on(
+              parameter.findPsi()
+                ?.safeAs<KtAnnotated>()
+                ?.findAnnotation(injektFqNames().inject)
+                ?: parameter.findPsi()
+                ?: declaration
+            )
         )
       }
       if (parameter.hasAnnotation(injektFqNames().provide) &&
@@ -369,7 +393,13 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       ) {
         trace()!!.report(
           InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(parameter.findPsi() ?: declaration)
+            .on(
+              parameter.findPsi()
+                ?.safeAs<KtAnnotated>()
+                ?.findAnnotation(injektFqNames().provide)
+                ?: parameter.findPsi()
+                ?: declaration
+            )
         )
       }
     }
@@ -386,7 +416,13 @@ class InjectableChecker(@Inject private val baseCtx: Context) : DeclarationCheck
       .forEach {
         trace()!!.report(
           InjektErrors.MULTIPLE_INJECT_PARAMETERS
-            .on(it.findPsi() ?: declaration)
+            .on(
+              it.findPsi()
+                ?.safeAs<KtAnnotated>()
+                ?.findAnnotation(injektFqNames().inject)
+                ?: it.findPsi()
+                ?: declaration
+            )
         )
       }
   }

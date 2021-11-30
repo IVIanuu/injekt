@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.findAnnotation
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektFqNames
 import com.ivianuu.injekt.compiler.trace
@@ -41,7 +42,10 @@ class TagChecker(@Inject private val baseCtx: Context) : DeclarationChecker {
       if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {
         trace()!!.report(
           InjektErrors.TAG_WITH_VALUE_PARAMETERS
-            .on(declaration)
+            .on(
+              declaration.findAnnotation(injektFqNames().tag)
+                ?: declaration
+            )
         )
       }
     }
