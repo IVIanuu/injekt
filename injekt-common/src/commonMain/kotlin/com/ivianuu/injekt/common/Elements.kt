@@ -25,21 +25,18 @@ interface Elements<N> {
 }
 
 @Provide class ElementsImpl<N>(
-  elements: (Elements<N>, @Parent Elements<*>) -> List<ProvidedElement<N, *>>,
-  private val parent: @Parent Elements<*>? = null
+  private val key: TypeKey<Elements<N>>,
+  elements: List<ProvidedElement<N, *>>
 ) : Elements<N> {
   @OptIn(ExperimentalStdlibApi::class)
   private val elements = buildMap<String, Any> {
-    for ((key, element) in elements(this@ElementsImpl, this@ElementsImpl))
+    for ((key, element) in elements)
       this[key.value] = element
   }
 
   override fun <T> invoke(@Inject key: TypeKey<T>): T =
     elements[key.value] as T
-      ?: parent?.invoke()
-      ?: error("No element found for ${key.value}")
-
-  @Tag private annotation class Parent
+      ?: error("${this.key.value} no element found for ${key.value}")
 }
 
 @Tag annotation class Element<N> {
