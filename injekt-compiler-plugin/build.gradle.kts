@@ -2,7 +2,7 @@
  * Copyright 2021 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.tasks.*
 
 plugins {
   kotlin("jvm")

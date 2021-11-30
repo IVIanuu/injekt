@@ -5,7 +5,7 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
 typealias DefaultContext = @DefaultContextTag CoroutineContext

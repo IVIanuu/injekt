@@ -6,9 +6,7 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
 typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope

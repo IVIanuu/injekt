@@ -4,24 +4,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.CallContext
-import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.DescriptorWithParentScope
-import com.ivianuu.injekt.compiler.resolution.InjectablesScope
-import com.ivianuu.injekt.compiler.resolution.InjectablesWithLookups
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.TypeRefKey
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtBlockExpression
-import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
-import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
+import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.util.slicedMap.*
 
 object InjektWritableSlices {
   val INJEKT_CONTEXT = BasicWritableSlice<Unit, Context>(RewritePolicy.DO_NOTHING)
