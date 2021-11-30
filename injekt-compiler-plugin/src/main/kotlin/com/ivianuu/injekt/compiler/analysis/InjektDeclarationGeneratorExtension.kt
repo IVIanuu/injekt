@@ -392,7 +392,7 @@ class InjektDeclarationGeneratorExtension(
     is KtClassOrObject ->
       "class" +
           name.orEmpty() +
-          visibilityModifier()?.text.orEmpty() +
+          modifierList?.text.orEmpty() +
           annotationEntries.joinToString { it.text } +
           primaryConstructor
             ?.let {
@@ -409,21 +409,18 @@ class InjektDeclarationGeneratorExtension(
     is KtFunction ->
       "function" +
           name.orEmpty() +
-          visibilityModifier()?.text.orEmpty() +
-          hasModifier(KtTokens.SUSPEND_KEYWORD).toString() +
-          modifierList +
+          modifierList?.text.orEmpty() +
           annotationEntries.joinToString { it.text } +
           receiverTypeReference?.text.orEmpty() +
-          valueParameters
-            .joinToString { it.text } +
+          valueParameters.joinToString { it.text } +
           typeReference?.text.orEmpty()
     is KtProperty ->
       "property" +
           name.orEmpty() +
-          visibilityModifier()?.text.orEmpty() +
+          modifierList?.text.orEmpty() +
           annotationEntries.joinToString { it.text } +
-          getter?.annotationEntries?.joinToString { it.text }.orEmpty() +
           receiverTypeReference?.text.orEmpty() +
+          getter?.annotationEntries?.joinToString { it.text }.orEmpty() +
           typeReference?.text.orEmpty()
     else -> throw AssertionError()
   }
