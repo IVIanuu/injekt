@@ -16,8 +16,5 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ivianuu.injekt.android">
-
-    <application android:name=".AndroidTestApp">
-        <activity android:name=".AndroidTestActivity" />
-    </application>
+    <application android:name=".AndroidTestApp"/>
 </manifest>
