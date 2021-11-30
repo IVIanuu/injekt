@@ -24,12 +24,10 @@ import org.junit.Test
 
 class ElementsTest {
   @Test fun testElements() {
-    class MyScope
+    @Provide val int: @Element<TestScope> Int = 42
+    @Provide val string: @Element<TestScope> String = "42"
 
-    @Provide val int: @Element<MyScope> Int = 42
-    @Provide val string: @Element<MyScope> String = "42"
-
-    val elements = inject<Elements<MyScope>>()
+    val elements = inject<Elements<TestScope>>()
 
     elements<Int>() shouldBe 42
     elements<String>() shouldBe "42"
