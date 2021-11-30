@@ -23,8 +23,8 @@ fun <N> Scope(): Scope<N> = ScopeImpl()
 @Suppress("UNCHECKED_CAST")
 inline operator fun <T : Any> Scope<*>.invoke(@Inject key: TypeKey<T>, init: () -> T): T {
   get(key.value)?.let { return it as T }
+  lock()
   return try {
-    lock()
     get(key.value)
       ?.let { it as T }
       ?: init()
