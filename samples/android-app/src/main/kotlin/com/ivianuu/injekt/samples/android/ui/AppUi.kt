@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 
 fun interface AppUi : @Composable () -> Unit
 
-@Provide fun appUi(modelProvider: @Composable () -> CounterModel) = AppUi {
+@Provide fun appUi(models: @Composable () -> CounterModel) = AppUi {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -50,7 +50,7 @@ fun interface AppUi : @Composable () -> Unit
       )
     }
   ) {
-    val model = modelProvider()
+    val model = models()
     Column(
       modifier = Modifier.fillMaxSize(),
       verticalArrangement = Arrangement.Center,
