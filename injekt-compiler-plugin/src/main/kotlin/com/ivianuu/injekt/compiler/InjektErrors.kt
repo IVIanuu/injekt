@@ -360,7 +360,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       withIndent {
         if (candidate is ProviderInjectable &&
           unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-          appendLine("${indent()}/* ${callContext.name.lowercase(Locale.getDefault())} call context */")
+          appendLine("${indent()}/* ${candidate.dependencyScopes.values.single().callContext.name.lowercase(Locale.getDefault())} call context */")
         }
         append(indent())
         if (candidate !is ProviderInjectable) {
