@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
@@ -169,7 +170,12 @@ class InjectablesScope(
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
-    ).filter { it.callable.isValidObjectRequest(request) }
+    )
+      .let { allInjectables ->
+        if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allInjectables
+        else allInjectables.filter { it.callable.isValidForObjectRequest() }
+      }
+
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
@@ -386,9 +392,8 @@ class InjectablesScope(
    * Here we ensure that the user cannot resolve such implicit object injectable if they are not
    * provided by the user
    */
-  private fun CallableRef.isValidObjectRequest(request: InjectableRequest): Boolean =
+  private fun CallableRef.isValidForObjectRequest(): Boolean =
     !originalType.classifier.isObject ||
-        request.parameterName == DISPATCH_RECEIVER_NAME ||
         (callable !is ReceiverParameterDescriptor ||
             callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
