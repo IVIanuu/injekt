@@ -40,14 +40,6 @@ class ProviderTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
-    """ 
-      fun invoke(): Foo = inject<() -> Foo>()()
-    """
-  ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
-  }
-
   @Test fun testProviderWithInjectableArgs() = codegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -120,11 +112,9 @@ class ProviderTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testProviderWithoutCandidatesError() = codegen(
-    """
-      fun invoke() {
-        inject<() -> Foo>()
-      }
+  @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
+    """ 
+      fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
