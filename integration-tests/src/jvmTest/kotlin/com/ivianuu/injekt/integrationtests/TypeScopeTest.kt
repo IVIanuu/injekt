@@ -488,47 +488,4 @@ class TypeScopeTest {
   ) {
     invokeSingleFile()
   }
-
-  @Test fun testTypeScopeDoesNotProduceDuplicates() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            interface MyType
-
-            @Provide object MyTypeImpl : MyType
-
-            @Provide fun pair(type: MyType): Pair<String, MyType> = "a" to type
-          """,
-          packageFqName = FqName("package1")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            @Providers("package1.*")
-            fun invoke() = inject<List<Pair<String, package1.MyType>>>()
-          """
-        )
-      )
-    )
-  ) {
-    invokeSingleFile<List<*>>() shouldHaveSize 1
-  }
-
-  @Test fun testTypeScopeDoesNotProduceDuplicates2() = codegen(
-    """
-      fun invoke(): List<ProvidedElement<*, *>> {
-        class MyScope
-      
-        @Provide fun unit() = Unit
-      
-        @Provide fun unitElement(unit: Unit): @Element<MyScope> Unit = unit
-      
-        return inject<List<ProvidedElement<*, *>>>()
-      }
-    """
-  ) {
-    invokeSingleFile<List<*>>() shouldHaveSize 1
-  }
 }

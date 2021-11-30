@@ -44,7 +44,19 @@ fun TypeRef.collectInjectables(
     return@getOrPut listOf(callable)
   }
 
-  if (!classifier.declaresInjectables && !classBodyView) return@getOrPut emptyList()
+  // do not run any code for types which do not declare any injectables
+  if (!classifier.declaresInjectables && !classBodyView)
+    // at least include the companion object if it declares injectables
+    return@getOrPut listOfNotNull(
+      classifier.descriptor
+        ?.safeAs<ClassDescriptor>()
+        ?.companionObjectDescriptor
+        ?.toClassifierRef()
+        ?.takeIf { it.declaresInjectables }
+        ?.descriptor
+        ?.cast<ClassDescriptor>()
+        ?.injectableReceiver(false)
+    )
 
   buildList {
     classifier.descriptor!!
@@ -286,7 +298,12 @@ fun List<ProviderImport>.collectImportedInjectables(
                   for (innerClass in packageObject.unsubstitutedInnerClassesScope
                     .getContributedDescriptors()) {
                     innerClass as ClassDescriptor
-                    if (innerClass.kind == ClassKind.OBJECT && !innerClass.isProvide())
+                    // only include the inner class if the class is a
+                    // object which is not the companion or @Provide
+                    // because otherwise it will be included when collecting the enclosing package object
+                    if (innerClass.kind == ClassKind.OBJECT &&
+                      !innerClass.isCompanionObject &&
+                      !innerClass.isProvide())
                       consumer(innerClass.injectableReceiver(false).copy(import = resolvedImport))
                     collectPackageObjects(innerClass)
                   }
@@ -299,8 +316,7 @@ fun List<ProviderImport>.collectImportedInjectables(
                   onEach = { declaration ->
                     if (declaration is ClassDescriptor)
                       collectInjectables(
-                        if (declaration.kind == ClassKind.OBJECT) declaration.unsubstitutedMemberScope
-                        else declaration.unsubstitutedInnerClassesScope,
+                        declaration.unsubstitutedInnerClassesScope,
                         declaration
                       )
                   },
