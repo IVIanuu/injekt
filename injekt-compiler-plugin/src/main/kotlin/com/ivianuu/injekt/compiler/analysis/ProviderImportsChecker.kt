@@ -4,27 +4,16 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.isIde
-import com.ivianuu.injekt.compiler.lookupLocation
-import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt.compiler.resolution.getProviderImports
-import com.ivianuu.injekt.compiler.resolution.isValidImport
-import com.ivianuu.injekt.compiler.trace
-import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
-import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.backend.common.serialization.*
+import org.jetbrains.kotlin.com.intellij.psi.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.calls.checkers.*
+import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker {
   override fun check(

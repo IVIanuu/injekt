@@ -4,17 +4,14 @@
 
 package com.ivianuu.injekt.samples.android.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.lifecycle.lifecycleScope
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.samples.android.app.App
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
+import android.os.*
+import androidx.activity.*
+import androidx.activity.compose.*
+import androidx.lifecycle.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.samples.android.app.*
+import kotlinx.coroutines.*
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {

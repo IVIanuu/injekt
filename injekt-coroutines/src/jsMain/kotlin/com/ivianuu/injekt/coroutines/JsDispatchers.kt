@@ -4,8 +4,8 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.Provide
-import kotlinx.coroutines.Dispatchers
+import com.ivianuu.injekt.*
+import kotlinx.coroutines.*
 
 actual object IOInjectables {
   @Provide actual inline val context: IOContext

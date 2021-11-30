@@ -4,37 +4,13 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.lookupLocation
-import com.ivianuu.injekt.compiler.resolution.CallableInjectable
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
-import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isInject
-import com.ivianuu.injekt.compiler.resolution.resolveRequests
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.trace
-import com.ivianuu.injekt.compiler.transform
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
-import org.jetbrains.kotlin.psi.KtSimpleNameExpression
-import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.calls.callUtil.*
+import org.jetbrains.kotlin.resolve.calls.model.*
 
 class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() {
   override fun visitCallExpression(expression: KtCallExpression) {

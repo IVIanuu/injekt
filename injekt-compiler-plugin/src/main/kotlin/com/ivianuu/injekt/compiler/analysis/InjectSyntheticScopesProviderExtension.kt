@@ -4,31 +4,19 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.transform
-import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
-import org.jetbrains.kotlin.resolve.sam.SamConversionOracle
-import org.jetbrains.kotlin.resolve.sam.SamConversionResolver
-import org.jetbrains.kotlin.resolve.scopes.SyntheticScope
-import org.jetbrains.kotlin.resolve.scopes.SyntheticScopes
-import org.jetbrains.kotlin.resolve.scopes.synthetic.FunInterfaceConstructorsScopeProvider
-import org.jetbrains.kotlin.storage.StorageManager
-import org.jetbrains.kotlin.synthetic.JavaSyntheticPropertiesScope
-import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.sam.*
+import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.resolve.scopes.synthetic.*
+import org.jetbrains.kotlin.storage.*
+import org.jetbrains.kotlin.synthetic.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectSyntheticScopeProviderExtension(
   private val injektFqNames: (ModuleDescriptor) -> InjektFqNames,

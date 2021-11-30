@@ -4,13 +4,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.shouldContainMessage
-import com.ivianuu.injekt.test.shouldNotContainMessage
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.source
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class ImportSuggestionsTest {
   @Test fun testShowsUsefulImportSuggestion() = singleAndMultiCodegen(

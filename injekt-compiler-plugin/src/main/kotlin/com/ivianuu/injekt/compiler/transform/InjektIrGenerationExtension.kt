@@ -4,25 +4,19 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.TranslationPluginContext
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.impl.IrTypeParameterImpl
-import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import java.io.File
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.ir.*
+import org.jetbrains.kotlin.ir.builders.*
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.impl.*
+import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.io.*
 
 var dumpAllFiles = false
 

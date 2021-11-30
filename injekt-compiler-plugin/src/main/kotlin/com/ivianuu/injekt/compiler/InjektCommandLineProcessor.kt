@@ -4,13 +4,10 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOption
-import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.CompilerConfigurationKey
-import org.jetbrains.kotlin.name.FqName
-import java.io.File
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.name.*
+import java.io.*
 
 class InjektCommandLineProcessor : CommandLineProcessor {
   override val pluginId = "com.ivianuu.injek".combine("t")

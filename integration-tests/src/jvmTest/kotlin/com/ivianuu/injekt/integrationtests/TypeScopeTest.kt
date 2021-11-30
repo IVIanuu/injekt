@@ -4,16 +4,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokableSource
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.multiPlatformCodegen
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.source
-import io.kotest.matchers.collections.shouldHaveSize
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import io.kotest.matchers.collections.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class TypeScopeTest {
   @Test fun testClassTypeScope() = singleAndMultiCodegen(

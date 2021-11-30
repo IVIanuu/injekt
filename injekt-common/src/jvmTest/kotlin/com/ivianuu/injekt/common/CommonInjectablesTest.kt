@@ -4,12 +4,10 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.inject
-import io.kotest.matchers.shouldBe
-import org.junit.Test
-import kotlin.reflect.KClass
-import kotlin.reflect.KTypeT
+import com.ivianuu.injekt.*
+import io.kotest.matchers.*
+import org.junit.*
+import kotlin.reflect.*
 
 class CommonInjectablesTest {
   @Test fun testCanResolveMap() {

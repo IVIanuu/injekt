@@ -4,7 +4,7 @@
 
 package kotlin
 
-import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.*
 
 object StandardInjectables {
   /**

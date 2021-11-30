@@ -4,8 +4,7 @@
 
 package kotlin.reflect
 
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.*
 
 object ReflectInjectables {
   /**

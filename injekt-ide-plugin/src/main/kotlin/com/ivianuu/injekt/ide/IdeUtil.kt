@@ -4,40 +4,27 @@
 
 package com.ivianuu.injekt.ide
 
-import com.intellij.openapi.module.Module
-import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiElement
-import com.intellij.psi.search.GlobalSearchScope
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.RootPackageOption
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.hasAnnotation
-import org.jetbrains.kotlin.analyzer.ModuleInfo
-import org.jetbrains.kotlin.analyzer.moduleInfo
-import org.jetbrains.kotlin.asJava.elements.KtLightDeclaration
-import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
-import org.jetbrains.kotlin.idea.caches.project.getModuleInfo
-import org.jetbrains.kotlin.idea.codeInsight.DescriptorToSourceUtilsIde
-import org.jetbrains.kotlin.idea.core.unwrapModuleSourceInfo
-import org.jetbrains.kotlin.idea.facet.KotlinFacet
-import org.jetbrains.kotlin.idea.util.module
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtAnnotated
-import org.jetbrains.kotlin.psi.KtConstructor
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
-import org.jetbrains.kotlin.resolve.jvm.KotlinJavaPsiFacade
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import com.intellij.openapi.module.*
+import com.intellij.openapi.project.*
+import com.intellij.psi.*
+import com.intellij.psi.search.*
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.asJava.elements.*
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.idea.caches.project.*
+import org.jetbrains.kotlin.idea.codeInsight.*
+import org.jetbrains.kotlin.idea.core.*
+import org.jetbrains.kotlin.idea.facet.*
+import org.jetbrains.kotlin.idea.util.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.jvm.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun PsiElement.injektFqNames() = module
   ?.getOptionValueInFacet(RootPackageOption)

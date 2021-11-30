@@ -4,11 +4,10 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
-import androidx.core.content.ContextCompat
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Tag
-import kotlin.reflect.KClass
+import android.content.*
+import androidx.core.content.*
+import com.ivianuu.injekt.*
+import kotlin.reflect.*
 
 /**
  * Tag for android system services

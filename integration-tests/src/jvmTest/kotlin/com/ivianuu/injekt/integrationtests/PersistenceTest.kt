@@ -4,10 +4,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import io.kotest.matchers.shouldBe
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import io.kotest.matchers.*
+import org.junit.*
 
 class PersistenceTest {
   @Test fun testModuleDispatchReceiverTypeInference() = singleAndMultiCodegen(

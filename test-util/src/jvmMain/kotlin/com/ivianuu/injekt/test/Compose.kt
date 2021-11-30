@@ -4,11 +4,8 @@
 
 package com.ivianuu.injekt.test
 
-import androidx.compose.runtime.AbstractApplier
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Composition
-import androidx.compose.runtime.Recomposer
-import kotlin.coroutines.EmptyCoroutineContext
+import androidx.compose.runtime.*
+import kotlin.coroutines.*
 
 fun <R> runComposing(block: @Composable () -> R): R {
   val recomposer = Recomposer(EmptyCoroutineContext)

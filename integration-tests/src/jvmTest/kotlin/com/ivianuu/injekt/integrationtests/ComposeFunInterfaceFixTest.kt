@@ -4,10 +4,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.withCompose
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import org.junit.*
 
 class ComposeFunInterfaceFixTest {
   @Test fun testComposeFunInterfaceWithFunctionSuperType() = singleAndMultiCodegen(

@@ -4,29 +4,14 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.CallContext
-import com.ivianuu.injekt.compiler.resolution.Injectable
-import com.ivianuu.injekt.compiler.resolution.InjectableRequest
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
-import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
-import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.callContext
-import com.ivianuu.injekt.compiler.resolution.isFunctionType
-import com.ivianuu.injekt.compiler.resolution.renderToString
-import com.ivianuu.injekt.compiler.resolution.unwrapTags
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
-import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.diagnostics.Severity
-import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
-import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
-import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
-import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import java.util.Locale
+import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.com.intellij.psi.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.diagnostics.rendering.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import java.util.*
 
 interface InjektErrors {
   companion object {

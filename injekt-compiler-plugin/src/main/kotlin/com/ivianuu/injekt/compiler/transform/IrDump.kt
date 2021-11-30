@@ -4,15 +4,13 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
-import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
-import org.jetbrains.kotlin.ir.util.dumpKotlinLike
-import java.io.File
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.ir.*
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.util.*
+import java.io.*
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrModuleFragment.dumpToFiles(dumpDir: File, @Inject irCtx: IrPluginContext) {

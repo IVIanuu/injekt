@@ -4,25 +4,14 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectablesLookupName
-import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.isIde
-import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt.compiler.nextFrameworkKey
-import com.ivianuu.injekt.compiler.subInjectablesLookupName
-import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import java.util.UUID
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.scopes.receivers.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.*
 
 @OptIn(ExperimentalStdlibApi::class)
 class InjectablesScope(

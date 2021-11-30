@@ -4,9 +4,9 @@
 
 package androidx.work
 
-import android.content.Context
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.android.work.InjektWorkerFactory
+import android.content.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.work.*
 
 object WorkManagerInjectables {
   @Provide inline fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)

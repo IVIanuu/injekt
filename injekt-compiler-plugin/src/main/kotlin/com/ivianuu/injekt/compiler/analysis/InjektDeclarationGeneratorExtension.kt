@@ -4,38 +4,19 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectablesLookupName
-import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.subInjectablesLookupName
-import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.context.ProjectContext
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtConstructor
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
-import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.Base64
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
+import org.jetbrains.kotlin.container.*
+import org.jetbrains.kotlin.context.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.extensions.*
+import java.io.*
+import java.nio.file.*
+import java.util.*
 
 class InjektDeclarationGeneratorExtension(
   private val srcDir: File,

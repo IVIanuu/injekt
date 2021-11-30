@@ -4,10 +4,9 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.transform
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.types.model.TypeVariance
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.types.model.*
 
 interface TypeCheckerContext {
   val ctx: Context

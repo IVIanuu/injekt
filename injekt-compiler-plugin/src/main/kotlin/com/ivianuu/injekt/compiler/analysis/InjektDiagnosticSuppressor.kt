@@ -4,33 +4,16 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.descriptor
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.resolution.anyType
-import com.ivianuu.injekt.compiler.resolution.isInject
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.diagnostics.Diagnostic
-import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
-import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtTypeAlias
-import org.jetbrains.kotlin.psi.KtTypeParameter
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjektDiagnosticSuppressor : DiagnosticSuppressor {
   override fun isSuppressed(diagnostic: Diagnostic): Boolean =

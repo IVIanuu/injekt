@@ -4,28 +4,14 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import androidx.compose.runtime.Composable
-import com.ivianuu.injekt.test.Bar
-import com.ivianuu.injekt.test.Command
-import com.ivianuu.injekt.test.CommandA
-import com.ivianuu.injekt.test.CommandB
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokableSource
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldContain
-import com.ivianuu.injekt.test.runComposing
-import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.source
-import com.ivianuu.injekt.test.withCompose
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import io.kotest.matchers.types.shouldBeTypeOf
-import kotlinx.coroutines.runBlocking
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import androidx.compose.runtime.*
+import com.ivianuu.injekt.test.*
+import io.kotest.matchers.*
+import io.kotest.matchers.collections.*
+import io.kotest.matchers.types.*
+import kotlinx.coroutines.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class ListTest {
   @Test fun testList() = singleAndMultiCodegen(

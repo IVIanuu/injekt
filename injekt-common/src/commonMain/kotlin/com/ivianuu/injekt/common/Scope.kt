@@ -4,12 +4,8 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Spread
-import com.ivianuu.injekt.Tag
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import com.ivianuu.injekt.*
+import kotlinx.atomicfu.locks.*
 
 interface Scope<N> : Disposable {
   @InternalScopeApi fun lock()

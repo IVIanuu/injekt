@@ -4,20 +4,13 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.isIde
-import com.ivianuu.injekt.compiler.readPrivateFinalField
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.container.ComponentStorage
-import org.jetbrains.kotlin.container.SingletonTypeComponentDescriptor
-import org.jetbrains.kotlin.container.StorageComponentContainer
-import org.jetbrains.kotlin.container.useImpl
-import org.jetbrains.kotlin.container.useInstance
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.platform.TargetPlatform
-import org.jetbrains.kotlin.synthetic.JavaSyntheticScopes
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.container.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.platform.*
+import org.jetbrains.kotlin.synthetic.*
 
 class InjektStorageComponentContainerContributor(
   private val injektFqNames: (ModuleDescriptor) -> InjektFqNames

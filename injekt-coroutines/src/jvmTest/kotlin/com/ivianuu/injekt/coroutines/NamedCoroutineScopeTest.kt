@@ -4,12 +4,10 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.inject
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import org.junit.Test
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
+import kotlinx.coroutines.*
+import org.junit.*
 
 class NamedCoroutineScopeTest {
   private object MyScope

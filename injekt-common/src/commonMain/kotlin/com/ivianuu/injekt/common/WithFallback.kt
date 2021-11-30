@@ -4,7 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.*
 
 sealed interface WithFallback<out A, out B>  {
   data class Preferred<out A>(val value: A) : WithFallback<A, Nothing>

@@ -4,18 +4,14 @@
 
 package com.ivianuu.injekt.ide
 
-import com.intellij.ide.ApplicationInitializedListener
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.extensions.Extensions
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.project.ProjectManagerListener
-import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
-import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
-import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
+import com.intellij.ide.*
+import com.intellij.openapi.application.*
+import com.intellij.openapi.extensions.*
+import com.intellij.openapi.project.*
+import com.ivianuu.injekt.compiler.analysis.*
+import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.synthetic.*
 
 @Suppress("UnstableApiUsage")
 class AppInitializer : ApplicationInitializedListener {

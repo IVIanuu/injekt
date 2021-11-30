@@ -4,9 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.*
 
 interface Elements<N> {
   operator fun <T> invoke(@Inject key: TypeKey<T>): T

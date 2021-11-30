@@ -4,19 +4,11 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektErrors
-import com.ivianuu.injekt.compiler.findAnnotation
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.trace
-import com.ivianuu.shaded_injekt.Inject
-import com.ivianuu.shaded_injekt.Provide
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
-import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.checkers.*
 
 class TagChecker(@Inject private val baseCtx: Context) : DeclarationChecker {
   override fun check(

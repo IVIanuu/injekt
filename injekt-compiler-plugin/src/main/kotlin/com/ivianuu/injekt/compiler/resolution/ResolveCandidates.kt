@@ -4,16 +4,13 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.injektFqNames
-import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.util.LinkedList
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.*
+import kotlin.reflect.*
 
 sealed class InjectionGraph {
   abstract val scope: InjectablesScope

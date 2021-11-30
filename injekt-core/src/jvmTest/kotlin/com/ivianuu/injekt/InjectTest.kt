@@ -4,8 +4,8 @@
 
 package com.ivianuu.injekt
 
-import io.kotest.matchers.shouldBe
-import org.junit.Test
+import io.kotest.matchers.*
+import org.junit.*
 
 class InjectTest {
   @Test fun testInject() {

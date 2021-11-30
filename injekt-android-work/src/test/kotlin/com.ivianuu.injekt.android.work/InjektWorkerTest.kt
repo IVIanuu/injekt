@@ -4,18 +4,15 @@
 
 package com.ivianuu.injekt.android.work
 
-import android.content.Context
-import androidx.work.Worker
-import androidx.work.WorkerFactory
-import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.inject
-import io.kotest.matchers.types.shouldBeTypeOf
-import io.mockk.mockk
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
+import android.content.*
+import androidx.work.*
+import com.ivianuu.injekt.*
+import io.kotest.matchers.types.*
+import io.mockk.*
+import org.junit.*
+import org.junit.runner.*
+import org.robolectric.*
+import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)

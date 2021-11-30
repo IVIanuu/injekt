@@ -4,9 +4,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import org.junit.Test
+import com.ivianuu.injekt.test.*
+import org.junit.*
 
 class InjectableDeclarationCheckTest {
   @Test fun testProvideAnnotationClass() = codegen(

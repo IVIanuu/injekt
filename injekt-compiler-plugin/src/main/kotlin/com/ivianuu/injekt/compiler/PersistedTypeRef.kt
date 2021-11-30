@@ -4,12 +4,9 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.shaded_injekt.Inject
-import kotlinx.serialization.Serializable
+import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.shaded_injekt.*
+import kotlinx.serialization.*
 
 @Serializable data class PersistedTypeRef(
   val classifierKey: String,

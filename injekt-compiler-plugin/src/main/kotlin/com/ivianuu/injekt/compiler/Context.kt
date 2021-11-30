@@ -4,16 +4,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.copy
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.resolve.BindingTrace
+import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.*
 
 inline fun injektFqNames(@Inject ctx: Context) = ctx.injektFqNames
 

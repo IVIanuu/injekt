@@ -4,15 +4,14 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.shaded_injekt.Inject
-import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.shaded_injekt.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.extensions.*
 
 class InjectCallCheckerExtension(
   private val withDeclarationGenerator: Boolean,
