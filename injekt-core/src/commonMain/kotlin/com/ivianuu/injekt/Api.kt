@@ -110,26 +110,3 @@ annotation class Tag
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
-
-/**
- * Specify a custom error message if no injectable could be found
- */
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.ANNOTATION_CLASS,
-  AnnotationTarget.VALUE_PARAMETER
-)
-annotation class InjectableNotFound(val message: String)
-
-/**
- * Specify a custom error message if ambiguous injectables were found
- */
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.VALUE_PARAMETER,
-  AnnotationTarget.CONSTRUCTOR,
-  AnnotationTarget.FUNCTION,
-  AnnotationTarget.PROPERTY,
-  AnnotationTarget.LOCAL_VARIABLE
-)
-annotation class AmbiguousInjectable(val message: String)

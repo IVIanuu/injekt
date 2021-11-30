@@ -17,16 +17,12 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.CallContext
-import com.ivianuu.injekt.compiler.resolution.CallableInjectable
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionGraph
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.callContext
-import com.ivianuu.injekt.compiler.resolution.customErrorMessages
 import com.ivianuu.injekt.compiler.resolution.isFunctionType
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
@@ -42,7 +38,6 @@ import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
 import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Locale
 
 interface InjektErrors {
@@ -270,19 +265,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
     }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
-      val errorMessage = unwrappedFailure.candidateResults
-        .firstNotNullOfOrNull { result ->
-          result.candidate
-            .safeAs<CallableInjectable>()
-            ?.callable
-            ?.let { callable ->
-              callable
-                .customErrorMessages()
-                ?.ambiguousMessage
-                ?.formatErrorMessage(callable.type, callable.typeArguments)
-            }
-        }
-        ?: if (failure == unwrappedFailure) {
+      val errorMessage = if (failure == unwrappedFailure) {
           "ambiguous injectables:\n\n${
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
@@ -300,11 +283,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.NoCandidates,
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
       appendLine(
-        (unwrappedFailureRequest.customErrorMessages()
-          ?.notFoundMessage
-          ?: unwrappedFailureRequest.type.classifier.customErrorMessages()?.notFoundMessage)
-          ?.formatErrorMessage(unwrappedFailureRequest.type, unwrappedFailureRequest.callableTypeArguments)
-          ?: "no injectable found of type " +
+        "no injectable found of type " +
           "${unwrappedFailureRequest.type.renderToString()} for parameter " +
           "${unwrappedFailureRequest.parameterName} of function " +
           "${unwrappedFailureRequest.callableFqName}."
@@ -476,16 +455,3 @@ private fun ResolutionResult.Failure.unwrapDependencyFailure(
   if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
     dependencyFailure.unwrapDependencyFailure(dependencyRequest)
   else request to this
-
-private fun String.formatErrorMessage(
-  type: TypeRef,
-  typeArguments: Map<ClassifierRef, TypeRef>
-): String {
-  val arguments = (typeArguments + type.classifier.typeParameters
-    .zip(type.arguments)
-    .toMap())
-    .map { "[${it.key.fqName}]" to it.value.renderToString() }
-  return arguments.fold(this) { acc, nextReplacement ->
-    acc.replace(nextReplacement.first, nextReplacement.second)
-  }
-}

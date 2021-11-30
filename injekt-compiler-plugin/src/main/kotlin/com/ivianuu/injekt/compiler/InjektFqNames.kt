@@ -20,9 +20,7 @@ import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.name.FqName
 
 class InjektFqNames(injektPackage: FqName) {
-  val ambiguousInjectable = injektPackage.child("AmbiguousInjectable".asNameId())
   val inject = injektPackage.child("Inject".asNameId())
-  val injectableNotFound = injektPackage.child("InjectableNotFound".asNameId())
   val provide = injektPackage.child("Provide".asNameId())
   val providers = injektPackage.child("Providers".asNameId())
   val tag = injektPackage.child("Tag".asNameId())

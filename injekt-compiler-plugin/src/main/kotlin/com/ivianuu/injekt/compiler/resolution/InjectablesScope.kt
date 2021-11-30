@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_NAME
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.injektFqNames

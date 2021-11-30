@@ -197,7 +197,7 @@ fun CallableRef.getInjectableRequests(@Inject ctx: Context): List<InjectableRequ
           add(it.toInjectableRequest(this@getInjectableRequests))
   }
 
-class InjectableRequest(
+data class InjectableRequest(
   val type: TypeRef,
   val callableFqName: FqName,
   val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
@@ -205,31 +205,8 @@ class InjectableRequest(
   val parameterIndex: Int,
   val isRequired: Boolean = true,
   val isInline: Boolean = false,
-  val isLazy: Boolean = false,
-  val customErrorMessages: () -> CustomErrorMessages? = { null }
-) {
-  override fun equals(other: Any?): Boolean = other is InjectableRequest &&
-      type == other.type &&
-      callableFqName == other.callableFqName &&
-      callableTypeArguments == other.callableTypeArguments &&
-      parameterName == other.parameterName &&
-      parameterIndex == other.parameterIndex &&
-      isRequired == other.isRequired &&
-      isInline == other.isInline &&
-      isLazy == other.isLazy
-
-  override fun hashCode(): Int {
-    var result = type.hashCode()
-    result = 31 * result + callableFqName.hashCode()
-    result = 31 * result + callableTypeArguments.hashCode()
-    result = 31 * result + parameterName.hashCode()
-    result = 31 * result + parameterIndex.hashCode()
-    result = 31 * result + isRequired.hashCode()
-    result = 31 * result + isInline.hashCode()
-    result = 31 * result + isLazy.hashCode()
-    return result
-  }
-}
+  val isLazy: Boolean = false
+)
 
 fun ParameterDescriptor.toInjectableRequest(
   callable: CallableRef,
@@ -243,6 +220,5 @@ fun ParameterDescriptor.toInjectableRequest(
   parameterIndex = injektIndex(),
   isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
   isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-      InlineUtil.isInlineParameter(this),
-  customErrorMessages = { toCallableRef().customErrorMessages() }
+      InlineUtil.isInlineParameter(this)
 )
