@@ -318,7 +318,7 @@ private fun InjectablesScope.resolveCandidates(
   val remaining = candidates
     .sortedWith { a, b -> compareCandidate(a, b) }
     .distinctBy {
-      if (it is CallableInjectable) it.callable.callable.uniqueKey()
+      if (it is CallableInjectable) it.usageKey
       else it
     }
     .toCollection(LinkedList())

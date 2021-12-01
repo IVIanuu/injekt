@@ -39,9 +39,21 @@ class InjectablesScope(
 
   val injectables = mutableListOf<CallableRef>()
 
-  val spreadingInjectables = mutableListOf<SpreadingInjectable>()
+  data class InjectableKey(
+    val uniqueKey: String,
+    val originalType: TypeRef,
+    val typeArguments: Map<ClassifierRef, TypeRef>
+  ) {
+    constructor(callable: CallableRef, @Inject ctx: Context) : this(
+      callable.callable.uniqueKey(),
+      callable.originalType,
+      callable.typeArguments
+    )
+  }
+
+  private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
+  val spreadingInjectableKeys = mutableSetOf<InjectableKey>()
   private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
-  val spreadingInjectableKeys = mutableSetOf<Pair<String, TypeRef>>()
 
   data class SpreadingInjectable(
     val callable: CallableRef,
@@ -64,10 +76,9 @@ class InjectablesScope(
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
   data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
-
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
+  private val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
       typeParameters.isEmpty() &&
       (isEmpty || (initialInjectables.isEmpty() && callContext == parent.callContext))
 
@@ -96,8 +107,7 @@ class InjectablesScope(
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
         addSpreadingInjectable = { callable ->
-          val key = callable.callable.uniqueKey() to callable.originalType
-          if (spreadingInjectableKeys.add(key))
+          if (spreadingInjectableKeys.add(InjectableKey(callable)))
             spreadingInjectables += SpreadingInjectable(callable)
         }
       )
@@ -203,8 +213,8 @@ class InjectablesScope(
 
           val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-          val elements = listElementsForType(singleElementType, collectionElementType, key) +
-              frameworkListElementsForType(singleElementType)
+          val elements = listElementsForType(singleElementType, collectionElementType, key)
+            .values.map { it.type } + frameworkListElementsForType(singleElementType)
 
           return if (elements.isEmpty()) null
           else ListInjectable(
@@ -233,11 +243,11 @@ class InjectablesScope(
     singleElementType: TypeRef,
     collectionElementType: TypeRef,
     key: CallableRequestKey
-  ): List<TypeRef> {
+  ): Map<InjectableKey, CallableRef> {
     if (injectables.isEmpty())
-      return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyList()
+      return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyMap()
 
-    return buildList {
+    return buildMap {
       fun addThisInjectables() {
         for (candidate in injectables.toList()) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
@@ -248,15 +258,17 @@ class InjectablesScope(
             context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
           if (!context.isOk) continue
 
-          val finalCandidate = candidate.substitute(context.fixedTypeVariables)
+          val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
 
-          val typeWithFrameworkKey = finalCandidate.type.copy(
+          val typeWithFrameworkKey = substitutedCandidate.type.copy(
             frameworkKey = UUID.randomUUID().toString()
           )
 
-          injectables += finalCandidate.copy(type = typeWithFrameworkKey)
+          val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
 
-          this += typeWithFrameworkKey
+          injectables += finalCandidate
+
+          this[InjectableKey(finalCandidate)] = finalCandidate
         }
       }
 
@@ -265,7 +277,10 @@ class InjectablesScope(
         addThisInjectables()
 
       parent?.listElementsForType(singleElementType, collectionElementType, key)
-        ?.let { addAll(it) }
+        ?.let { parentElements ->
+          for ((candidateKey, candidate) in parentElements)
+            put(candidateKey, candidate)
+        }
 
       if (typeScopeType == null)
         addThisInjectables()
@@ -286,10 +301,10 @@ class InjectablesScope(
             )
           }
 
-          for (candidateType in listElementsForType(
+          for (candidate in listElementsForType(
             providerReturnType, ctx.collectionClassifier
-              .defaultType.withArguments(listOf(providerReturnType)), innerKey))
-            candidateType.add()
+              .defaultType.withArguments(listOf(providerReturnType)), innerKey).values)
+            candidate.type.add()
 
           for (candidateType in frameworkListElementsForType(providerReturnType))
             candidateType.add()
@@ -345,26 +360,25 @@ class InjectablesScope(
           packageFqName
         )
       },
-      addInjectable = { newInnerInjectable ->
-        val finalNewInnerInjectable = newInnerInjectable
-          .copy(originalType = newInnerInjectable.type)
-        injectables += finalNewInnerInjectable
-        val newInnerInjectableWithFrameworkKey = finalNewInnerInjectable.copy(
-          type = finalNewInnerInjectable.type.copy(
+      addInjectable = { innerCallable ->
+        val finalInnerCallable = innerCallable
+          .copy(originalType = innerCallable.type)
+        injectables += finalInnerCallable
+        val innerCallableWithFrameworkKey = finalInnerCallable.copy(
+          type = finalInnerCallable.type.copy(
             frameworkKey = spreadingInjectable.callable.type.frameworkKey
-              .nextFrameworkKey(finalNewInnerInjectable.callable.uniqueKey())
+              .nextFrameworkKey(finalInnerCallable.callable.uniqueKey())
               .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
-        injectables += newInnerInjectableWithFrameworkKey
-        spreadingInjectableCandidateTypes += newInnerInjectableWithFrameworkKey.type
-        spreadInjectables(newInnerInjectableWithFrameworkKey.type)
+        injectables += innerCallableWithFrameworkKey
+        spreadingInjectableCandidateTypes += innerCallableWithFrameworkKey.type
+        spreadInjectables(innerCallableWithFrameworkKey.type)
       },
       addSpreadingInjectable = { newInnerCallable ->
         val finalNewInnerInjectable = newInnerCallable
           .copy(originalType = newInnerCallable.type)
-        val key = finalNewInnerInjectable.callable.uniqueKey() to finalNewInnerInjectable.originalType
-        if (spreadingInjectableKeys.add(key)) {
+        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable))) {
           val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
           spreadingInjectables += newSpreadingInjectable
           for (candidate in spreadingInjectableCandidateTypes.toList())

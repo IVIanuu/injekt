@@ -83,4 +83,19 @@ class DuplicatesTest {
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 1
   }
+
+  @Test fun testInjectableChainingDoesNotProduceDuplicates() = singleAndMultiCodegen(
+    """
+      class Dep {
+        companion object {
+          @Provide fun element(): Unit = Unit
+        }
+      }
+    """,
+    """
+      fun invoke() = inject<(Dep, Dep) -> List<Unit>>()(Dep(), Dep())
+    """
+  ) {
+    invokeSingleFile<List<*>>() shouldHaveSize 1
+  }
 }

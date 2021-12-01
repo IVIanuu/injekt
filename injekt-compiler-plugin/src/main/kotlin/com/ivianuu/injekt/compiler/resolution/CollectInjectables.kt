@@ -465,14 +465,14 @@ private fun InjectablesScope.canSee(callable: CallableRef, @Inject ctx: Context)
       })
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: Context): List<CallableRef> {
-  val existingInjectables: MutableSet<Pair<String, TypeRef>> = scope.allScopes
-    .transformTo<InjectablesScope, Pair<String, TypeRef>, MutableSet<Pair<String, TypeRef>>>(mutableSetOf()) {
+  val existingInjectables: MutableSet<InjectablesScope.InjectableKey> = scope.allScopes
+    .transformTo<InjectablesScope, InjectablesScope.InjectableKey, MutableSet<InjectablesScope.InjectableKey>>(mutableSetOf()) {
       for (injectable in it.injectables)
-        add(injectable.callable.uniqueKey() to injectable.originalType)
+        add(InjectablesScope.InjectableKey(injectable))
       addAll(it.spreadingInjectableKeys)
     }
 
-  return filter { existingInjectables.add(it.callable.uniqueKey() to it.originalType) }
+  return filter { existingInjectables.add(InjectablesScope.InjectableKey(it)) }
 }
 
 fun InjectablesScope.collectImportSuggestionInjectables(@Inject ctx: Context): List<CallableRef> =
