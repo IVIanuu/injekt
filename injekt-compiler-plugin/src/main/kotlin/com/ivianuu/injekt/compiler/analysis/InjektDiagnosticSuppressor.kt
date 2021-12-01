@@ -95,6 +95,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
       return true
 
+    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
+      return true
+
     return false
   }
 }

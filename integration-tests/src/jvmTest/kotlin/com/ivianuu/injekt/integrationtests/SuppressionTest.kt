@@ -88,4 +88,13 @@ class SuppressionTest {
   ) {
     shouldNotContainMessage("Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types")
   }
+
+  @Test fun testDoesNotWarnFinalTypeParameterUpperBound() = codegen(
+    """
+      fun <T : String> func() {
+      }
+    """
+  ) {
+    shouldNotContainMessage("'String' is a final type, and thus a value of the type parameter is predetermined")
+  }
 }
