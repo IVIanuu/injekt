@@ -41,6 +41,7 @@ class InjectablesScope(
 
   val spreadingInjectables = mutableListOf<SpreadingInjectable>()
   private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
+  val spreadingInjectableKeys = mutableSetOf<Pair<String, TypeRef>>()
 
   data class SpreadingInjectable(
     val callable: CallableRef,
@@ -73,7 +74,11 @@ class InjectablesScope(
   val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
 
   init {
-    for (injectable in initialInjectables) {
+    // we need them right here because otherwise we could possibly add duplicated spreading injectables
+    if (parent != null)
+      spreadingInjectableKeys.addAll(parent.spreadingInjectableKeys)
+
+    for (injectable in initialInjectables)
       injectable.collectInjectables(
         scope = this,
         addImport = { importFqName, packageFqName ->
@@ -90,21 +95,26 @@ class InjectablesScope(
           injectables += callable.copy(type = typeWithFrameworkKey)
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
-        addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) }
+        addSpreadingInjectable = { callable ->
+          val key = callable.callable.uniqueKey() to callable.originalType
+          if (spreadingInjectableKeys.add(key))
+            spreadingInjectables += SpreadingInjectable(callable)
+        }
       )
-    }
 
     val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
     val hasSpreadingInjectableCandidates = spreadingInjectableCandidateTypes.isNotEmpty()
     if (parent != null) {
       spreadingInjectables.addAll(
         0,
+        // we only need to copy the parent injectables if we have any candidates to process
         if (hasSpreadingInjectableCandidates) parent.spreadingInjectables.map { it.copy() }
         else parent.spreadingInjectables
       )
       spreadingInjectableCandidateTypes.addAll(0, parent.spreadingInjectableCandidateTypes)
     }
 
+    // only run if there is something meaningful to process
     if ((hasSpreadingInjectables && spreadingInjectableCandidateTypes.isNotEmpty()) ||
       (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
     ) {
@@ -350,13 +360,16 @@ class InjectablesScope(
         spreadingInjectableCandidateTypes += newInnerInjectableWithFrameworkKey.type
         spreadInjectables(newInnerInjectableWithFrameworkKey.type)
       },
-      addSpreadingInjectable = { newInnerInjectable ->
-        val finalNewInnerInjectable = newInnerInjectable
-          .copy(originalType = newInnerInjectable.type)
-        val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
-        spreadingInjectables += newSpreadingInjectable
-        for (candidate in spreadingInjectableCandidateTypes.toList())
-          spreadInjectables(newSpreadingInjectable, candidate)
+      addSpreadingInjectable = { newInnerCallable ->
+        val finalNewInnerInjectable = newInnerCallable
+          .copy(originalType = newInnerCallable.type)
+        val key = finalNewInnerInjectable.callable.uniqueKey() to finalNewInnerInjectable.originalType
+        if (spreadingInjectableKeys.add(key)) {
+          val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
+          spreadingInjectables += newSpreadingInjectable
+          for (candidate in spreadingInjectableCandidateTypes.toList())
+            spreadInjectables(newSpreadingInjectable, candidate)
+        }
       }
     )
   }

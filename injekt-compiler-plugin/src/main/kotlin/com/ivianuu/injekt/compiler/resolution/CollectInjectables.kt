@@ -469,8 +469,7 @@ fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, @Inject ctx: 
     .transformTo<InjectablesScope, Pair<String, TypeRef>, MutableSet<Pair<String, TypeRef>>>(mutableSetOf()) {
       for (injectable in it.injectables)
         add(injectable.callable.uniqueKey() to injectable.originalType)
-      for (injectable in it.spreadingInjectables)
-        add(injectable.callable.callable.uniqueKey() to injectable.callable.originalType)
+      addAll(it.spreadingInjectableKeys)
     }
 
   return filter { existingInjectables.add(it.callable.uniqueKey() to it.originalType) }
