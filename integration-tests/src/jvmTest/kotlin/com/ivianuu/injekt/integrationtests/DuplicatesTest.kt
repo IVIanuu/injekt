@@ -98,4 +98,22 @@ class DuplicatesTest {
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 1
   }
+
+  @Test fun testSpreadingInjectableModuleDoesNotProduceDuplicates() = singleAndMultiCodegen(
+    """
+      @Tag annotation class Trigger
+
+      @Provide class MyModule<@Spread T : @Trigger S, S> {
+        @Provide fun provide(x: T): Pair<*, *> = x to x
+      }
+    """,
+    """
+      @Provide val int: @Trigger Int = 42
+      @Provide val string: @Trigger String = "42"
+
+      fun invoke() = inject<List<Pair<*, *>>>()
+    """
+  ) {
+    invokeSingleFile<List<*>>() shouldHaveSize 2
+  }
 }

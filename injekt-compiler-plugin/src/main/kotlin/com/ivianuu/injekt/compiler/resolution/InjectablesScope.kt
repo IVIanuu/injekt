@@ -42,12 +42,14 @@ class InjectablesScope(
   data class InjectableKey(
     val uniqueKey: String,
     val originalType: TypeRef,
-    val typeArguments: Map<ClassifierRef, TypeRef>
+    val typeArguments: Map<ClassifierRef, TypeRef>,
+    val parameterTypes: Map<Int, TypeRef>
   ) {
     constructor(callable: CallableRef, @Inject ctx: Context) : this(
       callable.callable.uniqueKey(),
       callable.originalType,
-      callable.typeArguments
+      callable.typeArguments,
+      callable.parameterTypes
     )
   }
 
