@@ -22,7 +22,7 @@ interface Elements<N> {
 
   override fun <T> invoke(@Inject key: TypeKey<T>): T =
     elements[key.value] as T
-      ?: error("${this.key.value} no element found for ${key.value}")
+      ?: error("No element found for ${key.value} in ${this.key.value}")
 }
 
 @Tag annotation class Element<N> {
