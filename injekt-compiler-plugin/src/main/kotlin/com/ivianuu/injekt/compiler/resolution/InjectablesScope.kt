@@ -140,7 +140,6 @@ class InjectablesScope(
     lookupLocation: LookupLocation,
     visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
   ) {
-    if (isIde) return
     if (!visitedScopes.add(this)) return
 
     parent?.recordLookup(lookupLocation, visitedScopes)
@@ -356,7 +355,7 @@ class InjectablesScope(
     newInjectable.collectInjectables(
       scope = this,
       addImport = { importFqName, packageFqName ->
-        this.imports += ResolvedProviderImport(
+        imports += ResolvedProviderImport(
           null,
           "${importFqName}.*",
           packageFqName
