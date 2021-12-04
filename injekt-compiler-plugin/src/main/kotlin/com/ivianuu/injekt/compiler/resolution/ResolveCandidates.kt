@@ -243,21 +243,20 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
 private fun InjectablesScope.tryToResolveRequestInTypeScope(
   request: InjectableRequest,
   lookupLocation: LookupLocation
-): ResolutionResult? {
+): ResolutionResult? =
   // try the type scope if the requested type is not a framework type
-  return if (request.type.frameworkKey.isEmpty() &&
+  if (request.type.frameworkKey.isEmpty() &&
     !request.type.isFunctionType &&
     request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != injektFqNames().typeKey &&
     request.type.classifier.fqName != injektFqNames().sourceKey) {
-      TypeInjectablesScopeOrNull(request.type, this)
-        .takeUnless { it.isEmpty }
-        ?.run {
-          recordLookup(lookupLocation)
-          resolveRequest(request, lookupLocation, true)
-        }
-    } else null
-}
+    TypeInjectablesScopeOrNull(request.type, this)
+      .takeUnless { it.isEmpty }
+      ?.run {
+        recordLookup(lookupLocation)
+        resolveRequest(request, lookupLocation, true)
+      }
+  } else null
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
