@@ -14,7 +14,7 @@ interface Scope<N> : Disposable {
 fun <N> Scope(): Scope<N> = ScopeImpl()
 
 private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
-  private val values = mutableMapOf<Any, Any>()
+  private val values = mutableMapOf<String, Any>()
 
   override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
     synchronized(this) { values.getOrPut(key.value, init) as T }
@@ -38,4 +38,3 @@ private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
     ): S = scope(key, init)
   }
 }
-
