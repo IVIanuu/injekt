@@ -605,10 +605,8 @@ fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) 
     is InjectionGraph.Error -> mapOf(failureRequest to failure)
   }
 
-  results
-    .forEach { (request, result) ->
-      result.visitRecursive(request, action)
-    }
+  for ((request, result) in results)
+    result.visitRecursive(request, action)
 }
 
 private fun InjectablesScope.computeImportSuggestions(
