@@ -51,21 +51,23 @@ data class CounterModel(
   val decCounter: () -> Unit
 )
 
-@Provide @Composable fun counterModel(
+@Provide fun counterModel(
   counter: Flow<Counter>,
   incCounter: IncCounter,
   decCounter: DecCounter,
   scope: NamedCoroutineScope<ActivityScope>
-) = CounterModel(
-  state = counter.collectAsState(Counter(0)).value,
-  incCounter = {
-    scope.launch {
-      incCounter()
+): @Composable () -> CounterModel = {
+  CounterModel(
+    state = counter.collectAsState(Counter(0)).value,
+    incCounter = {
+      scope.launch {
+        incCounter()
+      }
+    },
+    decCounter = {
+      scope.launch {
+        decCounter()
+      }
     }
-  },
-  decCounter = {
-    scope.launch {
-      decCounter()
-    }
-  }
-)
+  )
+}
