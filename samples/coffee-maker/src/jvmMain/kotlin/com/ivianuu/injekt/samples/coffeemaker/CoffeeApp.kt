@@ -16,7 +16,9 @@ fun main() {
 
 interface Heater {
   fun on()
+
   fun off()
+
   val isHot: Boolean
 }
 
@@ -24,7 +26,7 @@ interface Heater {
   override val isHot: Boolean
     get() = heating
 
-  private var heating: Boolean = false
+  private var heating = false
 
   override fun on() {
     println("~ ~ ~ heating ~ ~ ~")
