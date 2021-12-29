@@ -211,10 +211,7 @@ private fun InjectablesScope.resolveRequest(
       if (userResult is ResolutionResult.Success ||
           userResult is ResolutionResult.Failure.CandidateAmbiguity)
             userResult
-      else if (!fromTypeScope &&
-        (userResult == null ||
-            userResult.cast<ResolutionResult.Failure>()
-              .unwrapDependencyFailure() is ResolutionResult.Failure.NoCandidates)) {
+      else if (!fromTypeScope) {
         tryToResolveRequestInTypeScope(request, lookupLocation)
           ?.takeUnless { it is ResolutionResult.Failure.NoCandidates }
           .let { typeScopeResult ->
