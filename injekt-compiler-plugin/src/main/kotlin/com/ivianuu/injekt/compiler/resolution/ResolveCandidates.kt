@@ -12,16 +12,16 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 import kotlin.reflect.*
 
-sealed class InjectionGraph {
-  abstract val scope: InjectablesScope
-  abstract val callee: CallableRef
+sealed interface InjectionGraph {
+  val scope: InjectablesScope
+  val callee: CallableRef
 
   data class Success(
     override val scope: InjectablesScope,
     override val callee: CallableRef,
     val results: Map<InjectableRequest, ResolutionResult.Success>,
     val usages: Map<UsageKey, MutableSet<InjectableRequest>>
-  ) : InjectionGraph()
+  ) : InjectionGraph
 
   data class Error(
     override val scope: InjectablesScope,
@@ -29,27 +29,27 @@ sealed class InjectionGraph {
     val failureRequest: InjectableRequest,
     val failure: ResolutionResult.Failure,
     val importSuggestions: List<CallableRef>
-  ) : InjectionGraph()
+  ) : InjectionGraph
 }
 
-sealed class ResolutionResult {
-  sealed class Success : ResolutionResult() {
-    object DefaultValue : Success()
+sealed interface ResolutionResult {
+  sealed interface Success : ResolutionResult {
+    object DefaultValue : Success
 
-    sealed class WithCandidate : ResolutionResult.Success() {
-      abstract val candidate: Injectable
-      abstract val scope: InjectablesScope
+    sealed interface WithCandidate : ResolutionResult.Success {
+      val candidate: Injectable
+      val scope: InjectablesScope
 
       data class CircularDependency(
         override val candidate: Injectable,
         override val scope: InjectablesScope
-      ) : Success.WithCandidate()
+      ) : Success.WithCandidate
 
       data class Value(
         override val candidate: Injectable,
         override val scope: InjectablesScope,
         val dependencyResults: Map<InjectableRequest, Success>
-      ) : Success.WithCandidate() {
+      ) : Success.WithCandidate {
         val highestScope: InjectablesScope = run {
           val anchorScopes = mutableSetOf<InjectablesScope>()
 
@@ -81,21 +81,21 @@ sealed class ResolutionResult {
     }
   }
 
-  sealed class Failure : ResolutionResult() {
-    abstract val failureOrdering: Int
+  sealed interface Failure : ResolutionResult {
+    val failureOrdering: Int
 
-    sealed class WithCandidate : Failure() {
-      abstract val candidate: Injectable
+    sealed interface WithCandidate : Failure {
+      val candidate: Injectable
 
       data class CallContextMismatch(
         val actualCallContext: CallContext,
         override val candidate: Injectable,
-      ) : WithCandidate() {
+      ) : WithCandidate {
         override val failureOrdering: Int
           get() = 1
       }
 
-      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate() {
+      data class DivergentInjectable(override val candidate: Injectable) : WithCandidate {
         override val failureOrdering: Int
           get() = 1
       }
@@ -104,7 +104,7 @@ sealed class ResolutionResult {
         val parameter: ClassifierRef,
         val argument: ClassifierRef,
         override val candidate: Injectable
-      ) : WithCandidate() {
+      ) : WithCandidate {
         override val failureOrdering: Int
           get() = 1
       }
@@ -113,7 +113,7 @@ sealed class ResolutionResult {
         override val candidate: Injectable,
         val dependencyRequest: InjectableRequest,
         val dependencyFailure: Failure,
-      ) : WithCandidate() {
+      ) : WithCandidate {
         override val failureOrdering: Int
           get() = 1
       }
@@ -122,7 +122,7 @@ sealed class ResolutionResult {
     data class CandidateAmbiguity(
       val request: InjectableRequest,
       val candidateResults: List<Success.WithCandidate.Value>
-    ) : Failure() {
+    ) : Failure {
       override val failureOrdering: Int
         get() = 0
     }
@@ -130,7 +130,7 @@ sealed class ResolutionResult {
     data class NoCandidates(
       val scope: InjectablesScope,
       val request: InjectableRequest
-    ) : Failure() {
+    ) : Failure {
       override val failureOrdering: Int
         get() = 2
     }

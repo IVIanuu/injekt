@@ -88,14 +88,14 @@ private fun TypeRef.isSubTypeOfSameClassifier(
   return true
 }
 
-sealed class TypeContextError {
+sealed interface TypeContextError {
   data class ConstraintError(
     val subType: TypeRef,
     val superType: TypeRef,
     val kind: ConstraintKind
-  ) : TypeContextError()
+  ) : TypeContextError
 
-  object NotEnoughInformation : TypeContextError()
+  object NotEnoughInformation : TypeContextError
 }
 
 class VariableWithConstraints(val typeVariable: ClassifierRef) {
@@ -158,10 +158,10 @@ enum class ConstraintKind {
   LOWER, UPPER, EQUAL
 }
 
-sealed class ConstraintPosition {
-  object FixVariable : ConstraintPosition()
-  object DeclaredUpperBound : ConstraintPosition()
-  object Unknown : ConstraintPosition()
+sealed interface ConstraintPosition {
+  object FixVariable : ConstraintPosition
+  object DeclaredUpperBound : ConstraintPosition
+  object Unknown : ConstraintPosition
 }
 
 fun buildContextForSpreadingInjectable(

@@ -15,21 +15,21 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-sealed class Injectable {
-  abstract val type: TypeRef
-  open val originalType: TypeRef get() = type
-  open val dependencies: List<InjectableRequest> get() = emptyList()
-  open val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
-  abstract val callableFqName: FqName
-  open val callContext: CallContext get() = CallContext.DEFAULT
-  abstract val ownerScope: InjectablesScope
-  open val usageKey: Any get() = type
+sealed interface Injectable {
+  val type: TypeRef
+  val originalType: TypeRef get() = type
+  val dependencies: List<InjectableRequest> get() = emptyList()
+  val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
+  val callableFqName: FqName
+  val callContext: CallContext get() = CallContext.DEFAULT
+  val ownerScope: InjectablesScope
+  val usageKey: Any get() = type
 }
 
 class CallableInjectable(
   @Provide override val ownerScope: InjectablesScope,
   val callable: CallableRef,
-) : Injectable() {
+) : Injectable {
   override val type: TypeRef
     get() = callable.type
   override val dependencies: List<InjectableRequest> = callable.getInjectableRequests()
@@ -55,7 +55,7 @@ class ListInjectable(
   elements: List<TypeRef>,
   val singleElementType: TypeRef,
   val collectionElementType: TypeRef
-) : Injectable() {
+) : Injectable {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.injectListOf")
   override val dependencies: List<InjectableRequest> = elements
     .mapIndexed { index, element ->
@@ -75,7 +75,7 @@ class ProviderInjectable(
   @Provide override val ownerScope: InjectablesScope,
   val isInline: Boolean,
   dependencyCallContext: CallContext
-) : Injectable() {
+) : Injectable {
   override val callableFqName: FqName = when (type.callContext()) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
@@ -134,14 +134,14 @@ class ProviderInjectable(
 class SourceKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
-) : Injectable() {
+) : Injectable {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
 }
 
 class TypeKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
-) : Injectable() {
+) : Injectable {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
   override val dependencies: List<InjectableRequest> = run {
     val typeParameterDependencies = mutableSetOf<ClassifierRef>()
