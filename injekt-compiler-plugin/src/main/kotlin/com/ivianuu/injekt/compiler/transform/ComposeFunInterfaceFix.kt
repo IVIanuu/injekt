@@ -34,6 +34,11 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
     object : IrElementTransformerVoid() {
       override fun visitTypeOperator(expression: IrTypeOperatorCall): IrExpression {
         if (expression.operator == IrTypeOperator.SAM_CONVERSION &&
+            expression.type.isComposableFunInterface() &&
+            expression.argument.type.isComposableFunInterface())
+              return expression.argument
+
+        if (expression.operator == IrTypeOperator.SAM_CONVERSION &&
             expression.argument is IrFunctionExpression &&
             expression.type.isComposableFunInterface()) {
           val functionExpression = expression.argument as IrFunctionExpression

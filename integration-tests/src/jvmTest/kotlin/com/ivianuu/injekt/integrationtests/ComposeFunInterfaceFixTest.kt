@@ -4,6 +4,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.*
 import com.ivianuu.injekt.test.*
 import org.junit.*
 
@@ -18,14 +19,38 @@ class ComposeFunInterfaceFixTest {
       }
     """,
     """
-      @Composable fun func() {
+      fun invoke(): @Composable () -> Unit = {
         testKeyUi()
       }
     """,
     config = { withCompose() }
-  )
+  ) {
+    runComposing {
+      invokeSingleFile<@Composable () -> Unit>().invoke()
+    }
+  }
 
-  @Test fun testComposableFunInterfaceWithComposableFunction() = multiCodegen(
+  @Test fun testComposeFunInterfaceWithFunctionSuperType2() = singleAndMultiCodegen(
+    """
+      fun interface KeyUi<K> : @Composable () -> Unit
+    """,
+    """
+        data class Holder(val keyUi: KeyUi<*>)
+        val keyUi = KeyUi<Any> {}
+    """,
+    """
+      fun invoke(): @Composable () -> Unit = {
+        Holder(keyUi)
+      }
+    """,
+    config = { withCompose() }
+  ) {
+    runComposing {
+      invokeSingleFile<@Composable () -> Unit>().invoke()
+    }
+  }
+
+  @Test fun testComposableFunInterfaceWithComposableFunction() = singleAndMultiCodegen(
     """
       fun interface ModelKeyUi<K, M> {
         @Composable operator fun invoke(scope: ModelKeyUiScope<K, M>)
@@ -41,7 +66,7 @@ class ComposeFunInterfaceFixTest {
       }
     """,
     """
-      @Composable fun func() {
+      fun invoke(): @Composable () -> Unit = {
         testKeyUi.invoke(
           object : ModelKeyUiScope<String, Int> {
             override val model: Int get() = 0
@@ -50,10 +75,14 @@ class ComposeFunInterfaceFixTest {
       }
     """,
     config = { withCompose() }
-  )
+  ) {
+    runComposing {
+      invokeSingleFile<@Composable () -> Unit>().invoke()
+    }
+  }
 
   // todo @Test
-  fun testComposableFunInterfaceWithComposableExtensionFunction() = multiCodegen(
+  fun testComposableFunInterfaceWithComposableExtensionFunction() = singleAndMultiCodegen(
     """
       fun interface ModelKeyUi<K, M> {
         @Composable operator fun ModelKeyUiScope<K, M>.invoke()
