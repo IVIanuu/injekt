@@ -156,7 +156,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 private fun IrType.isComposableFunInterface(@Inject ctx: Context): Boolean {
   val classifier = classifierOrNull?.descriptor?.toClassifierRef() ?: return false
-  return classifier.descriptor!!.cast<ClassDescriptor>().isFun &&
+  return classifier.descriptor!!.safeAs<ClassDescriptor>()?.isFun == true &&
       classifier.defaultType.anySuperType {
         it.classifier.fqName == injektFqNames().composable
       }
