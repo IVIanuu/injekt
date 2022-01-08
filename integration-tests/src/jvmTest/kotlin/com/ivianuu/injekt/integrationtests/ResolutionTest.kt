@@ -791,4 +791,19 @@ class ResolutionTest {
   ) {
     compilationShouldHaveFailed("ambiguous injectables")
   }
+
+  @Test fun testDoesNotPreferValueArgumentOverAnother() = singleAndMultiCodegen(
+    """
+      @Provide class FooModule {
+        @Provide fun foo() = Foo()
+      }
+
+      fun createFoo(@Inject module: FooModule, foo: Foo) = inject<Foo>()
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = createFoo()
+    """
+  ) {
+    compilationShouldHaveFailed("ambiguous injectables")
+  }
 }

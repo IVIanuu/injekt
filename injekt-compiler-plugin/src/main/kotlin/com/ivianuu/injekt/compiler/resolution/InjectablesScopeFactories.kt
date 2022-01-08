@@ -429,7 +429,7 @@ private fun FunctionParameterInjectablesScope(
     parent = parent,
     ownerDescriptor = function,
     initialInjectables = listOf(parameter),
-    nesting = if (parent.name.startsWith("FUNCTION_PARAMETER")) parent.nesting
+    nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
     else parent.nesting + 1
   )
 }
