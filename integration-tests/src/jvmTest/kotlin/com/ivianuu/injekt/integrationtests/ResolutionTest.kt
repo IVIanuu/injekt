@@ -792,16 +792,13 @@ class ResolutionTest {
     compilationShouldHaveFailed("ambiguous injectables")
   }
 
-  @Test fun testDoesNotPreferValueArgumentOverAnother() = singleAndMultiCodegen(
+  @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
     """
       @Provide class FooModule {
         @Provide fun foo() = Foo()
       }
 
       fun createFoo(@Inject module: FooModule, foo: Foo) = inject<Foo>()
-    """,
-    """
-      fun invoke(@Provide foo: Foo) = createFoo()
     """
   ) {
     compilationShouldHaveFailed("ambiguous injectables")
