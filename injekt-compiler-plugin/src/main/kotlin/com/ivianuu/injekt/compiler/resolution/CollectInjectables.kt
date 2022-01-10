@@ -26,7 +26,8 @@ fun TypeRef.collectInjectables(
 ): List<CallableRef> = trace()!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
-    val callable = unwrapTags()
+    val unwrappedFunctionType = unwrapTags()
+    val callable = unwrappedFunctionType
       .classifier
       .descriptor!!
       .defaultType
@@ -36,11 +37,15 @@ fun TypeRef.collectInjectables(
       .toCallableRef()
       .let { callable ->
         callable.copy(
-          type = arguments.last(),
+          type = unwrappedFunctionType.arguments.last(),
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           }
-        ).substitute(classifier.typeParameters.zip(arguments).toMap())
+        ).substitute(
+          unwrappedFunctionType.classifier.typeParameters
+            .zip(unwrappedFunctionType.arguments)
+            .toMap()
+        )
       }
 
     return@getOrPut listOf(callable)
@@ -218,10 +223,11 @@ fun CallableRef.collectInjectables(
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
-  seen: MutableSet<CallableRef> = mutableSetOf(),
+  chainLength: Int = 0,
+  seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf(),
   @Inject ctx: Context
 ) {
-  if (!seen.add(this)) return
+  if (!seen.add(InjectablesScope.InjectableKey(this))) return
 
   if (!scope.canSee(this) || !scope.injectablesPredicate(this)) return
 
@@ -249,14 +255,16 @@ fun CallableRef.collectInjectables(
       }
     )
     .forEach { innerCallable ->
+      val nextChainLength = chainLength + 1
       innerCallable
-        .copy(import = import)
+        .copy(import = import, chainLength = nextChainLength)
         .collectInjectables(
           scope = scope,
           addImport = addImport,
           addInjectable = addInjectable,
           addSpreadingInjectable = addSpreadingInjectable,
           import = import,
+          chainLength = nextChainLength,
           seen = seen
         )
     }

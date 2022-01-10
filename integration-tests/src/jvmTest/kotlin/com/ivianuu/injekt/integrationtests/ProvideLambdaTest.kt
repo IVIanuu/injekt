@@ -14,7 +14,7 @@ import org.junit.*
 class ProvideLambdaTest {
   @Test fun testProvideLambda() = codegen(
     """
-      fun invoke() = inject<@Provide (@Provide () -> Foo) -> Foo>()
+      fun invoke() = inject<(@Provide () -> Foo) -> Foo>()
     """
   ) {
     val foo = Foo()
@@ -23,7 +23,7 @@ class ProvideLambdaTest {
 
   @Test fun testSuspendProvideLambda() = codegen(
     """
-      fun invoke() = inject<@Provide suspend (@Provide suspend () -> Foo) -> Foo>()
+      fun invoke() = inject<suspend (@Provide suspend () -> Foo) -> Foo>()
     """
   ) {
     runBlocking {
@@ -34,8 +34,9 @@ class ProvideLambdaTest {
 
   @Test fun testComposableProvideLambda() = codegen(
     """
-      fun invoke() = inject<@Provide @Composable (@Provide @Composable () -> Foo) -> Foo>()
-    """
+      fun invoke() = inject<@Composable (@Provide @Composable () -> Foo) -> Foo>()
+    """,
+    config = { withCompose() }
   ) {
     runComposing {
       val foo = Foo()

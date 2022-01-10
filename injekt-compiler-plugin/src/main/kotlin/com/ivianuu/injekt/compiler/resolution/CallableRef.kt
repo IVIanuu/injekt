@@ -15,7 +15,8 @@ data class CallableRef(
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val import: ResolvedProviderImport?
+  val import: ResolvedProviderImport?,
+  val chainLength: Int
 )
 
 fun CallableRef.substitute(
@@ -61,6 +62,7 @@ fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType
       },
-      import = null
+      import = null,
+      chainLength = 0
     )
   }
