@@ -26,7 +26,9 @@ fun TypeRef.collectInjectables(
 ): List<CallableRef> = trace()!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
-    val callable = classifier.descriptor!!
+    val callable = unwrapTags()
+      .classifier
+      .descriptor!!
       .defaultType
       .memberScope
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
