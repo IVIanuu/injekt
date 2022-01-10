@@ -61,10 +61,11 @@ fun TypeRef.collectInjectables(
     )
 
   buildList {
-    classifier.descriptor!!
-      .defaultType
-      .memberScope
-      .collectInjectables(classBodyView = classBodyView) { callable ->
+    classifier
+      .descriptor
+      ?.defaultType
+      ?.memberScope
+      ?.collectInjectables(classBodyView = classBodyView) { callable ->
         val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
           CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
