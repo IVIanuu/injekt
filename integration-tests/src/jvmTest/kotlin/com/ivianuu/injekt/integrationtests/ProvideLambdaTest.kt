@@ -4,19 +4,43 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.*
 import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
+import kotlinx.coroutines.*
 import org.junit.*
 
 class ProvideLambdaTest {
   @Test fun testProvideLambda() = codegen(
     """
-      fun invoke(foo: Foo) = inject<@Provide (@Provide () -> Foo) -> Foo>()({ foo })
+      fun invoke() = inject<@Provide (@Provide () -> Foo) -> Foo>()
     """
   ) {
     val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+    invokeSingleFile<(() -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testSuspendProvideLambda() = codegen(
+    """
+      fun invoke() = inject<@Provide suspend (@Provide suspend () -> Foo) -> Foo>()
+    """
+  ) {
+    runBlocking {
+      val foo = Foo()
+      invokeSingleFile<suspend (suspend () -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+    }
+  }
+
+  @Test fun testComposableProvideLambda() = codegen(
+    """
+      fun invoke() = inject<@Provide @Composable (@Provide @Composable () -> Foo) -> Foo>()
+    """
+  ) {
+    runComposing {
+      val foo = Foo()
+      invokeSingleFile<@Composable (@Composable () -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+    }
   }
 
   @Test fun testProvideLambdaChain() = singleAndMultiCodegen(
