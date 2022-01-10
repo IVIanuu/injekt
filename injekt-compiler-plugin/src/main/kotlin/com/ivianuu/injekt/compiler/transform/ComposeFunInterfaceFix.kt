@@ -99,8 +99,6 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
 
       override fun visitCall(expression: IrCall): IrExpression {
         val result = super.visitCall(expression) as IrCall
-        if (result.origin != IrStatementOrigin.INVOKE) return result
-
         val dispatchReceiverType = result.dispatchReceiver?.type
           ?: return result
         if (dispatchReceiverType.isComposableFunInterface() &&
@@ -151,6 +149,8 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(@Inject ctx: Context) {
     },
     null
   )
+
+  println()
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)

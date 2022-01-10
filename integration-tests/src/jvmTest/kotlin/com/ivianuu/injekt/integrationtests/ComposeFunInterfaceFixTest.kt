@@ -50,6 +50,25 @@ class ComposeFunInterfaceFixTest {
     }
   }
 
+  @Test fun testComposeFunInterfaceWithFunctionSuperType3() = multiCodegen(
+    """
+      fun interface KeyUi<K> : @Composable () -> Unit
+    """,
+    """
+        val keyUi: KeyUi<Any>? = KeyUi<Any> {}
+    """,
+    """
+      fun invoke(): @Composable () -> Unit = {
+        keyUi?.invoke()
+      }
+    """,
+    config = { withCompose() }
+  ) {
+    runComposing {
+      invokeSingleFile<@Composable () -> Unit>().invoke()
+    }
+  }
+
   @Test fun testComposableFunInterfaceWithComposableFunction() = singleAndMultiCodegen(
     """
       fun interface ModelKeyUi<K, M> {
