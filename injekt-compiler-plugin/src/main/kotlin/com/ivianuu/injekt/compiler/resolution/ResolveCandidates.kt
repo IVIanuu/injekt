@@ -504,14 +504,14 @@ private fun InjectablesScope.compareCallable(
     if (bSubClassNesting < aSubClassNesting) return 1
   }
 
+  val diff = compareType(a.originalType, b.originalType)
+  if (diff < 0) return -1
+  if (diff > 0) return 1
+
   if (a.chainLength < b.chainLength)
     return -1
   if (b.chainLength < a.chainLength)
     return 1
-
-  val diff = compareType(a.originalType, b.originalType)
-  if (diff < 0) return -1
-  if (diff > 0) return 1
 
   return 0
 }
