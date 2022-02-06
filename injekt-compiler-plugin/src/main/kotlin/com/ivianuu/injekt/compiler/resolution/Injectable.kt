@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -27,21 +26,21 @@ sealed interface Injectable {
 }
 
 class CallableInjectable(
-  @Provide override val ownerScope: InjectablesScope,
-  val callable: CallableRef,
+  override val ownerScope: InjectablesScope,
+  val callable: CallableRef
 ) : Injectable {
   override val type: TypeRef
     get() = callable.type
-  override val dependencies: List<InjectableRequest> = callable.getInjectableRequests()
+  override val dependencies: List<InjectableRequest> = callable.getInjectableRequests(ownerScope.ctx)
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val callContext: CallContext
-    get() = callable.callable.callContext()
+    get() = callable.callable.callContext(ownerScope.ctx)
   override val originalType: TypeRef
     get() = callable.originalType
   override val usageKey: Any =
-    listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
+    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes, callable.type)
 
   override fun equals(other: Any?): Boolean =
     other is CallableInjectable && other.usageKey == usageKey
@@ -72,11 +71,11 @@ class ListInjectable(
 
 class ProviderInjectable(
   override val type: TypeRef,
-  @Provide override val ownerScope: InjectablesScope,
+  override val ownerScope: InjectablesScope,
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable {
-  override val callableFqName: FqName = when (type.callContext()) {
+  override val callableFqName: FqName = when (type.callContext(ownerScope.ctx)) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")
@@ -116,7 +115,7 @@ class ProviderInjectable(
       initialInjectables = parameterDescriptors
         .mapIndexed { index, parameter ->
           parameter
-            .toCallableRef()
+            .toCallableRef(ownerScope.ctx)
             .copy(type = type.unwrapTags().arguments[index])
         }
     )
@@ -163,13 +162,13 @@ class TypeKeyInjectable(
   }
 }
 
-fun CallableRef.getInjectableRequests(@Inject ctx: Context): List<InjectableRequest> = callable.allParameters
+fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParameters
   .transform {
     if ((callable !is ClassConstructorDescriptor || it.name.asString() != "<this>") &&
         it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
-        it.isProvide())
-          add(it.toInjectableRequest(this@getInjectableRequests))
+        it.isProvide(ctx))
+          add(it.toInjectableRequest(this@getInjectableRequests, ctx))
   }
 
 data class InjectableRequest(
@@ -185,7 +184,7 @@ data class InjectableRequest(
 
 fun ParameterDescriptor.toInjectableRequest(
   callable: CallableRef,
-  @Inject ctx: Context
+  ctx: Context
 ): InjectableRequest = InjectableRequest(
   type = callable.parameterTypes[injektIndex()]!!,
   callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()

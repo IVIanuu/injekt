@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.psi.*
@@ -23,15 +22,15 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
-    @Provide val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
+    val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
     if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
       diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
       return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
-        ?.descriptor<CallableDescriptor>()
+        ?.descriptor<CallableDescriptor>(ctx)
         ?.valueParameters
-        ?.filterNot { it.isInject() }
+        ?.filterNot { it.isInject(ctx) }
         ?.size
         ?.let { it <= 1 } == true
 
@@ -41,14 +40,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     // todo remove on kotlin 1.6.0
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(injektFqNames().spread) == true) return true
+      if (typeParameter?.hasAnnotation(ctx.injektFqNames.spread) == true) return true
     }
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
       if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(injektFqNames().tag) == true
+          ?.hasAnnotation(ctx.injektFqNames.tag) == true
       )
         return true
     }
@@ -67,22 +66,22 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
 
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
       val descriptor = diagnostic.psiElement.getParentOfType<KtNamedDeclaration>(false)
-        ?.descriptor<CallableDescriptor>()
-      if (descriptor?.hasAnnotation(injektFqNames().provide) == true ||
+        ?.descriptor<CallableDescriptor>(ctx)
+      if (descriptor?.hasAnnotation(ctx.injektFqNames.provide) == true ||
         descriptor?.valueParameters?.any {
-          it.hasAnnotation(injektFqNames().inject) ||
-              it.hasAnnotation(injektFqNames().provide)
+          it.hasAnnotation(ctx.injektFqNames.inject) ||
+              it.hasAnnotation(ctx.injektFqNames.provide)
         } == true)
           return true
     }
 
     if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER) {
       val typeParameter = diagnostic.psiElement
-        .cast<KtTypeParameter>().descriptor<TypeParameterDescriptor>()
+        .cast<KtTypeParameter>().descriptor<TypeParameterDescriptor>(ctx)
       return diagnostic.psiElement.getParentOfType<KtTypeAlias>(false)
-        ?.descriptor<TypeAliasDescriptor>()
+        ?.descriptor<TypeAliasDescriptor>(ctx)
         ?.expandedType
-        ?.toTypeRef()
+        ?.toTypeRef(ctx)
         ?.anyType { it.classifier.descriptor == typeParameter } == true
     }
 

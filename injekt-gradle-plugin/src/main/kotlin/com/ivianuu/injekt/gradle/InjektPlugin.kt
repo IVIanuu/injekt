@@ -7,14 +7,18 @@
 package com.ivianuu.injekt.gradle
 
 import org.gradle.api.*
+import org.gradle.api.attributes.*
+import org.gradle.api.file.*
 import org.gradle.api.model.*
 import org.gradle.api.provider.*
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.compile.*
+import org.gradle.work.*
 import org.jetbrains.kotlin.cli.common.arguments.*
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.internal.*
+import org.jetbrains.kotlin.gradle.internal.kapt.incremental.*
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.*
@@ -160,14 +164,13 @@ interface InjektTask : Task {
         kotlinCompile.compilerArgumentsContributor
       }
     )
+    classpathSnapshotProperties.useClasspathSnapshot.value(false).disallowChanges()
   }
 
   @get:Internal internal abstract val compileKotlinArgumentsContributor:
       Property<CompilerArgumentsContributor<K2JVMCompilerArguments>>
 
   init {
-    incremental = true
-    useClasspathSnapshot.set(true)
     // Mute a warning from ScriptingGradleSubplugin, which tries to get `sourceSetName` before this task is
     // configured.
     sourceSetName.set("main")
@@ -197,9 +200,10 @@ interface InjektTask : Task {
     args: K2JVMCompilerArguments,
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
+    taskOutputsBackup: TaskOutputsBackup?,
   ) {
     args.addChangedFiles(changedFiles)
-    super.callCompilerAsync(args, sourceRoots, changedFiles)
+    super.callCompilerAsync(args, sourceRoots, changedFiles, taskOutputsBackup)
   }
 }
 
@@ -221,11 +225,6 @@ interface InjektTask : Task {
 
   @get:Internal internal abstract val compileKotlinArgumentsContributor:
       Property<CompilerArgumentsContributor<K2JSCompilerArguments>>
-
-  init {
-    // todo
-    incremental = false
-  }
 
   override fun setupCompilerArgs(
     args: K2JSCompilerArguments,
@@ -250,9 +249,10 @@ interface InjektTask : Task {
     args: K2JSCompilerArguments,
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
+    taskOutputsBackup: TaskOutputsBackup?,
   ) {
     args.addChangedFiles(changedFiles)
-    super.callCompilerAsync(args, sourceRoots, changedFiles)
+    super.callCompilerAsync(args, sourceRoots, changedFiles, taskOutputsBackup)
   }
 }
 
@@ -273,10 +273,6 @@ interface InjektTask : Task {
 
   @get:Internal internal abstract val compileKotlinArgumentsContributor:
       Property<CompilerArgumentsContributor<K2MetadataCompilerArguments>>
-
-  init {
-    incremental = true
-  }
 
   override fun setupCompilerArgs(
     args: K2MetadataCompilerArguments,
@@ -305,9 +301,10 @@ interface InjektTask : Task {
     args: K2MetadataCompilerArguments,
     sourceRoots: SourceRoots,
     changedFiles: ChangedFiles,
+    taskOutputsBackup: TaskOutputsBackup?,
   ) {
     args.addChangedFiles(changedFiles)
-    super.callCompilerAsync(args, sourceRoots, changedFiles)
+    super.callCompilerAsync(args, sourceRoots, changedFiles, taskOutputsBackup)
   }
 }
 

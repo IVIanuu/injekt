@@ -19,7 +19,7 @@ object Deps {
 
   object AndroidX {
     object Activity {
-      private const val version = "1.3.1"
+      private const val version = "1.4.0"
       const val activity = "androidx.activity:activity:$version"
       const val compose = "androidx.activity:activity-compose:$version"
     }
@@ -37,12 +37,12 @@ object Deps {
     const val work = "androidx.work:work-runtime-ktx:2.7.0"
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.16.3"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.17.0"
 
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.0.0"
+    const val version = "1.0.1"
     const val compiler = "org.jetbrains.compose.compiler:compiler:$version"
     const val gradlePlugin = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin:$version"
     const val material = "org.jetbrains.compose.material:material:$version"
@@ -50,7 +50,7 @@ object Deps {
   }
 
   object Coroutines {
-    private const val version = "1.5.2"
+    private const val version = "1.6.0"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
     const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
@@ -58,13 +58,12 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev670"
-  const val injektGradlePluginShaded = "com.ivianuu.injekt:injekt-gradle-plugin-shaded:0.0.1-dev670"
+  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev674"
 
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.5.31"
+    const val version = "1.6.10"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -72,10 +71,10 @@ object Deps {
 
   object KotlinSerialization {
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2"
   }
 
-  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.4"
+  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.7"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 

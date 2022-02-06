@@ -48,7 +48,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           val refs = mutableListOf<PsiReference>()
 
           val module = element.getResolutionFacade().moduleDescriptor
-          val ctx = Context(module, module.injektFqNames(), null)
+          val ctx = Context(module, module.ctx.injektFqNames, null)
           val psiFacade = KotlinJavaPsiFacade.getInstance(element.project)
 
           fun resolveFqName(fqName: String, endOffset: Int) {
@@ -100,7 +100,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
 }
 
 fun KtStringTemplateExpression.isProviderImport() = getParentOfType<KtAnnotationEntry>(false)
-  ?.takeIf { it.typeReference?.text == injektFqNames().providers.shortName().asString() } != null
+  ?.takeIf { it.typeReference?.text == ctx.injektFqNames.providers.shortName().asString() } != null
 
 class ImportCompletionExtension : KotlinCompletionExtension() {
   override fun perform(parameters: CompletionParameters, result: CompletionResultSet): Boolean {
@@ -120,7 +120,7 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     val prefix = template.text.substring(range.startOffset, offsetInElement)
 
     val module = template.getResolutionFacade().moduleDescriptor
-    val ctx = Context(module, module.injektFqNames(), null)
+    val ctx = Context(module, module.ctx.injektFqNames, null)
 
     memberScopeForFqName(
       importReference.fqName.parent(),
@@ -160,7 +160,7 @@ class ImportTypedHandlerDelegate : TypedHandlerDelegate() {
       ?.getParentOfType<KtStringTemplateExpression>(false)
       ?.getParentOfType<KtAnnotationEntry>(false)
       ?.takeIf {
-        it.typeReference?.text == file.injektFqNames().providers.shortName().asString()
+        it.typeReference?.text == file.ctx.injektFqNames.providers.shortName().asString()
       }
       ?: return super.beforeCharTyped(c, project, editor, file, fileType)
 
@@ -181,7 +181,7 @@ class ImportTypedHandlerDelegate : TypedHandlerDelegate() {
       ?.getParentOfType<KtStringTemplateExpression>(false)
       ?.getParentOfType<KtAnnotationEntry>(false)
       ?.takeIf {
-        it.typeReference?.text == file.injektFqNames().providers.shortName().asString()
+        it.typeReference?.text == file.ctx.injektFqNames.providers.shortName().asString()
       }
       ?: return super.checkAutoPopup(charTyped, project, editor, file)
 
@@ -200,7 +200,7 @@ class ImportCompletionConfidence : CompletionConfidence() {
     .getParentOfType<KtStringTemplateExpression>(false)
     ?.getParentOfType<KtAnnotationEntry>(false)
     ?.takeIf {
-      it.typeReference?.text == contextElement.injektFqNames().providers.shortName().asString()
+      it.typeReference?.text == contextElement.ctx.injektFqNames.providers.shortName().asString()
     }
     ?.let { ThreeState.NO } ?: ThreeState.UNSURE
 }

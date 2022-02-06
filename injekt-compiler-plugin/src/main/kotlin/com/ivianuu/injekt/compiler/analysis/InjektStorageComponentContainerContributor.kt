@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.extensions.*
@@ -20,7 +19,7 @@ class InjektStorageComponentContainerContributor(
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    @Provide val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
+    val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
 
     val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
       StorageComponentContainer::class,
@@ -42,10 +41,10 @@ class InjektStorageComponentContainerContributor(
       container.useImpl<InjectSyntheticScopes>()
     }
 
-    container.useInstance(InjectableChecker())
-    container.useInstance(TagChecker())
-    container.useInstance(ProviderImportsChecker())
+    container.useInstance(InjectableChecker(ctx))
+    container.useInstance(TagChecker(ctx))
+    container.useInstance(ProviderImportsChecker(ctx))
     if (!isIde)
-      container.useInstance(InfoPatcher())
+      container.useInstance(InfoPatcher(ctx))
   }
 }

@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
@@ -15,7 +14,7 @@ import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
-class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker {
+class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
   override fun check(
     resolvedCall: ResolvedCall<*>,
     reportOn: PsiElement,
@@ -23,10 +22,10 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
   ) {
     val resulting = resolvedCall.resultingDescriptor
     if (resulting !is ConstructorDescriptor ||
-        resulting.constructedClass.fqNameSafe != injektFqNames().providers)
+        resulting.constructedClass.fqNameSafe != baseCtx.injektFqNames.providers)
           return
-    @Provide val ctx = baseCtx.withTrace(context.trace)
-    val imports = resolvedCall.getProviderImports()
+    val ctx = baseCtx.withTrace(context.trace)
+    val imports = resolvedCall.getProviderImports(ctx)
 
     imports
       .filter { it.importPath != null }
@@ -34,7 +33,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
       .filter { it.value.size > 1 }
       .forEach { (_, imports) ->
         for (import in imports) {
-          trace()!!.report(
+          ctx.trace!!.report(
             InjektErrors.DUPLICATED_INJECTABLE_IMPORT
               .on(import.element!!, import.element)
           )
@@ -46,7 +45,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
     for (import in imports) {
       val (element, importPath) = import
       if (!import.isValidImport()) {
-        trace()!!.report(
+        ctx.trace!!.report(
           InjektErrors.MALFORMED_INJECTABLE_IMPORT
             .on(element!!, element)
         )
@@ -56,14 +55,14 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
       if (importPath.endsWith("*")) {
         val packageFqName = FqName(importPath.removeSuffix(".**").removeSuffix(".*"))
         if (packageFqName == currentPackage) {
-          trace()!!.report(
+          ctx.trace!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!, element)
           )
           continue
         }
-        if (memberScopeForFqName(packageFqName, import.element.lookupLocation) == null) {
-          trace()!!.report(
+        if (memberScopeForFqName(packageFqName, import.element.lookupLocation, ctx) == null) {
+          ctx.trace!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!, element)
           )
@@ -73,7 +72,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
         val fqName = FqName(importPath.removeSuffix(".*"))
         val parentFqName = fqName.parent()
         if (parentFqName == currentPackage) {
-          trace()!!.report(
+          ctx.trace!!.report(
             InjektErrors.DECLARATION_PACKAGE_INJECTABLE_IMPORT
               .on(element!!, element)
           )
@@ -82,7 +81,8 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
         val shortName = fqName.shortName()
         val importedDeclarations = memberScopeForFqName(
           parentFqName,
-          import.element.lookupLocation
+          import.element.lookupLocation,
+          ctx
         )
           ?.first
           ?.getContributedDescriptors()
@@ -93,7 +93,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
                         it.constructedClass.name == shortName))
           }
         if (importedDeclarations == null || importedDeclarations.isEmpty()) {
-          trace()!!.report(
+          ctx.trace!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!, element)
           )
@@ -102,7 +102,7 @@ class ProviderImportsChecker(@Inject private val baseCtx: Context) : CallChecker
       }
 
       if (!isIde) {
-        trace()!!.report(
+        ctx.trace!!.report(
           InjektErrors.UNUSED_INJECTABLE_IMPORT
             .on(element!!, element)
         )

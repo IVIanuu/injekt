@@ -11,10 +11,10 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/ja
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
 intellij {
-  version.set("2020.3.1")
+  //version.set("2020.3.1")
   pluginName.set("Injekt ide plugin")
   updateSinceUntilBuild.set(false)
-  plugins.addAll("org.jetbrains.kotlin:203-1.6.0-release-798-AS7717.8", "gradle", "gradle-java", "java")
+  plugins.addAll("org.jetbrains.kotlin:211-1.6.10-release-923-AS7442.40", "gradle", "gradle-java", "java")
   localPath.set("/home/manu/android-studio")
 }
 

@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
@@ -76,21 +75,21 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
-  trace()!!.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
-    val info = classifierInfo()
+fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
+  ctx.trace!!.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
+    val info = classifierInfo(ctx)
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
       ?.declaredTypeParameters
-      ?.map { it.toClassifierRef() }
+      ?.map { it.toClassifierRef(ctx) }
       ?.toMutableList()
       ?: mutableListOf()
 
-    val isTag = hasAnnotation(injektFqNames().tag) || fqNameSafe == injektFqNames().composable
+    val isTag = hasAnnotation(ctx.injektFqNames.tag) || fqNameSafe == ctx.injektFqNames.composable
 
     if (isTag) {
       typeParameters += ClassifierRef(
-        key = "${uniqueKey()}.\$TT",
+        key = "${uniqueKey(ctx)}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
         lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
@@ -99,7 +98,7 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
     }
 
     ClassifierRef(
-      key = original.uniqueKey(),
+      key = original.uniqueKey(ctx),
       fqName = original.fqNameSafe,
       typeParameters = typeParameters,
       lazySuperTypes = info.lazySuperTypes,
@@ -117,9 +116,9 @@ fun ClassifierDescriptor.toClassifierRef(@Inject ctx: Context): ClassifierRef =
   }
 
 fun KotlinType.toTypeRef(
+  ctx: Context,
   isStarProjection: Boolean = false,
-  variance: TypeVariance = TypeVariance.INV,
-  @Inject ctx: Context
+  variance: TypeVariance = TypeVariance.INV
 ): TypeRef {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this
@@ -130,7 +129,7 @@ fun KotlinType.toTypeRef(
       else -> return ctx.nullableAnyType
     }
 
-    val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
+    val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef(ctx)
 
     val rawType = TypeRef(
       classifier = classifier,
@@ -141,6 +140,7 @@ fun KotlinType.toTypeRef(
         .take(classifier.typeParameters.size)
         .map {
           it.type.toTypeRef(
+            ctx = ctx,
             isStarProjection = it.isStarProjection,
             variance = it.projectionKind.convertVariance()
           )
@@ -150,18 +150,18 @@ fun KotlinType.toTypeRef(
             it + ctx.nullableAnyType
           else it
         },
-      isProvide = kotlinType.hasAnnotation(injektFqNames().provide),
-      isInject = kotlinType.hasAnnotation(injektFqNames().inject),
+      isProvide = kotlinType.hasAnnotation(ctx.injektFqNames.provide),
+      isInject = kotlinType.hasAnnotation(ctx.injektFqNames.inject),
       isStarProjection = false,
       frameworkKey = "",
       variance = variance,
       isError = isError
     )
 
-    val tagAnnotations = unwrapped.getTags(injektFqNames())
+    val tagAnnotations = unwrapped.getTags(ctx.injektFqNames)
     var r = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
-        .map { it.type.toTypeRef() }
+        .map { it.type.toTypeRef(ctx) }
         .map {
           it.copy(
             arguments = it.arguments,

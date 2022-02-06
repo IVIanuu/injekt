@@ -32,13 +32,13 @@ class InjektInspectionSuppressor : InspectionSuppressor {
           element.getResolutionFacade().analyze(element, BodyResolveMode.FULL)
             .let { element.getAbbreviatedTypeOrType(it) }
             .let {
-              return it?.getTags(element.injektFqNames())?.isNotEmpty() == true
+              return it?.getTags(element.ctx.injektFqNames)?.isNotEmpty() == true
             }
         else return false
       }
       "RedundantUnitReturnType" -> return element is KtUserType && element.text != "Unit"
       "RemoveExplicitTypeArguments" -> {
-        val injektFqNames = element.injektFqNames()
+        val injektFqNames = element.ctx.injektFqNames
         if (element !is KtTypeArgumentList) return false
         val call = element.parent as? KtCallExpression
         val bindingContext = call?.analyze() ?: return false
@@ -60,7 +60,7 @@ class InjektInspectionSuppressor : InspectionSuppressor {
         if (element !is LeafPsiElement) return false
         val typeParameter = element.parent.safeAs<KtTypeParameter>()
           ?: return false
-        val injektFqNames = element.injektFqNames()
+        val injektFqNames = element.ctx.injektFqNames
         return typeParameter.hasAnnotation(injektFqNames.spread) ||
             typeParameter.parent.parent is KtTypeAlias ||
             typeParameter.parent.parent.safeAs<KtClass>()

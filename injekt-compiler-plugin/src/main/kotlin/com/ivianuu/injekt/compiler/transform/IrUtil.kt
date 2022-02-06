@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.descriptors.*
@@ -26,82 +25,82 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassDescriptor.irClass(
-  @Inject ctx: Context,
+  ctx: Context,
   irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations
 ): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarations.localClasses
-      .single { it.descriptor.uniqueKey() == uniqueKey() }
+      .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
 
   return irCtx.referenceClass(fqNameSafe)!!.owner
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun ClassConstructorDescriptor.irConstructor(
-  @Inject ctx: Context,
+  ctx: Context,
   irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations
 ): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
     return localDeclarations.localClasses
-      .single { it.descriptor.uniqueKey() == constructedClass.uniqueKey() }
+      .single { it.descriptor.uniqueKey(ctx) == constructedClass.uniqueKey(ctx) }
       .constructors
-      .single { it.descriptor.uniqueKey() == uniqueKey() }
+      .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
 
   return irCtx.referenceConstructors(constructedClass.fqNameSafe)
-    .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
     .owner
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun FunctionDescriptor.irFunction(
-  @Inject ctx: Context,
+  ctx: Context,
   irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations
 ): IrFunction {
   if (visibility == DescriptorVisibilities.LOCAL)
     return localDeclarations.localFunctions.single {
-      it.descriptor.uniqueKey() == uniqueKey()
+      it.descriptor.uniqueKey(ctx) == uniqueKey(ctx)
     }
 
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
         return localDeclarations.localClasses.flatMap { it.declarations }
-          .single { it.descriptor.uniqueKey() == uniqueKey() }
+          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
           .cast()
 
   return irCtx.referenceFunctions(fqNameSafe)
-    .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
     .owner
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun PropertyDescriptor.irProperty(
-  @Inject ctx: Context,
+  ctx: Context,
   irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations
 ): IrProperty {
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
         return localDeclarations.localClasses.flatMap { it.declarations }
-          .single { it.descriptor.uniqueKey() == uniqueKey() }
+          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
           .cast()
 
   return irCtx.referenceProperties(fqNameSafe)
-    .single { it.descriptor.uniqueKey() == uniqueKey() }
+    .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
     .owner
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
-  @Inject irCtx: IrPluginContext,
+  irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations,
   ctx: Context
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
-    classifier.isTag -> arguments.last().toIrType()
+    classifier.isTag -> arguments.last().toIrType(irCtx, localDeclarations, ctx)
       .typeOrNull!!
       .cast<IrSimpleType>()
       .let { type ->
@@ -121,7 +120,7 @@ fun TypeRef.toIrType(
                   .typeWith(
                     arguments.dropLast(1)
                       .map {
-                        it.toIrType().typeOrNull ?: irCtx.irBuiltIns.anyNType
+                        it.toIrType(irCtx, localDeclarations, ctx).typeOrNull ?: irCtx.irBuiltIns.anyNType
                       }
                   )
               ).apply {
@@ -129,7 +128,7 @@ fun TypeRef.toIrType(
                   .forEach { index ->
                     putTypeArgument(
                       index,
-                      arguments[index].toIrType().typeOrNull!!
+                      arguments[index].toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
                     )
                   }
               }
@@ -138,31 +137,31 @@ fun TypeRef.toIrType(
         )
       }
     else -> {
-      val key = classifier.descriptor!!.uniqueKey()
+      val key = classifier.descriptor!!.uniqueKey(ctx)
       val fqName = FqName(key.split(":")[1])
       val irClassifier = localDeclarations.localClasses.singleOrNull {
-        it.descriptor.uniqueKey() == key
+        it.descriptor.uniqueKey(ctx) == key
       }
         ?.symbol
         ?: irCtx.referenceClass(fqName)
         ?: irCtx.referenceFunctions(fqName.parent())
           .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
+          .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
           ?.symbol
         ?: irCtx.referenceProperties(fqName.parent())
           .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey() == key }
+          .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
           ?.symbol
         ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
           ?.owner
           ?.typeParameters
-          ?.singleOrNull { it.descriptor.uniqueKey() == key }
+          ?.singleOrNull { it.descriptor.uniqueKey(ctx) == key }
           ?.symbol
         ?: error("Could not get for $fqName $key")
       IrSimpleTypeImpl(
         irClassifier,
         isMarkedNullable,
-        arguments.map { it.toIrType() },
+        arguments.map { it.toIrType(irCtx, localDeclarations, ctx) },
         emptyList()
       )
     }

@@ -245,9 +245,9 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   if (request.type.frameworkKey.isEmpty() &&
     !request.type.isFunctionType &&
     request.type.classifier != ctx.listClassifier &&
-    request.type.classifier.fqName != injektFqNames().typeKey &&
-    request.type.classifier.fqName != injektFqNames().sourceKey) {
-    TypeInjectablesScopeOrNull(request.type, this)
+    request.type.classifier.fqName != ctx.injektFqNames.typeKey &&
+    request.type.classifier.fqName != ctx.injektFqNames.sourceKey) {
+    TypeInjectablesScopeOrNull(request.type, this, ctx)
       .takeUnless { it.isEmpty }
       ?.run {
         recordLookup(lookupLocation)
@@ -486,8 +486,8 @@ private fun InjectablesScope.compareCallable(
   b!!
 
   if (compareCompilation) {
-    val isAExternal = a.callable.isExternalDeclaration()
-    val isBExternal = b.callable.isExternalDeclaration()
+    val isAExternal = a.callable.isExternalDeclaration(ctx)
+    val isBExternal = b.callable.isExternalDeclaration(ctx)
     if (!isAExternal && isBExternal) return -1
     if (!isBExternal && isAExternal) return 1
   }
@@ -558,12 +558,12 @@ private fun InjectablesScope.compareType(
   }
 
   if (a.classifier != b.classifier) {
-    val aSubTypeOfB = a.isSubTypeOf(b)
-    val bSubTypeOfA = b.isSubTypeOf(a)
+    val aSubTypeOfB = a.isSubTypeOf(b, ctx)
+    val bSubTypeOfA = b.isSubTypeOf(a, ctx)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
-    val aCommonSuperType = commonSuperType(a.superTypes)
-    val bCommonSuperType = commonSuperType(b.superTypes)
+    val aCommonSuperType = commonSuperType(a.superTypes, ctx = ctx)
+    val bCommonSuperType = commonSuperType(b.superTypes, ctx = ctx)
     val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
     if (diff < 0) return -1
     if (diff > 0) return 1
@@ -614,9 +614,9 @@ private fun InjectablesScope.computeImportSuggestions(
   failureRequest: InjectableRequest,
   lookupLocation: LookupLocation
 ): List<CallableRef> {
-  val candidates = collectImportSuggestionInjectables()
+  val candidates = collectImportSuggestionInjectables(ctx)
     .filter {
-      it.type.buildContext(failureRequest.type, allStaticTypeParameters).isOk
+      it.type.buildContext(failureRequest.type, allStaticTypeParameters, ctx = ctx).isOk
     }
     .sortedWith { a, b -> compareCallable(a, b, true) }
 
@@ -626,7 +626,7 @@ private fun InjectablesScope.computeImportSuggestions(
     if (successes.size >= 10) break
 
     val candidate = remaining.removeFirst()
-    val scope = ImportSuggestionInjectablesScope(this, candidate)
+    val scope = ImportSuggestionInjectablesScope(this, candidate, ctx)
 
     if (compareCallable(
         successes.firstOrNull()

@@ -73,15 +73,6 @@ class TagTest {
     """
   )
 
-  @Test fun testTaggedFunction() = singleAndMultiCodegen(
-    """ 
-      @Provide @Tag1 fun foo() = Foo()
-    """,
-    """
-      fun invoke() = inject<@Tag Foo>()
-    """
-  )
-
   @Test fun testTagWithValueParameters() = codegen(
     """ 
       @Tag annotation class MyTag(val value: String)

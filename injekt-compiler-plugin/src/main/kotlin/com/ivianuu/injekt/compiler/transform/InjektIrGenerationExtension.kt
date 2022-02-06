@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.*
@@ -23,22 +22,22 @@ var dumpAllFiles = false
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class InjektIrGenerationExtension(
   private val dumpDir: File,
-  @Inject private val injektFqNames: InjektFqNames
+  private val injektFqNames: InjektFqNames
 ) : IrGenerationExtension {
-  override fun generate(moduleFragment: IrModuleFragment, @Provide pluginContext: IrPluginContext) {
-    @Provide val ctx = Context(
+  override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+    val ctx = Context(
       pluginContext.moduleDescriptor,
       injektFqNames,
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
-    @Provide val localClassCollector = LocalDeclarations()
-    moduleFragment.transform(localClassCollector, null)
+    val localDeclarations = LocalDeclarations()
+    moduleFragment.transform(localDeclarations, null)
 
-    moduleFragment.transform(InjectCallTransformer(), null)
+    moduleFragment.transform(InjectCallTransformer(localDeclarations, pluginContext, ctx), null)
 
     moduleFragment.patchDeclarationParents()
-    moduleFragment.dumpToFiles(dumpDir)
-    moduleFragment.fixComposeFunInterfacesPreCompose()
+    moduleFragment.dumpToFiles(dumpDir, pluginContext)
+    moduleFragment.fixComposeFunInterfacesPreCompose(ctx, pluginContext)
   }
 
   @OptIn(ObsoleteDescriptorBasedAPI::class)

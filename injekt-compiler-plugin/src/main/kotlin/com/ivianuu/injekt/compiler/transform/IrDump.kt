@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.declarations.*
@@ -13,7 +12,7 @@ import org.jetbrains.kotlin.ir.util.*
 import java.io.*
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-fun IrModuleFragment.dumpToFiles(dumpDir: File, @Inject irCtx: IrPluginContext) {
+fun IrModuleFragment.dumpToFiles(dumpDir: File, irCtx: IrPluginContext) {
   files
     .filter {
       dumpAllFiles || irCtx.bindingContext[InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,

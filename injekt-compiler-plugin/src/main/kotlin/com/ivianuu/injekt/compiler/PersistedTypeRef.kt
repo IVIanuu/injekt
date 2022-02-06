@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import kotlinx.serialization.*
 
 @Serializable data class PersistedTypeRef(
@@ -17,29 +16,29 @@ import kotlinx.serialization.*
   val isInject: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(@Inject ctx: Context): PersistedTypeRef =
+fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef =
   PersistedTypeRef(
-    classifierKey = classifier.descriptor?.uniqueKey() ?: "",
-    arguments = arguments.map { it.toPersistedTypeRef() },
+    classifierKey = classifier.descriptor?.uniqueKey(ctx) ?: "",
+    arguments = arguments.map { it.toPersistedTypeRef(ctx) },
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
     isInject = isInject
   )
 
-fun PersistedTypeRef.toTypeRef(@Inject ctx: Context): TypeRef {
+fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = classifierDescriptorForKey(classifierKey)
-    .toClassifierRef()
+  val classifier = classifierDescriptorForKey(classifierKey, ctx)
+    .toClassifierRef(ctx)
   val arguments = if (classifier.isTag) {
     arguments
-      .map { it.toTypeRef() } +
+      .map { it.toTypeRef(ctx) } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
             ctx.nullableAnyType
           else null
         )
-  } else arguments.map { it.toTypeRef() }
+  } else arguments.map { it.toTypeRef(ctx) }
   return classifier.untaggedType.copy(
     arguments = arguments,
     isMarkedNullable = isMarkedNullable,

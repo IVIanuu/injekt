@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
@@ -194,7 +193,7 @@ interface InjektErrors {
 }
 
 private fun InjectionGraph.Error.render(): String = buildString {
-  @Provide val ctx = this@render.scope.ctx
+  val ctx = this@render.scope.ctx
 
   var indent = 0
   fun withIndent(block: () -> Unit) {
@@ -276,7 +275,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       callContext: CallContext
     ) {
       if (candidate is ProviderInjectable) {
-        when (candidate.type.callContext()) {
+        when (candidate.type.callContext(ctx)) {
           CallContext.DEFAULT -> {}
           CallContext.COMPOSABLE -> append("@Composable ")
           CallContext.SUSPEND -> append("suspend ")
@@ -322,7 +321,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
             failure.candidate,
-            if (candidate is ProviderInjectable) request.type.callContext() else callContext
+            if (candidate is ProviderInjectable) request.type.callContext(ctx) else callContext
           )
         } else {
           append("/* ")
@@ -368,7 +367,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         failureRequest,
         failure,
         null,
-        if (failureRequest.type.isFunctionType) failureRequest.type.callContext()
+        if (failureRequest.type.isFunctionType) failureRequest.type.callContext(ctx)
         else scope.callContext
       )
     }

@@ -8,7 +8,6 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
-  id("com.ivianuu.shaded_injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")

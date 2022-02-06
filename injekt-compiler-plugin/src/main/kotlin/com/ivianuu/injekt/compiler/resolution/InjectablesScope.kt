@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.psi.*
@@ -28,7 +27,7 @@ class InjectablesScope(
   imports: List<ResolvedProviderImport> = emptyList(),
   val typeParameters: List<ClassifierRef> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
-  @Inject @Provide val ctx: Context
+  val ctx: Context
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
@@ -45,8 +44,8 @@ class InjectablesScope(
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val parameterTypes: Map<Int, TypeRef>
   ) {
-    constructor(callable: CallableRef, @Inject ctx: Context) : this(
-      callable.callable.uniqueKey(),
+    constructor(callable: CallableRef, ctx: Context) : this(
+      callable.callable.uniqueKey(ctx),
       callable.originalType,
       callable.typeArguments,
       callable.parameterTypes
@@ -104,14 +103,15 @@ class InjectablesScope(
         addInjectable = { callable ->
           injectables += callable
           val typeWithFrameworkKey = callable.type
-            .copy(frameworkKey = callable.callable.uniqueKey())
+            .copy(frameworkKey = callable.callable.uniqueKey(ctx))
           injectables += callable.copy(type = typeWithFrameworkKey)
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
         addSpreadingInjectable = { callable ->
-          if (spreadingInjectableKeys.add(InjectableKey(callable)))
+          if (spreadingInjectableKeys.add(InjectableKey(callable, ctx)))
             spreadingInjectables += SpreadingInjectable(callable)
-        }
+        },
+        ctx = ctx
       )
 
     val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
@@ -145,11 +145,11 @@ class InjectablesScope(
     parent?.recordLookup(lookupLocation, visitedScopes)
     typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
     for (import in imports) {
-      memberScopeForFqName(import.packageFqName, lookupLocation)
+      memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
         ?.first
         ?.recordLookup(injectablesLookupName, lookupLocation)
       if (import.importPath!!.endsWith(".**")) {
-        memberScopeForFqName(import.packageFqName, lookupLocation)
+        memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
           ?.first
           ?.recordLookup(subInjectablesLookupName, lookupLocation)
       }
@@ -183,11 +183,11 @@ class InjectablesScope(
 
         for (candidate in injectables) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-          val context = candidate.type.buildContext(key.type, key.staticTypeParameters)
+          val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
           this += CallableInjectable(
             this@InjectablesScope,
-            candidate.substitute(context.fixedTypeVariables)
+            candidate.substitute(context.fixedTypeVariables, ctx)
           )
         }
       }
@@ -198,7 +198,7 @@ class InjectablesScope(
     when {
       request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
-        else request.type.callContext()
+        else request.type.callContext(ctx)
         return ProviderInjectable(
           type = request.type,
           ownerScope = this,
@@ -227,14 +227,14 @@ class InjectablesScope(
           )
         }
 
-        val typeScope = TypeInjectablesScopeOrNull(request.type, this)
+        val typeScope = TypeInjectablesScopeOrNull(request.type, this, ctx)
           .takeUnless { it.isEmpty }
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
       }
-      request.type.classifier.fqName == injektFqNames().typeKey ->
+      request.type.classifier.fqName == ctx.injektFqNames.typeKey ->
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == injektFqNames().sourceKey ->
+      request.type.classifier.fqName == ctx.injektFqNames.sourceKey ->
         return SourceKeyInjectable(request.type, this)
       else -> return null
     }
@@ -254,12 +254,12 @@ class InjectablesScope(
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
 
           var context =
-            candidate.type.buildContext(singleElementType, key.staticTypeParameters)
+            candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk)
-            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
+            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
 
-          val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
+          val substitutedCandidate = candidate.substitute(context.fixedTypeVariables, ctx)
 
           val typeWithFrameworkKey = substitutedCandidate.type.copy(
             frameworkKey = UUID.randomUUID().toString()
@@ -269,7 +269,7 @@ class InjectablesScope(
 
           injectables += finalCandidate
 
-          this[InjectableKey(finalCandidate)] = finalCandidate
+          this[InjectableKey(finalCandidate, ctx)] = finalCandidate
         }
       }
 
@@ -311,11 +311,11 @@ class InjectablesScope(
             candidateType.add()
         }
       }
-      singleElementType.classifier.fqName == injektFqNames().sourceKey -> listOf(
+      singleElementType.classifier.fqName == ctx.injektFqNames.sourceKey -> listOf(
         ctx.sourceKeyClassifier!!.defaultType
           .copy(frameworkKey = UUID.randomUUID().toString())
       )
-      singleElementType.classifier.fqName == injektFqNames().typeKey -> listOf(singleElementType)
+      singleElementType.classifier.fqName == ctx.injektFqNames.typeKey -> listOf(singleElementType)
       else -> emptyList()
     }
 
@@ -334,7 +334,8 @@ class InjectablesScope(
     val (context, substitutionMap) = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
       candidateType,
-      allStaticTypeParameters
+      allStaticTypeParameters,
+      ctx
     )
     if (!context.isOk) return
 
@@ -368,7 +369,7 @@ class InjectablesScope(
         val innerCallableWithFrameworkKey = finalInnerCallable.copy(
           type = finalInnerCallable.type.copy(
             frameworkKey = spreadingInjectable.callable.type.frameworkKey
-              .nextFrameworkKey(finalInnerCallable.callable.uniqueKey())
+              .nextFrameworkKey(finalInnerCallable.callable.uniqueKey(ctx))
               .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
@@ -379,13 +380,14 @@ class InjectablesScope(
       addSpreadingInjectable = { newInnerCallable ->
         val finalNewInnerInjectable = newInnerCallable
           .copy(originalType = newInnerCallable.type)
-        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable))) {
+        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable, ctx))) {
           val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
           spreadingInjectables += newSpreadingInjectable
           for (candidate in spreadingInjectableCandidateTypes.toList())
             spreadInjectables(newSpreadingInjectable, candidate)
         }
-      }
+      },
+      ctx = ctx
     )
   }
 
@@ -400,7 +402,7 @@ class InjectablesScope(
         (callable !is ReceiverParameterDescriptor ||
             callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(injektFqNames().provide))
+            originalType.classifier.descriptor!!.hasAnnotation(ctx.injektFqNames.provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

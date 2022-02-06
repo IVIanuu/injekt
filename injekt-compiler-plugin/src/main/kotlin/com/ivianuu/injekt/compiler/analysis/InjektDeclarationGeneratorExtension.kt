@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.container.*
@@ -24,7 +23,7 @@ class InjektDeclarationGeneratorExtension(
   private val modifiedFiles: List<File>?,
   private val removedFiles: List<File>?,
   private val withCompilation: Boolean,
-  @Inject private val injektFqNames: InjektFqNames
+  private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
   private val backupDir = cacheDir.resolve("backups")
 
@@ -74,7 +73,7 @@ class InjektDeclarationGeneratorExtension(
       }
     }
 
-    @Provide val ctx = Context(module, injektFqNames, bindingTrace)
+    val ctx = Context(module, injektFqNames, bindingTrace)
 
     files.forEach { file ->
       // Copy recursively, including last-modified-time of file and its parent dirs.
@@ -98,7 +97,7 @@ class InjektDeclarationGeneratorExtension(
       }
 
       if (modifiedFiles == null || file.virtualFilePath in modifiedFiles.map { it.absolutePath }) {
-        processFile(module, file).forEach { generatedFile ->
+        processFile(module, file, ctx).forEach { generatedFile ->
           fileMap.getOrPut(file.virtualFilePath) { mutableSetOf() } += generatedFile.absolutePath
           copy(generatedFile, generatedFile.backupFile(), true)
         }
@@ -143,7 +142,7 @@ class InjektDeclarationGeneratorExtension(
   private fun processFile(
     module: ModuleDescriptor,
     file: KtFile,
-    @Inject ctx: Context
+    ctx: Context
   ): List<File> {
     val injectables = mutableListOf<KtNamedDeclaration>()
 
@@ -174,7 +173,7 @@ class InjektDeclarationGeneratorExtension(
     if (injectables.isEmpty()) return emptyList()
 
     val markerName = "_${
-      module.moduleName()
+      module.moduleName(ctx)
         .filter { it.isLetterOrDigit() }
     }_${
       file.name.removeSuffix(".kt")
@@ -183,9 +182,9 @@ class InjektDeclarationGeneratorExtension(
     }_ProvidersMarker"
 
     return buildList {
-      this += injectablesFile(file, markerName, injectables)
-      subInjectableFiles(file, markerName, injectables)
-      this += indicesFile(file, markerName, injectables)
+      this += injectablesFile(file, markerName, injectables, ctx)
+      subInjectableFiles(file, markerName, injectables, ctx)
+      this += indicesFile(file, markerName, injectables, ctx)
     }
   }
 
@@ -193,7 +192,7 @@ class InjektDeclarationGeneratorExtension(
     file: KtFile,
     markerName: String,
     injectables: List<KtNamedDeclaration>,
-    @Inject ctx: Context
+    ctx: Context
   ): File {
     val injectablesCode = buildString {
       appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
@@ -247,7 +246,7 @@ class InjektDeclarationGeneratorExtension(
     file: KtFile,
     markerName: String,
     injectables: List<KtNamedDeclaration>,
-    @Inject ctx: Context
+    ctx: Context
   ) {
     if (file.packageFqName.isRoot) return
     var current = file.packageFqName
@@ -309,7 +308,7 @@ class InjektDeclarationGeneratorExtension(
     file: KtFile,
     markerName: String,
     injectables: List<KtNamedDeclaration>,
-    @Inject ctx: Context
+    ctx: Context
   ): File {
     val indicesCode = buildString {
       appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")

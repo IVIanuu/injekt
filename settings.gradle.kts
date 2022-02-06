@@ -3,19 +3,17 @@
  */
 
 include(
-    ":injekt-android",
-    ":injekt-android-work",
-    ":injekt-common",
-    ":injekt-compiler-plugin",
-    ":injekt-compiler-plugin-shaded",
-    ":injekt-core",
-    ":injekt-coroutines",
-    ":injekt-gradle-plugin",
-    ":injekt-gradle-plugin-shaded",
-    ":injekt-ide-plugin",
-    ":integration-tests",
-    ":samples:type-classes",
-    ":test-util",
-    "samples:android-app",
-    "samples:coffee-maker"
+  ":injekt-android",
+  ":injekt-android-work",
+  ":injekt-common",
+  ":injekt-compiler-plugin",
+  ":injekt-core",
+  ":injekt-coroutines",
+  ":injekt-gradle-plugin",
+  ":injekt-ide-plugin",
+  ":integration-tests",
+  ":samples:type-classes",
+  ":test-util",
+  "samples:android-app",
+  "samples:coffee-maker"
 )

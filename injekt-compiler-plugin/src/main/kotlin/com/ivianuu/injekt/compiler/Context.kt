@@ -5,16 +5,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
-
-inline fun injektFqNames(@Inject ctx: Context) = ctx.injektFqNames
-
-inline fun trace(@Inject ctx: Context) = ctx.trace
-
-inline fun module(@Inject ctx: Context) = ctx.module
 
 @Suppress("NewApi")
 class Context(
@@ -28,21 +21,21 @@ class Context(
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
-  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }
-  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef() }
-  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef() }
+  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef(ctx) }
+  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef(ctx) }
+  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef(ctx = ctx) }
+  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
   val sourceKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().sourceKey)
-    )?.toClassifierRef()
+      ClassId.topLevel(ctx.injektFqNames.sourceKey)
+    )?.toClassifierRef(ctx)
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(injektFqNames().typeKey)
-    )?.toClassifierRef()
+      ClassId.topLevel(ctx.injektFqNames.typeKey)
+    )?.toClassifierRef(ctx)
   }
 }

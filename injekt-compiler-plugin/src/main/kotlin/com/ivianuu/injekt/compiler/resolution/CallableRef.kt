@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.descriptors.*
 
 data class CallableRef(
@@ -21,7 +20,7 @@ data class CallableRef(
 
 fun CallableRef.substitute(
   map: Map<ClassifierRef, TypeRef>,
-  @Inject ctx: Context
+  ctx: Context
 ): CallableRef {
   if (map == typeArguments) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
@@ -47,10 +46,10 @@ fun CallableRef.substitute(
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-fun CallableDescriptor.toCallableRef(@Inject ctx: Context): CallableRef =
-  trace()!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
-    val info = callableInfo()
-    val typeParameters = typeParameters.map { it.toClassifierRef() }
+fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
+  ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
+    val info = callableInfo(ctx)
+    val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
 
     CallableRef(
       callable = this,

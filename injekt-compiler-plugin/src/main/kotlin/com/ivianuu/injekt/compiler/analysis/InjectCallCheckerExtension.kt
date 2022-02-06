@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
@@ -15,7 +14,7 @@ import org.jetbrains.kotlin.resolve.extensions.*
 
 class InjectCallCheckerExtension(
   private val withDeclarationGenerator: Boolean,
-  @Inject private val injektFqNames: InjektFqNames
+  private val injektFqNames: InjektFqNames
 ) : AnalysisHandlerExtension {
   private var completionCount = 0
 

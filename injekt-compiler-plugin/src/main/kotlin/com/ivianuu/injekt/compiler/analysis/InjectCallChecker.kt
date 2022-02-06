@@ -6,28 +6,27 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import com.ivianuu.shaded_injekt.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 
-class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() {
+class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
   override fun visitCallExpression(expression: KtCallExpression) {
     super.visitCallExpression(expression)
-    expression.getResolvedCall(trace()!!.bindingContext)
+    expression.getResolvedCall(ctx.trace!!.bindingContext)
       ?.let { checkCall(it) }
   }
 
   override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
     super.visitSimpleNameExpression(expression)
-    expression.getResolvedCall(trace()!!.bindingContext)
+    expression.getResolvedCall(ctx.trace!!.bindingContext)
       ?.let { checkCall(it) }
   }
 
   override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
     super.visitConstructorDelegationCall(call)
-    call.getResolvedCall(trace()!!.bindingContext)
+    call.getResolvedCall(ctx.trace!!.bindingContext)
       ?.let { checkCall(it) }
   }
 
@@ -46,7 +45,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
 
     val substitutionMap = buildMap<ClassifierRef, TypeRef> {
       for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef()] = argument.toTypeRef()
+        this[parameter.toClassifierRef(ctx)] = argument.toTypeRef(ctx)
 
       fun TypeRef.putAll() {
         for ((index, parameter) in classifier.typeParameters.withIndex()) {
@@ -56,26 +55,26 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef()?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef()?.putAll()
+      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
+      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
     }
 
     val callee = resultingDescriptor
-      .toCallableRef()
-      .substitute(substitutionMap)
+      .toCallableRef(ctx)
+      .substitute(substitutionMap, ctx)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
 
     val requests = callee.callable.valueParameters
       .transform {
-        if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject())
-          add(it.toInjectableRequest(callee))
+        if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject(ctx))
+          add(it.toInjectableRequest(callee, ctx))
       }
 
     if (requests.isEmpty()) return
 
-    val scope = ElementInjectablesScope(callExpression)
+    val scope = ElementInjectablesScope(ctx, callExpression)
     val graph = scope.resolveRequests(
       callee,
       requests,
@@ -84,7 +83,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
       if (result is ResolutionResult.Success.WithCandidate.Value &&
         result.candidate is CallableInjectable) {
         result.candidate.callable.import?.element?.let {
-          trace()!!.record(
+          ctx.trace!!.record(
             InjektWritableSlices.USED_IMPORT,
             SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
             Unit
@@ -95,12 +94,12 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
 
     when (graph) {
       is InjectionGraph.Success -> {
-        trace()!!.record(
+        ctx.trace!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
           file.virtualFilePath,
           Unit
         )
-        trace()!!.record(
+        ctx.trace!!.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
             file.virtualFilePath,
@@ -110,7 +109,7 @@ class InjectCallChecker(@Inject private val ctx: Context) : KtTreeVisitorVoid() 
           graph
         )
       }
-      is InjectionGraph.Error -> trace()!!.report(
+      is InjectionGraph.Error -> ctx.trace!!.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
       )
     }

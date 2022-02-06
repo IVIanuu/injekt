@@ -26,12 +26,12 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.jvm.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun PsiElement.injektFqNames() = module
+fun PsiElement.ctx.injektFqNames = module
   ?.getOptionValueInFacet(RootPackageOption)
   ?.let { InjektFqNames(FqName(it)) }
   ?: InjektFqNames.Default
 
-fun ModuleDescriptor.injektFqNames(): InjektFqNames = moduleInfo?.unwrapModuleSourceInfo()?.module
+fun ModuleDescriptor.ctx.injektFqNames: InjektFqNames = moduleInfo?.unwrapModuleSourceInfo()?.module
   ?.getOptionValueInFacet(RootPackageOption)
   ?.let { InjektFqNames(FqName(it)) }
   ?: InjektFqNames.Default
@@ -52,8 +52,8 @@ fun Module.getOptionValueInFacet(option: AbstractCliOption): String? {
 fun PsiElement.ktElementOrNull() = safeAs<KtDeclaration>()
   ?: safeAs<KtLightDeclaration<*, *>>()?.kotlinOrigin
 
-fun KtAnnotated.isProvideOrInjectDeclaration(): Boolean = hasAnnotation(injektFqNames().provide) ||
-    (this is KtParameter && hasAnnotation(injektFqNames().inject)) ||
+fun KtAnnotated.isProvideOrInjectDeclaration(): Boolean = hasAnnotation(ctx.injektFqNames.provide) ||
+    (this is KtParameter && hasAnnotation(ctx.injektFqNames.inject)) ||
     safeAs<KtParameter>()?.getParentOfType<KtFunction>(false)
       ?.isProvideOrInjectDeclaration() == true ||
     safeAs<KtConstructor<*>>()?.getContainingClassOrObject()
