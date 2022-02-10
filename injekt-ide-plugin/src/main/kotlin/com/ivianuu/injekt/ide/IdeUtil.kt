@@ -26,12 +26,12 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.jvm.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun PsiElement.ctx.injektFqNames = module
+fun PsiElement.injektFqNames(ctx: Context) = module
   ?.getOptionValueInFacet(RootPackageOption)
   ?.let { InjektFqNames(FqName(it)) }
   ?: InjektFqNames.Default
 
-fun ModuleDescriptor.ctx.injektFqNames: InjektFqNames = moduleInfo?.unwrapModuleSourceInfo()?.module
+fun ModuleDescriptor.injektFqNames(ctx: Context): InjektFqNames = moduleInfo?.unwrapModuleSourceInfo()?.module
   ?.getOptionValueInFacet(RootPackageOption)
   ?.let { InjektFqNames(FqName(it)) }
   ?: InjektFqNames.Default
