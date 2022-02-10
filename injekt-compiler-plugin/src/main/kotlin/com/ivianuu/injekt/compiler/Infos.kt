@@ -35,7 +35,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
   else ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
     if (isDeserializedDeclaration()) {
       val info = annotations
-        .findAnnotation(ctx.injektFqNames.callableInfo)
+        .findAnnotation(InjektFqNames.CallableInfo)
         ?.readChunkedValue()
         ?.decode<PersistedCallableInfo>()
         ?.toCallableInfo(ctx)
@@ -78,7 +78,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
       val tags = if (this is ConstructorDescriptor)
         buildList {
           addAll(constructedClass.classifierInfo(ctx).tags)
-          for (tagAnnotation in getTags(ctx.injektFqNames))
+          for (tagAnnotation in getTags())
             add(tagAnnotation.type.toTypeRef(ctx))
         }
       else emptyList()
@@ -107,7 +107,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
       safeAs<ConstructorDescriptor>()?.visibility?.shouldPersistInfo() != true)
         return
 
-  if (hasAnnotation(ctx.injektFqNames.callableInfo))
+  if (hasAnnotation(InjektFqNames.CallableInfo))
     return
 
   val shouldPersistInfo = info.type.shouldBePersisted() ||
@@ -120,7 +120,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
   updateAnnotation(
     AnnotationDescriptorImpl(
       ctx.module.findClassAcrossModuleDependencies(
-        ClassId.topLevel(ctx.injektFqNames.callableInfo)
+        ClassId.topLevel(InjektFqNames.CallableInfo)
       )?.defaultType ?: return,
       mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
       SourceElement.NO_SOURCE
@@ -166,7 +166,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       (if (this is TypeParameterDescriptor) {
         containingDeclaration
           .annotations
-          .findAnnotation(ctx.injektFqNames.typeParameterInfo)
+          .findAnnotation(InjektFqNames.TypeParameterInfo)
           ?.readChunkedValue()
           ?.split("=:=")
           ?.get(cast<TypeParameterDescriptor>().index)
@@ -175,7 +175,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           ?.toClassifierInfo(ctx)
       } else {
         annotations
-          .findAnnotation(ctx.injektFqNames.classifierInfo)
+          .findAnnotation(InjektFqNames.ClassifierInfo)
           ?.readChunkedValue()
           ?.cast<String>()
           ?.decode<PersistedClassifierInfo>()
@@ -188,7 +188,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
       ?.toTypeRef(ctx)
 
-    val isTag = hasAnnotation(ctx.injektFqNames.tag)
+    val isTag = hasAnnotation(InjektFqNames.Tag)
 
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
@@ -198,7 +198,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       }
     }
 
-    val tags = getTags(ctx.injektFqNames)
+    val tags = getTags()
       .map { it.type.toTypeRef(ctx) }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
@@ -211,9 +211,9 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       )
     } else {
       val info = if (this is TypeParameterDescriptor) {
-        val isSpread = hasAnnotation(ctx.injektFqNames.spread) ||
+        val isSpread = hasAnnotation(InjektFqNames.Spread) ||
             findPsi()?.safeAs<KtTypeParameter>()
-              ?.hasAnnotation(ctx.injektFqNames.spread) == true
+              ?.hasAnnotation(InjektFqNames.Spread) == true
 
         ClassifierInfo(
           tags = emptyList(),
@@ -291,7 +291,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (!info.isSpread && info.superTypes.none { it.shouldBePersisted() }) return
 
     fun loadTypeParameterInfos() = (container.annotations
-      .findAnnotation(ctx.injektFqNames.typeParameterInfo)
+      .findAnnotation(InjektFqNames.TypeParameterInfo)
       ?.readChunkedValue()
       ?.split("=:=")
       ?: run {
@@ -303,20 +303,20 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       }).toMutableList()
 
     val initialInfosAnnotation = container.annotations
-      .findAnnotation(ctx.injektFqNames.typeParameterInfo)
+      .findAnnotation(InjektFqNames.TypeParameterInfo)
     val initialTypeParameterInfos = loadTypeParameterInfos()
     if (initialTypeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo(ctx).encode()
       // load again if the annotation has changed
       val finalTypeParameterInfos =
-        if (container.annotations.findAnnotation(ctx.injektFqNames.typeParameterInfo) !=
+        if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfo) !=
           initialInfosAnnotation) loadTypeParameterInfos()
       else initialTypeParameterInfos
       finalTypeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           ctx.module.findClassAcrossModuleDependencies(
-            ClassId.topLevel(ctx.injektFqNames.typeParameterInfo)
+            ClassId.topLevel(InjektFqNames.TypeParameterInfo)
           )?.defaultType ?: return,
           mapOf("values".asNameId() to finalTypeParameterInfos.joinToString("=:=").toChunkedArrayValue()),
           SourceElement.NO_SOURCE
@@ -331,14 +331,14 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
       info.superTypes.none { it.shouldBePersisted() } &&
       !info.declaresInjectables) return
 
-    if (hasAnnotation(ctx.injektFqNames.classifierInfo)) return
+    if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
     val serializedInfo = info.toPersistedClassifierInfo(ctx).encode()
 
     updateAnnotation(
       AnnotationDescriptorImpl(
         ctx.module.findClassAcrossModuleDependencies(
-          ClassId.topLevel(ctx.injektFqNames.classifierInfo)
+          ClassId.topLevel(InjektFqNames.ClassifierInfo)
         )?.defaultType ?: return,
         mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
         SourceElement.NO_SOURCE

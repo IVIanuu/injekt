@@ -245,8 +245,8 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   if (request.type.frameworkKey.isEmpty() &&
     !request.type.isFunctionType &&
     request.type.classifier != ctx.listClassifier &&
-    request.type.classifier.fqName != ctx.injektFqNames.typeKey &&
-    request.type.classifier.fqName != ctx.injektFqNames.sourceKey) {
+    request.type.classifier.fqName != InjektFqNames.TypeKey &&
+    request.type.classifier.fqName != InjektFqNames.SourceKey) {
     TypeInjectablesScopeOrNull(request.type, this, ctx)
       .takeUnless { it.isEmpty }
       ?.run {

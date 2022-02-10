@@ -10,12 +10,8 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 
 @Suppress("NewApi")
-class Context(
-  val module: ModuleDescriptor,
-  val injektFqNames: InjektFqNames,
-  val trace: BindingTrace?
-) : TypeCheckerContext {
-  fun withTrace(trace: BindingTrace?) = Context(module, injektFqNames, trace)
+class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
+  fun withTrace(trace: BindingTrace?) = Context(module, trace)
 
   override val ctx: Context get() = this
 
@@ -29,13 +25,11 @@ class Context(
     anyType.copy(isMarkedNullable = true)
   }
   val sourceKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(ctx.injektFqNames.sourceKey)
-    )?.toClassifierRef(ctx)
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.SourceKey))
+      ?.toClassifierRef(ctx)
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(
-      ClassId.topLevel(ctx.injektFqNames.typeKey)
-    )?.toClassifierRef(ctx)
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
+      ?.toClassifierRef(ctx)
   }
 }

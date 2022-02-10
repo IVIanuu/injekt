@@ -11,15 +11,13 @@ import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
 import org.jetbrains.kotlin.synthetic.*
 
-class InjektStorageComponentContainerContributor(
-  private val injektFqNames: (ModuleDescriptor) -> InjektFqNames
-) : StorageComponentContainerContributor {
+class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
   override fun registerModuleComponents(
     container: StorageComponentContainer,
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    val ctx = Context(moduleDescriptor, injektFqNames(moduleDescriptor), null)
+    val ctx = Context(moduleDescriptor, null)
 
     val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
       StorageComponentContainer::class,

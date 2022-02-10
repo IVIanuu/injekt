@@ -147,7 +147,7 @@ private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
       ?.getParentOfType<KtClassOrObject>(false) != this)
     return true
 
-  if (this is KtAnnotatedExpression && hasAnnotation(ctx.injektFqNames.providers))
+  if (this is KtAnnotatedExpression && hasAnnotation(InjektFqNames.Providers))
     return true
 
   if (this is KtClass && position.getParentOfType<KtSuperTypeList>(false) == null) {

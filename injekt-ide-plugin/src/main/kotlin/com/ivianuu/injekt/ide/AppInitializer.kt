@@ -25,11 +25,11 @@ class AppInitializer : ApplicationInitializedListener {
           override fun projectOpened(project: Project) {
             StorageComponentContainerContributor.registerExtension(
               project,
-              InjektStorageComponentContainerContributor { it.ctx.injektFqNames }
+              InjektStorageComponentContainerContributor()
             )
             SyntheticScopeProviderExtension.registerExtension(
               project,
-              InjectSyntheticScopeProviderExtension(injektFqNames = { it.ctx.injektFqNames }) {
+              InjectSyntheticScopeProviderExtension() {
                 it.isInjektEnabled()
               }
             )

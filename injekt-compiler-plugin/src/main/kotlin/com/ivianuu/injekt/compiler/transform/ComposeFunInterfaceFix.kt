@@ -45,7 +45,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
           if (!declaration.hasComposableAnnotation()) {
             declaration.annotations += DeclarationIrBuilder(irCtx, declaration.symbol)
               .irCallConstructor(
-                irCtx.referenceConstructors(ctx.injektFqNames.composable)
+                irCtx.referenceConstructors(InjektFqNames.Composable)
                   .single(),
                 emptyList()
               )
@@ -59,7 +59,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
                 if (!it.owner.hasComposableAnnotation()) {
                   it.owner.annotations += DeclarationIrBuilder(irCtx, it.owner.symbol)
                     .irCallConstructor(
-                      irCtx.referenceConstructors(ctx.injektFqNames.composable)
+                      irCtx.referenceConstructors(InjektFqNames.Composable)
                         .single(),
                       emptyList()
                     )
@@ -78,7 +78,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
           if (!declaration.hasComposableAnnotation()) {
             declaration.annotations += DeclarationIrBuilder(irCtx, declaration.symbol)
               .irCallConstructor(
-                irCtx.referenceConstructors(ctx.injektFqNames.composable)
+                irCtx.referenceConstructors(InjektFqNames.Composable)
                   .single(),
                 emptyList()
               )
@@ -109,7 +109,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
             .add(
               DeclarationIrBuilder(irCtx, result.symbol)
                 .irCallConstructor(
-                  irCtx.referenceConstructors(ctx.injektFqNames.composable)
+                  irCtx.referenceConstructors(InjektFqNames.Composable)
                     .single(),
                   emptyList()
                 )
@@ -133,8 +133,8 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(ctx: Context) {
         if (declaration.hasComposableAnnotation()) {
           declaration.annotations = declaration.annotations
             .transform {
-              if (it.type.classifierOrFail.descriptor.fqNameSafe != ctx.injektFqNames.composable ||
-                  none { it.type.classifierOrFail.descriptor.fqNameSafe == ctx.injektFqNames.composable })
+              if (it.type.classifierOrFail.descriptor.fqNameSafe != InjektFqNames.Composable ||
+                  none { it.type.classifierOrFail.descriptor.fqNameSafe == InjektFqNames.Composable })
                     add(it)
             }
 
@@ -160,6 +160,6 @@ private fun IrType.isComposableFunInterface(ctx: Context): Boolean {
   val classifier = classifierOrNull?.descriptor?.toClassifierRef(ctx) ?: return false
   return classifier.descriptor!!.safeAs<ClassDescriptor>()?.isFun == true &&
       classifier.defaultType.anySuperType {
-        it.classifier.fqName == ctx.injektFqNames.composable
+        it.classifier.fqName == InjektFqNames.Composable
       }
 }

@@ -22,7 +22,7 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
   ) {
     val resulting = resolvedCall.resultingDescriptor
     if (resulting !is ConstructorDescriptor ||
-        resulting.constructedClass.fqNameSafe != baseCtx.injektFqNames.providers)
+        resulting.constructedClass.fqNameSafe != InjektFqNames.Providers)
           return
     val ctx = baseCtx.withTrace(context.trace)
     val imports = resolvedCall.getProviderImports(ctx)

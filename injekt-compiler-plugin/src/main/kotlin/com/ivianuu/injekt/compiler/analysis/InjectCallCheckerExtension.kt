@@ -12,10 +12,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.extensions.*
 
-class InjectCallCheckerExtension(
-  private val withDeclarationGenerator: Boolean,
-  private val injektFqNames: InjektFqNames
-) : AnalysisHandlerExtension {
+class InjectCallCheckerExtension(private val withDeclarationGenerator: Boolean) : AnalysisHandlerExtension {
   private var completionCount = 0
 
   override fun analysisCompleted(
@@ -29,7 +26,7 @@ class InjectCallCheckerExtension(
     if (completionCount > 0 && !withDeclarationGenerator)
       return null.also { completionCount++ }
 
-    val checker = InjectCallChecker(Context(module, injektFqNames, bindingTrace))
+    val checker = InjectCallChecker(Context(module, bindingTrace))
     files.forEach { it.accept(checker) }
 
     return null

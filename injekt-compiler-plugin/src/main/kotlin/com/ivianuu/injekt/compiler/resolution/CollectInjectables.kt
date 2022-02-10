@@ -133,9 +133,9 @@ fun ResolutionScope.collectInjectables(
         if (declaration.isProvide(ctx) &&
           (declaration !is PropertyDescriptor ||
               classBodyView ||
-              declaration.hasAnnotation(ctx.injektFqNames.provide) ||
+              declaration.hasAnnotation(InjektFqNames.Provide) ||
               declaration.primaryConstructorPropertyValueParameter(ctx)
-                ?.hasAnnotation(ctx.injektFqNames.provide) == true)) {
+                ?.hasAnnotation(InjektFqNames.Provide) == true)) {
           consumer(declaration.toCallableRef(ctx))
         }
       }
@@ -151,8 +151,8 @@ fun Annotated.isProvide(ctx: Context): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return ctx.trace!!.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
-    var isProvide = hasAnnotation(ctx.injektFqNames.provide) ||
-        hasAnnotation(ctx.injektFqNames.inject)
+    var isProvide = hasAnnotation(InjektFqNames.Provide) ||
+        hasAnnotation(InjektFqNames.Inject)
 
     if (!isProvide && this is PropertyDescriptor)
       isProvide = primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true
@@ -177,7 +177,7 @@ fun Annotated.isInject(ctx: Context): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return ctx.trace!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
-    var isInject = hasAnnotation(ctx.injektFqNames.inject)
+    var isInject = hasAnnotation(InjektFqNames.Inject)
 
     if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true
@@ -202,8 +202,8 @@ fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.trace!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
     constructors
       .transform { constructor ->
-        if (constructor.hasAnnotation(ctx.injektFqNames.provide) ||
-          (constructor.isPrimary && hasAnnotation(ctx.injektFqNames.provide)))
+        if (constructor.hasAnnotation(InjektFqNames.Provide) ||
+          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
             add(constructor.toCallableRef(ctx))
       }
   }
@@ -495,11 +495,11 @@ fun InjectablesScope.collectImportSuggestionInjectables(ctx: Context): List<Call
 
 fun collectAllInjectables(ctx: Context): List<CallableRef> =
   ctx.trace!!.getOrPut(InjektWritableSlices.ALL_INJECTABLES, Unit) {
-    memberScopeForFqName(ctx.injektFqNames.indicesPackage, NoLookupLocation.FROM_BACKEND, ctx)
+    memberScopeForFqName(InjektFqNames.IndicesPackage, NoLookupLocation.FROM_BACKEND, ctx)
       ?.first
       ?.getContributedFunctions("index".asNameId(), NoLookupLocation.FROM_BACKEND)
       ?.transform {
-        val annotation = it.annotations.findAnnotation(ctx.injektFqNames.index)
+        val annotation = it.annotations.findAnnotation(InjektFqNames.Index)
           ?: return@transform
         val fqName = FqName(annotation.allValueArguments["fqName".asNameId()]!!.value.toString())
         for (injectable in injectablesForFqName(fqName, ctx)) {

@@ -61,13 +61,13 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     val provideConstructors = descriptor.injectableConstructors(ctx)
     val isProvider = provideConstructors.isNotEmpty() ||
-        descriptor.hasAnnotation(ctx.injektFqNames.provide)
+        descriptor.hasAnnotation(InjektFqNames.Provide)
 
     if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ANNOTATION_CLASS
           .on(
-            declaration.findAnnotation(ctx.injektFqNames.provide)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
@@ -77,7 +77,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ENUM_CLASS
           .on(
-            declaration.findAnnotation(ctx.injektFqNames.provide)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
@@ -95,11 +95,11 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     }
 
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(ctx.injektFqNames.provide)) {
+      descriptor.hasAnnotation(InjektFqNames.Provide)) {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_INTERFACE
           .on(
-            declaration.findAnnotation(ctx.injektFqNames.provide)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
@@ -115,14 +115,14 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       )
     }
 
-    if (descriptor.hasAnnotation(ctx.injektFqNames.provide) &&
+    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
       descriptor.unsubstitutedPrimaryConstructor
-        ?.hasAnnotation(ctx.injektFqNames.provide) == true
+        ?.hasAnnotation(InjektFqNames.Provide) == true
     ) {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR
           .on(
-            declaration.findAnnotation(ctx.injektFqNames.provide)
+            declaration.findAnnotation(InjektFqNames.Provide)
               ?: declaration
           )
       )
@@ -182,8 +182,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     declaration: KtDeclaration,
     ctx: Context
   ) {
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(ctx.injektFqNames.provide) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(ctx.injektFqNames.provide) == true) {
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Provide) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true) {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_RECEIVER
           .on(
@@ -194,8 +194,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       )
     }
 
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(ctx.injektFqNames.inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(ctx.injektFqNames.inject) == true) {
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true) {
       ctx.trace!!.report(
         InjektErrors.INJECT_RECEIVER
           .on(
@@ -224,7 +224,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
               .on(
                 it.findPsi()
                   ?.safeAs<KtAnnotated>()
-                  ?.findAnnotation(ctx.injektFqNames.spread)
+                  ?.findAnnotation(InjektFqNames.Spread)
                   ?: it.findPsi()
                   ?: declaration
               )
@@ -274,7 +274,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     overriddenDescriptor: MemberDescriptor,
     ctx: Context
   ): Boolean {
-    if (overriddenDescriptor.hasAnnotation(ctx.injektFqNames.provide) && !descriptor.isProvide(ctx)) {
+    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) && !descriptor.isProvide(ctx)) {
       return false
     }
 
@@ -282,8 +282,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       for ((index, overriddenValueParameter) in
       overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
         val valueParameter = descriptor.valueParameters[index]
-        if (overriddenValueParameter.hasAnnotation(ctx.injektFqNames.inject) !=
-          valueParameter.hasAnnotation(ctx.injektFqNames.inject)) {
+        if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
+          valueParameter.hasAnnotation(InjektFqNames.Inject)) {
           return false
         }
       }
@@ -322,7 +322,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
             .on(
               typeParameter.findPsi()
                 ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(ctx.injektFqNames.spread)
+                ?.findAnnotation(InjektFqNames.Spread)
                 ?: typeParameter.findPsi()!!
             )
         )
@@ -335,19 +335,19 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     if (isEmpty()) return
     for (parameter in this) {
-      if (parameter.hasAnnotation(ctx.injektFqNames.inject)) {
+      if (parameter.hasAnnotation(InjektFqNames.Inject)) {
         ctx.trace!!.report(
           InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
             .on(
               parameter.findPsi()
                 ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(ctx.injektFqNames.inject)
+                ?.findAnnotation(InjektFqNames.Inject)
                 ?: parameter.findPsi()
                 ?: declaration
             )
         )
       }
-      if (parameter.hasAnnotation(ctx.injektFqNames.provide) &&
+      if (parameter.hasAnnotation(InjektFqNames.Provide) &&
         parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
       ) {
         ctx.trace!!.report(
@@ -355,7 +355,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
             .on(
               parameter.findPsi()
                 ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(ctx.injektFqNames.provide)
+                ?.findAnnotation(InjektFqNames.Provide)
                 ?: parameter.findPsi()
                 ?: declaration
             )
@@ -370,7 +370,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     if (isEmpty()) return
     this
-      .filter { it.hasAnnotation(ctx.injektFqNames.inject) }
+      .filter { it.hasAnnotation(InjektFqNames.Inject) }
       .drop(1)
       .forEach {
         ctx.trace!!.report(
@@ -378,7 +378,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
             .on(
               it.findPsi()
                 ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(ctx.injektFqNames.inject)
+                ?.findAnnotation(InjektFqNames.Inject)
                 ?: it.findPsi()
                 ?: declaration
             )

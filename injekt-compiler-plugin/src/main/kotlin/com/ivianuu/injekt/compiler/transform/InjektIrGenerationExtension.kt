@@ -20,14 +20,10 @@ import java.io.*
 var dumpAllFiles = false
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-class InjektIrGenerationExtension(
-  private val dumpDir: File,
-  private val injektFqNames: InjektFqNames
-) : IrGenerationExtension {
+class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     val ctx = Context(
       pluginContext.moduleDescriptor,
-      injektFqNames,
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
     val localDeclarations = LocalDeclarations()

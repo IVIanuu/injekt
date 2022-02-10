@@ -28,20 +28,15 @@ class InjektComponentRegistrar : ComponentRegistrar {
   ) {
     if (configuration.isKaptCompilation()) return
 
-    val injektFqNames = InjektFqNames(configuration.getNotNull(RootPackageKey))
-
     if (configuration.get(SrcDirKey) != null)
-      project.registerCodegenExtensions(configuration, injektFqNames)
+      project.registerCodegenExtensions(configuration)
 
     if (configuration.get(DumpDirKey) != null)
-      project.registerAnalysisExtensions(configuration, injektFqNames)
+      project.registerAnalysisExtensions(configuration)
   }
 }
 
-private fun MockProject.registerCodegenExtensions(
-  configuration: CompilerConfiguration,
-  injektFqNames: InjektFqNames
-) {
+private fun MockProject.registerCodegenExtensions(configuration: CompilerConfiguration) {
   val srcDir = configuration.getNotNull(SrcDirKey)
   val cacheDir = configuration.getNotNull(CacheDirKey)
   val modifiedFiles = configuration.get(ModifiedFilesKey)
@@ -49,23 +44,19 @@ private fun MockProject.registerCodegenExtensions(
   val withCompilation = configuration.get(WithCompilationKey) ?: false
   AnalysisHandlerExtension.registerExtension(
     this,
-    InjektDeclarationGeneratorExtension(srcDir, cacheDir, modifiedFiles, removedFiles,
-    withCompilation, injektFqNames)
+    InjektDeclarationGeneratorExtension(srcDir, cacheDir, modifiedFiles, removedFiles, withCompilation)
   )
 }
 
-private fun MockProject.registerAnalysisExtensions(
-  configuration: CompilerConfiguration,
-  injektFqNames: InjektFqNames
-) {
+private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfiguration) {
   StorageComponentContainerContributor.registerExtension(
     this,
-    InjektStorageComponentContainerContributor { injektFqNames }
+    InjektStorageComponentContainerContributor()
   )
   IrGenerationExtension.registerExtensionWithLoadingOrder(
     this,
     LoadingOrder.FIRST,
-    InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), injektFqNames)
+    InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
   )
   IrGenerationExtension.registerExtensionWithLoadingOrder(
     this,
@@ -76,7 +67,6 @@ private fun MockProject.registerAnalysisExtensions(
         moduleFragment.fixComposeFunInterfacesPostCompose(
           ctx = Context(
             pluginContext.moduleDescriptor,
-            injektFqNames,
             DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
           )
         )
@@ -87,7 +77,7 @@ private fun MockProject.registerAnalysisExtensions(
   if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
     AnalysisHandlerExtension.registerExtension(
       this,
-      InjectCallCheckerExtension(configuration.get(WithCompilationKey) ?: false, injektFqNames)
+      InjectCallCheckerExtension(configuration.get(WithCompilationKey) ?: false)
     )
 
   // extension point does not exist CLI for some reason
@@ -95,7 +85,7 @@ private fun MockProject.registerAnalysisExtensions(
   SyntheticScopeProviderExtension.registerExtensionPoint(this)
   SyntheticScopeProviderExtension.registerExtension(
     this,
-    InjectSyntheticScopeProviderExtension({ injektFqNames })
+    InjectSyntheticScopeProviderExtension()
   )
 
   @Suppress("DEPRECATION")

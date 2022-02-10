@@ -243,7 +243,7 @@ class InjectCallTransformer(
         if (result.candidate.callContext == CallContext.COMPOSABLE) {
           annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
             .irCallConstructor(
-              irCtx.referenceConstructors(ctx.injektFqNames.composable)
+              irCtx.referenceConstructors(InjektFqNames.Composable)
                 .single(),
               emptyList()
             )
@@ -407,7 +407,7 @@ class InjectCallTransformer(
     }
   }
 
-  private val sourceKeyConstructor = irCtx.referenceClass(ctx.injektFqNames.sourceKey)
+  private val sourceKeyConstructor = irCtx.referenceClass(InjektFqNames.SourceKey)
     ?.constructors?.single()
 
   private fun ScopeContext.sourceKeyExpression(): IrExpression =
@@ -428,7 +428,7 @@ class InjectCallTransformer(
       }
     }
 
-  private val typeKey = irCtx.referenceClass(ctx.injektFqNames.typeKey)
+  private val typeKey = irCtx.referenceClass(InjektFqNames.TypeKey)
   private val typeKeyValue = typeKey?.owner?.properties
     ?.single { it.name.asString() == "value" }
   private val typeKeyConstructor = typeKey?.constructors?.single()

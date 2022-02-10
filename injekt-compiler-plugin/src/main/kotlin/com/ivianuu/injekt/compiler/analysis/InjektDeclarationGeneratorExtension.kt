@@ -22,8 +22,7 @@ class InjektDeclarationGeneratorExtension(
   cacheDir: File,
   private val modifiedFiles: List<File>?,
   private val removedFiles: List<File>?,
-  private val withCompilation: Boolean,
-  private val injektFqNames: InjektFqNames
+  private val withCompilation: Boolean
 ) : AnalysisHandlerExtension {
   private val backupDir = cacheDir.resolve("backups")
 
@@ -73,7 +72,7 @@ class InjektDeclarationGeneratorExtension(
       }
     }
 
-    val ctx = Context(module, injektFqNames, bindingTrace)
+    val ctx = Context(module, bindingTrace)
 
     files.forEach { file ->
       // Copy recursively, including last-modified-time of file and its parent dirs.
@@ -153,17 +152,17 @@ class InjektDeclarationGeneratorExtension(
         when (declaration) {
           is KtClassOrObject -> {
             if (!declaration.isLocal &&
-              (declaration.hasAnnotation(injektFqNames.provide) ||
-                  declaration.primaryConstructor?.hasAnnotation(injektFqNames.provide) == true ||
-                  declaration.secondaryConstructors.any { it.hasAnnotation(injektFqNames.provide) }))
+              (declaration.hasAnnotation(InjektFqNames.Provide) ||
+                  declaration.primaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true ||
+                  declaration.secondaryConstructors.any { it.hasAnnotation(InjektFqNames.Provide) }))
                     injectables += declaration
           }
           is KtNamedFunction -> {
-            if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide))
+            if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
               injectables += declaration
           }
           is KtProperty -> {
-            if (!declaration.isLocal && declaration.hasAnnotation(injektFqNames.provide))
+            if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
               injectables += declaration
           }
         }
@@ -314,10 +313,10 @@ class InjektDeclarationGeneratorExtension(
       appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")
       appendLine()
 
-      appendLine("package ${injektFqNames.indicesPackage}")
+      appendLine("package ${InjektFqNames.IndicesPackage}")
       appendLine()
 
-      appendLine("import ${injektFqNames.index}")
+      appendLine("import ${InjektFqNames.Index}")
 
       appendLine()
 
@@ -345,7 +344,7 @@ class InjektDeclarationGeneratorExtension(
       .filter { it.isLetterOrDigit() }
 
     val indicesFile = srcDir.resolve(
-      "${injektFqNames.indicesPackage.pathSegments().joinToString("/")}/" +
+      "${InjektFqNames.IndicesPackage.pathSegments().joinToString("/")}/" +
           (if (file.packageFqName.isRoot) "" else file.packageFqName.pathSegments().joinToString("_").plus("_")) +
           "${file.name.removeSuffix(".kt")}Indices_${injectablesKeyHash}.kt"
     )

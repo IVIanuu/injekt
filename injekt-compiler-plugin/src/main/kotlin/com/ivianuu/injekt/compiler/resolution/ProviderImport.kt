@@ -40,7 +40,7 @@ fun ProviderImport.resolve(ctx: Context): ResolvedProviderImport? {
 }
 
 fun KtAnnotated.getProviderImports(ctx: Context): List<ProviderImport> =
-  findAnnotation(ctx.injektFqNames.providers)
+  findAnnotation(InjektFqNames.Providers)
     ?.valueArguments
     ?.map { it.toProviderImport() } ?: emptyList()
 

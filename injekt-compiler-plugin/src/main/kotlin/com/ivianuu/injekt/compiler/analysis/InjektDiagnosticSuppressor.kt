@@ -40,14 +40,14 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     // todo remove on kotlin 1.6.0
     if (diagnostic.factory == Errors.UNSUPPORTED) {
       val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(ctx.injektFqNames.spread) == true) return true
+      if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true) return true
     }
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
       if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(ctx.injektFqNames.tag) == true
+          ?.hasAnnotation(InjektFqNames.Tag) == true
       )
         return true
     }
@@ -67,10 +67,10 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
       val descriptor = diagnostic.psiElement.getParentOfType<KtNamedDeclaration>(false)
         ?.descriptor<CallableDescriptor>(ctx)
-      if (descriptor?.hasAnnotation(ctx.injektFqNames.provide) == true ||
+      if (descriptor?.hasAnnotation(InjektFqNames.Provide) == true ||
         descriptor?.valueParameters?.any {
-          it.hasAnnotation(ctx.injektFqNames.inject) ||
-              it.hasAnnotation(ctx.injektFqNames.provide)
+          it.hasAnnotation(InjektFqNames.Inject) ||
+              it.hasAnnotation(InjektFqNames.Provide)
         } == true)
           return true
     }

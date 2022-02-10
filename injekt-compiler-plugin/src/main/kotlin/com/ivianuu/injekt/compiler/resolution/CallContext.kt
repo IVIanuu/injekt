@@ -91,15 +91,15 @@ private fun getArgumentDescriptor(
 
 private fun CallableDescriptor.callContextOfThis(ctx: Context): CallContext = when {
   isSuspend -> CallContext.SUSPEND
-  (hasAnnotation(ctx.injektFqNames.composable) ||
+  (hasAnnotation(InjektFqNames.Composable) ||
       (this is PropertyDescriptor &&
-          getter?.hasAnnotation(ctx.injektFqNames.composable) == true)) -> CallContext.COMPOSABLE
+          getter?.hasAnnotation(InjektFqNames.Composable) == true)) -> CallContext.COMPOSABLE
   else -> CallContext.DEFAULT
 }
 
 fun TypeRef.callContext(ctx: Context): CallContext = when {
   classifier.fqName.asString()
     .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
-  classifier.fqName == ctx.injektFqNames.composable -> CallContext.COMPOSABLE
+  classifier.fqName == InjektFqNames.Composable -> CallContext.COMPOSABLE
   else -> CallContext.DEFAULT
 }

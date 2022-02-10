@@ -93,7 +93,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           injektTask.classpath = kotlinCompileTask.project.files(Callable { kotlinCompileTask.classpath })
 
           getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
-            kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injek".combine("t"), option)
+            kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injekt", option)
           }
 
           injektTask.configureCompilation(
@@ -109,7 +109,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         project.tasks.register(injektTaskName, injektTaskClass, kotlinCompileTask.compilation).apply {
           configure { injektTask ->
             getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
-              kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injek".combine("t"), option)
+              kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injekt", option)
             }
             injektTask.onlyIf { kotlinCompileTask.compilation.konanTarget.enabledOnCurrentHost }
             configure(injektTask)
@@ -129,10 +129,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider { emptyList() }
   }
 
-  override fun getCompilerPluginId(): String = "com.ivianuu.injek".combine("t")
+  override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = "com.ivianuu.injek".combine("t"),
+    groupId = "com.ivianuu.injekt",
     artifactId = if (javaClass.name == "com.ivianuu.shaded_injekt.gradle.InjektPlugin")
       "injekt-compiler-plugin-shaded" else "injekt-compiler-plugin",
     version = BuildConfig.VERSION
@@ -361,7 +361,7 @@ private inline fun <reified T : Task> Project.locateTask(name: String): TaskProv
     null
   }
 
-private fun SubpluginOption.toArg() = "plugin:com.ivianuu.injek".combine("t:$key=$value")
+private fun SubpluginOption.toArg() = "plugin:com.ivianuu.injekt:$key=$value"
 
 private fun CommonCompilerArguments.addPluginOptions(options: List<SubpluginOption>) {
   pluginOptions = (options.map { it.toArg() } + pluginOptions!!).toTypedArray()
@@ -379,5 +379,3 @@ private fun CommonCompilerArguments.addChangedFiles(changedFiles: ChangedFiles) 
     options.ifNotEmpty { addPluginOptions(this) }
   }
 }
-
-fun String.combine(other: String) = this + other

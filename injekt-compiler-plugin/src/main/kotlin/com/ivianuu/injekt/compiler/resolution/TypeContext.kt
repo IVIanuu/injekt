@@ -50,11 +50,11 @@ fun TypeRef.isSubTypeOf(
   ctx.addSubTypeConstraint(this, superType)
     ?.let { return it }
 
-  if (classifier.fqName == ctx.ctx.injektFqNames.nothing &&
+  if (classifier.fqName == InjektFqNames.Nothing &&
     (!isMarkedNullable || superType.isNullableType)
   ) return true
 
-  if (superType.classifier.fqName == ctx.ctx.injektFqNames.any &&
+  if (superType.classifier.fqName == InjektFqNames.Any &&
     (superType.isMarkedNullable || !isNullableType)
   ) return true
 
@@ -391,7 +391,7 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
     resultType: TypeRef,
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
-    if (resultType.classifier.fqName == ctx.injektFqNames.nothing) return false
+    if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
     val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))

@@ -232,9 +232,9 @@ class InjectablesScope(
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
       }
-      request.type.classifier.fqName == ctx.injektFqNames.typeKey ->
+      request.type.classifier.fqName == InjektFqNames.TypeKey ->
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == ctx.injektFqNames.sourceKey ->
+      request.type.classifier.fqName == InjektFqNames.SourceKey ->
         return SourceKeyInjectable(request.type, this)
       else -> return null
     }
@@ -311,11 +311,11 @@ class InjectablesScope(
             candidateType.add()
         }
       }
-      singleElementType.classifier.fqName == ctx.injektFqNames.sourceKey -> listOf(
+      singleElementType.classifier.fqName == InjektFqNames.SourceKey -> listOf(
         ctx.sourceKeyClassifier!!.defaultType
           .copy(frameworkKey = UUID.randomUUID().toString())
       )
-      singleElementType.classifier.fqName == ctx.injektFqNames.typeKey -> listOf(singleElementType)
+      singleElementType.classifier.fqName == InjektFqNames.TypeKey -> listOf(singleElementType)
       else -> emptyList()
     }
 
@@ -402,7 +402,7 @@ class InjectablesScope(
         (callable !is ReceiverParameterDescriptor ||
             callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(ctx.injektFqNames.provide))
+            originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

@@ -85,7 +85,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       ?.toMutableList()
       ?: mutableListOf()
 
-    val isTag = hasAnnotation(ctx.injektFqNames.tag) || fqNameSafe == ctx.injektFqNames.composable
+    val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
 
     if (isTag) {
       typeParameters += ClassifierRef(
@@ -150,15 +150,15 @@ fun KotlinType.toTypeRef(
             it + ctx.nullableAnyType
           else it
         },
-      isProvide = kotlinType.hasAnnotation(ctx.injektFqNames.provide),
-      isInject = kotlinType.hasAnnotation(ctx.injektFqNames.inject),
+      isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
+      isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
       isStarProjection = false,
       frameworkKey = "",
       variance = variance,
       isError = isError
     )
 
-    val tagAnnotations = unwrapped.getTags(ctx.injektFqNames)
+    val tagAnnotations = unwrapped.getTags()
     var r = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef(ctx) }
@@ -464,7 +464,7 @@ val TypeRef.isProvideFunctionType: Boolean
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
       classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction") ||
-      (classifier.fqName == InjektFqNames.Default.composable && arguments.last().isFunctionType)
+      (classifier.fqName == InjektFqNames.Composable && arguments.last().isFunctionType)
 
 fun effectiveVariance(
   declared: TypeVariance,
