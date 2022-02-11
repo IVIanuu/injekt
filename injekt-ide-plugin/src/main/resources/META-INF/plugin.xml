@@ -8,8 +8,8 @@
 
     <vendor email="ivianuu@gmail.com" url="https://github.com/IVIanuu/injekt">Injekt</vendor>
 
-    <idea-version>2020.3.1</idea-version>
-    <idea-version since-build="201.8743.12" until-build="203.*" />
+    <idea-version>2021.1.1</idea-version>
+    <idea-version since-build="201.8743.12" until-build="211.*" />
     <version>0.0.1-dev506</version>
 
     <description><![CDATA[Idea plugin for the injekt library]]></description>
@@ -17,6 +17,11 @@
     <depends>com.intellij.gradle</depends>
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
+
+    <applicationListeners>
+        <listener class="com.ivianuu.injekt.ide.InjektProjectInitializer"
+            topic="com.intellij.openapi.project.ProjectManagerListener"/>
+    </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
     <!--    <referencesSearch
@@ -33,8 +38,6 @@
             order="first"
             implementationClass="com.ivianuu.injekt.ide.ImportCompletionConfidence"/>
 -->
-        <applicationInitializedListener implementation="com.ivianuu.injekt.ide.AppInitializer" />
-
         <lang.inspectionSuppressor language="kotlin"
             implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />
     </extensions>

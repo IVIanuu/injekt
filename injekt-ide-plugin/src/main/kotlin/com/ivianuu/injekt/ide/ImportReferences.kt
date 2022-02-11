@@ -48,7 +48,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
           val refs = mutableListOf<PsiReference>()
 
           val module = element.getResolutionFacade().moduleDescriptor
-          val ctx = Context(module, module.InjektFqNames, null)
+          val ctx = Context(module, null)
           val psiFacade = KotlinJavaPsiFacade.getInstance(element.project)
 
           fun resolveFqName(fqName: String, endOffset: Int) {
@@ -59,9 +59,7 @@ class ImportReferenceContributor : PsiReferenceContributor() {
               return resolveFqName(fqName.removeSuffix(".**"), endOffset - 3)
             val startOffset = fqName.lastIndexOf(".") + 1
 
-            val range = TextRange.create(
-              startOffset + 1, endOffset
-            )
+            val range = TextRange(startOffset + 1, endOffset)
 
             val finalFqName = FqName(fqName)
 
@@ -120,7 +118,7 @@ class ImportCompletionExtension : KotlinCompletionExtension() {
     val prefix = template.text.substring(range.startOffset, offsetInElement)
 
     val module = template.getResolutionFacade().moduleDescriptor
-    val ctx = Context(module, module.InjektFqNames, null)
+    val ctx = Context(module, null)
 
     memberScopeForFqName(
       importReference.fqName.parent(),
@@ -160,7 +158,7 @@ class ImportTypedHandlerDelegate : TypedHandlerDelegate() {
       ?.getParentOfType<KtStringTemplateExpression>(false)
       ?.getParentOfType<KtAnnotationEntry>(false)
       ?.takeIf {
-        it.typeReference?.text == file.InjektFqNames.Providers.shortName().asString()
+        it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
       }
       ?: return super.beforeCharTyped(c, project, editor, file, fileType)
 
@@ -181,7 +179,7 @@ class ImportTypedHandlerDelegate : TypedHandlerDelegate() {
       ?.getParentOfType<KtStringTemplateExpression>(false)
       ?.getParentOfType<KtAnnotationEntry>(false)
       ?.takeIf {
-        it.typeReference?.text == file.InjektFqNames.Providers.shortName().asString()
+        it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
       }
       ?: return super.checkAutoPopup(charTyped, project, editor, file)
 
@@ -200,7 +198,7 @@ class ImportCompletionConfidence : CompletionConfidence() {
     .getParentOfType<KtStringTemplateExpression>(false)
     ?.getParentOfType<KtAnnotationEntry>(false)
     ?.takeIf {
-      it.typeReference?.text == contextElement.InjektFqNames.Providers.shortName().asString()
+      it.typeReference?.text == InjektFqNames.Providers.shortName().asString()
     }
     ?.let { ThreeState.NO } ?: ThreeState.UNSURE
 }
@@ -216,4 +214,5 @@ class ImportElementReference(
 ) {
   private val target by lazy(computeTarget)
   override fun resolve(): PsiElement? = target
+  override fun getVariants(): kotlin.Array<kotlin.Any> = emptyArray()
 }

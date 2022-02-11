@@ -37,5 +37,4 @@ tasks {
 dependencies {
   api(project(":injekt-compiler-plugin", "shadow"))
   api(Deps.KotlinSerialization.json)
-  api("com.intellij:openapi:7.0.3")
 }

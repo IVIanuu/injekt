@@ -12,13 +12,12 @@ import com.intellij.util.*
 import org.jetbrains.kotlin.idea.*
 import org.jetbrains.kotlin.psi.*
 
-class InjektReferencesSearcher :
-  QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>() {
-  override fun processQuery(
+class InjektReferencesSearcher : QueryExecutor<PsiReference, ReferencesSearch.SearchParameters> {
+  override fun execute(
     params: ReferencesSearch.SearchParameters,
-    processor: Processor<in PsiReference>
-  ) {
-    if (!params.elementToSearch.isInjektEnabled()) return
+    processor: Processor<PsiReference>
+  ): Boolean {
+    if (!params.elementToSearch.isInjektEnabled()) return false
 
     val tasks = mutableListOf<() -> Unit>()
     runReadAction {
@@ -30,7 +29,7 @@ class InjektReferencesSearcher :
       if (!isProvideOrInjectDeclaration && !isObjectDeclaration)
         return@runReadAction
 
-      val psiManager = PsiManager.getInstance(params.project)
+      val psiManager = PsiManager.getInstance(params.elementToSearch.project)
 
       fun collectTasks(scope: SearchScope) {
         if (scope is LocalSearchScope) {
@@ -63,5 +62,7 @@ class InjektReferencesSearcher :
       for (task in tasks)
         runReadAction { task() }
     }
+
+    return true
   }
 }

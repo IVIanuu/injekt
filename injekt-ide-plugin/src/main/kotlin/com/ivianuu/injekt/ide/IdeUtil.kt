@@ -26,19 +26,6 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.jvm.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun Module.getOptionValueInFacet(option: AbstractCliOption): String? {
-  val kotlinFacet = KotlinFacet.get(this) ?: return null
-  val commonArgs = kotlinFacet.configuration.settings.compilerArguments ?: return null
-
-  val prefix = "plugin:com.ivianuu.injekt:${option.optionName}="
-
-  val optionValue = commonArgs.pluginOptions
-    ?.firstOrNull { it.startsWith(prefix) }
-    ?.substring(prefix.length)
-
-  return optionValue
-}
-
 fun PsiElement.ktElementOrNull() = safeAs<KtDeclaration>()
   ?: safeAs<KtLightDeclaration<*, *>>()?.kotlinOrigin
 
