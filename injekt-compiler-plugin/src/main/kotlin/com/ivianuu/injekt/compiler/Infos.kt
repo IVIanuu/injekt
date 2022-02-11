@@ -153,7 +153,6 @@ class ClassifierInfo(
   val tags: List<TypeRef>,
   val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
-  val isSpread: Boolean,
   val lazyDeclaresInjectables: Lazy<Boolean>
 ) {
   val superTypes by lazySuperTypes
@@ -206,20 +205,14 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
         tags = tags,
         lazySuperTypes = lazySuperTypes,
         primaryConstructorPropertyParameters = emptyList(),
-        isSpread = false,
         lazyDeclaresInjectables = lazyOf(false)
       )
     } else {
       val info = if (this is TypeParameterDescriptor) {
-        val isSpread = hasAnnotation(InjektFqNames.Spread) ||
-            findPsi()?.safeAs<KtTypeParameter>()
-              ?.hasAnnotation(InjektFqNames.Spread) == true
-
         ClassifierInfo(
           tags = emptyList(),
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = emptyList(),
-          isSpread = isSpread,
           lazyDeclaresInjectables = lazyOf(false)
         )
       } else {
@@ -236,7 +229,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           tags = tags,
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-          isSpread = false,
           lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
             defaultType
               .memberScope
@@ -260,7 +252,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
   val tags: List<PersistedTypeRef>,
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
-  val isSpread: Boolean,
   val declaresInjectables: Boolean
 )
 
@@ -268,7 +259,6 @@ fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef(ctx) },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  isSpread = isSpread,
   lazyDeclaresInjectables = lazyOf(declaresInjectables)
 )
 
@@ -276,7 +266,6 @@ fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifier
   tags = tags.map { it.toPersistedTypeRef(ctx) },
   superTypes = superTypes.map { it.toPersistedTypeRef(ctx) },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  isSpread = isSpread,
   declaresInjectables = declaresInjectables
 )
 
@@ -288,7 +277,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     val container = containingDeclaration
     if (container is TypeAliasDescriptor) return
 
-    if (!info.isSpread && info.superTypes.none { it.shouldBePersisted() }) return
+    if (info.superTypes.none { it.shouldBePersisted() }) return
 
     fun loadTypeParameterInfos() = (container.annotations
       .findAnnotation(InjektFqNames.TypeParameterInfo)

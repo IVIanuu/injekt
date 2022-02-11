@@ -37,12 +37,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
-    // todo remove on kotlin 1.6.0
-    if (diagnostic.factory == Errors.UNSUPPORTED) {
-      val typeParameter = diagnostic.psiElement.parent?.parent as? KtTypeParameter
-      if (typeParameter?.hasAnnotation(InjektFqNames.Spread) == true) return true
-    }
-
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
@@ -84,11 +78,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.toTypeRef(ctx)
         ?.anyType { it.classifier.descriptor == typeParameter } == true
     }
-
-
-    // todo remove on kotlin 1.6.0 update
-    if (diagnostic.factory == Errors.SUPERTYPE_IS_SUSPEND_FUNCTION_TYPE)
-      return true
 
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")

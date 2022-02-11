@@ -212,9 +212,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     typeParameters: List<TypeParameterDescriptor>,
     ctx: Context
   ) {
-    val spreadParameters = typeParameters.filter {
-      it.classifierInfo(ctx).isSpread
-    }
+    val spreadParameters = typeParameters.filter { it.hasAnnotation(InjektFqNames.Spread) }
     if (spreadParameters.size > 1) {
       spreadParameters
         .drop(1)
@@ -301,8 +299,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
 
     for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
       val typeParameter = typeParameters[index]
-      if (typeParameter.classifierInfo(ctx).isSpread !=
-        overriddenTypeParameter.classifierInfo(ctx).isSpread) {
+      if (typeParameter.hasAnnotation(InjektFqNames.Spread) !=
+        overriddenTypeParameter.hasAnnotation(InjektFqNames.Spread)) {
         return false
       }
     }
@@ -316,7 +314,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     if (typeParameters.isEmpty()) return
     for (typeParameter in typeParameters) {
-      if (typeParameter.classifierInfo(ctx).isSpread)
+      if (typeParameter.hasAnnotation(InjektFqNames.Spread))
         ctx.trace!!.report(
           InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
             .on(

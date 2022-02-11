@@ -54,7 +54,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
-  @Provide val ctx = Context(module, InjektFqNames.Default, CliBindingTrace())
+  @Provide val ctx = Context(module, CliBindingTrace())
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
