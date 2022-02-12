@@ -346,9 +346,7 @@ private fun String.toChunkedArrayValue() = ArrayValue(
   chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
 ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
-private fun TypeRef.shouldBePersisted(): Boolean = anyType {
-  it.classifier.isTag && it.classifier.typeParameters.size > 1
-}
+private fun TypeRef.shouldBePersisted(): Boolean = anyType { it.classifier.isTag }
 
 @OptIn(ExperimentalStdlibApi::class)
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
