@@ -6,8 +6,11 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
+import io.kotest.matchers.booleans.*
+import io.kotest.matchers.types.*
 import kotlinx.coroutines.*
 import org.junit.*
+import kotlin.coroutines.*
 
 class NamedCoroutineScopeTest {
   private object MyScope
@@ -25,6 +28,6 @@ class NamedCoroutineScopeTest {
     @Provide val scope = Scope<MyScope>()
     @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
-    coroutineScope.coroutineContext[CoroutineDispatcher] shouldBeSameInstanceAs customContext
+    coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext
   }
 }
