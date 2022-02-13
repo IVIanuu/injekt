@@ -27,7 +27,7 @@ interface Elements<N> {
 
 @Tag annotation class Element<N> {
   companion object {
-    @Provide class Module<@com.ivianuu.injekt.Spread T : @Element<N> S, S : Any, N> {
+    @Provide class Module<@Spread T : @Element<N> S, S : Any, N> {
       @Provide fun provided(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
 
       @Provide inline fun accessor(value: T): S = value
@@ -43,7 +43,7 @@ data class ProvidedElement<N, T : Any>(val key: TypeKey<T>, val element: T) {
 
 @Tag annotation class Eager<N> {
   companion object {
-    @Provide class Module<@com.ivianuu.injekt.Spread T : @Eager<N> S, S : Any, N> {
+    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N> {
       @Provide fun scoped(value: T): @Scoped<N> S = value
 
       @Provide fun element(value: S): @Element<N> @Initializer S = value
