@@ -61,7 +61,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
 
     val callee = resultingDescriptor
       .toCallableRef(ctx)
-      .substitute(substitutionMap, ctx)
+      .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
@@ -69,7 +69,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
     val requests = callee.callable.valueParameters
       .transform {
         if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject(ctx))
-          add(it.toInjectableRequest(callee, ctx))
+          add(it.toInjectableRequest(callee))
       }
 
     if (requests.isEmpty()) return
