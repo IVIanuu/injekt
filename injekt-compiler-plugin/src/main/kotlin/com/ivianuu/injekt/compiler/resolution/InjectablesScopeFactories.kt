@@ -21,7 +21,7 @@ fun ElementInjectablesScope(
   position: KtElement = element
 ): InjectablesScope {
   val scopeOwner = element.parentsWithSelf
-    .first { (it as KtElement).isScopeOwner(position, ctx) }
+    .first { (it as KtElement).isScopeOwner(position) }
     .cast<KtElement>()
 
   if (scopeOwner !is KtBlockExpression)
@@ -29,7 +29,7 @@ fun ElementInjectablesScope(
       ?.let { return it }
 
   val parentScope = scopeOwner.parents
-    .firstOrNull { (it as KtElement).isScopeOwner(position, ctx) }
+    .firstOrNull { (it as KtElement).isScopeOwner(position) }
     ?.let { ElementInjectablesScope(ctx, it.cast(), position) }
 
   val scope = when (scopeOwner) {
@@ -102,7 +102,7 @@ fun ElementInjectablesScope(
   return scope
 }
 
-private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
+private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   if (this is KtFile ||
     this is KtClassInitializer ||
     this is KtProperty ||
@@ -191,7 +191,7 @@ private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
   ctx.trace!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
     ImportInjectablesScopes(
       file = file,
-      imports = file.getProviderImports(ctx) + ProviderImport(null, "${file.packageFqName.asString()}.*"),
+      imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
       namePrefix = "FILE ${file.name}",
       parent = null,
       ctx = ctx
@@ -216,7 +216,7 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
 
   return ImportInjectablesScopes(
     file = file,
-    imports = file.getProviderImports(ctx) + ProviderImport(null, "${file.packageFqName.asString()}.*"),
+    imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
     namePrefix = "FILE INIT ${file.name} at ${injectableDeclaration?.name}",
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScopes true
@@ -245,7 +245,7 @@ private fun ClassImportsInjectablesScope(
   return (clazz
     .findPsi()
     .safeAs<KtClassOrObject>()
-    ?.getProviderImports(ctx)
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportInjectablesScopes(null, it, "CLASS ${clazz.fqNameSafe}", finalParent, ctx = ctx) }
     ?: finalParent)
@@ -353,7 +353,7 @@ private fun FunctionImportsInjectablesScope(
 ): InjectablesScope = function
   .findPsi()
   .safeAs<KtFunction>()
-  ?.getProviderImports(ctx)
+  ?.getProviderImports()
   ?.takeIf { it.isNotEmpty() }
   ?.let {
     val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
@@ -460,7 +460,7 @@ private fun PropertyInjectablesScope(
   val finalParent = property
     .findPsi()
     .safeAs<KtProperty>()
-    ?.getProviderImports(ctx)
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportInjectablesScopes(null, it, "PROPERTY ${property.fqNameSafe}", parent, ctx = ctx) }
     ?: parent
@@ -496,7 +496,7 @@ private fun PropertyInitInjectablesScope(
   val finalParent = property
     .findPsi()
     .safeAs<KtProperty>()
-    ?.getProviderImports(ctx)
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let {
       ImportInjectablesScopes(
@@ -529,7 +529,7 @@ private fun LocalVariableInjectablesScope(
   val finalParent = variable
     .findPsi()
     .safeAs<KtProperty>()
-    ?.getProviderImports(ctx)
+    ?.getProviderImports()
     ?.takeIf { it.isNotEmpty() }
     ?.let { ImportInjectablesScopes(null, it, "LOCAL VARIABLE ${variable.fqNameSafe}", parent, ctx = ctx) }
     ?: parent
@@ -550,7 +550,7 @@ private fun ExpressionInjectablesScope(
   ctx: Context
 ): InjectablesScope = ctx.trace!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
   val finalParent = expression
-    .getProviderImports(ctx)
+    .getProviderImports()
     .takeIf { it.isNotEmpty() }
     ?.let { ImportInjectablesScopes(null, it, "EXPRESSION ${expression.startOffset}", parent, ctx = ctx) }
     ?: parent

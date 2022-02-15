@@ -99,7 +99,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
           file.virtualFilePath,
           Unit
         )
-        ctx.trace!!.record(
+        ctx.trace.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
             file.virtualFilePath,

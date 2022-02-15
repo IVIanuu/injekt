@@ -41,8 +41,7 @@ fun TypeRef.collectInjectables(
         ).substitute(
           classifier.typeParameters
             .zip(arguments)
-            .toMap(),
-          ctx
+            .toMap()
         )
       }
 
@@ -80,7 +79,7 @@ fun TypeRef.collectInjectables(
           classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
             .zip(subtypeView(originalClassifier)!!.arguments)
         } else classifier.typeParameters.zip(arguments).toMap()
-        val substituted = callable.substitute(substitutionMap, ctx)
+        val substituted = callable.substitute(substitutionMap)
 
         add(
           substituted.copy(

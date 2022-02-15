@@ -19,16 +19,10 @@ class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
 
     // requesting infos triggers saving them
     when (descriptor) {
-      is ClassDescriptor -> {
-        if (descriptor.visibility.shouldPersistInfo()) {
-          descriptor.classifierInfo(ctx)
-        }
-      }
-      is TypeAliasDescriptor -> {
-        if (descriptor.visibility.shouldPersistInfo()) {
-          descriptor.classifierInfo(ctx)
-        }
-      }
+      is ClassDescriptor -> if (descriptor.visibility.shouldPersistInfo())
+        descriptor.classifierInfo(ctx)
+      is TypeAliasDescriptor -> if (descriptor.visibility.shouldPersistInfo())
+        descriptor.classifierInfo(ctx)
     }
   }
 }

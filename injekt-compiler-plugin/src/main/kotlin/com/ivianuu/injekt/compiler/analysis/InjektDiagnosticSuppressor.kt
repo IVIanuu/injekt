@@ -60,16 +60,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
           return true
     }
 
-    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER) {
-      val typeParameter = diagnostic.psiElement
-        .cast<KtTypeParameter>().descriptor<TypeParameterDescriptor>(ctx)
-      return diagnostic.psiElement.getParentOfType<KtTypeAlias>(false)
-        ?.descriptor<TypeAliasDescriptor>(ctx)
-        ?.expandedType
-        ?.toTypeRef(ctx)
-        ?.anyType { it.classifier.descriptor == typeParameter } == true
-    }
-
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
       return true

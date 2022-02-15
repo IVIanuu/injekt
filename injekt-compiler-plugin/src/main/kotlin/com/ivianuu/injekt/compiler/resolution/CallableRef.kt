@@ -19,10 +19,7 @@ data class CallableRef(
   val chainLength: Int
 )
 
-fun CallableRef.substitute(
-  map: Map<ClassifierRef, TypeRef>,
-  ctx: Context
-): CallableRef {
+fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   if (map == typeArguments) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {

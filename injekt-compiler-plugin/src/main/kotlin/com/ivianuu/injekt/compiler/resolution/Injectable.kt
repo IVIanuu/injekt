@@ -75,7 +75,7 @@ class ProviderInjectable(
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable {
-  override val callableFqName: FqName = when (type.callContext(ownerScope.ctx)) {
+  override val callableFqName: FqName = when (type.callContext) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")
@@ -167,7 +167,7 @@ fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = c
         it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
         it.isProvide(ctx))
-          add(it.toInjectableRequest(this@getInjectableRequests, ctx))
+          add(it.toInjectableRequest(this@getInjectableRequests))
   }
 
 data class InjectableRequest(
@@ -181,10 +181,7 @@ data class InjectableRequest(
   val isLazy: Boolean = false
 )
 
-fun ParameterDescriptor.toInjectableRequest(
-  callable: CallableRef,
-  ctx: Context
-): InjectableRequest = InjectableRequest(
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableRequest(
   type = callable.parameterTypes[injektIndex()]!!,
   callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
     ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,

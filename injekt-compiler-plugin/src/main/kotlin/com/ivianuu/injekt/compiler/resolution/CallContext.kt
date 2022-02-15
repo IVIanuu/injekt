@@ -29,7 +29,7 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
 
   if (ctx.trace == null) return callContextOfThis(ctx)
 
-  return ctx.trace!!.getOrPut(InjektWritableSlices.CALL_CONTEXT, this) {
+  return ctx.trace.getOrPut(InjektWritableSlices.CALL_CONTEXT, this) {
     if (composeCompilerInClasspath && isComposableCallable(ctx.trace.bindingContext))
       return@getOrPut CallContext.COMPOSABLE
 
@@ -46,9 +46,9 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
             // KtLambdaExpression
           }
           is KtLambdaExpression -> {
-            val descriptor = ctx.trace!!.bindingContext[BindingContext.FUNCTION, node.functionLiteral]
+            val descriptor = ctx.trace.bindingContext[BindingContext.FUNCTION, node.functionLiteral]
               ?: return@getOrPut callContextOfThis(ctx)
-            val arg = getArgumentDescriptor(node.functionLiteral, ctx.trace!!.bindingContext)
+            val arg = getArgumentDescriptor(node.functionLiteral, ctx.trace.bindingContext)
             val inlined = arg != null &&
                 canBeInlineArgument(node.functionLiteral) &&
                 isInline(arg.containingDeclaration) &&
@@ -57,13 +57,13 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
               return@getOrPut descriptor.callContextOfThis(ctx)
           }
           is KtFunction -> {
-            val descriptor = ctx.trace!!.bindingContext[BindingContext.FUNCTION, node]
+            val descriptor = ctx.trace.bindingContext[BindingContext.FUNCTION, node]
             return@getOrPut descriptor?.callContextOfThis(ctx) ?: CallContext.DEFAULT
           }
           is KtProperty -> {
             if (!node.isLocal) {
               val descriptor =
-                ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
+                ctx.trace.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, node] as? CallableDescriptor
               return@getOrPut descriptor?.callContextOfThis(ctx) ?: CallContext.DEFAULT
             }
           }
@@ -97,9 +97,10 @@ private fun CallableDescriptor.callContextOfThis(ctx: Context): CallContext = wh
   else -> CallContext.DEFAULT
 }
 
-fun TypeRef.callContext(ctx: Context): CallContext = when {
-  classifier.fqName.asString()
-    .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
-  isComposableType -> CallContext.COMPOSABLE
-  else -> CallContext.DEFAULT
-}
+val TypeRef.callContext: CallContext
+  get() = when {
+    classifier.fqName.asString()
+      .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
+    isComposableType -> CallContext.COMPOSABLE
+    else -> CallContext.DEFAULT
+  }
