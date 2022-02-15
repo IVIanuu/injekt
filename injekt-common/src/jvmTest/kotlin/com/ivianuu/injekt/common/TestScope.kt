@@ -4,4 +4,4 @@
 
 package com.ivianuu.injekt.common
 
-object TestScope
+object TestScope : Scope.Name

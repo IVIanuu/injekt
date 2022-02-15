@@ -24,12 +24,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
  * Stores information about a classifier which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-class ClassifierInfo(
+@Serializable class ClassifierInfo(
   val primaryConstructorPropertyParameters: List<String>,
-  val lazyDeclaresInjectables: Lazy<Boolean>
-) {
-  val declaresInjectables by lazyDeclaresInjectables
-}
+  val declaresInjectables: Boolean
+)
 
 fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
   ctx.trace!!.getOrPut(InjektWritableSlices.CLASSIFIER_INFO, this) {
@@ -48,7 +46,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
       ClassifierInfo(
         primaryConstructorPropertyParameters = emptyList(),
-        lazyDeclaresInjectables = lazyOf(false)
+        declaresInjectables = false
       )
     } else {
       val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
@@ -62,12 +60,10 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
 
       val info = ClassifierInfo(
         primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-        lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
-          defaultType
-            .memberScope
-            .getContributedDescriptors()
-            .any { it.isProvide(ctx) }
-        }
+        declaresInjectables = defaultType
+          .memberScope
+          .getContributedDescriptors()
+          .any { it.isProvide(ctx) }
       )
 
       // important to cache the info before persisting it
