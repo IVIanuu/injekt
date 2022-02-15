@@ -135,10 +135,6 @@ class VariableWithConstraints(val typeVariable: ClassifierRef) {
     return true
   }
 
-  fun copy() = VariableWithConstraints(typeVariable).apply {
-    this.constraints += this@VariableWithConstraints.constraints
-  }
-
   private fun newConstraintIsUseless(old: Constraint, new: Constraint): Boolean =
     old.kind == new.kind || when (old.kind) {
       ConstraintKind.EQUAL -> true

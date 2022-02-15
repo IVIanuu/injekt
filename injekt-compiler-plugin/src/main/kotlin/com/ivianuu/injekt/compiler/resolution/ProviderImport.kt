@@ -39,12 +39,12 @@ fun ProviderImport.resolve(ctx: Context): ResolvedProviderImport? {
   return toResolvedImport(packageFqName)
 }
 
-fun KtAnnotated.getProviderImports(ctx: Context): List<ProviderImport> =
+fun KtAnnotated.getProviderImports(): List<ProviderImport> =
   findAnnotation(InjektFqNames.Providers)
     ?.valueArguments
     ?.map { it.toProviderImport() } ?: emptyList()
 
-fun ResolvedCall<*>.getProviderImports(ctx: Context): List<ProviderImport> =
+fun ResolvedCall<*>.getProviderImports(): List<ProviderImport> =
   valueArguments
     .values
     .flatMap { it.arguments }

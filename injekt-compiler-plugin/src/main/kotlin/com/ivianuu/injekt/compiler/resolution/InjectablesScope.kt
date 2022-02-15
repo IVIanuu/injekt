@@ -137,7 +137,7 @@ class InjectablesScope(
           if (!context.isOk) continue
           this += CallableInjectable(
             this@InjectablesScope,
-            candidate.substitute(context.fixedTypeVariables, ctx)
+            candidate.substitute(context.fixedTypeVariables)
           )
         }
       }
@@ -148,7 +148,7 @@ class InjectablesScope(
     when {
       request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
-        else request.type.callContext(ctx)
+        else request.type.callContext
         return ProviderInjectable(
           type = request.type,
           ownerScope = this,
@@ -209,7 +209,7 @@ class InjectablesScope(
             context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
 
-          val substitutedCandidate = candidate.substitute(context.fixedTypeVariables, ctx)
+          val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
 
           val typeWithFrameworkKey = substitutedCandidate.type.copy(
             frameworkKey = UUID.randomUUID().toString()

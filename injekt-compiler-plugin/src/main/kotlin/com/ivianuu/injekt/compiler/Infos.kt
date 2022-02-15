@@ -8,7 +8,6 @@ import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
@@ -19,8 +18,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
-import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 /**
@@ -39,10 +36,12 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
     if (isDeserializedDeclaration()) {
       annotations
         .findAnnotation(InjektFqNames.ClassifierInfo)
-        ?.readChunkedValue()
+        ?.allValueArguments
+        ?.values
+        ?.single()
+        ?.value
         ?.cast<String>()
-        ?.decode<PersistedClassifierInfo>()
-        ?.toClassifierInfo(ctx)
+        ?.decode<ClassifierInfo>()
         ?.let { return@getOrPut it }
     }
 
@@ -52,31 +51,24 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
         lazyDeclaresInjectables = lazyOf(false)
       )
     } else {
-      val info = if (this is TypeParameterDescriptor) {
-        ClassifierInfo(
-          primaryConstructorPropertyParameters = emptyList(),
-          lazyDeclaresInjectables = lazyOf(false)
-        )
-      } else {
-        val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
-          ?.unsubstitutedPrimaryConstructor
-          ?.valueParameters
-          ?.transform {
-            if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
-              add(it.name.asString())
-          }
-          ?: emptyList()
+      val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+        ?.unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.transform {
+          if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
+            add(it.name.asString())
+        }
+        ?: emptyList()
 
-        ClassifierInfo(
-          primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-          lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
-            defaultType
-              .memberScope
-              .getContributedDescriptors()
-              .any { it.isProvide(ctx) }
-          }
-        )
-      }
+      val info = ClassifierInfo(
+        primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
+        lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
+          defaultType
+            .memberScope
+            .getContributedDescriptors()
+            .any { it.isProvide(ctx) }
+        }
+      )
 
       // important to cache the info before persisting it
       ctx.trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
@@ -87,21 +79,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       return info
     }
   }
-
-@Serializable data class PersistedClassifierInfo(
-  val primaryConstructorPropertyParameters: List<String>,
-  val declaresInjectables: Boolean
-)
-
-fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
-  primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  lazyDeclaresInjectables = lazyOf(declaresInjectables)
-)
-
-fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifierInfo(
-  primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  declaresInjectables = declaresInjectables
-)
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
   info: ClassifierInfo,
@@ -114,29 +91,19 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
 
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
-    val serializedInfo = info.toPersistedClassifierInfo(ctx).encode()
+    val serializedInfo = info.encode()
 
     updateAnnotation(
       AnnotationDescriptorImpl(
         ctx.module.findClassAcrossModuleDependencies(
           ClassId.topLevel(InjektFqNames.ClassifierInfo)
         )?.defaultType ?: return,
-        mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
+        mapOf("value".asNameId() to StringValue(serializedInfo)),
         SourceElement.NO_SOURCE
       )
     )
   }
 }
-
-private fun AnnotationDescriptor.readChunkedValue() = allValueArguments
-  .values
-  .single()
-  .cast<ArrayValue>()
-  .value.joinToString("") { it.value.toString() }
-
-private fun String.toChunkedArrayValue() = ArrayValue(
-  chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
-) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
 @OptIn(ExperimentalStdlibApi::class)
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {

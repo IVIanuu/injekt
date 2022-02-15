@@ -248,7 +248,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
       callContext: CallContext
     ) {
       if (candidate is ProviderInjectable) {
-        when (candidate.type.callContext(ctx)) {
+        when (candidate.type.callContext) {
           CallContext.DEFAULT -> {}
           CallContext.COMPOSABLE -> append("@Composable ")
           CallContext.SUSPEND -> append("suspend ")
@@ -294,7 +294,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
             failure.candidate,
-            if (candidate is ProviderInjectable) request.type.callContext(ctx) else callContext
+            if (candidate is ProviderInjectable) request.type.callContext else callContext
           )
         } else {
           append("/* ")
@@ -340,7 +340,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
         failureRequest,
         failure,
         null,
-        if (failureRequest.type.isFunctionType) failureRequest.type.callContext(ctx)
+        if (failureRequest.type.isFunctionType) failureRequest.type.callContext
         else scope.callContext
       )
     }

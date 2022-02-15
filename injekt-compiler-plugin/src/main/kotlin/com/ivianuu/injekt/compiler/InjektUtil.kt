@@ -243,8 +243,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-fun String.nextFrameworkKey(next: String) = "$this:$next"
-
 fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }
@@ -300,29 +298,6 @@ fun classifierDescriptorForFqName(
     ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
 
-fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
-  ctx.trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
-    val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-      ?.first
-      ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.takeIf { it.uniqueKey(ctx) == key }
-      ?: functionDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull {
-          it.uniqueKey(ctx) == key
-        }
-      ?: propertyDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull { it.uniqueKey(ctx) == key }
-      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-        .safeAs<ClassifierDescriptorWithTypeParameters>()
-        ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(ctx) == key }
-      ?: error("Could not get for $fqName $key")
-    classifier
-  }
-
 fun injectablesForFqName(
   fqName: FqName,
   ctx: Context
@@ -339,23 +314,6 @@ fun injectablesForFqName(
         }
       }
     }
-    ?: emptyList()
-
-private fun functionDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<FunctionDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.first
-    ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?: emptyList()
-
-private fun propertyDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)?.first
-    ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
     ?: emptyList()
 
 fun memberScopeForFqName(
