@@ -7,9 +7,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
@@ -22,22 +20,18 @@ class ClassifierRef(
   val lazySuperTypes: Lazy<List<TypeRef>> = lazyOf(emptyList()),
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
-  val isTag: Boolean = false,
   val descriptor: ClassifierDescriptor? = null,
-  val tags: List<TypeRef> = emptyList(),
-  val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
   val declaresInjectables: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 
-  val untaggedType: TypeRef = TypeRef(
+  val defaultType: TypeRef = TypeRef(
     classifier = this,
     arguments = typeParameters.map { it.defaultType },
     variance = variance
   )
-  val defaultType = tags.wrap(untaggedType)
 
   fun copy(
     key: String = this.key,
@@ -46,35 +40,18 @@ class ClassifierRef(
     lazySuperTypes: Lazy<List<TypeRef>> = this.lazySuperTypes,
     isTypeParameter: Boolean = this.isTypeParameter,
     isObject: Boolean = this.isObject,
-    isTag: Boolean = this.isTag,
     descriptor: ClassifierDescriptor? = this.descriptor,
-    tags: List<TypeRef> = this.tags,
-    isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
-    key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject, isTag,
-    descriptor, tags, isSpread, primaryConstructorPropertyParameters, variance, declaresInjectables
+    key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject,
+    descriptor, primaryConstructorPropertyParameters, variance, declaresInjectables
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
   override fun hashCode(): Int = key.hashCode()
   override fun toString(): String = key
-}
-
-fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextTag, acc ->
-  nextTag.wrap(acc)
-}
-
-fun TypeRef.unwrapTags(): TypeRef = if (!classifier.isTag) this
-else arguments.last().unwrapTags()
-
-fun TypeRef.wrap(type: TypeRef): TypeRef {
-  val newArguments = if (arguments.size < classifier.typeParameters.size)
-    arguments + type
-  else arguments.dropLast(1) + type
-  return withArguments(newArguments)
 }
 
 fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
@@ -87,29 +64,22 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       ?.toMutableList()
       ?: mutableListOf()
 
-    val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
-
-    if (isTag) {
-      typeParameters += ClassifierRef(
-        key = "${uniqueKey(ctx)}.\$TT",
-        fqName = fqNameSafe.child("\$TT".asNameId()),
-        isTypeParameter = true,
-        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
-        variance = TypeVariance.OUT
-      )
-    }
-
     ClassifierRef(
       key = original.uniqueKey(ctx),
       fqName = original.fqNameSafe,
       typeParameters = typeParameters,
-      lazySuperTypes = info.lazySuperTypes,
+      lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
+        val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
+          ?.toTypeRef(ctx)
+        when {
+          expandedType != null -> listOf(expandedType)
+          else -> typeConstructor.supertypes.map { it.toTypeRef(ctx) }
+        }
+      }
+      ,
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-      isTag = isTag,
       descriptor = this,
-      tags = info.tags,
-      isSpread = hasAnnotation(InjektFqNames.Spread),
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
@@ -133,9 +103,9 @@ fun KotlinType.toTypeRef(
 
     val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef(ctx)
 
-    val rawType = TypeRef(
+    var r = TypeRef(
       classifier = classifier,
-      isMarkedNullable = kotlinType.isMarkedNullable,
+      isNullable = kotlinType.isMarkedNullable,
       arguments = kotlinType.arguments
         // we use take here because an inner class also contains the type parameters
         // of it's parent class which is irrelevant for us
@@ -146,12 +116,8 @@ fun KotlinType.toTypeRef(
             isStarProjection = it.isStarProjection,
             variance = it.projectionKind.convertVariance()
           )
-        }
-        .let {
-          if (classifier.isTag && it.size != classifier.typeParameters.size)
-            it + ctx.nullableAnyType
-          else it
         },
+      isComposable = kotlinType.hasAnnotation(InjektFqNames.Composable),
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
       isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
       isStarProjection = false,
@@ -160,26 +126,9 @@ fun KotlinType.toTypeRef(
       isError = isError
     )
 
-    val tagAnnotations = unwrapped.getTags()
-    var r = if (tagAnnotations.isNotEmpty()) {
-      tagAnnotations
-        .map { it.type.toTypeRef(ctx) }
-        .map {
-          it.copy(
-            arguments = it.arguments,
-            isMarkedNullable = rawType.isMarkedNullable,
-            isProvide = rawType.isProvide,
-            variance = rawType.variance
-          )
-        }
-        .wrap(rawType)
-    } else rawType
-
     // expand the type
-    while (r.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
-      val expanded = r.unwrapTags().superTypes.single()
-      r = if (r.classifier.isTag) r.wrap(expanded) else expanded
-    }
+    while (r.classifier.descriptor is TypeAliasDescriptor)
+      r = r.superTypes.single()
 
     r
   }
@@ -187,8 +136,9 @@ fun KotlinType.toTypeRef(
 
 class TypeRef(
   val classifier: ClassifierRef,
-  val isMarkedNullable: Boolean = false,
+  val isNullable: Boolean = false,
   val arguments: List<TypeRef> = emptyList(),
+  val isComposable: Boolean = false,
   val isProvide: Boolean = false,
   val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
@@ -229,10 +179,10 @@ class TypeRef(
           this[parameter] = arguments[index]
       }
       _superTypes = if (substitutionMap.isEmpty()) classifier.superTypes
-        .map { it.withNullability(isMarkedNullable) }
+        .map { it.withNullability(isNullable) }
       else classifier.superTypes.map {
         it.substitute(substitutionMap)
-          .withNullability(isMarkedNullable)
+          .withNullability(isNullable)
       }
     }
     return _superTypes!!
@@ -257,7 +207,7 @@ class TypeRef(
   val isNullableType: Boolean get() {
     if (_isNullableType == null) {
       fun inner(): Boolean {
-        if (isMarkedNullable) return true
+        if (isNullable) return true
         for (superType in superTypes)
           if (superType.isNullableType) return true
         return false
@@ -281,8 +231,9 @@ class TypeRef(
   override fun hashCode(): Int {
     if (_hashCode == 0) {
       var result = classifier.hashCode()
-      result = 31 * result + isMarkedNullable.hashCode()
+      result = 31 * result + isNullable.hashCode()
       result = 31 * result + arguments.hashCode()
+      result = 31 * result + isComposable.hashCode()
       result = 31 * result + isProvide.hashCode()
       result = 31 * result + isInject.hashCode()
       result = 31 * result + isStarProjection.hashCode()
@@ -303,8 +254,8 @@ fun TypeRef.withArguments(arguments: List<TypeRef>): TypeRef =
   else copy(arguments = arguments)
 
 fun TypeRef.withNullability(isMarkedNullable: Boolean) =
-  if (this.isMarkedNullable == isMarkedNullable) this
-  else copy(isMarkedNullable = isMarkedNullable)
+  if (this.isNullable == isMarkedNullable) this
+  else copy(isNullable = isMarkedNullable)
 
 fun TypeRef.withVariance(variance: TypeVariance) =
   if (this.variance == variance) this
@@ -312,8 +263,9 @@ fun TypeRef.withVariance(variance: TypeVariance) =
 
 fun TypeRef.copy(
   classifier: ClassifierRef = this.classifier,
-  isMarkedNullable: Boolean = this.isMarkedNullable,
+  isNullable: Boolean = this.isNullable,
   arguments: List<TypeRef> = this.arguments,
+  isComposable: Boolean = this.isComposable,
   isProvide: Boolean = this.isProvide,
   isInject: Boolean = this.isInject,
   isStarProjection: Boolean = this.isStarProjection,
@@ -323,8 +275,9 @@ fun TypeRef.copy(
   isError: Boolean = this.isError
 ) = TypeRef(
   classifier,
-  isMarkedNullable,
+  isNullable,
   arguments,
+  isComposable,
   isProvide,
   isInject,
   isStarProjection,
@@ -341,6 +294,9 @@ val STAR_PROJECTION_TYPE = TypeRef(
 
 val TypeRef.hasErrors: Boolean
   get() = isError || arguments.any { it.hasErrors }
+
+val TypeRef.isComposableType: Boolean
+  get() = isComposable || superTypes.any { it.isComposableType }
 
 fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
   action(this) || arguments.any { it.anyType(action) }
@@ -370,20 +326,20 @@ fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<Class
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
   if (map.isEmpty()) return this
   map[classifier]?.let { substitution ->
-    val newNullability = if (isStarProjection) substitution.isMarkedNullable
-    else isMarkedNullable || substitution.isMarkedNullable
+    val newNullability = if (isStarProjection) substitution.isNullable
+    else isNullable || substitution.isNullable
     val newIsProvide = isProvide || substitution.isProvide
     val newIsInject = isInject || substitution.isInject
     val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
     else variance
-    return if (newNullability != substitution.isMarkedNullable ||
+    return if (newNullability != substitution.isNullable ||
       newIsProvide != substitution.isProvide ||
       newIsInject != substitution.isInject ||
       newVariance != substitution.variance
     ) {
       substitution.copy(
         // we copy nullability to support T : Any? -> String
-        isMarkedNullable = newNullability,
+        isNullable = newNullability,
         // we copy injectable kind to support @Provide C -> @Provide String
         // fallback to substitution injectable
         isProvide = newIsProvide,
@@ -415,6 +371,8 @@ fun TypeRef.render(
   fun TypeRef.inner() {
     if (!renderType(this)) return
 
+    if (isComposable) append("${InjektFqNames.Composable}<")
+
     when {
       isStarProjection -> append("*")
       else -> append(classifier.fqName.asString())
@@ -427,7 +385,8 @@ fun TypeRef.render(
       }
       append(">")
     }
-    if (isMarkedNullable && !isStarProjection) append("?")
+    if (isNullable && !isStarProjection) append("?")
+    if (isComposable) append(">")
   }
   inner()
 }
@@ -465,8 +424,7 @@ val TypeRef.isProvideFunctionType: Boolean
 
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
-      classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction") ||
-      (classifier.fqName == InjektFqNames.Composable && arguments.last().isFunctionType)
+      classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
 
 fun effectiveVariance(
   declared: TypeVariance,

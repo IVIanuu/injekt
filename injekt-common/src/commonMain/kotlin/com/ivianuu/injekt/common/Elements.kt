@@ -12,12 +12,12 @@ interface Elements<N> {
 
 @Provide class ElementsImpl<N>(
   private val key: TypeKey<Elements<N>>,
-  elements: List<ProvidedElement<N, *>>
+  elements: List<Element<N, *>>
 ) : Elements<N> {
   @OptIn(ExperimentalStdlibApi::class)
   private val elements = buildMap<String, Any> {
-    for ((key, element) in elements)
-      this[key.value] = element
+    for (element in elements)
+      this[element.key.value] = element.value
   }
 
   override fun <T> invoke(@Inject key: TypeKey<T>): T =
@@ -25,30 +25,7 @@ interface Elements<N> {
       ?: error("No element found for ${key.value} in ${this.key.value}")
 }
 
-@Tag annotation class Element<N> {
-  companion object {
-    @Provide class Module<@Spread T : @Element<N> S, S : Any, N> {
-      @Provide fun provided(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
-
-      @Provide inline fun accessor(value: T): S = value
-    }
-  }
-}
-
-data class ProvidedElement<N, T : Any>(val key: TypeKey<T>, val element: T) {
-  companion object {
-    @Provide fun <N> defaultElements(): Collection<ProvidedElement<N, *>> = emptyList()
-  }
-}
-
-@Tag annotation class Eager<N> {
-  companion object {
-    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N> {
-      @Provide fun scoped(value: T): @Scoped<N> S = value
-
-      @Provide fun element(value: S): @Element<N> @Initializer S = value
-
-      @Tag private annotation class Initializer
-    }
-  }
-}
+data class Element<N, T : Any>(
+  @Provide val value: T,
+  @Inject val key: TypeKey<T>
+)

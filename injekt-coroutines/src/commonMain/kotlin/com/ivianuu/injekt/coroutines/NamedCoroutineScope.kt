@@ -8,26 +8,30 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
+import kotlin.jvm.*
 
-typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope
-
-@Tag annotation class NamedCoroutineScopeTag<N> {
+@JvmInline value class NamedCoroutineScope<N : Scope.Name>(override val _value: Any?) : Tag<CoroutineScope> {
   companion object {
-    @Provide fun <N> scope(
-      context: NamedCoroutineContext<N>
-    ): @Scoped<N> NamedCoroutineScope<N> = object : CoroutineScope, Disposable {
-      override val coroutineContext: CoroutineContext = context + SupervisorJob()
-      override fun dispose() {
-        coroutineContext.cancel()
-      }
+    @Provide fun <N : Scope.Name> scope(
+      context: NamedCoroutineContext<N>,
+      scope: Scope<N>,
+      nKey: TypeKey<N>
+    ): NamedCoroutineScope<N> = scope {
+      NamedCoroutineScope(
+        object : CoroutineScope, Disposable {
+          override val coroutineContext: CoroutineContext = context() + SupervisorJob()
+          override fun dispose() {
+            coroutineContext.cancel()
+          }
+        }
+      )
     }
   }
 }
 
-typealias NamedCoroutineContext<N> = @NamedCoroutineContextTag<N> CoroutineContext
-
-@Tag annotation class NamedCoroutineContextTag<N> {
+@JvmInline value class NamedCoroutineContext<N>(override val _value: Any?) : Tag<CoroutineContext> {
   companion object {
-    @Provide inline fun <N> context(context: DefaultContext): NamedCoroutineContext<N> = context
+    @Provide inline operator fun <N> defaultContext(context: DefaultContext) =
+      NamedCoroutineContext<N>(context)
   }
 }

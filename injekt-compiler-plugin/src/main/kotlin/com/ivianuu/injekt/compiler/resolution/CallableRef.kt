@@ -5,6 +5,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 
 data class CallableRef(
@@ -48,15 +49,19 @@ fun CallableRef.substitute(
 @OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
   ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
-    val info = callableInfo(ctx)
     val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
+
+    val type = returnType?.toTypeRef(ctx) ?: ctx.nullableAnyType
 
     CallableRef(
       callable = this,
-      type = info.type,
-      originalType = info.type,
+      type = type,
+      originalType = type,
       typeParameters = typeParameters,
-      parameterTypes = info.parameterTypes,
+      parameterTypes = buildMap {
+        for (parameter in allParameters)
+          this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
+      },
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType

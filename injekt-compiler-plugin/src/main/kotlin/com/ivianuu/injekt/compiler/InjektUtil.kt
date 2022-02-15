@@ -111,12 +111,6 @@ fun String.asNameId() = Name.identifier(this)
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
 
-fun Annotated.getTags(): List<AnnotationDescriptor> =
-  annotations.filter {
-    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
-  }
-
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
   ctx.trace!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
     when (val original = this.original) {

@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.unit.*
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.samples.android.domain.*
 import kotlinx.coroutines.*
@@ -60,12 +61,12 @@ data class CounterModel(
   CounterModel(
     state = counter.collectAsState(Counter(0)).value,
     incCounter = {
-      scope.launch {
+      scope().launch {
         incCounter()
       }
     },
     decCounter = {
-      scope.launch {
+      scope().launch {
         decCounter()
       }
     }

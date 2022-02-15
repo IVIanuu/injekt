@@ -14,6 +14,6 @@ class App : Application() {
   val appComponent by lazy { inject<AppComponent>() }
 }
 
-object AppScope
+object AppScope : Scope.Name
 
 @Provide data class AppComponent(val mainActivityComponent: (Scope<ActivityScope>) -> MainActivityComponent)

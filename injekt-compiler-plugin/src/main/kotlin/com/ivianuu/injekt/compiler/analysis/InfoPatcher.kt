@@ -22,24 +22,11 @@ class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
       is ClassDescriptor -> {
         if (descriptor.visibility.shouldPersistInfo()) {
           descriptor.classifierInfo(ctx)
-          descriptor.declaredTypeParameters
-            .forEach { it.classifierInfo(ctx) }
-          descriptor.constructors
-            .forEach { it.callableInfo(ctx) }
-        }
-      }
-      is CallableDescriptor -> {
-        if (descriptor.visibility.shouldPersistInfo()) {
-          descriptor.callableInfo(ctx)
-          descriptor.typeParameters
-            .forEach { it.classifierInfo(ctx) }
         }
       }
       is TypeAliasDescriptor -> {
         if (descriptor.visibility.shouldPersistInfo()) {
           descriptor.classifierInfo(ctx)
-          descriptor.declaredTypeParameters
-            .forEach { it.classifierInfo(ctx) }
         }
       }
     }

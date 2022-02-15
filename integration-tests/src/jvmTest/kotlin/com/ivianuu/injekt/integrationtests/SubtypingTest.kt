@@ -13,7 +13,6 @@ class SubtypingTest {
   @Test fun testNullableAnyIsSuperTypeOfEveryOtherType() = withTypeCheckerContext {
     stringType shouldBeSubTypeOf nullableAny
     stringType.nullable() shouldBeSubTypeOf nullableAny
-    tag1.wrap(stringType) shouldBeSubTypeOf nullableAny
   }
 
   @Test fun testNonNullAnyIsSuperTypeOfEveryOtherNonNullType() = withTypeCheckerContext {
@@ -53,8 +52,8 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable8() = withTypeCheckerContext {
-    listType.withArguments(tag1.wrap(typeParameter())) shouldBeAssignableTo
-        listType.withArguments(listOf(tag1.wrap(stringType)))
+    listType.withArguments(typeParameter()) shouldBeAssignableTo
+        listType.withArguments(listOf(stringType))
   }
 
   @Test fun testMatchingGenericTypeIsAssignable2() = withTypeCheckerContext {
@@ -65,9 +64,9 @@ class SubtypingTest {
   }
 
   @Test fun testMatchingGenericTypeIsAssignable3() = withTypeCheckerContext {
-    val tpB = typeParameter(tag1.wrap(charSequenceType), fqName = FqName("B"))
+    val tpB = typeParameter(charSequenceType, fqName = FqName("B"))
     val tpA = typeParameter(tpB, fqName = FqName("A"))
-    tag1.wrap(stringType) shouldBeAssignableTo tpA
+    stringType shouldBeAssignableTo tpA
   }
 
   @Test fun testMatchingGenericTypeIsAssignable5() = withTypeCheckerContext {
@@ -93,26 +92,6 @@ class SubtypingTest {
     val charSequenceTypeClass = classType(typeClass.withArguments(charSequenceType))
     val stringTypeClass = typeClass.withArguments(stringType)
     charSequenceTypeClass shouldBeAssignableTo stringTypeClass
-  }
-
-  @Test fun testSameTagsIsAssignable() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldBeAssignableTo tag1.wrap(stringType)
-  }
-
-  @Test fun testDifferentTagsIsNotAssignable() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldNotBeAssignableTo tag2.wrap(stringType)
-  }
-
-  @Test fun testTaggedIsNotSubTypeOfUntagged() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldNotBeSubTypeOf stringType
-  }
-
-  @Test fun testTaggedIsNotAssignableToUntagged() = withTypeCheckerContext {
-    tag1.wrap(stringType) shouldNotBeAssignableTo stringType
-  }
-
-  @Test fun testUntaggedTypeParameterIsNotAssignableToTaggedType() = withTypeCheckerContext {
-    typeParameter(stringType) shouldNotBeAssignableTo tag1.wrap(stringType)
   }
 
   @Test fun testSubTypeOfTypeParameterWithNullableAnyUpperBound() = withTypeCheckerContext {
@@ -152,13 +131,7 @@ class SubtypingTest {
     subType(stringType) shouldBeAssignableTo typeParameter(stringType.nullable())
   }
 
-  @Test fun testNestedTaggedSubTypeOfNestedTaggedTypeParameter() = withTypeCheckerContext {
-    listType.withArguments(tag1.wrap(stringType)) shouldBeAssignableTo
-        listType.withArguments(tag1.wrap(typeParameter(nullable = false)))
-  }
-
-  @Test
-  fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() =
+  @Test fun testSubTypeWithTypeParameterIsAssignableToSuperTypeWithOtherTypeParameterButSameSuperTypes() =
     withTypeCheckerContext {
       mutableListType.withArguments(typeParameter()) shouldBeAssignableTo listType.withArguments(typeParameter())
     }

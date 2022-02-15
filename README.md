@@ -181,24 +181,6 @@ Value classes:
 fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
 ```
 
-Tags:
-```kotlin
-@Tag annotation class PlaylistId
-@Tag annotation class TrackId
-
-fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: @TrackId String): List<Track> = ...
-```
-
-Optionally you can add a typealias for your tag to make it easier to use
-```kotlin
-@Tag annotation class PlaylistIdTag
-typealias PlaylistId = @PlaylistIdTag String
-@Tag annotation class TrackIdTag
-typealias TrackId = @TrackIdTag String
-
-fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
-```
-
 # Injectable chaining
 TODO
 

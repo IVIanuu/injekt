@@ -6,14 +6,16 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
 import kotlinx.atomicfu.locks.*
+import kotlin.jvm.*
 
-interface Scope<N> : Disposable {
+interface Scope<N : Scope.Name> : Disposable {
   operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T
+  interface Name
 }
 
-fun <N> Scope(): Scope<N> = ScopeImpl()
+fun <N : Scope.Name> Scope(): Scope<N> = ScopeImpl()
 
-private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
+private class ScopeImpl<N : Scope.Name> : SynchronizedObject(), Scope<N>, Disposable {
   private val values = mutableMapOf<String, Any>()
 
   override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
@@ -26,15 +28,5 @@ private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
     }.forEach {
       (it as? Disposable)?.dispose()
     }
-  }
-}
-
-@Tag annotation class Scoped<N> {
-  companion object {
-    @Provide fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
-      init: () -> T,
-      scope: Scope<N>,
-      key: TypeKey<S>
-    ): S = scope(key, init)
   }
 }

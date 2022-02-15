@@ -531,8 +531,8 @@ private fun InjectablesScope.compareType(
   if (!a.isStarProjection && b.isStarProjection) return -1
   if (a.isStarProjection && !b.isStarProjection) return 1
 
-  if (!a.isMarkedNullable && b.isMarkedNullable) return -1
-  if (!b.isMarkedNullable && a.isMarkedNullable) return 1
+  if (!a.isNullable && b.isNullable) return -1
+  if (!b.isNullable && a.isNullable) return 1
 
   if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
   if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1

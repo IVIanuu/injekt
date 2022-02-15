@@ -22,7 +22,7 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeChec
   val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef(ctx = ctx) }
   val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
-    anyType.copy(isMarkedNullable = true)
+    anyType.copy(isNullable = true)
   }
   val sourceKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.SourceKey))

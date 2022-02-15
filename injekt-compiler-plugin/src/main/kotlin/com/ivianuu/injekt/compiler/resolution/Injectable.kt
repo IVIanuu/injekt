@@ -82,18 +82,17 @@ class ProviderInjectable(
   }
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
-      type = type.unwrapTags().arguments.last(),
+      type = type.arguments.last(),
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
       isInline = isInline,
       isLazy = !isInline,
-      isRequired = !type.unwrapTags().arguments.last().isNullableType
+      isRequired = !type.arguments.last().isNullableType
     )
   )
 
   val parameterDescriptors = type
-    .unwrapTags()
     .classifier
     .descriptor!!
     .cast<ClassDescriptor>()
@@ -116,13 +115,13 @@ class ProviderInjectable(
         .mapIndexed { index, parameter ->
           parameter
             .toCallableRef(ownerScope.ctx)
-            .copy(type = type.unwrapTags().arguments[index])
+            .copy(type = type.arguments[index])
         }
     )
   )
 
   override val originalType: TypeRef
-    get() = type.unwrapTags().classifier.defaultType
+    get() = type.classifier.defaultType
 
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(

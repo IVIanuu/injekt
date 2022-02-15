@@ -125,7 +125,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     fqName = fqName,
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (upperBounds.isNotEmpty()) upperBounds.toList() else
-        listOf(any.copy(isMarkedNullable = nullable))
+        listOf(any.copy(isNullable = nullable))
     },
     isTypeParameter = true,
     variance = variance
@@ -186,9 +186,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   }
 }
 
-fun TypeRef.nullable() = copy(isMarkedNullable = true)
-
-fun TypeRef.nonNull() = copy(isMarkedNullable = false)
+fun TypeRef.nullable() = copy(isNullable = true)
 
 fun TypeRef.withArguments(vararg arguments: TypeRef) =
   withArguments(arguments.toList())

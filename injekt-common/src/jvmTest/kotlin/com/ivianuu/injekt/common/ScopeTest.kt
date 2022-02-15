@@ -59,23 +59,4 @@ class ScopeTest {
     scope.dispose()
     disposeCalls shouldBe 1
   }
-
-  @Test fun testScoped() {
-    var callCount = 0
-
-    class Foo
-
-    @Provide fun scopedFoo(): @Scoped<TestScope> Foo {
-      callCount++
-      return Foo()
-    }
-
-    @Provide val scope = Scope<TestScope>()
-    callCount shouldBe 0
-    val a = inject<Foo>()
-    callCount shouldBe 1
-    val b = inject<Foo>()
-    callCount shouldBe 1
-    a shouldBeSameInstanceAs b
-  }
 }

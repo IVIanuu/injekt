@@ -19,7 +19,7 @@ fun TypeRef.isEqualTo(other: TypeRef, ctx: TypeCheckerContext): Boolean {
   if (ctx.isDenotable(this) && ctx.isDenotable(other)) {
     if (classifier != other.classifier) return false
 
-    if (isMarkedNullable != other.isMarkedNullable) return false
+    if (isNullable != other.isNullable) return false
 
     for (i in arguments.indices) {
       val thisParameter = arguments[i]
@@ -51,12 +51,14 @@ fun TypeRef.isSubTypeOf(
     ?.let { return it }
 
   if (classifier.fqName == InjektFqNames.Nothing &&
-    (!isMarkedNullable || superType.isNullableType)
+    (!isNullable || superType.isNullableType)
   ) return true
 
   if (superType.classifier.fqName == InjektFqNames.Any &&
-    (superType.isMarkedNullable || !isNullableType)
+    (superType.isNullable || !isNullableType)
   ) return true
+
+  if (superType.isComposableType && !isComposableType) return false
 
   subtypeView(superType.classifier)
     ?.let { return it.isSubTypeOfSameClassifier(superType, ctx) }
@@ -68,7 +70,7 @@ private fun TypeRef.isSubTypeOfSameClassifier(
   superType: TypeRef,
   ctx: TypeCheckerContext
 ): Boolean {
-  if (!superType.isMarkedNullable && isMarkedNullable) return false
+  if (!superType.isNullable && isNullable) return false
 
   for (i in arguments.indices) {
     val argument = arguments[i]
@@ -161,39 +163,6 @@ sealed interface ConstraintPosition {
   object FixVariable : ConstraintPosition
   object DeclaredUpperBound : ConstraintPosition
   object Unknown : ConstraintPosition
-}
-
-fun buildContextForSpreadingInjectable(
-  constraintType: TypeRef,
-  candidateType: TypeRef,
-  staticTypeParameters: List<ClassifierRef>,
-  ctx: TypeCheckerContext
-): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
-  val candidateTypeParameters = mutableListOf<ClassifierRef>()
-  candidateType.allTypes.forEach {
-    if (it.classifier.isTypeParameter)
-      candidateTypeParameters += it.classifier
-  }
-  val typeCtx = candidateType.buildContext(
-    constraintType,
-    candidateTypeParameters + staticTypeParameters,
-    true,
-    ctx
-  )
-
-  val map = if (typeCtx.isOk) {
-    val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
-    val rawMap = typeCtx.fixedTypeVariables
-    rawMap.forEach { (key, value) ->
-      if (value.classifier in candidateTypeParameters) {
-        swapMap[value.classifier] = key.defaultType
-      }
-    }
-    rawMap
-      .filterKeys { it !in candidateTypeParameters }
-      .mapValues { it.value.substitute(swapMap) }
-  } else emptyMap()
-  return typeCtx to map
 }
 
 fun TypeRef.buildContext(
@@ -300,7 +269,7 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
     val constraintType = constraint.type
 
     if (constraintType.classifier == constraint.typeVariable) {
-      if (constraintType.isMarkedNullable && constraint.kind == ConstraintKind.LOWER)
+      if (constraintType.isNullable && constraint.kind == ConstraintKind.LOWER)
         return false
       return true
     }
@@ -478,7 +447,7 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
 
     var result = true
 
-    if (typeVariable.isMarkedNullable) {
+    if (typeVariable.isNullable) {
       result = superType.classifier in typeVariables ||
           ctx.nullableNothingType.isSubTypeOf(superType, this)
     }
@@ -882,7 +851,7 @@ private enum class ResultNullability {
 
   protected val TypeRef.resultNullability: ResultNullability
     get() = when {
-      isMarkedNullable -> ACCEPT_NULL
+      isNullable -> ACCEPT_NULL
       !isNullableType -> NOT_NULL
       else -> UNKNOWN
     }
