@@ -27,10 +27,6 @@ class CommonInjectablesTest {
     inject<KClass<Foo>>()
   }
 
-  @Test fun testCanResolveKType() {
-    inject<KTypeT<Foo>>()
-  }
-
   @Test fun testCanResolveTypeKey() {
     inject<TypeKey<Foo>>()
   }

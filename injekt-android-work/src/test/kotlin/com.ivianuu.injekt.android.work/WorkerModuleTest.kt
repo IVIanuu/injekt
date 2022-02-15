@@ -16,17 +16,21 @@ import org.robolectric.annotation.*
 
 @Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
-class InjektWorkerTest {
-  @Test fun testInjektWorker() {
+class WorkerModuleTest {
+  @Test fun testWorkerModule() {
     val workerFactory = inject<(Context) -> WorkerFactory>()(mockk())
     workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
       .shouldBeTypeOf<TestWorker>()
   }
 }
 
-@Provide @InjektWorker class TestWorker(
+@Provide class TestWorker(
   appContext: Context,
   workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
   override fun doWork(): Result = Result.success()
+
+  companion object {
+    @Provide val module = WorkerModule<TestWorker>()
+  }
 }

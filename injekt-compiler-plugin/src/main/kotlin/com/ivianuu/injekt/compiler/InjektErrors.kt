@@ -102,33 +102,6 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val MULTIPLE_SPREADS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "a declaration may have only one @Spread type parameter"
-          )
-        }
-
-    @JvmField val SPREAD_ON_NON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
-          )
-        }
-
-    @JvmField val TAG_WITH_VALUE_PARAMETERS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "tag cannot have value parameters"
-          )
-        }
-
     @JvmField val MALFORMED_INJECTABLE_IMPORT =
       DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
@@ -294,7 +267,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           append("{ ")
           if (candidate.parameterDescriptors.isNotEmpty()) {
             for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
-              val argument = candidate.type.unwrapTags().arguments[index]
+              val argument = candidate.type.arguments[index]
               append("${parameter.name}: ${argument.renderToString()}")
               if (index != candidate.parameterDescriptors.lastIndex)
                 append(",")

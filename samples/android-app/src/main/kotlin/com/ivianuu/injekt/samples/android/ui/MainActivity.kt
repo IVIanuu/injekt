@@ -31,4 +31,4 @@ class MainActivity : ComponentActivity() {
 
 @Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)
 
-object ActivityScope
+object ActivityScope : Scope.Name

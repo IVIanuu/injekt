@@ -61,16 +61,6 @@ class SuppressionTest {
     """
   )
 
-  @Test fun testDoesNotShowUnusedTypeParameterIfUsedInAnnotation() = codegen(
-    """
-      typealias ComponentScope<C> = @ComponentScopeTag<C> String
-
-      @Tag annotation class ComponentScopeTag<C : Component>
-    """
-  ) {
-    shouldNotContainMessage("Type alias parameter C is not used in the expanded type String and does not affect type checking")
-  }
-
   @Test fun testDoesNotWarnInlineOnProvideDeclaration() = codegen(
     """
       @Provide inline fun func() {

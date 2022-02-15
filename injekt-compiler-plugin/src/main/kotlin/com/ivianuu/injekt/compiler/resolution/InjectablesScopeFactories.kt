@@ -267,7 +267,7 @@ private fun ClassInjectablesScope(
     name = name,
     parent = finalParent,
     ownerDescriptor = clazz,
-    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
+    initialInjectables = listOf(clazz.injectableReceiver(ctx)),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
     ctx = ctx
   )
@@ -299,7 +299,7 @@ private fun ClassInitInjectablesScope(
     "COMPANION INIT ${clazz.containingDeclaration.fqNameSafe} at ${injectableDeclaration?.name}"
   else "CLASS INIT ${clazz.fqNameSafe} at ${injectableDeclaration?.name}"
 
-  val thisInjectable = clazz.injectableReceiver(false, ctx)
+  val thisInjectable = clazz.injectableReceiver(ctx)
 
   val classInitScope = InjectablesScope(
     name = name,

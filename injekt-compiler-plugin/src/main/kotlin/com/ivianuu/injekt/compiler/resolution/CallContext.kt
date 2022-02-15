@@ -30,7 +30,7 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
   if (ctx.trace == null) return callContextOfThis(ctx)
 
   return ctx.trace!!.getOrPut(InjektWritableSlices.CALL_CONTEXT, this) {
-    if (composeCompilerInClasspath && isComposableCallable(ctx.trace!!.bindingContext))
+    if (composeCompilerInClasspath && isComposableCallable(ctx.trace.bindingContext))
       return@getOrPut CallContext.COMPOSABLE
 
     val initialNode = findPsi() ?: return@getOrPut callContextOfThis(ctx)
@@ -100,6 +100,6 @@ private fun CallableDescriptor.callContextOfThis(ctx: Context): CallContext = wh
 fun TypeRef.callContext(ctx: Context): CallContext = when {
   classifier.fqName.asString()
     .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
-  classifier.fqName == InjektFqNames.Composable -> CallContext.COMPOSABLE
+  isComposableType -> CallContext.COMPOSABLE
   else -> CallContext.DEFAULT
 }

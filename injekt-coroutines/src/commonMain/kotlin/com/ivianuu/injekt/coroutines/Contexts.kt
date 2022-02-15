@@ -5,39 +5,33 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
+import kotlin.jvm.*
 
-typealias DefaultContext = @DefaultContextTag CoroutineContext
-
-@Tag annotation class DefaultContextTag {
+@JvmInline value class DefaultContext(override val _value: Any?) : Tag<CoroutineContext> {
   companion object {
     @Provide inline val context: DefaultContext
-      get() = Dispatchers.Default
+      get() = DefaultContext(Dispatchers.Default)
   }
 }
 
-typealias MainContext = @MainContextTag CoroutineContext
-
-@Tag annotation class MainContextTag {
+@JvmInline value class MainContext(override val _value: Any?) : Tag<CoroutineContext> {
   companion object {
     @Provide inline val context: MainContext
-      get() = Dispatchers.Main
+      get() = MainContext(Dispatchers.Main)
   }
 }
 
-typealias ImmediateMainContext = @ImmediateMainContextTag CoroutineContext
-
-@Tag annotation class ImmediateMainContextTag {
+@JvmInline value class ImmediateMainContext(override val _value: Any?) : Tag<CoroutineContext> {
   companion object {
-    @Provide inline val context: @ImmediateMainContextTag CoroutineContext
-      get() = Dispatchers.Main.immediate
+    @Provide inline val context: ImmediateMainContext
+      get() = ImmediateMainContext(Dispatchers.Main.immediate)
   }
 }
 
-typealias IOContext = @IOContextTag CoroutineContext
-
-@Tag annotation class IOContextTag
+@JvmInline value class IOContext(override val _value: Any?) : Tag<CoroutineContext>
 
 expect object IOInjectables {
   @Provide val context: IOContext

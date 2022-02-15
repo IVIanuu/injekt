@@ -70,14 +70,14 @@ class DuplicatesTest {
 
   @Test fun testTypeScopeDoesNotProduceDuplicates2() = codegen(
     """
-      fun invoke(): List<ProvidedElement<*, *>> {
+      fun invoke(): List<Element<*, *>> {
         class MyScope
       
         @Provide fun unit() = Unit
       
-        @Provide fun unitElement(unit: Unit): @Element<MyScope> Unit = unit
+        @Provide fun unitElement(unit: Unit) = Element<MyScope, Unit>(unit)
       
-        return inject<List<ProvidedElement<*, *>>>()
+        return inject<List<Element<*, *>>>()
       }
     """
   ) {
@@ -97,23 +97,5 @@ class DuplicatesTest {
     """
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 1
-  }
-
-  @Test fun testSpreadingInjectableModuleDoesNotProduceDuplicates() = singleAndMultiCodegen(
-    """
-      @Tag annotation class Trigger
-
-      @Provide class MyModule<@Spread T : @Trigger S, S> {
-        @Provide fun provide(x: T): Pair<*, *> = x to x
-      }
-    """,
-    """
-      @Provide val int: @Trigger Int = 42
-      @Provide val string: @Trigger String = "42"
-
-      fun invoke() = inject<List<Pair<*, *>>>()
-    """
-  ) {
-    invokeSingleFile<List<*>>() shouldHaveSize 2
   }
 }

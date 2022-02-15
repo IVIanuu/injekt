@@ -159,7 +159,5 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(ctx: Context) {
 private fun IrType.isComposableFunInterface(ctx: Context): Boolean {
   val classifier = classifierOrNull?.descriptor?.toClassifierRef(ctx) ?: return false
   return classifier.descriptor!!.safeAs<ClassDescriptor>()?.isFun == true &&
-      classifier.defaultType.anySuperType {
-        it.classifier.fqName == InjektFqNames.Composable
-      }
+      classifier.defaultType.anySuperType { it.isComposableType }
 }

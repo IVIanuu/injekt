@@ -5,6 +5,7 @@
 package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 
 class Foo
 
@@ -18,11 +19,11 @@ class CommandA : Command
 
 class CommandB : Command
 
-@Tag annotation class Tag1
+@JvmInline value class Tag1<T>(override val _value: Any?) : Tag<T>
 
-@Tag annotation class Tag2
+@JvmInline value class Tag2<T>(override val _value: Any?) : Tag<T>
 
-@Tag annotation class TypedTag<T>
+@JvmInline value class TypedTag<A, T>(override val _value: Any?) : Tag<T>
 
 object TestScope1
 

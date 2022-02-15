@@ -40,13 +40,9 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: FunctionDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx)) {
+    if (descriptor.isProvide(ctx))
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
-      checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
-    } else {
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
-    }
     descriptor.valueParameters
       .checkHasNotMoreThanOneInjectAnnotatedParameter(declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
@@ -128,12 +124,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       )
     }
 
-    if (isProvider) {
-      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, ctx)
-    } else {
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, ctx)
-    }
-
     checkExceptActual(declaration, descriptor, ctx)
   }
 
@@ -158,7 +148,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: PropertyDescriptor,
     ctx: Context
   ) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
     checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
@@ -204,30 +193,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
               ?: declaration
           )
       )
-    }
-  }
-
-  private fun checkSpreadingInjectable(
-    declaration: KtDeclaration,
-    typeParameters: List<TypeParameterDescriptor>,
-    ctx: Context
-  ) {
-    val spreadParameters = typeParameters.filter { it.hasAnnotation(InjektFqNames.Spread) }
-    if (spreadParameters.size > 1) {
-      spreadParameters
-        .drop(1)
-        .forEach {
-          ctx.trace!!.report(
-            InjektErrors.MULTIPLE_SPREADS
-              .on(
-                it.findPsi()
-                  ?.safeAs<KtAnnotated>()
-                  ?.findAnnotation(InjektFqNames.Spread)
-                  ?: it.findPsi()
-                  ?: declaration
-              )
-          )
-        }
     }
   }
 
@@ -287,44 +252,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       }
     }
 
-    val (typeParameters, overriddenTypeParameters) = when (descriptor) {
-      is CallableMemberDescriptor ->
-        descriptor.typeParameters to overriddenDescriptor.cast<CallableMemberDescriptor>()
-          .typeParameters
-      is ClassifierDescriptorWithTypeParameters ->
-        descriptor.declaredTypeParameters to overriddenDescriptor.cast<ClassifierDescriptorWithTypeParameters>()
-          .declaredTypeParameters
-      else -> emptyList<TypeParameterDescriptor>() to emptyList()
-    }
-
-    for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
-      val typeParameter = typeParameters[index]
-      if (typeParameter.hasAnnotation(InjektFqNames.Spread) !=
-        overriddenTypeParameter.hasAnnotation(InjektFqNames.Spread)) {
-        return false
-      }
-    }
-
     return true
-  }
-
-  private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
-    typeParameters: List<TypeParameterDescriptor>,
-    ctx: Context
-  ) {
-    if (typeParameters.isEmpty()) return
-    for (typeParameter in typeParameters) {
-      if (typeParameter.hasAnnotation(InjektFqNames.Spread))
-        ctx.trace!!.report(
-          InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
-            .on(
-              typeParameter.findPsi()
-                ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(InjektFqNames.Spread)
-                ?: typeParameter.findPsi()!!
-            )
-        )
-    }
   }
 
   private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(

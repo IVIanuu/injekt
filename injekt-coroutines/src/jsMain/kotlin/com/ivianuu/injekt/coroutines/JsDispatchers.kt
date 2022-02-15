@@ -9,5 +9,5 @@ import kotlinx.coroutines.*
 
 actual object IOInjectables {
   @Provide actual inline val context: IOContext
-    get() = Dispatchers.Main
+    get() = IOContext(Dispatchers.Main)
 }

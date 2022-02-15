@@ -5,10 +5,11 @@
 package kotlinx.coroutines
 
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 import com.ivianuu.injekt.coroutines.*
 
 object CoroutinesInjectables {
   @OptIn(ExperimentalStdlibApi::class)
   @Provide inline fun dispatcher(context: DefaultContext): CoroutineDispatcher =
-    context[CoroutineDispatcher] ?: Dispatchers.Default
+    context()[CoroutineDispatcher] ?: Dispatchers.Default
 }

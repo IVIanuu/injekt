@@ -299,18 +299,6 @@ class ResolveTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testCanResolveStarProjectedType() = singleAndMultiCodegen(
-    """
-      @Provide fun foos() = Foo() to Foo()
-      
-      @Tag annotation class First
-      @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
-    """,
-    """
-      fun invoke() = inject<@First Foo>() 
-    """
-  )
-
   @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(
     """
       object MyObject
@@ -1071,24 +1059,6 @@ class ResolveTest {
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
-  }
-
-  @Test fun testTaggedObjectInjectableIsNotApplicableToUntaggedType() = singleAndMultiCodegen(
-    """
-      interface Logger
-
-      @Provide @Tag1 object NoopLogger : Logger
-      
-      fun log(@Inject logger: Logger) {
-      }
-    """,
-    """
-      fun invoke() = log()
-    """
-  ) {
-    compilationShouldHaveFailed(
-      "no injectable found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
-    )
   }
 
   @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(
