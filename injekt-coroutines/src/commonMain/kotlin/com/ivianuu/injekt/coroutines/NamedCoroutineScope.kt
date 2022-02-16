@@ -10,9 +10,9 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.jvm.*
 
-@JvmInline value class NamedCoroutineScope<N : Scope.Name>(override val _value: Any?) : Tag<CoroutineScope> {
+@JvmInline value class NamedCoroutineScope<N>(override val _value: Any?) : Tag<CoroutineScope> {
   companion object {
-    @Provide fun <N : Scope.Name> scope(
+    @Provide fun <N> scope(
       context: NamedCoroutineContext<N>,
       scope: Scope<N>,
       nKey: TypeKey<N>
