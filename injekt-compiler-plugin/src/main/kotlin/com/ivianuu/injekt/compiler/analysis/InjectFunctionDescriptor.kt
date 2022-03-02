@@ -37,6 +37,7 @@ class InjectValueParameterDescriptor(
 ) {
   private val declaresDefaultValue =
     underlyingDescriptor.isInject(ctx) || underlyingDescriptor.declaresDefaultValue()
+
   override fun declaresDefaultValue(): Boolean = declaresDefaultValue
 }
 
