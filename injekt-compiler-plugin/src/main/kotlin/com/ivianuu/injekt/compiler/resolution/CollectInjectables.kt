@@ -159,12 +159,7 @@ fun Annotated.isProvide(ctx: Context): Boolean {
 
     if (!isProvide && this is ParameterDescriptor)
       isProvide = type.isProvide(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide(ctx) ||
-                  containingFunction.valueParameters.getOrNull(injektIndex() - 1)
-                    ?.isInject(ctx) == true
-            } == true
+          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
 
     if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
       isProvide = constructedClass.isProvide(ctx)
@@ -184,12 +179,7 @@ fun Annotated.isInject(ctx: Context): Boolean {
 
     if (!isInject && this is ParameterDescriptor)
       isInject = type.isInject(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.let { containingFunction ->
-              containingFunction.isProvide(ctx) ||
-                  containingFunction.valueParameters.getOrNull(injektIndex() - 1)
-                      ?.isInject(ctx) == true
-            } == true
+          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
 
     if (!isInject && this is ClassConstructorDescriptor && isPrimary)
       isInject = constructedClass.isProvide(ctx)

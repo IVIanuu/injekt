@@ -42,12 +42,6 @@ interface InjektErrors {
           MAP.put(it, "parameters of a injectable are automatically treated as inject parameters")
         }
 
-    @JvmField val MULTIPLE_INJECT_PARAMETERS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(it, "parameters after the first @Inject parameter are automatically treated as inject parameters")
-        }
-
     @JvmField val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {

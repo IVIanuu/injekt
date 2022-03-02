@@ -55,7 +55,7 @@ class PersistenceTest {
     """
       @Tag annotation class MyAlias<T>
       fun <T> largeFunc(${
-        (1..150).map { "${if (it == 1) "@Inject " else ""}p$it: @MyAlias<T> Any?" }.joinToString("\n,")
+        (1..150).map { "@Inject p$it: @MyAlias<T> Any?" }.joinToString("\n,")
       }): String = ""
     """,
     """

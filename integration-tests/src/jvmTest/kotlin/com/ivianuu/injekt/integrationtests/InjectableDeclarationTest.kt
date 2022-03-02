@@ -179,7 +179,7 @@ class InjectableDeclarationTest {
 
   @Test fun testMultipleInjectValueParameter() = codegen(
     """
-      fun invoke(@Inject foo: Foo, bar: Bar) = inject<Foo>() to inject<Bar>()
+      fun invoke(@Inject foo: Foo, @Inject bar: Bar) = inject<Foo>() to inject<Bar>()
     """
   ) {
     val foo = Foo()
@@ -347,7 +347,7 @@ class InjectableDeclarationTest {
 
   @Test fun testMultipleInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
     """
-      inline fun <T, S, R> withProvidedInstances(@Provide t: T, @Provide s: S, block: (@Inject T, S) -> R) = block()
+      inline fun <T, S, R> withProvidedInstances(@Provide t: T, @Provide s: S, block: (@Inject T, @Inject S) -> R) = block()
     """,
     """
       fun invoke(foo: Foo, bar: Bar) = withProvidedInstances(foo, bar) { _, _ -> inject<Foo>() to inject<Bar>() }
