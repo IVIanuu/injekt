@@ -798,7 +798,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject foo1: Foo, foo2: Foo) = inject<Foo>()
+      fun createFoo(@Inject foo1: Foo, @Inject foo2: Foo) = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("ambiguous injectables")
@@ -810,7 +810,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject module: FooModule, foo: Foo) = inject<Foo>()
+      fun createFoo(@Inject module: FooModule, @Inject foo: Foo) = inject<Foo>()
     """,
     """
       fun invoke(foo: Foo) = createFoo(FooModule(), foo)

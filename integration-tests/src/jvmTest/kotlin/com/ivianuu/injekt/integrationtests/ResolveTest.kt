@@ -1109,7 +1109,7 @@ class ResolveTest {
       fun <T> produceState(
         vararg keys: Any?,
         @Inject scope: String,
-        Nkey: SourceKey
+        @Inject Nkey: SourceKey
       ): State<T> = TODO()
 
       fun invoke(@Inject scope: String) {
