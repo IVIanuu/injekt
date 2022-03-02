@@ -26,16 +26,6 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.jvm.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun PsiElement.ktElementOrNull() = safeAs<KtDeclaration>()
-  ?: safeAs<KtLightDeclaration<*, *>>()?.kotlinOrigin
-
-fun KtAnnotated.isProvideOrInjectDeclaration(): Boolean = hasAnnotation(InjektFqNames.Provide) ||
-    (this is KtParameter && hasAnnotation(InjektFqNames.Inject)) ||
-    safeAs<KtParameter>()?.getParentOfType<KtFunction>(false)
-      ?.isProvideOrInjectDeclaration() == true ||
-    safeAs<KtConstructor<*>>()?.getContainingClassOrObject()
-      ?.isProvideOrInjectDeclaration() == true
-
 fun ModuleDescriptor.isInjektEnabled(): Boolean = getCapability(ModuleInfo.Capability)
   ?.isInjektEnabled() ?: false
 
@@ -52,36 +42,4 @@ fun ModuleInfo.isInjektEnabled(): Boolean {
   return pluginClasspath.any {
     it.contains("injekt-compiler-plugin")
   }
-}
-
-fun DeclarationDescriptor.findPsiDeclarations(project: Project, resolveScope: GlobalSearchScope): Collection<PsiElement> {
-  if (this is PackageViewDescriptor)
-    return listOf(
-      KotlinJavaPsiFacade.getInstance(project)
-        .findPackage(fqName.asString(), resolveScope)
-    )
-
-  if (this is InjectFunctionDescriptor)
-    return underlyingDescriptor.findPsiDeclarations(project, resolveScope)
-
-  if (this is ConstructorDescriptor &&
-    constructedClass.kind == ClassKind.OBJECT)
-    return constructedClass.findPsiDeclarations(project, resolveScope)
-
-  if (this is ValueParameterDescriptor &&
-    (containingDeclaration is DeserializedDescriptor ||
-        containingDeclaration is InjectFunctionDescriptor)) {
-    return listOfNotNull(
-      containingDeclaration.findPsiDeclarations(project, resolveScope)
-        .firstOrNull()
-        .safeAs<KtFunction>()
-        ?.valueParameters
-        ?.get(index)
-    )
-  }
-
-  if (this is LazyClassReceiverParameterDescriptor)
-    return containingDeclaration.findPsiDeclarations(project, resolveScope)
-
-  return DescriptorToSourceUtilsIde.getAllDeclarations(project, this, resolveScope)
 }

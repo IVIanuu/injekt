@@ -22,29 +22,4 @@
         <listener class="com.ivianuu.injekt.ide.InjektProjectInitializer"
             topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </applicationListeners>
-
-    <extensions defaultExtensionNs="com.intellij">
-    <!--    <referencesSearch
-            implementation="com.ivianuu.injekt.ide.InjektReferencesSearcher"/>
-
-        <psi.referenceContributor
-            implementation="com.ivianuu.injekt.ide.ImportReferenceContributor"/>
-
-        <typedHandler
-            implementation="com.ivianuu.injekt.ide.ImportTypedHandlerDelegate" />
-
-        <completion.confidence
-            language="kotlin"
-            order="first"
-            implementationClass="com.ivianuu.injekt.ide.ImportCompletionConfidence"/>
--->
-        <lang.inspectionSuppressor language="kotlin"
-            implementationClass="com.ivianuu.injekt.ide.InjektInspectionSuppressor" />
-    </extensions>
-
-    <!--
-    <extensions defaultExtensionNs="org.jetbrains.kotlin">
-        <completionExtension
-            implementation="com.ivianuu.injekt.ide.ImportCompletionExtension"/>-->
-
 </idea-plugin>
