@@ -78,7 +78,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       descriptor = this,
-      primaryConstructorPropertyParameters = primaryConstructorPropertyParameters(ctx)
+      primaryConstructorPropertyParameters = primaryConstructorPropertyParameters()
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
       declaresInjectables = declaresInjectables(ctx)

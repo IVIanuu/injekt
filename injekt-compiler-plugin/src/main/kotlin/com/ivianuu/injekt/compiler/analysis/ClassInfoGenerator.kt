@@ -19,7 +19,7 @@ class ClassInfoGenerator(private val baseCtx: Context) : DeclarationChecker {
     if (descriptor is ClassDescriptor && descriptor.visibility.shouldPersistInfo()) {
       val ctx = baseCtx.withTrace(context.trace)
       descriptor.declaresInjectables(ctx)
-      descriptor.primaryConstructorPropertyParameters(ctx)
+      descriptor.primaryConstructorPropertyParameters()
     }
   }
 }

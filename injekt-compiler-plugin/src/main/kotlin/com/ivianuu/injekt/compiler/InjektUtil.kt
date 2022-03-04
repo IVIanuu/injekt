@@ -361,11 +361,11 @@ fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
     .getContributedDescriptors()
     .any { it.isProvide(ctx) }
 
-  if (visibility.shouldPersistInfo())
+  if (declaresInjectables && visibility.shouldPersistInfo())
     addAnnotation(
       AnnotationDescriptorImpl(
-        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.DeclaresInjectables))!!
-          .defaultType,
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.DeclaresInjectables))
+          ?.defaultType ?: return false,
         emptyMap(),
         SourceElement.NO_SOURCE
       )
@@ -374,7 +374,7 @@ fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
   return declaresInjectables
 }
 
-fun ClassifierDescriptor.primaryConstructorPropertyParameters(ctx: Context): List<String> {
+fun ClassifierDescriptor.primaryConstructorPropertyParameters(): List<String> {
   if (this !is ClassDescriptor) return emptyList()
 
   annotations.findAnnotation(InjektFqNames.PrimaryConstructorPropertyParameters)
@@ -397,11 +397,11 @@ fun ClassifierDescriptor.primaryConstructorPropertyParameters(ctx: Context): Lis
     }
     ?: emptyList()
 
-  if (visibility.shouldPersistInfo())
+  if (primaryConstructorPropertyParameters.isNotEmpty() && visibility.shouldPersistInfo())
     addAnnotation(
       AnnotationDescriptorImpl(
-        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.PrimaryConstructorPropertyParameters))!!
-          .defaultType,
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.PrimaryConstructorPropertyParameters))
+          ?.defaultType ?: return emptyList(),
         mapOf(
           "value".asNameId() to ArrayValue(
             primaryConstructorPropertyParameters
