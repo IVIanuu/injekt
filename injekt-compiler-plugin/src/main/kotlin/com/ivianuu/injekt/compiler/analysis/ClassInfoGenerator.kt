@@ -9,14 +9,17 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
 
-class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
+class ClassInfoGenerator(private val baseCtx: Context) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
     // requesting infos triggers saving them
-    if (descriptor is ClassDescriptor && descriptor.visibility.shouldPersistInfo())
-      descriptor.classifierInfo(baseCtx.withTrace(context.trace))
+    if (descriptor is ClassDescriptor && descriptor.visibility.shouldPersistInfo()) {
+      val ctx = baseCtx.withTrace(context.trace)
+      descriptor.declaresInjectables(ctx)
+      descriptor.primaryConstructorPropertyParameters(ctx)
+    }
   }
 }

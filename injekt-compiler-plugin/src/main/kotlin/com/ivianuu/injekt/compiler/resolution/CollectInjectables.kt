@@ -121,7 +121,7 @@ fun ResolutionScope.collectInjectables(
           declaration.injectableConstructors(ctx).forEach(consumer)
           if (!classBodyView && !includeNonProvideObjectsWithInjectables)
             declaration.companionObjectDescriptor
-              ?.takeIf { it.classifierInfo(ctx).declaresInjectables }
+              ?.takeIf { it.declaresInjectables(ctx) }
               ?.injectableReceiver(ctx)
               ?.let(consumer)
         }

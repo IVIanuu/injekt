@@ -14,8 +14,9 @@ object InjektFqNames {
   val Providers = InjektPackage.child("Providers".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
-  val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
+  val DeclaresInjectables = InternalPackage.child("DeclaresInjectables".asNameId())
   val Index = InternalPackage.child("Index".asNameId())
+  val PrimaryConstructorPropertyParameters = InternalPackage.child("PrimaryConstructorPropertyParameters".asNameId())
   val IndicesPackage = InternalPackage.child("indices".asNameId())
 
   val CommonPackage = InjektPackage.child("common".asNameId())

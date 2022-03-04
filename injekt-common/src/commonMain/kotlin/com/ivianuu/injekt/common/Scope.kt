@@ -28,4 +28,3 @@ private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
     }
   }
 }
-....

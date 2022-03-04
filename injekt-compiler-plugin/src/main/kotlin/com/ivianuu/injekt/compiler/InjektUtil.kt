@@ -20,10 +20,13 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.util.slicedMap.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
@@ -346,3 +349,87 @@ val composeCompilerInClasspath = try {
 } catch (e: ClassNotFoundException) {
   false
 }
+
+fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
+  if (this !is ClassDescriptor) return false
+  if (hasAnnotation(InjektFqNames.DeclaresInjectables)) return true
+
+  if (this !is LazyClassDescriptor) return false
+
+  val declaresInjectables = defaultType
+    .memberScope
+    .getContributedDescriptors()
+    .any { it.isProvide(ctx) }
+
+  if (visibility.shouldPersistInfo())
+    addAnnotation(
+      AnnotationDescriptorImpl(
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.DeclaresInjectables))!!
+          .defaultType,
+        emptyMap(),
+        SourceElement.NO_SOURCE
+      )
+    )
+
+  return declaresInjectables
+}
+
+fun ClassifierDescriptor.primaryConstructorPropertyParameters(ctx: Context): List<String> {
+  if (this !is ClassDescriptor) return emptyList()
+
+  annotations.findAnnotation(InjektFqNames.PrimaryConstructorPropertyParameters)
+    ?.allValueArguments
+    ?.values
+    ?.single()
+    ?.cast<ArrayValue>()
+    ?.value
+    ?.map { it.value as String }
+    ?.let { return it }
+
+  if (this !is LazyClassDescriptor) return emptyList()
+
+  val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+    ?.unsubstitutedPrimaryConstructor
+    ?.valueParameters
+    ?.transform {
+      if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
+        add(it.name.asString())
+    }
+    ?: emptyList()
+
+  if (visibility.shouldPersistInfo())
+    addAnnotation(
+      AnnotationDescriptorImpl(
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.PrimaryConstructorPropertyParameters))!!
+          .defaultType,
+        mapOf(
+          "value".asNameId() to ArrayValue(
+            primaryConstructorPropertyParameters
+              .map { StringValue(it) }
+          ) {
+            it.builtIns.array.defaultType.replace(
+              newArguments = listOf(
+                it.builtIns.stringType.asTypeProjection()
+              )
+            )
+          }
+        ),
+        SourceElement.NO_SOURCE
+      )
+    )
+
+  return primaryConstructorPropertyParameters
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+private fun Annotated.addAnnotation(annotation: AnnotationDescriptor) {
+  updatePrivateFinalField<Annotations>(
+    LazyClassDescriptor::class,
+    "annotations"
+  ) { Annotations.create(annotations + annotation) }
+}
+
+fun DescriptorVisibility.shouldPersistInfo() = this ==
+    DescriptorVisibilities.PUBLIC ||
+    this == DescriptorVisibilities.INTERNAL ||
+    this == DescriptorVisibilities.PROTECTED

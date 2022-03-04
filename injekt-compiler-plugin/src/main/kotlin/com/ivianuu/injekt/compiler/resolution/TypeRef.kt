@@ -56,8 +56,6 @@ class ClassifierRef(
 
 fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
   ctx.trace!!.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
-    val info = classifierInfo(ctx)
-
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
       ?.declaredTypeParameters
       ?.map { it.toClassifierRef(ctx) }
@@ -80,10 +78,10 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       descriptor = this,
-      primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
+      primaryConstructorPropertyParameters = primaryConstructorPropertyParameters(ctx)
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      declaresInjectables = info.declaresInjectables
+      declaresInjectables = declaresInjectables(ctx)
     )
   }
 
