@@ -136,7 +136,6 @@ class ListTest {
     list.size shouldBe 1
     val provider = list.single()
     val foo = Foo()
-    println()
     val bar = runComposing { provider(foo) }
     foo shouldBeSameInstanceAs bar.foo
   }

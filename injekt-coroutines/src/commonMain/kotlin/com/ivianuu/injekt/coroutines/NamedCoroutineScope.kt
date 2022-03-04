@@ -31,7 +31,7 @@ import kotlin.jvm.*
 
 @JvmInline value class NamedCoroutineContext<N>(override val _value: CoroutineContext) : Tag<CoroutineContext> {
   companion object {
-    @Provide inline operator fun <N> defaultContext(context: DefaultContext) =
+    @Provide inline fun <N> defaultContext(context: DefaultContext) =
       NamedCoroutineContext<N>(context())
   }
 }

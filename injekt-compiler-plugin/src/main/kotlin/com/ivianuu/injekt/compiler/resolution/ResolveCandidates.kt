@@ -208,10 +208,7 @@ private fun InjectablesScope.resolveRequest(
 
   val typeKey = request.type.toTypeKey()
 
-  resultsByType[typeKey]?.let {
-    println()
-    return it
-  }
+  resultsByType[typeKey]?.let { return it }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation)
     .let { userResult ->
@@ -273,10 +270,7 @@ private fun InjectablesScope.computeForCandidate(
   candidate: Injectable,
   compute: () -> ResolutionResult,
 ): ResolutionResult {
-  resultsByCandidate[candidate]?.let {
-    println()
-    return it
-  }
+  resultsByCandidate[candidate]?.let { return it }
 
   if (candidate.dependencies.isEmpty())
     return compute().also { resultsByCandidate[candidate] = it }
