@@ -15,14 +15,8 @@ class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    val ctx = baseCtx.withTrace(context.trace)
-
     // requesting infos triggers saving them
-    when (descriptor) {
-      is ClassDescriptor -> if (descriptor.visibility.shouldPersistInfo())
-        descriptor.classifierInfo(ctx)
-      is TypeAliasDescriptor -> if (descriptor.visibility.shouldPersistInfo())
-        descriptor.classifierInfo(ctx)
-    }
+    if (descriptor is ClassDescriptor && descriptor.visibility.shouldPersistInfo())
+      descriptor.classifierInfo(baseCtx.withTrace(context.trace))
   }
 }
