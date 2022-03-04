@@ -17,14 +17,14 @@ import kotlin.jvm.*
       scope: Scope<N>,
       nKey: TypeKey<N>
     ) = NamedCoroutineScope<N>(
-      //scope {
+      scope {
         object : CoroutineScope, Disposable {
           override val coroutineContext: CoroutineContext = context() + SupervisorJob()
           override fun dispose() {
             coroutineContext.cancel()
           }
         }
-      //}
+      }
     )
   }
 }

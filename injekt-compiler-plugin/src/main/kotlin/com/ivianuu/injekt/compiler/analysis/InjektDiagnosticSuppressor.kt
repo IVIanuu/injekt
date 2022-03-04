@@ -22,18 +22,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
-    val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
-      ?: return false
-
-    if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
-      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
-      return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
-        ?.descriptor<CallableDescriptor>(ctx)
-        ?.valueParameters
-        ?.filterNot { it.isInject(ctx) }
-        ?.size
-        ?.let { it <= 1 } == true
-
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
@@ -49,22 +37,8 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       }
     }
 
-    if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
-      val descriptor = diagnostic.psiElement.getParentOfType<KtNamedDeclaration>(false)
-        ?.descriptor<CallableDescriptor>(ctx)
-      if (descriptor?.hasAnnotation(InjektFqNames.Provide) == true ||
-        descriptor?.valueParameters?.any {
-          it.hasAnnotation(InjektFqNames.Inject) ||
-              it.hasAnnotation(InjektFqNames.Provide)
-        } == true)
-          return true
-    }
-
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
-      return true
-
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
       return true
 
     return false
