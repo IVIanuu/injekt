@@ -24,7 +24,7 @@ sealed interface Injectable {
   val callableFqName: FqName
   val callContext: CallContext get() = CallContext.DEFAULT
   val ownerScope: InjectablesScope
-  val usageKey: Any get() = type
+  val usageKey: Any get() = type.toTypeKey()
 }
 
 class CallableInjectable(
@@ -42,7 +42,8 @@ class CallableInjectable(
   override val originalType: KotlinType
     get() = callable.originalType
   override val usageKey: Any =
-    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes, callable.type)
+    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes
+      .map { it.value.toTypeKey() }, callable.type.toTypeKey())
 
   override fun equals(other: Any?): Boolean =
     other is CallableInjectable && other.usageKey == usageKey
@@ -180,7 +181,8 @@ data class InjectableRequest(
   val parameterIndex: Int,
   val isRequired: Boolean = true,
   val isInline: Boolean = false,
-  val isLazy: Boolean = false
+  val isLazy: Boolean = false,
+  val key: TypeKey = type.toTypeKey()
 )
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableRequest(

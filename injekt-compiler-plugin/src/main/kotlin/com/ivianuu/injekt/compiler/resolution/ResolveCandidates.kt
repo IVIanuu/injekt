@@ -208,7 +208,12 @@ private fun InjectablesScope.resolveRequest(
   if (scopeToUse != this)
     return scopeToUse.resolveRequest(request, lookupLocation, fromTypeScope)
 
-  resultsByType[request.type]?.let { return it }
+  val typeKey = request.type.toTypeKey()
+
+  resultsByType[typeKey]?.let {
+    println()
+    return it
+  }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation)
     .let { userResult ->
@@ -230,7 +235,7 @@ private fun InjectablesScope.resolveRequest(
       } else userResult
     } ?: ResolutionResult.Failure.NoCandidates(this, request)
 
-  resultsByType[request.type] = result
+  resultsByType[typeKey] = result
   return result
 }
 
@@ -246,7 +251,8 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   lookupLocation: LookupLocation
 ): ResolutionResult? =
   // try the type scope if the requested type is not a framework type
-  if (!request.type.isFunctionType &&
+  if (request.type.frameworkKey.isEmpty() &&
+    !request.type.isFunctionType &&
     request.type.fqName != ctx.module.builtIns.list.fqNameSafe &&
     request.type.fqName != InjektFqNames.TypeKey &&
     request.type.fqName != InjektFqNames.SourceKey) {
@@ -269,7 +275,10 @@ private fun InjectablesScope.computeForCandidate(
   candidate: Injectable,
   compute: () -> ResolutionResult,
 ): ResolutionResult {
-  resultsByCandidate[candidate]?.let { return it }
+  resultsByCandidate[candidate]?.let {
+    println()
+    return it
+  }
 
   if (candidate.dependencies.isEmpty())
     return compute().also { resultsByCandidate[candidate] = it }

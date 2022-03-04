@@ -114,7 +114,7 @@ class InjectCallTransformer(
     val irScope: Scope
   ) {
     val symbol = irScope.scopeOwnerSymbol
-    val functionWrappedExpressions = mutableMapOf<KotlinType, ScopeContext.() -> IrExpression>()
+    val functionWrappedExpressions = mutableMapOf<TypeKey, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
     val initializingExpressions: MutableMap<Injectable, InjectableExpression> =
@@ -233,7 +233,7 @@ class InjectCallTransformer(
   ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
   else with(result.safeAs<ResolutionResult.Success.WithCandidate.Value>()
     ?.highestScope?.let { findScopeContext(it) } ?: this) {
-    functionWrappedExpressions.getOrPut(result.candidate.type) {
+    functionWrappedExpressions.getOrPut(result.candidate.type.toTypeKey()) {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
         name = "function${graphContext.variableIndex++}".asNameId()

@@ -476,10 +476,10 @@ val KotlinType.fqName: FqName
 val KotlinType.typeSize: Int
   get() {
     var typeSize = 0
-    val seen = mutableSetOf<KotlinType>()
+    val seen = mutableSetOf<TypeKey>()
     fun visit(type: KotlinType) {
       typeSize++
-      if (seen.add(type))
+      if (seen.add(type.toTypeKey()))
         type.arguments.forEach { visit(it.type) }
     }
     visit(this)
@@ -489,9 +489,9 @@ val KotlinType.typeSize: Int
 val KotlinType.coveringSet: Set<ClassifierDescriptor>
   get() {
     val classifiers = mutableSetOf<ClassifierDescriptor>()
-    val seen = mutableSetOf<KotlinType>()
+    val seen = mutableSetOf<TypeKey>()
     fun visit(type: KotlinType) {
-      if (!seen.add(type)) return
+      if (!seen.add(type.toTypeKey())) return
       type.constructor.declarationDescriptor
         ?.let { classifiers += it }
       type.arguments.forEach { visit(it.type) }
@@ -500,11 +500,13 @@ val KotlinType.coveringSet: Set<ClassifierDescriptor>
     return classifiers
   }
 
-val KotlinType.allTypes: Set<KotlinType>
+val KotlinType.allTypes: List<KotlinType>
   get() {
-    val result = mutableSetOf<KotlinType>()
+    val result = mutableListOf<KotlinType>()
+    val seen = mutableSetOf<TypeKey>()
     fun collect(inner: KotlinType) {
-      if (!result.add(inner)) return
+      if (!seen.add(inner.toTypeKey())) return
+      result += inner
       inner.arguments.forEach { collect(it.type) }
       inner.constructor.supertypes.forEach { collect(it) }
     }
@@ -512,11 +514,27 @@ val KotlinType.allTypes: Set<KotlinType>
     return result
   }
 
-val KotlinType.allVisibleTypes: Set<KotlinType>
+data class TypeKey(
+  val type: KotlinType,
+  val isComposable: Boolean,
+  val frameworkKey: String,
+  val arguments: List<TypeKey>
+)
+
+fun KotlinType.toTypeKey(): TypeKey = TypeKey(
+  type = this,
+  isComposable = isComposable,
+  frameworkKey = frameworkKey,
+  arguments = arguments.map { it.type.toTypeKey() }
+)
+
+val KotlinType.allVisibleTypes: List<KotlinType>
   get() {
-    val result = mutableSetOf<KotlinType>()
+    val result = mutableListOf<KotlinType>()
+    val seen = mutableSetOf<TypeKey>()
     fun collect(inner: KotlinType) {
-      if (!result.add(inner)) return
+      if (!seen.add(inner.toTypeKey())) return
+      result += inner
       inner.arguments.forEach { collect(it.type) }
     }
     collect(this)

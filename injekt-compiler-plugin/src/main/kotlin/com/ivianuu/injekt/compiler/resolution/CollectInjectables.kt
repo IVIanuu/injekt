@@ -22,7 +22,7 @@ import java.util.*
 fun KotlinType.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
-): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
+): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, toTypeKey() to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
     val callable = constructor
@@ -364,14 +364,14 @@ fun List<ProviderImport>.collectImportedInjectables(
 }
 
 fun KotlinType.collectTypeScopeInjectables(ctx: Context): InjectablesWithLookups =
-  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, this) {
+  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, toTypeKey()) {
     val injectables = mutableListOf<CallableRef>()
     val lookedUpPackages = mutableSetOf<FqName>()
     val nextPackages = LinkedList<FqName>()
-    val seenTypes = mutableSetOf<KotlinType>()
+    val seenTypes = mutableSetOf<TypeKey>()
 
     fun KotlinType.addNextPackages() {
-      if (!seenTypes.add(this)) return
+      if (!seenTypes.add(toTypeKey())) return
 
       val packageFqName = constructor.declarationDescriptor?.findPackage()?.fqName
       if (packageFqName != null && lookedUpPackages.add(packageFqName))

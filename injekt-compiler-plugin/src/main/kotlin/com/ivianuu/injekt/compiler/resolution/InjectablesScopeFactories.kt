@@ -619,7 +619,7 @@ fun TypeInjectablesScopeOrNull(
   ctx: Context
 ): InjectablesScope {
   val finalParent = parent.scopeToUse
-  return finalParent.typeScopes.getOrPut(type) {
+  return finalParent.typeScopes.getOrPut(type.toTypeKey()) {
     val injectablesWithLookups = type.collectTypeScopeInjectables(ctx)
 
     val newInjectables = injectablesWithLookups.injectables

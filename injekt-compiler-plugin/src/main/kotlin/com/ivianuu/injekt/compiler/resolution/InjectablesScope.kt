@@ -33,23 +33,25 @@ class InjectablesScope(
   val ctx: Context
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
-  val resultsByType = mutableMapOf<KotlinType, ResolutionResult>()
+  val resultsByType = mutableMapOf<TypeKey, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
-  val typeScopes = mutableMapOf<KotlinType, InjectablesScope>()
+  val typeScopes = mutableMapOf<TypeKey, InjectablesScope>()
 
   private val imports = imports.toMutableList()
 
   val injectables = mutableListOf<CallableRef>()
 
+  private val injectableByFrameworkKey = mutableMapOf<String, CallableRef>()
+
   data class InjectableKey(
     val uniqueKey: String,
-    val originalType: KotlinType,
+    val originalTypeKey: TypeKey,
     val typeArguments: Map<TypeParameterDescriptor, TypeProjection>,
     val parameterTypes: Map<Int, KotlinType>
   ) {
     constructor(callable: CallableRef, ctx: Context) : this(
       callable.callable.uniqueKey(ctx),
-      callable.originalType,
+      callable.originalType.toTypeKey(),
       callable.typeArguments,
       callable.parameterTypes
     )
@@ -59,7 +61,10 @@ class InjectablesScope(
 
   private val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val type: KotlinType, val staticTypeParameters: List<TypeParameterDescriptor>)
+  data class CallableRequestKey(
+    val typeKey: TypeKey,
+    val staticTypeParameters: List<TypeParameterDescriptor>
+  )
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   private val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
@@ -79,7 +84,11 @@ class InjectablesScope(
             packageFqName
           )
         },
-        addInjectable = { injectables += it },
+        addInjectable = {
+          injectables += it
+          if (it.type.frameworkKey.isNotEmpty())
+            injectableByFrameworkKey[it.type.frameworkKey] = it
+        },
         ctx = ctx
       )
   }
@@ -113,7 +122,7 @@ class InjectablesScope(
       request.type.fqName == ctx.module.builtIns.list.fqNameSafe) return emptyList()
 
     return injectablesForType(
-      CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
+      CallableRequestKey(request.type.toTypeKey(), requestingScope.allStaticTypeParameters)
     )
       .let { allInjectables ->
         if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allInjectables
@@ -129,14 +138,20 @@ class InjectablesScope(
       buildList {
         parent?.injectablesForType(key)?.let { addAll(it) }
 
-        for (candidate in injectables) {
-          if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-          val system = candidate.type.buildSystem(key.type, key.staticTypeParameters)
-          if (system.status.hasContradiction()) continue
-          val substitutedCandidate = candidate.substitute(system.resultingSubstitutor)
-          if (!substitutedCandidate.type.isSubtypeOf(key.type))
-            continue
-          this += CallableInjectable(this@InjectablesScope, substitutedCandidate)
+        val frameworkKey = key.typeKey.frameworkKey
+        if (frameworkKey.isEmpty()) {
+          for (candidate in injectables) {
+            if (candidate.type.frameworkKey != key.typeKey.frameworkKey) continue
+            val system = candidate.type.buildSystem(key.typeKey.type, key.staticTypeParameters)
+            if (system.status.hasContradiction()) continue
+            val substitutedCandidate = candidate.substitute(system.resultingSubstitutor)
+            if (!substitutedCandidate.type.isSubtypeOf(key.typeKey.type))
+              continue
+            this += CallableInjectable(this@InjectablesScope, substitutedCandidate)
+          }
+        } else {
+          injectableByFrameworkKey[frameworkKey]
+            ?.let { this += CallableInjectable(this@InjectablesScope, it) }
         }
       }
     }
@@ -160,7 +175,7 @@ class InjectablesScope(
           val collectionElementType = ctx.module.builtIns.collection.defaultType
             .replace(newArguments = listOf(singleElementType.asTypeProjection()))
 
-          val key = CallableRequestKey(request.type, allStaticTypeParameters)
+          val key = CallableRequestKey(request.type.toTypeKey(), allStaticTypeParameters)
 
           val elements = listElementsForType(singleElementType, collectionElementType, key)
             .values.map { it.type } + frameworkListElementsForType(singleElementType)
@@ -199,8 +214,6 @@ class InjectablesScope(
     return buildMap {
       fun addThisInjectables() {
         for (candidate in injectables.toList()) {
-          if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-
           var system =
             candidate.type.buildSystem(singleElementType, key.staticTypeParameters)
           if (system.status.hasContradiction() ||
@@ -214,14 +227,15 @@ class InjectablesScope(
               !substitutedCandidate.type.isSubtypeOf(collectionElementType))
             continue
 
+          val frameworkKey = UUID.randomUUID().toString()
           val typeWithFrameworkKey = substitutedCandidate.type.withFrameworkKey(
-            UUID.randomUUID().toString(),
+            frameworkKey,
             ctx
           )
 
           val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
 
-          injectables += finalCandidate
+          injectableByFrameworkKey[frameworkKey] = finalCandidate
 
           this[InjectableKey(finalCandidate, ctx)] = finalCandidate
         }
@@ -246,7 +260,7 @@ class InjectablesScope(
     when {
       singleElementType.isFunctionType -> {
         val providerReturnType = singleElementType.arguments.last().type
-        val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
+        val innerKey = CallableRequestKey(providerReturnType.toTypeKey(), allStaticTypeParameters)
 
         buildList {
           fun KotlinType.add() {
