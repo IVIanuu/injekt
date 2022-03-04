@@ -8,7 +8,10 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -19,20 +22,20 @@ class InjectablesScope(
   val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
-  val typeScopeType: TypeRef? = null,
+  val typeScopeType: KotlinType? = null,
   val isDeclarationContainer: Boolean = true,
   val isEmpty: Boolean = false,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   imports: List<ResolvedProviderImport> = emptyList(),
-  val typeParameters: List<ClassifierRef> = emptyList(),
+  val typeParameters: List<TypeParameterDescriptor> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
-  val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
+  val resultsByType = mutableMapOf<KotlinType, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
-  val typeScopes = mutableMapOf<TypeRefKey, InjectablesScope>()
+  val typeScopes = mutableMapOf<KotlinType, InjectablesScope>()
 
   private val imports = imports.toMutableList()
 
@@ -40,9 +43,9 @@ class InjectablesScope(
 
   data class InjectableKey(
     val uniqueKey: String,
-    val originalType: TypeRef,
-    val typeArguments: Map<ClassifierRef, TypeRef>,
-    val parameterTypes: Map<Int, TypeRef>
+    val originalType: KotlinType,
+    val typeArguments: Map<TypeParameterDescriptor, TypeProjection>,
+    val parameterTypes: Map<Int, KotlinType>
   ) {
     constructor(callable: CallableRef, ctx: Context) : this(
       callable.callable.uniqueKey(ctx),
@@ -56,7 +59,7 @@ class InjectablesScope(
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
+  data class CallableRequestKey(val type: KotlinType, val staticTypeParameters: List<TypeParameterDescriptor>)
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   private val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
@@ -76,12 +79,7 @@ class InjectablesScope(
             packageFqName
           )
         },
-        addInjectable = { callable ->
-          injectables += callable
-          val typeWithFrameworkKey = callable.type
-            .copy(frameworkKey = callable.callable.uniqueKey(ctx))
-          injectables += callable.copy(type = typeWithFrameworkKey)
-        },
+        addInjectable = { injectables += it },
         ctx = ctx
       )
   }
@@ -112,7 +110,7 @@ class InjectablesScope(
   ): List<Injectable> {
     // we return merged collections
     if (request.type.frameworkKey.isEmpty() &&
-      request.type.classifier == ctx.listClassifier) return emptyList()
+      request.type.fqName == ctx.module.builtIns.list.fqNameSafe) return emptyList()
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
@@ -133,12 +131,12 @@ class InjectablesScope(
 
         for (candidate in injectables) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-          val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
-          if (!context.isOk) continue
-          this += CallableInjectable(
-            this@InjectablesScope,
-            candidate.substitute(context.fixedTypeVariables)
-          )
+          val system = candidate.type.buildSystem(key.type, key.staticTypeParameters)
+          if (system.status.hasContradiction()) continue
+          val substitutedCandidate = candidate.substitute(system.resultingSubstitutor)
+          if (!substitutedCandidate.type.isSubtypeOf(key.type))
+            continue
+          this += CallableInjectable(this@InjectablesScope, substitutedCandidate)
         }
       }
     }
@@ -156,11 +154,11 @@ class InjectablesScope(
           isInline = request.isInline
         )
       }
-      request.type.classifier == ctx.listClassifier -> {
+      request.type.fqName == ctx.module.builtIns.list.fqNameSafe -> {
         fun createInjectable(): ListInjectable? {
-          val singleElementType = request.type.arguments[0]
-          val collectionElementType = ctx.collectionClassifier.defaultType
-            .withArguments(listOf(singleElementType))
+          val singleElementType = request.type.arguments[0].type
+          val collectionElementType = ctx.module.builtIns.collection.defaultType
+            .replace(newArguments = listOf(singleElementType.asTypeProjection()))
 
           val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
@@ -182,17 +180,17 @@ class InjectablesScope(
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
       }
-      request.type.classifier.fqName == InjektFqNames.TypeKey ->
+      request.type.fqName == InjektFqNames.TypeKey ->
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == InjektFqNames.SourceKey ->
+      request.type.fqName == InjektFqNames.SourceKey ->
         return SourceKeyInjectable(request.type, this)
       else -> return null
     }
   }
 
   private fun listElementsForType(
-    singleElementType: TypeRef,
-    collectionElementType: TypeRef,
+    singleElementType: KotlinType,
+    collectionElementType: KotlinType,
     key: CallableRequestKey
   ): Map<InjectableKey, CallableRef> {
     if (injectables.isEmpty())
@@ -203,16 +201,22 @@ class InjectablesScope(
         for (candidate in injectables.toList()) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
 
-          var context =
-            candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
-          if (!context.isOk)
-            context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
-          if (!context.isOk) continue
+          var system =
+            candidate.type.buildSystem(singleElementType, key.staticTypeParameters)
+          if (system.status.hasContradiction() ||
+              !singleElementType.isSubtypeOf(singleElementType))
+            system = candidate.type.buildSystem(collectionElementType, key.staticTypeParameters)
+          if (system.status.hasContradiction()) continue
 
-          val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
+          val substitutedCandidate = candidate.substitute(system.resultingSubstitutor)
 
-          val typeWithFrameworkKey = substitutedCandidate.type.copy(
-            frameworkKey = UUID.randomUUID().toString()
+          if (!substitutedCandidate.type.isSubtypeOf(singleElementType) &&
+              !substitutedCandidate.type.isSubtypeOf(collectionElementType))
+            continue
+
+          val typeWithFrameworkKey = substitutedCandidate.type.withFrameworkKey(
+            UUID.randomUUID().toString(),
+            ctx
           )
 
           val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
@@ -238,34 +242,34 @@ class InjectablesScope(
     }
   }
 
-  private fun frameworkListElementsForType(singleElementType: TypeRef): List<TypeRef> =
+  private fun frameworkListElementsForType(singleElementType: KotlinType): List<KotlinType> =
     when {
       singleElementType.isFunctionType -> {
-        val providerReturnType = singleElementType.arguments.last()
+        val providerReturnType = singleElementType.arguments.last().type
         val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
         buildList {
-          fun TypeRef.add() {
-            this@buildList += singleElementType.copy(
-              arguments = singleElementType.arguments
-                .dropLast(1) + this
+          fun KotlinType.add() {
+            this@buildList += singleElementType.replace(
+              newArguments = singleElementType.arguments
+                .dropLast(1) + this.asTypeProjection()
             )
           }
 
           for (candidate in listElementsForType(
-            providerReturnType, ctx.collectionClassifier
-              .defaultType.withArguments(listOf(providerReturnType)), innerKey).values)
+            providerReturnType, ctx.module.builtIns.collection
+              .defaultType.replace(newArguments = listOf(providerReturnType.asTypeProjection())), innerKey).values)
             candidate.type.add()
 
           for (candidateType in frameworkListElementsForType(providerReturnType))
             candidateType.add()
         }
       }
-      singleElementType.classifier.fqName == InjektFqNames.SourceKey -> listOf(
+      singleElementType.fqName == InjektFqNames.SourceKey -> listOf(
         ctx.sourceKeyClassifier!!.defaultType
-          .copy(frameworkKey = UUID.randomUUID().toString())
+          .withFrameworkKey(UUID.randomUUID().toString(), ctx)
       )
-      singleElementType.classifier.fqName == InjektFqNames.TypeKey -> listOf(singleElementType)
+      singleElementType.fqName == InjektFqNames.TypeKey -> listOf(singleElementType)
       else -> emptyList()
     }
 
@@ -276,11 +280,11 @@ class InjectablesScope(
    * provided by the user
    */
   private fun CallableRef.isValidForObjectRequest(): Boolean =
-    !originalType.classifier.isObject ||
+    originalType.constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind != ClassKind.OBJECT ||
         (callable !is ReceiverParameterDescriptor ||
             callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
+            originalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }

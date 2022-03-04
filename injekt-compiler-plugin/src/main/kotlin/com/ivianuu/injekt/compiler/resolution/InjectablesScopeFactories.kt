@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun ElementInjectablesScope(
@@ -268,7 +269,7 @@ private fun ClassInjectablesScope(
     parent = finalParent,
     ownerDescriptor = clazz,
     initialInjectables = listOf(clazz.injectableReceiver(ctx)),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters,
     ctx = ctx
   )
 }
@@ -312,7 +313,7 @@ private fun ClassInitInjectablesScope(
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters,
     ctx = ctx
   )
 
@@ -333,14 +334,11 @@ private fun ConstructorPreInitInjectablesScope(
     ctx
   )
   val parameterScopes = FunctionParameterInjectablesScopes(finalParent, constructor, null, ctx)
-  val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
-    it.toClassifierRef(ctx)
-  }
   return InjectablesScope(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
     parent = parameterScopes,
     ownerDescriptor = constructor,
-    typeParameters = typeParameters,
+    typeParameters = constructor.constructedClass.declaredTypeParameters,
     nesting = parameterScopes.nesting,
     ctx = ctx
   )
@@ -376,7 +374,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
       // suspend functions cannot be called from a default value context
       .takeIf { it != CallContext.SUSPEND } ?: CallContext.DEFAULT,
     ownerDescriptor = function,
-    typeParameters = function.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = function.typeParameters,
     ctx = ctx
   )
 }
@@ -392,10 +390,9 @@ private fun FunctionInjectablesScope(
   val finalParent = FunctionImportsInjectablesScope(function, parent, ctx)
   val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null, ctx)
   val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is ConstructorDescriptor)
+  val typeParameters = if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
-  else function.typeParameters)
-    .map { it.toClassifierRef(ctx) }
+  else function.typeParameters
   InjectablesScope(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
@@ -471,7 +468,7 @@ private fun PropertyInjectablesScope(
     parent = finalParent,
     ownerDescriptor = property,
     initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx)),
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters,
     ctx = ctx
   )
 }
@@ -513,7 +510,7 @@ private fun PropertyInitInjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
     parent = finalParent,
     ownerDescriptor = property,
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters,
     ctx = ctx
   )
 }
@@ -617,12 +614,12 @@ fun ImportSuggestionInjectablesScope(
 )
 
 fun TypeInjectablesScopeOrNull(
-  type: TypeRef,
+  type: KotlinType,
   parent: InjectablesScope,
   ctx: Context
 ): InjectablesScope {
   val finalParent = parent.scopeToUse
-  return finalParent.typeScopes.getOrPut(type.key) {
+  return finalParent.typeScopes.getOrPut(type) {
     val injectablesWithLookups = type.collectTypeScopeInjectables(ctx)
 
     val newInjectables = injectablesWithLookups.injectables
@@ -647,7 +644,7 @@ fun TypeInjectablesScopeOrNull(
     val internalInjectables = mutableListOf<CallableRef>()
 
     val thisModuleName = ctx.module.moduleName(ctx)
-    val typeModuleName = type.classifier.descriptor!!.moduleName(ctx)
+    val typeModuleName = type.constructor.declarationDescriptor!!.moduleName(ctx)
     for (callable in newInjectables) {
       when (callable.callable.moduleName(ctx)) {
         thisModuleName -> internalInjectables += callable

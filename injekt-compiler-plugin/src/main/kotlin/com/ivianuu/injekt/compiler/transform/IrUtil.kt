@@ -93,50 +93,6 @@ fun PropertyDescriptor.irProperty(
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-fun TypeRef.toIrType(
-  irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations,
-  ctx: Context
-): IrTypeArgument {
-  if (isStarProjection) return IrStarProjectionImpl
-  val key = classifier.descriptor!!.uniqueKey(ctx)
-  val fqName = FqName(key.split(":")[1])
-  val irClassifier = localDeclarations.localClasses.singleOrNull {
-    it.descriptor.uniqueKey(ctx) == key
-  }
-    ?.symbol
-    ?: irCtx.referenceClass(fqName)
-    ?: irCtx.referenceFunctions(fqName.parent())
-      .flatMap { it.owner.typeParameters }
-      .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
-      ?.symbol
-    ?: irCtx.referenceProperties(fqName.parent())
-      .flatMap { it.owner.getter!!.typeParameters }
-      .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
-      ?.symbol
-    ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
-      ?.owner
-      ?.typeParameters
-      ?.singleOrNull { it.descriptor.uniqueKey(ctx) == key }
-      ?.symbol
-    ?: error("Could not get for $fqName $key")
-  return IrSimpleTypeImpl(
-    irClassifier,
-    isNullable,
-    arguments.map { it.toIrType(irCtx, localDeclarations, ctx) },
-    listOfNotNull(
-      if (isComposable) run {
-        val composableConstructor = irCtx.referenceConstructors(InjektFqNames.Composable)
-          .single()
-        DeclarationIrBuilder(irCtx, composableConstructor)
-          .irCall(composableConstructor)
-      }
-        else null
-    )
-  )
-}
-
-@OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(
   type: IrType,
   startOffset: Int = UNDEFINED_OFFSET,

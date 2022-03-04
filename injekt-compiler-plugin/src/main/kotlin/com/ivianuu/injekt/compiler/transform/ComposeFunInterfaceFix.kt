@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -157,7 +158,9 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(ctx: Context) {
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 private fun IrType.isComposableFunInterface(ctx: Context): Boolean {
-  val classifier = classifierOrNull?.descriptor?.toClassifierRef(ctx) ?: return false
-  return classifier.descriptor!!.safeAs<ClassDescriptor>()?.isFun == true &&
-      classifier.defaultType.anySuperType { it.isComposableType }
+  val classifier = classifierOrNull?.descriptor ?: return false
+  return classifier.safeAs<ClassDescriptor>()?.isFun == true &&
+      classifier.defaultType.anySuperTypeConstructor {
+        it.declarationDescriptor?.defaultType?.isComposableType == true
+      }
 }

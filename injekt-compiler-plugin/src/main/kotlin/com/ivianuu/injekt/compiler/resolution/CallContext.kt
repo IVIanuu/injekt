@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.*
+import org.jetbrains.kotlin.types.*
 
 enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
@@ -97,9 +98,9 @@ private fun CallableDescriptor.callContextOfThis(ctx: Context): CallContext = wh
   else -> CallContext.DEFAULT
 }
 
-val TypeRef.callContext: CallContext
+val KotlinType.callContext: CallContext
   get() = when {
-    classifier.fqName.asString()
+    fqName.asString()
       .startsWith("kotlin.coroutines.SuspendFunction") -> CallContext.SUSPEND
     isComposableType -> CallContext.COMPOSABLE
     else -> CallContext.DEFAULT

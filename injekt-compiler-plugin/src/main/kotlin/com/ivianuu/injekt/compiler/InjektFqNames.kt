@@ -15,6 +15,7 @@ object InjektFqNames {
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val DeclaresInjectables = InternalPackage.child("DeclaresInjectables".asNameId())
+  val FrameworkKey = InternalPackage.child("FrameworkKey".asNameId())
   val Index = InternalPackage.child("Index".asNameId())
   val PrimaryConstructorPropertyParameters = InternalPackage.child("PrimaryConstructorPropertyParameters".asNameId())
   val IndicesPackage = InternalPackage.child("indices".asNameId())

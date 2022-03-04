@@ -20,6 +20,8 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.inference.*
+import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
@@ -40,12 +42,11 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   .filterIsInstance<ClassDescriptor>()
   .mapNotNull { clazz ->
     if (clazz.isDeserializedDeclaration()) {
-      val clazzClassifier = clazz.toClassifierRef(ctx)
       clazz.unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.firstOrNull {
           it.name == name &&
-              it.name in clazzClassifier.primaryConstructorPropertyParameters
+              it.name.asString() in clazz.primaryConstructorPropertyParameters()
         }
     } else {
       clazz.unsubstitutedPrimaryConstructor
@@ -433,3 +434,157 @@ fun DescriptorVisibility.shouldPersistInfo() = this ==
     DescriptorVisibilities.PUBLIC ||
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
+
+fun KotlinType.renderToString() = asTypeProjection().renderToString()
+
+fun TypeProjection.renderToString() = buildString {
+  render { append(it) }
+}
+
+fun TypeProjection.render(
+  depth: Int = 0,
+  renderType: (TypeProjection) -> Boolean = { true },
+  append: (String) -> Unit
+) {
+  if (depth > 15) return
+  fun TypeProjection.inner() {
+    if (!renderType(this)) return
+
+    if (type.isComposable) append("${InjektFqNames.Composable}<")
+
+    when {
+      isStarProjection -> append("*")
+      else -> append(type.fqName.asString())
+    }
+    if (type.arguments.isNotEmpty()) {
+      append("<")
+      type.arguments.forEachIndexed { index, typeArgument ->
+        typeArgument.render(depth = depth + 1, renderType, append)
+        if (index != type.arguments.lastIndex) append(", ")
+      }
+      append(">")
+    }
+    if (type.isMarkedNullable && !isStarProjection) append("?")
+    if (type.isComposable) append(">")
+  }
+  inner()
+}
+
+val KotlinType.fqName: FqName
+  get() = constructor.declarationDescriptor?.fqNameSafe ?: FqName.ROOT
+
+val KotlinType.typeSize: Int
+  get() {
+    var typeSize = 0
+    val seen = mutableSetOf<KotlinType>()
+    fun visit(type: KotlinType) {
+      typeSize++
+      if (seen.add(type))
+        type.arguments.forEach { visit(it.type) }
+    }
+    visit(this)
+    return typeSize
+  }
+
+val KotlinType.coveringSet: Set<ClassifierDescriptor>
+  get() {
+    val classifiers = mutableSetOf<ClassifierDescriptor>()
+    val seen = mutableSetOf<KotlinType>()
+    fun visit(type: KotlinType) {
+      if (!seen.add(type)) return
+      type.constructor.declarationDescriptor
+        ?.let { classifiers += it }
+      type.arguments.forEach { visit(it.type) }
+    }
+    visit(this)
+    return classifiers
+  }
+
+val KotlinType.allTypes: Set<KotlinType>
+  get() {
+    val result = mutableSetOf<KotlinType>()
+    fun collect(inner: KotlinType) {
+      if (!result.add(inner)) return
+      inner.arguments.forEach { collect(it.type) }
+      inner.constructor.supertypes.forEach { collect(it) }
+    }
+    collect(this)
+    return result
+  }
+
+val KotlinType.allVisibleTypes: Set<KotlinType>
+  get() {
+    val result = mutableSetOf<KotlinType>()
+    fun collect(inner: KotlinType) {
+      if (!result.add(inner)) return
+      inner.arguments.forEach { collect(it.type) }
+    }
+    collect(this)
+    return result
+  }
+
+
+fun KotlinType.subtypeView(classifier: ClassifierDescriptor): KotlinType? {
+  if (constructor.declarationDescriptor == classifier) return this
+  return constructor.supertypes
+    .firstNotNullOfOrNull { it.subtypeView(classifier) }
+    ?.let { return it }
+}
+
+fun KotlinType.buildSystem(
+  superType: KotlinType,
+  staticTypeParameters: List<TypeParameterDescriptor>
+): ConstraintSystem {
+  val system = ConstraintSystemBuilderImpl()
+
+  val typeVariables = buildList {
+    for (visibleType in allVisibleTypes)
+      if (visibleType.constructor.declarationDescriptor is TypeParameterDescriptor &&
+        visibleType.constructor.declarationDescriptor !in staticTypeParameters)
+        add(visibleType.constructor.declarationDescriptor as TypeParameterDescriptor)
+  }
+
+  val substitutor = system.registerTypeVariables(
+    CallHandle.NONE,
+    typeVariables
+  )
+
+  system.addSubtypeConstraint(
+    substitutor.substitute(this, Variance.INVARIANT) ?: this,
+    superType,
+    ConstraintPositionKind.SPECIAL.position()
+  )
+
+  system.fixVariables()
+
+  return system.build()
+}
+
+val KotlinType.frameworkKey: String
+  get() = annotations.findAnnotation(InjektFqNames.FrameworkKey)
+    ?.allValueArguments?.values?.single()?.value?.cast() ?: ""
+
+fun KotlinType.withFrameworkKey(key: String, ctx: Context) = replace(
+  newAnnotations = Annotations.create(
+    annotations
+      .filter { it.fqName != InjektFqNames.FrameworkKey } +
+        AnnotationDescriptorImpl(
+          ctx.frameworkKeyClassifier.defaultType,
+          mapOf("value".asNameId() to StringValue(key)),
+          SourceElement.NO_SOURCE
+        )
+  )
+)
+
+val KotlinType.isComposable: Boolean
+  get() = hasAnnotation(InjektFqNames.Composable)
+
+val KotlinType.isComposableType: Boolean
+  get() = isComposable || constructor.supertypes.any { it.isComposableType }
+
+val KotlinType.isProvideFunctionType: Boolean
+  get() = hasAnnotation(InjektFqNames.Provide) && isFunctionType
+
+val KotlinType.isFunctionType: Boolean
+  get() = fqName.asString().startsWith("kotlin.Function") ||
+      fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
