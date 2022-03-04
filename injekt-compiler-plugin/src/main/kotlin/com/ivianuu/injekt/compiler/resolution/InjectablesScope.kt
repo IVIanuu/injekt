@@ -57,7 +57,7 @@ class InjectablesScope(
 
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
-  val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
+  private val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
   data class CallableRequestKey(val type: KotlinType, val staticTypeParameters: List<TypeParameterDescriptor>)
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
