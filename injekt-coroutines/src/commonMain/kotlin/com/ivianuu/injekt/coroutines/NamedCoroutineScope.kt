@@ -10,28 +10,28 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.jvm.*
 
-@JvmInline value class NamedCoroutineScope<N>(override val _value: Any?) : Tag<CoroutineScope> {
+@JvmInline value class NamedCoroutineScope<N>(override val _value: CoroutineScope) : Tag<CoroutineScope> {
   companion object {
     @Provide fun <N> scope(
       context: NamedCoroutineContext<N>,
       scope: Scope<N>,
       nKey: TypeKey<N>
-    ): NamedCoroutineScope<N> = scope {
-      NamedCoroutineScope(
+    ) = NamedCoroutineScope<N>(
+      scope {
         object : CoroutineScope, Disposable {
           override val coroutineContext: CoroutineContext = context() + SupervisorJob()
           override fun dispose() {
             coroutineContext.cancel()
           }
         }
-      )
-    }
+      }
+    )
   }
 }
 
-@JvmInline value class NamedCoroutineContext<N>(override val _value: Any?) : Tag<CoroutineContext> {
+@JvmInline value class NamedCoroutineContext<N>(override val _value: CoroutineContext) : Tag<CoroutineContext> {
   companion object {
     @Provide inline operator fun <N> defaultContext(context: DefaultContext) =
-      NamedCoroutineContext<N>(context)
+      NamedCoroutineContext<N>(context())
   }
 }
