@@ -10,7 +10,6 @@ import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import kotlinx.coroutines.*
 import org.junit.*
-import kotlin.coroutines.*
 
 class NamedCoroutineScopeTest {
   private object MyScope

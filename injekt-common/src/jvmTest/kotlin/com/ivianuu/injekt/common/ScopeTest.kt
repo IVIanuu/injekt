@@ -4,9 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
 import io.kotest.matchers.*
-import io.kotest.matchers.types.*
 import kotlinx.atomicfu.*
 import kotlinx.coroutines.*
 import org.junit.*

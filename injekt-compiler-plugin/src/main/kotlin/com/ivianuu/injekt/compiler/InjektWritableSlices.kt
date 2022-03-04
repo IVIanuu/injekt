@@ -8,7 +8,6 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
 object InjektWritableSlices {

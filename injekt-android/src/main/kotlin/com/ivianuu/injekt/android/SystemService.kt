@@ -7,7 +7,7 @@ package com.ivianuu.injekt.android
 import android.content.*
 import androidx.core.content.*
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.Tag
+import com.ivianuu.injekt.common.*
 import kotlin.reflect.*
 
 /**
