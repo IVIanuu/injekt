@@ -26,6 +26,4 @@ object InjektFqNames {
 
   val Composable = FqName("androidx.compose.runtime.Composable")
 
-  val Any = StandardNames.FqNames.any.toSafe()
-  val Nothing = StandardNames.FqNames.nothing.toSafe()
 }

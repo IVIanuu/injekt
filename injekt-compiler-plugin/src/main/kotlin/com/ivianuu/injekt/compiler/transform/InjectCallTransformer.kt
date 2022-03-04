@@ -567,7 +567,7 @@ class InjectCallTransformer(
       }
   }
 
-  private fun ScopeContext.receiverExpression(
+  private fun receiverExpression(
     descriptor: ParameterDescriptor
   ) = receiverAccessors.last {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor
