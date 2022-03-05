@@ -20,7 +20,7 @@ import kotlin.reflect.*
  */
 @JvmInline value class SystemService<T : Any>(override val _value: Any?) : Tag<T> {
   companion object {
-    @Provide inline fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
+    @Provide fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
        SystemService<T>(ContextCompat.getSystemService(context, serviceClass.java)!!)
   }
 }

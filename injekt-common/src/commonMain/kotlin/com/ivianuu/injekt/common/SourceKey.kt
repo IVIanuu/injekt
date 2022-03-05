@@ -15,4 +15,5 @@ import kotlin.jvm.*
 /**
  * Returns the [SourceKey] at this call site
  */
+@Suppress("NOTHING_TO_INLINE")
 inline fun sourceKey(@Inject x: SourceKey): SourceKey = x

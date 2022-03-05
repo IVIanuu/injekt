@@ -10,8 +10,8 @@ import com.ivianuu.injekt.*
 import kotlin.reflect.*
 
 class WorkerModule<T : ListenableWorker> {
-  @Provide inline fun workerFactory(
-    noinline factory: (Context, WorkerParameters) -> T,
+  @Provide fun workerFactory(
+    factory: (Context, WorkerParameters) -> T,
     workerClass: KClass<T>
   ): Pair<String, SingleWorkerFactory> = workerClass.java.name to SingleWorkerFactory(factory)
 }
