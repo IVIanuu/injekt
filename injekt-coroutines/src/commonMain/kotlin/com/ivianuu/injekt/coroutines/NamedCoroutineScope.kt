@@ -10,28 +10,34 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.jvm.*
 
-@JvmInline value class NamedCoroutineScope<N>(override val _value: CoroutineScope) : Tag<CoroutineScope> {
+@JvmInline value class NamedCoroutineScope<N>(val value: CoroutineScope) : CoroutineScope, Disposable {
+  override val coroutineContext: CoroutineContext
+    get() = value.coroutineContext
+
+  override fun dispose() {
+    value.cancel()
+  }
+
   companion object {
     @Provide fun <N> scope(
       context: NamedCoroutineContext<N>,
       scope: Scope<N>,
       key: TypeKey<NamedCoroutineScope<N>>
-    ): NamedCoroutineScope<N> = NamedCoroutineScope(
-      scope(key as TypeKey<CoroutineScope>) {
+    ): NamedCoroutineScope<N> = scope(key) {
+      NamedCoroutineScope(
         object : CoroutineScope, Disposable {
-          override val coroutineContext: CoroutineContext = context() + SupervisorJob()
+          override val coroutineContext: CoroutineContext = context.value + SupervisorJob()
           override fun dispose() {
             coroutineContext.cancel()
           }
         }
-      }
-    )
+      )
+    }
   }
 }
 
-@JvmInline value class NamedCoroutineContext<N>(override val _value: CoroutineContext) : Tag<CoroutineContext> {
+@JvmInline value class NamedCoroutineContext<N>(val value: CoroutineContext) {
   companion object {
-    @Provide fun <N> defaultContext(context: DefaultContext) =
-      NamedCoroutineContext<N>(context())
+    @Provide fun <N> defaultContext(context: DefaultContext) = NamedCoroutineContext<N>(context.value)
   }
 }

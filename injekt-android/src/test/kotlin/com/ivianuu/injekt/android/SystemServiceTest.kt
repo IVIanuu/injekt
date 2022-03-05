@@ -18,6 +18,6 @@ import org.robolectric.annotation.*
 class SystemServiceTest {
   @Test fun testCanRequestSystemService() {
     @Provide val context = InstrumentationRegistry.getInstrumentation().context
-    inject<SystemService<PowerManager>>()()
+    inject<SystemService<PowerManager>>().value
   }
 }

@@ -61,12 +61,12 @@ data class CounterModel(
   CounterModel(
     state = counter.collectAsState(Counter(0)).value,
     incCounter = {
-      scope().launch {
+      scope.launch {
         incCounter()
       }
     },
     decCounter = {
-      scope().launch {
+      scope.launch {
         decCounter()
       }
     }
