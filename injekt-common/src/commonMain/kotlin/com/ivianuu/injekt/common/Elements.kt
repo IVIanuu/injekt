@@ -26,4 +26,9 @@ interface Elements<N> {
       ?: error("No element found for $key in ${this.key.type}")
 }
 
-data class Element<N, T : Any>(@Provide val value: T, @Inject val key: TypeKey<T>)
+class Element<N, T : Any>(
+  @Provide val value: T,
+  @Inject val key: TypeKey<T>
+) {
+  constructor(scopeName: N, value: T, key: TypeKey<T>) : this(value, key)
+}
