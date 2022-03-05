@@ -22,7 +22,7 @@ import java.util.*
 fun KotlinType.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
-): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, toTypeKey() to classBodyView) {
+): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_CHAINED_INJECTABLES, toTypeKey() to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
     val callable = constructor
@@ -63,36 +63,12 @@ fun KotlinType.collectInjectables(
     )
 
   buildList {
-    constructor
-      .declarationDescriptor
-      ?.defaultType
-      ?.memberScope
-      ?.collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
-        // todo is this still needed?
-        val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-          CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
-            .overriddenTreeAsSequence(false)
-            .last()
-            .containingDeclaration
-            .cast<ClassDescriptor>()
-          constructor.parameters.map { it.typeConstructor }
-            .zip(arguments)
-            .toMap() + originalClassifier.declaredTypeParameters
-            .map { it.typeConstructor }
-            .zip(subtypeView(originalClassifier)!!.arguments)
-        } else constructor.parameters
-          .map { it.typeConstructor }
-          .zip(arguments).toMap()
-        val substituted = callable.substitute(TypeSubstitutor.create(substitutionMap))
-
+    memberScope.collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
         add(
-          substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-              substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-            } else substituted.parameterTypes
-          )
+          if (callable.parameterTypes[DISPATCH_RECEIVER_INDEX]?.toTypeKey() != this@collectInjectables.toTypeKey()) callable.copy(
+            parameterTypes = callable.parameterTypes.toMutableMap()
+              .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
+          ) else callable
         )
       }
   }
@@ -150,55 +126,45 @@ fun ResolutionScope.collectInjectables(
 }
 
 fun Annotated.isProvide(ctx: Context): Boolean {
-  @Suppress("IMPLICIT_CAST_TO_ANY")
-  val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.trace!!.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
-    var isProvide = hasAnnotation(InjektFqNames.Provide) ||
-        hasAnnotation(InjektFqNames.Inject)
+  var isProvide = hasAnnotation(InjektFqNames.Provide) ||
+      hasAnnotation(InjektFqNames.Inject)
 
-    if (!isProvide && this is PropertyDescriptor)
-      isProvide = primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true
+  if (!isProvide && this is PropertyDescriptor)
+    isProvide = primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true
 
-    if (!isProvide && this is ParameterDescriptor)
-      isProvide = type.isProvide(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
+  if (!isProvide && this is ParameterDescriptor)
+    isProvide = type.isProvide(ctx) ||
+        containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
 
-    if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
-      isProvide = constructedClass.isProvide(ctx)
+  if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
+    isProvide = constructedClass.isProvide(ctx)
 
-    isProvide
-  }
+  return isProvide
 }
 
 fun Annotated.isInject(ctx: Context): Boolean {
-  @Suppress("IMPLICIT_CAST_TO_ANY")
-  val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.trace!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
-    var isInject = hasAnnotation(InjektFqNames.Inject)
+  var isInject = hasAnnotation(InjektFqNames.Inject)
 
-    if (!isInject && this is PropertyDescriptor)
-      isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true
+  if (!isInject && this is PropertyDescriptor)
+    isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true
 
-    if (!isInject && this is ParameterDescriptor)
-      isInject = type.isInject(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
+  if (!isInject && this is ParameterDescriptor)
+    isInject = type.isInject(ctx) ||
+        containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
 
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary)
-      isInject = constructedClass.isProvide(ctx)
+  if (!isInject && this is ClassConstructorDescriptor && isPrimary)
+    isInject = constructedClass.isProvide(ctx)
 
-    isInject
-  }
+  return isInject
 }
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
-    constructors
-      .transform { constructor ->
-        if (constructor.hasAnnotation(InjektFqNames.Provide) ||
-          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
-            add(constructor.toCallableRef(ctx))
-      }
-  }
+  constructors
+    .transform { constructor ->
+      if (constructor.hasAnnotation(InjektFqNames.Provide) ||
+        (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
+        add(constructor.toCallableRef(ctx))
+    }
 
 fun ClassDescriptor.injectableReceiver(ctx: Context): CallableRef =
   thisAsReceiverParameter.toCallableRef(ctx)

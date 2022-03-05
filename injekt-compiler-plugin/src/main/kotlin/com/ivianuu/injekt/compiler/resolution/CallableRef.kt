@@ -33,23 +33,21 @@ fun CallableRef.substitute(substitutor: TypeSubstitutor): CallableRef {
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
-  ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
-    val type = returnType ?: ctx.module.builtIns.nullableAnyType
-
-    CallableRef(
-      callable = this,
-      type = type,
-      originalType = type,
-      parameterTypes = buildMap {
-        for (parameter in allParameters)
-          this[parameter.injektIndex()] = parameter.type
-      },
-      typeArguments = buildMap {
-        for (typeParameter in typeParameters)
-          this[typeParameter] = typeParameter.defaultType.asTypeProjection()
-      },
-      import = null,
-      chainLength = 0
-    )
-  }
+fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef {
+  val type = returnType ?: ctx.module.builtIns.nullableAnyType
+  return CallableRef(
+    callable = this,
+    type = type,
+    originalType = type,
+    parameterTypes = buildMap {
+      for (parameter in allParameters)
+        this[parameter.injektIndex()] = parameter.type
+    },
+    typeArguments = buildMap {
+      for (typeParameter in typeParameters)
+        this[typeParameter] = typeParameter.defaultType.asTypeProjection()
+    },
+    import = null,
+    chainLength = 0
+  )
+}

@@ -5,7 +5,7 @@
 package com.ivianuu.injekt.common
 
 import kotlin.jvm.*
-...
+
 interface Tag<T> {
   val _value: Any?
 }

@@ -35,29 +35,28 @@ import java.lang.reflect.*
 import kotlin.experimental.*
 import kotlin.reflect.*
 
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  ctx: Context
-): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
-  .map { it.containingDeclaration }
-  .filterIsInstance<ClassDescriptor>()
-  .mapNotNull { clazz ->
-    if (clazz.isDeserializedDeclaration()) {
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.name == name &&
-              it.name.asString() in clazz.primaryConstructorPropertyParameters()
-        }
-    } else {
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
-              it.name == name
-        }
+fun PropertyDescriptor.primaryConstructorPropertyValueParameter(): ValueParameterDescriptor? =
+  overriddenTreeUniqueAsSequence(false)
+    .map { it.containingDeclaration }
+    .filterIsInstance<ClassDescriptor>()
+    .mapNotNull { clazz ->
+      if (clazz.isDeserializedDeclaration()) {
+        clazz.unsubstitutedPrimaryConstructor
+          ?.valueParameters
+          ?.firstOrNull {
+            it.name == name &&
+                it.name.asString() in clazz.primaryConstructorPropertyParameters()
+          }
+      } else {
+        clazz.unsubstitutedPrimaryConstructor
+          ?.valueParameters
+          ?.firstOrNull {
+            it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
+                it.name == name
+          }
+      }
     }
-  }
-  .firstOrNull()
+    .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
@@ -112,8 +111,7 @@ fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is Deseria
 
 fun String.asNameId() = Name.identifier(this)
 
-fun Annotated.hasAnnotation(fqName: FqName): Boolean =
-  annotations.hasAnnotation(fqName)
+fun Annotated.hasAnnotation(fqName: FqName): Boolean = annotations.hasAnnotation(fqName)
 
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
   ctx.trace!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
@@ -540,14 +538,6 @@ val KotlinType.allVisibleTypes: List<KotlinType>
     collect(this)
     return result
   }
-
-
-fun KotlinType.subtypeView(classifier: ClassifierDescriptor): KotlinType? {
-  if (constructor.declarationDescriptor == classifier) return this
-  return constructor.supertypes
-    .firstNotNullOfOrNull { it.subtypeView(classifier) }
-    ?.let { return it }
-}
 
 fun KotlinType.buildSystem(
   superType: KotlinType,
