@@ -74,18 +74,6 @@ fun codegen(
 )
 
 fun codegen(
-  @Language("kotlin") source1: String,
-  @Language("kotlin") source2: String,
-  @Language("kotlin") source3: String,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
-) = codegen(
-  sources = listOf(source(source1), source(source2), invokableSource(source3)),
-  config = config,
-  assertions = assertions
-)
-
-fun codegen(
   sources: List<SourceFile>,
   config: KotlinCompilation.() -> Unit = {},
   assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
@@ -116,19 +104,6 @@ fun singleAndMultiCodegen(
 }
 
 fun singleAndMultiCodegen(
-  @Language("kotlin") source1: String,
-  @Language("kotlin") source2: String,
-  @Language("kotlin") source3: String,
-  config: KotlinCompilation.(Int) -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.(Boolean) -> Unit = { compilationShouldBeOk() }
-) {
-  singleAndMultiCodegen(
-    listOf(listOf(source(source1)), listOf(source(source2)), listOf(invokableSource(source3))),
-    config, assertions
-  )
-}
-
-fun singleAndMultiCodegen(
   sources: List<List<SourceFile>>,
   config: KotlinCompilation.(Int) -> Unit = {},
   assertions: KotlinCompilationAssertionScope.(Boolean) -> Unit = { compilationShouldBeOk() }
@@ -154,22 +129,6 @@ fun multiCodegen(
     listOf(listOf(source(source1)), listOf(invokableSource(source2))),
     config,
     assertions
-  )
-}
-
-fun multiCodegen(
-  @Language("kotlin") source1: String,
-  @Language("kotlin") source2: String,
-  @Language("kotlin") source3: String,
-  config: KotlinCompilation.(Int) -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() }
-) {
-  multiCodegen(
-    listOf(
-      listOf(source(source1)), listOf(source(source2)), listOf(
-        invokableSource(source3)
-      )
-    ), config, assertions
   )
 }
 

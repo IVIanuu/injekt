@@ -88,12 +88,4 @@ class ProviderTest {
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
   }
-
-  @Test fun testProviderWithNullableReturnTypeReturnsNullAsDefault() = codegen(
-    """
-      fun invoke() = inject<() -> Foo?>()()
-    """
-  ) {
-    invokeSingleFile().shouldBeNull()
-  }
 }

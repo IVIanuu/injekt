@@ -91,7 +91,7 @@ class ProviderInjectable(
       parameterIndex = 0,
       isInline = isInline,
       isLazy = !isInline,
-      isRequired = !type.arguments.last().type.isMarkedNullable
+      isRequired = true
     )
   )
 

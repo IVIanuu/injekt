@@ -472,7 +472,7 @@ class ResolveTest {
     """
       fun <T> invoke() {
         inject<List<T>>()
-      } 
+      }
     """
   )
 

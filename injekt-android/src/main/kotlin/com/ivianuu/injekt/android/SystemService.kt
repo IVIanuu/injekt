@@ -18,7 +18,7 @@ import kotlin.reflect.*
  * fun Notification.post(@Inject notificationManager: SystemService<NotificationManager>) { ... }
  * ```
  */
-@JvmInline value class SystemService<T : Any>(override val _value: Any?) : Tag<T> {
+@JvmInline value class SystemService<T : Any>(override val _value: Any) : Tag<T> {
   companion object {
     @Provide fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
        SystemService<T>(ContextCompat.getSystemService(context, serviceClass.java)!!)
