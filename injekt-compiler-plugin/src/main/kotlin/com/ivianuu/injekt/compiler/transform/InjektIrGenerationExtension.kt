@@ -35,21 +35,4 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
     moduleFragment.dumpToFiles(dumpDir, pluginContext)
     moduleFragment.fixComposeFunInterfacesPreCompose(pluginContext)
   }
-
-  @OptIn(ObsoleteDescriptorBasedAPI::class)
-  override fun resolveSymbol(symbol: IrSymbol, context: TranslationPluginContext): IrDeclaration? {
-    // this is needed to fix a unbound error which seems to occur
-    // when using type parameters in injections
-    val descriptor = symbol.descriptor as? TypeParameterDescriptor ?: return null
-    return IrTypeParameterImpl(
-      UNDEFINED_OFFSET,
-      UNDEFINED_OFFSET,
-      IrDeclarationOrigin.DEFINED,
-      symbol.cast(),
-      descriptor.name,
-      descriptor.index,
-      descriptor.isReified,
-      descriptor.variance
-    )
-  }
 }

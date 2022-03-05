@@ -13,12 +13,6 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   val frameworkKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.FrameworkKey))!!
   }
-  val sourceKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.SourceKey))
-  }
-  val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
-  }
 
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
 }

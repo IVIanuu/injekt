@@ -19,10 +19,6 @@ object InjektFqNames {
   val PrimaryConstructorPropertyParameters = InternalPackage.child("PrimaryConstructorPropertyParameters".asNameId())
   val IndicesPackage = InternalPackage.child("indices".asNameId())
 
-  val CommonPackage = InjektPackage.child("common".asNameId())
-  val SourceKey = CommonPackage.child("SourceKey".asNameId())
-  val TypeKey = CommonPackage.child("TypeKey".asNameId())
-
   val Composable = FqName("androidx.compose.runtime.Composable")
 
 }

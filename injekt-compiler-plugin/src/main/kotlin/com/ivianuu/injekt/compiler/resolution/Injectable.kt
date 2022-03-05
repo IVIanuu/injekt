@@ -132,38 +132,6 @@ class ProviderInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-class SourceKeyInjectable(
-  override val type: KotlinType,
-  override val ownerScope: InjectablesScope
-) : Injectable {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
-}
-
-class TypeKeyInjectable(
-  override val type: KotlinType,
-  override val ownerScope: InjectablesScope
-) : Injectable {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
-  override val dependencies: List<InjectableRequest> = run {
-    val typeParameterDependencies = mutableSetOf<TypeParameterDescriptor>()
-    type.allVisibleTypes.forEach {
-      if (it.constructor.declarationDescriptor is TypeParameterDescriptor)
-        typeParameterDependencies += it.constructor.declarationDescriptor!!.cast<TypeParameterDescriptor>()
-    }
-    typeParameterDependencies
-      .mapIndexed { index, typeParameter ->
-        InjectableRequest(
-          type = ownerScope.ctx.typeKeyClassifier!!.defaultType
-            .replace(newArguments = listOf(typeParameter.defaultType.asTypeProjection())),
-          callableFqName = callableFqName,
-          callableTypeArguments = type.constructor.parameters.zip(type.arguments).toMap(),
-          parameterName = "${typeParameter.fqNameSafe.shortName()}Key".asNameId(),
-          parameterIndex = index
-        )
-      }
-  }
-}
-
 fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParameters
   .transform {
     if ((callable !is ClassConstructorDescriptor || it.name.asString() != "<this>") &&

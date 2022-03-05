@@ -15,9 +15,9 @@ import kotlin.jvm.*
     @Provide fun <N> scope(
       context: NamedCoroutineContext<N>,
       scope: Scope<N>,
-      nKey: TypeKey<N>
-    ) = NamedCoroutineScope<N>(
-      scope {
+      key: TypeKey<NamedCoroutineScope<N>>
+    ): NamedCoroutineScope<N> = NamedCoroutineScope(
+      scope(key as TypeKey<CoroutineScope>) {
         object : CoroutineScope, Disposable {
           override val coroutineContext: CoroutineContext = context() + SupervisorJob()
           override fun dispose() {
@@ -31,7 +31,7 @@ import kotlin.jvm.*
 
 @JvmInline value class NamedCoroutineContext<N>(override val _value: CoroutineContext) : Tag<CoroutineContext> {
   companion object {
-    @Provide inline fun <N> defaultContext(context: DefaultContext) =
+    @Provide fun <N> defaultContext(context: DefaultContext) =
       NamedCoroutineContext<N>(context())
   }
 }

@@ -195,10 +195,6 @@ class InjectablesScope(
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
       }
-      request.type.fqName == InjektFqNames.TypeKey ->
-        return TypeKeyInjectable(request.type, this)
-      request.type.fqName == InjektFqNames.SourceKey ->
-        return SourceKeyInjectable(request.type, this)
       else -> return null
     }
   }
@@ -279,11 +275,6 @@ class InjectablesScope(
             candidateType.add()
         }
       }
-      singleElementType.fqName == InjektFqNames.SourceKey -> listOf(
-        ctx.sourceKeyClassifier!!.defaultType
-          .withFrameworkKey(UUID.randomUUID().toString(), ctx)
-      )
-      singleElementType.fqName == InjektFqNames.TypeKey -> listOf(singleElementType)
       else -> emptyList()
     }
 

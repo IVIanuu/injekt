@@ -630,7 +630,7 @@ fun TypeInjectablesScopeOrNull(
 
     if (newInjectables.isEmpty()) {
       return@getOrPut InjectablesScope(
-        name = "EMPTY TYPE ${type.renderToString()}",
+        name = "EMPTY TYPE ${type.render()}",
         parent = finalParent,
         imports = imports,
         isEmpty = true,
@@ -657,7 +657,7 @@ fun TypeInjectablesScopeOrNull(
 
     if (externalInjectables.isNotEmpty()) {
       result = InjectablesScope(
-        name = "EXTERNAL TYPE ${type.renderToString()}",
+        name = "EXTERNAL TYPE ${type.render()}",
         parent = result,
         initialInjectables = externalInjectables,
         callContext = result.callContext,
@@ -669,7 +669,7 @@ fun TypeInjectablesScopeOrNull(
     }
     if (typeInjectables.isNotEmpty()) {
       result = InjectablesScope(
-        name = "TYPE TYPE ${type.renderToString()}",
+        name = "TYPE TYPE ${type.render()}",
         parent = result,
         initialInjectables = typeInjectables,
         callContext = result.callContext,
@@ -681,7 +681,7 @@ fun TypeInjectablesScopeOrNull(
     }
     if (internalInjectables.isNotEmpty()) {
       result = InjectablesScope(
-        name = "INTERNAL TYPE ${type.renderToString()}",
+        name = "INTERNAL TYPE ${type.render()}",
         parent = result,
         initialInjectables = internalInjectables,
         callContext = result.callContext,

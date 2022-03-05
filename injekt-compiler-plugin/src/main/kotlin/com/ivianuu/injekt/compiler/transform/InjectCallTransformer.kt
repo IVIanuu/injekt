@@ -200,8 +200,6 @@ class InjectCallTransformer(
           is CallableInjectable -> callableExpression(result, result.candidate.cast())
           is ProviderInjectable -> providerExpression(result, result.candidate.cast())
           is ListInjectable -> listExpression(result, result.candidate.cast())
-          is SourceKeyInjectable -> sourceKeyExpression()
-          is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
         }
       }
 
@@ -393,96 +391,6 @@ class InjectCallTransformer(
 
         +irGet(tmpSet)
       }
-    }
-  }
-
-  private val sourceKeyConstructor = irCtx.referenceClass(InjektFqNames.SourceKey)
-    ?.constructors?.single()
-
-  private fun ScopeContext.sourceKeyExpression(): IrExpression =
-    DeclarationIrBuilder(irCtx, symbol).run {
-      irCall(sourceKeyConstructor!!).apply {
-        putValueArgument(
-          0,
-          irString(
-            buildString {
-              append(currentFile.name)
-              append(":")
-              append(currentFile.fileEntry.getLineNumber(graphContext.startOffset) + 1)
-              append(":")
-              append(currentFile.fileEntry.getColumnNumber(graphContext.startOffset))
-            }
-          )
-        )
-      }
-    }
-
-  private val typeKey = irCtx.referenceClass(InjektFqNames.TypeKey)
-  private val typeKeyValue = typeKey?.owner?.properties
-    ?.single { it.name.asString() == "value" }
-  private val typeKeyConstructor = typeKey?.constructors?.single()
-  private val stringPlus = irCtx.irBuiltIns.stringClass
-    .functions
-    .map { it.owner }
-    .first { it.name.asString() == "plus" }
-
-  private fun ScopeContext.typeKeyExpression(
-    result: ResolutionResult.Success.WithCandidate.Value,
-    injectable: TypeKeyInjectable
-  ): IrExpression = DeclarationIrBuilder(irCtx, symbol).run {
-    val expressions = mutableListOf<IrExpression>()
-    var currentString = ""
-    fun commitCurrentString() {
-      if (currentString.isNotEmpty()) {
-        expressions += irString(currentString)
-        currentString = ""
-      }
-    }
-
-    fun appendToCurrentString(value: String) {
-      currentString += value
-    }
-
-    fun appendTypeParameterExpression(expression: IrExpression) {
-      commitCurrentString()
-      expressions += expression
-    }
-
-    injectable.type.arguments.single().render(
-      renderType = { typeToRender ->
-        if (typeToRender.type.constructor.declarationDescriptor !is TypeParameterDescriptor) true else {
-          appendTypeParameterExpression(
-            irCall(typeKeyValue!!.getter!!).apply {
-              dispatchReceiver = expressionFor(
-                result.dependencyResults.values.single {
-                  it is ResolutionResult.Success.WithCandidate &&
-                      it.candidate.type.arguments.single().type.constructor == typeToRender.type.constructor
-                }.cast()
-              )
-            }
-          )
-          false
-        }
-      },
-      append = { appendToCurrentString(it) }
-    )
-
-    commitCurrentString()
-
-    val stringExpression = if (expressions.size == 1) {
-      expressions.single()
-    } else {
-      expressions.reduce { acc, expression ->
-        irCall(stringPlus).apply {
-          dispatchReceiver = acc
-          putValueArgument(0, expression)
-        }
-      }
-    }
-
-    irCall(typeKeyConstructor!!).apply {
-      putTypeArgument(0, injectable.type.arguments.single().type.toIrType())
-      putValueArgument(0, stringExpression)
     }
   }
 

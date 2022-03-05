@@ -433,41 +433,6 @@ fun DescriptorVisibility.shouldPersistInfo() = this ==
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
 
-fun KotlinType.renderToString() = asTypeProjection().renderToString()
-
-fun TypeProjection.renderToString() = buildString {
-  render { append(it) }
-}
-
-fun TypeProjection.render(
-  depth: Int = 0,
-  renderType: (TypeProjection) -> Boolean = { true },
-  append: (String) -> Unit
-) {
-  if (depth > 15) return
-  fun TypeProjection.inner() {
-    if (!renderType(this)) return
-
-    if (type.isComposable) append("${InjektFqNames.Composable}<")
-
-    when {
-      isStarProjection -> append("*")
-      else -> append(type.fqName.asString())
-    }
-    if (type.arguments.isNotEmpty()) {
-      append("<")
-      type.arguments.forEachIndexed { index, typeArgument ->
-        typeArgument.render(depth = depth + 1, renderType, append)
-        if (index != type.arguments.lastIndex) append(", ")
-      }
-      append(">")
-    }
-    if (type.isMarkedNullable && !isStarProjection) append("?")
-    if (type.isComposable) append(">")
-  }
-  inner()
-}
-
 val KotlinType.fqName: FqName
   get() = constructor.declarationDescriptor?.fqNameSafe ?: FqName.ROOT
 
@@ -566,6 +531,32 @@ fun KotlinType.buildSystem(
   system.fixVariables()
 
   return system.build()
+}
+
+fun KotlinType.render() = asTypeProjection().render()
+
+fun TypeProjection.render() = buildString {
+  fun TypeProjection.inner(depth: Int) {
+    if (depth > 15) return
+
+    if (type.isComposable) append("${InjektFqNames.Composable}<")
+
+    when {
+      isStarProjection -> append("*")
+      else -> append(type.fqName.asString())
+    }
+    if (type.arguments.isNotEmpty()) {
+      append("<")
+      type.arguments.forEachIndexed { index, typeArgument ->
+        typeArgument.inner(depth + 1)
+        if (index != type.arguments.lastIndex) append(", ")
+      }
+      append(">")
+    }
+    if (type.isMarkedNullable && !isStarProjection) append("?")
+    if (type.isComposable) append(">")
+  }
+  inner(0)
 }
 
 val KotlinType.frameworkKey: String

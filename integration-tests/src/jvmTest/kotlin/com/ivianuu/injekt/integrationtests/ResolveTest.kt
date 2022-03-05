@@ -494,6 +494,24 @@ class ResolveTest {
     )
   }
 
+  @Test fun testCannotUseNestedNonReifiedTypeParameterForReifiedInjectable() = singleAndMultiCodegen(
+    """
+      @Provide inline fun <reified T> set(): Set<T> {
+        T::class
+        return emptySet()
+      }
+    """,
+    """
+      fun <T> invoke() {
+        inject<Set<List<T>>>()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T>> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
+    )
+  }
+
   @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
       """
         @Provide val foo = Foo()
@@ -1052,10 +1070,10 @@ class ResolveTest {
       fun <T> produceState(
         vararg keys: Any?,
         @Inject scope: String,
-        @Inject Nkey: SourceKey
+        @Inject count: Int
       ): State<T> = TODO()
 
-      fun invoke(@Inject scope: String) {
+      fun invoke(@Inject scope: String, @Inject count: Int) {
         val scope by produceState<Int>()
       }
     """

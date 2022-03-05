@@ -248,9 +248,7 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
   // try the type scope if the requested type is not a framework type
   if (request.type.frameworkKey.isEmpty() &&
     !request.type.isFunctionType &&
-    request.type.fqName != ctx.module.builtIns.list.fqNameSafe &&
-    request.type.fqName != InjektFqNames.TypeKey &&
-    request.type.fqName != InjektFqNames.SourceKey) {
+    request.type.fqName != ctx.module.builtIns.list.fqNameSafe) {
     TypeInjectablesScopeOrNull(request.type, this, ctx)
       .takeUnless { it.isEmpty }
       ?.run {
@@ -368,14 +366,16 @@ private fun InjectablesScope.resolveCandidate(
 
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
-      val argumentDescriptor = typeArgument.type.constructor.declarationDescriptor as? TypeParameterDescriptor
-        ?: continue
-      if (typeParameter.isReified && !argumentDescriptor.isReified) {
-        return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
-          typeParameter,
-          typeArgument.type.constructor.declarationDescriptor.cast(),
-          candidate
-        )
+      val argumentTypeParameters = typeArgument.type.allVisibleTypes
+        .mapNotNull { it.constructor.declarationDescriptor as? TypeParameterDescriptor }
+      for (argumentTypeParameter in argumentTypeParameters) {
+        if (typeParameter.isReified && !argumentTypeParameter.isReified) {
+          return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
+            typeParameter,
+            argumentTypeParameter,
+            candidate
+          )
+        }
       }
     }
   }
