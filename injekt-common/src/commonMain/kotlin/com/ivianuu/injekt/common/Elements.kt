@@ -26,7 +26,4 @@ interface Elements<N> {
       ?: error("No element found for $key in ${this.key.type}")
 }
 
-data class Element<N, T : Any>(
-  @Provide val value: T,
-  @Inject val key: TypeKey<T>
-)
+data class Element<N, T : Any>(@Provide val value: T, @Inject val key: TypeKey<T>)

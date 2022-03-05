@@ -17,9 +17,9 @@ class NamedCoroutineScopeTest {
   @Test fun testComponentScopeLifecycle() {
     @Provide val scope = Scope<MyScope>()
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
-    coroutineScope().isActive.shouldBeTrue()
+    coroutineScope.isActive.shouldBeTrue()
     scope.dispose()
-    coroutineScope().isActive.shouldBeFalse()
+    coroutineScope.isActive.shouldBeFalse()
   }
 
   @OptIn(ExperimentalStdlibApi::class)
@@ -27,6 +27,6 @@ class NamedCoroutineScopeTest {
     @Provide val scope = Scope<MyScope>()
     @Provide val customContext = NamedCoroutineContext<MyScope>(Dispatchers.Main)
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
-    coroutineScope().coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext()
+    coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext.value
   }
 }
