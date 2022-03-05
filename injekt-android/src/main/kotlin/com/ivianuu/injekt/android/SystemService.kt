@@ -18,7 +18,7 @@ import kotlin.reflect.*
  * fun Notification.post(@Inject notificationManager: SystemService<NotificationManager>) { ... }
  * ```
  */
-data class SystemService<T : Any>(val value: T) {
+data class SystemService<T>(val value: T) {
   companion object {
     @Provide fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
        SystemService(ContextCompat.getSystemService(context, serviceClass.java)!!)
