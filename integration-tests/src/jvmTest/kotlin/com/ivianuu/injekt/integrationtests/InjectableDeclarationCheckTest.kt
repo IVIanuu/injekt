@@ -121,7 +121,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("receiver cannot be injected")
   }
 
-  @Test fun testInjectReceiverOnProperty() = codegen(
+  @Test fun testProvideReceiverOnProperty() = codegen(
     """
       val @receiver:Provide Foo.bar get() = Bar(this)
     """

@@ -651,4 +651,61 @@ class ImportsTest {
   ) {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
+
+  @Test fun testImportedProvideFunctionInObject() = singleAndMultiCodegen(
+    """
+      object FooModule {
+        @Provide fun foo() = Foo()
+      }
+    """,
+    """
+      @Providers("com.ivianuu.injekt.integrationtests.FooModule.foo")
+      fun invoke() = inject<Foo>() 
+    """
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testImportedProvideFunctionInObjectWithStar() = singleAndMultiCodegen(
+    """
+      object FooModule {
+        @Provide fun foo() = Foo()
+      }
+    """,
+    """
+      @Providers("com.ivianuu.injekt.integrationtests.FooModule.*")
+      fun invoke() = inject<Foo>() 
+    """
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testImportedProvideFunctionInCompanionObject() = singleAndMultiCodegen(
+    listOf(
+      listOf(
+        source(
+          """
+            class FooModule {
+              companion object {
+                @Provide fun foo() = Foo()
+              }
+            }
+          """,
+          packageFqName = FqName("providers")
+        )
+      ),
+      listOf(
+        invokableSource(
+          """
+            @Providers("providers.FooModule")
+            fun invoke() = inject<Foo>()
+          """
+        )
+      )
+    )
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 }

@@ -208,19 +208,6 @@ class ResolveTest {
     compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testGenericInjectable() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      @Provide fun <T> injectableList(value: T): List<T> = listOf(value)
-    """,
-    """
-      fun invoke() = inject<List<Foo>>() 
-    """
-  ) {
-    val (foo) = invokeSingleFile<List<Any>>()
-    foo.shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testFunctionInvocationWithInjectables() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
@@ -261,20 +248,6 @@ class ResolveTest {
     """
   ) {
     invokeSingleFile()
-  }
-
-  @Test fun testPrimaryConstructorInjectableWithReceiver() = singleAndMultiCodegen(
-    """
-      class UsesFoo(@Provide val foo: Foo)
-    """,
-    """
-      fun invoke(foo: Foo) = with(UsesFoo(foo)) {
-        inject<Foo>()
-      }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testLocalConstructorInvocationWithInjectables() = codegen(

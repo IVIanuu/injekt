@@ -112,7 +112,7 @@ fun ResolutionScope.collectInjectables(
           (declaration !is PropertyDescriptor ||
               classBodyView ||
               declaration.hasAnnotation(InjektFqNames.Provide) ||
-              declaration.primaryConstructorPropertyValueParameter(ctx)
+              declaration.primaryConstructorPropertyValueParameter()
                 ?.hasAnnotation(InjektFqNames.Provide) == true)) {
           consumer(declaration.toCallableRef(ctx))
         }
@@ -130,7 +130,7 @@ fun Annotated.isProvide(ctx: Context): Boolean {
       hasAnnotation(InjektFqNames.Inject)
 
   if (!isProvide && this is PropertyDescriptor)
-    isProvide = primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true
+    isProvide = primaryConstructorPropertyValueParameter()?.isProvide(ctx) == true
 
   if (!isProvide && this is ParameterDescriptor)
     isProvide = type.isProvide(ctx) ||
@@ -146,7 +146,7 @@ fun Annotated.isInject(ctx: Context): Boolean {
   var isInject = hasAnnotation(InjektFqNames.Inject)
 
   if (!isInject && this is PropertyDescriptor)
-    isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true
+    isInject = primaryConstructorPropertyValueParameter()?.isInject(ctx) == true
 
   if (!isInject && this is ParameterDescriptor)
     isInject = type.isInject(ctx) ||

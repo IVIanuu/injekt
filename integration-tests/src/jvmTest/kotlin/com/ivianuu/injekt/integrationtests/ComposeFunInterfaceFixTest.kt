@@ -99,36 +99,4 @@ class ComposeFunInterfaceFixTest {
       invokeSingleFile<@Composable () -> Unit>().invoke()
     }
   }
-
-  // todo @Test
-  fun testComposableFunInterfaceWithComposableExtensionFunction() = singleAndMultiCodegen(
-    """
-      fun interface ModelKeyUi<K, M> {
-        @Composable operator fun ModelKeyUiScope<K, M>.invoke()
-      }
-
-      interface ModelKeyUiScope<K, M> {
-        val model: M
-      }
-    """,
-    """
-      val testKeyUi = ModelKeyUi<String, Int> {
-        val test = remember { model }
-      }
-    """,
-    """
-      @Composable fun func() {
-        with(
-          object : ModelKeyUiScope<String, Int> {
-            override val model: Int get() = 0
-          }
-        ) {
-          with(testKeyUi) {
-            invoke()
-          }
-        }
-      }
-    """,
-    config = { withCompose() }
-  )
 }
