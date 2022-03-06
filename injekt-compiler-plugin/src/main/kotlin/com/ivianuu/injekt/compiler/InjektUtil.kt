@@ -207,9 +207,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-val injectablesLookupName = "_injectables".asNameId()
-val subInjectablesLookupName = "_subInjectables".asNameId()
-
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
@@ -227,16 +224,6 @@ inline fun <K, V> BindingTrace?.getOrPut(
   this?.get(slice, key)?.let { return it }
   return computation()
     .also { this?.record(slice, key, it) }
-}
-
-fun classifierDescriptorForFqName(
-  fqName: FqName,
-  lookupLocation: LookupLocation,
-  ctx: Context
-): ClassifierDescriptor? {
-  return if (fqName.isRoot) null
-  else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)?.first
-    ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
 
 fun memberScopeForFqName(

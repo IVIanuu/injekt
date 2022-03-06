@@ -21,12 +21,10 @@ class InjectablesScope(
   val parent: InjectablesScope?,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
-  val typeScopeType: KotlinType? = null,
   val isDeclarationContainer: Boolean = true,
   val isEmpty: Boolean = false,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  imports: List<ResolvedProviderImport> = emptyList(),
   val typeParameters: List<TypeParameterDescriptor> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
@@ -34,11 +32,8 @@ class InjectablesScope(
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeKey, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
-  val typeScopes = mutableMapOf<TypeKey, InjectablesScope>()
 
-  private val imports = imports.toMutableList()
-
-  val injectables = mutableListOf<CallableRef>()
+  private val injectables = mutableListOf<CallableRef>()
 
   private val injectableByFrameworkKey = mutableMapOf<String, CallableRef>()
 
@@ -74,42 +69,11 @@ class InjectablesScope(
 
   init {
     for (injectable in initialInjectables)
-      injectable.collectInjectables(
-        scope = this,
-        addImport = { importFqName, packageFqName ->
-          this.imports += ResolvedProviderImport(
-            null,
-            "${importFqName}.*",
-            packageFqName
-          )
-        },
-        addInjectable = {
-          injectables += it
-          if (it.type.frameworkKey.isNotEmpty())
-            injectableByFrameworkKey[it.type.frameworkKey] = it
-        },
-        ctx = ctx
-      )
-  }
-
-  fun recordLookup(
-    lookupLocation: LookupLocation,
-    visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
-  ) {
-    if (!visitedScopes.add(this)) return
-
-    parent?.recordLookup(lookupLocation, visitedScopes)
-    typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
-    for (import in imports) {
-      memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
-        ?.first
-        ?.recordLookup(injectablesLookupName, lookupLocation)
-      if (import.importPath!!.endsWith(".**")) {
-        memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
-          ?.first
-          ?.recordLookup(subInjectablesLookupName, lookupLocation)
+      injectable.collectInjectables(this, ctx) {
+        injectables += it
+        if (it.type.frameworkKey.isNotEmpty())
+          injectableByFrameworkKey[it.type.frameworkKey] = it
       }
-    }
   }
 
   fun injectablesForRequest(
@@ -164,30 +128,23 @@ class InjectablesScope(
         isInline = request.isInline
       )
       request.type.fqName == ctx.module.builtIns.list.fqNameSafe -> {
-        fun createInjectable(): ListInjectable? {
-          val singleElementType = request.type.arguments[0].type
-          val collectionElementType = ctx.module.builtIns.collection.defaultType
-            .replace(newArguments = listOf(singleElementType.asTypeProjection()))
+        val singleElementType = request.type.arguments[0].type
+        val collectionElementType = ctx.module.builtIns.collection.defaultType
+          .replace(newArguments = listOf(singleElementType.asTypeProjection()))
 
-          val key = CallableRequestKey(request.type.toTypeKey(), allStaticTypeParameters)
+        val key = CallableRequestKey(request.type.toTypeKey(), allStaticTypeParameters)
 
-          val elements = listElementsForType(singleElementType, collectionElementType, key)
-            .values.map { it.type } + frameworkListElementsForType(singleElementType)
+        val elements = listElementsForType(singleElementType, collectionElementType, key)
+          .values.map { it.type } + frameworkListElementsForType(singleElementType)
 
-          return if (elements.isEmpty()) null
-          else ListInjectable(
-            type = request.type,
-            ownerScope = this,
-            elements = elements,
-            singleElementType = singleElementType,
-            collectionElementType = collectionElementType
-          )
-        }
-
-        val typeScope = TypeInjectablesScopeOrNull(request.type, this, ctx)
-          .takeUnless { it.isEmpty }
-        return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
-        else createInjectable()
+        return if (elements.isEmpty()) null
+        else ListInjectable(
+          type = request.type,
+          ownerScope = this,
+          elements = elements,
+          singleElementType = singleElementType,
+          collectionElementType = collectionElementType
+        )
       }
       else -> return null
     }
@@ -202,47 +159,38 @@ class InjectablesScope(
       return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyMap()
 
     return buildMap {
-      fun addThisInjectables() {
-        for (candidate in injectables.toList()) {
-          var system =
-            candidate.type.buildSystem(singleElementType, key.staticTypeParameters)
-          if (system.status.hasContradiction() ||
-              !singleElementType.isSubtypeOf(singleElementType))
-            system = candidate.type.buildSystem(collectionElementType, key.staticTypeParameters)
-          if (system.status.hasContradiction()) continue
-
-          val substitutedCandidate = candidate.substitute(system.resultingSubstitutor)
-
-          if (!substitutedCandidate.type.isSubtypeOf(singleElementType) &&
-              !substitutedCandidate.type.isSubtypeOf(collectionElementType))
-            continue
-
-          val frameworkKey = UUID.randomUUID().toString()
-          val typeWithFrameworkKey = substitutedCandidate.type.withFrameworkKey(
-            frameworkKey,
-            ctx
-          )
-
-          val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
-
-          injectableByFrameworkKey[frameworkKey] = finalCandidate
-
-          this[InjectableKey(finalCandidate, ctx)] = finalCandidate
-        }
-      }
-
-      // if we are a type scope we wanna appear in the list before the other scopes
-      if (typeScopeType != null)
-        addThisInjectables()
-
       parent?.listElementsForType(singleElementType, collectionElementType, key)
         ?.let { parentElements ->
           for ((candidateKey, candidate) in parentElements)
             put(candidateKey, candidate)
         }
 
-      if (typeScopeType == null)
-        addThisInjectables()
+      for (candidate in injectables.toList()) {
+        var system =
+          candidate.type.buildSystem(singleElementType, key.staticTypeParameters)
+        if (system.status.hasContradiction() ||
+          !singleElementType.isSubtypeOf(singleElementType))
+          system = candidate.type.buildSystem(collectionElementType, key.staticTypeParameters)
+        if (system.status.hasContradiction()) continue
+
+        val substitutedCandidate = candidate.substitute(system.resultingSubstitutor)
+
+        if (!substitutedCandidate.type.isSubtypeOf(singleElementType) &&
+          !substitutedCandidate.type.isSubtypeOf(collectionElementType))
+          continue
+
+        val frameworkKey = UUID.randomUUID().toString()
+        val typeWithFrameworkKey = substitutedCandidate.type.withFrameworkKey(
+          frameworkKey,
+          ctx
+        )
+
+        val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
+
+        injectableByFrameworkKey[frameworkKey] = finalCandidate
+
+        this[InjectableKey(finalCandidate, ctx)] = finalCandidate
+      }
     }
   }
 

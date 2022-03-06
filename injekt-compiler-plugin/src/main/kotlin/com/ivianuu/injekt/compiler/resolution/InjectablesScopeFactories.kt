@@ -148,9 +148,6 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
       ?.getParentOfType<KtClassOrObject>(false) != this)
     return true
 
-  if (this is KtAnnotatedExpression && hasAnnotation(InjektFqNames.Providers))
-    return true
-
   if (this is KtClass && position.getParentOfType<KtSuperTypeList>(false) == null) {
     val constructor = position.getParentOfType<KtConstructor<*>>(false)
     if (constructor != null &&
@@ -190,11 +187,10 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
 
 private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
   ctx.trace!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
-    ImportInjectablesScopes(
+    InjectablesScope(
+      name = "FILE ${file.name}",
       file = file,
-      imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
-      namePrefix = "FILE ${file.name}",
-      parent = null,
+      parent = GlobalInjectablesScope(ctx),
       ctx = ctx
     )
   }
@@ -215,17 +211,16 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
 
   val injectableDeclaration = visibleInjectableDeclarations.lastOrNull()
 
-  return ImportInjectablesScopes(
+  return InjectablesScope(
     file = file,
-    imports = file.getProviderImports() + ProviderImport(null, "${file.packageFqName.asString()}.*"),
-    namePrefix = "FILE INIT ${file.name} at ${injectableDeclaration?.name}",
+    name = "FILE INIT ${file.name} at ${injectableDeclaration?.name}",
     injectablesPredicate = {
-      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@ImportInjectablesScopes true
+      val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
       psiProperty.containingFile != file ||
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    parent = null,
+    parent = GlobalInjectablesScope(ctx),
     ctx = ctx
   )
 }
@@ -237,21 +232,6 @@ private fun ClassCompanionInjectablesScope(
 ): InjectablesScope = clazz.companionObjectDescriptor
   ?.let { ClassInjectablesScope(it, parent, ctx) } ?: parent
 
-private fun ClassImportsInjectablesScope(
-  clazz: ClassDescriptor,
-  parent: InjectablesScope,
-  ctx: Context
-): InjectablesScope {
-  val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
-  return (clazz
-    .findPsi()
-    .safeAs<KtClassOrObject>()
-    ?.getProviderImports()
-    ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScopes(null, it, "CLASS ${clazz.fqNameSafe}", finalParent, ctx = ctx) }
-    ?: finalParent)
-}
-
 private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
@@ -260,7 +240,7 @@ private fun ClassInjectablesScope(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(clazz, parent.name)
 ) {
-  val finalParent = ClassImportsInjectablesScope(clazz, parent, ctx)
+  val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
   val name = if (clazz.isCompanionObject)
     "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
   else "CLASS ${clazz.fqNameSafe}"
@@ -292,7 +272,6 @@ private fun ClassInitInjectablesScope(
           ?.let { add(it) }
       }
     }
-  val finalParent = ClassImportsInjectablesScope(clazz, parent, ctx)
 
   val injectableDeclaration = visibleInjectableDeclarations.lastOrNull()
 
@@ -304,7 +283,7 @@ private fun ClassInitInjectablesScope(
 
   val classInitScope = InjectablesScope(
     name = name,
-    parent = finalParent,
+    parent = parent,
     ownerDescriptor = clazz,
     initialInjectables = listOf(thisInjectable),
     injectablesPredicate = {
@@ -328,12 +307,7 @@ private fun ConstructorPreInitInjectablesScope(
   parent: InjectablesScope,
   ctx: Context
 ): InjectablesScope {
-  val finalParent = ClassImportsInjectablesScope(
-    constructor.constructedClass,
-    FunctionImportsInjectablesScope(constructor, parent, ctx),
-    ctx
-  )
-  val parameterScopes = FunctionParameterInjectablesScopes(finalParent, constructor, null, ctx)
+  val parameterScopes = FunctionParameterInjectablesScopes(parent, constructor, null, ctx)
   return InjectablesScope(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
     parent = parameterScopes,
@@ -344,29 +318,13 @@ private fun ConstructorPreInitInjectablesScope(
   )
 }
 
-private fun FunctionImportsInjectablesScope(
-  function: FunctionDescriptor,
-  parent: InjectablesScope,
-  ctx: Context
-): InjectablesScope = function
-  .findPsi()
-  .safeAs<KtFunction>()
-  ?.getProviderImports()
-  ?.takeIf { it.isNotEmpty() }
-  ?.let {
-    val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-    ImportInjectablesScopes(null, it, "$baseName ${function.fqNameSafe}", parent, ctx = ctx)
-  }
-  ?: parent
-
 private fun ValueParameterDefaultValueInjectablesScope(
   valueParameter: ValueParameterDescriptor,
   parent: InjectablesScope,
   ctx: Context
 ): InjectablesScope {
   val function = valueParameter.containingDeclaration.cast<FunctionDescriptor>()
-  val finalParent = FunctionImportsInjectablesScope(function, parent, ctx)
-  val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, valueParameter, ctx)
+  val parameterScopes = FunctionParameterInjectablesScopes(parent, function, valueParameter, ctx)
   return InjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
@@ -384,8 +342,7 @@ private fun FunctionInjectablesScope(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(function, parent.name)
 ) {
-  val finalParent = FunctionImportsInjectablesScope(function, parent, ctx)
-  val parameterScopes = FunctionParameterInjectablesScopes(finalParent, function, null, ctx)
+  val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
   val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
   val typeParameters = if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
@@ -449,17 +406,9 @@ private fun PropertyInjectablesScope(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(property, parent.name)
 ) {
-  val finalParent = property
-    .findPsi()
-    .safeAs<KtProperty>()
-    ?.getProviderImports()
-    ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScopes(null, it, "PROPERTY ${property.fqNameSafe}", parent, ctx = ctx) }
-    ?: parent
-
   InjectablesScope(
     name = "PROPERTY ${property.fqNameSafe}",
-    parent = finalParent,
+    parent = parent,
     ownerDescriptor = property,
     initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx)),
     typeParameters = property.typeParameters,
@@ -473,7 +422,7 @@ private fun PropertyInitInjectablesScope(
   position: KtElement,
   ctx: Context
 ): InjectablesScope {
-  val containingDeclarationScope = if (property.containingDeclaration is ClassDescriptor) {
+  val finalParent = if (property.containingDeclaration is ClassDescriptor) {
     ClassInitInjectablesScope(
       clazz = property.containingDeclaration.cast(),
       parent = parent,
@@ -483,22 +432,6 @@ private fun PropertyInitInjectablesScope(
   } else {
     FileInitInjectablesScope(position = position, ctx = ctx)
   }
-
-  val finalParent = property
-    .findPsi()
-    .safeAs<KtProperty>()
-    ?.getProviderImports()
-    ?.takeIf { it.isNotEmpty() }
-    ?.let {
-      ImportInjectablesScopes(
-        file = null,
-        imports = it,
-        namePrefix = "PROPERTY ${property.fqNameSafe}",
-        parent = containingDeclarationScope,
-        ctx = ctx
-      )
-    }
-    ?: containingDeclarationScope
 
   return InjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
@@ -517,19 +450,11 @@ private fun LocalVariableInjectablesScope(
   InjektWritableSlices.DECLARATION_SCOPE,
   DescriptorWithParentScope(variable, parent.name)
 ) {
-  val finalParent = variable
-    .findPsi()
-    .safeAs<KtProperty>()
-    ?.getProviderImports()
-    ?.takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScopes(null, it, "LOCAL VARIABLE ${variable.fqNameSafe}", parent, ctx = ctx) }
-    ?: parent
-
   InjectablesScope(
     name = "LOCAL VARIABLE ${variable.fqNameSafe}",
-    parent = finalParent,
+    parent = parent,
     ownerDescriptor = variable,
-    nesting = finalParent.nesting,
+    nesting = parent.nesting,
     ctx = ctx
   )
 }
@@ -539,16 +464,10 @@ private fun ExpressionInjectablesScope(
   parent: InjectablesScope,
   ctx: Context
 ): InjectablesScope = ctx.trace!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, expression) {
-  val finalParent = expression
-    .getProviderImports()
-    .takeIf { it.isNotEmpty() }
-    ?.let { ImportInjectablesScopes(null, it, "EXPRESSION ${expression.startOffset}", parent, ctx = ctx) }
-    ?: parent
-
   InjectablesScope(
     name = "EXPRESSION ${expression.startOffset}",
-    parent = finalParent,
-    nesting = finalParent.nesting,
+    parent = parent,
+    nesting = parent.nesting,
     ctx = ctx
   )
 }
@@ -591,180 +510,25 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun TypeInjectablesScopeOrNull(
-  type: KotlinType,
-  parent: InjectablesScope,
-  ctx: Context
-): InjectablesScope {
-  val finalParent = parent.scopeToUse
-  return finalParent.typeScopes.getOrPut(type.toTypeKey()) {
-    val injectablesWithLookups = type.collectTypeScopeInjectables(ctx)
+fun GlobalInjectablesScope(ctx: Context) = ctx.trace!!.getOrPut(
+  InjektWritableSlices.GLOBAL_INJECTABLES_SCOPE, Unit
+) {
+  val (internalInjectables, externalInjectables) = collectAllInjectables(ctx)
+    .partition { !it.callable.isExternalDeclaration(ctx) }
 
-    val newInjectables = injectablesWithLookups.injectables
-      .filterNotExistingIn(finalParent, ctx)
-
-    val imports = injectablesWithLookups.lookedUpPackages
-      .map { ResolvedProviderImport(null, "$it.*", it) }
-
-    if (newInjectables.isEmpty()) {
-      return@getOrPut InjectablesScope(
-        name = "EMPTY TYPE ${type.render()}",
-        parent = finalParent,
-        imports = imports,
-        isEmpty = true,
-        isDeclarationContainer = false,
-        ctx = ctx
-      )
-    }
-
-    val externalInjectables = mutableListOf<CallableRef>()
-    val typeInjectables = mutableListOf<CallableRef>()
-    val internalInjectables = mutableListOf<CallableRef>()
-
-    val thisModuleName = ctx.module.moduleName(ctx)
-    val typeModuleName = type.constructor.declarationDescriptor!!.moduleName(ctx)
-    for (callable in newInjectables) {
-      when (callable.callable.moduleName(ctx)) {
-        thisModuleName -> internalInjectables += callable
-        typeModuleName -> typeInjectables += callable
-        else -> externalInjectables += callable
-      }
-    }
-
-    var result = finalParent
-
-    if (externalInjectables.isNotEmpty()) {
-      result = InjectablesScope(
-        name = "EXTERNAL TYPE ${type.render()}",
-        parent = result,
-        initialInjectables = externalInjectables,
-        typeScopeType = type,
-        isDeclarationContainer = false,
-        imports = imports,
-        ctx = ctx
-      )
-    }
-    if (typeInjectables.isNotEmpty()) {
-      result = InjectablesScope(
-        name = "TYPE TYPE ${type.render()}",
-        parent = result,
-        initialInjectables = typeInjectables,
-        typeScopeType = type,
-        isDeclarationContainer = false,
-        imports = imports,
-        ctx = ctx
-      )
-    }
-    if (internalInjectables.isNotEmpty()) {
-      result = InjectablesScope(
-        name = "INTERNAL TYPE ${type.render()}",
-        parent = result,
-        initialInjectables = internalInjectables,
-        typeScopeType = type,
-        isDeclarationContainer = false,
-        imports = imports,
-        ctx = ctx
-      )
-    }
-
-    result
-  }
-}
-
-private fun ImportInjectablesScopes(
-  file: KtFile?,
-  imports: List<ProviderImport>,
-  namePrefix: String,
-  parent: InjectablesScope?,
-  injectablesPredicate: (CallableRef) -> Boolean = { true },
-  ctx: Context
-): InjectablesScope {
-  val externalStarInjectables = mutableListOf<CallableRef>()
-  val externalByNameInjectables = mutableListOf<CallableRef>()
-  val internalStarInjectables = mutableListOf<CallableRef>()
-  val internalByNameInjectables = mutableListOf<CallableRef>()
-
-  imports.collectImportedInjectables(ctx) { callable ->
-    if (callable.callable.isExternalDeclaration(ctx)) {
-      if (callable.import!!.importPath!!.endsWith("*")) {
-        externalStarInjectables += callable
-      } else {
-        externalByNameInjectables += callable
-      }
-    } else {
-      if (callable.import!!.importPath!!.endsWith("*")) {
-        internalStarInjectables += callable
-      } else {
-        internalByNameInjectables += callable
-      }
-    }
-  }
-
-  val resolvedImports = imports.mapNotNull { it.resolve(ctx) }
-  if (externalStarInjectables.isEmpty() &&
-      internalStarInjectables.isEmpty() &&
-      externalByNameInjectables.isEmpty() &&
-      internalByNameInjectables.isEmpty()) {
-    return InjectablesScope(
-      name = "$namePrefix EMPTY IMPORTS",
-      parent = parent,
-      file = file,
+  InjectablesScope(
+    name = "INTERNAL GLOBAL SCOPE",
+    parent = InjectablesScope(
+      name = "EXTERNAL GLOBAL SCOPE",
+      parent = null,
+      initialInjectables = externalInjectables,
       isDeclarationContainer = false,
       ctx = ctx
-    )
-  }
-
-  var current = parent
-  if (externalStarInjectables.isNotEmpty()) {
-    current = InjectablesScope(
-      name = "$namePrefix EXTERNAL STAR IMPORTS",
-      parent = current,
-      file = file,
-      imports = resolvedImports,
-      initialInjectables = externalStarInjectables,
-      isDeclarationContainer = false,
-      injectablesPredicate = injectablesPredicate,
-      ctx = ctx
-    )
-  }
-  if (internalStarInjectables.isNotEmpty()) {
-    current = InjectablesScope(
-      name = "$namePrefix INTERNAL STAR IMPORTS",
-      parent = current,
-      file = file,
-      imports = resolvedImports,
-      initialInjectables = internalStarInjectables,
-      isDeclarationContainer = false,
-      injectablesPredicate = injectablesPredicate,
-      ctx = ctx
-    )
-  }
-  if (externalByNameInjectables.isNotEmpty()) {
-    current = InjectablesScope(
-      name = "$namePrefix EXTERNAL BY NAME IMPORTS",
-      parent = current,
-      initialInjectables = externalByNameInjectables,
-      file = file,
-      imports = resolvedImports,
-      isDeclarationContainer = false,
-      injectablesPredicate = injectablesPredicate,
-      ctx = ctx
-    )
-  }
-  if (internalByNameInjectables.isNotEmpty()) {
-    current = InjectablesScope(
-      name = "$namePrefix INTERNAL BY NAME IMPORTS",
-      parent = current,
-      file = file,
-      imports = resolvedImports,
-      initialInjectables = internalByNameInjectables,
-      isDeclarationContainer = false,
-      injectablesPredicate = injectablesPredicate,
-      ctx = ctx
-    )
-  }
-
-  return current!!
+    ),
+    initialInjectables = internalInjectables,
+    isDeclarationContainer = false,
+    ctx = ctx
+  )
 }
 
 data class DescriptorWithParentScope(

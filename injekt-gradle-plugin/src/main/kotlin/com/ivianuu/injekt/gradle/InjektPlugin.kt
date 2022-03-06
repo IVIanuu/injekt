@@ -36,8 +36,6 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
-    kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xallow-kotlin-package"
-
     val project = kotlinCompilation.target.project
 
     val sourceSetName = kotlinCompilation.defaultSourceSetName

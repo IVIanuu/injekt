@@ -16,8 +16,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
   ) {
-    val ctx = Context(moduleDescriptor, null)
-    container.useInstance(InjectableChecker(ctx))
-    container.useInstance(ProviderImportsChecker(ctx))
+    container.useInstance(InjectableChecker(Context(moduleDescriptor, null)))
   }
 }

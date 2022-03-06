@@ -17,7 +17,6 @@ data class CallableRef(
   val originalType: KotlinType,
   val parameterTypes: Map<Int, KotlinType>,
   val typeArguments: Map<TypeParameterDescriptor, TypeProjection>,
-  val import: ResolvedProviderImport?,
   val chainLength: Int
 )
 
@@ -47,7 +46,6 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef {
       for (typeParameter in typeParameters)
         this[typeParameter] = typeParameter.defaultType.asTypeProjection()
     },
-    import = null,
     chainLength = 0
   )
 }

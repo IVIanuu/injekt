@@ -14,11 +14,6 @@ interface InjektErrors {
   companion object {
     @JvmField val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
-    @JvmField val IMPORT_RENDERER = object : DiagnosticParameterRenderer<PsiElement> {
-      override fun render(obj: PsiElement, renderingContext: RenderingContext): String =
-        "'${obj.text.removeSurrounding("\"")}'"
-    }
-
     @JvmField val UNRESOLVED_INJECTION =
       DiagnosticFactory1.create<PsiElement, InjectionGraph.Error>(Severity.ERROR)
         .also {
@@ -69,56 +64,6 @@ interface InjektErrors {
           MAP.put(
             it,
             "injectable variable must be initialized, delegated or marked with lateinit"
-          )
-        }
-
-    @JvmField val MALFORMED_INJECTABLE_IMPORT =
-      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "cannot read injectable import: {0}",
-            IMPORT_RENDERER
-          )
-        }
-
-    @JvmField val UNRESOLVED_INJECTABLE_IMPORT =
-      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "unresolved injectable import: {0}",
-            IMPORT_RENDERER
-          )
-        }
-
-    @JvmField val DUPLICATED_INJECTABLE_IMPORT =
-      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "duplicated injectable import: {0}",
-            IMPORT_RENDERER
-          )
-        }
-
-    @JvmField val UNUSED_INJECTABLE_IMPORT =
-      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.WARNING)
-        .also {
-          MAP.put(
-            it,
-            "unused injectable import: {0}",
-            IMPORT_RENDERER
-          )
-        }
-
-    @JvmField val DECLARATION_PACKAGE_INJECTABLE_IMPORT =
-      DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "injectables of the same package are automatically imported: {0}",
-            IMPORT_RENDERER
           )
         }
 

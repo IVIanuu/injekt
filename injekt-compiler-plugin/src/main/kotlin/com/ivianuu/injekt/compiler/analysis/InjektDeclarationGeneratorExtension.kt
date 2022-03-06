@@ -92,7 +92,8 @@ class InjektDeclarationGeneratorExtension(
       }
 
       if (modifiedFiles == null || file.virtualFilePath in modifiedFiles.map { it.absolutePath }) {
-        processFile(module, file, ctx).forEach { generatedFile ->
+        val generatedFile = processFile(module, file, ctx)
+        if (generatedFile != null) {
           fileMap.getOrPut(file.virtualFilePath) { mutableSetOf() } += generatedFile.absolutePath
           copy(generatedFile, generatedFile.backupFile(), true)
         }
@@ -133,12 +134,7 @@ class InjektDeclarationGeneratorExtension(
     }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
-  private fun processFile(
-    module: ModuleDescriptor,
-    file: KtFile,
-    ctx: Context
-  ): List<File> {
+  private fun processFile(module: ModuleDescriptor, file: KtFile, ctx: Context): File? {
     val injectables = mutableListOf<KtNamedDeclaration>()
 
     file.accept(
@@ -165,45 +161,39 @@ class InjektDeclarationGeneratorExtension(
       }
     )
 
-    if (injectables.isEmpty()) return emptyList()
+    if (injectables.isEmpty()) return null
 
     val markerName = "_${
       module.moduleName(ctx)
         .filter { it.isLetterOrDigit() }
-    }_${
+    }_${file.packageFqName.pathSegments().joinToString("_")}${
       file.name.removeSuffix(".kt")
         .substringAfterLast(".")
         .substringAfterLast("/")
     }_ProvidersMarker"
 
-    return buildList {
-      this += injectablesFile(file, markerName, injectables)
-      subInjectableFiles(file, markerName, injectables)
-      this += indicesFile(file, markerName, injectables)
-    }
-  }
-
-  private fun injectablesFile(
-    file: KtFile,
-    markerName: String,
-    injectables: List<KtNamedDeclaration>
-  ): File {
-    val injectablesCode = buildString {
-      appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
+    val indicesCode = buildString {
+      appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")
       appendLine()
 
-      if (!file.packageFqName.isRoot) {
-        appendLine("package ${file.packageFqName}")
-        appendLine()
-      }
+      appendLine("package ${InjektFqNames.IndicesPackage}")
+      appendLine()
+
+      appendLine("import ${InjektFqNames.Index}")
+
+      appendLine()
 
       appendLine("object $markerName")
-
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        appendLine("fun $injectablesLookupName(")
-        appendLine(" marker: $markerName,")
+        append("@Index(fqName = ")
+        appendLine("\"${
+          if (injectable is KtConstructor<*>) injectable.getContainingClassOrObject().fqName!!
+          else injectable.fqName!!
+        }\")")
+        appendLine("fun index(")
+        appendLine("  marker: ${markerName.asNameId()},")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
         }
@@ -219,111 +209,6 @@ class InjektDeclarationGeneratorExtension(
             appendLine("  hash_${index}_$value: Int,")
           }
 
-        appendLine(") {")
-        appendLine("}")
-        appendLine()
-      }
-    }
-
-    val injectablesFile = srcDir.resolve(
-      (if (!file.packageFqName.isRoot)
-        "${file.packageFqName.pathSegments().joinToString("/")}/"
-      else "") + "${file.name.removeSuffix(".kt")}Injectables.kt"
-    )
-    injectablesFile.parentFile.mkdirs()
-    injectablesFile.createNewFile()
-    injectablesFile.writeText(injectablesCode)
-    return injectablesFile
-  }
-
-  private fun MutableList<File>.subInjectableFiles(
-    file: KtFile,
-    markerName: String,
-    injectables: List<KtNamedDeclaration>
-  ) {
-    if (file.packageFqName.isRoot) return
-    var current = file.packageFqName
-    while (!current.isRoot) {
-      current = current.parent()
-
-      val injectablesCode = buildString {
-        appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
-        appendLine()
-
-        if (!current.isRoot) {
-          appendLine("package $current")
-          appendLine()
-        }
-
-        for ((i, injectable) in injectables.withIndex()) {
-          appendLine("fun $subInjectablesLookupName(")
-          appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
-          repeat(i + 1) {
-            appendLine("  index$it: Byte,")
-          }
-
-          val hash = injectable.hash()
-
-          val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
-
-          finalHash
-            .filter { it.isLetterOrDigit() }
-            .chunked(256)
-            .forEachIndexed { index, value ->
-              appendLine("  hash_${index}_$value: Int,")
-            }
-
-          appendLine(") {")
-          appendLine("}")
-          appendLine()
-        }
-      }
-
-      val injectablesKeyHash = injectables
-        .joinToString { it.hash() }
-        .hashCode()
-        .toString()
-        .filter { it.isLetterOrDigit() }
-
-      val subInjectablesFile = srcDir.resolve(
-        (if (!current.isRoot)
-          "${current.pathSegments().joinToString("/")}/"
-        else "") + "${file.name.removeSuffix(".kt")}SubInjectables_${injectablesKeyHash}.kt"
-      )
-      subInjectablesFile.parentFile.mkdirs()
-      subInjectablesFile.createNewFile()
-      subInjectablesFile.writeText(injectablesCode)
-      this += subInjectablesFile
-    }
-  }
-
-  private fun indicesFile(
-    file: KtFile,
-    markerName: String,
-    injectables: List<KtNamedDeclaration>
-  ): File {
-    val indicesCode = buildString {
-      appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")
-      appendLine()
-
-      appendLine("package ${InjektFqNames.IndicesPackage}")
-      appendLine()
-
-      appendLine("import ${InjektFqNames.Index}")
-
-      appendLine()
-
-      for ((i, injectable) in injectables.withIndex()) {
-        append("@Index(fqName = ")
-        appendLine("\"${
-          if (injectable is KtConstructor<*>) injectable.getContainingClassOrObject().fqName!!
-          else injectable.fqName!!
-        }\")")
-        appendLine("fun index(")
-        appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
-        repeat(i + 1) {
-          appendLine("  index$it: Byte,")
-        }
         appendLine(") {")
         appendLine("}")
         appendLine()

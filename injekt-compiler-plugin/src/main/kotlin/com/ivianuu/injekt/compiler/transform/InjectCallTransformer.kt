@@ -56,7 +56,6 @@ class InjectCallTransformer(
         if (!seenScopes.add(this)) return
         add(this)
         parent?.add()
-        typeScopes.forEach { it.value.add() }
       }
 
       graph.scope.add()

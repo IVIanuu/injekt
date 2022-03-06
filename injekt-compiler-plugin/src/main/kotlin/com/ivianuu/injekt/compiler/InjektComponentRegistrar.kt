@@ -12,7 +12,9 @@ import org.jetbrains.kotlin.com.intellij.mock.*
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import java.io.*
@@ -61,9 +63,21 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
       InjectCallChecker(configuration.get(WithCompilationKey) ?: false)
     )
 
+  // todo remove once compose is fixed
   @Suppress("DEPRECATION")
   Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-    .registerExtension(InjektDiagnosticSuppressor(), this)
+    .registerExtension(
+      object : DiagnosticSuppressor {
+        override fun isSuppressed(diagnostic: Diagnostic): Boolean =
+          isSuppressed(diagnostic, null)
+
+        override fun isSuppressed(
+          diagnostic: Diagnostic,
+          bindingContext: BindingContext?
+        ): Boolean = diagnostic.factory.name == "COMPOSABLE_INVOCATION"
+      },
+      this
+    )
 }
 
 private fun CompilerConfiguration.isKaptCompilation(): Boolean {

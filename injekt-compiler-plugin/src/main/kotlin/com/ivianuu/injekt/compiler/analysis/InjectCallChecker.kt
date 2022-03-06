@@ -90,18 +90,9 @@ class InjectCallChecker(private val withDeclarationGenerator: Boolean) : KtTreeV
       callee,
       listOf(request),
       callExpression.lookupLocation
-    ) { _, result ->
-      if (result is ResolutionResult.Success.WithCandidate.Value &&
-        result.candidate is CallableInjectable) {
-        result.candidate.callable.import?.element?.let {
-          ctx!!.trace!!.record(
-            InjektWritableSlices.USED_IMPORT,
-            SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-            Unit
-          )
-        }
-      }
-    }
+    )
+
+    // todo record lookup
 
     when (graph) {
       is InjectionGraph.Success -> {
