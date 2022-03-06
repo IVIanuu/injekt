@@ -213,11 +213,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   block()
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",
-    "rootPackage",
-    "com.ivianuu.injekt"
-  )
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
     "dumpDir",
     workingDir.resolve("injekt/dump").absolutePath
   )
@@ -241,11 +236,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     "withCompilation",
     true.toString()
   )
-}
-
-fun KotlinCompilation.withCompose() {
-  compilerPlugins += ComposeComponentRegistrar()
-  commandLineProcessors += ComposeCommandLineProcessor()
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()

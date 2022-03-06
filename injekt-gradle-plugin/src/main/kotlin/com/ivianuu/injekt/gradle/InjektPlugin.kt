@@ -322,7 +322,6 @@ private fun getSubpluginOptions(
     options += SubpluginOption("cacheDir", getCacheDir(project, sourceSetName).path)
     options += SubpluginOption("srcDir", srcDir(project, sourceSetName).path)
   } else {
-    options += SubpluginOption("rootPackage", "com.ivianuu.injekt")
     options += SubpluginOption("dumpDir", getDumpDir(project, sourceSetName).path)
     options += SubpluginOption("infoDir", getInfoDir(project, sourceSetName).path)
   }
