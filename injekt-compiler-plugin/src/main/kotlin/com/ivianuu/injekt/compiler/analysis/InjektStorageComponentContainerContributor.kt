@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
-import org.jetbrains.kotlin.synthetic.*
 
 class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
   override fun registerModuleComponents(

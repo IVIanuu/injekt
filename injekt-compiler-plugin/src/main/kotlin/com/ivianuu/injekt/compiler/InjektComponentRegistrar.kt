@@ -17,7 +17,6 @@ import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
-import org.jetbrains.kotlin.synthetic.*
 import java.io.*
 
 class InjektComponentRegistrar : ComponentRegistrar {

@@ -10,7 +10,6 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import java.util.*
 
 interface InjektErrors {
   companion object {

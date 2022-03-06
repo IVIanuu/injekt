@@ -6,15 +6,10 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.extensions.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.*
-import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.declarations.impl.*
-import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 
 var dumpAllFiles = false
