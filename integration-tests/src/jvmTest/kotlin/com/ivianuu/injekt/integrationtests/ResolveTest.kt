@@ -582,7 +582,7 @@ class ResolveTest {
   @Test fun testCannotResolvePrimaryConstructorParameterInFunctionWithMultipleNestedBlocks() = codegen(
     """
       class MyClass(@property:Provide val _foo: Foo) {
-        fun foo(): Foo = runBlocking {
+        fun foo(): Foo = with(Unit) {
           run {
             inject()
           }

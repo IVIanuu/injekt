@@ -265,31 +265,6 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testProvideSuspendFunction() = singleAndMultiCodegen(
-    """
-      @Provide suspend fun foo() = Foo()
-    """,
-    """
-      fun invoke() = runBlocking { inject<Foo>() } 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testProvideComposableFunction() = singleAndMultiCodegen(
-    """
-      @Provide @Composable fun foo() = Foo()
-    """,
-    """
-      fun invoke() = runComposing { inject<Foo>()  }
-    """,
-    config = { withCompose() }
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(
     """
       abstract class MySuperClass(@property:Provide val foo: Foo)

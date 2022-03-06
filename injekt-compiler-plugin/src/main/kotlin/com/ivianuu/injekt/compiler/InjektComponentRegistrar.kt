@@ -56,16 +56,6 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
     LoadingOrder.FIRST,
     InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
   )
-  IrGenerationExtension.registerExtensionWithLoadingOrder(
-    this,
-    LoadingOrder.LAST,
-    object : IrGenerationExtension {
-      @OptIn(ObsoleteDescriptorBasedAPI::class)
-      override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        moduleFragment.fixComposeFunInterfacesPostCompose()
-      }
-    }
-  )
 
   if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
     AnalysisHandlerExtension.registerExtension(

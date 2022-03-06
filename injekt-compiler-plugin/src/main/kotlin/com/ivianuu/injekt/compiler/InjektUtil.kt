@@ -481,8 +481,7 @@ val KotlinType.isComposable: Boolean
   get() = hasAnnotation(InjektFqNames.Composable)
 
 val KotlinType.isProvideFunctionType: Boolean
-  get() = hasAnnotation(InjektFqNames.Provide) && isFunctionType
+  get() = hasAnnotation(InjektFqNames.Provide) && isFunctionType && !isComposable
 
 val KotlinType.isFunctionType: Boolean
-  get() = fqName.asString().startsWith("kotlin.Function") ||
-      fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")
+  get() = fqName.asString().startsWith("kotlin.Function")
