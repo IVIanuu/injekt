@@ -9,7 +9,7 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.work.*
 
 object WorkManagerInjectables {
-  @Provide inline fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)
+  @Provide fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)
 
-  @Provide inline fun workerFactory(factory: InjektWorkerFactory): WorkerFactory = factory
+  @Provide fun workerFactory(factory: InjektWorkerFactory): WorkerFactory = factory
 }

@@ -8,26 +8,36 @@ import com.ivianuu.injekt.*
 import com.ivianuu.injekt.common.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
+import kotlin.jvm.*
 
-typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope
+@JvmInline value class NamedCoroutineScope<N>(val value: CoroutineScope) : CoroutineScope, Disposable {
+  override val coroutineContext: CoroutineContext
+    get() = value.coroutineContext
 
-@Tag annotation class NamedCoroutineScopeTag<N> {
+  override fun dispose() {
+    value.cancel()
+  }
+
   companion object {
     @Provide fun <N> scope(
-      context: NamedCoroutineContext<N>
-    ): @Scoped<N> NamedCoroutineScope<N> = object : CoroutineScope, Disposable {
-      override val coroutineContext: CoroutineContext = context + SupervisorJob()
-      override fun dispose() {
-        coroutineContext.cancel()
-      }
+      context: NamedCoroutineContext<N>,
+      scope: Scope<N>,
+      key: TypeKey<NamedCoroutineScope<N>>
+    ): NamedCoroutineScope<N> = scope(key) {
+      NamedCoroutineScope(
+        object : CoroutineScope, Disposable {
+          override val coroutineContext: CoroutineContext = context.value + SupervisorJob()
+          override fun dispose() {
+            coroutineContext.cancel()
+          }
+        }
+      )
     }
   }
 }
 
-typealias NamedCoroutineContext<N> = @NamedCoroutineContextTag<N> CoroutineContext
-
-@Tag annotation class NamedCoroutineContextTag<N> {
+@JvmInline value class NamedCoroutineContext<N>(val value: CoroutineContext) {
   companion object {
-    @Provide inline fun <N> context(context: DefaultContext): NamedCoroutineContext<N> = context
+    @Provide fun <N> defaultContext(context: DefaultContext) = NamedCoroutineContext<N>(context.value)
   }
 }

@@ -50,39 +50,6 @@ class ListTest {
     childList[1].shouldBeTypeOf<CommandB>()
   }
 
-  @Test fun testListWithSingleElement() = singleAndMultiCodegen(
-    """
-      @Provide fun commandA() = CommandA()
-    """,
-    """
-      fun invoke() = inject<List<Command>>() 
-    """
-  ) {
-    irShouldContain(1, "listOf")
-  }
-
-  @Test fun testListWithSingleCollectionElement() = singleAndMultiCodegen(
-    """
-      @Provide fun commandA() = setOf(CommandA())
-    """,
-    """
-      fun invoke() = inject<List<Command>>() 
-    """
-  ) {
-    irShouldContain(1, "toList")
-  }
-
-  @Test fun testListWithSingleListCollectionElement() = singleAndMultiCodegen(
-    """
-      @Provide fun commandA() = listOf(CommandA())
-    """,
-    """
-      fun invoke() = inject<List<Command>>() 
-    """
-  ) {
-    irShouldContain(1, "inject<List<Command>>(x = commandA())")
-  }
-
   @Test fun testListWithoutElements() = codegen(
     """
       fun invoke() = inject<List<Command>>()
@@ -136,7 +103,6 @@ class ListTest {
     list.size shouldBe 1
     val provider = list.single()
     val foo = Foo()
-    println()
     val bar = runComposing { provider(foo) }
     foo shouldBeSameInstanceAs bar.foo
   }

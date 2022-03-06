@@ -6,7 +6,6 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.*
 
 plugins {
   kotlin("jvm")
-  kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
 }
 
@@ -33,7 +32,6 @@ artifacts {
 dependencies {
   compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.Compose.compiler)
-  implementation(Deps.KotlinSerialization.json)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

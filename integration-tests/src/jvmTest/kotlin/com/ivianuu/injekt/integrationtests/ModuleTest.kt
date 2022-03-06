@@ -4,7 +4,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.*
 import com.ivianuu.injekt.test.*
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import kotlinx.coroutines.*
 import org.junit.*
 
 class ModuleTest {
@@ -60,21 +64,6 @@ class ModuleTest {
     """,
     """
         fun invoke() = inject<Pair<Foo, Foo>>() 
-    """
-  )
-
-  @Test fun testGenericModuleTagged() = singleAndMultiCodegen(
-    """
-      @Tag annotation class MyTag<T>
-      class MyModule<T>(private val instance: T) {
-          @Provide fun provide(): @MyTag<Int> Pair<T, T> = instance to instance
-      }
-  
-      @Provide val fooModule = MyModule(Foo())
-      @Provide val stringModule = MyModule("__")
-    """,
-    """
-      fun invoke() = inject<@MyTag<Int> Pair<Foo, Foo>>() 
     """
   )
 
@@ -139,4 +128,61 @@ class ModuleTest {
       fun invoke() = inject<Dep>() 
     """
   )
+
+  @Test fun testLambdaModule() = codegen(
+    """
+      fun invoke() = inject<(@Provide () -> Foo) -> Foo>()
+    """
+  ) {
+    val foo = Foo()
+    invokeSingleFile<(() -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testSuspendLambdaModule() = codegen(
+    """
+      fun invoke() = inject<suspend (@Provide suspend () -> Foo) -> Foo>()
+    """
+  ) {
+    runBlocking {
+      val foo = Foo()
+      invokeSingleFile<suspend (suspend () -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+    }
+  }
+
+  @Test fun testComposableLambdaModule() = codegen(
+    """
+      fun invoke() = inject<@Composable (@Provide @Composable () -> Foo) -> Foo>()
+    """,
+    config = { withCompose() }
+  ) {
+    runComposing {
+      val foo = Foo()
+      invokeSingleFile<@Composable (@Composable () -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+    }
+  }
+
+  @Test fun testLambdaModuleChain() = singleAndMultiCodegen(
+    """
+      @Provide val fooModule: @Provide () -> @Provide () -> Foo = { { Foo() } }
+    """,
+    """
+      fun invoke() = inject<Foo>() 
+    """
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testLambdaModuleIdentity() = codegen(
+    """
+      private val foo1 = Foo()
+      @Provide val foo1Lambda: @Provide () -> Foo = { foo1 }
+      private val foo2 = Foo()
+      @Provide val foo2Lambda: @Provide () -> Foo = { foo2 }
+      fun invoke() = inject<List<Foo>>()
+    """
+  ) {
+    val foos = invokeSingleFile<List<Foo>>()
+    foos shouldBe foos.distinct()
+  }
 }

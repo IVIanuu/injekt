@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.descriptors.*
@@ -21,6 +20,8 @@ import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -93,79 +94,55 @@ fun PropertyDescriptor.irProperty(
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-fun TypeRef.toIrType(
+fun KotlinType.toIrType(
+  irCtx: IrPluginContext,
+  localDeclarations: LocalDeclarations,
+  ctx: Context
+): IrType = asTypeProjection().toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+fun TypeProjection.toIrType(
   irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations,
   ctx: Context
 ): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
-  return when {
-    classifier.isTag -> arguments.last().toIrType(irCtx, localDeclarations, ctx)
-      .typeOrNull!!
-      .cast<IrSimpleType>()
-      .let { type ->
-        val tagConstructor = irCtx.referenceClass(classifier.fqName)!!
-          .constructors.single()
-        IrSimpleTypeImpl(
-          type.originalKotlinType,
-          type.classifier,
-          type.hasQuestionMark,
-          type.arguments,
-          listOf(
-            DeclarationIrBuilder(irCtx, tagConstructor)
-              .irCall(
-                tagConstructor,
-                tagConstructor.owner.returnType
-                  .classifierOrFail
-                  .typeWith(
-                    arguments.dropLast(1)
-                      .map {
-                        it.toIrType(irCtx, localDeclarations, ctx).typeOrNull ?: irCtx.irBuiltIns.anyNType
-                      }
-                  )
-              ).apply {
-                tagConstructor.owner.typeParameters.indices
-                  .forEach { index ->
-                    putTypeArgument(
-                      index,
-                      arguments[index].toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
-                    )
-                  }
-              }
-          ) + type.annotations,
-          type.abbreviation
-        )
-      }
-    else -> {
-      val key = classifier.descriptor!!.uniqueKey(ctx)
-      val fqName = FqName(key.split(":")[1])
-      val irClassifier = localDeclarations.localClasses.singleOrNull {
-        it.descriptor.uniqueKey(ctx) == key
-      }
-        ?.symbol
-        ?: irCtx.referenceClass(fqName)
-        ?: irCtx.referenceFunctions(fqName.parent())
-          .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
-          ?.symbol
-        ?: irCtx.referenceProperties(fqName.parent())
-          .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
-          ?.symbol
-        ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
-          ?.owner
-          ?.typeParameters
-          ?.singleOrNull { it.descriptor.uniqueKey(ctx) == key }
-          ?.symbol
-        ?: error("Could not get for $fqName $key")
-      IrSimpleTypeImpl(
-        irClassifier,
-        isMarkedNullable,
-        arguments.map { it.toIrType(irCtx, localDeclarations, ctx) },
-        emptyList()
-      )
-    }
+  val key = type.constructor.declarationDescriptor!!.uniqueKey(ctx)
+  val fqName = FqName(key.split(":")[1])
+  val irClassifier = localDeclarations.localClasses.singleOrNull {
+    it.descriptor.uniqueKey(ctx) == key
   }
+    ?.symbol
+    ?: irCtx.referenceClass(fqName)
+    ?: irCtx.referenceFunctions(fqName.parent())
+      .flatMap { it.owner.typeParameters }
+      .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+      ?.symbol
+    ?: irCtx.referenceProperties(fqName.parent())
+      .flatMap { it.owner.getter!!.typeParameters }
+      .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+      ?.symbol
+    ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
+      ?.owner
+      ?.typeParameters
+      ?.singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+      ?.symbol
+    ?: error("Could not get for $fqName $key")
+  return IrSimpleTypeImpl(
+    type,
+    irClassifier,
+    type.isMarkedNullable,
+    type.arguments.map { it.toIrType(irCtx, localDeclarations, ctx) },
+    listOfNotNull(
+      if (type.isComposable) run {
+        val composableConstructor = irCtx.referenceConstructors(InjektFqNames.Composable)
+          .single()
+        DeclarationIrBuilder(irCtx, composableConstructor)
+          .irCall(composableConstructor)
+      }
+      else null
+    )
+  )
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)

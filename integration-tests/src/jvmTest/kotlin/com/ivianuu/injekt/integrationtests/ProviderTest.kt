@@ -34,19 +34,6 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProviderWithTaggedInjectableArgs() = singleAndMultiCodegen(
-    """
-      @Tag annotation class MyTag
-      @Provide fun bar(foo: @MyTag Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() = inject<(@MyTag Foo) -> Bar>()(Foo()) 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Bar>()
-  }
-
   @Test fun testProviderModule() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -100,13 +87,5 @@ class ProviderTest {
     """
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
-  }
-
-  @Test fun testProviderWithNullableReturnTypeReturnsNullAsDefault() = codegen(
-    """
-      fun invoke() = inject<() -> Foo?>()()
-    """
-  ) {
-    invokeSingleFile().shouldBeNull()
   }
 }

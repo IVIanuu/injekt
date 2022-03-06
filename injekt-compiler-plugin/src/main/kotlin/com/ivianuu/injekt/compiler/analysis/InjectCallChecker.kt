@@ -10,6 +10,8 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 
 class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
   override fun visitCallExpression(expression: KtCallExpression) {
@@ -43,25 +45,28 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+    val substitutionMap = buildMap<TypeConstructor, TypeProjection> {
       for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef(ctx)] = argument.toTypeRef(ctx)
+        this[parameter.typeConstructor] = argument.asTypeProjection()
 
-      fun TypeRef.putAll() {
-        for ((index, parameter) in classifier.typeParameters.withIndex()) {
+      for ((parameter, argument) in resolvedCall.typeArguments)
+        this[parameter.typeConstructor] = argument.asTypeProjection()
+
+      fun KotlinType.putAll() {
+        for ((index, parameter) in constructor.parameters.withIndex()) {
           val argument = arguments[index]
-          if (argument.classifier != parameter)
-            this@buildMap[parameter] = arguments[index]
+          if (argument.type.constructor.declarationDescriptor != parameter)
+            this@buildMap[parameter.typeConstructor] = arguments[index]
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
+      resolvedCall.dispatchReceiver?.type?.putAll()
+      resolvedCall.extensionReceiver?.type?.putAll()
     }
 
     val callee = resultingDescriptor
       .toCallableRef(ctx)
-      .substitute(substitutionMap, ctx)
+      .substitute(TypeSubstitutor.create(substitutionMap))
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
@@ -69,7 +74,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
     val requests = callee.callable.valueParameters
       .transform {
         if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject(ctx))
-          add(it.toInjectableRequest(callee, ctx))
+          add(it.toInjectableRequest(callee))
       }
 
     if (requests.isEmpty()) return
@@ -99,7 +104,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
           file.virtualFilePath,
           Unit
         )
-        ctx.trace!!.record(
+        ctx.trace.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
             file.virtualFilePath,

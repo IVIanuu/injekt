@@ -69,11 +69,6 @@ object Deps {
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
   }
 
-  object KotlinSerialization {
-    const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2"
-  }
-
   const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.7"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"

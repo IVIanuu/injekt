@@ -5,8 +5,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
@@ -22,30 +20,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
-    val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
-      ?: return false
-
-    if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
-      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
-      return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
-        ?.descriptor<CallableDescriptor>(ctx)
-        ?.valueParameters
-        ?.filterNot { it.isInject(ctx) }
-        ?.size
-        ?.let { it <= 1 } == true
-
-    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
-      return true
-
-    if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
-      val annotationDescriptor =
-        bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
-      if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(InjektFqNames.Tag) == true
-      )
-        return true
-    }
-
     if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
       val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath
       if (filePath != null) {
@@ -58,32 +32,8 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       }
     }
 
-    if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
-      val descriptor = diagnostic.psiElement.getParentOfType<KtNamedDeclaration>(false)
-        ?.descriptor<CallableDescriptor>(ctx)
-      if (descriptor?.hasAnnotation(InjektFqNames.Provide) == true ||
-        descriptor?.valueParameters?.any {
-          it.hasAnnotation(InjektFqNames.Inject) ||
-              it.hasAnnotation(InjektFqNames.Provide)
-        } == true)
-          return true
-    }
-
-    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER) {
-      val typeParameter = diagnostic.psiElement
-        .cast<KtTypeParameter>().descriptor<TypeParameterDescriptor>(ctx)
-      return diagnostic.psiElement.getParentOfType<KtTypeAlias>(false)
-        ?.descriptor<TypeAliasDescriptor>(ctx)
-        ?.expandedType
-        ?.toTypeRef(ctx)
-        ?.anyType { it.classifier.descriptor == typeParameter } == true
-    }
-
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
-      return true
-
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
       return true
 
     return false

@@ -20,40 +20,43 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.inference.*
+import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.*
+import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.util.slicedMap.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import kotlin.experimental.*
 import kotlin.reflect.*
 
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  ctx: Context
-): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
-  .map { it.containingDeclaration }
-  .filterIsInstance<ClassDescriptor>()
-  .mapNotNull { clazz ->
-    if (clazz.isDeserializedDeclaration()) {
-      val clazzClassifier = clazz.toClassifierRef(ctx)
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.name == name &&
-              it.name in clazzClassifier.primaryConstructorPropertyParameters
-        }
-    } else {
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
-              it.name == name
-        }
+fun PropertyDescriptor.primaryConstructorPropertyValueParameter(): ValueParameterDescriptor? =
+  overriddenTreeUniqueAsSequence(false)
+    .map { it.containingDeclaration }
+    .filterIsInstance<ClassDescriptor>()
+    .mapNotNull { clazz ->
+      if (clazz.isDeserializedDeclaration()) {
+        clazz.unsubstitutedPrimaryConstructor
+          ?.valueParameters
+          ?.firstOrNull {
+            it.name == name &&
+                it.name.asString() in clazz.primaryConstructorPropertyParameters()
+          }
+      } else {
+        clazz.unsubstitutedPrimaryConstructor
+          ?.valueParameters
+          ?.firstOrNull {
+            it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
+                it.name == name
+          }
+      }
     }
-  }
-  .firstOrNull()
+    .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
@@ -108,14 +111,7 @@ fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is Deseria
 
 fun String.asNameId() = Name.identifier(this)
 
-fun Annotated.hasAnnotation(fqName: FqName): Boolean =
-  annotations.hasAnnotation(fqName)
-
-fun Annotated.getTags(): List<AnnotationDescriptor> =
-  annotations.filter {
-    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
-  }
+fun Annotated.hasAnnotation(fqName: FqName): Boolean = annotations.hasAnnotation(fqName)
 
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
   ctx.trace!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
@@ -249,8 +245,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-fun String.nextFrameworkKey(next: String) = "$this:$next"
-
 fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }
@@ -306,29 +300,6 @@ fun classifierDescriptorForFqName(
     ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
 
-fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
-  ctx.trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
-    val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-      ?.first
-      ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.takeIf { it.uniqueKey(ctx) == key }
-      ?: functionDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull {
-          it.uniqueKey(ctx) == key
-        }
-      ?: propertyDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull { it.uniqueKey(ctx) == key }
-      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-        .safeAs<ClassifierDescriptorWithTypeParameters>()
-        ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(ctx) == key }
-      ?: error("Could not get for $fqName $key")
-    classifier
-  }
-
 fun injectablesForFqName(
   fqName: FqName,
   ctx: Context
@@ -345,23 +316,6 @@ fun injectablesForFqName(
         }
       }
     }
-    ?: emptyList()
-
-private fun functionDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<FunctionDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.first
-    ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?: emptyList()
-
-private fun propertyDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)?.first
-    ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
     ?: emptyList()
 
 fun memberScopeForFqName(
@@ -394,3 +348,242 @@ val composeCompilerInClasspath = try {
 } catch (e: ClassNotFoundException) {
   false
 }
+
+fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
+  if (this !is ClassDescriptor) return false
+  if (hasAnnotation(InjektFqNames.DeclaresInjectables)) return true
+
+  if (this !is LazyClassDescriptor) return false
+
+  val declaresInjectables = defaultType
+    .memberScope
+    .getContributedDescriptors()
+    .any { it.isProvide(ctx) }
+
+  if (declaresInjectables && visibility.shouldPersistInfo())
+    addAnnotation(
+      AnnotationDescriptorImpl(
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.DeclaresInjectables))
+          ?.defaultType ?: return false,
+        emptyMap(),
+        SourceElement.NO_SOURCE
+      )
+    )
+
+  return declaresInjectables
+}
+
+fun ClassifierDescriptor.primaryConstructorPropertyParameters(): List<String> {
+  if (this !is ClassDescriptor) return emptyList()
+
+  annotations.findAnnotation(InjektFqNames.PrimaryConstructorPropertyParameters)
+    ?.allValueArguments
+    ?.values
+    ?.single()
+    ?.cast<ArrayValue>()
+    ?.value
+    ?.map { it.value as String }
+    ?.let { return it }
+
+  if (this !is LazyClassDescriptor) return emptyList()
+
+  val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+    ?.unsubstitutedPrimaryConstructor
+    ?.valueParameters
+    ?.transform {
+      if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
+        add(it.name.asString())
+    }
+    ?: emptyList()
+
+  if (primaryConstructorPropertyParameters.isNotEmpty() && visibility.shouldPersistInfo())
+    addAnnotation(
+      AnnotationDescriptorImpl(
+        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.PrimaryConstructorPropertyParameters))
+          ?.defaultType ?: return emptyList(),
+        mapOf(
+          "value".asNameId() to ArrayValue(
+            primaryConstructorPropertyParameters
+              .map { StringValue(it) }
+          ) {
+            it.builtIns.array.defaultType.replace(
+              newArguments = listOf(
+                it.builtIns.stringType.asTypeProjection()
+              )
+            )
+          }
+        ),
+        SourceElement.NO_SOURCE
+      )
+    )
+
+  return primaryConstructorPropertyParameters
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+private fun Annotated.addAnnotation(annotation: AnnotationDescriptor) {
+  updatePrivateFinalField<Annotations>(
+    LazyClassDescriptor::class,
+    "annotations"
+  ) { Annotations.create(annotations + annotation) }
+}
+
+fun DescriptorVisibility.shouldPersistInfo() = this ==
+    DescriptorVisibilities.PUBLIC ||
+    this == DescriptorVisibilities.INTERNAL ||
+    this == DescriptorVisibilities.PROTECTED
+
+val KotlinType.fqName: FqName
+  get() = constructor.declarationDescriptor?.fqNameSafe ?: FqName.ROOT
+
+val KotlinType.typeSize: Int
+  get() {
+    var typeSize = 0
+    val seen = mutableSetOf<TypeKey>()
+    fun visit(type: KotlinType) {
+      typeSize++
+      if (seen.add(type.toTypeKey()))
+        type.arguments.forEach { visit(it.type) }
+    }
+    visit(this)
+    return typeSize
+  }
+
+val KotlinType.coveringSet: Set<ClassifierDescriptor>
+  get() {
+    val classifiers = mutableSetOf<ClassifierDescriptor>()
+    val seen = mutableSetOf<TypeKey>()
+    fun visit(type: KotlinType) {
+      if (!seen.add(type.toTypeKey())) return
+      type.constructor.declarationDescriptor
+        ?.let { classifiers += it }
+      type.arguments.forEach { visit(it.type) }
+    }
+    visit(this)
+    return classifiers
+  }
+
+val KotlinType.allTypes: List<KotlinType>
+  get() {
+    val result = mutableListOf<KotlinType>()
+    val seen = mutableSetOf<TypeKey>()
+    fun collect(inner: KotlinType) {
+      if (!seen.add(inner.toTypeKey())) return
+      result += inner
+      inner.arguments.forEach { collect(it.type) }
+      inner.constructor.supertypes.forEach { collect(it) }
+    }
+    collect(this)
+    return result
+  }
+
+data class TypeKey(
+  val type: KotlinType,
+  val isComposable: Boolean,
+  val frameworkKey: String,
+  val arguments: List<TypeKey>
+)
+
+fun KotlinType.toTypeKey(): TypeKey = TypeKey(
+  type = this,
+  isComposable = isComposable,
+  frameworkKey = frameworkKey,
+  arguments = arguments.map { it.type.toTypeKey() }
+)
+
+val KotlinType.allVisibleTypes: List<KotlinType>
+  get() {
+    val result = mutableListOf<KotlinType>()
+    val seen = mutableSetOf<TypeKey>()
+    fun collect(inner: KotlinType) {
+      if (!seen.add(inner.toTypeKey())) return
+      result += inner
+      inner.arguments.forEach { collect(it.type) }
+    }
+    collect(this)
+    return result
+  }
+
+fun KotlinType.buildSystem(
+  superType: KotlinType,
+  staticTypeParameters: List<TypeParameterDescriptor>
+): ConstraintSystem {
+  val system = ConstraintSystemBuilderImpl()
+
+  val typeVariables = buildList {
+    for (visibleType in allVisibleTypes)
+      if (visibleType.constructor.declarationDescriptor is TypeParameterDescriptor &&
+        visibleType.constructor.declarationDescriptor !in staticTypeParameters)
+        add(visibleType.constructor.declarationDescriptor as TypeParameterDescriptor)
+  }
+
+  val substitutor = system.registerTypeVariables(
+    CallHandle.NONE,
+    typeVariables
+  )
+
+  system.addSubtypeConstraint(
+    substitutor.substitute(this, Variance.INVARIANT) ?: this,
+    superType,
+    ConstraintPositionKind.SPECIAL.position()
+  )
+
+  system.fixVariables()
+
+  return system.build()
+}
+
+fun KotlinType.render() = asTypeProjection().render()
+
+fun TypeProjection.render() = buildString {
+  fun TypeProjection.inner(depth: Int) {
+    if (depth > 15) return
+
+    if (type.isComposable) append("${InjektFqNames.Composable}<")
+
+    when {
+      isStarProjection -> append("*")
+      else -> append(type.fqName.asString())
+    }
+    if (type.arguments.isNotEmpty()) {
+      append("<")
+      type.arguments.forEachIndexed { index, typeArgument ->
+        typeArgument.inner(depth + 1)
+        if (index != type.arguments.lastIndex) append(", ")
+      }
+      append(">")
+    }
+    if (type.isMarkedNullable && !isStarProjection) append("?")
+    if (type.isComposable) append(">")
+  }
+  inner(0)
+}
+
+val KotlinType.frameworkKey: String
+  get() = annotations.findAnnotation(InjektFqNames.FrameworkKey)
+    ?.allValueArguments?.values?.single()?.value?.cast() ?: ""
+
+fun KotlinType.withFrameworkKey(key: String, ctx: Context) = replace(
+  newAnnotations = Annotations.create(
+    annotations
+      .filter { it.fqName != InjektFqNames.FrameworkKey } +
+        AnnotationDescriptorImpl(
+          ctx.frameworkKeyClassifier.defaultType,
+          mapOf("value".asNameId() to StringValue(key)),
+          SourceElement.NO_SOURCE
+        )
+  )
+)
+
+val KotlinType.isComposable: Boolean
+  get() = hasAnnotation(InjektFqNames.Composable)
+
+val KotlinType.isComposableType: Boolean
+  get() = isComposable || constructor.supertypes.any { it.isComposableType }
+
+val KotlinType.isProvideFunctionType: Boolean
+  get() = hasAnnotation(InjektFqNames.Provide) && isFunctionType
+
+val KotlinType.isFunctionType: Boolean
+  get() = fqName.asString().startsWith("kotlin.Function") ||
+      fqName.asString().startsWith("kotlin.coroutines.SuspendFunction")

@@ -208,19 +208,6 @@ class ResolveTest {
     compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testGenericInjectable() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      @Provide fun <T> injectableList(value: T): List<T> = listOf(value)
-    """,
-    """
-      fun invoke() = inject<List<Foo>>() 
-    """
-  ) {
-    val (foo) = invokeSingleFile<List<Any>>()
-    foo.shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testFunctionInvocationWithInjectables() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
@@ -263,20 +250,6 @@ class ResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testPrimaryConstructorInjectableWithReceiver() = singleAndMultiCodegen(
-    """
-      class UsesFoo(@Provide val foo: Foo)
-    """,
-    """
-      fun invoke(foo: Foo) = with(UsesFoo(foo)) {
-        inject<Foo>()
-      }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testLocalConstructorInvocationWithInjectables() = codegen(
     """
       @Provide val foo = Foo()
@@ -298,18 +271,6 @@ class ResolveTest {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
-
-  @Test fun testCanResolveStarProjectedType() = singleAndMultiCodegen(
-    """
-      @Provide fun foos() = Foo() to Foo()
-      
-      @Tag annotation class First
-      @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
-    """,
-    """
-      fun invoke() = inject<@First Foo>() 
-    """
-  )
 
   @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(
     """
@@ -511,7 +472,7 @@ class ResolveTest {
     """
       fun <T> invoke() {
         inject<List<T>>()
-      } 
+      }
     """
   )
 
@@ -530,6 +491,24 @@ class ResolveTest {
   ) {
     compilationShouldHaveFailed(
       "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.T> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
+    )
+  }
+
+  @Test fun testCannotUseNestedNonReifiedTypeParameterForReifiedInjectable() = singleAndMultiCodegen(
+    """
+      @Provide inline fun <reified T> set(): Set<T> {
+        T::class
+        return emptySet()
+      }
+    """,
+    """
+      fun <T> invoke() {
+        inject<Set<List<T>>>()
+      }
+    """
+  ) {
+    compilationShouldHaveFailed(
+      "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<kotlin.collections.List<com.ivianuu.injekt.integrationtests.invoke.T>> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
     )
   }
 
@@ -1073,24 +1052,6 @@ class ResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testTaggedObjectInjectableIsNotApplicableToUntaggedType() = singleAndMultiCodegen(
-    """
-      interface Logger
-
-      @Provide @Tag1 object NoopLogger : Logger
-      
-      fun log(@Inject logger: Logger) {
-      }
-    """,
-    """
-      fun invoke() = log()
-    """
-  ) {
-    compilationShouldHaveFailed(
-      "no injectable found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
-    )
-  }
-
   @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(
     """
       @Provide class HaloState(val foo: Foo) {
@@ -1109,10 +1070,10 @@ class ResolveTest {
       fun <T> produceState(
         vararg keys: Any?,
         @Inject scope: String,
-        @Inject Nkey: SourceKey
+        @Inject count: Int
       ): State<T> = TODO()
 
-      fun invoke(@Inject scope: String) {
+      fun invoke(@Inject scope: String, @Inject count: Int) {
         val scope by produceState<Int>()
       }
     """

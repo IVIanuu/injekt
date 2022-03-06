@@ -4,9 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
 import io.kotest.matchers.*
-import io.kotest.matchers.types.*
 import kotlinx.atomicfu.*
 import kotlinx.coroutines.*
 import org.junit.*
@@ -58,24 +56,5 @@ class ScopeTest {
     disposeCalls shouldBe 1
     scope.dispose()
     disposeCalls shouldBe 1
-  }
-
-  @Test fun testScoped() {
-    var callCount = 0
-
-    class Foo
-
-    @Provide fun scopedFoo(): @Scoped<TestScope> Foo {
-      callCount++
-      return Foo()
-    }
-
-    @Provide val scope = Scope<TestScope>()
-    callCount shouldBe 0
-    val a = inject<Foo>()
-    callCount shouldBe 1
-    val b = inject<Foo>()
-    callCount shouldBe 1
-    a shouldBeSameInstanceAs b
   }
 }

@@ -181,17 +181,16 @@ class InjektDeclarationGeneratorExtension(
     }_ProvidersMarker"
 
     return buildList {
-      this += injectablesFile(file, markerName, injectables, ctx)
-      subInjectableFiles(file, markerName, injectables, ctx)
-      this += indicesFile(file, markerName, injectables, ctx)
+      this += injectablesFile(file, markerName, injectables)
+      subInjectableFiles(file, markerName, injectables)
+      this += indicesFile(file, markerName, injectables)
     }
   }
 
   private fun injectablesFile(
     file: KtFile,
     markerName: String,
-    injectables: List<KtNamedDeclaration>,
-    ctx: Context
+    injectables: List<KtNamedDeclaration>
   ): File {
     val injectablesCode = buildString {
       appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
@@ -244,8 +243,7 @@ class InjektDeclarationGeneratorExtension(
   private fun MutableList<File>.subInjectableFiles(
     file: KtFile,
     markerName: String,
-    injectables: List<KtNamedDeclaration>,
-    ctx: Context
+    injectables: List<KtNamedDeclaration>
   ) {
     if (file.packageFqName.isRoot) return
     var current = file.packageFqName
@@ -306,8 +304,7 @@ class InjektDeclarationGeneratorExtension(
   private fun indicesFile(
     file: KtFile,
     markerName: String,
-    injectables: List<KtNamedDeclaration>,
-    ctx: Context
+    injectables: List<KtNamedDeclaration>
   ): File {
     val indicesCode = buildString {
       appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")

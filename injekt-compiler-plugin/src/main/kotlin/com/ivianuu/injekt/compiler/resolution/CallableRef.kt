@@ -5,63 +5,49 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.resolve.calls.inference.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 
 data class CallableRef(
   val callable: CallableDescriptor,
-  val type: TypeRef,
-  val originalType: TypeRef,
-  val typeParameters: List<ClassifierRef>,
-  val parameterTypes: Map<Int, TypeRef>,
-  val typeArguments: Map<ClassifierRef, TypeRef>,
+  val type: KotlinType,
+  val originalType: KotlinType,
+  val parameterTypes: Map<Int, KotlinType>,
+  val typeArguments: Map<TypeParameterDescriptor, TypeProjection>,
   val import: ResolvedProviderImport?,
   val chainLength: Int
 )
 
-fun CallableRef.substitute(
-  map: Map<ClassifierRef, TypeRef>,
-  ctx: Context
-): CallableRef {
-  if (map == typeArguments) return this
-  val substitutedTypeParameters = typeParameters.substitute(map)
-  val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
-    it.defaultType
-  }
+fun CallableRef.substitute(substitutor: TypeSubstitutor): CallableRef {
+  if (substitutor.isEmpty) return this
   return copy(
-    type = type.substitute(map).substitute(typeParameterSubstitutionMap),
+    type = substitutor.substitute(type.unwrap()),
     parameterTypes = parameterTypes
-      .mapValues {
-        it.value
-          .substitute(map)
-          .substitute(typeParameterSubstitutionMap)
-      },
-    typeParameters = substitutedTypeParameters,
+      .mapValues { substitutor.substitute(it.value.unwrap()) },
     typeArguments = typeArguments
-      .mapValues {
-        it.value
-          .substitute(map)
-          .substitute(typeParameterSubstitutionMap)
-      }
+      .mapValues { substitutor.substitute(it.value) ?: it.value }
   )
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
-  ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
-    val info = callableInfo(ctx)
-    val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
-
-    CallableRef(
-      callable = this,
-      type = info.type,
-      originalType = info.type,
-      typeParameters = typeParameters,
-      parameterTypes = info.parameterTypes,
-      typeArguments = buildMap {
-        for (typeParameter in typeParameters)
-          this[typeParameter] = typeParameter.defaultType
-      },
-      import = null,
-      chainLength = 0
-    )
-  }
+fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef {
+  val type = returnType ?: ctx.module.builtIns.nullableAnyType
+  return CallableRef(
+    callable = this,
+    type = type,
+    originalType = type,
+    parameterTypes = buildMap {
+      for (parameter in allParameters)
+        this[parameter.injektIndex()] = parameter.type
+    },
+    typeArguments = buildMap {
+      for (typeParameter in typeParameters)
+        this[typeParameter] = typeParameter.defaultType.asTypeProjection()
+    },
+    import = null,
+    chainLength = 0
+  )
+}

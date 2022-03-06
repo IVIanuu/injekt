@@ -33,22 +33,6 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
 
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)
-    moduleFragment.fixComposeFunInterfacesPreCompose(ctx, pluginContext)
-  }
-
-  @OptIn(ObsoleteDescriptorBasedAPI::class)
-  override fun resolveSymbol(symbol: IrSymbol, context: TranslationPluginContext): IrDeclaration? {
-    val descriptor = symbol.descriptor
-    return if (descriptor is TypeParameterDescriptor)
-      IrTypeParameterImpl(
-        UNDEFINED_OFFSET,
-        UNDEFINED_OFFSET,
-        IrDeclarationOrigin.DEFINED,
-        symbol.cast(),
-        descriptor.name,
-        descriptor.index,
-        descriptor.isReified,
-        descriptor.variance
-      ) else null
+    moduleFragment.fixComposeFunInterfacesPreCompose(pluginContext)
   }
 }

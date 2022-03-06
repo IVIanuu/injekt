@@ -6,8 +6,8 @@ package com.ivianuu.injekt.internal
 
 internal annotation class Index(val fqName: String)
 
-internal annotation class CallableInfo(val values: Array<String>)
+internal annotation class DeclaresInjectables
 
-internal annotation class ClassifierInfo(val values: Array<String>)
+internal annotation class PrimaryConstructorPropertyParameters(val value: Array<String>)
 
-internal annotation class TypeParameterInfo(val values: Array<String>)
+internal annotation class FrameworkKey(val value: String)

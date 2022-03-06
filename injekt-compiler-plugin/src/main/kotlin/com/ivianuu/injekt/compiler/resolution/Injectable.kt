@@ -12,24 +12,26 @@ import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
-  val type: TypeRef
-  val originalType: TypeRef get() = type
+  val type: KotlinType
+  val originalType: KotlinType get() = type
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
   val callableFqName: FqName
   val callContext: CallContext get() = CallContext.DEFAULT
   val ownerScope: InjectablesScope
-  val usageKey: Any get() = type
+  val usageKey: Any get() = type.toTypeKey()
 }
 
 class CallableInjectable(
   override val ownerScope: InjectablesScope,
   val callable: CallableRef
 ) : Injectable {
-  override val type: TypeRef
+  override val type: KotlinType
     get() = callable.type
   override val dependencies: List<InjectableRequest> = callable.getInjectableRequests(ownerScope.ctx)
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
@@ -37,10 +39,11 @@ class CallableInjectable(
   else callable.callable.fqNameSafe
   override val callContext: CallContext
     get() = callable.callable.callContext(ownerScope.ctx)
-  override val originalType: TypeRef
+  override val originalType: KotlinType
     get() = callable.originalType
   override val usageKey: Any =
-    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes, callable.type)
+    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes
+      .map { it.value.toTypeKey() }, callable.type.toTypeKey())
 
   override fun equals(other: Any?): Boolean =
     other is CallableInjectable && other.usageKey == usageKey
@@ -49,11 +52,11 @@ class CallableInjectable(
 }
 
 class ListInjectable(
-  override val type: TypeRef,
+  override val type: KotlinType,
   override val ownerScope: InjectablesScope,
-  elements: List<TypeRef>,
-  val singleElementType: TypeRef,
-  val collectionElementType: TypeRef
+  elements: List<KotlinType>,
+  val singleElementType: KotlinType,
+  val collectionElementType: KotlinType
 ) : Injectable {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.injectListOf")
   override val dependencies: List<InjectableRequest> = elements
@@ -61,7 +64,7 @@ class ListInjectable(
       InjectableRequest(
         type = element,
         callableFqName = callableFqName,
-        callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
+        callableTypeArguments = type.constructor.parameters.zip(type.arguments).toMap(),
         parameterName = "element$index".asNameId(),
         parameterIndex = index
       )
@@ -70,32 +73,31 @@ class ListInjectable(
 }
 
 class ProviderInjectable(
-  override val type: TypeRef,
+  override val type: KotlinType,
   override val ownerScope: InjectablesScope,
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable {
-  override val callableFqName: FqName = when (type.callContext(ownerScope.ctx)) {
+  override val callableFqName: FqName = when (type.callContext) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")
   }
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
-      type = type.unwrapTags().arguments.last(),
+      type = type.arguments.last().type,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
       isInline = isInline,
       isLazy = !isInline,
-      isRequired = !type.unwrapTags().arguments.last().isNullableType
+      isRequired = true
     )
   )
 
   val parameterDescriptors = type
-    .unwrapTags()
-    .classifier
-    .descriptor!!
+    .constructor
+    .declarationDescriptor
     .cast<ClassDescriptor>()
     .unsubstitutedMemberScope
     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -116,50 +118,18 @@ class ProviderInjectable(
         .mapIndexed { index, parameter ->
           parameter
             .toCallableRef(ownerScope.ctx)
-            .copy(type = type.unwrapTags().arguments[index])
+            .copy(type = type.arguments[index].type)
         }
     )
   )
 
-  override val originalType: TypeRef
-    get() = type.unwrapTags().classifier.defaultType
+  override val originalType: KotlinType
+    get() = type.constructor.declarationDescriptor!!.defaultType
 
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(
     private val delegate: ValueParameterDescriptor
   ) : ValueParameterDescriptor by delegate
-}
-
-class SourceKeyInjectable(
-  override val type: TypeRef,
-  override val ownerScope: InjectablesScope
-) : Injectable {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
-}
-
-class TypeKeyInjectable(
-  override val type: TypeRef,
-  override val ownerScope: InjectablesScope
-) : Injectable {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
-  override val dependencies: List<InjectableRequest> = run {
-    val typeParameterDependencies = mutableSetOf<ClassifierRef>()
-    type.allTypes.forEach {
-      if (it.classifier.isTypeParameter)
-        typeParameterDependencies += it.classifier
-    }
-    typeParameterDependencies
-      .mapIndexed { index, typeParameter ->
-        InjectableRequest(
-          type = ownerScope.ctx.typeKeyClassifier!!.defaultType
-            .withArguments(listOf(typeParameter.defaultType)),
-          callableFqName = callableFqName,
-          callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-          parameterName = "${typeParameter.fqName.shortName()}Key".asNameId(),
-          parameterIndex = index
-        )
-      }
-  }
 }
 
 fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParameters
@@ -168,24 +138,22 @@ fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = c
         it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
         it.isProvide(ctx))
-          add(it.toInjectableRequest(this@getInjectableRequests, ctx))
+          add(it.toInjectableRequest(this@getInjectableRequests))
   }
 
 data class InjectableRequest(
-  val type: TypeRef,
+  val type: KotlinType,
   val callableFqName: FqName,
-  val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
+  val callableTypeArguments: Map<TypeParameterDescriptor, TypeProjection> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true,
   val isInline: Boolean = false,
-  val isLazy: Boolean = false
+  val isLazy: Boolean = false,
+  val key: TypeKey = type.toTypeKey()
 )
 
-fun ParameterDescriptor.toInjectableRequest(
-  callable: CallableRef,
-  ctx: Context
-): InjectableRequest = InjectableRequest(
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableRequest(
   type = callable.parameterTypes[injektIndex()]!!,
   callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
     ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,

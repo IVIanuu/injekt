@@ -4,32 +4,15 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 
 @Suppress("NewApi")
-class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
+class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
+  val frameworkKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.FrameworkKey))!!
+  }
+
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
-
-  override val ctx: Context get() = this
-
-  override fun isDenotable(type: TypeRef): Boolean = true
-
-  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef(ctx) }
-  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef(ctx) }
-  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef(ctx = ctx) }
-  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
-  val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
-    anyType.copy(isMarkedNullable = true)
-  }
-  val sourceKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.SourceKey))
-      ?.toClassifierRef(ctx)
-  }
-  val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
-      ?.toClassifierRef(ctx)
-  }
 }

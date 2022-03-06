@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.synthetic.*
@@ -64,12 +63,7 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
     object : IrGenerationExtension {
       @OptIn(ObsoleteDescriptorBasedAPI::class)
       override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        moduleFragment.fixComposeFunInterfacesPostCompose(
-          ctx = Context(
-            pluginContext.moduleDescriptor,
-            DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
-          )
-        )
+        moduleFragment.fixComposeFunInterfacesPostCompose()
       }
     }
   )

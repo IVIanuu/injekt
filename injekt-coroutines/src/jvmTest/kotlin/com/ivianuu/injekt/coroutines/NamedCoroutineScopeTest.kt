@@ -10,7 +10,6 @@ import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import kotlinx.coroutines.*
 import org.junit.*
-import kotlin.coroutines.*
 
 class NamedCoroutineScopeTest {
   private object MyScope
@@ -26,8 +25,8 @@ class NamedCoroutineScopeTest {
   @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val scope = Scope<MyScope>()
-    @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
+    @Provide val customContext = NamedCoroutineContext<MyScope>(Dispatchers.Main)
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
-    coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext
+    coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext.value
   }
 }

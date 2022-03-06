@@ -7,6 +7,7 @@ package com.ivianuu.injekt.android
 import android.content.*
 import androidx.core.content.*
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
 import kotlin.reflect.*
 
 /**
@@ -14,12 +15,12 @@ import kotlin.reflect.*
  *
  * Example:
  * ```
- * fun Notification.post(@Inject notificationManager: @SystemService NotificationManager) { ... }
+ * fun Notification.post(@Inject notificationManager: SystemService<NotificationManager>) { ... }
  * ```
  */
-@Tag annotation class SystemService {
+data class SystemService<T>(val value: T) {
   companion object {
-    @Provide inline fun <T : Any> service(context: Context, serviceClass: KClass<T>):
-        @SystemService T = ContextCompat.getSystemService(context, serviceClass.java)!!
+    @Provide fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
+       SystemService(ContextCompat.getSystemService(context, serviceClass.java)!!)
   }
 }
