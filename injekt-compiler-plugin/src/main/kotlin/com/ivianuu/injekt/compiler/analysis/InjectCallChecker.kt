@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.types.typeUtil.*
 
 class InjectCallChecker(private val withDeclarationGenerator: Boolean) : KtTreeVisitorVoid(), AnalysisHandlerExtension {
   private var completionCount = 0
-  private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
 
   private var ctx: Context? = null
 
@@ -48,22 +47,8 @@ class InjectCallChecker(private val withDeclarationGenerator: Boolean) : KtTreeV
       ?.let { checkCall(it) }
   }
 
-  override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
-    super.visitSimpleNameExpression(expression)
-    expression.getResolvedCall(ctx!!.trace!!.bindingContext)
-      ?.let { checkCall(it) }
-  }
-
-  override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
-    super.visitConstructorDelegationCall(call)
-    call.getResolvedCall(ctx!!.trace!!.bindingContext)
-      ?.let { checkCall(it) }
-  }
-
   @OptIn(ExperimentalStdlibApi::class)
   private fun checkCall(resolvedCall: ResolvedCall<*>) {
-    if (!checkedCalls.add(resolvedCall)) return
-
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor.fqNameSafe != InjektFqNames.inject)
       return
@@ -91,8 +76,6 @@ class InjectCallChecker(private val withDeclarationGenerator: Boolean) : KtTreeV
       listOf(request),
       callExpression.lookupLocation
     )
-
-    // todo record lookup
 
     when (graph) {
       is InjectionGraph.Success -> {

@@ -25,7 +25,6 @@ class InjektDeclarationGeneratorExtension(
   private val withCompilation: Boolean
 ) : AnalysisHandlerExtension {
   private val backupDir = cacheDir.resolve("backups")
-
   private val fileMapFile = cacheDir.resolve("file-map")
 
   private val fileMap = (if (fileMapFile.exists()) fileMapFile.readText() else "")
