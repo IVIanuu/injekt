@@ -245,11 +245,6 @@ fun memberScopeForFqName(
   return classDescriptor.unsubstitutedMemberScope to classDescriptor
 }
 
-fun packageFragmentsForFqName(
-  fqName: FqName,
-  ctx: Context
-): List<PackageFragmentDescriptor> = ctx.module.getPackage(fqName).fragments
-
 val KotlinType.fqName: FqName
   get() = constructor.declarationDescriptor?.fqNameSafe ?: FqName.ROOT
 

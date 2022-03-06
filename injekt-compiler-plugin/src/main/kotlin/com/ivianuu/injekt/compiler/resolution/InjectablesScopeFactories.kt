@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun ElementInjectablesScope(
@@ -510,7 +509,7 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun GlobalInjectablesScope(ctx: Context) = ctx.trace!!.getOrPut(
+fun GlobalInjectablesScope(ctx: Context): InjectablesScope = ctx.trace!!.getOrPut(
   InjektWritableSlices.GLOBAL_INJECTABLES_SCOPE, Unit
 ) {
   val (internalInjectables, externalInjectables) = collectAllInjectables(ctx)

@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
@@ -22,7 +21,6 @@ class InjectablesScope(
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
   val isDeclarationContainer: Boolean = true,
-  val isEmpty: Boolean = false,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   val typeParameters: List<TypeParameterDescriptor> = emptyList(),
@@ -62,8 +60,7 @@ class InjectablesScope(
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   private val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
-      typeParameters.isEmpty() &&
-      (isEmpty || initialInjectables.isEmpty())
+      typeParameters.isEmpty() && initialInjectables.isEmpty()
 
   val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
 
