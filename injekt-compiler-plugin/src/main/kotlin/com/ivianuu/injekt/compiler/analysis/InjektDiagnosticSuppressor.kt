@@ -20,9 +20,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (bindingContext == null)
       return false
 
-    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
-      return true
-
     if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
       val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath
       if (filePath != null) {
