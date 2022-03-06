@@ -13,9 +13,9 @@ object InjektFqNames {
   val Providers = InjektPackage.child("Providers".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
-  val FrameworkKey = InternalPackage.child("FrameworkKey".asNameId())
   val Index = InternalPackage.child("Index".asNameId())
   val IndicesPackage = InternalPackage.child("indices".asNameId())
 
+  val Any = FqName("kotlin.Any")
   val Composable = FqName("androidx.compose.runtime.Composable")
 }

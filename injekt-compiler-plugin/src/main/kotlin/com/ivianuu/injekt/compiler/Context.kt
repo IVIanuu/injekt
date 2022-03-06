@@ -5,14 +5,6 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 
-@Suppress("NewApi")
-class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
-  val frameworkKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.FrameworkKey))!!
-  }
-
-  fun withTrace(trace: BindingTrace?) = Context(module, trace)
-}
+data class Context(val module: ModuleDescriptor, val trace: BindingTrace?)

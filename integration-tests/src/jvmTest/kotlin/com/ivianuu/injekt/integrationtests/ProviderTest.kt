@@ -21,7 +21,7 @@ class ProviderTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testProviderWithInjectableArgs() = codegen(
+  @Test fun testProviderWithParameters() = codegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
@@ -31,28 +31,6 @@ class ProviderTest {
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Bar>()
-  }
-
-  @Test fun testProviderModule() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-      class FooModule(@property:Provide val foo: Foo)
-    """,
-    """
-      fun invoke() = inject<(FooModule) -> Bar>()(FooModule(Foo()))
-    """
-  )
-
-  @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke() = inject<(Foo) -> Foo>()(Foo())
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
   }
 
   @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(

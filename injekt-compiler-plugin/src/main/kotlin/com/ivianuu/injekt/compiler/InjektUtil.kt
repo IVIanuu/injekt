@@ -390,15 +390,15 @@ fun TypeProjection.render() = buildString {
 }
 
 val KotlinType.frameworkKey: String
-  get() = annotations.findAnnotation(InjektFqNames.FrameworkKey)
+  get() = annotations.findAnnotation(InjektFqNames.Any)
     ?.allValueArguments?.values?.single()?.value?.cast() ?: ""
 
 fun KotlinType.withFrameworkKey(key: String, ctx: Context) = replace(
   newAnnotations = Annotations.create(
     annotations
-      .filter { it.fqName != InjektFqNames.FrameworkKey } +
+      .filter { it.fqName != InjektFqNames.Any } +
         AnnotationDescriptorImpl(
-          ctx.frameworkKeyClassifier.defaultType,
+          ctx.module.builtIns.anyType,
           mapOf("value".asNameId() to StringValue(key)),
           SourceElement.NO_SOURCE
         )

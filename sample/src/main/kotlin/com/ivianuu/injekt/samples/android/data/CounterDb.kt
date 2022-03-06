@@ -5,8 +5,6 @@
 package com.ivianuu.injekt.samples.android.data
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
-import com.ivianuu.injekt.samples.android.app.*
 import kotlinx.coroutines.flow.*
 
 interface CounterDb {
