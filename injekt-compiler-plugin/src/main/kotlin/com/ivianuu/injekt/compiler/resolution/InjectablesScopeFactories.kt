@@ -410,9 +410,8 @@ private fun FunctionParameterInjectablesScopes(
 
   return function.allParameters
     .transform {
-      if ((maxIndex == null || it.injektIndex() < maxIndex) &&
-        (it === function.extensionReceiverParameter || it.isProvide(ctx)))
-          add(it.toCallableRef(ctx))
+      if ((maxIndex == null || it.injektIndex() < maxIndex) && it.isProvide(ctx))
+        add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(

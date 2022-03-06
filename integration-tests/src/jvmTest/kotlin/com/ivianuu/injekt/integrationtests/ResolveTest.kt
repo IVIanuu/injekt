@@ -208,16 +208,6 @@ class ResolveTest {
     compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testCanResolveInjectableOfInjectableThisFunction() = codegen(
-    """
-      class Dep(@property:Provide val foo: Foo)
-      fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(
     """
       object MyObject
@@ -451,13 +441,6 @@ class ResolveTest {
   ) {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
   }
-
-  @Test fun testCanResolveReceiverInDefaultValueOfParameter() = codegen(
-    """
-      fun Foo.invoke(bar: Bar = Bar(inject())) {
-      }
-    """
-  )
 
   @Test fun testCannotResolveClassProvideDeclarationInClassConstructorParameterDefaultValue() = codegen(
     """

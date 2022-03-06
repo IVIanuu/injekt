@@ -125,7 +125,7 @@ class InjectablesScope(
     )
       .let { allInjectables ->
         if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allInjectables
-        else allInjectables.filter { it.callable.isValidForObjectRequest() }
+        else allInjectables.filter { it.callable.isValidRequest() }
       }
 
   }
@@ -278,12 +278,11 @@ class InjectablesScope(
    * Here we ensure that the user cannot resolve such implicit object injectable if they are not
    * provided by the user
    */
-  private fun CallableRef.isValidForObjectRequest(): Boolean =
-    originalType.constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind != ClassKind.OBJECT ||
-        (callable !is ReceiverParameterDescriptor ||
+  private fun CallableRef.isValidRequest(): Boolean =
+    callable !is ReceiverParameterDescriptor ||
             callable.cast<ReceiverParameterDescriptor>()
               .value !is ImplicitClassReceiver ||
-            originalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Provide))
+            originalType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Provide)
 
   override fun toString(): String = "InjectablesScope($name)"
 }

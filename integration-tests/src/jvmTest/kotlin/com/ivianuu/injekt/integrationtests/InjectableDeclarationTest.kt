@@ -159,25 +159,9 @@ class InjectableDeclarationTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideDispatchReceiver() = codegen(
-    """
-      class MyClass {
-        fun receiver() = inject<MyClass>()
-      }
-
-      fun invoke(): Pair<Any, Any> {
-        val instance = MyClass()
-        return instance to instance.receiver()
-      }
-    """
-  ) {
-    val (a, b) = invokeSingleFile<Pair<Any, Any>>()
-    a shouldBeSameInstanceAs b
-  }
-
   @Test fun testProvideExtensionReceiver() = codegen(
     """
-      fun Foo.foo() = inject<Foo>()
+      fun @receiver:Provide Foo.foo() = inject<Foo>()
 
       fun invoke(foo: Foo) = foo.foo()
     """

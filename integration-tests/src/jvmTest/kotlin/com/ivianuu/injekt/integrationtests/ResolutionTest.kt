@@ -186,40 +186,6 @@ class ResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionReceiverInjectableOverInternalInjectable() = codegen(
-    """
-      @Provide lateinit var internalFoo: Foo
-      fun Foo.invoke(internal: Foo): Foo {
-        internalFoo = internal
-        return inject()
-      }
-    """
-  ) {
-    val internal = Foo()
-    val functionFoo = Foo()
-    val result = invokeSingleFile(functionFoo, internal)
-    functionFoo shouldBeSameInstanceAs result
-  }
-
-  @Test fun testPrefersFunctionReceiverInjectableOverClassInjectable() = codegen(
-    """
-      class MyClass(@property:Provide val classFoo: Foo) {
-        fun Foo.resolve() = inject<Foo>()
-      }
-
-      fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
-        return with(MyClass(classFoo)) {
-          functionFoo.resolve()
-        }
-      }
-    """
-  ) {
-    val classFoo = Foo()
-    val functionFoo = Foo()
-    val result = invokeSingleFile(classFoo, functionFoo)
-    functionFoo shouldBeSameInstanceAs result
-  }
-
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
     """
       @Provide fun foo() = Foo()
