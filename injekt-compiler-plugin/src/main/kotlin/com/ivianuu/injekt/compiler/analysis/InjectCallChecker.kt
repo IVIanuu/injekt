@@ -35,16 +35,16 @@ class InjectCallChecker(private val withDeclarationGenerator: Boolean) : KtTreeV
       return null.also { completionCount++ }
 
     ctx = Context(module, bindingTrace)
-    files.forEach { it.accept(this) }
+    for (file in files)
+      file.accept(
+        callExpressionRecursiveVisitor { expression ->
+          expression.getResolvedCall(ctx!!.trace!!.bindingContext)
+            ?.let { checkCall(it) }
+        }
+      )
     ctx = null
 
     return null
-  }
-
-  override fun visitCallExpression(expression: KtCallExpression) {
-    super.visitCallExpression(expression)
-    expression.getResolvedCall(ctx!!.trace!!.bindingContext)
-      ?.let { checkCall(it) }
   }
 
   @OptIn(ExperimentalStdlibApi::class)
