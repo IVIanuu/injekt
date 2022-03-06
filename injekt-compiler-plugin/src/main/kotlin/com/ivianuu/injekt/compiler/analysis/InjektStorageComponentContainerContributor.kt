@@ -19,7 +19,5 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     val ctx = Context(moduleDescriptor, null)
     container.useInstance(InjectableChecker(ctx))
     container.useInstance(ProviderImportsChecker(ctx))
-    if (!isIde)
-      container.useInstance(ClassInfoGenerator(ctx))
   }
 }

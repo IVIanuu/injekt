@@ -211,19 +211,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  val currentValue = field.get(this)
-  val newValue = transform(currentValue as T)
-  field.set(this, newValue)
-  return newValue
-}
-
 val injectablesLookupName = "_injectables".asNameId()
 val subInjectablesLookupName = "_subInjectables".asNameId()
 
@@ -297,43 +284,6 @@ fun packageFragmentsForFqName(
   fqName: FqName,
   ctx: Context
 ): List<PackageFragmentDescriptor> = ctx.module.getPackage(fqName).fragments
-
-fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
-  if (this !is ClassDescriptor) return false
-  if (hasAnnotation(InjektFqNames.DeclaresInjectables)) return true
-
-  if (this !is LazyClassDescriptor) return false
-
-  val declaresInjectables = defaultType
-    .memberScope
-    .getContributedDescriptors()
-    .any { it.isProvide(ctx) }
-
-  if (declaresInjectables && visibility.shouldPersistInfo())
-    addAnnotation(
-      AnnotationDescriptorImpl(
-        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.DeclaresInjectables))
-          ?.defaultType ?: return false,
-        emptyMap(),
-        SourceElement.NO_SOURCE
-      )
-    )
-
-  return declaresInjectables
-}
-
-@OptIn(ExperimentalStdlibApi::class)
-private fun Annotated.addAnnotation(annotation: AnnotationDescriptor) {
-  updatePrivateFinalField<Annotations>(
-    LazyClassDescriptor::class,
-    "annotations"
-  ) { Annotations.create(annotations + annotation) }
-}
-
-fun DescriptorVisibility.shouldPersistInfo() = this ==
-    DescriptorVisibilities.PUBLIC ||
-    this == DescriptorVisibilities.INTERNAL ||
-    this == DescriptorVisibilities.PROTECTED
 
 val KotlinType.fqName: FqName
   get() = constructor.declarationDescriptor?.fqNameSafe ?: FqName.ROOT

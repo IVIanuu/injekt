@@ -6,6 +6,4 @@ package com.ivianuu.injekt.internal
 
 internal annotation class Index(val fqName: String)
 
-internal annotation class DeclaresInjectables
-
 internal annotation class FrameworkKey(val value: String)

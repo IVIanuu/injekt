@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -399,6 +400,14 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
         val scopeFile = allScopes.firstNotNullOfOrNull { it.file }
         scopeFile == callable.callable.findPsi()?.containingFile
       })
+
+private fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
+  if (this !is ClassDescriptor) return false
+  return defaultType
+    .memberScope
+    .getContributedDescriptors()
+    .any { it.isProvide(ctx) }
+}
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, ctx: Context): List<CallableRef> {
   val existingInjectables: MutableSet<InjectablesScope.InjectableKey> = scope.allScopes
