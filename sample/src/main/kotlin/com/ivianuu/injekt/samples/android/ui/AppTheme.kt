@@ -8,7 +8,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import com.ivianuu.injekt.*
 
-fun interface AppTheme : @Composable (@Composable () -> Unit) -> Unit
+fun interface AppTheme {
+  @Composable operator fun invoke(p1: @Composable () -> Unit)
+}
 
 @Provide val appTheme = AppTheme { content ->
   MaterialTheme(colors = darkColors()) {
