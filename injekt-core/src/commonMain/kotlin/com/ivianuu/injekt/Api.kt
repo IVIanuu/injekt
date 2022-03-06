@@ -33,11 +33,6 @@ package com.ivianuu.injekt
 annotation class Provide
 
 /**
- * Returns a provided instance of [T]
- */
-fun <T> inject(): T = throw UnsupportedOperationException()
-
-/**
  * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
  */
 @Target(
@@ -51,3 +46,9 @@ fun <T> inject(): T = throw UnsupportedOperationException()
 )
 @Retention(AnnotationRetention.SOURCE)
 annotation class Providers(vararg val importPaths: String)
+
+/**
+ * Returns a provided instance of [T]
+ */
+fun <T> inject(): T = throw UnsupportedOperationException()
+
