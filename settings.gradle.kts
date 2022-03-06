@@ -13,6 +13,5 @@ include(
   ":injekt-ide-plugin",
   ":integration-tests",
   ":test-util",
-  "samples:android-app",
-  "samples:coffee-maker"
+  ":sample"
 )
