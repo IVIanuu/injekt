@@ -258,7 +258,7 @@ class InjectCallTransformer(
       injectable.type.toIrType(irCtx, localDeclarations, ctx),
       parameterNameProvider = { "p${graphContext.variableIndex++}" }
     ) { function ->
-      val dependencyScope = injectable.dependencyScopes.values.single()
+      val dependencyScope = injectable.dependencyScope
       val dependencyScopeContext = if (dependencyScope == this@providerExpression.scope) null
       else ScopeContext(
         this@providerExpression, graphContext,

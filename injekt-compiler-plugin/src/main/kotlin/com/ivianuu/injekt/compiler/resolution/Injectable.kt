@@ -19,7 +19,7 @@ sealed interface Injectable {
   val type: KotlinType
   val originalType: KotlinType get() = type
   val dependencies: List<InjectableRequest> get() = emptyList()
-  val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
+  val dependencyScope: InjectablesScope? get() = null
   val callableFqName: FqName
   val ownerScope: InjectablesScope
   val usageKey: Any get() = type.toTypeKey()
@@ -65,7 +65,7 @@ class ListInjectable(
         parameterIndex = index
       )
     }
-  override val dependencyScopes = dependencies.associateWith { ownerScope }
+  override val dependencyScope get() = ownerScope
 }
 
 class ProviderInjectable(
@@ -96,20 +96,17 @@ class ProviderInjectable(
     .valueParameters
     .map { ProviderValueParameterDescriptor(it) }
 
-  // only create a new scope if we have parameters
-  override val dependencyScopes = mapOf(
-    dependencies.single() to if (parameterDescriptors.isEmpty()) ownerScope
-    else InjectablesScope(
-      name = "PROVIDER $type",
-      parent = ownerScope,
-      ctx = ownerScope.ctx,
-      initialInjectables = parameterDescriptors
-        .mapIndexed { index, parameter ->
-          parameter
-            .toCallableRef(ownerScope.ctx)
-            .copy(type = type.arguments[index].type)
-        }
-    )
+  override val dependencyScope = if (parameterDescriptors.isEmpty()) ownerScope
+  else InjectablesScope(
+    name = "PROVIDER $type",
+    parent = ownerScope,
+    ctx = ownerScope.ctx,
+    initialInjectables = parameterDescriptors
+      .mapIndexed { index, parameter ->
+        parameter
+          .toCallableRef(ownerScope.ctx)
+          .copy(type = type.arguments[index].type)
+      }
   )
 
   override val originalType: KotlinType

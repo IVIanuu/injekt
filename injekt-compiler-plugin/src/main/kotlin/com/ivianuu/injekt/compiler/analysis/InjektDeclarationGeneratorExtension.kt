@@ -75,10 +75,6 @@ class InjektDeclarationGeneratorExtension(
     val ctx = Context(module, bindingTrace)
 
     files.forEach { file ->
-      // Copy recursively, including last-modified-time of file and its parent dirs.
-      //
-      // `java.nio.file.Files.copy(path1, path2, options...)` keeps last-modified-time (if supported) according to
-      // https://docs.oracle.com/javase/7/docs/api/java/nio/file/Files.html
       fun copy(src: File, dst: File, overwrite: Boolean) {
         if (!dst.parentFile.exists())
           copy(src.parentFile, dst.parentFile, false)

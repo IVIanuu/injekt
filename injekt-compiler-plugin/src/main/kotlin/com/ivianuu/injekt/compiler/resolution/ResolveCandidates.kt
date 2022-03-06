@@ -368,7 +368,7 @@ private fun InjectablesScope.resolveCandidate(
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
-    val dependencyScope = candidate.dependencyScopes[dependency] ?: this
+    val dependencyScope = candidate.dependencyScope ?: this
     when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
