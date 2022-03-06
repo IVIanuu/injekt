@@ -300,24 +300,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
     }.let { }
   }
-
-  if (importSuggestions.isNotEmpty()) {
-    appendLine()
-    appendLine(
-      if (importSuggestions.size == 1)
-        "The following import might fix the problem:"
-      else
-        "One of the following imports might fix the problem:"
-    )
-    appendLine()
-    importSuggestions.forEach {
-      val importableFqName = if (it.callable is ConstructorDescriptor)
-        it.callable.constructedClass.fqNameSafe
-      else
-        it.callable.fqNameSafe
-      appendLine("  @Providers(\"$importableFqName\")")
-    }
-  } else Unit
 }
 
 private fun ResolutionResult.Failure.unwrapDependencyFailure(

@@ -591,18 +591,6 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun ImportSuggestionInjectablesScope(
-  parent: InjectablesScope,
-  candidate: CallableRef,
-  ctx: Context
-) = InjectablesScope(
-  name = "IMPORT SUGGESTION ${candidate.callable.fqNameSafe}",
-  parent = parent,
-  isDeclarationContainer = false,
-  initialInjectables = listOf(candidate),
-  ctx = ctx
-)
-
 fun TypeInjectablesScopeOrNull(
   type: KotlinType,
   parent: InjectablesScope,
