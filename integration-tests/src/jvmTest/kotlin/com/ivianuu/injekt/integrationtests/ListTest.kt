@@ -4,12 +4,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import androidx.compose.runtime.*
 import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
 import io.kotest.matchers.collections.*
 import io.kotest.matchers.types.*
-import kotlinx.coroutines.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 

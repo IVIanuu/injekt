@@ -33,15 +33,12 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
 
   override fun apply(target: Project) {
-    target.extensions.add("injekt", InjektExtension())
   }
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
     kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xallow-kotlin-package"
 
     val project = kotlinCompilation.target.project
-
-    val extension = project.extensions.getByType(InjektExtension::class.java)
 
     val sourceSetName = kotlinCompilation.defaultSourceSetName
     val outputDir = outputDir(project, sourceSetName)
@@ -58,7 +55,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     fun configure(injektTask: InjektTask) {
       injektTask.options.addAll(
         injektTask.project.provider {
-          getSubpluginOptions(project, sourceSetName, extension, true)
+          getSubpluginOptions(project, sourceSetName, true)
         }
       )
       injektTask.outputDir = outputDir
@@ -88,7 +85,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           configure(injektTask)
           injektTask.classpath = kotlinCompileTask.project.files(Callable { kotlinCompileTask.classpath })
 
-          getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
+          getSubpluginOptions(project, sourceSetName, false).forEach { option ->
             kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injekt", option)
           }
 
@@ -104,7 +101,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           (kotlinCompileTask.compilation as AbstractKotlinNativeCompilation).pluginConfigurationName
         project.tasks.register(injektTaskName, injektTaskClass, kotlinCompileTask.compilation).apply {
           configure { injektTask ->
-            getSubpluginOptions(project, sourceSetName, extension, false).forEach { option ->
+            getSubpluginOptions(project, sourceSetName, false).forEach { option ->
               kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injekt", option)
             }
             injektTask.onlyIf { kotlinCompileTask.compilation.konanTarget.enabledOnCurrentHost }
@@ -320,7 +317,6 @@ interface InjektTask : Task {
 private fun getSubpluginOptions(
   project: Project,
   sourceSetName: String,
-  extension: InjektExtension,
   forInjektTask: Boolean
 ): List<SubpluginOption> {
   val options = mutableListOf<SubpluginOption>()
@@ -328,7 +324,7 @@ private fun getSubpluginOptions(
     options += SubpluginOption("cacheDir", getCacheDir(project, sourceSetName).path)
     options += SubpluginOption("srcDir", srcDir(project, sourceSetName).path)
   } else {
-    options += SubpluginOption("rootPackage", extension.rootPackage)
+    options += SubpluginOption("rootPackage", "com.ivianuu.injekt")
     options += SubpluginOption("dumpDir", getDumpDir(project, sourceSetName).path)
     options += SubpluginOption("infoDir", getInfoDir(project, sourceSetName).path)
   }

@@ -8,6 +8,4 @@ internal annotation class Index(val fqName: String)
 
 internal annotation class DeclaresInjectables
 
-internal annotation class PrimaryConstructorPropertyParameters(val value: Array<String>)
-
 internal annotation class FrameworkKey(val value: String)

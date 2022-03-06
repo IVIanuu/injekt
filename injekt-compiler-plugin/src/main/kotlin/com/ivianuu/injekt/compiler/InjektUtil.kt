@@ -298,13 +298,6 @@ fun packageFragmentsForFqName(
   ctx: Context
 ): List<PackageFragmentDescriptor> = ctx.module.getPackage(fqName).fragments
 
-val composeCompilerInClasspath = try {
-  Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
-  true
-} catch (e: ClassNotFoundException) {
-  false
-}
-
 fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
   if (this !is ClassDescriptor) return false
   if (hasAnnotation(InjektFqNames.DeclaresInjectables)) return true
@@ -486,9 +479,6 @@ fun KotlinType.withFrameworkKey(key: String, ctx: Context) = replace(
 
 val KotlinType.isComposable: Boolean
   get() = hasAnnotation(InjektFqNames.Composable)
-
-val KotlinType.isComposableType: Boolean
-  get() = isComposable || constructor.supertypes.any { it.isComposableType }
 
 val KotlinType.isProvideFunctionType: Boolean
   get() = hasAnnotation(InjektFqNames.Provide) && isFunctionType

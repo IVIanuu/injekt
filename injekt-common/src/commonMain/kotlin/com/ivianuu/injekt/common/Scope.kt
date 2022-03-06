@@ -4,13 +4,14 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
 import kotlinx.atomicfu.locks.*
-import kotlin.reflect.*
 
 interface Scope<N> : Disposable {
   operator fun <T : Any> invoke(key: TypeKey<T>, init: () -> T): T
 }
+
+inline operator fun <reified T : Any> Scope<*>.invoke(noinline init: () -> T): T =
+  this(typeKeyOf(), init)
 
 fun <N> Scope(): Scope<N> = ScopeImpl()
 

@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.jvm.*

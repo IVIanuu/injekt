@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -163,3 +164,13 @@ private val IrType.isComposableFunInterface: Boolean
           it.declarationDescriptor?.defaultType?.isComposableType == true
         }
   }
+
+private val KotlinType.isComposableType: Boolean
+  get() = isComposable || constructor.supertypes.any { it.isComposableType }
+
+private val composeCompilerInClasspath = try {
+  Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
+  true
+} catch (e: ClassNotFoundException) {
+  false
+}

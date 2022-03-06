@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.nulls.*
 import io.kotest.matchers.types.*
 import org.junit.*
 

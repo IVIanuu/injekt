@@ -70,7 +70,7 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
   if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
     AnalysisHandlerExtension.registerExtension(
       this,
-      InjectCallCheckerExtension(configuration.get(WithCompilationKey) ?: false)
+      InjectCallChecker(configuration.get(WithCompilationKey) ?: false)
     )
 
   @Suppress("DEPRECATION")

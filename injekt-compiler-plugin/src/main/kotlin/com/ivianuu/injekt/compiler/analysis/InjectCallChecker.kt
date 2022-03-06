@@ -6,33 +6,59 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.types.typeUtil.*
 
-class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
+class InjectCallChecker(private val withDeclarationGenerator: Boolean) : KtTreeVisitorVoid(), AnalysisHandlerExtension {
+  private var completionCount = 0
+  private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
+
+  private var ctx: Context? = null
+
+  override fun analysisCompleted(
+    project: Project,
+    module: ModuleDescriptor,
+    bindingTrace: BindingTrace,
+    files: Collection<KtFile>
+  ): AnalysisResult? {
+    if (completionCount < 1 && withDeclarationGenerator)
+      return null.also { completionCount++ }
+    if (completionCount > 0 && !withDeclarationGenerator)
+      return null.also { completionCount++ }
+
+    ctx = Context(module, bindingTrace)
+    files.forEach { it.accept(this) }
+    ctx = null
+
+    return null
+  }
+
   override fun visitCallExpression(expression: KtCallExpression) {
     super.visitCallExpression(expression)
-    expression.getResolvedCall(ctx.trace!!.bindingContext)
+    expression.getResolvedCall(ctx!!.trace!!.bindingContext)
       ?.let { checkCall(it) }
   }
 
   override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
     super.visitSimpleNameExpression(expression)
-    expression.getResolvedCall(ctx.trace!!.bindingContext)
+    expression.getResolvedCall(ctx!!.trace!!.bindingContext)
       ?.let { checkCall(it) }
   }
 
   override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
     super.visitConstructorDelegationCall(call)
-    call.getResolvedCall(ctx.trace!!.bindingContext)
+    call.getResolvedCall(ctx!!.trace!!.bindingContext)
       ?.let { checkCall(it) }
   }
-
-  private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
 
   @OptIn(ExperimentalStdlibApi::class)
   private fun checkCall(resolvedCall: ResolvedCall<*>) {
@@ -46,7 +72,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
 
     val file = callExpression.containingKtFile
 
-    val callee = resultingDescriptor.toCallableRef(ctx)
+    val callee = resultingDescriptor.toCallableRef(ctx!!)
 
     val requestedType = resolvedCall.typeArguments.values.single()
 
@@ -59,7 +85,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
       parameterIndex = 0
     )
 
-    val scope = ElementInjectablesScope(ctx, callExpression)
+    val scope = ElementInjectablesScope(ctx!!, callExpression)
     val graph = scope.resolveRequests(
       callee,
       listOf(request),
@@ -68,7 +94,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
       if (result is ResolutionResult.Success.WithCandidate.Value &&
         result.candidate is CallableInjectable) {
         result.candidate.callable.import?.element?.let {
-          ctx.trace!!.record(
+          ctx!!.trace!!.record(
             InjektWritableSlices.USED_IMPORT,
             SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
             Unit
@@ -79,12 +105,12 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
 
     when (graph) {
       is InjectionGraph.Success -> {
-        ctx.trace!!.record(
+        ctx!!.trace!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
           file.virtualFilePath,
           Unit
         )
-        ctx.trace.record(
+        ctx!!.trace!!.record(
           InjektWritableSlices.INJECTION_GRAPH,
           SourcePosition(
             file.virtualFilePath,
@@ -94,7 +120,7 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
           graph
         )
       }
-      is InjectionGraph.Error -> ctx.trace!!.report(
+      is InjectionGraph.Error -> ctx!!.trace!!.report(
         InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
       )
     }

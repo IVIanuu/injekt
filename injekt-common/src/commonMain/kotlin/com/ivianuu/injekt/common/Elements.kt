@@ -11,6 +11,8 @@ interface Elements<N> {
   operator fun <T> invoke(key: TypeKey<T>): T
 }
 
+inline operator fun <reified T> Elements<*>.invoke(): T = this(typeKeyOf())
+
 @Provide class ElementsImpl<N>(
   private val key: TypeKey<Elements<N>>,
   elements: List<Element<N, *>>
