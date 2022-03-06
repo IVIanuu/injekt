@@ -2,6 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.ivianuu.injekt.android.work
 
 import android.content.*
@@ -29,12 +31,10 @@ class WorkerModule<T : ListenableWorker> {
 
 @JvmInline value class SingleWorkerFactory(val value: (Context, WorkerParameters) -> ListenableWorker) {
   @Provide companion object {
-    @Provide val defaultWorkers: Collection<Pair<String, SingleWorkerFactory>> get() = emptyList()
+    @Provide inline val defaultWorkers: Collection<Pair<String, SingleWorkerFactory>> get() = emptyList()
   }
 }
 
 @Provide object WorkManagerModule {
-  @Provide fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)
-
-  @Provide fun workerFactory(factory: InjektWorkerFactory): WorkerFactory = factory
+  @Provide inline fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)
 }

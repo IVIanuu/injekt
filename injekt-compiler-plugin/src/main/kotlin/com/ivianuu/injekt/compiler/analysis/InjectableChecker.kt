@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.multiplatform.*
+import org.jetbrains.kotlin.resolve.source.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
@@ -56,8 +57,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ANNOTATION_CLASS
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -66,8 +67,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ENUM_CLASS
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -88,8 +89,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_INTERFACE
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -111,8 +112,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }

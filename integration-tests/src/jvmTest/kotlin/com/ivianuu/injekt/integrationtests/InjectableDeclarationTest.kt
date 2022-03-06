@@ -265,16 +265,6 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(
-    """
-      abstract class MySuperClass(@property:Provide val foo: Foo)
-    """,
-    """
-      @Provide object MySubClass : MySuperClass(Foo())
-      fun invoke() = inject<Foo>()
-    """
-  )
-
   @Test fun testProvideFunctionInLocalClass() = codegen(
     """
       fun invoke() {
@@ -290,41 +280,11 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testProvidePropertyInLocalClass() = codegen(
-    """
-      fun invoke() {
-        class MyClass {
-          @Provide val foo = Foo()
-          
-          override fun equals(other: Any?): Boolean {
-            inject<Foo>()
-            return super.equals(other)
-          }
-        }
-      }
-    """
-  )
-
   @Test fun testProvideFunctionInAnonymousObject() = codegen(
     """
       fun invoke() {
         object : Any() {
           @Provide fun foo() = Foo()
-          
-          override fun equals(other: Any?): Boolean {
-            inject<Foo>()
-            return super.equals(other)
-          }
-        }
-      }
-    """
-  )
-
-  @Test fun testProvidePropertyInAnonymousObject() = codegen(
-    """
-      fun invoke() {
-        object : Any() {
-          @Provide private val foo = Foo()
           
           override fun equals(other: Any?): Boolean {
             inject<Foo>()

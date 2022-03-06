@@ -79,7 +79,7 @@ class DivergenceTest {
     """
       @Provide class A(b: B)
       class B(a: A) {
-        companion object {
+        @Provide companion object {
           @Provide inline fun newInstance(a: () -> A) = B(a())
         }
       }
@@ -96,7 +96,7 @@ class DivergenceTest {
       @Provide class A(b: C)
       @Provide class B(a: () -> A)
       class C(b: B) {
-        companion object {
+        @Provide companion object {
           @Provide inline fun newInstance(b: () -> B) = C(b())
         }
       }

@@ -247,12 +247,7 @@ class ResolutionTest {
       fun invoke() = inject<String>() 
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.a\n" +
-          "com.ivianuu.injekt.integrationtests.b\n\n" +
-          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
-    )
+    compilationShouldHaveFailed("ambiguous injectables")
   }
 
   @Test fun testCannotDeclareMultipleInjectablesOfTheSameTypeInTheSameCodeBlock() = codegen(
@@ -264,12 +259,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableA\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableB\n\n" +
-          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
-    )
+    compilationShouldHaveFailed("ambiguous injectables")
   }
 
   @Test fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
@@ -307,7 +297,7 @@ class ResolutionTest {
       fun invoke() = useOrd<Int>(inject())
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = { // BLOCK\nIntOrd\n})")
+    irShouldContain(3, "IntOrd")
   }
 
   @Test fun testPrefersMoreSpecificType4() = singleAndMultiCodegen(
@@ -324,7 +314,7 @@ class ResolutionTest {
       fun invoke() = useOrd<Int>(inject())
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = { // BLOCK\nIntOrd\n})")
+    irShouldContain(1, "intOrd<Int>()")
   }
 
   @Test fun testPrefersMoreSpecificType5() = singleAndMultiCodegen(
@@ -341,7 +331,7 @@ class ResolutionTest {
       fun invoke() = useOrd<Int>(inject())
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = { // BLOCK\nnumberOrd<Int>()\n})")
+    irShouldContain(1, "numberOrd<Int>()")
   }
 
   @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
@@ -390,12 +380,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.foo1\n" +
-          "com.ivianuu.injekt.integrationtests.foo2\n\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject."
-    )
+    compilationShouldHaveFailed("ambiguous injectables")
   }
 
   @Test fun testDoesNotUseDefaultValueOnNestedAmbiguityError() = codegen(
@@ -410,25 +395,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      " \n" +
-          "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
-          "\n" +
-          "I found:\n" +
-          "\n" +
-          "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
-          "    bar = com.ivianuu.injekt.integrationtests.bar(\n" +
-          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ inject<com.ivianuu.injekt.test.Foo>()\n" +
-          "    )\n" +
-          "  )\n" +
-          "\n" +
-          "but\n" +
-          "\n" +
-          "com.ivianuu.injekt.integrationtests.foo1\n" +
-          "com.ivianuu.injekt.integrationtests.foo2\n" +
-          "\n" +
-          "do all match type com.ivianuu.injekt.test.Foo."
-    )
+    compilationShouldHaveFailed("ambiguous injectables")
   }
 
   @Test fun testDoesNotPreferInjectablesInTheSameFile() = codegen(
@@ -443,12 +410,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.foo\n" +
-          "com.ivianuu.injekt.integrationtests.otherFoo\n\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject"
-    )
+    compilationShouldHaveFailed("ambiguous injectables")
   }
 
   @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(

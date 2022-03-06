@@ -138,13 +138,6 @@ fun run(@Inject tokenFactory: () -> Token) {
   val viewModel = remember { viewModelFactory("user_id") }
 }
 
-// inject a function to create a dependency in suspend context
-fun startService(@Inject dbFactory: suspend () -> Db) {
-  scope.launch {
-    val db = dbFactory()
-  }
-}
-
 // inject functions in a inline function to create a conditional Logger with zero overhead
 @Provide inline fun logger(isDebug: IsDebug, loggerImpl: () -> LoggerImpl, noOpLogger: () -> NoOpLogger): Logger =
   if (isDebug) loggerImpl() else noOpLogger()
@@ -197,9 +190,6 @@ TODO
 TODO
 
 # Type keys
-TODO
-
-# Source keys
 TODO
 
 # Full kotlin support

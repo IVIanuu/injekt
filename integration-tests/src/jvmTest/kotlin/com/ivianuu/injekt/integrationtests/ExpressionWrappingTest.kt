@@ -58,25 +58,6 @@ class ExpressionWrappingTest {
     irShouldNotContain("local fun <anonymous>(): Foo {")
   }
 
-  @Test fun testSearchBetterName() = codegen(
-    """
-      interface Logger
-
-      @Provide object AndroidLogger : Logger
-
-      @Provide fun androidLogger(factory: () -> AndroidLogger): Logger = factory()
-
-      @Provide data class MyComponent(
-        val loggerFactory: () -> Logger,
-        val loggerFactory2: () -> Logger
-      )
-
-      fun invoke() {
-        inject<MyComponent>()
-      }
-    """
-  )
-
   @Test fun testDoesFunctionWrapListInjectablesWithSameElements() = singleAndMultiCodegen(
     """
       @Provide val a = "a"

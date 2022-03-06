@@ -163,7 +163,7 @@ class ResolveTest {
       fun invoke() = inject<Bar>() 
     """
   ) {
-    compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
   @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(

@@ -19,7 +19,9 @@ import kotlin.reflect.*
  */
 data class SystemService<T>(val value: T) {
   @Provide companion object {
-    @Provide fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
+    @Suppress("NOTHING_TO_INLINE")
+    @Provide
+    inline fun <T : Any> invoke(context: Context, serviceClass: KClass<T>) =
        SystemService(ContextCompat.getSystemService(context, serviceClass.java)!!)
   }
 }

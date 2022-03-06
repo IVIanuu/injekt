@@ -141,20 +141,23 @@ class InjektDeclarationGeneratorExtension(
       namedDeclarationRecursiveVisitor { declaration ->
         if (declaration.fqName == null) return@namedDeclarationRecursiveVisitor
 
+        fun KtAnnotated.isProvide() =
+          annotationEntries.any { it.shortName == InjektFqNames.Provide.shortName() }
+
         when (declaration) {
           is KtClassOrObject -> {
             if (!declaration.isLocal &&
-              (declaration.hasAnnotation(InjektFqNames.Provide) ||
-                  declaration.primaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true ||
-                  declaration.secondaryConstructors.any { it.hasAnnotation(InjektFqNames.Provide) }))
+              (declaration.isProvide() ||
+                  declaration.primaryConstructor?.isProvide() == true ||
+                  declaration.secondaryConstructors.any { it.isProvide() }))
                     injectables += declaration
           }
           is KtNamedFunction -> {
-            if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
+            if (!declaration.isLocal && declaration.isProvide())
               injectables += declaration
           }
           is KtProperty -> {
-            if (!declaration.isLocal && declaration.hasAnnotation(InjektFqNames.Provide))
+            if (!declaration.isLocal && declaration.isProvide())
               injectables += declaration
           }
         }
