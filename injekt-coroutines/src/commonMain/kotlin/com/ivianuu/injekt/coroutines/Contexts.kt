@@ -10,21 +10,21 @@ import kotlin.coroutines.*
 import kotlin.jvm.*
 
 @JvmInline value class DefaultContext(val value: CoroutineContext) {
-  companion object {
+  @Provide companion object {
     @Provide inline val context: DefaultContext
       get() = DefaultContext(Dispatchers.Default)
   }
 }
 
 @JvmInline value class MainContext(val value: CoroutineContext) {
-  companion object {
+  @Provide companion object {
     @Provide inline val context: MainContext
       get() = MainContext(Dispatchers.Main)
   }
 }
 
 @JvmInline value class ImmediateMainContext(val value: CoroutineContext) {
-  companion object {
+  @Provide companion object {
     @Provide inline val context: ImmediateMainContext
       get() = ImmediateMainContext(Dispatchers.Main.immediate)
   }
@@ -32,6 +32,6 @@ import kotlin.jvm.*
 
 @JvmInline value class IOContext(val value: CoroutineContext)
 
-expect object IOInjectables {
+@Provide expect object IOContextModule {
   @Provide val context: IOContext
 }

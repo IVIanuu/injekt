@@ -18,7 +18,7 @@ import kotlin.jvm.*
     value.cancel()
   }
 
-  companion object {
+  @Provide companion object {
     @Provide fun <N> scope(
       context: NamedCoroutineContext<N>,
       scope: Scope<N>,
@@ -37,7 +37,7 @@ import kotlin.jvm.*
 }
 
 @JvmInline value class NamedCoroutineContext<N>(val value: CoroutineContext) {
-  companion object {
+  @Provide companion object {
     @Provide fun <N> defaultContext(context: DefaultContext) = NamedCoroutineContext<N>(context.value)
   }
 }

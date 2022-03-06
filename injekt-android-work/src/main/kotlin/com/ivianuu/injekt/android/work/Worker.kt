@@ -28,7 +28,13 @@ class WorkerModule<T : ListenableWorker> {
 }
 
 @JvmInline value class SingleWorkerFactory(val value: (Context, WorkerParameters) -> ListenableWorker) {
-  companion object {
+  @Provide companion object {
     @Provide val defaultWorkers: Collection<Pair<String, SingleWorkerFactory>> get() = emptyList()
   }
+}
+
+@Provide object WorkManagerModule {
+  @Provide fun workManager(context: Context): WorkManager = WorkManager.getInstance(context)
+
+  @Provide fun workerFactory(factory: InjektWorkerFactory): WorkerFactory = factory
 }

@@ -7,11 +7,13 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -141,7 +143,10 @@ fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
     }
 
 fun ClassDescriptor.injectableReceiver(ctx: Context): CallableRef =
-  thisAsReceiverParameter.toCallableRef(ctx)
+  ReceiverParameterDescriptorImpl(
+    this, ImplicitClassReceiver(this),
+    Annotations.EMPTY
+  ).toCallableRef(ctx)
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
@@ -192,8 +197,7 @@ fun collectAllInjectables(ctx: Context): List<CallableRef> =
       for (injectable in injectablesForFqName(fqName, ctx)) {
         val dispatchReceiverType = injectable.parameterTypes[DISPATCH_RECEIVER_INDEX]
           .takeIf { injectable.callable !is ConstructorDescriptor }
-        if (dispatchReceiverType == null ||
-          dispatchReceiverType.constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.isCompanionObject == true)
+        if (dispatchReceiverType == null)
           add(injectable)
       }
     }
