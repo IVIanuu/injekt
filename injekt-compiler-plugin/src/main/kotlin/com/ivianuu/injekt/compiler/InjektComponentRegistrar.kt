@@ -13,8 +13,6 @@ import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
-import org.jetbrains.kotlin.ir.*
-import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import java.io.*

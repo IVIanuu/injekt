@@ -4,7 +4,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -21,15 +20,12 @@ import org.jetbrains.kotlin.resolve.calls.inference.*
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.util.slicedMap.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import java.lang.reflect.*
 import kotlin.experimental.*
-import kotlin.reflect.*
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
@@ -242,24 +238,6 @@ fun classifierDescriptorForFqName(
   else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)?.first
     ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 }
-
-fun injectablesForFqName(
-  fqName: FqName,
-  ctx: Context
-): List<CallableRef> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.first
-    ?.getContributedDescriptors(nameFilter = { it == fqName.shortName() })
-    ?.transform { declaration ->
-      when (declaration) {
-        is ClassDescriptor -> addAll(declaration.injectableConstructors(ctx))
-        is CallableDescriptor -> {
-          if (declaration.isProvide(ctx))
-            this += declaration.toCallableRef(ctx)
-        }
-      }
-    }
-    ?: emptyList()
 
 fun memberScopeForFqName(
   fqName: FqName,

@@ -50,7 +50,7 @@ class InjectCallTransformer(
     var variableIndex = 0
 
     @OptIn(ExperimentalStdlibApi::class)
-    private val graphContextParents = buildList<InjectablesScope> {
+    private val graphContextParents = buildList {
       val seenScopes = mutableSetOf<InjectablesScope>()
       fun InjectablesScope.add() {
         if (!seenScopes.add(this)) return
