@@ -4,9 +4,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.builtins.functions.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -14,7 +12,6 @@ import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.load.java.descriptors.*
 import org.jetbrains.kotlin.load.kotlin.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
@@ -26,7 +23,6 @@ import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.lazy.descriptors.*
 import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.util.slicedMap.*
@@ -34,29 +30,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.lang.reflect.*
 import kotlin.experimental.*
 import kotlin.reflect.*
-
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(): ValueParameterDescriptor? =
-  overriddenTreeUniqueAsSequence(false)
-    .map { it.containingDeclaration }
-    .filterIsInstance<ClassDescriptor>()
-    .mapNotNull { clazz ->
-      if (clazz.isDeserializedDeclaration()) {
-        clazz.unsubstitutedPrimaryConstructor
-          ?.valueParameters
-          ?.firstOrNull {
-            it.name == name &&
-                it.name.asString() in clazz.primaryConstructorPropertyParameters()
-          }
-      } else {
-        clazz.unsubstitutedPrimaryConstructor
-          ?.valueParameters
-          ?.firstOrNull {
-            it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
-                it.name == name
-          }
-      }
-    }
-    .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
@@ -101,13 +74,6 @@ fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
 
 fun DeclarationDescriptor.isExternalDeclaration(ctx: Context): Boolean =
   moduleName(ctx) != ctx.module.moduleName(ctx)
-
-fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
-    (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
-    this is DeserializedTypeParameterDescriptor ||
-    this is JavaClassDescriptor ||
-    this is FunctionClassDescriptor
 
 fun String.asNameId() = Name.identifier(this)
 
@@ -245,16 +211,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  return field.get(this) as T
-}
-
 fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }
@@ -371,53 +327,6 @@ fun ClassifierDescriptor.declaresInjectables(ctx: Context): Boolean {
     )
 
   return declaresInjectables
-}
-
-fun ClassifierDescriptor.primaryConstructorPropertyParameters(): List<String> {
-  if (this !is ClassDescriptor) return emptyList()
-
-  annotations.findAnnotation(InjektFqNames.PrimaryConstructorPropertyParameters)
-    ?.allValueArguments
-    ?.values
-    ?.single()
-    ?.cast<ArrayValue>()
-    ?.value
-    ?.map { it.value as String }
-    ?.let { return it }
-
-  if (this !is LazyClassDescriptor) return emptyList()
-
-  val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
-    ?.unsubstitutedPrimaryConstructor
-    ?.valueParameters
-    ?.transform {
-      if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
-        add(it.name.asString())
-    }
-    ?: emptyList()
-
-  if (primaryConstructorPropertyParameters.isNotEmpty() && visibility.shouldPersistInfo())
-    addAnnotation(
-      AnnotationDescriptorImpl(
-        module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.PrimaryConstructorPropertyParameters))
-          ?.defaultType ?: return emptyList(),
-        mapOf(
-          "value".asNameId() to ArrayValue(
-            primaryConstructorPropertyParameters
-              .map { StringValue(it) }
-          ) {
-            it.builtIns.array.defaultType.replace(
-              newArguments = listOf(
-                it.builtIns.stringType.asTypeProjection()
-              )
-            )
-          }
-        ),
-        SourceElement.NO_SOURCE
-      )
-    )
-
-  return primaryConstructorPropertyParameters
 }
 
 @OptIn(ExperimentalStdlibApi::class)

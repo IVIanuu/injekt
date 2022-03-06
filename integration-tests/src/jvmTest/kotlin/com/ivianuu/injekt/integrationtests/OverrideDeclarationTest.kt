@@ -60,21 +60,6 @@ class OverrideDeclarationTest {
     compilationShouldHaveFailed("'foo' overrides nothing")
   }
 
-  @Test fun testFunctionWithInjectParameterOverrideWithoutInjectAnnotation() = codegen(
-    """
-      abstract class MySuperClass {
-        abstract fun bar(@Inject foo: Foo): Bar
-      }
-    """,
-    """
-      class MySubClass : MySuperClass() {
-        override fun bar(foo: Foo) = Bar(foo)
-      } 
-    """
-  ) {
-    compilationShouldHaveFailed("'bar' overrides nothing")
-  }
-
   @Test fun testProvidePropertyOverrideWithoutProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {

@@ -36,28 +36,6 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(it, "parameters of a injectable are automatically treated as inject parameters")
-        }
-
-    @JvmField val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(it, "parameters of a injectable are automatically provided")
-        }
-
-    @JvmField val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, "receiver cannot be injected")
-      }
-
-    @JvmField val PROVIDE_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, "receiver is automatically provided")
-      }
-
     @JvmField val PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
@@ -176,18 +154,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
   appendLine()
 
   when (unwrappedFailure) {
-    is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-      if (failure == unwrappedFailure) {
-        appendLine(
-          "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.render()} " +
-              "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
-              "is a ${unwrappedFailure.candidate.callContext.name.lowercase(Locale.getDefault())} function " +
-              "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}."
-        )
-      } else {
-        appendLine("call context mismatch.")
-      }
-    }
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
@@ -236,16 +202,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
     fun printCall(
       request: InjectableRequest,
       failure: ResolutionResult.Failure,
-      candidate: Injectable?,
-      callContext: CallContext
+      candidate: Injectable?
     ) {
-      if (candidate is ProviderInjectable) {
-        when (candidate.type.callContext) {
-          CallContext.DEFAULT -> {}
-          CallContext.COMPOSABLE -> append("@Composable ")
-          CallContext.SUSPEND -> append("suspend ")
-        }
-      } else {
+      if (candidate !is ProviderInjectable) {
         append("${request.callableFqName}")
 
         if (request.callableTypeArguments.isNotEmpty()) {
@@ -274,10 +233,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
       }
       withIndent {
-        if (candidate is ProviderInjectable &&
-          unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-          appendLine("${indent()}/* ${candidate.dependencyScopes.values.single().callContext.name.lowercase(Locale.getDefault())} call context */")
-        }
         append(indent())
         if (candidate !is ProviderInjectable) {
           append("${request.parameterName} = ")
@@ -285,15 +240,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
         if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
-            failure.candidate,
-            if (candidate is ProviderInjectable) request.type.callContext else callContext
+            failure.candidate
           )
         } else {
           append("/* ")
           when (failure) {
-            is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-              append("${failure.candidate.callContext.name.lowercase(Locale.getDefault())} call:")
-            }
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.name} is reified: ")
             }
@@ -311,11 +262,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          if (failure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-            appendLine("${failure.candidate.callableFqName}()")
-          } else {
-            appendLine("inject<${request.type.render()}>()")
-          }
+          appendLine("inject<${request.type.render()}>()")
         }
       }
       append(indent())
@@ -324,24 +271,12 @@ private fun InjectionGraph.Error.render(): String = buildString {
     }
 
     withIndent {
-      if (unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-        appendLine("${indent()}/* ${scope.callContext.name.lowercase(Locale.getDefault())} call context */")
-      }
       append(indent())
-      printCall(
-        failureRequest,
-        failure,
-        null,
-        if (failureRequest.type.isFunctionType) failureRequest.type.callContext
-        else scope.callContext
-      )
+      printCall(failureRequest, failure, null)
     }
     appendLine()
 
     when (unwrappedFailure) {
-      is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}.")
-      }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqNameSafe} is not reified.")
       }

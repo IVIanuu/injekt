@@ -370,9 +370,6 @@ private fun ValueParameterDefaultValueInjectablesScope(
   return InjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
-    callContext = function.callContext(ctx)
-      // suspend functions cannot be called from a default value context
-      .takeIf { it != CallContext.SUSPEND } ?: CallContext.DEFAULT,
     ownerDescriptor = function,
     typeParameters = function.typeParameters,
     ctx = ctx
@@ -396,7 +393,6 @@ private fun FunctionInjectablesScope(
   InjectablesScope(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
-    callContext = function.callContext(ctx),
     ownerDescriptor = function,
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting,
@@ -464,7 +460,6 @@ private fun PropertyInjectablesScope(
 
   InjectablesScope(
     name = "PROPERTY ${property.fqNameSafe}",
-    callContext = property.callContext(ctx),
     parent = finalParent,
     ownerDescriptor = property,
     initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx)),
@@ -533,7 +528,6 @@ private fun LocalVariableInjectablesScope(
 
   InjectablesScope(
     name = "LOCAL VARIABLE ${variable.fqNameSafe}",
-    callContext = parent.callContext,
     parent = finalParent,
     ownerDescriptor = variable,
     nesting = finalParent.nesting,
@@ -554,7 +548,6 @@ private fun ExpressionInjectablesScope(
 
   InjectablesScope(
     name = "EXPRESSION ${expression.startOffset}",
-    callContext = finalParent.callContext,
     parent = finalParent,
     nesting = finalParent.nesting,
     ctx = ctx
@@ -586,7 +579,6 @@ private fun BlockExpressionInjectablesScope(
 
     InjectablesScope(
       name = "BLOCK AT ${injectableDeclaration.name}",
-      callContext = finalParent.callContext,
       parent = finalParent,
       initialInjectables = when (injectableDeclaration) {
         is ClassDescriptor -> injectableDeclaration.injectableConstructors(ctx)
@@ -607,7 +599,6 @@ fun ImportSuggestionInjectablesScope(
 ) = InjectablesScope(
   name = "IMPORT SUGGESTION ${candidate.callable.fqNameSafe}",
   parent = parent,
-  callContext = parent.callContext,
   isDeclarationContainer = false,
   initialInjectables = listOf(candidate),
   ctx = ctx
@@ -660,7 +651,6 @@ fun TypeInjectablesScopeOrNull(
         name = "EXTERNAL TYPE ${type.render()}",
         parent = result,
         initialInjectables = externalInjectables,
-        callContext = result.callContext,
         typeScopeType = type,
         isDeclarationContainer = false,
         imports = imports,
@@ -672,7 +662,6 @@ fun TypeInjectablesScopeOrNull(
         name = "TYPE TYPE ${type.render()}",
         parent = result,
         initialInjectables = typeInjectables,
-        callContext = result.callContext,
         typeScopeType = type,
         isDeclarationContainer = false,
         imports = imports,
@@ -684,7 +673,6 @@ fun TypeInjectablesScopeOrNull(
         name = "INTERNAL TYPE ${type.render()}",
         parent = result,
         initialInjectables = internalInjectables,
-        callContext = result.callContext,
         typeScopeType = type,
         isDeclarationContainer = false,
         imports = imports,

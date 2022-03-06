@@ -74,39 +74,6 @@ class ListTest {
     foo shouldBeSameInstanceAs bar.foo
   }
 
-  @Test fun testSuspendProviderList() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() = inject<List<suspend (Foo) -> Bar>>() 
-    """
-  ) {
-    val list = invokeSingleFile<List<suspend (Foo) -> Bar>>().toList()
-    list.size shouldBe 1
-    val provider = list.single()
-    val foo = Foo()
-    val bar = runBlocking { provider(foo) }
-    foo shouldBeSameInstanceAs bar.foo
-  }
-
-  @Test fun testComposableProviderList() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() = inject<List<@Composable (Foo) -> Bar>>() 
-    """,
-    config = { withCompose() }
-  ) {
-    val list = invokeSingleFile<List<@Composable (Foo) -> Bar>>().toList()
-    list.size shouldBe 1
-    val provider = list.single()
-    val foo = Foo()
-    val bar = runComposing { provider(foo) }
-    foo shouldBeSameInstanceAs bar.foo
-  }
-
   @Test fun testNestedProviderList() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo): Any = Bar(foo)

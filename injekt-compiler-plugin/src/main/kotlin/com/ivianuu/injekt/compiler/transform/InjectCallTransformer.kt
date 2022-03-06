@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.Scope
@@ -20,13 +19,11 @@ import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSet
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
@@ -230,18 +227,8 @@ class InjectCallTransformer(
         name = "function${graphContext.variableIndex++}".asNameId()
         returnType = result.candidate.type.toIrType(irCtx, localDeclarations, ctx)
         visibility = DescriptorVisibilities.LOCAL
-        isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
         parent = irScope.getLocalDeclarationParent()
-
-        if (result.candidate.callContext == CallContext.COMPOSABLE) {
-          annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
-            .irCallConstructor(
-              irCtx.referenceConstructors(InjektFqNames.Composable)
-                .single(),
-              emptyList()
-            )
-        }
 
         this.body = DeclarationIrBuilder(irCtx, symbol).run {
           irBlockBody {
@@ -545,36 +532,31 @@ class InjectCallTransformer(
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
+    if (result.symbol.descriptor.fqNameSafe != InjektFqNames.inject)
+      return result
+
     val graph = irCtx.bindingContext[
         InjektWritableSlices.INJECTION_GRAPH,
         SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
 
-    // some ir transformations reuse the start and end offsets
-    // we ensure that were not transforming wrong calls
-    if (!expression.symbol.owner.isPropertyAccessor &&
-      expression.symbol.owner.descriptor.containingDeclaration
-        .safeAs<ClassDescriptor>()
-        ?.defaultType
-        ?.isFunctionOrSuspendFunctionType != true &&
-      graph.callee.callable.fqNameSafe != result.symbol.owner.descriptor.fqNameSafe)
-      return result
-
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
         val graphContext = GraphContext(graph)
-        try {
+        val finalExpression = try {
           ScopeContext(
             parent = null,
             graphContext = graphContext,
             scope = graph.scope,
             irScope = scope
-          ).run { result.inject(this, graph.results) }
+          ).run {
+            expressionFor(graph.results.values.single().cast())
+          }
         } catch (e: Throwable) {
-          throw RuntimeException("Wtf ${expression.dump()}", e)
+          throw RuntimeException("Wtf ${result.dump()}", e)
         }
         graphContext.statements.forEach { +it }
-        +result
+        +finalExpression
       }
   }
 }

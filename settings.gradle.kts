@@ -12,7 +12,6 @@ include(
   ":injekt-gradle-plugin",
   ":injekt-ide-plugin",
   ":integration-tests",
-  ":samples:type-classes",
   ":test-util",
   "samples:android-app",
   "samples:coffee-maker"

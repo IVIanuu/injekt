@@ -39,12 +39,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: FunctionDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx))
-      descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
-    checkReceiver(descriptor, declaration, ctx)
   }
 
   private fun checkClass(
@@ -129,11 +125,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: ConstructorDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx)) {
-      descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
-    }
-
     checkExceptActual(declaration, descriptor, ctx)
   }
 
@@ -142,7 +133,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: PropertyDescriptor,
     ctx: Context
   ) {
-    checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
   }
@@ -157,36 +147,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
       ctx.trace!!.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED.on(declaration))
-    }
-  }
-
-  private fun checkReceiver(
-    descriptor: CallableDescriptor,
-    declaration: KtDeclaration,
-    ctx: Context
-  ) {
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Provide) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_RECEIVER
-          .on(
-            declaration.safeAs<KtFunction>()?.receiverTypeReference
-              ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-              ?: declaration
-          )
-      )
-    }
-
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true) {
-      ctx.trace!!.report(
-        InjektErrors.INJECT_RECEIVER
-          .on(
-            declaration.safeAs<KtFunction>()?.receiverTypeReference
-              ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-              ?: declaration
-          )
-      )
     }
   }
 
@@ -230,57 +190,5 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: MemberDescriptor,
     overriddenDescriptor: MemberDescriptor,
     ctx: Context
-  ): Boolean {
-    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) && !descriptor.isProvide(ctx)) {
-      return false
-    }
-
-    if (descriptor is CallableMemberDescriptor) {
-      for ((index, overriddenValueParameter) in
-      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
-        val valueParameter = descriptor.valueParameters[index]
-        if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
-          valueParameter.hasAnnotation(InjektFqNames.Inject)) {
-          return false
-        }
-      }
-    }
-
-    return true
-  }
-
-  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
-    declaration: KtDeclaration,
-    ctx: Context
-  ) {
-    if (isEmpty()) return
-    for (parameter in this) {
-      if (parameter.hasAnnotation(InjektFqNames.Inject)) {
-        ctx.trace!!.report(
-          InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(
-              parameter.findPsi()
-                ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(InjektFqNames.Inject)
-                ?: parameter.findPsi()
-                ?: declaration
-            )
-        )
-      }
-      if (parameter.hasAnnotation(InjektFqNames.Provide) &&
-        parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
-      ) {
-        ctx.trace!!.report(
-          InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(
-              parameter.findPsi()
-                ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(InjektFqNames.Provide)
-                ?: parameter.findPsi()
-                ?: declaration
-            )
-        )
-      }
-    }
-  }
+  ): Boolean = !overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) || descriptor.isProvide(ctx)
 }

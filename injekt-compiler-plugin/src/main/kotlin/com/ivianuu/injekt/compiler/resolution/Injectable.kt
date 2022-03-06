@@ -5,15 +5,14 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.inline.*
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
@@ -22,7 +21,6 @@ sealed interface Injectable {
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
   val callableFqName: FqName
-  val callContext: CallContext get() = CallContext.DEFAULT
   val ownerScope: InjectablesScope
   val usageKey: Any get() = type.toTypeKey()
 }
@@ -33,12 +31,10 @@ class CallableInjectable(
 ) : Injectable {
   override val type: KotlinType
     get() = callable.type
-  override val dependencies: List<InjectableRequest> = callable.getInjectableRequests(ownerScope.ctx)
+  override val dependencies: List<InjectableRequest> = callable.getInjectableRequests()
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
-  override val callContext: CallContext
-    get() = callable.callable.callContext(ownerScope.ctx)
   override val originalType: KotlinType
     get() = callable.originalType
   override val usageKey: Any =
@@ -75,14 +71,9 @@ class ListInjectable(
 class ProviderInjectable(
   override val type: KotlinType,
   override val ownerScope: InjectablesScope,
-  val isInline: Boolean,
-  dependencyCallContext: CallContext
+  val isInline: Boolean
 ) : Injectable {
-  override val callableFqName: FqName = when (type.callContext) {
-    CallContext.DEFAULT -> FqName("providerOf")
-    CallContext.COMPOSABLE -> FqName("composableProviderOf")
-    CallContext.SUSPEND -> FqName("suspendProviderOf")
-  }
+  override val callableFqName = FqName("providerOf")
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
       type = type.arguments.last().type,
@@ -105,15 +96,13 @@ class ProviderInjectable(
     .valueParameters
     .map { ProviderValueParameterDescriptor(it) }
 
-  // only create a new scope if we have parameters or a different call context then our parent
+  // only create a new scope if we have parameters
   override val dependencyScopes = mapOf(
-    dependencies.single() to if (parameterDescriptors.isEmpty() &&
-      ownerScope.callContext == dependencyCallContext) ownerScope
+    dependencies.single() to if (parameterDescriptors.isEmpty()) ownerScope
     else InjectablesScope(
       name = "PROVIDER $type",
       parent = ownerScope,
       ctx = ownerScope.ctx,
-      callContext = dependencyCallContext,
       initialInjectables = parameterDescriptors
         .mapIndexed { index, parameter ->
           parameter
@@ -132,12 +121,9 @@ class ProviderInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParameters
+fun CallableRef.getInjectableRequests(): List<InjectableRequest> = callable.allParameters
   .transform {
-    if ((callable !is ClassConstructorDescriptor || it.name.asString() != "<this>") &&
-        it === callable.dispatchReceiverParameter ||
-        it === callable.extensionReceiverParameter ||
-        it.isProvide(ctx))
+    if ((callable !is ClassConstructorDescriptor || it.name.asString() != "<this>"))
           add(it.toInjectableRequest(this@getInjectableRequests))
   }
 
@@ -160,7 +146,7 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableR
   callableTypeArguments = callable.typeArguments,
   parameterName = injektName(),
   parameterIndex = injektIndex(),
-  isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
+  isRequired = this !is ValueParameterDescriptor || !hasDefaultValue(),
   isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
       InlineUtil.isInlineParameter(this)
 )

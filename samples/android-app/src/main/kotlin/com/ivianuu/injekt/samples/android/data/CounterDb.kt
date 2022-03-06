@@ -22,7 +22,7 @@ class CounterDbImpl : CounterDb {
   override suspend fun updateCounter(transform: Int.() -> Int) = _counter.update(transform)
 
   companion object {
-    @Provide fun counterDb(scope: Scope<AppScope>) = scope {
+    @Provide fun counterDb(scope: Scope<AppScope>) = scope(typeKeyOf()) {
       CounterDbImpl()
     }
   }

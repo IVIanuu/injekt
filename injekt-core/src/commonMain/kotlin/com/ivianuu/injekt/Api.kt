@@ -33,23 +33,9 @@ package com.ivianuu.injekt
 annotation class Provide
 
 /**
- * Automatically fills in a argument if no explicit argument was provided
- */
-@Target(
-  // fun func(@Inject foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
-
-  // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
-)
-annotation class Inject
-
-/**
  * Returns a provided instance of [T]
  */
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T> inject(@Inject x: T): T = x
+fun <T> inject(): T = throw UnsupportedOperationException()
 
 /**
  * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration

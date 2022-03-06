@@ -9,7 +9,7 @@ import kotlinx.atomicfu.locks.*
 import kotlin.reflect.*
 
 interface Scope<N> : Disposable {
-  operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T
+  operator fun <T : Any> invoke(key: TypeKey<T>, init: () -> T): T
 }
 
 fun <N> Scope(): Scope<N> = ScopeImpl()
@@ -17,7 +17,7 @@ fun <N> Scope(): Scope<N> = ScopeImpl()
 private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
   private val values = mutableMapOf<TypeKey<*>, Any>()
 
-  override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+  override fun <T : Any> invoke(key: TypeKey<T>, init: () -> T): T =
     synchronized(this) { values.getOrPut(key, init) as T }
 
   override fun dispose() {

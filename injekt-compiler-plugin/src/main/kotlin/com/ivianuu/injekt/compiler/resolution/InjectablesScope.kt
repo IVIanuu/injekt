@@ -19,7 +19,6 @@ import java.util.*
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
   val typeScopeType: KotlinType? = null,
@@ -69,7 +68,7 @@ class InjectablesScope(
 
   private val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
       typeParameters.isEmpty() &&
-      (isEmpty || (initialInjectables.isEmpty() && callContext == parent.callContext))
+      (isEmpty || initialInjectables.isEmpty())
 
   val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
 
@@ -159,16 +158,11 @@ class InjectablesScope(
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
     when {
-      request.type.isFunctionType -> {
-        val finalCallContext = if (request.isInline) callContext
-        else request.type.callContext
-        return ProviderInjectable(
-          type = request.type,
-          ownerScope = this,
-          dependencyCallContext = finalCallContext,
-          isInline = request.isInline
-        )
-      }
+      request.type.isFunctionType -> return ProviderInjectable(
+        type = request.type,
+        ownerScope = this,
+        isInline = request.isInline
+      )
       request.type.fqName == ctx.module.builtIns.list.fqNameSafe -> {
         fun createInjectable(): ListInjectable? {
           val singleElementType = request.type.arguments[0].type

@@ -11,18 +11,10 @@ import kotlin.reflect.*
 /**
  * A key for a type of [T] which can be used as a [Map] key or similar
  */
-@JvmInline value class TypeKey<out T>(val type: KType) {
-  companion object {
-    /**
-     * Provides a [TypeKey] of [T]
-     */
-    @OptIn(ExperimentalStdlibApi::class)
-    @Provide inline fun <reified T> typeKey() = TypeKey<T>(typeOf<T>())
-  }
-}
+@JvmInline value class TypeKey<out T>(val type: KType)
 
 /**
  * Returns the [TypeKey] of [T]
  */
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T> typeKeyOf(@Inject x: TypeKey<T>): TypeKey<T> = x
+@OptIn(ExperimentalStdlibApi::class)
+@Provide inline fun <reified T> typeKeyOf(): TypeKey<T> = TypeKey(typeOf<T>())

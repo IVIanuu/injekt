@@ -18,27 +18,6 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     moduleDescriptor: ModuleDescriptor,
   ) {
     val ctx = Context(moduleDescriptor, null)
-
-    val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
-      StorageComponentContainer::class,
-      "componentStorage"
-    )
-      .readPrivateFinalField<Set<Any>>(
-        ComponentStorage::class,
-        "descriptors"
-      )
-      .let { descriptors ->
-        descriptors.any {
-          it is SingletonTypeComponentDescriptor &&
-              it.klass == JavaSyntheticScopes::class.java
-        }
-      }
-
-    if (!hasSyntheticScopesExtension) {
-      container.useInstance(ctx)
-      container.useImpl<InjectSyntheticScopes>()
-    }
-
     container.useInstance(InjectableChecker(ctx))
     container.useInstance(ProviderImportsChecker(ctx))
     if (!isIde)

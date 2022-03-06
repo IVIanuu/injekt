@@ -78,7 +78,7 @@ class ResolutionTest {
   @Test fun testPrefersClassInjectableOverInternalInjectable() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
       }
   
@@ -96,7 +96,7 @@ class ResolutionTest {
 
   @Test fun testPrefersClassInjectableOverClassCompanionInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
         companion object {
           @Provide lateinit var companionFoo: Foo
@@ -137,8 +137,8 @@ class ResolutionTest {
 
   @Test fun testPrefersSubClassInjectableOverSuperClassInjectable() = singleAndMultiCodegen(
     """
-      abstract class MySuperClass(@Provide val superClassFoo: Foo)
-      class MySubClass(@Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
+      abstract class MySuperClass(@property:Provide val superClassFoo: Foo)
+      class MySubClass(@property:Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
         fun finalFoo(): Foo = inject()
       }
     """,
@@ -171,7 +171,7 @@ class ResolutionTest {
 
   @Test fun testPrefersFunctionParameterInjectableOverClassInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve(@Provide functionFoo: Foo) = inject<Foo>()
       }
 
@@ -203,7 +203,7 @@ class ResolutionTest {
 
   @Test fun testPrefersFunctionReceiverInjectableOverClassInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@property:Provide val classFoo: Foo) {
         fun Foo.resolve() = inject<Foo>()
       }
 
@@ -218,16 +218,6 @@ class ResolutionTest {
     val functionFoo = Foo()
     val result = invokeSingleFile(classFoo, functionFoo)
     functionFoo shouldBeSameInstanceAs result
-  }
-
-  @Test fun testPrefersProviderArgument() = codegen(
-    """
-      @Provide fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(Foo) -> Foo>()(foo)
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
@@ -343,13 +333,13 @@ class ResolutionTest {
       interface Ord<in T>
       @Provide object IntOrd : Ord<Int>
       @Provide object NumberOrd : Ord<Number>
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(ord: Ord<T>) = ord
     """,
     """
-      fun invoke() = useOrd<Int>()
+      fun invoke() = useOrd<Int>(inject())
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = IntOrd)")
+    irShouldContain(1, "useOrd<Int>(ord = { // BLOCK\nIntOrd\n})")
   }
 
   @Test fun testPrefersMoreSpecificType4() = singleAndMultiCodegen(
@@ -360,13 +350,13 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
       @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
       @Provide fun <T : Int> intOrd(): Ord<T> = TODO()
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(ord: Ord<T>) = ord
     """,
     """
-      fun invoke() = useOrd<Int>()
+      fun invoke() = useOrd<Int>(inject())
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = intOrd<Int>())")
+    irShouldContain(1, "useOrd<Int>(ord = { // BLOCK\nIntOrd\n})")
   }
 
   @Test fun testPrefersMoreSpecificType5() = singleAndMultiCodegen(
@@ -377,13 +367,13 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
       @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
       @Provide fun <T : Int> intOrd(long: Long): Ord<T> = TODO()
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(ord: Ord<T>) = ord
     """,
     """
-      fun invoke() = useOrd<Int>()
+      fun invoke() = useOrd<Int>(inject())
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = numberOrd<Int>())")
+    irShouldContain(1, "useOrd<Int>(ord = { // BLOCK\nnumberOrd<Int>()\n})")
   }
 
   @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
@@ -443,8 +433,8 @@ class ResolutionTest {
       @Provide fun foo2() = Foo()
 
       fun invoke(): Foo {
-        fun inner(@Inject foo: Foo = Foo()) = foo
-        return inner()
+        fun inner(foo: Foo = Foo()) = foo
+        return inner(inject())
       }
     """
   ) {
@@ -452,7 +442,7 @@ class ResolutionTest {
       "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo1\n" +
           "com.ivianuu.injekt.integrationtests.foo2\n\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
+          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject."
     )
   }
 
@@ -463,8 +453,8 @@ class ResolutionTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
 
       fun invoke(foo: Foo): Bar {
-        fun inner(@Inject bar: Bar = Bar(foo)) = bar
-        return inner()
+        fun inner(bar: Bar = Bar(foo)) = bar
+        return inner(inject())
       }
     """
   ) {
@@ -767,7 +757,7 @@ class ResolutionTest {
         }
       }
   
-      @Provide class Context1<A>(@Provide val a: A)
+      @Provide class Context1<A>(@property:Provide val a: A)
     """,
     """
       fun invoke() = inject<MyDep>()
@@ -798,7 +788,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject foo1: Foo, @Inject foo2: Foo) = inject<Foo>()
+      fun createFoo(@Provide foo1: Foo, @Provide foo2: Foo) = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("ambiguous injectables")
@@ -810,7 +800,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject module: FooModule, @Inject foo: Foo) = inject<Foo>()
+      fun createFoo(@Provide module: FooModule, @Provide foo: Foo) = inject<Foo>()
     """,
     """
       fun invoke(foo: Foo) = createFoo(FooModule(), foo)

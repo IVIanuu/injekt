@@ -37,7 +37,7 @@ class ProviderTest {
   @Test fun testProviderModule() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
-      class FooModule(@Provide val foo: Foo)
+      class FooModule(@property:Provide val foo: Foo)
     """,
     """
       fun invoke() = inject<(FooModule) -> Bar>()(FooModule(Foo()))

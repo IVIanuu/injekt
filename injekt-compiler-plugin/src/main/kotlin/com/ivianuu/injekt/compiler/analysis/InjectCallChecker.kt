@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.typeUtil.*
 
@@ -39,50 +40,30 @@ class InjectCallChecker(private val ctx: Context) : KtTreeVisitorVoid() {
     if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+    if (resultingDescriptor.fqNameSafe != InjektFqNames.inject)
+      return
 
     val callExpression = resolvedCall.call.callElement
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = buildMap<TypeConstructor, TypeProjection> {
-      for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.typeConstructor] = argument.asTypeProjection()
+    val callee = resultingDescriptor.toCallableRef(ctx)
 
-      for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.typeConstructor] = argument.asTypeProjection()
+    val requestedType = resolvedCall.typeArguments.values.single()
 
-      fun KotlinType.putAll() {
-        for ((index, parameter) in constructor.parameters.withIndex()) {
-          val argument = arguments[index]
-          if (argument.type.constructor.declarationDescriptor != parameter)
-            this@buildMap[parameter.typeConstructor] = arguments[index]
-        }
-      }
-
-      resolvedCall.dispatchReceiver?.type?.putAll()
-      resolvedCall.extensionReceiver?.type?.putAll()
-    }
-
-    val callee = resultingDescriptor
-      .toCallableRef(ctx)
-      .substitute(TypeSubstitutor.create(substitutionMap))
-
-    val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
-
-    val requests = callee.callable.valueParameters
-      .transform {
-        if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject(ctx))
-          add(it.toInjectableRequest(callee))
-      }
-
-    if (requests.isEmpty()) return
+    val request = InjectableRequest(
+      type = requestedType,
+      callableFqName = callee.callable.fqNameSafe,
+      resolvedCall.typeArguments
+        .mapValues { it.value.asTypeProjection() },
+      parameterName = "x".asNameId(),
+      parameterIndex = 0
+    )
 
     val scope = ElementInjectablesScope(ctx, callExpression)
     val graph = scope.resolveRequests(
       callee,
-      requests,
+      listOf(request),
       callExpression.lookupLocation
     ) { _, result ->
       if (result is ResolutionResult.Success.WithCandidate.Value &&

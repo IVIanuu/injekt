@@ -66,69 +66,6 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("interface cannot be injectable")
   }
 
-  @Test fun testInjectValueParameterOnProvideFunction() = codegen(
-    """
-      @Provide fun bar(@Inject foo: Foo) = Bar(foo)
-    """
-  ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
-  }
-
-  @Test fun testInjectValueParameterOnProvideClass() = codegen(
-    """
-      @Provide class MyBar(@Inject foo: Foo)
-    """
-  ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
-  }
-
-  @Test fun testProvideValueParameterOnProvideFunction() = codegen(
-    """
-      @Provide fun bar(@Provide foo: Foo) = Bar(foo)
-    """
-  ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically provided")
-  }
-
-  @Test fun testProvideValueParameterPropertyOnProvideClass() = codegen(
-    """
-      @Provide class Dep(@Provide val foo: Foo)
-    """
-  )
-
-  @Test fun testOverrideProvideValueParameterPropertyOnProvideClass() = codegen(
-    """
-      abstract class AbstractDep {
-        @Provide abstract val foo: Foo
-      }
-      @Provide class Dep(@Provide override val foo: Foo) : AbstractDep()
-    """
-  )
-
-  @Test fun testProvideValueParameterOnProvideClass() = codegen(
-    """
-      @Provide class MyBar(@Provide foo: Foo)
-    """
-  ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically provided")
-  }
-
-  @Test fun testInjectReceiverOnFunction() = codegen(
-    """
-      fun @receiver:Inject Foo.bar() = Bar(this)
-    """
-  ) {
-    compilationShouldHaveFailed("receiver cannot be injected")
-  }
-
-  @Test fun testProvideReceiverOnProperty() = codegen(
-    """
-      val @receiver:Provide Foo.bar get() = Bar(this)
-    """
-  ) {
-    compilationShouldHaveFailed("receiver is automatically provided")
-  }
-
   @Test fun testProvideLocalVariableWithoutInitializer() = codegen(
     """
       fun invoke() {

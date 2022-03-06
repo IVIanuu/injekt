@@ -358,7 +358,7 @@ class ImportsTest {
             interface FooHolder {
               val foo: Foo
             }
-            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+            fun FooHolder(foo: Foo) = object : FooHolder {
               override val foo: Foo = foo
             }
           """,
@@ -369,7 +369,7 @@ class ImportsTest {
         invokableSource(
           """
             @Providers("injectables.*")
-            class MyClass : injectables.FooHolder by injectables.FooHolder()
+            class MyClass : injectables.FooHolder by injectables.FooHolder(inject())
             fun invoke() = MyClass().foo
           """
         )
@@ -388,7 +388,7 @@ class ImportsTest {
             interface FooHolder {
               val foo: Foo
             }
-            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+            fun FooHolder(foo: Foo) = object : FooHolder {
               override val foo: Foo = foo
             }
           """,
@@ -399,7 +399,7 @@ class ImportsTest {
         invokableSource(
           """
             @Providers("injectables.*")
-            object MyObject : injectables.FooHolder by injectables.FooHolder()
+            object MyObject : injectables.FooHolder by injectables.FooHolder(inject())
             fun invoke() = MyObject.foo
           """
         )
@@ -418,7 +418,7 @@ class ImportsTest {
             interface FooHolder {
               val foo: Foo
             }
-            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+            fun FooHolder(foo: Foo) = object : FooHolder {
               override val foo: Foo = foo
             }
           """,
@@ -428,7 +428,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            class MyClass @Providers("injectables.*") constructor() : injectables.FooHolder by injectables.FooHolder()
+            class MyClass @Providers("injectables.*") constructor() : injectables.FooHolder by injectables.FooHolder(inject())
             fun invoke() = MyClass().foo
           """
         )

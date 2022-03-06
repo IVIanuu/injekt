@@ -75,7 +75,7 @@ class DuplicatesTest {
       
         @Provide fun unit() = Unit
       
-        @Provide fun unitElement(unit: Unit) = Element<MyScope, Unit>(unit)
+        @Provide fun unitElement(unit: Unit) = Element<MyScope, Unit>(unit, typeKeyOf())
       
         return inject<List<Element<*, *>>>()
       }
