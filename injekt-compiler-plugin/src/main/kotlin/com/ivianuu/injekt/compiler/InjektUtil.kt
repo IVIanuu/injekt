@@ -127,11 +127,11 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               .fullyAbbreviatedType
               .uniqueTypeKey()
           }
-      }"
+      }:${original.returnType.render()}"
       is ClassDescriptor -> "class:$fqNameSafe"
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-      }}"
+      }}:${original.returnType?.render()}"
       is FunctionDescriptor -> "function:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -160,7 +160,9 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
                     .uniqueTypeKey()
                 )
               }
-            }
+            } +
+          ":" +
+          original.returnType?.render().orEmpty()
       is PropertyDescriptor -> "property:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -181,13 +183,15 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               it.type
                 .fullyAbbreviatedType
                 .uniqueTypeKey()
-            }
+            } +
+          ":" +
+          original.returnType?.render().orEmpty()
       is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
-      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe"
-      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe"
-      is VariableDescriptor -> "variable:${fqNameSafe}"
+      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.render()}"
+      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.render()}"
+      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.render()}"
       else -> error("Unexpected declaration $this")
     }
   }
