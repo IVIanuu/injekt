@@ -97,7 +97,7 @@ sealed interface ResolutionResult {
 
       data class DivergentInjectable(override val candidate: Injectable) : WithCandidate {
         override val failureOrdering: Int
-          get() = 1
+          get() = 2
       }
 
       data class ReifiedTypeArgumentMismatch(
@@ -132,7 +132,7 @@ sealed interface ResolutionResult {
       val request: InjectableRequest
     ) : Failure {
       override val failureOrdering: Int
-        get() = 2
+        get() = 3
     }
   }
 }
