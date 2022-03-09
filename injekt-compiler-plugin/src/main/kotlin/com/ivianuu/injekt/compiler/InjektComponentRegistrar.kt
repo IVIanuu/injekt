@@ -26,8 +26,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration,
   ) {
-    if (configuration.isKaptCompilation()) return
-
     if (configuration.get(SrcDirKey) != null)
       project.registerCodegenExtensions(configuration)
 
@@ -91,16 +89,6 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
   @Suppress("DEPRECATION")
   Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
     .registerExtension(InjektDiagnosticSuppressor(), this)
-}
-
-private fun CompilerConfiguration.isKaptCompilation(): Boolean {
-  val outputDir = this[JVMConfigurationKeys.OUTPUT_DIRECTORY]
-  val kaptOutputDirs = listOf(
-    listOf("tmp", "kapt3", "stubs"),
-    listOf("tmp", "kapt3", "incrementalData"),
-    listOf("tmp", "kapt3", "incApCache")
-  ).map { File(it.joinToString(File.separator)) }
-  return kaptOutputDirs.any { outputDir?.parentFile?.endsWith(it) == true }
 }
 
 fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
