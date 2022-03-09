@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.synthetic.*
-import java.io.*
 
 class InjektComponentRegistrar : ComponentRegistrar {
   override fun registerProjectComponents(

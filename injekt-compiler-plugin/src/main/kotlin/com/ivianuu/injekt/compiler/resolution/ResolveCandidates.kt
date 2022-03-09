@@ -27,8 +27,7 @@ sealed interface InjectionGraph {
     override val scope: InjectablesScope,
     override val callee: CallableRef,
     val failureRequest: InjectableRequest,
-    val failure: ResolutionResult.Failure,
-    val importSuggestions: List<CallableRef>
+    val failure: ResolutionResult.Failure
   ) : InjectionGraph
 }
 
@@ -168,20 +167,12 @@ fun InjectablesScope.resolveRequests(
     successes,
     usages
   ).also { it.postProcess(onEachResult, usages) }
-  else {
-    val unwrappedFailure = failure.unwrapDependencyFailure()
-    val importSuggestions = if (unwrappedFailure is ResolutionResult.Failure.NoCandidates &&
-       !unwrappedFailure.request.type.hasErrors)
-         unwrappedFailure.scope.computeImportSuggestions(unwrappedFailure.request, lookupLocation)
-    else emptyList()
-    InjectionGraph.Error(
-      this,
-      callee,
-      failureRequest!!,
-      failure,
-      importSuggestions
-    )
-  }
+  else InjectionGraph.Error(
+    this,
+    callee,
+    failureRequest!!,
+    failure
+  )
 }
 
 private fun InjectablesScope.resolveRequest(
@@ -596,60 +587,6 @@ fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) 
 
   for ((request, result) in results)
     result.visitRecursive(request, action)
-}
-
-private fun InjectablesScope.computeImportSuggestions(
-  failureRequest: InjectableRequest,
-  lookupLocation: LookupLocation
-): List<CallableRef> {
-  val candidates = collectImportSuggestionInjectables(ctx)
-    .filter {
-      it.type.buildContext(failureRequest.type, allStaticTypeParameters, ctx = ctx).isOk
-    }
-    .sortedWith { a, b -> compareCallable(a, b, true) }
-
-  val successes = mutableListOf<ResolutionResult.Success>()
-  val remaining = candidates.toCollection(LinkedList())
-  while (remaining.isNotEmpty()) {
-    if (successes.size >= 10) break
-
-    val candidate = remaining.removeFirst()
-    val scope = ImportSuggestionInjectablesScope(this, candidate, ctx)
-
-    if (compareCallable(
-        successes.firstOrNull()
-          ?.safeAs<ResolutionResult.Success.WithCandidate>()
-          ?.candidate?.safeAs<CallableInjectable>()?.callable,
-        candidate,
-        true
-      ) < 0
-    ) {
-      // we cannot get a better result
-      break
-    }
-
-    val candidateResult = scope.resolveRequest(failureRequest, lookupLocation, false)
-    if (candidateResult is ResolutionResult.Success) {
-      val firstSuccessResult = successes.firstOrNull()
-      when (compareResult(candidateResult, firstSuccessResult)) {
-        -1 -> {
-          successes.clear()
-          successes += candidateResult
-        }
-        0 -> successes += candidateResult
-      }
-    }
-  }
-
-  return successes
-    .mapNotNull {
-      it.cast<ResolutionResult.Success.WithCandidate.Value>()
-        .candidate.safeAs<CallableInjectable>()
-        ?.callable
-    }
-    .takeIf { it.isNotEmpty() }
-    ?: candidates
-      .take(10)
 }
 
 private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult.Failure =

@@ -6,11 +6,8 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import java.util.*
 
 interface InjektErrors {
   companion object {
@@ -354,24 +351,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
       }
     }.let { }
   }
-
-  if (importSuggestions.isNotEmpty()) {
-    appendLine()
-    appendLine(
-      if (importSuggestions.size == 1)
-        "The following import might fix the problem:"
-      else
-        "One of the following imports might fix the problem:"
-    )
-    appendLine()
-    importSuggestions.forEach {
-      val importableFqName = if (it.callable is ConstructorDescriptor)
-        it.callable.constructedClass.fqNameSafe
-      else
-        it.callable.fqNameSafe
-      appendLine("  @Providers(\"$importableFqName\")")
-    }
-  } else Unit
 }
 
 private fun ResolutionResult.Failure.unwrapDependencyFailure(

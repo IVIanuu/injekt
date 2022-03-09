@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.smartcasts.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.resolve.lazy.*
 import java.io.*
@@ -192,7 +191,6 @@ class InjektDeclarationGeneratorExtension(
     return buildList {
       this += injectablesFile(file, markerName, injectables, ctx)
       subInjectableFiles(file, markerName, injectables, ctx)
-      this += indicesFile(file, markerName, injectables)
     }
   }
 
@@ -304,51 +302,6 @@ class InjektDeclarationGeneratorExtension(
       subInjectablesFile.writeText(injectablesCode)
       this += subInjectablesFile
     }
-  }
-
-  private fun indicesFile(
-    file: KtFile,
-    markerName: String,
-    injectables: List<DeclarationDescriptor>
-  ): File {
-    val indicesCode = buildString {
-      appendLine("@file:Suppress(\"INVISIBLE_REFERENCE\", \"INVISIBLE_MEMBER\", \"unused\", \"UNUSED_PARAMETER\")")
-      appendLine()
-
-      appendLine("package ${InjektFqNames.IndicesPackage}")
-      appendLine()
-
-      appendLine("import ${InjektFqNames.Index}")
-
-      appendLine()
-
-      for ((i, injectable) in injectables.withIndex()) {
-        append("@Index(fqName = ")
-        appendLine("\"${
-          if (injectable is KtConstructor<*>) injectable.getContainingClassOrObject().fqName!!
-          else injectable.fqNameSafe
-        }\")")
-        appendLine("fun index(")
-        appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
-        repeat(i + 1) {
-          appendLine("  index$it: Byte,")
-        }
-        appendLine(") {")
-        appendLine("}")
-        appendLine()
-      }
-    }
-
-    val indicesFile = srcDir.resolve(
-      "${InjektFqNames.IndicesPackage.pathSegments().joinToString("/")}/" +
-          (if (file.packageFqName.isRoot) "" else file.packageFqName.pathSegments().joinToString("_").plus("_")) +
-          "${file.name.removeSuffix(".kt")}Indices.kt"
-    )
-    indicesFile.parentFile.mkdirs()
-    indicesFile.createNewFile()
-    indicesFile.writeText(indicesCode)
-
-    return indicesFile
   }
 
   private fun resolveDeclaration(

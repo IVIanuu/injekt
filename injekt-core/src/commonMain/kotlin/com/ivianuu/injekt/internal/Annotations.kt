@@ -4,8 +4,6 @@
 
 package com.ivianuu.injekt.internal
 
-internal annotation class Index(val fqName: String)
-
 internal annotation class CallableInfo(val values: Array<String>)
 
 internal annotation class ClassifierInfo(val values: Array<String>)

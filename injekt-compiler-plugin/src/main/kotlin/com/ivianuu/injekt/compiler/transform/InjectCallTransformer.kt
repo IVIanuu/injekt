@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
@@ -567,7 +566,7 @@ class InjectCallTransformer(
       }
   }
 
-  private fun ScopeContext.receiverExpression(
+  private fun receiverExpression(
     descriptor: ParameterDescriptor
   ) = receiverAccessors.last {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor

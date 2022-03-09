@@ -297,24 +297,6 @@ fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor 
     classifier
   }
 
-fun injectablesForFqName(
-  fqName: FqName,
-  ctx: Context
-): List<CallableRef> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.first
-    ?.getContributedDescriptors(nameFilter = { it == fqName.shortName() })
-    ?.transform { declaration ->
-      when (declaration) {
-        is ClassDescriptor -> addAll(declaration.injectableConstructors(ctx))
-        is CallableDescriptor -> {
-          if (declaration.isProvide(ctx))
-            this += declaration.toCallableRef(ctx)
-        }
-      }
-    }
-    ?: emptyList()
-
 private fun functionDescriptorsForFqName(
   fqName: FqName,
   ctx: Context

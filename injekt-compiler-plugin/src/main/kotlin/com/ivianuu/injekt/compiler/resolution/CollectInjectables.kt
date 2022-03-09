@@ -484,25 +484,3 @@ fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, ctx: Context)
 
   return filter { existingInjectables.add(InjectablesScope.InjectableKey(it, ctx)) }
 }
-
-fun InjectablesScope.collectImportSuggestionInjectables(ctx: Context): List<CallableRef> =
-  collectAllInjectables(ctx).filterNotExistingIn(this, ctx)
-
-fun collectAllInjectables(ctx: Context): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.ALL_INJECTABLES, Unit) {
-    memberScopeForFqName(InjektFqNames.IndicesPackage, NoLookupLocation.FROM_BACKEND, ctx)
-      ?.first
-      ?.getContributedFunctions("index".asNameId(), NoLookupLocation.FROM_BACKEND)
-      ?.transform {
-        val annotation = it.annotations.findAnnotation(InjektFqNames.Index)
-          ?: return@transform
-        val fqName = FqName(annotation.allValueArguments["fqName".asNameId()]!!.value.toString())
-        for (injectable in injectablesForFqName(fqName, ctx)) {
-          val dispatchReceiverType = injectable.parameterTypes[DISPATCH_RECEIVER_INDEX]
-          if (dispatchReceiverType == null ||
-              dispatchReceiverType.classifier.isObject)
-                add(injectable)
-        }
-      }
-      ?: emptyList()
-  }
