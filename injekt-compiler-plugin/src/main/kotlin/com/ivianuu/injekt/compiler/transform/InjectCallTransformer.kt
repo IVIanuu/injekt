@@ -270,35 +270,31 @@ class InjectCallTransformer(
       injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
       parameterNameProvider = { "p${graphContext.variableIndex++}" }
     ) { function ->
-      when (val dependencyResult = result.dependencyResults.values.single()) {
-        is ResolutionResult.Success.DefaultValue -> return@irLambda irNull()
-        is ResolutionResult.Success.WithCandidate -> {
-          val dependencyScope = injectable.dependencyScopes.values.single()
-          val dependencyScopeContext = if (dependencyScope == this@providerExpression.scope) null
-          else ScopeContext(
-            this@providerExpression, graphContext,
-            dependencyScope, scope
-          )
+      val dependencyResult = result.dependencyResults.values.single()
+      val dependencyScope = injectable.dependencyScopes.values.single()
+      val dependencyScopeContext = if (dependencyScope == this@providerExpression.scope) null
+      else ScopeContext(
+        this@providerExpression, graphContext,
+        dependencyScope, scope
+      )
 
-          fun ScopeContext.createExpression(): IrExpression {
-            for ((index, a) in injectable.parameterDescriptors.withIndex())
-              parameterMap[a] = function.valueParameters[index]
-            return expressionFor(dependencyResult)
-              .also {
-                injectable.parameterDescriptors.forEach {
-                  parameterMap -= it
-                }
-              }
+      fun ScopeContext.createExpression(): IrExpression {
+        for ((index, a) in injectable.parameterDescriptors.withIndex())
+          parameterMap[a] = function.valueParameters[index]
+        return expressionFor(dependencyResult.cast())
+          .also {
+            injectable.parameterDescriptors.forEach {
+              parameterMap -= it
+            }
           }
+      }
 
-          val expression = dependencyScopeContext?.run { createExpression() } ?: createExpression()
+      val expression = dependencyScopeContext?.run { createExpression() } ?: createExpression()
 
-          if (dependencyScopeContext == null || dependencyScopeContext.statements.isEmpty()) expression
-          else irBlock {
-            dependencyScopeContext.statements.forEach { +it }
-            +expression
-          }
-        }
+      if (dependencyScopeContext == null || dependencyScopeContext.statements.isEmpty()) expression
+      else irBlock {
+        dependencyScopeContext.statements.forEach { +it }
+        +expression
       }
     }
 
