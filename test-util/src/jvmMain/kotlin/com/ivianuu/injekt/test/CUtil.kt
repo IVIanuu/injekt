@@ -7,8 +7,6 @@
 package com.ivianuu.injekt.test
 
 import androidx.compose.compiler.plugins.kotlin.*
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.transform.*
 import com.tschuchort.compiletesting.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
@@ -254,18 +252,8 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   block()
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",
-    "rootPackage",
-    "com.ivianuu.injekt"
-  )
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
     "dumpDir",
     workingDir.resolve("injekt/dump").absolutePath
-  )
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
-    "infoDir",
-    workingDir.resolve("injekt/info").absolutePath
   )
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",

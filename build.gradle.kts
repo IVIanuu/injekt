@@ -48,8 +48,6 @@ allprojects {
     project.name == "injekt-gradle-plugin")
     return@allprojects
 
-  project.extensions.add("injekt", InjektExtension())
-
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
