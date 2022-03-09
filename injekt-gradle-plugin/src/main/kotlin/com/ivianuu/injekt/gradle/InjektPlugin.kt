@@ -140,7 +140,7 @@ interface InjektTask : Task {
 
   @get:OutputDirectory var outputDir: File
 
-  @get:LocalState var cacheDir: File
+  @get:Internal var cacheDir: File
 
   fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,

@@ -337,16 +337,10 @@ class InjektDeclarationGeneratorExtension(
       }
     }
 
-    val injectablesKeyHash = injectables
-      .joinToString { it.hash() }
-      .hashCode()
-      .toString()
-      .filter { it.isLetterOrDigit() }
-
     val indicesFile = srcDir.resolve(
       "${InjektFqNames.IndicesPackage.pathSegments().joinToString("/")}/" +
           (if (file.packageFqName.isRoot) "" else file.packageFqName.pathSegments().joinToString("_").plus("_")) +
-          "${file.name.removeSuffix(".kt")}Indices_${injectablesKeyHash}.kt"
+          "${file.name.removeSuffix(".kt")}Indices.kt"
     )
     indicesFile.parentFile.mkdirs()
     indicesFile.createNewFile()
