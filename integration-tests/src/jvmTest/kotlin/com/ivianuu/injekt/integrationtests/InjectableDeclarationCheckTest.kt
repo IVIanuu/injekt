@@ -5,6 +5,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
+import io.kotest.matchers.types.*
 import org.junit.*
 
 class InjectableDeclarationCheckTest {
