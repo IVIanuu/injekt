@@ -9,11 +9,13 @@ import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
+import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
@@ -199,7 +201,11 @@ fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   }
 
 fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableRef {
-  val callable = thisAsReceiverParameter.toCallableRef(ctx)
+  val callable = ReceiverParameterDescriptorImpl(
+    this,
+    ImplicitClassReceiver(this),
+    Annotations.EMPTY
+  ).toCallableRef(ctx)
   return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
   else {
     val taggedType = callable.type.classifier.tags.wrap(callable.type)
