@@ -7,9 +7,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*

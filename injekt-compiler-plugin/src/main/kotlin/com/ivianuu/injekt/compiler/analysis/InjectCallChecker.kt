@@ -88,7 +88,7 @@ class InjectCallChecker(
 
     val callee = resultingDescriptor
       .toCallableRef(ctx!!)
-      .substitute(substitutionMap, ctx!!)
+      .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }

@@ -75,7 +75,7 @@ class ProviderInjectable(
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable {
-  override val callableFqName: FqName = when (type.callContext(ownerScope.ctx)) {
+  override val callableFqName: FqName = when (type.callContext) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")

@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.name.*
 import java.io.*
 
 class InjektCommandLineProcessor : CommandLineProcessor {

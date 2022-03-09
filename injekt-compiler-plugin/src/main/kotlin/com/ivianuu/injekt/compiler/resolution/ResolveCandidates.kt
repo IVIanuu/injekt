@@ -36,20 +36,20 @@ sealed interface ResolutionResult {
   sealed interface Success : ResolutionResult {
     object DefaultValue : Success
 
-    sealed interface WithCandidate : ResolutionResult.Success {
+    sealed interface WithCandidate : Success {
       val candidate: Injectable
       val scope: InjectablesScope
 
       data class CircularDependency(
         override val candidate: Injectable,
         override val scope: InjectablesScope
-      ) : Success.WithCandidate
+      ) : WithCandidate
 
       data class Value(
         override val candidate: Injectable,
         override val scope: InjectablesScope,
         val dependencyResults: Map<InjectableRequest, Success>
-      ) : Success.WithCandidate {
+      ) : WithCandidate {
         val highestScope: InjectablesScope = run {
           val anchorScopes = mutableSetOf<InjectablesScope>()
 
