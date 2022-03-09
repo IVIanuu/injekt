@@ -289,34 +289,27 @@ class InjectablesScope(
   }
 
   private fun frameworkListElementsForType(singleElementType: TypeRef): List<TypeRef> =
-    when {
-      singleElementType.isFunctionType -> {
-        val providerReturnType = singleElementType.arguments.last()
-        val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
+    if (!singleElementType.isFunctionType) emptyList()
+    else {
+      val providerReturnType = singleElementType.arguments.last()
+      val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
 
-        buildList {
-          fun TypeRef.add() {
-            this@buildList += singleElementType.copy(
-              arguments = singleElementType.arguments
-                .dropLast(1) + this
-            )
-          }
-
-          for (candidate in listElementsForType(
-            providerReturnType, ctx.collectionClassifier
-              .defaultType.withArguments(listOf(providerReturnType)), innerKey).values)
-            candidate.type.add()
-
-          for (candidateType in frameworkListElementsForType(providerReturnType))
-            candidateType.add()
+      buildList {
+        fun TypeRef.add() {
+          this@buildList += singleElementType.copy(
+            arguments = singleElementType.arguments
+              .dropLast(1) + this
+          )
         }
+
+        for (candidate in listElementsForType(
+          providerReturnType, ctx.collectionClassifier
+            .defaultType.withArguments(listOf(providerReturnType)), innerKey).values)
+          candidate.type.add()
+
+        for (candidateType in frameworkListElementsForType(providerReturnType))
+          candidateType.add()
       }
-      singleElementType.classifier.fqName == InjektFqNames.SourceKey -> listOf(
-        ctx.sourceKeyClassifier!!.defaultType
-          .copy(frameworkKey = UUID.randomUUID().toString())
-      )
-      singleElementType.classifier.fqName == InjektFqNames.TypeKey -> listOf(singleElementType)
-      else -> emptyList()
     }
 
   private fun spreadInjectables(candidateType: TypeRef) {
