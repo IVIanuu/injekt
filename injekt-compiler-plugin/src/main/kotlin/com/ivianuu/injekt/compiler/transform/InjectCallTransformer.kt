@@ -311,85 +311,40 @@ class InjectCallTransformer(
     .owner
     .functions
     .single { it.name.asString() == "addAll" && it.valueParameters.size == 1 }
-  private val listOf = irCtx.referenceFunctions(
-    FqName("kotlin.collections.listOf")
-  ).single { it.owner.valueParameters.singleOrNull()?.isVararg == false }
-  private val iterableToList = irCtx.referenceFunctions(
-    FqName("kotlin.collections.toList")
-  ).single {
-    it.owner.extensionReceiverParameter?.type?.classifierOrNull ==
-        irCtx.irBuiltIns.iterableClass
-  }
 
   private fun ScopeContext.listExpression(
     result: ResolutionResult.Success.WithCandidate.Value,
     injectable: ListInjectable
-  ): IrExpression = when (injectable.dependencies.size) {
-    1 -> {
-      val singleDependency = result.dependencyResults.values.single()
-        .cast<ResolutionResult.Success.WithCandidate.Value>()
-      when {
-        singleDependency.candidate.type.isSubTypeOf(injectable.type, ctx) ->
-          expressionFor(result.dependencyResults.values.single().cast())
-        singleDependency.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx) -> {
-          DeclarationIrBuilder(irCtx, symbol)
-            .irCall(iterableToList)
-            .apply {
-              extensionReceiver =
-                expressionFor(result.dependencyResults.values.single().cast())
-              putTypeArgument(
-                0,
-                injectable.singleElementType.toIrType(irCtx, localDeclarations, ctx).typeOrNull
-              )
-            }
+  ): IrExpression = DeclarationIrBuilder(irCtx, symbol).irBlock {
+    val tmpSet = irTemporary(
+      irCall(mutableListOf)
+        .apply {
+          putTypeArgument(
+            0,
+            injectable.singleElementType.toIrType(irCtx, localDeclarations, ctx).typeOrNull
+          )
+        },
+      nameHint = "${graphContext.variableIndex++}"
+    )
+
+    result.dependencyResults
+      .forEach { (_, dependency) ->
+        if (dependency !is ResolutionResult.Success.WithCandidate.Value)
+          return@forEach
+        if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx)) {
+          +irCall(listAddAll).apply {
+            dispatchReceiver = irGet(tmpSet)
+            putValueArgument(0, expressionFor(dependency))
+          }
+        } else {
+          +irCall(listAdd).apply {
+            dispatchReceiver = irGet(tmpSet)
+            putValueArgument(0, expressionFor(dependency))
+          }
         }
-        else -> DeclarationIrBuilder(irCtx, symbol)
-          .irCall(listOf)
-          .apply {
-            putTypeArgument(
-              0,
-              injectable.singleElementType.toIrType(irCtx, localDeclarations, ctx).typeOrNull
-            )
-            putValueArgument(
-              0,
-              expressionFor(result.dependencyResults.values.single().cast())
-            )
-          }
       }
-    }
-    else -> {
-      DeclarationIrBuilder(irCtx, symbol).irBlock {
-        val tmpSet = irTemporary(
-          irCall(mutableListOf)
-            .apply {
-              putTypeArgument(
-                0,
-                injectable.singleElementType.toIrType(irCtx, localDeclarations, ctx).typeOrNull
-              )
-            },
-          nameHint = "${graphContext.variableIndex++}"
-        )
 
-        result.dependencyResults
-          .forEach { (_, dependency) ->
-            if (dependency !is ResolutionResult.Success.WithCandidate.Value)
-              return@forEach
-            if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx)) {
-              +irCall(listAddAll).apply {
-                dispatchReceiver = irGet(tmpSet)
-                putValueArgument(0, expressionFor(dependency))
-              }
-            } else {
-              +irCall(listAdd).apply {
-                dispatchReceiver = irGet(tmpSet)
-                putValueArgument(0, expressionFor(dependency))
-              }
-            }
-          }
-
-        +irGet(tmpSet)
-      }
-    }
+    +irGet(tmpSet)
   }
 
   private val sourceKeyConstructor = irCtx.referenceClass(InjektFqNames.SourceKey)
