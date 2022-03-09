@@ -236,18 +236,8 @@ class InjectCallTransformer(
         returnType = result.candidate.type.toIrType(irCtx, localDeclarations, ctx)
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
-        isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
         parent = irScope.getLocalDeclarationParent()
-
-        if (result.candidate.callContext == CallContext.COMPOSABLE) {
-          annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
-            .irCallConstructor(
-              irCtx.referenceConstructors(InjektFqNames.Composable)
-                .single(),
-              emptyList()
-            )
-        }
 
         this.body = DeclarationIrBuilder(irCtx, symbol).run {
           irBlockBody {

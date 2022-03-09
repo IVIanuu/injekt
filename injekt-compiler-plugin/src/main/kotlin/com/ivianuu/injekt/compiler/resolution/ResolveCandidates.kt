@@ -71,8 +71,7 @@ sealed interface ResolutionResult {
                   anchorScopes.all {
                     (candidateScope.canSeeInjectablesOf(it) ||
                         candidateScope.canSeeInjectablesOf(scope))
-                  } &&
-                  candidateScope.callContext.canCall(candidate.callContext)
+                  }
             } ?: scope
         }
 
@@ -86,14 +85,6 @@ sealed interface ResolutionResult {
 
     sealed interface WithCandidate : Failure {
       val candidate: Injectable
-
-      data class CallContextMismatch(
-        val actualCallContext: CallContext,
-        override val candidate: Injectable,
-      ) : WithCandidate {
-        override val failureOrdering: Int
-          get() = 1
-      }
 
       data class DivergentInjectable(override val candidate: Injectable) : WithCandidate {
         override val failureOrdering: Int
@@ -359,9 +350,6 @@ private fun InjectablesScope.resolveCandidate(
   candidate: Injectable,
   lookupLocation: LookupLocation
 ): ResolutionResult = computeForCandidate(request, candidate) {
-  if (!callContext.canCall(candidate.callContext))
-    return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
-
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor

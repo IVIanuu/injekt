@@ -462,9 +462,7 @@ val TypeRef.isProvideFunctionType: Boolean
   get() = isProvide && isFunctionType
 
 val TypeRef.isFunctionType: Boolean
-  get() = classifier.fqName.asString().startsWith("kotlin.Function") ||
-      classifier.fqName.asString().startsWith("kotlin.coroutines.SuspendFunction") ||
-      (classifier.fqName == InjektFqNames.Composable && arguments.last().isFunctionType)
+  get() = classifier.fqName.asString().startsWith("kotlin.Function")
 
 fun effectiveVariance(
   declared: TypeVariance,

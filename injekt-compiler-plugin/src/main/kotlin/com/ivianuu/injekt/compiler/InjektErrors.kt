@@ -203,18 +203,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
   appendLine()
 
   when (unwrappedFailure) {
-    is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-      if (failure == unwrappedFailure) {
-        appendLine(
-          "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
-              "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
-              "is a ${unwrappedFailure.candidate.callContext.name.lowercase(Locale.getDefault())} function " +
-              "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}."
-        )
-      } else {
-        appendLine("call context mismatch.")
-      }
-    }
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
@@ -263,16 +251,9 @@ private fun InjectionGraph.Error.render(): String = buildString {
     fun printCall(
       request: InjectableRequest,
       failure: ResolutionResult.Failure,
-      candidate: Injectable?,
-      callContext: CallContext
+      candidate: Injectable?
     ) {
-      if (candidate is ProviderInjectable) {
-        when (candidate.type.callContext) {
-          CallContext.DEFAULT -> {}
-          CallContext.COMPOSABLE -> append("@Composable ")
-          CallContext.SUSPEND -> append("suspend ")
-        }
-      } else {
+      if (candidate !is ProviderInjectable) {
         append("${request.callableFqName}")
 
         if (request.callableTypeArguments.isNotEmpty()) {
@@ -301,10 +282,6 @@ private fun InjectionGraph.Error.render(): String = buildString {
         }
       }
       withIndent {
-        if (candidate is ProviderInjectable &&
-          unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-          appendLine("${indent()}/* ${candidate.dependencyScopes.values.single().callContext.name.lowercase(Locale.getDefault())} call context */")
-        }
         append(indent())
         if (candidate !is ProviderInjectable) {
           append("${request.parameterName} = ")
@@ -312,15 +289,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
         if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
-            failure.candidate,
-            if (candidate is ProviderInjectable) request.type.callContext else callContext
+            failure.candidate
           )
         } else {
           append("/* ")
           when (failure) {
-            is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-              append("${failure.candidate.callContext.name.lowercase(Locale.getDefault())} call:")
-            }
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
               append("${failure.parameter.fqName.shortName()} is reified: ")
             }
@@ -338,11 +311,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          if (failure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-            appendLine("${failure.candidate.callableFqName}()")
-          } else {
-            appendLine("inject<${request.type.renderToString()}>()")
-          }
+          appendLine("inject<${request.type.renderToString()}>()")
         }
       }
       append(indent())
@@ -351,24 +320,16 @@ private fun InjectionGraph.Error.render(): String = buildString {
     }
 
     withIndent {
-      if (unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
-        appendLine("${indent()}/* ${scope.callContext.name.lowercase(Locale.getDefault())} call context */")
-      }
       append(indent())
       printCall(
         failureRequest,
         failure,
-        null,
-        if (failureRequest.type.isFunctionType) failureRequest.type.callContext
-        else scope.callContext
+        null
       )
     }
     appendLine()
 
     when (unwrappedFailure) {
-      is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
-        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}.")
-      }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified.")
       }
