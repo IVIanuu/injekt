@@ -26,15 +26,6 @@ typealias MainContext = @MainContextTag CoroutineContext
   }
 }
 
-typealias ImmediateMainContext = @ImmediateMainContextTag CoroutineContext
-
-@Tag annotation class ImmediateMainContextTag {
-  companion object {
-    @Provide inline val context: @ImmediateMainContextTag CoroutineContext
-      get() = Dispatchers.Main.immediate
-  }
-}
-
 typealias IOContext = @IOContextTag CoroutineContext
 
 @Tag annotation class IOContextTag
