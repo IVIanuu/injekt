@@ -5,7 +5,6 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.*
-import io.kotest.matchers.collections.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 

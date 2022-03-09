@@ -7,30 +7,26 @@
 package com.ivianuu.injekt.gradle
 
 import org.gradle.api.*
-import org.gradle.api.attributes.*
-import org.gradle.api.file.*
 import org.gradle.api.model.*
 import org.gradle.api.provider.*
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.compile.*
-import org.gradle.work.*
 import org.jetbrains.kotlin.cli.common.arguments.*
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.internal.*
-import org.jetbrains.kotlin.gradle.internal.kapt.incremental.*
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.*
 import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.SourceRoots
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 import java.util.concurrent.*
 import javax.inject.*
-import org.jetbrains.kotlin.gradle.tasks.SourceRoots
 
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
