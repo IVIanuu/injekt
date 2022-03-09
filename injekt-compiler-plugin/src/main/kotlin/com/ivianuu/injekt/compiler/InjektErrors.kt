@@ -187,8 +187,6 @@ interface InjektErrors {
 }
 
 private fun InjectionGraph.Error.render(): String = buildString {
-  val ctx = this@render.scope.ctx
-
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++

@@ -57,42 +57,6 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
-fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean = findAnnotation(fqName) != null
-
-fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
-  val annotationEntries = annotationEntries
-  if (annotationEntries.isEmpty()) return null
-
-  // Check if the fully qualified name is used, e.g. `@dagger.Module`.
-  val annotationEntry = annotationEntries.firstOrNull {
-    it.text.startsWith("@${fqName.asString()}")
-  }
-  if (annotationEntry != null) return annotationEntry
-
-  // Check if the simple name is used, e.g. `@Provide`.
-  val annotationEntryShort = annotationEntries
-    .firstOrNull {
-      it.shortName == fqName.shortName()
-    }
-    ?: return null
-
-  val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
-
-  // If the simple name is used, check that the annotation is imported.
-  val hasImport = importPaths.any { it.fqName == fqName }
-  if (hasImport) return annotationEntryShort
-
-  // Look for star imports and make a guess.
-  val hasStarImport = importPaths
-    .any { it.isAllUnder && fqName.asString().startsWith(it.fqName.asString()) }
-  if (hasStarImport) return annotationEntryShort
-
-  val isSamePackage = fqName.parent() == annotationEntryShort.containingKtFile.packageFqName
-  if (isSamePackage) return annotationEntryShort
-
-  return null
-}
-
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
   ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 

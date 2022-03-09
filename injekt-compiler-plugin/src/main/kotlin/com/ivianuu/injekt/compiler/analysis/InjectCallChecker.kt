@@ -96,7 +96,7 @@ class InjectCallChecker(
     val requests = callee.callable.valueParameters
       .transform {
         if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject(ctx!!))
-          add(it.toInjectableRequest(callee, ctx!!))
+          add(it.toInjectableRequest(callee))
       }
 
     if (requests.isEmpty()) return

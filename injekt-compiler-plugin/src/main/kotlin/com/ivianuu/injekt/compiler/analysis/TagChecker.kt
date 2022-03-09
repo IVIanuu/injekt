@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.checkers.*
+import org.jetbrains.kotlin.resolve.source.*
 
 class TagChecker(private val baseCtx: Context) : DeclarationChecker {
   override fun check(
@@ -22,8 +23,8 @@ class TagChecker(private val baseCtx: Context) : DeclarationChecker {
         ctx.trace!!.report(
           InjektErrors.TAG_WITH_VALUE_PARAMETERS
             .on(
-              declaration.findAnnotation(InjektFqNames.Tag)
-                ?: declaration
+              descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+                ?.source?.getPsi() ?: declaration
             )
         )
       }

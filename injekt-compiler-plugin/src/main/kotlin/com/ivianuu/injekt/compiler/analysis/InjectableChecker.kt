@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.checkers.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.multiplatform.*
+import org.jetbrains.kotlin.resolve.source.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
@@ -65,8 +66,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ANNOTATION_CLASS
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -75,8 +76,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ENUM_CLASS
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -97,8 +98,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_INTERFACE
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -120,8 +121,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       ctx.trace!!.report(
         InjektErrors.PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR
           .on(
-            declaration.findAnnotation(InjektFqNames.Provide)
-              ?: declaration
+            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+              ?.source?.getPsi() ?: declaration
           )
       )
     }
@@ -215,11 +216,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
           ctx.trace!!.report(
             InjektErrors.MULTIPLE_SPREADS
               .on(
-                it.findPsi()
-                  ?.safeAs<KtAnnotated>()
-                  ?.findAnnotation(InjektFqNames.Spread)
-                  ?: it.findPsi()
-                  ?: declaration
+                it.annotations.findAnnotation(InjektFqNames.Spread)
+                  ?.source?.getPsi() ?: declaration
               )
           )
         }
@@ -313,10 +311,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
         ctx.trace!!.report(
           InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
             .on(
-              typeParameter.findPsi()
-                ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(InjektFqNames.Spread)
-                ?: typeParameter.findPsi()!!
+              typeParameter.annotations.findAnnotation(InjektFqNames.Spread)
+                ?.source?.getPsi() ?: typeParameter.findPsi()!!
             )
         )
     }
@@ -332,11 +328,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
         ctx.trace!!.report(
           InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
             .on(
-              parameter.findPsi()
-                ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(InjektFqNames.Inject)
-                ?: parameter.findPsi()
-                ?: declaration
+              parameter.annotations.findAnnotation(InjektFqNames.Inject)
+                ?.source?.getPsi() ?: declaration
             )
         )
       }
@@ -346,11 +339,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
         ctx.trace!!.report(
           InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
             .on(
-              parameter.findPsi()
-                ?.safeAs<KtAnnotated>()
-                ?.findAnnotation(InjektFqNames.Provide)
-                ?: parameter.findPsi()
-                ?: declaration
+              parameter.annotations.findAnnotation(InjektFqNames.Provide)
+                ?.source?.getPsi() ?: declaration
             )
         )
       }
