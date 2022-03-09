@@ -19,10 +19,6 @@ class CommonInjectablesTest {
     map["b"] shouldBe "b"
   }
 
-  @Test fun testCanResolveLazy() {
-    inject<Lazy<Foo>>()
-  }
-
   @Test fun testCanResolveKClass() {
     inject<KClass<Foo>>()
   }
