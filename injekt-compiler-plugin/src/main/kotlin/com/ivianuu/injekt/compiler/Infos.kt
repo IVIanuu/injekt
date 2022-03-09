@@ -93,7 +93,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
     val info = CallableInfo(type, parameterTypes)
 
     // important to cache the info before persisting it
-    ctx.trace!!.record(InjektWritableSlices.CALLABLE_INFO, this, info)
+    ctx.trace.record(InjektWritableSlices.CALLABLE_INFO, this, info)
 
     persistInfoIfNeeded(info, ctx)
 
@@ -239,7 +239,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       }
 
       // important to cache the info before persisting it
-      ctx.trace!!.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
+      ctx.trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
 
       persistInfoIfNeeded(info, ctx)
 
