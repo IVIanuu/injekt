@@ -89,30 +89,38 @@ class TypeSubstitutionTest {
   }
 
   @Test fun todoExtractToTypeOnlyTest() = codegen(
-    """
-      interface Key<R>
+    listOf(
+      source(
+        """
+          interface Key<R>
+    
+          interface DialogKey<R> : Key<R>
+    
+          @Tag annotation class KeyUiTag<K : Key<*>>
+          typealias KeyUi<K> = @KeyUiTag<K> @Composable () -> Unit
+    
+          typealias ModelKeyUi<K, S> = (ModelKeyUiScope<K, S>) -> Unit
+          
+          interface ModelKeyUiScope<K : Key<*>, S>
+          
+          @Provide fun <@Spread U : ModelKeyUi<K, S>, K : Key<*>, S> modelKeyUi(): KeyUi<K> = TODO()
+        """
+      ),
+      source(
+        """
+          object DonationKey : DialogKey<Unit>
 
-      interface DialogKey<R> : Key<R>
+          object DonationModel
 
-      @Tag annotation class KeyUiTag<K : Key<*>>
-      typealias KeyUi<K> = @KeyUiTag<K> @Composable () -> Unit
-
-      typealias ModelKeyUi<K, S> = (ModelKeyUiScope<K, S>) -> Unit
-      
-      interface ModelKeyUiScope<K : Key<*>, S>
-      
-      @Provide fun <@Spread U : ModelKeyUi<K, S>, K : Key<*>, S> modelKeyUi(): KeyUi<K> = TODO()
-    """,
-    """
-      object DonationKey : DialogKey<Unit>
-
-      object DonationModel
-
-      @Provide val donationUi: ModelKeyUi<DonationKey, DonationModel> = TODO()
-    """,
-    """
-      fun invoke() = inject<KeyUi<DonationKey>>()
-    """
+          @Provide val donationUi: ModelKeyUi<DonationKey, DonationModel> = TODO()
+        """
+      ),
+      source(
+        """
+          fun invoke() = inject<KeyUi<DonationKey>>()
+        """
+      )
+    )
   )
 
   private fun TypeCheckerTestContext.getSubstitutionMap(
