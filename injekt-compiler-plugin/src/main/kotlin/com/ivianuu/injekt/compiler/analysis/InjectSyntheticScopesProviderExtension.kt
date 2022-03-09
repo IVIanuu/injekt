@@ -17,9 +17,7 @@ import org.jetbrains.kotlin.synthetic.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class InjectSyntheticScopeProviderExtension(
-  private val isEnabled: (ModuleDescriptor) -> Boolean = { true }
-) : SyntheticScopeProviderExtension {
+class InjectSyntheticScopeProviderExtension : SyntheticScopeProviderExtension {
   override fun getScopes(
     moduleDescriptor: ModuleDescriptor,
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
@@ -28,9 +26,7 @@ class InjectSyntheticScopeProviderExtension(
       moduleDescriptor,
       DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
     )
-    return if (isEnabled(moduleDescriptor))
-      listOf(InjectSyntheticScope(ctx))
-    else emptyList()
+    return listOf(InjectSyntheticScope(ctx))
   }
 }
 

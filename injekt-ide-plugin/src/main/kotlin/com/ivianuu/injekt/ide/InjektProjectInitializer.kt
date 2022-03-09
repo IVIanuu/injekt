@@ -19,9 +19,7 @@ class InjektProjectInitializer : ProjectManagerListener {
     )
     SyntheticScopeProviderExtension.registerExtension(
       project,
-      InjectSyntheticScopeProviderExtension {
-        it.isInjektEnabled()
-      }
+      InjectSyntheticScopeProviderExtension()
     )
     @Suppress("DEPRECATION")
     Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
