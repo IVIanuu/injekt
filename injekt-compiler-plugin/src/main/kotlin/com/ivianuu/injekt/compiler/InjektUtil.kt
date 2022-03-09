@@ -127,11 +127,11 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               .fullyAbbreviatedType
               .uniqueTypeKey()
           }
-      }:${original.returnType.render()}"
+      }:${original.returnType}"
       is ClassDescriptor -> "class:$fqNameSafe"
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-      }}:${original.returnType?.render()}"
+      }}:${original.returnType?.toString().orEmpty()}"
       is FunctionDescriptor -> "function:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -162,7 +162,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               }
             } +
           ":" +
-          original.returnType?.render().orEmpty()
+          original.returnType?.toString().orEmpty()
       is PropertyDescriptor -> "property:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -185,13 +185,13 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
                 .uniqueTypeKey()
             } +
           ":" +
-          original.returnType?.render().orEmpty()
+          original.returnType?.toString().orEmpty()
       is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
-      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.render()}"
-      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.render()}"
-      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.render()}"
+      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type}"
+      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type}"
+      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type}"
       else -> error("Unexpected declaration $this")
     }
   }
