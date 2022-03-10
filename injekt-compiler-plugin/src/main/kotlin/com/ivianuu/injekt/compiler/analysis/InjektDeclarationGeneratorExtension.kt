@@ -290,10 +290,16 @@ class InjektDeclarationGeneratorExtension(
         }
       }
 
+      val injectablesKeyHash = injectables
+        .joinToString { it.uniqueKey(ctx) }
+        .hashCode()
+        .toString()
+        .filter { it.isLetterOrDigit() }
+
       val subInjectablesFile = srcDir.resolve(
         (if (!current.isRoot)
           "${current.pathSegments().joinToString("/")}/"
-        else "") + "${file.name.removeSuffix(".kt")}SubInjectables.kt"
+        else "") + "${file.name.removeSuffix(".kt")}SubInjectables_${injectablesKeyHash}.kt"
       )
       subInjectablesFile.parentFile.mkdirs()
       subInjectablesFile.createNewFile()
