@@ -91,11 +91,11 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               .fullyAbbreviatedType
               .uniqueTypeKey()
           }
-      }:${original.returnType}"
+      }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
       is ClassDescriptor -> "class:$fqNameSafe"
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-      }}:${original.returnType?.toString().orEmpty()}"
+      }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
       is FunctionDescriptor -> "function:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -126,7 +126,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               }
             } +
           ":" +
-          original.returnType?.toString().orEmpty()
+          original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
       is PropertyDescriptor -> "property:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -149,7 +149,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
                 .uniqueTypeKey()
             } +
           ":" +
-          original.returnType?.toString().orEmpty()
+          original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
       is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
