@@ -40,9 +40,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]
-      if (annotationDescriptor?.type?.constructor?.declarationDescriptor
-          ?.hasAnnotation(InjektFqNames.Tag) == true
-      )
+      if (annotationDescriptor?.type?.constructor?.declarationDescriptor?.isTag == true)
         return true
     }
 
@@ -75,8 +73,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       return diagnostic.psiElement.getParentOfType<KtTypeAlias>(false)
         ?.descriptor<TypeAliasDescriptor>(ctx)
         ?.expandedType
-        ?.toTypeRef(ctx)
-        ?.anyType { it.classifier.descriptor == typeParameter } == true
+        ?.anyType { it.constructor.declarationDescriptor == typeParameter } == true
     }
 
     // todo remove once compose fun interface support is fixed

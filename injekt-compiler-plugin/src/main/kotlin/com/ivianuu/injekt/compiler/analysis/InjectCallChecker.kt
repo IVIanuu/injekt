@@ -9,12 +9,14 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.extensions.*
+import org.jetbrains.kotlin.types.*
 
 class InjectCallChecker(
   private val withDeclarationGenerator: Boolean
@@ -70,25 +72,25 @@ class InjectCallChecker(
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+    val substitutionMap = buildMap<String, KotlinType> {
       for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef(ctx!!)] = argument.toTypeRef(ctx!!)
+        this[parameter.uniqueKey(ctx!!)] = argument.prepare()
 
-      fun TypeRef.putAll() {
-        for ((index, parameter) in classifier.typeParameters.withIndex()) {
-          val argument = arguments[index]
-          if (argument.classifier != parameter)
-            this@buildMap[parameter] = arguments[index]
+      fun KotlinType.putAll() {
+        for ((index, parameter) in constructor.parameters.withIndex()) {
+          val argument = arguments[index].type.prepare()
+          if (argument != parameter)
+            this@buildMap[parameter.uniqueKey(ctx!!)] = argument
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx!!)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx!!)?.putAll()
+      resolvedCall.dispatchReceiver?.type?.prepare()?.putAll()
+      resolvedCall.extensionReceiver?.type?.prepare()?.putAll()
     }
 
     val callee = resultingDescriptor
       .toCallableRef(ctx!!)
-      .substitute(substitutionMap)
+      .substitute(substitutionMap, ctx!!)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
@@ -105,7 +107,7 @@ class InjectCallChecker(
     val graph = scope.resolveRequests(
       callee,
       requests,
-      callExpression.lookupLocation
+      KotlinLookupLocation(callExpression)
     ) { _, result ->
       if (result is ResolutionResult.Success.WithCandidate.Value &&
         result.candidate is CallableInjectable) {

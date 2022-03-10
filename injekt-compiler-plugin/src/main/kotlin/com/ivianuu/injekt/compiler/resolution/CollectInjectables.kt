@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
@@ -21,76 +22,64 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
 @OptIn(ExperimentalStdlibApi::class)
-fun TypeRef.collectInjectables(
+fun KotlinType.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
 ): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
-    val unwrappedFunctionType = unwrapTags()
-    val callable = unwrappedFunctionType
-      .classifier
-      .descriptor!!
-      .defaultType
-      .memberScope
+    val callable = memberScope
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
       .first()
       .toCallableRef(ctx)
       .let { callable ->
         callable.copy(
-          type = unwrappedFunctionType.arguments.last(),
+          type = arguments.last().type,
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           }
         ).substitute(
-          unwrappedFunctionType.classifier.typeParameters
-            .zip(unwrappedFunctionType.arguments)
-            .toMap()
+          constructor.parameters
+            .map { it.typeConstructor.declarationDescriptor!!.uniqueKey(ctx) }
+            .zip(arguments.map { it.type })
+            .toMap(),
+          ctx
         )
       }
 
     return@getOrPut listOf(callable)
   }
 
+  val withoutTags = unwrapTags()
+
   // do not run any code for types which do not declare any injectables
-  if (!classifier.declaresInjectables && !classBodyView)
+  if (!withoutTags.constructor.declarationDescriptor!!.classifierInfo(ctx).declaresInjectables && !classBodyView)
     // at least include the companion object if it declares injectables
     return@getOrPut listOfNotNull(
-      classifier.descriptor
-        ?.safeAs<ClassDescriptor>()
+      withoutTags
+        .constructor
+        .declarationDescriptor
+        .safeAs<ClassDescriptor>()
         ?.companionObjectDescriptor
-        ?.toClassifierRef(ctx)
-        ?.takeIf { it.declaresInjectables }
-        ?.descriptor
-        ?.cast<ClassDescriptor>()
+        ?.takeIf { it.classifierInfo(ctx).declaresInjectables }
         ?.injectableReceiver(false, ctx)
     )
 
   buildList {
-    classifier
-      .descriptor
-      ?.defaultType
-      ?.memberScope
-      ?.collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
-        val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-          CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
-            .overriddenTreeAsSequence(false)
-            .last()
-            .containingDeclaration
-            .cast<ClassDescriptor>()
-            .toClassifierRef(ctx)
-          classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
-            .zip(subtypeView(originalClassifier)!!.arguments)
-        } else classifier.typeParameters.zip(arguments).toMap()
-        val substituted = callable.substitute(substitutionMap)
-
+    withoutTags
+      .memberScope
+      .collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
         add(
-          substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-              substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-            } else substituted.parameterTypes
+          (if (callable.parameterTypes[DISPATCH_RECEIVER_INDEX] == this@collectInjectables) callable
+          else callable.copy(
+            parameterTypes = callable.parameterTypes.toMutableMap()
+              .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
+          )).substitute(
+            withoutTags.constructor.parameters
+              .map { it.typeConstructor.declarationDescriptor!!.uniqueKey(ctx) }
+              .zip(withoutTags.arguments.map { it.type })
+              .toMap(),
+            ctx
           )
         )
       }
@@ -117,7 +106,7 @@ fun ResolutionScope.collectInjectables(
               .takeIf {
                 it.isProvide(ctx) ||
                     (includeNonProvideObjectsWithInjectables &&
-                        it.toClassifierRef(ctx).declaresInjectables)
+                        it.classifierInfo(ctx).declaresInjectables)
               }
               ?.injectableReceiver(!classBodyView, ctx)
               ?.let(consumer)
@@ -205,9 +194,9 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
     ImplicitClassReceiver(this),
     Annotations.EMPTY
   ).toCallableRef(ctx)
-  return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
+  return if (!tagged || callable.type.constructor.declarationDescriptor?.classifierInfo(ctx)?.tags?.isEmpty() == true) callable
   else {
-    val taggedType = callable.type.classifier.tags.wrap(callable.type)
+    val taggedType = callable.type.constructor.declarationDescriptor!!.classifierInfo(ctx).tags.wrap(callable.type)
     callable.copy(type = taggedType, originalType = taggedType)
   }
 }
@@ -226,27 +215,27 @@ fun CallableRef.collectInjectables(
 
   if (!scope.canSee(this, ctx) || !scope.injectablesPredicate(this)) return
 
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
+  if (typeParameters.any { it.hasAnnotation(InjektFqNames.Spread) && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
     return
   }
 
   val nextCallable = if (type.isProvideFunctionType) {
     addInjectable(this)
-    copy(type = type.copy(frameworkKey = callable.uniqueKey(ctx)))
+    copy(type = type.withFrameworkKey(callable.uniqueKey(ctx), ctx))
   } else this
   addInjectable(nextCallable)
 
   nextCallable
     .type
     .also { type ->
-      type.classifier.descriptor?.findPackage()?.fqName?.let {
-        addImport(type.classifier.fqName, it)
+      type.constructor.declarationDescriptor?.findPackage()?.fqName?.let {
+        addImport(type.constructor.declarationDescriptor!!.fqNameSafe, it)
       }
     }
     .collectInjectables(
       scope.allScopes.any {
-        it.ownerDescriptor == nextCallable.type.classifier.descriptor
+        it.ownerDescriptor == nextCallable.type.constructor.declarationDescriptor
       },
       ctx
     )
@@ -282,7 +271,8 @@ fun List<ProviderImport>.collectImportedInjectables(
 
         val nextPackages = LinkedList<FqName>().also { it.add(basePackage) }
 
-        val lookupLocation = import.element.lookupLocation
+        val lookupLocation = import.element?.let { KotlinLookupLocation(it) }
+          ?: NoLookupLocation.FROM_BACKEND
 
         while (nextPackages.isNotEmpty()) {
           val currentPackage = nextPackages.removeFirst()
@@ -295,7 +285,7 @@ fun List<ProviderImport>.collectImportedInjectables(
             currentPackageObject: ClassDescriptor?
           ) {
             if ((currentPackageObject != null &&
-                  currentPackageObject.toClassifierRef(ctx).declaresInjectables) ||
+                  currentPackageObject.classifierInfo(ctx).declaresInjectables) ||
               (currentPackageObject == null &&
                   injectablesLookupName in currentScope.getFunctionNames())) {
               if (currentPackageObject != null) {
@@ -345,18 +335,22 @@ fun List<ProviderImport>.collectImportedInjectables(
         val packageFqName = FqName(import.importPath.removeSuffix(".*"))
         val resolvedImport = import.toResolvedImport(packageFqName)
 
-        val (scope, packageObject) = memberScopeForFqName(packageFqName, import.element.lookupLocation, ctx)
+        val (scope, packageObject) = memberScopeForFqName(
+          packageFqName,
+          import.element?.let { KotlinLookupLocation(it) } ?: NoLookupLocation.FROM_BACKEND,
+          ctx
+        )
           ?: continue
 
         // import all injectables in the package
-        if ((packageObject != null && packageObject.toClassifierRef(ctx).declaresInjectables) ||
+        if ((packageObject != null && packageObject.classifierInfo(ctx).declaresInjectables) ||
           (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
-          if (packageObject != null) consumer(
-            packageObject.injectableReceiver(false, ctx).copy(import = resolvedImport)
-          )
-          else scope.collectInjectables(false, ctx = ctx) {
-            consumer(it.copy(import = resolvedImport))
-          }
+            if (packageObject != null) consumer(
+              packageObject.injectableReceiver(false, ctx).copy(import = resolvedImport)
+            )
+            else scope.collectInjectables(false, ctx = ctx) {
+              consumer(it.copy(import = resolvedImport))
+            }
         }
       }
       else -> {
@@ -364,11 +358,15 @@ fun List<ProviderImport>.collectImportedInjectables(
         val parentFqName = fqName.parent()
         val name = fqName.shortName()
 
-        val (scope, packageObject) = memberScopeForFqName(parentFqName, import.element.lookupLocation, ctx)
+        val (scope, packageObject) = memberScopeForFqName(
+          parentFqName,
+          import.element?.let { KotlinLookupLocation(it) } ?: NoLookupLocation.FROM_BACKEND,
+          ctx
+        )
           ?: continue
 
         // import all injectables with the specified name
-        if ((packageObject != null && packageObject.toClassifierRef(ctx).declaresInjectables) ||
+        if ((packageObject != null && packageObject.classifierInfo(ctx).declaresInjectables) ||
           (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
           scope.collectInjectables(false, name = name, ctx = ctx) {
             consumer(it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)))
@@ -379,22 +377,22 @@ fun List<ProviderImport>.collectImportedInjectables(
   }
 }
 
-fun TypeRef.collectTypeScopeInjectables(ctx: Context): InjectablesWithLookups =
-  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
+fun KotlinType.collectTypeScopeInjectables(ctx: Context): InjectablesWithLookups =
+  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, this) {
     val injectables = mutableListOf<CallableRef>()
     val lookedUpPackages = mutableSetOf<FqName>()
     val nextPackages = LinkedList<FqName>()
-    val seenTypes = mutableSetOf<TypeRef>()
+    val seenTypes = mutableSetOf<KotlinType>()
 
-    fun TypeRef.addNextPackages() {
+    fun KotlinType.addNextPackages() {
       if (!seenTypes.add(this)) return
 
-      val packageFqName = classifier.descriptor?.findPackage()?.fqName
+      val packageFqName = constructor.declarationDescriptor?.findPackage()?.fqName
       if (packageFqName != null && lookedUpPackages.add(packageFqName))
         nextPackages += packageFqName
 
       allTypes.forEach { it.addNextPackages() }
-      classifier.tags.forEach { it.addNextPackages() }
+      constructor.declarationDescriptor?.classifierInfo(ctx)?.tags?.forEach { it.addNextPackages() }
     }
 
     addNextPackages()
@@ -443,7 +441,7 @@ private fun collectPackageTypeScopeInjectables(
           // only collect in nested scopes if the declaration does NOT declare any injectables
           if (declaration is ClassDescriptor &&
             (declaration.kind != ClassKind.OBJECT ||
-                !declaration.toClassifierRef(ctx).declaresInjectables))
+                !declaration.classifierInfo(ctx).declaresInjectables))
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
         },
         classBodyView = false,
@@ -464,7 +462,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
       (callable.callable is ClassConstructorDescriptor &&
-          callable.type.unwrapTags().classifier.isObject) ||
+          callable.type.constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT) ||
       callable.callable.parents.any { callableParent ->
         allScopes.any { it.ownerDescriptor == callableParent }
       } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&

@@ -150,19 +150,17 @@ class InjektDeclarationGeneratorExtension(
     val injectables = mutableListOf<DeclarationDescriptor>()
 
     file.accept(
-      namedDeclarationRecursiveVisitor { declaration ->
-        if (declaration.fqName == null) return@namedDeclarationRecursiveVisitor
-
+      declarationRecursiveVisitor { declaration ->
         fun KtAnnotated.isProvide() =
           annotationEntries.any { it.shortName == InjektFqNames.Provide.shortName() }
 
         when (declaration) {
           is KtClassOrObject -> {
-            if (!declaration.isLocal && (declaration.isProvide()))
+            if (!declaration.isLocal && declaration.isProvide())
               injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
           }
           is KtConstructor<*> -> {
-            if (!declaration.isLocal && (declaration.isProvide()))
+            if (!declaration.isLocal && declaration.isProvide())
               injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
           }
           is KtNamedFunction -> {

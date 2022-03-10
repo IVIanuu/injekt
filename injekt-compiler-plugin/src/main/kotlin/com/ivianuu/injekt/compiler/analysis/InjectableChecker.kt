@@ -25,7 +25,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext,
   ) {
-    val ctx = baseCtx.withTrace(context.trace)
+    val ctx = baseCtx.copy(trace = context.trace)
     ctx.trace!!.record(InjektWritableSlices.INJEKT_CONTEXT, Unit, ctx)
     when (descriptor) {
       is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor, ctx)

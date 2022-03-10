@@ -15,7 +15,7 @@ class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    val ctx = baseCtx.withTrace(context.trace)
+    val ctx = baseCtx.copy(trace = context.trace)
 
     // requesting infos triggers saving them
     when (descriptor) {
