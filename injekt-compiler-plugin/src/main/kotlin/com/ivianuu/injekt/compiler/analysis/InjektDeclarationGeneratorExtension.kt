@@ -150,9 +150,7 @@ class InjektDeclarationGeneratorExtension(
     val injectables = mutableListOf<DeclarationDescriptor>()
 
     file.accept(
-      namedDeclarationRecursiveVisitor { declaration ->
-        if (declaration.fqName == null) return@namedDeclarationRecursiveVisitor
-
+      declarationRecursiveVisitor { declaration ->
         fun KtAnnotated.isProvide() =
           annotationEntries.any { it.shortName == InjektFqNames.Provide.shortName() }
 
