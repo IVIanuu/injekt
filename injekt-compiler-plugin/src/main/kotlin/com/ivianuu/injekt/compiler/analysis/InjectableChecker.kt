@@ -41,7 +41,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: FunctionDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx)) {
+    if (descriptor.hasAnnotation(InjektFqNames.Provide)) {
       if (descriptor.isSuspend)
         ctx.trace!!.report(
           InjektErrors.PROVIDE_SUSPEND_FUNCTION
@@ -158,9 +158,11 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: ConstructorDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx)) {
-      descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
+    if (descriptor.hasAnnotation(InjektFqNames.Provide) ||
+      (descriptor.isPrimary &&
+          descriptor.constructedClass.hasAnnotation(InjektFqNames.Provide))) {
+            descriptor.valueParameters
+              .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
     }
 
     checkExceptActual(declaration, descriptor, ctx)
@@ -171,7 +173,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: PropertyDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx) &&
+    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
       descriptor.getter?.hasAnnotation(InjektFqNames.Composable) == true)
       ctx.trace!!.report(
         InjektErrors.PROVIDE_COMPOSABLE_PROPERTY
@@ -192,7 +194,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: LocalVariableDescriptor,
     ctx: Context
   ) {
-    if (descriptor.isProvide(ctx) &&
+    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
       !descriptor.isDelegated &&
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
@@ -258,7 +260,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     descriptor.overriddenTreeAsSequence(false)
       .drop(1)
-      .filterNot { isValidOverride(descriptor, it, ctx) }
+      .filterNot { isValidOverride(descriptor, it) }
       .forEach {
         ctx.trace!!.report(
           Errors.NOTHING_TO_OVERRIDE
@@ -274,7 +276,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     if (!descriptor.isActual) return
     descriptor.findExpects()
-      .filterNot { isValidOverride(descriptor, it, ctx) }
+      .filterNot { isValidOverride(descriptor, it) }
       .forEach {
         ctx.trace!!.report(
           Errors.ACTUAL_WITHOUT_EXPECT
@@ -289,11 +291,11 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
 
   private fun isValidOverride(
     descriptor: MemberDescriptor,
-    overriddenDescriptor: MemberDescriptor,
-    ctx: Context
+    overriddenDescriptor: MemberDescriptor
   ): Boolean {
-    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) && !descriptor.isProvide(ctx)) {
-      return false
+    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
+      !descriptor.hasAnnotation(InjektFqNames.Provide)) {
+        return false
     }
 
     if (descriptor is CallableMemberDescriptor) {
