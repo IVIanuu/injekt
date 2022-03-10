@@ -142,6 +142,30 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("injectable variable must be initialized, delegated or marked with lateinit")
   }
 
+  @Test fun testProvideSuspendFunction() = codegen(
+    """
+      @Provide suspend fun foo() = Foo()
+    """
+  ) {
+    compilationShouldHaveFailed("suspend function cannot be injectable")
+  }
+
+  @Test fun testProvideComposableFunction() = codegen(
+    """
+      @Provide @Composable fun foo() = Foo()
+    """
+  ) {
+    compilationShouldHaveFailed("@Composable function cannot be injectable")
+  }
+
+  @Test fun testProvideComposableProperty() = codegen(
+    """
+      @Provide @Composable val foo: Foo @Composable get() = Foo()
+    """
+  ) {
+    compilationShouldHaveFailed("@Composable property cannot be injectable")
+  }
+
   @Test fun testProvideFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {

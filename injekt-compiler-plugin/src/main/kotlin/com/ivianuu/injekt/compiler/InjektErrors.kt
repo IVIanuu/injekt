@@ -93,6 +93,18 @@ interface InjektErrors {
           )
         }
 
+    @JvmField val PROVIDE_SUSPEND_FUNCTION =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "suspend function cannot be injectable") }
+
+    @JvmField val PROVIDE_COMPOSABLE_FUNCTION =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "@Composable function cannot be injectable") }
+
+    @JvmField val PROVIDE_COMPOSABLE_PROPERTY =
+      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+        .also { MAP.put(it, "@Composable property cannot be injectable") }
+
     @JvmField val MULTIPLE_SPREADS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
