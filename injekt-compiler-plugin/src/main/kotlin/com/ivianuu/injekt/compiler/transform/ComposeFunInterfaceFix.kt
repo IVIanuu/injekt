@@ -33,15 +33,13 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
     object : IrElementTransformerVoid() {
       override fun visitTypeOperator(expression: IrTypeOperatorCall): IrExpression {
         if (expression.operator == IrTypeOperator.SAM_CONVERSION &&
-            expression.type.isComposableFunInterface() &&
-            expression.argument.type.isComposableFunInterface()
-        )
+            expression.type.isComposableFunInterface(ctx) &&
+            expression.argument.type.isComposableFunInterface(ctx))
               return expression.argument
 
         if (expression.operator == IrTypeOperator.SAM_CONVERSION &&
             expression.argument is IrFunctionExpression &&
-            expression.type.isComposableFunInterface()
-        ) {
+            expression.type.isComposableFunInterface(ctx)) {
           val functionExpression = expression.argument as IrFunctionExpression
           val declaration = functionExpression.function
           if (!declaration.hasComposableAnnotation()) {
@@ -76,8 +74,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
       override fun visitFunction(declaration: IrFunction): IrStatement {
         if (declaration.isFakeOverride &&
             !declaration.isFakeOverriddenFromAny() &&
-            declaration.parentAsClass.defaultType.isComposableFunInterface()
-        ) {
+            declaration.parentAsClass.defaultType.isComposableFunInterface(ctx)) {
           if (!declaration.hasComposableAnnotation()) {
             declaration.annotations += DeclarationIrBuilder(irCtx, declaration.symbol)
               .irCallConstructor(
@@ -86,7 +83,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
                 emptyList()
               )
           }
-          if (declaration.parentAsClass.defaultType.isComposableFunInterface()) {
+          if (declaration.parentAsClass.defaultType.isComposableFunInterface(ctx)) {
             (declaration as IrSimpleFunction).overriddenSymbols = listOf(
               irBuiltins.functionN(
                 declaration.valueParameters.size +
@@ -106,7 +103,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPreCompose(
         val result = super.visitCall(expression) as IrCall
         val dispatchReceiverType = result.dispatchReceiver?.type
           ?: return result
-        if (dispatchReceiverType.isComposableFunInterface() &&
+        if (dispatchReceiverType.isComposableFunInterface(ctx) &&
             !dispatchReceiverType.hasComposableAnnotation()) {
           (dispatchReceiverType.annotations as ArrayList<IrConstructorCall>)
             .add(
@@ -142,7 +139,7 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(ctx: Context) {
             }
 
           if (declaration.parentClassOrNull?.defaultType?.superTypes()
-              ?.any { it.isComposableFunInterface() } == true) {
+              ?.any { it.isComposableFunInterface(ctx) } == true) {
             (declaration as IrSimpleFunction).overriddenSymbols = listOf(
               irBuiltins.functionN(declaration.valueParameters.size)
                 .functions.first { it.name.asString() == "invoke" }.symbol
@@ -159,10 +156,10 @@ fun IrModuleFragment.fixComposeFunInterfacesPostCompose(ctx: Context) {
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-private fun IrType.isComposableFunInterface(): Boolean {
-  val classifier = classifierOrNull?.descriptor ?: return false
-  return classifier.safeAs<ClassDescriptor>()?.isFun == true &&
-      classifier.defaultType.anySupertype {
-        it.hasAnnotation(InjektFqNames.Composable)
+private fun IrType.isComposableFunInterface(ctx: Context): Boolean {
+  val classifier = classifierOrNull?.descriptor?.toClassifierRef(ctx) ?: return false
+  return classifier.descriptor!!.safeAs<ClassDescriptor>()?.isFun == true &&
+      classifier.defaultType.anySuperType {
+        it.classifier.fqName == InjektFqNames.Composable
       }
 }

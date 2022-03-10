@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
  * Stores information about a callable which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-data class CallableInfo(val type: KotlinType, val parameterTypes: Map<Int, KotlinType>)
+data class CallableInfo(val type: TypeRef, val parameterTypes: Map<Int, TypeRef>)
 
 @OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
@@ -45,12 +45,14 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
           kind != CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           info
         } else {
-          /*val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
+          val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
           val rootClassifier = rootOverriddenCallable.containingDeclaration
             .cast<ClassDescriptor>()
+            .toClassifierRef(ctx)
           val classifierInfo = containingDeclaration
             .cast<ClassDescriptor>()
-          val superType = classifierInfo.defaultType.firstSupertypeOrNull {
+            .toClassifierRef(ctx)
+          val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
             it.classifier == rootClassifier
           }!!
           val substitutionMap = buildMap<ClassifierRef, TypeRef> {
@@ -59,8 +61,13 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
 
             for ((index, typeParameter) in rootOverriddenCallable.typeParameters.withIndex())
               this[typeParameter.toClassifierRef(ctx)] = typeParameters[index].defaultType.toTypeRef(ctx)
-          }*/
-          info
+          }
+          info.copy(
+            type = info.type.substitute(substitutionMap),
+            parameterTypes = info.parameterTypes.mapValues {
+              it.value.substitute(substitutionMap)
+            }
+          )
         }
 
         return@getOrPut finalInfo
@@ -71,16 +78,16 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
       val tags = if (this is ConstructorDescriptor)
         buildList {
           addAll(constructedClass.classifierInfo(ctx).tags)
-          for (tag in getTags())
-            add(tag.prepare())
+          for (tagAnnotation in getTags())
+            add(tagAnnotation.type.toTypeRef(ctx))
         }
       else emptyList()
-      tags.wrap(returnType?.prepare() ?: ctx.module.builtIns.nullableAnyType)
+      tags.wrap(returnType?.toTypeRef(ctx) ?: ctx.nullableAnyType)
     }
 
-    val parameterTypes = buildMap {
+    val parameterTypes = buildMap<Int, TypeRef> {
       for (parameter in allParameters)
-        this[parameter.injektIndex()] = parameter.type.prepare()
+        this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
     }
 
     val info = CallableInfo(type, parameterTypes)
@@ -122,20 +129,20 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
 }
 
 @Serializable data class PersistedCallableInfo(
-  val type: PersistedKotlinType,
-  val parameterTypes: Map<Int, PersistedKotlinType>
+  val type: PersistedTypeRef,
+  val parameterTypes: Map<Int, PersistedTypeRef>
 )
 
 fun CallableInfo.toPersistedCallableInfo(ctx: Context) = PersistedCallableInfo(
-  type = type.toPersistedKotlinType(ctx),
+  type = type.toPersistedTypeRef(ctx),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toPersistedKotlinType(ctx) }
+    .mapValues { it.value.toPersistedTypeRef(ctx) }
 )
 
 fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
-  type = type.toKotlinType(ctx).type,
+  type = type.toTypeRef(ctx),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toKotlinType(ctx).type }
+    .mapValues { it.value.toTypeRef(ctx) }
 )
 
 /**
@@ -143,8 +150,8 @@ fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
  * but is critical to injekt
  */
 class ClassifierInfo(
-  val tags: List<KotlinType>,
-  val lazySuperTypes: Lazy<List<KotlinType>>,
+  val tags: List<TypeRef>,
+  val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
   val lazyDeclaresInjectables: Lazy<Boolean>
 ) {
@@ -177,19 +184,21 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       }
     }
 
-    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType?.prepare()
+    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
+      ?.toTypeRef(ctx)
 
-    val isTag = isTag
+    val isTag = hasAnnotation(InjektFqNames.Tag)
 
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
         expandedType != null -> listOf(expandedType)
-        isTag -> listOf(ctx.module.builtIns.anyType)
-        else -> typeConstructor.supertypes.map { it.prepare() }
+        isTag -> listOf(ctx.anyType)
+        else -> typeConstructor.supertypes.map { it.toTypeRef(ctx) }
       }
     }
 
-    val tags = getTags().map { it.prepare() }
+    val tags = getTags()
+      .map { it.type.toTypeRef(ctx) }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
       ClassifierInfo(
@@ -240,22 +249,22 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
   }
 
 @Serializable data class PersistedClassifierInfo(
-  val tags: List<PersistedKotlinType>,
-  val superTypes: List<PersistedKotlinType>,
+  val tags: List<PersistedTypeRef>,
+  val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
   val declaresInjectables: Boolean
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
-  tags = tags.map { it.toKotlinType(ctx).type },
-  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toKotlinType(ctx).type } },
+  tags = tags.map { it.toTypeRef(ctx) },
+  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   lazyDeclaresInjectables = lazyOf(declaresInjectables)
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifierInfo(
-  tags = tags.map { it.toPersistedKotlinType(ctx) },
-  superTypes = superTypes.map { it.toPersistedKotlinType(ctx) },
+  tags = tags.map { it.toPersistedTypeRef(ctx) },
+  superTypes = superTypes.map { it.toPersistedTypeRef(ctx) },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   declaresInjectables = declaresInjectables
 )
@@ -337,8 +346,7 @@ private fun String.toChunkedArrayValue() = ArrayValue(
   chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
 ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
-private fun KotlinType.shouldBePersisted(): Boolean =
-  anyType { it.constructor is TagTypeConstructor }
+private fun TypeRef.shouldBePersisted(): Boolean = anyType { it.classifier.isTag }
 
 @OptIn(ExperimentalStdlibApi::class)
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {

@@ -40,7 +40,9 @@ class InjectSyntheticScopes(
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
   override val scopes: Collection<SyntheticScope> = delegate.scopes + InjectSyntheticScope(
-    ctx.copy(trace = DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes"))
+    ctx.withTrace(
+      DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
+    )
   )
 }
 

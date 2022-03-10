@@ -16,7 +16,7 @@ class TagChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
   ) {
-    val ctx = baseCtx.copy(trace = context.trace)
+    val ctx = baseCtx.withTrace(context.trace)
 
     if (descriptor.hasAnnotation(InjektFqNames.Tag) && descriptor is ClassDescriptor) {
       if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {

@@ -9,7 +9,6 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.calls.checkers.*
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -25,7 +24,7 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
     if (resulting !is ConstructorDescriptor ||
         resulting.constructedClass.fqNameSafe != InjektFqNames.Providers)
           return
-    val ctx = baseCtx.copy(trace = context.trace)
+    val ctx = baseCtx.withTrace(context.trace)
     val imports = resolvedCall.getProviderImports()
 
     imports
@@ -62,7 +61,7 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
           )
           continue
         }
-        if (memberScopeForFqName(packageFqName, KotlinLookupLocation(import.element!!), ctx) == null) {
+        if (memberScopeForFqName(packageFqName, import.element.lookupLocation, ctx) == null) {
           ctx.trace!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!, element)
@@ -82,7 +81,7 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
         val shortName = fqName.shortName()
         val importedDeclarations = memberScopeForFqName(
           parentFqName,
-          KotlinLookupLocation(import.element!!),
+          import.element.lookupLocation,
           ctx
         )
           ?.first

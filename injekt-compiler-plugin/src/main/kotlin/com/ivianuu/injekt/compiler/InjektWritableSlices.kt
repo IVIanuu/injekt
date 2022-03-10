@@ -8,7 +8,6 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
 object InjektWritableSlices {
@@ -20,12 +19,14 @@ object InjektWritableSlices {
   val IS_PROVIDE = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
   val IS_INJECT = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
   val BLOCK_SCOPE = BasicWritableSlice<Pair<KtBlockExpression, DeclarationDescriptor>, InjectablesScope>(RewritePolicy.DO_NOTHING)
+  val CLASSIFIER_REF = BasicWritableSlice<ClassifierDescriptor, ClassifierRef>(RewritePolicy.DO_NOTHING)
+  val CALLABLE_REF = BasicWritableSlice<CallableDescriptor, CallableRef>(RewritePolicy.DO_NOTHING)
   val CALLABLE_INFO = BasicWritableSlice<CallableDescriptor, CallableInfo>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_INFO = BasicWritableSlice<ClassifierDescriptor, ClassifierInfo>(RewritePolicy.DO_NOTHING)
   val ELEMENT_SCOPE = BasicWritableSlice<KtElement, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val DECLARATION_SCOPE = BasicWritableSlice<DescriptorWithParentScope, InjectablesScope>(RewritePolicy.DO_NOTHING)
-  val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<KotlinType, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
-  val TYPE_INJECTABLES = BasicWritableSlice<Pair<KotlinType, Boolean>, List<CallableRef>>(RewritePolicy.DO_NOTHING)
+  val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
+  val TYPE_INJECTABLES = BasicWritableSlice<Pair<TypeRef, Boolean>, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
   val UNIQUE_KEY = BasicWritableSlice<DeclarationDescriptor, String>(RewritePolicy.DO_NOTHING)

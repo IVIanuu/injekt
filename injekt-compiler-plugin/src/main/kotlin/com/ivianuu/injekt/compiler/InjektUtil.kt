@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.load.java.descriptors.*
@@ -36,12 +37,12 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   .filterIsInstance<ClassDescriptor>()
   .mapNotNull { clazz ->
     if (clazz.isDeserializedDeclaration()) {
-      val info = clazz.classifierInfo(ctx)
+      val clazzClassifier = clazz.toClassifierRef(ctx)
       clazz.unsubstitutedPrimaryConstructor
         ?.valueParameters
         ?.firstOrNull {
           it.name == name &&
-              it.name.asString() in info.primaryConstructorPropertyParameters
+              it.name in clazzClassifier.primaryConstructorPropertyParameters
         }
     } else {
       clazz.unsubstitutedPrimaryConstructor
@@ -74,6 +75,12 @@ fun String.asNameId() = Name.identifier(this)
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
 
+fun Annotated.getTags(): List<AnnotationDescriptor> =
+  annotations.filter {
+    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
+    inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
+  }
+
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
   ctx.trace!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
     when (val original = this.original) {
@@ -84,11 +91,11 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               .fullyAbbreviatedType
               .uniqueTypeKey()
           }
-      }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
+      }:${original.returnType}"
       is ClassDescriptor -> "class:$fqNameSafe"
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-      }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
+      }}:${original.returnType?.toString().orEmpty()}"
       is FunctionDescriptor -> "function:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -119,7 +126,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
               }
             } +
           ":" +
-          original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
+          original.returnType?.toString().orEmpty()
       is PropertyDescriptor -> "property:$fqNameSafe:" +
           original.typeParameters.joinToString {
             buildString {
@@ -142,13 +149,13 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
                 .uniqueTypeKey()
             } +
           ":" +
-          original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
+          original.returnType?.toString().orEmpty()
       is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
-      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type}"
+      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type}"
+      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type}"
       else -> error("Unexpected declaration $this")
     }
   }
@@ -166,6 +173,12 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
     if (isMarkedNullable) append("?")
   }
 }
+
+private val KotlinType.fullyAbbreviatedType: KotlinType
+  get() {
+    val abbreviatedType = getAbbreviatedType()
+    return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
+  }
 
 @OptIn(ExperimentalTypeInference::class)
 inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> =
@@ -204,6 +217,8 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
+fun String.nextFrameworkKey(next: String) = "$this:$next"
+
 fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }
@@ -229,6 +244,10 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
 
 val injectablesLookupName = "_injectables".asNameId()
 val subInjectablesLookupName = "_subInjectables".asNameId()
+
+val KtElement?.lookupLocation: LookupLocation
+  get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
+  else KotlinLookupLocation(this)
 
 fun DeclarationDescriptor.moduleName(ctx: Context): String =
   getJvmModuleNameForDeserializedDescriptor(this)

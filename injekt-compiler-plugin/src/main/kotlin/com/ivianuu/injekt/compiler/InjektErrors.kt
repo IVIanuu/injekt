@@ -8,7 +8,6 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 interface InjektErrors {
   companion object {
@@ -204,11 +203,11 @@ private fun InjectionGraph.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "type parameter ${unwrappedFailure.parameter.name} " +
+          "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
               "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is reified but type argument " +
-              "${unwrappedFailure.argument.fqNameSafe} is not reified."
+              "${unwrappedFailure.argument.fqName} is not reified."
         )
       } else {
         appendLine("type argument kind mismatch.")
@@ -266,7 +265,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           if (candidate.parameterDescriptors.isNotEmpty()) {
             for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
               val argument = candidate.type.unwrapTags().arguments[index]
-              append("${parameter.name}: ${argument.type.renderToString()}")
+              append("${parameter.name}: ${argument.renderToString()}")
               if (index != candidate.parameterDescriptors.lastIndex)
                 append(",")
             }
@@ -293,7 +292,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
           append("/* ")
           when (failure) {
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-              append("${failure.parameter.name} is reified: ")
+              append("${failure.parameter.fqName.shortName()} is reified: ")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
@@ -329,7 +328,7 @@ private fun InjectionGraph.Error.render(): String = buildString {
 
     when (unwrappedFailure) {
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-        appendLine("but type argument ${unwrappedFailure.argument.name} is not reified.")
+        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified.")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(
