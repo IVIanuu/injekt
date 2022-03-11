@@ -15,7 +15,9 @@ import com.ivianuu.injekt.samples.android.domain.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-fun interface AppUi : @Composable () -> Unit
+fun interface AppUi {
+  @Composable operator fun invoke()
+}
 
 @Provide fun appUi(models: @Composable () -> CounterModel) = AppUi {
   Scaffold(

@@ -28,6 +28,5 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
 
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)
-    moduleFragment.fixComposeFunInterfacesPreCompose(ctx, pluginContext)
   }
 }
