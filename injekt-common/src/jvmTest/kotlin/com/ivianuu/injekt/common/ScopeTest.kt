@@ -5,11 +5,14 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
+import io.kotest.assertions.throwables.*
 import io.kotest.matchers.*
+import io.kotest.matchers.booleans.*
 import io.kotest.matchers.types.*
 import kotlinx.atomicfu.*
 import kotlinx.coroutines.*
 import org.junit.*
+import kotlin.IllegalStateException
 
 class ScopeTest {
   @Test fun testScope() {
@@ -54,10 +57,19 @@ class ScopeTest {
       }
     }
     disposeCalls shouldBe 0
+    scope.isDisposed shouldBe false
     scope.dispose()
     disposeCalls shouldBe 1
+    scope.isDisposed shouldBe true
     scope.dispose()
     disposeCalls shouldBe 1
+  }
+
+  @Test fun testCannotUseADisposedScope() {
+    val scope = Scope<TestScope>()
+    shouldNotThrow<IllegalStateException> { scope { 42 } }
+    scope.dispose()
+    shouldThrow<IllegalStateException> { scope { 42 } }
   }
 
   @Test fun testScoped() {
