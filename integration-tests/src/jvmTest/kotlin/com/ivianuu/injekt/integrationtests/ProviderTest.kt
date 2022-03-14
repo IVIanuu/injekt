@@ -56,6 +56,31 @@ class ProviderTest {
     """
   )
 
+  @Test fun testSuspendProviderInjectable() = singleAndMultiCodegen(
+    """
+      @Provide suspend fun foo() = Foo()
+    """,
+    """
+      fun invoke(): Foo = runBlocking { inject<suspend () -> Foo>()() } 
+    """
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testComposableProviderInjectable() = singleAndMultiCodegen(
+    """
+      @Provide val foo: Foo @Composable get() = Foo()
+    """,
+    """
+      fun invoke() = runComposing { inject<@Composable () -> Foo>()() }
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile()
+      .shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
