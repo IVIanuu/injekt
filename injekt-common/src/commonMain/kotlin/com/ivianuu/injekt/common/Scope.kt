@@ -10,18 +10,21 @@ import kotlinx.atomicfu.locks.*
 interface Scope<N> : Disposable {
   val isDisposed: Boolean
 
-  operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T
+  operator fun <T : Any> invoke(key: Any, init: () -> T): T
 }
+
+operator fun <T : Any> Scope<*>.invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+  this(key.value, init)
 
 fun <N> Scope(): Scope<N> = ScopeImpl()
 
 private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
-  private val values = mutableMapOf<String, Any>()
+  private val values = mutableMapOf<Any, Any>()
   override var isDisposed = false
 
-  override fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T = synchronized(this) {
+  override fun <T : Any> invoke(key: Any, init: () -> T): T = synchronized(this) {
     check(!isDisposed) { "Cannot use a disposed scope" }
-    values.getOrPut(key.value, init) as T
+    values.getOrPut(key, init) as T
   }
 
   override fun dispose() {
