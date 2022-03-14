@@ -163,9 +163,10 @@ class CallContextTest {
       """,
       """
         fun invoke(): @Composable () -> Bar = { inject<LazyBar>()() }
-      """
+      """,
+      config = { withCompose() }
     ) {
-      runBlocking {
+      runComposing {
         invokeSingleFile<@Composable () -> Bar>()
           .invoke()
           .shouldBeTypeOf<Bar>()

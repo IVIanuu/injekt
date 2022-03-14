@@ -11,10 +11,13 @@ import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi2ir.generators.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.*
+import org.jetbrains.kotlin.resolve.sam.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 enum class CallContext {
   DEFAULT, COMPOSABLE, SUSPEND
@@ -44,8 +47,17 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
             val descriptor = ctx.trace.bindingContext[BindingContext.FUNCTION, node.functionLiteral]
               ?: return@getOrPut callContextOfThis
 
-            if (composeCompilerInClasspath && descriptor.isComposableCallable(ctx.trace.bindingContext))
-              return@getOrPut CallContext.COMPOSABLE
+            if (composeCompilerInClasspath) {
+              val parentCall = node.getParentResolvedCall(ctx.trace.bindingContext)
+                ?: return@getOrPut callContextOfThis
+              if (parentCall.candidateDescriptor.isSamConstructor())
+                return@getOrPut parentCall.candidateDescriptor.returnType
+                  ?.constructor
+                  ?.declarationDescriptor
+                  ?.cast<ClassDescriptor>()
+                  ?.let { getSingleAbstractMethodOrNull(it) }
+                  ?.callContext(ctx) ?: callContextOfThis
+            }
 
             val arg = getArgumentDescriptor(node.functionLiteral, ctx.trace.bindingContext)
             val inlined = arg != null &&
