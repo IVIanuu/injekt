@@ -409,4 +409,57 @@ class CallContextTest {
           .shouldBeTypeOf<Foo>()
       }
     }
+
+  @Test fun testCallContextOfCrossinlinedSuspendLambda() =
+    singleAndMultiCodegen(
+      """
+        @Provide suspend fun foo() = Foo()
+
+        interface WithLambda<R> {
+          suspend fun invoke(): R
+        }
+
+        inline fun <R> WithLambda(crossinline block: suspend () -> R): WithLambda<R> = object : WithLambda<R> {
+          override suspend fun invoke() = block()
+        }
+      """,
+      """
+        fun invoke(): suspend () -> Foo = { 
+          WithLambda { inject<Foo>() }.invoke()
+        }
+      """
+    ) {
+      runBlocking {
+        invokeSingleFile<suspend () -> Foo>()
+          .invoke()
+          .shouldBeTypeOf<Foo>()
+      }
+    }
+
+  @Test fun testCallContextOfCrossinlinedComposableLambda() =
+    singleAndMultiCodegen(
+      """
+        @Provide @Composable fun foo() = Foo()
+
+        interface WithLambda<R> {
+          @Composable fun invoke(): R
+        }
+
+        inline fun <R> WithLambda(crossinline block: @Composable () -> R): WithLambda<R> = object : WithLambda<R> {
+          @Composable override fun invoke() = block()
+        }
+      """,
+      """
+        fun invoke(): @Composable () -> Foo = { 
+          WithLambda { inject<Foo>() }.invoke()
+        }
+      """,
+      config = { withCompose() }
+    ) {
+      runComposing {
+        invokeSingleFile<@Composable () -> Foo>()
+          .invoke()
+          .shouldBeTypeOf<Foo>()
+      }
+    }
 }

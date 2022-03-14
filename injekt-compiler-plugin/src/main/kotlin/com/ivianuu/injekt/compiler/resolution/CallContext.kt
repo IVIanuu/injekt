@@ -60,13 +60,16 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
             }
 
             val arg = getArgumentDescriptor(node.functionLiteral, ctx.trace.bindingContext)
+
             val inlined = arg != null &&
                 canBeInlineArgument(node.functionLiteral) &&
                 isInline(arg.containingDeclaration) &&
-                isInlineParameter(arg)
+                isInlineParameter(arg) &&
+                !arg.isCrossinline
 
             if (!inlined)
-              return@getOrPut descriptor.callContextOfThis
+              return@getOrPut arg?.type?.toTypeRef(ctx)?.callContext
+                ?: callContextOfThis
           }
           is KtFunction -> {
             val descriptor = ctx.trace.bindingContext[BindingContext.FUNCTION, node]
