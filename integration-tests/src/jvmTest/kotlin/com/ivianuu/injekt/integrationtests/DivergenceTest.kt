@@ -91,6 +91,27 @@ class DivergenceTest {
     compilationShouldHaveFailed("diverging")
   }
 
+  @Test fun testCrossinlineProviderDoesBreakCircularDependency() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: B)
+
+      interface B {
+        val a: A
+        
+        companion object {
+          @Provide inline fun newInstance(crossinline a: () -> A): B = object : B {
+            override val a: A get() = a()
+          }
+        }
+      }
+    """,
+    """
+      fun invoke() = inject<B>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testNonInlineProviderInsideAChainBreaksCircularDependencyWithInlineProvider() = singleAndMultiCodegen(
     """
       @Provide class A(b: C)

@@ -190,5 +190,6 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableR
   parameterIndex = injektIndex(),
   isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
   isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-      InlineUtil.isInlineParameter(this)
+      InlineUtil.isInlineParameter(this) &&
+      safeAs<ValueParameterDescriptor>()?.isCrossinline != true
 )
