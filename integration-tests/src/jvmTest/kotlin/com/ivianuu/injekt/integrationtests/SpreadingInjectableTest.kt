@@ -252,7 +252,7 @@ class SpreadingInjectableTest {
       fun invoke() = inject<List<Foo>>()
     """
   ) {
-    irShouldContain(1, "listOf")
+    irShouldContain(1, "mutableListOf")
   }
 
   @Test fun testNestedSpreadingInjectablesWithGenerics() = singleAndMultiCodegen(

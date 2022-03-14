@@ -42,23 +42,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     ctx: Context
   ) {
     if (descriptor.hasAnnotation(InjektFqNames.Provide)) {
-      if (descriptor.isSuspend)
-        ctx.trace!!.report(
-          InjektErrors.PROVIDE_SUSPEND_FUNCTION
-            .on(
-              descriptor.annotations.findAnnotation(InjektFqNames.Provide)
-                ?.source?.getPsi() ?: declaration
-            )
-        )
-      if (descriptor.hasAnnotation(InjektFqNames.Composable))
-        ctx.trace!!.report(
-          InjektErrors.PROVIDE_COMPOSABLE_FUNCTION
-            .on(
-              descriptor.annotations.findAnnotation(InjektFqNames.Provide)
-                ?.source?.getPsi() ?: declaration
-            )
-        )
-
       descriptor.valueParameters
         .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
       checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
@@ -173,16 +156,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: PropertyDescriptor,
     ctx: Context
   ) {
-    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
-      descriptor.getter?.hasAnnotation(InjektFqNames.Composable) == true)
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_COMPOSABLE_PROPERTY
-          .on(
-            descriptor.getter?.annotations?.findAnnotation(InjektFqNames.Provide)
-              ?.source?.getPsi() ?: declaration
-          )
-      )
-
     checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
     checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)

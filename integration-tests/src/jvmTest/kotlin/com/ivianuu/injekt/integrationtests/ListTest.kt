@@ -4,10 +4,12 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.*
 import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
 import io.kotest.matchers.collections.*
 import io.kotest.matchers.types.*
+import kotlinx.coroutines.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
@@ -69,6 +71,40 @@ class ListTest {
     val provider = list.single()
     val foo = Foo()
     val bar = provider(foo)
+    foo shouldBeSameInstanceAs bar.foo
+  }
+
+  @Test fun testSuspendProviderList() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo) = Bar(foo)
+    """,
+    """
+      fun invoke() = inject<List<suspend (Foo) -> Bar>>() 
+    """
+  ) {
+    val list = invokeSingleFile<List<suspend (Foo) -> Bar>>().toList()
+    list.size shouldBe 1
+    val provider = list.single()
+    val foo = Foo()
+    val bar = runBlocking { provider(foo) }
+    foo shouldBeSameInstanceAs bar.foo
+  }
+
+  @Test fun testComposableProviderList() = singleAndMultiCodegen(
+    """
+      @Provide fun bar(foo: Foo) = Bar(foo)
+    """,
+    """
+      fun invoke() = inject<List<@Composable (Foo) -> Bar>>() 
+    """,
+    config = { withCompose() }
+  ) {
+    val list = invokeSingleFile<List<@Composable (Foo) -> Bar>>().toList()
+    list.size shouldBe 1
+    val provider = list.single()
+    val foo = Foo()
+    println()
+    val bar = runComposing { provider(foo) }
     foo shouldBeSameInstanceAs bar.foo
   }
 

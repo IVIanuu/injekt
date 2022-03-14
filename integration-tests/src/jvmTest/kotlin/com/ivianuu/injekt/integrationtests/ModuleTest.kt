@@ -4,9 +4,11 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import androidx.compose.runtime.*
 import com.ivianuu.injekt.test.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
+import kotlinx.coroutines.*
 import org.junit.*
 
 class ModuleTest {
@@ -147,6 +149,29 @@ class ModuleTest {
   ) {
     val foo = Foo()
     invokeSingleFile<(() -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testSuspendLambdaModule() = codegen(
+    """
+      fun invoke() = inject<suspend (@Provide suspend () -> Foo) -> Foo>()
+    """
+  ) {
+    runBlocking {
+      val foo = Foo()
+      invokeSingleFile<suspend (suspend () -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+    }
+  }
+
+  @Test fun testComposableLambdaModule() = codegen(
+    """
+      fun invoke() = inject<@Composable (@Provide @Composable () -> Foo) -> Foo>()
+    """,
+    config = { withCompose() }
+  ) {
+    runComposing {
+      val foo = Foo()
+      invokeSingleFile<@Composable (@Composable () -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
+    }
   }
 
   @Test fun testLambdaModuleChain() = singleAndMultiCodegen(

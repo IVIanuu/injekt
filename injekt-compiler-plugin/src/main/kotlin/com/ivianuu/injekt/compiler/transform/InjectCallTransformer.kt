@@ -14,18 +14,8 @@ import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.ir.*
-import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
-import org.jetbrains.kotlin.ir.builders.irBlock
-import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
-import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irSet
-import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.expressions.*
@@ -235,8 +225,18 @@ class InjectCallTransformer(
         returnType = result.candidate.type.toIrType(irCtx, localDeclarations, ctx)
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
+        isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
         parent = irScope.getLocalDeclarationParent()
+
+        if (result.candidate.callContext == CallContext.COMPOSABLE) {
+          annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
+            .irCallConstructor(
+              irCtx.referenceConstructors(InjektFqNames.Composable)
+                .single(),
+              emptyList()
+            )
+        }
 
         this.body = DeclarationIrBuilder(irCtx, symbol).run {
           irBlockBody {
