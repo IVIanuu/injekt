@@ -132,6 +132,46 @@ class CallContextTest {
       }
     }
 
+  @Test fun testCanRequestSuspendDependencyFromNonSuspendFunctionInSuspendFunInterface() =
+    singleAndMultiCodegen(
+      """
+        @Provide suspend fun foo() = Foo()
+        fun interface LazyBar {
+          suspend operator fun invoke(): Bar
+        }
+        @Provide fun lazyBar() = LazyBar { Bar(inject()) }
+      """,
+      """
+        fun invoke(): suspend () -> Bar = { inject<LazyBar>()() }
+      """
+    ) {
+      runBlocking {
+        invokeSingleFile<suspend () -> Bar>()
+          .invoke()
+          .shouldBeTypeOf<Bar>()
+      }
+    }
+
+  @Test fun testCanRequestComposableDependencyFromNonComposableFunctionInComposableFunInterface() =
+    singleAndMultiCodegen(
+      """
+        @Provide @Composable fun foo() = Foo()
+        fun interface LazyBar {
+          @Composable operator fun invoke(): Bar
+        }
+        @Provide fun lazyBar() = LazyBar { Bar(inject()) }
+      """,
+      """
+        fun invoke(): @Composable () -> Bar = { inject<LazyBar>()() }
+      """
+    ) {
+      runBlocking {
+        invokeSingleFile<@Composable () -> Bar>()
+          .invoke()
+          .shouldBeTypeOf<Bar>()
+      }
+    }
+
   @Test fun testSuspendCanBeRequestedFromInlineLambdaInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun foo() = Foo()

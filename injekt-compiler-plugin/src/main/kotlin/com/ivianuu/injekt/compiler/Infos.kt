@@ -377,7 +377,6 @@ val json = Json { ignoreUnknownKeys = true }
 inline fun <reified T> T.encode(): String = json.encodeToString(this)
 inline fun <reified T> String.decode(): T = json.decodeFromString(this)
 
-fun DescriptorVisibility.shouldPersistInfo() = this ==
-    DescriptorVisibilities.PUBLIC ||
+fun DescriptorVisibility.shouldPersistInfo() = this == DescriptorVisibilities.PUBLIC ||
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED

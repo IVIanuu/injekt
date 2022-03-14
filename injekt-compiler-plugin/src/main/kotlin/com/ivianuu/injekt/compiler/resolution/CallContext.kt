@@ -30,9 +30,6 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
   if (ctx.trace == null) return callContextOfThis
 
   return ctx.trace.getOrPut(InjektWritableSlices.CALL_CONTEXT, this) {
-    if (composeCompilerInClasspath && isComposableCallable(ctx.trace.bindingContext))
-      return@getOrPut CallContext.COMPOSABLE
-
     val initialNode = findPsi() ?: return@getOrPut callContextOfThis
 
     var node: PsiElement? = initialNode
@@ -46,11 +43,16 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
           is KtLambdaExpression -> {
             val descriptor = ctx.trace.bindingContext[BindingContext.FUNCTION, node.functionLiteral]
               ?: return@getOrPut callContextOfThis
+
+            if (composeCompilerInClasspath && descriptor.isComposableCallable(ctx.trace.bindingContext))
+              return@getOrPut CallContext.COMPOSABLE
+
             val arg = getArgumentDescriptor(node.functionLiteral, ctx.trace.bindingContext)
             val inlined = arg != null &&
                 canBeInlineArgument(node.functionLiteral) &&
                 isInline(arg.containingDeclaration) &&
                 isInlineParameter(arg)
+
             if (!inlined)
               return@getOrPut descriptor.callContextOfThis
           }
