@@ -91,6 +91,22 @@ class DivergenceTest {
     compilationShouldHaveFailed("diverging")
   }
 
+  @Test fun testNoInlineProviderDoesNotBreakCircularDependency() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: B)
+      class B(a: A) {
+        companion object {
+          @Provide inline fun newInstance(noinline a: () -> A) = B(a())
+        }
+      }
+    """,
+    """
+      fun invoke() = inject<B>()
+    """
+  ) {
+    compilationShouldHaveFailed("diverging")
+  }
+
   @Test fun testCrossinlineProviderDoesBreakCircularDependency() = singleAndMultiCodegen(
     """
       @Provide class A(b: B)
