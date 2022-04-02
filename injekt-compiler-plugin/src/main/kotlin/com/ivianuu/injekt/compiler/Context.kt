@@ -4,10 +4,15 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.*
+import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.copy
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.resolve.BindingTrace
 
 @Suppress("NewApi")
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {

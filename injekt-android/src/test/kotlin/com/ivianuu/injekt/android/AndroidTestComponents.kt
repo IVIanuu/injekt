@@ -4,6 +4,6 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.*
+import android.app.Application
 
 class AndroidTestApp : Application()

@@ -4,9 +4,10 @@
 
 package com.ivianuu.injekt.samples.android.domain
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.samples.android.data.*
-import kotlinx.coroutines.flow.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.samples.android.data.CounterDb
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 @JvmInline value class Counter(val value: Int)
 

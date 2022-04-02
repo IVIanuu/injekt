@@ -4,8 +4,12 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.*
-import kotlinx.atomicfu.locks.*
+import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 interface Scope<N> : Disposable {
   val isDisposed: Boolean

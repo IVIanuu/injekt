@@ -4,10 +4,14 @@
 
 package com.ivianuu.injekt.android.work
 
-import android.content.*
-import androidx.work.*
-import com.ivianuu.injekt.*
-import kotlin.reflect.*
+import android.content.Context
+import androidx.work.ListenableWorker
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Spread
+import com.ivianuu.injekt.Tag
+import kotlin.reflect.KClass
 
 /**
  * Installs the injectable [ListenableWorker] in the [InjektWorkerFactory]

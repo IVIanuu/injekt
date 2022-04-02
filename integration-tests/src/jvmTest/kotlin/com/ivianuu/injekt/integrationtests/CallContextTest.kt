@@ -4,11 +4,17 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import androidx.compose.runtime.*
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.types.*
-import kotlinx.coroutines.*
-import org.junit.*
+import androidx.compose.runtime.Composable
+import com.ivianuu.injekt.test.Bar
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.runComposing
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.withCompose
+import io.kotest.matchers.types.shouldBeTypeOf
+import kotlinx.coroutines.runBlocking
+import org.junit.Test
 
 class CallContextTest {
   @Test fun testSuspendCannotBeRequestedFromNonSuspend() = singleAndMultiCodegen(

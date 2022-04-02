@@ -4,12 +4,17 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.serialization.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.calls.model.*
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.classifierDescriptorForFqName
+import com.ivianuu.injekt.compiler.lookupLocation
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtAnnotated
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.ValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
 data class ProviderImport(val element: KtElement?, val importPath: String?)
 

@@ -4,7 +4,7 @@
 
 package kotlin.reflect
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Provide
 
 object ReflectInjectables {
   /**

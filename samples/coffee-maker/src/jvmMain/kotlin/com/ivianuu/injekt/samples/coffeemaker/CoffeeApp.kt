@@ -4,7 +4,8 @@
 
 package com.ivianuu.injekt.samples.coffeemaker
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.inject
 
 fun main() {
   val heater = inject<Heater>()

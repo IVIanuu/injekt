@@ -4,13 +4,14 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.extensions.*
-import org.jetbrains.kotlin.ir.*
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.resolve.*
-import java.io.*
+import com.ivianuu.injekt.compiler.Context
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import java.io.File
 
 var dumpAllFiles = false
 

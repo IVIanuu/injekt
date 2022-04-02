@@ -4,7 +4,7 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Tag
 
 class Foo
 

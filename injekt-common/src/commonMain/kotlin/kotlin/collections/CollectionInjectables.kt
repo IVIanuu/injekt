@@ -4,7 +4,7 @@
 
 package kotlin.collections
 
-import com.ivianuu.injekt.*
+import com.ivianuu.injekt.Provide
 
 object CollectionInjectables {
   /**

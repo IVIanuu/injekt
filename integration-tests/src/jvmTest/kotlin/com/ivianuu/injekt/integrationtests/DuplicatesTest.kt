@@ -4,10 +4,14 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.collections.*
-import org.jetbrains.kotlin.name.*
-import org.junit.*
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokableSource
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import com.ivianuu.injekt.test.source
+import io.kotest.matchers.collections.shouldHaveSize
+import org.jetbrains.kotlin.name.FqName
+import org.junit.Test
 
 class DuplicatesTest {
   @Test fun testDoubleStarImportDoesNotProduceDuplicates() = singleAndMultiCodegen(

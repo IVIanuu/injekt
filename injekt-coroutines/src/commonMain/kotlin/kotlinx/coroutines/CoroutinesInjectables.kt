@@ -4,8 +4,8 @@
 
 package kotlinx.coroutines
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.coroutines.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.coroutines.DefaultContext
 
 object CoroutinesInjectables {
   @OptIn(ExperimentalStdlibApi::class)

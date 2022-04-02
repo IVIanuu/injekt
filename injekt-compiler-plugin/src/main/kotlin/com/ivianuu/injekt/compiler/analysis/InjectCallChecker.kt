@@ -4,17 +4,41 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.analyzer.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.calls.callUtil.*
-import org.jetbrains.kotlin.resolve.calls.model.*
-import org.jetbrains.kotlin.resolve.extensions.*
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.injektIndex
+import com.ivianuu.injekt.compiler.lookupLocation
+import com.ivianuu.injekt.compiler.resolution.CallableInjectable
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
+import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.ResolutionResult
+import com.ivianuu.injekt.compiler.resolution.TypeRef
+import com.ivianuu.injekt.compiler.resolution.isInject
+import com.ivianuu.injekt.compiler.resolution.resolveRequests
+import com.ivianuu.injekt.compiler.resolution.substitute
+import com.ivianuu.injekt.compiler.resolution.toCallableRef
+import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import com.ivianuu.injekt.compiler.transform
+import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtSimpleNameExpression
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 
 class InjectCallChecker(
   private val withDeclarationGenerator: Boolean

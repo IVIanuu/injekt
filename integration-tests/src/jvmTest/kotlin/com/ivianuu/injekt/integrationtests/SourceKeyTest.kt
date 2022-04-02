@@ -4,9 +4,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import io.kotest.matchers.*
-import org.junit.*
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import io.kotest.matchers.shouldBe
+import org.junit.Test
 
 class SourceKeyTest {
   @Test fun testSourceKey() = codegen(

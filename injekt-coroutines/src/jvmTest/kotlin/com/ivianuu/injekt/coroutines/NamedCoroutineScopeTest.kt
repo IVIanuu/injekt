@@ -4,12 +4,16 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
-import io.kotest.matchers.booleans.*
-import io.kotest.matchers.types.*
-import kotlinx.coroutines.*
-import org.junit.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.common.Scope
+import com.ivianuu.injekt.inject
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
+import org.junit.Test
 
 class NamedCoroutineScopeTest {
   private object MyScope

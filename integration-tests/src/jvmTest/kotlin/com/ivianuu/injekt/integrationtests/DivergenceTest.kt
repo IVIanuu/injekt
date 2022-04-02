@@ -4,8 +4,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import org.junit.*
+import com.ivianuu.injekt.test.compilationShouldHaveFailed
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import org.junit.Test
 
 class DivergenceTest {
   @Test fun testUnresolvableDivergence() = singleAndMultiCodegen(

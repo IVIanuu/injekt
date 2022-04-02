@@ -4,10 +4,14 @@
 
 package com.ivianuu.injekt.coroutines
 
-import com.ivianuu.injekt.*
-import com.ivianuu.injekt.common.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
+import com.ivianuu.injekt.Provide
+import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.common.Disposable
+import com.ivianuu.injekt.common.Scoped
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlin.coroutines.CoroutineContext
 
 typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope
 

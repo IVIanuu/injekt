@@ -4,8 +4,11 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.callableInfo
+import com.ivianuu.injekt.compiler.getOrPut
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 
 data class CallableRef(
   val callable: CallableDescriptor,

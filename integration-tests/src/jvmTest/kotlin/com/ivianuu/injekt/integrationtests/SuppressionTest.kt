@@ -4,8 +4,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.*
-import org.junit.*
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.shouldNotContainMessage
+import com.ivianuu.injekt.test.singleAndMultiCodegen
+import org.junit.Test
 
 class SuppressionTest {
   @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
