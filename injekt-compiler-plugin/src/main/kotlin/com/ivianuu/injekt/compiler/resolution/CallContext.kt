@@ -67,8 +67,7 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
 
             if (composeCompilerInClasspath) {
               val parentCall = node.getParentResolvedCall(ctx.trace.bindingContext)
-                ?: return@getOrPut callContextOfThis
-              if (parentCall.candidateDescriptor.isSamConstructor())
+              if (parentCall?.candidateDescriptor?.isSamConstructor() == true)
                 return@getOrPut parentCall.candidateDescriptor.returnType
                   ?.constructor
                   ?.declarationDescriptor
@@ -87,7 +86,7 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
 
             if (!inlined)
               return@getOrPut arg?.type?.toTypeRef(ctx)?.callContext
-                ?: callContextOfThis
+                ?: descriptor.callContextOfThis
           }
           is KtFunction -> {
             val descriptor = ctx.trace.bindingContext[BindingContext.FUNCTION, node]
