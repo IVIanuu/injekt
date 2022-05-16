@@ -24,17 +24,19 @@ fun <N> Scope(): Scope<N> = ScopeImpl()
 
 private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
   private val values = mutableMapOf<Any, Any>()
-  override var isDisposed = false
+  private var _isDisposed = false
+  override val isDisposed: Boolean
+    get() = synchronized(this) { _isDisposed }
 
   override fun <T : Any> invoke(key: Any, init: () -> T): T = synchronized(this) {
-    check(!isDisposed) { "Cannot use a disposed scope" }
+    check(!_isDisposed) { "Cannot use a disposed scope" }
     values.getOrPut(key, init) as T
   }
 
   override fun dispose() {
     synchronized(this) {
-      if (!isDisposed) {
-        isDisposed = true
+      if (!_isDisposed) {
+        _isDisposed = true
         values.values.toList()
           .also { values.clear() }
       } else null
