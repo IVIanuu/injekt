@@ -8,6 +8,7 @@ import android.os.PowerManager
 import androidx.test.platform.app.InstrumentationRegistry
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -18,6 +19,7 @@ import org.robolectric.annotation.Config
 class SystemServiceTest {
   @Test fun testCanRequestSystemService() {
     @Provide val context = InstrumentationRegistry.getInstrumentation().context
-    inject<@SystemService PowerManager>()
+    inject<@SystemService PowerManager>() shouldBeSameInstanceAs
+        context.getSystemService(PowerManager::class.java)
   }
 }

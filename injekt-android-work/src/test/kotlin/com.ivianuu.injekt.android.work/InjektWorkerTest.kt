@@ -13,6 +13,7 @@ import com.ivianuu.injekt.inject
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.mockk
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
