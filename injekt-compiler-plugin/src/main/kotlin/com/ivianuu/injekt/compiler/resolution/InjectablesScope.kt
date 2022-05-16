@@ -212,7 +212,8 @@ class InjectablesScope(
           type = request.type,
           ownerScope = this,
           dependencyCallContext = finalCallContext,
-          isInline = request.isInline
+          isInline = request.isInline,
+          isNoInline = request.isNoInline
         )
       }
       request.type.classifier == ctx.listClassifier -> {
