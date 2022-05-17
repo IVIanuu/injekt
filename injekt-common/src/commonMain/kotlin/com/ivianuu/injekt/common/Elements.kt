@@ -31,7 +31,7 @@ interface Elements<N> {
 @Tag annotation class Element<N> {
   companion object {
     @Provide class Module<@Spread T : @Element<N> S, S : Any, N> {
-      @Provide fun provided(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
+      @Provide fun element(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
 
       @Provide inline fun accessor(value: T): S = value
     }
