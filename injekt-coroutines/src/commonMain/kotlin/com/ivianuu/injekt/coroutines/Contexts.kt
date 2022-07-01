@@ -31,6 +31,6 @@ typealias IOContext = @IOContextTag CoroutineContext
 
 @Tag annotation class IOContextTag
 
-expect object IOContextInjectables {
+expect object IOContextModule {
   @Provide val context: IOContext
 }

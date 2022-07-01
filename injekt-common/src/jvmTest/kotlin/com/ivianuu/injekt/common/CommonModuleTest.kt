@@ -10,7 +10,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 import kotlin.reflect.KClass
 
-class CommonInjectablesTest {
+class CommonModuleTest {
   @Test fun testCanResolveMap() {
     @Provide val elementsA = listOf("a" to "a")
     @Provide val elementB = "b" to "b"

@@ -502,7 +502,7 @@ class ResolutionTest {
       listOf(
         source(
           """
-            object MyInjectables {
+            object MyModule {
               @Provide val a = "a"
               @Provide val b = "b"
             }
@@ -513,8 +513,8 @@ class ResolutionTest {
       listOf(
         invokableSource(
           """
-            fun invoke() = @Providers("injectables.MyInjectables.a") run {
-              @Providers("injectables.MyInjectables.b") run {
+            fun invoke() = @Providers("injectables.MyModule.a") run {
+              @Providers("injectables.MyModule.b") run {
                 inject<String>()
               }
             }
