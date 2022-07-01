@@ -7,7 +7,7 @@ package com.ivianuu.injekt.coroutines
 import com.ivianuu.injekt.Provide
 import kotlinx.coroutines.Dispatchers
 
-actual object IOInjectables {
+actual object IOContextInjectables {
   @Provide actual inline val context: IOContext
     get() = Dispatchers.IO
 }
