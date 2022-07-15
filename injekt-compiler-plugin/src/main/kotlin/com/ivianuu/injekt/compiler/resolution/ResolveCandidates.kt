@@ -191,11 +191,11 @@ private fun InjectablesScope.resolveRequest(
   lookupLocation: LookupLocation,
   fromTypeScope: Boolean
 ): ResolutionResult {
-  if (request.type.hasErrors)
-    return ResolutionResult.Failure.NoCandidates(this, request)
-
   if (scopeToUse != this)
     return scopeToUse.resolveRequest(request, lookupLocation, fromTypeScope)
+
+  if (request.type.hasErrors)
+    return ResolutionResult.Failure.NoCandidates(this, request)
 
   resultsByType[request.type]?.let { return it }
 
@@ -297,10 +297,9 @@ private fun InjectablesScope.resolveCandidates(
   candidates: List<Injectable>,
   lookupLocation: LookupLocation
 ): ResolutionResult {
-  if (candidates.size == 1) {
-    val candidate = candidates.single()
-    return resolveCandidate(request, candidate, lookupLocation)
-  }
+  // fast path
+  if (candidates.size == 1)
+    return resolveCandidate(request, candidates.single(), lookupLocation)
 
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
@@ -311,6 +310,7 @@ private fun InjectablesScope.resolveCandidates(
       else it
     }
     .toCollection(LinkedList())
+
   while (remaining.isNotEmpty()) {
     val candidate = remaining.removeFirst()
     if (compareCandidate(
@@ -327,13 +327,16 @@ private fun InjectablesScope.resolveCandidates(
         val firstSuccessResult = successes.firstOrNull()
         when (compareResult(candidateResult, firstSuccessResult)) {
           -1 -> {
+            // new best result
             successes.clear()
             successes += candidateResult
           }
+          // append to success results
           0 -> successes += candidateResult
         }
       }
       is ResolutionResult.Failure -> {
+        // set as the new failure if the failure is better then the previous one
         if (compareResult(candidateResult, failure) < 0)
           failure = candidateResult
       }
@@ -399,6 +402,7 @@ private fun InjectablesScope.resolveCandidate(
       }
     }
   }
+
   return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(
     candidate,
     this,
