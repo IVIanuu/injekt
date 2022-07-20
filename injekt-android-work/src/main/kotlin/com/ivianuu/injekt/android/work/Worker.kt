@@ -33,7 +33,7 @@ import kotlin.reflect.KClass
       workerClass: KClass<S>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
 
-    @Provide val defaultWorkers: Collection<Pair<String, SingleWorkerFactory>> get() = emptyList()
+    @Provide val defaultWorkerFactories: Collection<Pair<String, SingleWorkerFactory>> get() = emptyList()
   }
 }
 
