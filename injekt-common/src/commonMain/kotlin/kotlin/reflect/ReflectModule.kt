@@ -6,7 +6,7 @@ package kotlin.reflect
 
 import com.ivianuu.injekt.Provide
 
-object ReflectInjectables {
+object ReflectModule {
   /**
    * Provides a [KClass] of [T]
    */

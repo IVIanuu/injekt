@@ -6,7 +6,7 @@ package kotlin.collections
 
 import com.ivianuu.injekt.Provide
 
-object CollectionInjectables {
+object CollectionModule {
   /**
    * Provides a [Map] of [K] [V] for each [List] of [Pair] of [K] [V]
    */
