@@ -33,7 +33,7 @@ interface Elements<N> {
     @Provide class Module<@Spread T : @Element<N> S, S : Any, N> {
       @Provide fun element(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
 
-      @Provide inline fun accessor(value: T): S = value
+      @Provide inline fun accessor(element: T): S = element
     }
   }
 }
