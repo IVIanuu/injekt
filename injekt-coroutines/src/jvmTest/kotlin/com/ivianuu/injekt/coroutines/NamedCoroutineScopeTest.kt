@@ -18,7 +18,7 @@ import org.junit.Test
 class NamedCoroutineScopeTest {
   private object MyScope
 
-  @Test fun testComponentScopeLifecycle() {
+  @Test fun testNamedScopeLifecycle() {
     @Provide val scope = Scope<MyScope>()
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
     coroutineScope.isActive.shouldBeTrue()

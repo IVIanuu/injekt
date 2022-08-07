@@ -53,9 +53,8 @@ class InjectCallChecker(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
-    if (completionCount < 1 && withDeclarationGenerator)
-      return null.also { completionCount++ }
-    if (completionCount > 0 && !withDeclarationGenerator)
+    if ((completionCount < 1 && withDeclarationGenerator) ||
+      (completionCount > 0 && !withDeclarationGenerator))
       return null.also { completionCount++ }
 
     ctx = Context(module, bindingTrace)
