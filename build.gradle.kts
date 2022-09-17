@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 buildscript {
   repositories {
@@ -22,7 +23,6 @@ buildscript {
   dependencies {
     classpath(Deps.androidGradlePlugin)
     classpath(Deps.atomicFuGradlePlugin)
-    classpath(Deps.Compose.gradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
     classpath(Deps.injektGradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
@@ -40,6 +40,20 @@ allprojects {
     jcenter()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://plugins.gradle.org/m2")
+  }
+
+  plugins.withId("java-base") {
+    extensions.getByName<JavaPluginExtension>("java").apply {
+      toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+      }
+    }
+  }
+
+  tasks.withType<KotlinJvmCompile>().configureEach {
+    kotlinOptions {
+      jvmTarget = "11"
+    }
   }
 
   plugins.withId("com.vanniktech.maven.publish") {

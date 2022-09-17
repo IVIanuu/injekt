@@ -19,6 +19,8 @@ import org.gradle.api.tasks.LocalState
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.work.InputChanges
+import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
@@ -29,6 +31,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformCommonOptionsImpl
 import org.jetbrains.kotlin.gradle.dsl.fillDefaultValues
 import org.jetbrains.kotlin.gradle.internal.CompilerArgumentsContributor
 import org.jetbrains.kotlin.gradle.internal.compilerArgumentsConfigurationFlags
+import org.jetbrains.kotlin.gradle.plugin.CompilerPluginConfig
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
@@ -37,21 +40,46 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.AbstractKotlinNativeCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.enabledOnCurrentHost
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinCompilationData
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinNativeCompilationData
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.SourceRoots
 import org.jetbrains.kotlin.gradle.plugin.pluginConfigurationName
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile.Configurator
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
 import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.configuration.AbstractKotlinCompileConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
-import org.jetbrains.kotlin.gradle.tasks.SourceRoots
 import org.jetbrains.kotlin.gradle.tasks.TaskOutputsBackup
 import org.jetbrains.kotlin.incremental.ChangedFiles
 import org.jetbrains.kotlin.incremental.destinationAsFile
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.File
 import java.util.concurrent.Callable
 import javax.inject.Inject
+
+@Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
+internal class Configurator : AbstractKotlinCompileConfig<AbstractKotlinCompile<*>> {
+  constructor(compilation: KotlinCompilationData<*>, kotlinCompile: AbstractKotlinCompile<*>) : super(compilation) {
+    configureTask { task ->
+      if (task is InjektTaskJvm) {
+        // Assign ownModuleName different from kotlin compilation to
+        // work around https://github.com/google/ksp/issues/647
+        // This will not be necessary once https://youtrack.jetbrains.com/issue/KT-45777 lands
+        task.ownModuleName.value(kotlinCompile.ownModuleName.map { "$it-ksp" })
+      }
+      if (task is InjektTaskJS) {
+        val libraryCacheService = project.rootProject.gradle.sharedServices.registerIfAbsent(
+          Kotlin2JsCompile.LibraryFilterCachingService::class.java.canonicalName +
+              "_${Kotlin2JsCompile.LibraryFilterCachingService::class.java.classLoader.hashCode()}",
+          Kotlin2JsCompile.LibraryFilterCachingService::class.java
+        ) {}
+        task.libraryCache.set(libraryCacheService).also { task.libraryCache.disallowChanges() }
+        task.pluginClasspath.setFrom(objectFactory.fileCollection())
+      }
+    }
+  }
+}
 
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
@@ -69,7 +97,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     val outputDir = outputDir(project, sourceSetName)
     val srcDir = srcDir(project, sourceSetName)
 
-    val kotlinCompileProvider: TaskProvider<AbstractCompile> =
+    val kotlinCompileProvider: TaskProvider<AbstractKotlinCompileTool<*>> =
       project.locateTask(kotlinCompilation.compileKotlinTaskName)
         ?: return project.provider { emptyList() }
 
@@ -86,12 +114,12 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       injektTask.outputDir = outputDir
       injektTask.cacheDir = getCacheDir(project, sourceSetName)
 
-      injektTask as AbstractCompile
+      injektTask as AbstractKotlinCompileTool<*>
 
       injektTask.destinationDirectory.set(outputDir)
       (injektTask as InjektTask).outputs.dirs(outputDir, srcDir)
-      injektTask.source(
-        kotlinCompileTask.source.filter {
+      injektTask.setSource(
+        kotlinCompileTask.sources.filter {
           it.extension == "kt" &&
               !it.absolutePath.startsWith(srcDir.absolutePath)
         }
@@ -108,10 +136,14 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         }
         project.tasks.register(injektTaskName, injektTaskClass) { injektTask ->
           configure(injektTask)
-          injektTask.classpath = kotlinCompileTask.project.files(Callable { kotlinCompileTask.classpath })
+          injektTask.libraries.setFrom(kotlinCompileTask.project.files(Callable { kotlinCompileTask.libraries }))
 
           getSubpluginOptions(project, sourceSetName, false).forEach { option ->
-            kotlinCompileTask.pluginOptions.addPluginArgument("com.ivianuu.injekt", option)
+            kotlinCompileTask.pluginOptions.add(
+              CompilerPluginConfig().apply {
+                addPluginArgument("com.ivianuu.injekt", option)
+              }
+            )
           }
 
           injektTask.configureCompilation(
@@ -137,6 +169,11 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         }
       }
       else -> return project.provider { emptyList() }
+    }
+
+    kotlinCompileTask.safeAs<AbstractKotlinCompile<*>>()?.let {
+      Configurator(kotlinCompilation as KotlinCompilationData<*>, kotlinCompileTask as AbstractKotlinCompile<*>)
+        .execute(injektTaskProvider as TaskProvider<AbstractKotlinCompile<*>>)
     }
 
     kotlinCompileProvider.configure { kotlinCompile ->
@@ -169,12 +206,14 @@ interface InjektTask : Task {
   )
 }
 
-@CacheableTask abstract class InjektTaskJvm : KotlinCompile(KotlinJvmOptionsImpl()), InjektTask {
+@CacheableTask abstract class InjektTaskJvm @Inject constructor(
+  objectFactory: ObjectFactory,
+  workerExecutor: WorkerExecutor
+) : KotlinCompile(KotlinJvmOptionsImpl(), workerExecutor, objectFactory), InjektTask {
   override fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) {
-    Configurator<InjektTaskJvm>(kotlinCompilation).configure(this)
     kotlinCompile as KotlinCompile
     compileKotlinArgumentsContributor.set(
       kotlinCompile.project.provider {
@@ -182,6 +221,7 @@ interface InjektTask : Task {
       }
     )
     classpathSnapshotProperties.useClasspathSnapshot.value(false).disallowChanges()
+    useKotlinAbiSnapshot.value(false)
   }
 
   @get:Internal internal abstract val compileKotlinArgumentsContributor:
@@ -213,25 +253,25 @@ interface InjektTask : Task {
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
-  fun `callCompilerAsync$kotlin_gradle_plugin`(
+  fun `callCompilerAsync$kotlin_gradle_plugin_common`(
     args: K2JVMCompilerArguments,
-    sourceRoots: SourceRoots,
-    changedFiles: ChangedFiles,
-    taskOutputsBackup: TaskOutputsBackup?,
+    kotlinSources: Set<File>,
+    inputChanges: InputChanges,
+    taskOutputsBackup: TaskOutputsBackup?
   ) {
-    args.addChangedFiles(changedFiles)
-    super.callCompilerAsync(args, sourceRoots, changedFiles, taskOutputsBackup)
+    args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
 
 @CacheableTask abstract class InjektTaskJS @Inject constructor(
   objectFactory: ObjectFactory,
-) : Kotlin2JsCompile(KotlinJsOptionsImpl(), objectFactory), InjektTask {
+  workerExecutor: WorkerExecutor
+) : Kotlin2JsCompile(KotlinJsOptionsImpl(), objectFactory, workerExecutor), InjektTask {
   override fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) {
-    Configurator<InjektTaskJS>(kotlinCompilation).configure(this)
     kotlinCompile as Kotlin2JsCompile
     compileKotlinArgumentsContributor.set(
       kotlinCompile.project.provider {
@@ -262,24 +302,25 @@ interface InjektTask : Task {
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
-  fun `callCompilerAsync$kotlin_gradle_plugin`(
+  fun `callCompilerAsync$kotlin_gradle_plugin_common`(
     args: K2JSCompilerArguments,
-    sourceRoots: SourceRoots,
-    changedFiles: ChangedFiles,
-    taskOutputsBackup: TaskOutputsBackup?,
+    kotlinSources: Set<File>,
+    inputChanges: InputChanges,
+    taskOutputsBackup: TaskOutputsBackup?
   ) {
-    args.addChangedFiles(changedFiles)
-    super.callCompilerAsync(args, sourceRoots, changedFiles, taskOutputsBackup)
+    args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
 
-@CacheableTask abstract class InjektTaskMetadata :
-  KotlinCompileCommon(KotlinMultiplatformCommonOptionsImpl()), InjektTask {
+@CacheableTask abstract class InjektTaskMetadata @Inject constructor(
+  objectFactory: ObjectFactory,
+  workerExecutor: WorkerExecutor
+) : KotlinCompileCommon(KotlinMultiplatformCommonOptionsImpl(), workerExecutor, objectFactory), InjektTask {
   override fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) {
-    Configurator<InjektTaskMetadata>(kotlinCompilation).configure(this)
     kotlinCompile as KotlinCompileCommon
     compileKotlinArgumentsContributor.set(
       kotlinCompile.project.provider {
@@ -306,7 +347,7 @@ interface InjektTask : Task {
     )
     args.addPluginOptions(options.get())
     args.destination = outputDir.canonicalPath
-    val classpathList = classpath.files.filter { it.exists() }.toMutableList()
+    val classpathList = libraries.files.filter { it.exists() }.toMutableList()
     args.classpath = classpathList.joinToString(File.pathSeparator)
     args.friendPaths = friendPaths.files.map { it.absolutePath }.toTypedArray()
     args.refinesPaths = refinesMetadataPaths.map { it.absolutePath }.toTypedArray()
@@ -314,23 +355,28 @@ interface InjektTask : Task {
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
-  fun `callCompilerAsync$kotlin_gradle_plugin`(
+  fun `callCompilerAsync$kotlin_gradle_plugin_common`(
     args: K2MetadataCompilerArguments,
-    sourceRoots: SourceRoots,
-    changedFiles: ChangedFiles,
-    taskOutputsBackup: TaskOutputsBackup?,
+    kotlinSources: Set<File>,
+    inputChanges: InputChanges,
+    taskOutputsBackup: TaskOutputsBackup?
   ) {
-    args.addChangedFiles(changedFiles)
-    super.callCompilerAsync(args, sourceRoots, changedFiles, taskOutputsBackup)
+    args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
 
 @CacheableTask abstract class InjektTaskNative @Inject constructor(
   injected: KotlinNativeCompilationData<*>,
-) : KotlinNativeCompile(injected), InjektTask {
-  override fun buildCompilerArgs(): List<String> =
-    super.buildCompilerArgs() + options.get().flatMap { listOf("-P", it.toArg()) } +
-        "-Xallow-kotlin-package"
+  objectFactory: ObjectFactory
+) : KotlinNativeCompile(injected, objectFactory), InjektTask {
+  override val additionalCompilerOptions: Provider<Collection<String>>
+    get() {
+      return project.provider {
+        super.additionalCompilerOptions.get() + options.get().flatMap { listOf("-P", it.toArg()) } +
+            "-Xallow-kotlin-package"
+      }
+    }
 
   override fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,

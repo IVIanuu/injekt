@@ -86,6 +86,16 @@ class TagTest {
     compilationShouldHaveFailed("tag cannot have value parameters")
   }
 
+  @Test fun testTagDoesNotNeedToSpecifyTypeTarget() = singleAndMultiCodegen(
+    """
+      @Tag annotation class MyTag 
+    """,
+    """
+      fun invoke(@Inject value: @MyTag String) {
+      }
+    """
+  )
+
   @Test fun testTagWithTypeParameters() = singleAndMultiCodegen(
     """
       @Tag annotation class MyTag<T>

@@ -3,7 +3,6 @@
  */
 
 plugins {
-  id("org.jetbrains.compose")
   kotlin("multiplatform")
 }
 
@@ -24,4 +23,8 @@ kotlin {
       }
     }
   }
+}
+
+dependencies {
+  kotlinCompilerPluginClasspath(Deps.Compose.compiler)
 }

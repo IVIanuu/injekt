@@ -135,7 +135,7 @@ fun TypeRef.toIrType(
         IrSimpleTypeImpl(
           type.originalKotlinType,
           type.classifier,
-          type.hasQuestionMark,
+          type.nullability,
           type.arguments,
           listOf(
             DeclarationIrBuilder(irCtx, tagConstructor)

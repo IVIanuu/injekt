@@ -27,14 +27,15 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.psi2ir.generators.isSamConstructor
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.callUtil.getParentResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getValueArgumentForExpression
 import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
+import org.jetbrains.kotlin.resolve.calls.util.getParentResolvedCall
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.canBeInlineArgument
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInline
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInlineParameter
 import org.jetbrains.kotlin.resolve.sam.getSingleAbstractMethodOrNull
+import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 enum class CallContext {
@@ -110,6 +111,7 @@ fun CallableDescriptor.callContext(ctx: Context): CallContext {
   }
 }
 
+@OptIn(IDEAPluginsCompatibilityAPI::class)
 private fun getArgumentDescriptor(
   argument: KtFunction,
   bindingContext: BindingContext

@@ -39,8 +39,9 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
-class InjectCallChecker(
+@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker(
   private val withDeclarationGenerator: Boolean
 ) : KtTreeVisitorVoid(), AnalysisHandlerExtension {
   private var completionCount = 0
