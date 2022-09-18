@@ -15,29 +15,29 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:7.0.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:7.3.0"
 
   object AndroidX {
     object Activity {
-      private const val version = "1.4.0"
+      private const val version = "1.5.1"
       const val activity = "androidx.activity:activity:$version"
       const val compose = "androidx.activity:activity-compose:$version"
     }
 
     object Lifecycle {
-      private const val version = "2.3.1"
+      private const val version = "2.5.1"
       const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
     }
 
     object Test {
-      const val core = "androidx.test:core-ktx:1.2.0"
+      const val core = "androidx.test:core-ktx:1.4.0"
       const val junit = "androidx.test.ext:junit:1.0.0"
     }
 
-    const val work = "androidx.work:work-runtime-ktx:2.7.0"
+    const val work = "androidx.work:work-runtime-ktx:2.7.1"
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.17.0"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.18.3"
 
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
