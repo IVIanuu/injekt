@@ -6,17 +6,24 @@
 
 package com.ivianuu.injekt.gradle
 
+import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.UnknownTaskException
+import org.gradle.api.file.FileCollection
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.IgnoreEmptyDirectories
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.LocalState
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.work.InputChanges
@@ -55,12 +62,16 @@ import org.jetbrains.kotlin.incremental.destinationAsFile
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.File
+import java.nio.file.Paths
 import java.util.concurrent.Callable
 import javax.inject.Inject
 
 @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
-internal class Configurator : AbstractKotlinCompileConfig<AbstractKotlinCompile<*>> {
-  constructor(compilation: KotlinCompilationData<*>, kotlinCompile: AbstractKotlinCompile<*>) : super(compilation) {
+internal class Configurator(
+  compilation: KotlinCompilationData<*>,
+  kotlinCompile: AbstractKotlinCompile<*>
+) : AbstractKotlinCompileConfig<AbstractKotlinCompile<*>>(compilation) {
+  init {
     configureTask { task ->
       if (task is InjektTaskJvm) {
         // Assign ownModuleName different from kotlin compilation to
@@ -116,8 +127,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
       injektTask as AbstractKotlinCompileTool<*>
 
+      println("${project.name} $injektTaskName deps ${kotlinCompileTask.dependsOn.map { it.toString() }}")
+
       injektTask.destinationDirectory.set(outputDir)
-      (injektTask as InjektTask).outputs.dirs(outputDir, srcDir)
+      injektTask.outputs.dirs(outputDir, srcDir)
       injektTask.setSource(
         kotlinCompileTask.sources.filter {
           it.extension == "kt" &&
@@ -136,7 +149,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         }
         project.tasks.register(injektTaskName, injektTaskClass) { injektTask ->
           configure(injektTask)
-          injektTask.libraries.setFrom(kotlinCompileTask.project.files(Callable { kotlinCompileTask.libraries }))
+          injektTask.libraries.setFrom(kotlinCompileTask.project.files(Callable {
+            kotlinCompileTask.libraries
+          }))
+          injektTask.dependsOn(injektTask.libraries)
 
           getSubpluginOptions(project, sourceSetName, false).forEach { option ->
             kotlinCompileTask.pluginOptions.add(
@@ -178,7 +194,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
     kotlinCompileProvider.configure { kotlinCompile ->
       kotlinCompile.dependsOn(injektTaskProvider)
-      kotlinCompile.source(srcDir)
+      kotlinCompile.setSource(srcDir)
     }
 
     return project.provider { emptyList() }
@@ -371,11 +387,9 @@ interface InjektTask : Task {
   objectFactory: ObjectFactory
 ) : KotlinNativeCompile(injected, objectFactory), InjektTask {
   override val additionalCompilerOptions: Provider<Collection<String>>
-    get() {
-      return project.provider {
-        super.additionalCompilerOptions.get() + options.get().flatMap { listOf("-P", it.toArg()) } +
-            "-Xallow-kotlin-package"
-      }
+    get() = project.provider {
+      super.additionalCompilerOptions.get() + options.get().flatMap { listOf("-P", it.toArg()) } +
+          "-Xallow-kotlin-package"
     }
 
   override fun configureCompilation(

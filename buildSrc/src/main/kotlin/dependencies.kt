@@ -15,7 +15,7 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:7.3.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:7.0.0"
 
   object AndroidX {
     object Activity {
@@ -57,7 +57,7 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev684"
+  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev685"
 
   const val junit = "junit:junit:4.12"
 
