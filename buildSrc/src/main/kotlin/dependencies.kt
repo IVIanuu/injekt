@@ -15,7 +15,7 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:7.0.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:7.3.0"
 
   object AndroidX {
     object Activity {
