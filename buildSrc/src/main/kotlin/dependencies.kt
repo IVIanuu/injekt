@@ -42,7 +42,7 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.2.0-beta01"
+    const val version = "1.2.0"
     const val compiler = "androidx.compose.compiler:compiler:1.3.0"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
