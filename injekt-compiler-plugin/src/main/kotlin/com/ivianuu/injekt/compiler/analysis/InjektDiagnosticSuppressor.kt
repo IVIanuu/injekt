@@ -13,10 +13,13 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.builtins.isFunctionOrSuspendFunctionType
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
+import org.jetbrains.kotlin.diagnostics.DiagnosticWithParameters2
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
@@ -28,6 +31,7 @@ import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -96,11 +100,18 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.anyType { it.classifier.descriptor == typeParameter } == true
     }
 
+    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
+      return true
+
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
       return true
 
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
+    // todo remove once compose fun interface support is fixed
+    if (diagnostic.factory.name.contains("TYPE_MISMATCH") &&
+      diagnostic is DiagnosticWithParameters2<*, *, *> &&
+      diagnostic.a.cast<KotlinType>().isFunctionOrSuspendFunctionType &&
+      diagnostic.b.cast<KotlinType>().isFunctionOrSuspendFunctionType)
       return true
 
     return false
