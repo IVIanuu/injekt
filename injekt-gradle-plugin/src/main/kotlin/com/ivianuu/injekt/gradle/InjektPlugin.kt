@@ -179,6 +179,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
             configure(injektTask)
             injektTask.compilerPluginClasspath = project.configurations.getByName(pluginConfigurationName)
             injektTask.commonSources.from(kotlinCompileTask.commonSources)
+            injektTask.compilerPluginOptions.addPluginArgument(kotlinCompileTask.compilerPluginOptions)
           }
         }
       }
