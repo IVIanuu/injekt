@@ -110,8 +110,8 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name.contains("TYPE_MISMATCH") &&
       diagnostic is DiagnosticWithParameters2<*, *, *> &&
-      diagnostic.a.cast<KotlinType>().isFunctionOrSuspendFunctionType &&
-      diagnostic.b.cast<KotlinType>().isFunctionOrSuspendFunctionType)
+      diagnostic.a.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true &&
+      diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
       return true
 
     return false
