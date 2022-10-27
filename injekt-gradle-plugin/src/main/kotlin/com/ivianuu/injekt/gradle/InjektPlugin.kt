@@ -77,7 +77,7 @@ internal class Configurator(
         // Assign ownModuleName different from kotlin compilation to
         // work around https://github.com/google/ksp/issues/647
         // This will not be necessary once https://youtrack.jetbrains.com/issue/KT-45777 lands
-        task.ownModuleName.value(kotlinCompile.ownModuleName.map { "$it-ksp" })
+        task.ownModuleName.value(kotlinCompile.ownModuleName.map { "$it-injekt" })
       }
       if (task is InjektTaskJS) {
         val libraryCacheService = project.rootProject.gradle.sharedServices.registerIfAbsent(
