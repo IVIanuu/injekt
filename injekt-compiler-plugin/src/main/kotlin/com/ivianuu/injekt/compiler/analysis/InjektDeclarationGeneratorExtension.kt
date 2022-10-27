@@ -43,7 +43,7 @@ import java.util.*
 
 class InjektDeclarationGeneratorExtension(
   private val srcDir: File,
-  cacheDir: File,
+  private val cacheDir: File,
   private val modifiedFiles: List<File>?,
   private val removedFiles: List<File>?,
   private val withCompilation: Boolean
@@ -85,13 +85,18 @@ class InjektDeclarationGeneratorExtension(
 
     finished = true
 
+    if (removedFiles == null && modifiedFiles == null) {
+      cacheDir.deleteRecursively()
+    }
+
     fun File.backupFile() = File(backupDir, toRelativeString(srcDir))
 
     ((removedFiles ?: emptyList()) + (modifiedFiles ?: emptyList())).forEach { changedFile ->
       fileMap.remove(changedFile.absolutePath)?.forEach { outputFile ->
         File(outputFile).run {
           delete()
-          backupFile().delete()
+          backupFile()
+            .delete()
         }
       }
     }
