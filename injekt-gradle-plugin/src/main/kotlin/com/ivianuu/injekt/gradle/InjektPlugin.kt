@@ -127,8 +127,6 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
       injektTask as AbstractKotlinCompileTool<*>
 
-      println("${project.name} $injektTaskName deps ${kotlinCompileTask.dependsOn.map { it.toString() }}")
-
       injektTask.destinationDirectory.set(outputDir)
       injektTask.outputs.dirs(outputDir, srcDir)
       injektTask.setSource(
