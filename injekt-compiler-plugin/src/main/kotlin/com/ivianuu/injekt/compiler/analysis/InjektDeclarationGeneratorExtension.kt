@@ -85,13 +85,14 @@ class InjektDeclarationGeneratorExtension(
 
     finished = true
 
-    if (removedFiles == null && modifiedFiles == null) {
-      cacheDir.deleteRecursively()
-    }
-
     fun File.backupFile() = File(backupDir, toRelativeString(srcDir))
 
-    ((removedFiles ?: emptyList()) + (modifiedFiles ?: emptyList())).forEach { changedFile ->
+    buildList {
+      removedFiles?.let { addAll(it) }
+      modifiedFiles?.let { addAll(it) }
+      if (modifiedFiles == null)
+        files.forEach { add(File(it.virtualFilePath)) }
+    }.forEach { changedFile ->
       fileMap.remove(changedFile.absolutePath)?.forEach { outputFile ->
         File(outputFile).run {
           delete()
