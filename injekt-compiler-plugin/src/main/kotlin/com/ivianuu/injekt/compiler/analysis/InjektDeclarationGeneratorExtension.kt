@@ -10,32 +10,21 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPsiUtil
-import org.jetbrains.kotlin.psi.KtStubbedPsiUtil
 import org.jetbrains.kotlin.psi.declarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.BodyResolver
-import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.resolve.lazy.ForceResolveUtil
-import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -149,7 +138,7 @@ class InjektDeclarationGeneratorExtension(
 
       if (modifiedFiles == null || file.virtualFilePath in modifiedFiles.map { it.absolutePath }) {
         logOutput.appendLine("process file ${file.virtualFilePath}")
-        processFile(module, file, ctx, componentProvider.get(), componentProvider.get()).forEach { generatedFile ->
+        processFile(module, file, ctx).forEach { generatedFile ->
           fileMap.getOrPut(file.virtualFilePath) { mutableSetOf() } += generatedFile.absolutePath
           copy(generatedFile, generatedFile.backupFile(), true)
         }
@@ -195,15 +184,8 @@ class InjektDeclarationGeneratorExtension(
     }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
-  private fun processFile(
-    module: ModuleDescriptor,
-    file: KtFile,
-    ctx: Context,
-    resolveSession: ResolveSession,
-    bodyResolver: BodyResolver
-  ): List<File> {
-    val injectables = mutableListOf<DeclarationDescriptor>()
+  private fun processFile(module: ModuleDescriptor, file: KtFile, ctx: Context): List<File> {
+    val injectables = mutableListOf<KtDeclaration>()
 
     file.accept(
       declarationRecursiveVisitor { declaration ->
@@ -211,22 +193,15 @@ class InjektDeclarationGeneratorExtension(
           annotationEntries.any { it.shortName == InjektFqNames.Provide.shortName() }
 
         when (declaration) {
-          is KtClassOrObject -> {
+          is KtClassOrObject ->
             if (!declaration.isLocal && (declaration.isProvide()))
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
-          }
-          is KtConstructor<*> -> {
-            if (!declaration.isLocal && (declaration.isProvide()))
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
-          }
-          is KtNamedFunction -> {
+              injectables += declaration
+          is KtFunction ->
             if (!declaration.isLocal && declaration.isProvide())
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
-          }
-          is KtProperty -> {
+              injectables += declaration
+          is KtProperty ->
             if (!declaration.isLocal && declaration.isProvide())
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
-          }
+              injectables += declaration
         }
       }
     )
@@ -243,16 +218,15 @@ class InjektDeclarationGeneratorExtension(
     }_ProvidersMarker"
 
     return buildList {
-      this += injectablesFile(file, markerName, injectables, ctx)
-      subInjectableFiles(file, markerName, injectables, ctx)
+      this += injectablesFile(file, markerName, injectables)
+      subInjectableFiles(file, markerName, injectables)
     }
   }
 
   private fun injectablesFile(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
-    ctx: Context
+    injectables: List<KtDeclaration>
   ): File {
     val injectablesCode = buildString {
       appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
@@ -268,16 +242,13 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
-        val key = injectable.uniqueKey(ctx)
-
-        appendLine("// $key")
-
         appendLine("fun $injectablesLookupName(")
         appendLine(" marker: $markerName,")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
         }
 
+        val key = injectable.key()
         val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
 
         finalKey
@@ -307,8 +278,7 @@ class InjektDeclarationGeneratorExtension(
   private fun MutableList<File>.subInjectableFiles(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
-    ctx: Context
+    injectables: List<KtDeclaration>
   ) {
     if (file.packageFqName.isRoot) return
     var current = file.packageFqName
@@ -325,15 +295,13 @@ class InjektDeclarationGeneratorExtension(
         }
 
         for ((i, injectable) in injectables.withIndex()) {
-          val key = injectable.uniqueKey(ctx)
-
-          appendLine("// $key")
           appendLine("fun $subInjectablesLookupName(")
           appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
           repeat(i + 1) {
             appendLine("  index$it: Byte,")
           }
 
+          val key = injectable.key()
           val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
 
           finalKey
@@ -350,7 +318,7 @@ class InjektDeclarationGeneratorExtension(
       }
 
       val injectablesKeyHash = injectables
-        .joinToString { it.uniqueKey(ctx) }
+        .joinToString { it.key() }
         .hashCode()
         .toString()
         .filter { it.isLetterOrDigit() }
@@ -367,46 +335,27 @@ class InjektDeclarationGeneratorExtension(
     }
   }
 
-  private fun resolveDeclaration(
-    declaration: KtDeclaration,
-    resolveSession: ResolveSession,
-    bodyResolver: BodyResolver,
-    ctx: Context
-  ): DeclarationDescriptor? {
-    return if (KtPsiUtil.isLocal(declaration)) {
-      resolveDeclarationForLocal(declaration, resolveSession, bodyResolver, ctx)
-      ctx.trace!!.bindingContext.get(BindingContext.DECLARATION_TO_DESCRIPTOR, declaration)
-    } else {
-      resolveSession.resolveToDescriptor(declaration)
+  private fun KtDeclaration.key(): String = when (this) {
+    is KtClassOrObject -> {
+      modifierList!!.text +
+          typeParameters.joinToString(",") { it.text } +
+          name +
+          primaryConstructor?.text.orEmpty() +
+          superTypeListEntries.map { it.text }
     }
-  }
-
-  private fun resolveDeclarationForLocal(
-    localDeclaration: KtDeclaration,
-    resolveSession: ResolveSession,
-    bodyResolver: BodyResolver,
-    ctx: Context
-  ) {
-    var declaration = KtStubbedPsiUtil.getContainingDeclaration(localDeclaration) ?: return
-    while (KtPsiUtil.isLocal(declaration))
-      declaration = KtStubbedPsiUtil.getContainingDeclaration(declaration)!!
-
-    val containingFD = resolveSession.resolveToDescriptor(declaration).also {
-      ForceResolveUtil.forceResolveAllContents(it)
+    is KtFunction -> {
+      modifierList!!.text +
+          typeParameters.joinToString(",") { it.text } +
+          receiverTypeReference?.text.orEmpty() +
+          name.orEmpty() +
+          valueParameters.joinToString(",") { it.text }
     }
-
-    if (declaration is KtNamedFunction) {
-      val dataFlowInfo = DataFlowInfo.EMPTY
-      val scope = resolveSession.declarationScopeProvider.getResolutionScopeForDeclaration(declaration)
-      bodyResolver.resolveFunctionBody(
-        dataFlowInfo,
-        ctx.trace!!,
-        declaration,
-        containingFD as FunctionDescriptor,
-        scope,
-        null
-      )
+    is KtProperty ->  {
+      modifierList!!.text +
+          typeParameters.joinToString(",") { it.text } +
+          receiverTypeReference?.text.orEmpty() +
+          name
     }
+    else -> throw AssertionError("Unexpected declaration $this")
   }
 }
-
