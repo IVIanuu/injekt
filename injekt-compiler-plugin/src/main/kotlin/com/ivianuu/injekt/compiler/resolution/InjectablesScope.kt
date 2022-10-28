@@ -147,20 +147,23 @@ class InjectablesScope(
 
   fun recordLookup(
     lookupLocation: LookupLocation,
+    lookups: MutableSet<String>,
     visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
   ) {
     if (!visitedScopes.add(this)) return
 
-    parent?.recordLookup(lookupLocation, visitedScopes)
-    typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
+    parent?.recordLookup(lookupLocation, lookups, visitedScopes)
+    typeScopes.forEach { it.value.recordLookup(lookupLocation, lookups, visitedScopes) }
     for (import in imports) {
       memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
         ?.first
         ?.recordLookup(injectablesLookupName, lookupLocation)
+        ?.let { lookups += import.packageFqName.child(injectablesLookupName).asString() }
       if (import.importPath!!.endsWith(".**")) {
         memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
           ?.first
           ?.recordLookup(subInjectablesLookupName, lookupLocation)
+          ?.let { lookups += import.packageFqName.child(subInjectablesLookupName).asString() }
       }
     }
   }

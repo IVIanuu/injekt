@@ -268,13 +268,15 @@ class InjektDeclarationGeneratorExtension(
       appendLine()
 
       for ((i, injectable) in injectables.withIndex()) {
+        val key = injectable.uniqueKey(ctx)
+
+        appendLine("// $key")
+
         appendLine("fun $injectablesLookupName(")
         appendLine(" marker: $markerName,")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
         }
-
-        val key = injectable.uniqueKey(ctx)
 
         val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
 
@@ -323,13 +325,14 @@ class InjektDeclarationGeneratorExtension(
         }
 
         for ((i, injectable) in injectables.withIndex()) {
+          val key = injectable.uniqueKey(ctx)
+
+          appendLine("// $key")
           appendLine("fun $subInjectablesLookupName(")
           appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
           repeat(i + 1) {
             appendLine("  index$it: Byte,")
           }
-
-          val key = injectable.uniqueKey(ctx)
 
           val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
 

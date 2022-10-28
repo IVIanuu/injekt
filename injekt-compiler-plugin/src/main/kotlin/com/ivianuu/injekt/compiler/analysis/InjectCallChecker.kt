@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
@@ -83,7 +84,6 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
       ?.let { checkCall(it) }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun checkCall(resolvedCall: ResolvedCall<*>) {
     if (!checkedCalls.add(resolvedCall)) return
 
@@ -126,10 +126,15 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(ctx!!, callExpression)
+    val location = callExpression.lookupLocation
+    val lookups = ctx!!.trace!!.getOrPut(InjektWritableSlices.LOOKUPS, file.virtualFilePath) {
+      mutableMapOf()
+    }.getOrPut(location) { mutableSetOf() }
     val graph = scope.resolveRequests(
       callee,
       requests,
-      callExpression.lookupLocation
+      location,
+      lookups
     ) { _, result ->
       if (result is ResolutionResult.Success.WithCandidate.Value &&
         result.candidate is CallableInjectable) {

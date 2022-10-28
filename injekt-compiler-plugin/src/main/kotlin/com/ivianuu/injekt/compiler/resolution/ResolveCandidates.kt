@@ -151,14 +151,15 @@ fun InjectablesScope.resolveRequests(
   callee: CallableRef,
   requests: List<InjectableRequest>,
   lookupLocation: LookupLocation,
+  lookups: MutableSet<String>,
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit
 ): InjectionGraph {
-  recordLookup(lookupLocation)
+  recordLookup(lookupLocation, lookups)
   val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   var failureRequest: InjectableRequest? = null
   var failure: ResolutionResult.Failure? = null
   for (request in requests) {
-    when (val result = resolveRequest(request, lookupLocation, false)) {
+    when (val result = resolveRequest(request, lookupLocation, lookups, false)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
         if (request.isRequired || result.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity) {
@@ -189,23 +190,24 @@ fun InjectablesScope.resolveRequests(
 private fun InjectablesScope.resolveRequest(
   request: InjectableRequest,
   lookupLocation: LookupLocation,
+  lookups: MutableSet<String>,
   fromTypeScope: Boolean
 ): ResolutionResult {
   if (request.type.hasErrors)
     return ResolutionResult.Failure.NoCandidates(this, request)
 
   if (scopeToUse != this)
-    return scopeToUse.resolveRequest(request, lookupLocation, fromTypeScope)
+    return scopeToUse.resolveRequest(request, lookupLocation, lookups, fromTypeScope)
 
   resultsByType[request.type]?.let { return it }
 
-  val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation)
+  val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request, lookupLocation, lookups)
     .let { userResult ->
       if (userResult is ResolutionResult.Success ||
           userResult is ResolutionResult.Failure.CandidateAmbiguity)
             userResult
       else if (!fromTypeScope) {
-        tryToResolveRequestInTypeScope(request, lookupLocation)
+        tryToResolveRequestInTypeScope(request, lookupLocation, lookups)
           ?.takeUnless { it is ResolutionResult.Failure.NoCandidates }
           .let { typeScopeResult ->
             when (typeScopeResult) {
@@ -214,7 +216,7 @@ private fun InjectablesScope.resolveRequest(
               else -> if (compareResult(userResult, typeScopeResult) < 0) userResult else typeScopeResult
             }
           }
-          ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation)
+          ?: tryToResolveRequestWithFrameworkInjectable(request, lookupLocation, lookups)
           ?: userResult
       } else userResult
     } ?: ResolutionResult.Failure.NoCandidates(this, request)
@@ -225,14 +227,16 @@ private fun InjectablesScope.resolveRequest(
 
 private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
   request: InjectableRequest,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  lookups: MutableSet<String>
 ): ResolutionResult? = injectablesForRequest(request, this)
   .takeIf { it.isNotEmpty() }
-  ?.let { resolveCandidates(request, it, lookupLocation) }
+  ?.let { resolveCandidates(request, it, lookupLocation, lookups) }
 
 private fun InjectablesScope.tryToResolveRequestInTypeScope(
   request: InjectableRequest,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  lookups: MutableSet<String>
 ): ResolutionResult? =
   // try the type scope if the requested type is not a framework type
   if (request.type.frameworkKey.isEmpty() &&
@@ -241,16 +245,17 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
     request.type.classifier.fqName != InjektFqNames.TypeKey &&
     request.type.classifier.fqName != InjektFqNames.SourceKey) {
     TypeInjectablesScopeOrNull(request.type, this, ctx)
-      .also { it.recordLookup(lookupLocation) }
+      .also { it.recordLookup(lookupLocation, lookups) }
       .takeUnless { it.isEmpty }
-      ?.resolveRequest(request, lookupLocation, true)
+      ?.resolveRequest(request, lookupLocation, lookups, true)
   } else null
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  lookups: MutableSet<String>
 ): ResolutionResult? =
-  frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it, lookupLocation) }
+  frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it, lookupLocation, lookups) }
 
 private fun InjectablesScope.computeForCandidate(
   request: InjectableRequest,
@@ -293,11 +298,12 @@ private fun InjectablesScope.computeForCandidate(
 private fun InjectablesScope.resolveCandidates(
   request: InjectableRequest,
   candidates: List<Injectable>,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  lookups: MutableSet<String>
 ): ResolutionResult {
   if (candidates.size == 1) {
     val candidate = candidates.single()
-    return resolveCandidate(request, candidate, lookupLocation)
+    return resolveCandidate(request, candidate, lookupLocation, lookups)
   }
 
   val successes = mutableListOf<ResolutionResult.Success>()
@@ -320,7 +326,7 @@ private fun InjectablesScope.resolveCandidates(
       break
     }
 
-    when (val candidateResult = resolveCandidate(request, candidate, lookupLocation)) {
+    when (val candidateResult = resolveCandidate(request, candidate, lookupLocation, lookups)) {
       is ResolutionResult.Success -> {
         val firstSuccessResult = successes.firstOrNull()
         when (compareResult(candidateResult, firstSuccessResult)) {
@@ -348,7 +354,8 @@ private fun InjectablesScope.resolveCandidates(
 private fun InjectablesScope.resolveCandidate(
   request: InjectableRequest,
   candidate: Injectable,
-  lookupLocation: LookupLocation
+  lookupLocation: LookupLocation,
+  lookups: MutableSet<String>
 ): ResolutionResult = computeForCandidate(request, candidate) {
   if (!callContext.canCall(candidate.callContext))
     return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
@@ -378,7 +385,7 @@ private fun InjectablesScope.resolveCandidate(
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
     val dependencyScope = candidate.dependencyScopes[dependency] ?: this
-    when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, false)) {
+    when (val dependencyResult = dependencyScope.resolveRequest(dependency, lookupLocation, lookups, false)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {

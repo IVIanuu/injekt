@@ -23,12 +23,30 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, irCtx: IrPluginContext) {
     .forEach { irFile ->
       val file = File(irFile.fileEntry.name)
       val content = try {
-        irFile.dumpKotlinLike(
-          KotlinLikeDumpOptions(
-            useNamedArguments = true,
-            printFakeOverridesStrategy = FakeOverridesStrategy.NONE
+        buildString {
+          appendLine(
+            irFile.dumpKotlinLike(
+              KotlinLikeDumpOptions(
+                useNamedArguments = true,
+                printFakeOverridesStrategy = FakeOverridesStrategy.NONE
+              )
+            )
           )
-        )
+
+          appendLine()
+
+          val lookups = irCtx.bindingContext[InjektWritableSlices.LOOKUPS, irFile.fileEntry.name]
+
+          if (lookups != null) {
+            appendLine("lookups:")
+            lookups.forEach { (location, lookups) ->
+              appendLine("${location.location!!.position}:")
+              lookups.sorted().forEach {
+                appendLine("  $it")
+              }
+            }
+          }
+        }
       } catch (e: Throwable) {
         e.stackTraceToString()
       }
