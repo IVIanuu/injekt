@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.text.SimpleDateFormat
 import java.util.*
 
 class InjektDeclarationGeneratorExtension(
@@ -52,7 +53,9 @@ class InjektDeclarationGeneratorExtension(
 
   private val fileMapFile = cacheDir.resolve("file-map")
 
-  private val logOutputFile = cacheDir.resolve("declaration-gen-log-${System.currentTimeMillis()}")
+  private val logOutputFile = cacheDir.resolve("declaration-gen-log-${SimpleDateFormat("dd-MM-yyyy-HH-mm-ss-SSS").format(
+    Date(System.currentTimeMillis())
+  )}")
   private val logOutput = StringBuilder()
 
   private val fileMap = (if (fileMapFile.exists()) fileMapFile.readText() else "")

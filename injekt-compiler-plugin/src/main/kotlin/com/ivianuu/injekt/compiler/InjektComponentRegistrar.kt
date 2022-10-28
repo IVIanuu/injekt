@@ -28,6 +28,8 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
+import java.text.SimpleDateFormat
+import java.util.*
 
 class InjektComponentRegistrar : ComponentRegistrar {
   override fun registerProjectComponents(
@@ -72,7 +74,10 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
         finished = true
 
         val logOutputFile = configuration.getNotNull(DumpDirKey)
-          .resolve("analysis-log-${System.currentTimeMillis()}")
+          .resolve("analysis-log-${
+            SimpleDateFormat("dd-MM-yyyy-HH-mm-ss-SSS").format(
+            Date(System.currentTimeMillis())
+          )}")
         val logOutput = StringBuilder()
 
         logOutput.appendLine("files:")
