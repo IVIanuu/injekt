@@ -241,11 +241,9 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
     request.type.classifier.fqName != InjektFqNames.TypeKey &&
     request.type.classifier.fqName != InjektFqNames.SourceKey) {
     TypeInjectablesScopeOrNull(request.type, this, ctx)
+      .also { it.recordLookup(lookupLocation) }
       .takeUnless { it.isEmpty }
-      ?.run {
-        recordLookup(lookupLocation)
-        resolveRequest(request, lookupLocation, true)
-      }
+      ?.resolveRequest(request, lookupLocation, true)
   } else null
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
