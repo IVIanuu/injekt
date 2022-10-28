@@ -182,9 +182,9 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
       is TypeAliasDescriptor -> "typealias:$fqNameSafe"
       is TypeParameterDescriptor ->
         "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
-      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type}"
-      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type}"
-      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type}"
+      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
       else -> error("Unexpected declaration $this")
     }
   }
@@ -195,7 +195,7 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
     append(constructor.declarationDescriptor!!.fqNameSafe)
     arguments.forEachIndexed { index, typeArgument ->
       if (index == 0) append("<")
-      append(typeArgument.type.uniqueTypeKey(depth + 1))
+      append(typeArgument.type.fullyAbbreviatedType.uniqueTypeKey(depth + 1))
       if (index != arguments.lastIndex) append(", ")
       else append(">")
     }
