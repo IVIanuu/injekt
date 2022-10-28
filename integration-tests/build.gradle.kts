@@ -14,6 +14,7 @@ kotlin {
       dependencies {
         implementation(Deps.AndroidX.Activity.compose)
         implementation(Deps.Compose.runtime)
+        implementation(Deps.gradleTestKit)
         implementation(project(":injekt-common"))
         implementation(project(":injekt-core"))
         implementation(project(":injekt-coroutines"))
