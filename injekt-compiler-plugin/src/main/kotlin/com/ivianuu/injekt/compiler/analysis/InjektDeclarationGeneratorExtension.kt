@@ -52,6 +52,9 @@ class InjektDeclarationGeneratorExtension(
 
   private val fileMapFile = cacheDir.resolve("file-map")
 
+  private val logOutputFile = cacheDir.resolve("declaration-gen-log-${System.currentTimeMillis()}")
+  private val logOutput = StringBuilder()
+
   private val fileMap = (if (fileMapFile.exists()) fileMapFile.readText() else "")
     .split("\n")
     .filter { it.isNotEmpty() }
@@ -85,10 +88,32 @@ class InjektDeclarationGeneratorExtension(
 
     finished = true
 
+    logOutput.appendLine("files:")
+    files.forEach {
+      logOutput.appendLine("file: ${it.virtualFilePath}")
+    }
+
+    modifiedFiles?.let {
+      logOutput.appendLine("modified files:")
+      it.forEach {
+        logOutput.appendLine("modified file: $it")
+      }
+    }
+
+    removedFiles?.let {
+      logOutput.appendLine("removed files:")
+      it.forEach {
+        logOutput.appendLine("removed file: $it")
+      }
+    }
+
+    logOutput.appendLine("files map: $fileMap")
+
     fun File.backupFile() = File(backupDir, toRelativeString(srcDir))
 
     ((removedFiles ?: emptyList()) + (modifiedFiles ?: emptyList())).forEach { changedFile ->
       fileMap.remove(changedFile.absolutePath)?.forEach { outputFile ->
+        logOutput.appendLine("delete file changed $changedFile output $outputFile")
         File(outputFile).run {
           delete()
           backupFile().delete()
@@ -120,11 +145,13 @@ class InjektDeclarationGeneratorExtension(
       }
 
       if (modifiedFiles == null || file.virtualFilePath in modifiedFiles.map { it.absolutePath }) {
+        logOutput.appendLine("process file ${file.virtualFilePath}")
         processFile(module, file, ctx, componentProvider.get(), componentProvider.get()).forEach { generatedFile ->
           fileMap.getOrPut(file.virtualFilePath) { mutableSetOf() } += generatedFile.absolutePath
           copy(generatedFile, generatedFile.backupFile(), true)
         }
       } else {
+        logOutput.appendLine("skip and restore file ${file.virtualFilePath}")
         fileMap[file.virtualFilePath]?.forEach { outputFile ->
           copy(File(outputFile).backupFile(), File(outputFile), false)
         }
@@ -147,6 +174,10 @@ class InjektDeclarationGeneratorExtension(
     } else {
       fileMapFile.delete()
     }
+
+    logOutputFile.parentFile.mkdirs()
+    logOutputFile.createNewFile()
+    logOutputFile.writeText(logOutput.toString())
 
     return if (!withCompilation) {
       AnalysisResult.success(BindingContext.EMPTY, module, shouldGenerateCode = false)

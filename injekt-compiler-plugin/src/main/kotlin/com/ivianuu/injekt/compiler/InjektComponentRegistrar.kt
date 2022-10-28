@@ -10,14 +10,21 @@ import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
+import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
@@ -48,6 +55,37 @@ private fun MockProject.registerCodegenExtensions(configuration: CompilerConfigu
 }
 
 private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfiguration) {
+  AnalysisHandlerExtension.registerExtension(
+    this,
+    object : AnalysisHandlerExtension {
+      private var finished = false
+
+      override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider
+      ): AnalysisResult? {
+        if (finished) return null
+        finished = true
+
+        val logOutputFile = configuration.getNotNull(DumpDirKey)
+          .resolve("analysis-log-${System.currentTimeMillis()}")
+        val logOutput = StringBuilder()
+
+        logOutput.appendLine("files:")
+        files.forEach { logOutput.appendLine("file: ${it.virtualFilePath}") }
+
+        logOutputFile.parentFile.mkdirs()
+        logOutputFile.createNewFile()
+        logOutputFile.writeText(logOutput.toString())
+
+        return null
+      }
+    }
+  )
   StorageComponentContainerContributor.registerExtension(
     this,
     InjektStorageComponentContainerContributor()
