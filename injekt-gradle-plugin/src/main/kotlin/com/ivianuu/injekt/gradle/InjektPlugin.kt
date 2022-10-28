@@ -122,8 +122,8 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
           getSubpluginOptions(project, sourceSetName, true)
         }
       )
-      injektTask.outputDir = outputDir
       injektTask.cacheDir = getCacheDir(project, sourceSetName)
+      injektTask.outputDir = outputDir
 
       injektTask as AbstractKotlinCompileTool<*>
 
@@ -211,9 +211,9 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 interface InjektTask : Task {
   @get:Internal val options: ListProperty<SubpluginOption>
 
-  @get:OutputDirectory var outputDir: File
+  @get:Internal var cacheDir: File
 
-  @get:LocalState var cacheDir: File
+  @get:OutputDirectory var outputDir: File
 
   fun configureCompilation(
     kotlinCompilation: KotlinCompilationData<*>,
@@ -274,7 +274,8 @@ interface InjektTask : Task {
     inputChanges: InputChanges,
     taskOutputsBackup: TaskOutputsBackup?
   ) {
-    args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    if (cacheDir.exists())
+      args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
     super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
@@ -323,7 +324,8 @@ interface InjektTask : Task {
     inputChanges: InputChanges,
     taskOutputsBackup: TaskOutputsBackup?
   ) {
-    args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    if (cacheDir.exists())
+      args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
     super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
@@ -376,7 +378,8 @@ interface InjektTask : Task {
     inputChanges: InputChanges,
     taskOutputsBackup: TaskOutputsBackup?
   ) {
-    args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    if (cacheDir.exists())
+      args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
     super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
@@ -401,15 +404,14 @@ private fun getSubpluginOptions(
   project: Project,
   sourceSetName: String,
   forInjektTask: Boolean
-): List<SubpluginOption> {
-  val options = mutableListOf<SubpluginOption>()
+): List<SubpluginOption> = buildList {
   if (forInjektTask) {
-    options += SubpluginOption("cacheDir", getCacheDir(project, sourceSetName).path)
-    options += SubpluginOption("srcDir", srcDir(project, sourceSetName).path)
+    this += SubpluginOption("cacheDir", getCacheDir(project, sourceSetName).path)
+    this += SubpluginOption("srcDir", srcDir(project, sourceSetName).path)
   } else {
-    options += SubpluginOption("dumpDir", getDumpDir(project, sourceSetName).path)
+    this += SubpluginOption("cacheDir", getCacheDir(project, sourceSetName).path)
+    this += SubpluginOption("dumpDir", getDumpDir(project, sourceSetName).path)
   }
-  return options
 }
 
 private fun outputDir(project: Project, sourceSetName: String) =
