@@ -124,6 +124,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       )
       injektTask.cacheDir = getCacheDir(project, sourceSetName)
       injektTask.outputDir = outputDir
+      injektTask.srcDir = srcDir
 
       injektTask as AbstractKotlinCompileTool<*>
 
@@ -213,6 +214,8 @@ interface InjektTask : Task {
 
   @get:Internal var cacheDir: File
 
+  @get:Internal var srcDir: File
+
   @get:OutputDirectory var outputDir: File
 
   fun configureCompilation(
@@ -274,8 +277,11 @@ interface InjektTask : Task {
     inputChanges: InputChanges,
     taskOutputsBackup: TaskOutputsBackup?
   ) {
-    if (cacheDir.exists())
+    if (cacheDir.exists()) {
       args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    } else {
+      srcDir.deleteRecursively()
+    }
     super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
@@ -324,8 +330,11 @@ interface InjektTask : Task {
     inputChanges: InputChanges,
     taskOutputsBackup: TaskOutputsBackup?
   ) {
-    if (cacheDir.exists())
+    if (cacheDir.exists()) {
       args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    } else {
+      srcDir.deleteRecursively()
+    }
     super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
@@ -378,8 +387,11 @@ interface InjektTask : Task {
     inputChanges: InputChanges,
     taskOutputsBackup: TaskOutputsBackup?
   ) {
-    if (cacheDir.exists())
+    if (cacheDir.exists()) {
       args.addChangedFiles(getChangedFiles(inputChanges, incrementalProps))
+    } else {
+      srcDir.deleteRecursively()
+    }
     super.callCompilerAsync(args, kotlinSources, inputChanges, taskOutputsBackup)
   }
 }
