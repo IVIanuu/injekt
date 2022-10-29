@@ -17,28 +17,43 @@ interface Elements<N> {
   private val key: TypeKey<Elements<N>>,
   elements: List<ProvidedElement<N, *>>
 ) : Elements<N> {
-  @OptIn(ExperimentalStdlibApi::class)
-  private val elements = buildMap<String, Any> {
-    for ((key, element) in elements)
-      this[key.value] = element
+  private val elements = buildMap {
+    for (element in elements)
+      this[element.key.value] = element
+  }
+
+  init {
+    elements.forEach { it.init() }
   }
 
   override fun <T> invoke(@Inject key: TypeKey<T>): T =
-    elements[key.value] as T
+    elements[key.value]?.get() as T
       ?: error("No element found for ${key.value} in ${this.key.value}")
 }
 
 @Tag annotation class Element<N> {
   companion object {
     @Provide class Module<@Spread T : @Element<N> S, S : Any, N> {
-      @Provide fun element(key: TypeKey<S>, element: T) = ProvidedElement<N, S>(key, element)
+      @Provide inline fun element(key: TypeKey<S>, crossinline factory: () -> T) = object : ProvidedElement<N, S> {
+        override val key: TypeKey<S>
+          get() = key
+
+        override fun get(): T = factory()
+      }
 
       @Provide inline fun accessor(element: T): S = element
     }
   }
 }
 
-data class ProvidedElement<N, T : Any>(val key: TypeKey<T>, val element: T) {
+interface ProvidedElement<N, T : Any> {
+  val key: TypeKey<T>
+
+  fun init() {
+  }
+
+  fun get(): T
+
   companion object {
     @Provide fun <N> defaultElements(): Collection<ProvidedElement<N, *>> = emptyList()
   }
@@ -49,7 +64,17 @@ data class ProvidedElement<N, T : Any>(val key: TypeKey<T>, val element: T) {
     @Provide class Module<@Spread T : @Eager<N> S, S : Any, N> {
       @Provide fun scoped(value: T): @Scoped<N> S = value
 
-      @Provide fun element(value: S): @Element<N> @Initializer S = value
+      @Provide inline fun element(key: TypeKey<S>, crossinline factory: () -> S) = object : ProvidedElement<N, @Initializer S> {
+        override val key: TypeKey<S>
+          get() = key
+
+        private var _value: Any? = null
+        override fun init() {
+          _value = factory()
+        }
+
+        override fun get(): S = _value as S
+      }
 
       @Tag private annotation class Initializer
     }
