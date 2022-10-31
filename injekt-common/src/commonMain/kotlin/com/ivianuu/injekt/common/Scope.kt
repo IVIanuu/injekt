@@ -15,10 +15,10 @@ interface Scope<N> : Disposable {
   val isDisposed: Boolean
 
   operator fun <T : Any> invoke(key: Any, init: () -> T): T
-}
 
-operator fun <T : Any> Scope<*>.invoke(@Inject key: TypeKey<T>, init: () -> T): T =
-  this(key.value, init)
+  operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+    this(key.value, init)
+}
 
 fun <N> Scope(): Scope<N> = ScopeImpl()
 
