@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 class InjektWorkerTest {
   @Test fun testInjektWorker() {
-    val workerFactory = inject<(Context) -> WorkerFactory>()(mockk())
+    val workerFactory = inject<WorkerFactory>()
     workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
       .shouldBeTypeOf<TestWorker>()
   }
