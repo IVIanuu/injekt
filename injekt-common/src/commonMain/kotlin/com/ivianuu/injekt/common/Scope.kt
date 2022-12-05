@@ -23,7 +23,7 @@ interface Scope<N> : Disposable {
 fun <N> Scope(): Scope<N> = ScopeImpl()
 
 private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
-  private val values = mutableMapOf<Any, Any>()
+  private val values = hashMapOf<Any, Any>()
   private var _isDisposed = false
   override val isDisposed: Boolean
     get() = synchronized(this) { _isDisposed }
