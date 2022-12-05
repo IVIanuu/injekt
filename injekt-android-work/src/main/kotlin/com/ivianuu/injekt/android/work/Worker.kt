@@ -38,7 +38,7 @@ import kotlin.reflect.KClass
 }
 
 /**
- * Factory which is able to create provided [InjektWorker] [ListenableWorker]
+ * Factory for provided [InjektWorker] tagged [ListenableWorker]s
  */
 @Provide class InjektWorkerFactory(
   private val workers: Map<String, SingleWorkerFactory>
