@@ -37,13 +37,13 @@ object Deps {
     const val work = "androidx.work:work-runtime-ktx:2.7.1"
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.18.3"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.18.5"
 
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.2.0"
-    const val compiler = "androidx.compose.compiler:compiler:1.3.0"
+    const val version = "1.2.1"
+    const val compiler = "androidx.compose.compiler:compiler:1.3.2"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
@@ -64,7 +64,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.7.10"
+    const val version = "1.7.20"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"

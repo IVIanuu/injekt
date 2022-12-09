@@ -77,7 +77,7 @@ class ScopeTest {
     shouldThrow<IllegalStateException> { scope { 42 } }
   }
 
-  @Test fun testScoped() {
+  @Test fun testScopedTag() {
     var callCount = 0
 
     class Foo
