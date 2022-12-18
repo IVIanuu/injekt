@@ -61,8 +61,8 @@ sealed interface ResolutionResult {
           .firstOrNull { candidateScope ->
             candidateScope.isDeclarationContainer &&
                 anchorScopes.all {
-                  (candidateScope.canSeeInjectablesOf(it) ||
-                      candidateScope.canSeeInjectablesOf(scope))
+                  candidateScope.canSeeInjectablesOf(it) ||
+                      candidateScope.canSeeInjectablesOf(scope)
                 } &&
                 candidateScope.callContext.canCall(candidate.callContext)
           } ?: scope
