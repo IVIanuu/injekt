@@ -26,7 +26,6 @@ class NamedCoroutineScopeTest {
     coroutineScope.isActive.shouldBeFalse()
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val scope = Scope<MyScope>()
     @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
