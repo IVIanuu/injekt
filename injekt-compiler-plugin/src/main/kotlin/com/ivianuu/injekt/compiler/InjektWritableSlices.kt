@@ -10,7 +10,7 @@ import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.DescriptorWithParentScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectablesWithLookups
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.TypeRefKey
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 
 object InjektWritableSlices {
   val INJEKT_CONTEXT = BasicWritableSlice<Unit, Context>(RewritePolicy.DO_NOTHING)
-  val INJECTION_GRAPH = BasicWritableSlice<SourcePosition, InjectionGraph.Success>(RewritePolicy.DO_NOTHING)
+  val INJECTION_RESULT = BasicWritableSlice<SourcePosition, InjectionResult.Success>(RewritePolicy.DO_NOTHING)
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
   val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
   val CALL_CONTEXT = BasicWritableSlice<CallableDescriptor, CallContext>(RewritePolicy.DO_NOTHING)

@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.*
 import kotlin.reflect.KClass
 
-sealed interface InjectionGraph {
+sealed interface InjectionResult {
   val scope: InjectablesScope
   val callee: CallableRef
 
@@ -23,14 +23,14 @@ sealed interface InjectionGraph {
     override val callee: CallableRef,
     val results: Map<InjectableRequest, ResolutionResult.Success>,
     val usages: Map<UsageKey, MutableSet<InjectableRequest>>
-  ) : InjectionGraph
+  ) : InjectionResult
 
   data class Error(
     override val scope: InjectablesScope,
     override val callee: CallableRef,
     val failureRequest: InjectableRequest,
     val failure: ResolutionResult.Failure
-  ) : InjectionGraph
+  ) : InjectionResult
 }
 
 sealed interface ResolutionResult {
@@ -143,7 +143,7 @@ fun InjectablesScope.resolveRequests(
   lookupLocation: LookupLocation,
   lookups: MutableSet<String>,
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit
-): InjectionGraph {
+): InjectionResult {
   recordLookup(lookupLocation, lookups)
   val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   var failureRequest: InjectableRequest? = null
@@ -163,13 +163,13 @@ fun InjectablesScope.resolveRequests(
     }
   }
   val usages = mutableMapOf<UsageKey, MutableSet<InjectableRequest>>()
-  return if (failure == null) InjectionGraph.Success(
+  return if (failure == null) InjectionResult.Success(
     this,
     callee,
     successes,
     usages
   ).also { it.postProcess(onEachResult, usages) }
-  else InjectionGraph.Error(
+  else InjectionResult.Error(
     this,
     callee,
     failureRequest!!,
@@ -559,7 +559,7 @@ private fun InjectablesScope.compareType(
   return 0
 }
 
-private fun InjectionGraph.Success.postProcess(
+private fun InjectionResult.Success.postProcess(
   onEachResult: (InjectableRequest, ResolutionResult) -> Unit,
   usages: MutableMap<UsageKey, MutableSet<InjectableRequest>>
 ) {
@@ -583,10 +583,10 @@ fun ResolutionResult.visitRecursive(
   }
 }
 
-fun InjectionGraph.visitRecursive(action: (InjectableRequest, ResolutionResult) -> Unit) {
+fun InjectionResult.visitRecursive(action: (InjectableRequest, ResolutionResult) -> Unit) {
   val results = when (this) {
-    is InjectionGraph.Success -> results
-    is InjectionGraph.Error -> mapOf(failureRequest to failure)
+    is InjectionResult.Success -> results
+    is InjectionResult.Error -> mapOf(failureRequest to failure)
   }
 
   for ((request, result) in results)

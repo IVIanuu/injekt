@@ -7,7 +7,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.callContext
@@ -35,14 +35,14 @@ interface InjektErrors {
     }
 
     @JvmField val UNRESOLVED_INJECTION =
-      DiagnosticFactory1.create<PsiElement, InjectionGraph.Error>(Severity.ERROR)
+      DiagnosticFactory1.create<PsiElement, InjectionResult.Error>(Severity.ERROR)
         .also {
           MAP.put(
             it,
             "{0}",
-            object : DiagnosticParameterRenderer<InjectionGraph.Error> {
+            object : DiagnosticParameterRenderer<InjectionResult.Error> {
               override fun render(
-                obj: InjectionGraph.Error,
+                obj: InjectionResult.Error,
                 renderingContext: RenderingContext,
               ): String = obj.render()
             }
@@ -199,7 +199,7 @@ interface InjektErrors {
   }
 }
 
-private fun InjectionGraph.Error.render(): String = buildString {
+private fun InjectionResult.Error.render(): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++

@@ -14,7 +14,7 @@ import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
@@ -130,7 +130,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     val lookups = ctx!!.trace!!.getOrPut(InjektWritableSlices.LOOKUPS, file.virtualFilePath) {
       mutableMapOf()
     }.getOrPut(location) { mutableSetOf() }
-    val graph = scope.resolveRequests(
+    val result = scope.resolveRequests(
       callee,
       requests,
       location,
@@ -148,25 +148,25 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
       }
     }
 
-    when (graph) {
-      is InjectionGraph.Success -> {
+    when (result) {
+      is InjectionResult.Success -> {
         ctx!!.trace!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
           file.virtualFilePath,
           Unit
         )
         ctx!!.trace!!.record(
-          InjektWritableSlices.INJECTION_GRAPH,
+          InjektWritableSlices.INJECTION_RESULT,
           SourcePosition(
             file.virtualFilePath,
             callExpression.startOffset,
             callExpression.endOffset
           ),
-          graph
+          result
         )
       }
-      is InjectionGraph.Error -> ctx!!.trace!!.report(
-        InjektErrors.UNRESOLVED_INJECTION.on(callExpression, graph)
+      is InjectionResult.Error -> ctx!!.trace!!.report(
+        InjektErrors.UNRESOLVED_INJECTION.on(callExpression, result)
       )
     }
   }

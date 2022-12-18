@@ -15,10 +15,9 @@ import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.CallableRef
-import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
-import com.ivianuu.injekt.compiler.resolution.InjectionGraph
+import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.ListInjectable
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
@@ -56,24 +55,19 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irSet
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.declarations.name
-import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.allParameters
 import org.jetbrains.kotlin.ir.util.constructors
@@ -94,15 +88,15 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
-  private inner class GraphContext(
-    val graph: InjectionGraph.Success,
+  private inner class RootContext(
+    val rootCtx: InjectionResult.Success,
     val startOffset: Int
   ) {
     val statements = mutableListOf<IrStatement>()
 
     var variableIndex = 0
 
-    private val graphContextParents = buildList<InjectablesScope> {
+    private val rootContextParents = buildList<InjectablesScope> {
       val seenScopes = mutableSetOf<InjectablesScope>()
       fun InjectablesScope.add() {
         if (!seenScopes.add(this)) return
@@ -111,29 +105,29 @@ class InjectCallTransformer(
         typeScopes.forEach { it.value.add() }
       }
 
-      graph.scope.add()
+      rootCtx.scope.add()
     }
 
     fun mapScopeIfNeeded(scope: InjectablesScope) =
-      if (scope in graphContextParents) graph.scope else scope
+      if (scope in rootContextParents) rootCtx.scope else scope
         .allScopes.last { it.isDeclarationContainer }
   }
 
   private inner class ScopeContext(
     val parent: ScopeContext?,
-    val graphContext: GraphContext,
+    val rootContext: RootContext,
     val scope: InjectablesScope,
     val irScope: Scope
   ) {
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val statements =
-      if (scope == graphContext.graph.scope) graphContext.statements else mutableListOf()
+      if (scope == rootContext.rootCtx.scope) rootContext.statements else mutableListOf()
     val parameterMap: MutableMap<ParameterDescriptor, IrValueParameter> =
       parent?.parameterMap ?: mutableMapOf()
 
     fun findScopeContext(scopeToFind: InjectablesScope): ScopeContext {
-      val finalScope = graphContext.mapScopeIfNeeded(scopeToFind)
+      val finalScope = rootContext.mapScopeIfNeeded(scopeToFind)
       if (finalScope == scope) return this@ScopeContext
       return parent?.findScopeContext(finalScope)
         ?: error("wtf")
@@ -179,20 +173,20 @@ class InjectCallTransformer(
   }
 
   private fun ResolutionResult.Success.Value.shouldWrap(
-    ctx: GraphContext
+    ctx: RootContext
   ): Boolean = (candidate !is ProviderInjectable || !candidate.isInline) &&
-      (dependencyResults.isNotEmpty() && ctx.graph.usages[this.usageKey]!!.size > 1)
+      (dependencyResults.isNotEmpty() && ctx.rootCtx.usages[this.usageKey]!!.size > 1)
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
     rawExpressionProvider: () -> IrExpression
-  ): IrExpression = if (!result.shouldWrap(graphContext)) rawExpressionProvider()
+  ): IrExpression = if (!result.shouldWrap(rootContext)) rawExpressionProvider()
   else with(result.safeAs<ResolutionResult.Success.Value>()
     ?.highestScope?.let { findScopeContext(it) } ?: this) {
     functionWrappedExpressions.getOrPut(result.candidate.type) {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
-        name = "function${graphContext.variableIndex++}".asNameId()
+        name = "function${rootContext.variableIndex++}".asNameId()
         returnType = result.candidate.type.toIrType(irCtx, localDeclarations, ctx)
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
@@ -239,13 +233,13 @@ class InjectCallTransformer(
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
     .irLambda(
       injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
-      parameterNameProvider = { "p${graphContext.variableIndex++}" }
+      parameterNameProvider = { "p${rootContext.variableIndex++}" }
     ) { function ->
       val dependencyResult = result.dependencyResults.values.single()
       val dependencyScope = injectable.dependencyScopes.values.single()
       val dependencyScopeContext = if (dependencyScope == this@providerExpression.scope) null
       else ScopeContext(
-        this@providerExpression, graphContext,
+        this@providerExpression, rootContext,
         dependencyScope, scope
       )
 
@@ -295,7 +289,7 @@ class InjectCallTransformer(
             injectable.singleElementType.toIrType(irCtx, localDeclarations, ctx).typeOrNull
           )
         },
-      nameHint = "${graphContext.variableIndex++}"
+      nameHint = "${rootContext.variableIndex++}"
     )
 
     result.dependencyResults
@@ -330,9 +324,9 @@ class InjectCallTransformer(
             buildString {
               append(currentFile.name)
               append(":")
-              append(currentFile.fileEntry.getLineNumber(graphContext.startOffset) + 1)
+              append(currentFile.fileEntry.getLineNumber(rootContext.startOffset) + 1)
               append(":")
-              append(currentFile.fileEntry.getColumnNumber(graphContext.startOffset))
+              append(currentFile.fileEntry.getColumnNumber(rootContext.startOffset))
             }
           )
         )
@@ -607,8 +601,8 @@ class InjectCallTransformer(
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    val graph = irCtx.bindingContext[
-        InjektWritableSlices.INJECTION_GRAPH,
+    val injectionResult = irCtx.bindingContext[
+        InjektWritableSlices.INJECTION_RESULT,
         SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ] ?: return result
 
@@ -619,23 +613,23 @@ class InjectCallTransformer(
         .safeAs<ClassDescriptor>()
         ?.defaultType
         ?.isFunctionOrSuspendFunctionType != true &&
-      graph.callee.callable.fqNameSafe != result.symbol.owner.descriptor.fqNameSafe)
+      injectionResult.callee.callable.fqNameSafe != result.symbol.owner.descriptor.fqNameSafe)
       return result
 
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
-        val graphContext = GraphContext(graph, result.startOffset)
+        val rootContext = RootContext(injectionResult, result.startOffset)
         try {
           ScopeContext(
             parent = null,
-            graphContext = graphContext,
-            scope = graph.scope,
+            rootContext = rootContext,
+            scope = injectionResult.scope,
             irScope = scope
-          ).run { result.inject(this, graph.results) }
+          ).run { result.inject(this, injectionResult.results) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)
         }
-        graphContext.statements.forEach { +it }
+        rootContext.statements.forEach { +it }
         +result
       }
   }
