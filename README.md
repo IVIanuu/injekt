@@ -124,7 +124,7 @@ or in a package of the injected type
 
 # Function injection
 Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters dynamically,
-or you aren't in the right call context yet.
+break circular dependencies or you aren't in the right call context yet.
 You can do this by injecting a function.
 ```kotlin
 // inject a function to create multiple Tokens
@@ -136,6 +136,12 @@ fun run(@Inject tokenFactory: () -> Token) {
 // inject a function to create a MyViewModel with the additional String parameter
 @Composable fun MyScreen(@Inject viewModelFactory: (String) -> MyViewModel) {
   val viewModel = remember { viewModelFactory("user_id") }
+}
+
+// break circular dependency
+class Foo(val bar: Bar)
+class Bar(foo: (Bar) -> Foo) {
+   val foo = foo(this)
 }
 
 // inject a function to create a dependency in suspend context
