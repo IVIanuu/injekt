@@ -139,8 +139,8 @@ fun run(@Inject tokenFactory: () -> Token) {
 }
 
 // break circular dependency
-class Foo(val bar: Bar)
-class Bar(foo: (Bar) -> Foo) {
+@Provide class Foo(val bar: Bar)
+@Provide class Bar(foo: (Bar) -> Foo) {
    val foo = foo(this)
 }
 
