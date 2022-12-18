@@ -472,6 +472,7 @@ private fun collectPackageTypeScopeInjectables(
       scope.collectInjectables(
         onEach = { declaration ->
           // only collect in nested scopes if the declaration does NOT declare any injectables
+          // otherwise they will be included later in the injectables scope itself
           if (declaration is ClassDescriptor &&
             (declaration.kind != ClassKind.OBJECT ||
                 !declaration.toClassifierRef(ctx).declaresInjectables))
