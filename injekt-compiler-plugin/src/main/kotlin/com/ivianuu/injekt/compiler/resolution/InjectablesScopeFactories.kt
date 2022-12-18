@@ -645,7 +645,7 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun TypeInjectablesScopeOrNull(
+fun TypeInjectablesScope(
   type: TypeRef,
   parent: InjectablesScope,
   ctx: Context

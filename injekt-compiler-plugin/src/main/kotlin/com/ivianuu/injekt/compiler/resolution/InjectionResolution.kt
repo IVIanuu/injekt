@@ -234,7 +234,7 @@ private fun InjectablesScope.tryToResolveRequestInTypeScope(
     request.type.classifier != ctx.listClassifier &&
     request.type.classifier.fqName != InjektFqNames.TypeKey &&
     request.type.classifier.fqName != InjektFqNames.SourceKey) {
-    TypeInjectablesScopeOrNull(request.type, this, ctx)
+    TypeInjectablesScope(request.type, this, ctx)
       .also { it.recordLookup(lookupLocation, lookups) }
       .takeUnless { it.isEmpty }
       ?.resolveRequest(request, lookupLocation, lookups, true)

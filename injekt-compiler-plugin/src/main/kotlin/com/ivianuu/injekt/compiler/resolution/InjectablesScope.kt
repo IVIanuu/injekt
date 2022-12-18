@@ -238,7 +238,7 @@ class InjectablesScope(
           )
         }
 
-        val typeScope = TypeInjectablesScopeOrNull(request.type, this, ctx)
+        val typeScope = TypeInjectablesScope(request.type, this, ctx)
           .takeUnless { it.isEmpty }
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
