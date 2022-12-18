@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.util.*
 
-@OptIn(ExperimentalStdlibApi::class)
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
@@ -215,8 +214,7 @@ class InjectablesScope(
           type = request.type,
           ownerScope = this,
           dependencyCallContext = finalCallContext,
-          isInline = request.isInline,
-          isNoInline = request.isNoInline
+          isInline = request.isInline
         )
       }
       request.type.classifier == ctx.listClassifier -> {

@@ -237,7 +237,6 @@ class TypeRef(
   }
 
   private var _superTypes: List<TypeRef>? = null
-  @OptIn(ExperimentalStdlibApi::class)
   val superTypes: List<TypeRef> get() {
     if (_superTypes == null) {
       val substitutionMap = buildMap<ClassifierRef, TypeRef> {

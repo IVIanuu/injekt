@@ -51,7 +51,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.*
 
-@OptIn(ExperimentalStdlibApi::class)
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
@@ -298,7 +297,6 @@ fun CallableRef.collectInjectables(
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 fun List<ProviderImport>.collectImportedInjectables(
   ctx: Context,
   consumer: (CallableRef) -> Unit

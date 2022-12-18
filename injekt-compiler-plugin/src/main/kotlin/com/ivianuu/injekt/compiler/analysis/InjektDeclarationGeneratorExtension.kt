@@ -195,7 +195,6 @@ class InjektDeclarationGeneratorExtension(
     }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun processFile(
     module: ModuleDescriptor,
     file: KtFile,

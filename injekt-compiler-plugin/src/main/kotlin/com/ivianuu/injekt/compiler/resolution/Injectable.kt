@@ -85,7 +85,6 @@ class ProviderInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope,
   val isInline: Boolean,
-  val isNoInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable {
   override val callableFqName: FqName = when (type.callContext) {
@@ -99,8 +98,7 @@ class ProviderInjectable(
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0,
-      isInline = isInline,
-      isLazy = !isInline && !isNoInline
+      isInline = isInline
     )
   )
 
@@ -190,9 +188,7 @@ data class InjectableRequest(
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true,
-  val isInline: Boolean = false,
-  val isNoInline: Boolean = false,
-  val isLazy: Boolean = false
+  val isInline: Boolean = false
 )
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableRequest(
@@ -205,6 +201,5 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) = InjectableR
   isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
   isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
       InlineUtil.isInlineParameter(this) &&
-      safeAs<ValueParameterDescriptor>()?.isCrossinline != true,
-  isNoInline = this is ValueParameterDescriptor && isNoinline
+      safeAs<ValueParameterDescriptor>()?.isCrossinline != true
 )

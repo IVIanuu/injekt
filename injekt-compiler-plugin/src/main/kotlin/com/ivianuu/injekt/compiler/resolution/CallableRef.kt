@@ -45,7 +45,6 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   )
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
   ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
     val info = callableInfo(ctx)

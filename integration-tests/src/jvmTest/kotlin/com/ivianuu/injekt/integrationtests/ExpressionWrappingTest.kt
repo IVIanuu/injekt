@@ -129,17 +129,4 @@ class ExpressionWrappingTest {
   ) {
     irShouldNotContain("local fun function0(): Function0<Foo>")
   }
-
-  @Test fun testDoesNotFunctionWrapCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: B)
-      @Provide class B(a: () -> A, a2: () -> A)
-     """,
-    """
-      fun invoke() = inject<B>() 
-    """
-  ) {
-    irShouldNotContain("local fun function0(): Function0<Foo>")
-    invokeSingleFile()
-  }
 }

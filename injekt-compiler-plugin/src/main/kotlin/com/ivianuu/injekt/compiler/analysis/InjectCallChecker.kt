@@ -136,7 +136,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
       location,
       lookups
     ) { _, result ->
-      if (result is ResolutionResult.Success.WithCandidate.Value &&
+      if (result is ResolutionResult.Success.Value &&
         result.candidate is CallableInjectable) {
         result.candidate.callable.import?.element?.let {
           ctx!!.trace!!.record(

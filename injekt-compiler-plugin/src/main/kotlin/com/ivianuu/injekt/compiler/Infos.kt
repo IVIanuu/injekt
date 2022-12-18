@@ -59,7 +59,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  */
 data class CallableInfo(val type: TypeRef, val parameterTypes: Map<Int, TypeRef>)
 
-@OptIn(ExperimentalStdlibApi::class)
 fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
   if (this is PropertyAccessorDescriptor) correspondingProperty.callableInfo(ctx)
   else ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
@@ -378,7 +377,6 @@ private fun String.toChunkedArrayValue() = ArrayValue(
 
 private fun TypeRef.shouldBePersisted(): Boolean = anyType { it.classifier.isTag }
 
-@OptIn(ExperimentalStdlibApi::class)
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
   val newAnnotations = Annotations.create(
     buildList {

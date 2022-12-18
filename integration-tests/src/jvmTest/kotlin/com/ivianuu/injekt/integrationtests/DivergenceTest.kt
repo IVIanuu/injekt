@@ -52,96 +52,13 @@ class DivergenceTest {
     compilationShouldHaveFailed("diverging")
   }
 
-  @Test fun testProviderBreaksCircularDependency() = singleAndMultiCodegen(
+  @Test fun testCanBreakCircularDependencyViaProvider() = singleAndMultiCodegen(
     """
       @Provide class A(b: B)
-      @Provide class B(a: () -> A)
+      @Provide class B(a: (B) -> A)
     """,
     """
       fun invoke() = inject<B>()
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testIrrelevantProviderInChainDoesNotBreakCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: () -> B)
-      @Provide class B(b: C)
-      @Provide class C(b: B)
-     """,
-     """
-       fun invoke() = inject<C>() 
-     """
-  ) {
-    compilationShouldHaveFailed("diverging")
-  }
-
-  @Test fun testInlineProviderDoesNotBreakCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: B)
-      class B(a: A) {
-        companion object {
-          @Provide inline fun newInstance(a: () -> A) = B(a())
-        }
-      }
-    """,
-    """
-      fun invoke() = inject<B>()
-    """
-  ) {
-    compilationShouldHaveFailed("diverging")
-  }
-
-  @Test fun testNoInlineProviderDoesNotBreakCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: B)
-      class B(a: A) {
-        companion object {
-          @Provide inline fun newInstance(noinline a: () -> A) = B(a())
-        }
-      }
-    """,
-    """
-      fun invoke() = inject<B>()
-    """
-  ) {
-    compilationShouldHaveFailed("diverging")
-  }
-
-  @Test fun testCrossinlineProviderDoesBreakCircularDependency() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: B)
-
-      interface B {
-        val a: A
-        
-        companion object {
-          @Provide inline fun newInstance(crossinline a: () -> A): B = object : B {
-            override val a: A get() = a()
-          }
-        }
-      }
-    """,
-    """
-      fun invoke() = inject<B>()
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testNonInlineProviderInsideAChainBreaksCircularDependencyWithInlineProvider() = singleAndMultiCodegen(
-    """
-      @Provide class A(b: C)
-      @Provide class B(a: () -> A)
-      class C(b: B) {
-        companion object {
-          @Provide inline fun newInstance(b: () -> B) = C(b())
-        }
-      }
-    """,
-    """
-      fun invoke() = inject<C>()
     """
   ) {
     invokeSingleFile()

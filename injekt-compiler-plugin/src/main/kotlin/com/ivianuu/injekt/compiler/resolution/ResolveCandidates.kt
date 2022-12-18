@@ -37,48 +37,38 @@ sealed interface ResolutionResult {
   sealed interface Success : ResolutionResult {
     object DefaultValue : Success
 
-    sealed interface WithCandidate : Success {
-      val candidate: Injectable
-      val scope: InjectablesScope
+    data class Value(
+      val candidate: Injectable,
+      val scope: InjectablesScope,
+      val dependencyResults: Map<InjectableRequest, Success>
+    ) : Success {
+      val highestScope: InjectablesScope = run {
+        val anchorScopes = mutableSetOf<InjectablesScope>()
 
-      data class CircularDependency(
-        override val candidate: Injectable,
-        override val scope: InjectablesScope
-      ) : WithCandidate
-
-      data class Value(
-        override val candidate: Injectable,
-        override val scope: InjectablesScope,
-        val dependencyResults: Map<InjectableRequest, Success>
-      ) : WithCandidate {
-        val highestScope: InjectablesScope = run {
-          val anchorScopes = mutableSetOf<InjectablesScope>()
-
-          fun collectScopesRecursive(result: Value) {
-            if (result.candidate is CallableInjectable &&
-                result.candidate.ownerScope.typeScopeType == null)
-              anchorScopes += result.candidate.ownerScope
-            for (dependency in result.dependencyResults.values)
-              if (dependency is Value)
-                collectScopesRecursive(dependency)
-          }
-
-          collectScopesRecursive(this)
-
-          scope.allScopes
-            .sortedBy { it.nesting }
-            .firstOrNull { candidateScope ->
-              candidateScope.isDeclarationContainer &&
-                  anchorScopes.all {
-                    (candidateScope.canSeeInjectablesOf(it) ||
-                        candidateScope.canSeeInjectablesOf(scope))
-                  } &&
-                  candidateScope.callContext.canCall(candidate.callContext)
-            } ?: scope
+        fun collectScopesRecursive(result: Value) {
+          if (result.candidate is CallableInjectable &&
+            result.candidate.ownerScope.typeScopeType == null)
+            anchorScopes += result.candidate.ownerScope
+          for (dependency in result.dependencyResults.values)
+            if (dependency is Value)
+              collectScopesRecursive(dependency)
         }
 
-        val usageKey = UsageKey(candidate.usageKey, candidate::class, highestScope)
+        collectScopesRecursive(this)
+
+        scope.allScopes
+          .sortedBy { it.nesting }
+          .firstOrNull { candidateScope ->
+            candidateScope.isDeclarationContainer &&
+                anchorScopes.all {
+                  (candidateScope.canSeeInjectablesOf(it) ||
+                      candidateScope.canSeeInjectablesOf(scope))
+                } &&
+                candidateScope.callContext.canCall(candidate.callContext)
+          } ?: scope
       }
+
+      val usageKey = UsageKey(candidate.usageKey, candidate::class, highestScope)
     }
   }
 
@@ -122,7 +112,7 @@ sealed interface ResolutionResult {
 
     data class CandidateAmbiguity(
       val request: InjectableRequest,
-      val candidateResults: List<Success.WithCandidate.Value>
+      val candidateResults: List<Success.Value>
     ) : Failure {
       override val failureOrdering: Int
         get() = 0
@@ -268,24 +258,19 @@ private fun InjectablesScope.computeForCandidate(
     return compute().also { resultsByCandidate[candidate] = it }
 
   if (chain.isNotEmpty()) {
-    var isLazy = false
     for (i in chain.lastIndex downTo 0) {
       val prev = chain[i]
-      isLazy = isLazy || prev.first.isLazy
 
       if (prev.second.callableFqName == candidate.callableFqName &&
         prev.second.type.coveringSet == candidate.type.coveringSet &&
         (prev.second.type.typeSize < candidate.type.typeSize ||
-            (prev.second.type == candidate.type && (!isLazy || prev.first.isInline)))) {
+            prev.second.type == candidate.type)) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
         return result
       }
     }
   }
-
-  if (chain.any { it.second == candidate })
-    return ResolutionResult.Success.WithCandidate.CircularDependency(candidate, this)
 
   val pair = request to candidate
   chain += pair
@@ -319,7 +304,7 @@ private fun InjectablesScope.resolveCandidates(
     val candidate = remaining.removeFirst()
     if (compareCandidate(
         successes.firstOrNull()
-          ?.safeAs<ResolutionResult.Success.WithCandidate>()?.candidate, candidate
+          ?.safeAs<ResolutionResult.Success.Value>()?.candidate, candidate
       ) < 0
     ) {
       // we cannot get a better result
@@ -376,7 +361,7 @@ private fun InjectablesScope.resolveCandidate(
   }
 
   if (candidate.dependencies.isEmpty())
-    return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(
+    return@computeForCandidate ResolutionResult.Success.Value(
       candidate,
       this,
       emptyMap()
@@ -404,7 +389,7 @@ private fun InjectablesScope.resolveCandidate(
       }
     }
   }
-  return@computeForCandidate ResolutionResult.Success.WithCandidate.Value(
+  return@computeForCandidate ResolutionResult.Success.Value(
     candidate,
     this,
     successDependencyResults
@@ -431,8 +416,8 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
       a is ResolutionResult.Success.DefaultValue
     ) return 1
 
-    if (a is ResolutionResult.Success.WithCandidate &&
-      b is ResolutionResult.Success.WithCandidate
+    if (a is ResolutionResult.Success.Value &&
+      b is ResolutionResult.Success.Value
     )
       return compareCandidate(a.candidate, b.candidate)
 
@@ -579,7 +564,7 @@ private fun InjectionGraph.Success.postProcess(
   usages: MutableMap<UsageKey, MutableSet<InjectableRequest>>
 ) {
   visitRecursive { request, result ->
-    if (result is ResolutionResult.Success.WithCandidate.Value)
+    if (result is ResolutionResult.Success.Value)
       usages.getOrPut(result.usageKey) { mutableSetOf() } += request
     onEachResult(request, result)
   }
@@ -590,7 +575,7 @@ fun ResolutionResult.visitRecursive(
   action: (InjectableRequest, ResolutionResult) -> Unit
 ) {
   action(request, this)
-  if (this is ResolutionResult.Success.WithCandidate.Value) {
+  if (this is ResolutionResult.Success.Value) {
     dependencyResults
       .forEach { (request, result) ->
         result.visitRecursive(request, action)
