@@ -154,22 +154,21 @@ class InjectCallTransformer(
     ctx: ScopeContext,
     results: Map<InjectableRequest, ResolutionResult.Success>
   ) {
-    results
-      .forEach { (request, result) ->
-        if (result !is ResolutionResult.Success.Value) return@forEach
-        val expression = ctx.expressionFor(result)
-        when (request.parameterIndex) {
-          DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
-          EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
-          else -> putValueArgument(
-            symbol.owner
-              .valueParameters
-              .first { it.descriptor.injektIndex() == request.parameterIndex }
-              .index,
-            expression
-          )
-        }
+    for ((request, result) in results) {
+      if (result !is ResolutionResult.Success.Value) continue
+      val expression = ctx.expressionFor(result)
+      when (request.parameterIndex) {
+        DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
+        EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
+        else -> putValueArgument(
+          symbol.owner
+            .valueParameters
+            .first { it.descriptor.injektIndex() == request.parameterIndex }
+            .index,
+          expression
+        )
       }
+    }
   }
 
   private fun ResolutionResult.Success.Value.shouldWrap(
