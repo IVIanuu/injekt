@@ -223,10 +223,6 @@ class InjectCallTransformer(
     }
   }.invoke(this)
 
-  private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =
-    DeclarationIrBuilder(irCtx, symbol)
-      .irGetObject(irCtx.referenceClass(type.classifier.fqName)!!)
-
   private fun ScopeContext.providerExpression(
     result: ResolutionResult.Success.Value,
     injectable: ProviderInjectable
@@ -449,6 +445,10 @@ class InjectCallTransformer(
         inject(this@classExpression, result.dependencyResults)
       }
   }
+
+  private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =
+    DeclarationIrBuilder(irCtx, symbol)
+      .irGetObject(irCtx.referenceClass(type.classifier.fqName)!!)
 
   private fun ScopeContext.propertyExpression(
     result: ResolutionResult.Success.Value,
