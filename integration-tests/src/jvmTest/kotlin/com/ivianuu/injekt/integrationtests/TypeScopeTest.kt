@@ -234,7 +234,7 @@ class TypeScopeTest {
           """
             class Dep
 
-            object DepImplicits {
+            object DepModule {
               @Provide val dep = Dep() 
             }
           """,
@@ -258,9 +258,9 @@ class TypeScopeTest {
           """
             class Dep
 
-            object DepImplicits {
+            object DepModule {
               class MyClass {
-                object RealDepImplicits {
+                object RealDepModule {
                   @Provide val dep = Dep()
                 }
               }
