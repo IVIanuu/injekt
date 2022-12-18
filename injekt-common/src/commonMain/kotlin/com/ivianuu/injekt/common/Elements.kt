@@ -55,7 +55,7 @@ interface ProvidedElement<N, T : Any> {
   fun get(): T
 
   companion object {
-    @Provide fun <N> defaultElements(): Collection<ProvidedElement<N, *>> = emptyList()
+    @Provide fun <N> defaultElements() = emptyList<ProvidedElement<N, *>>()
   }
 }
 
