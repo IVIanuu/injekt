@@ -320,7 +320,7 @@ class CallContextTest {
         @Provide suspend fun foo() = Foo()
       """,
       """
-        fun invoke(): suspend () -> Unit        = {
+        fun invoke(): suspend () -> Unit = {
           val foo by lazy(run { inject<Foo>() }) {  }
         }
       """
