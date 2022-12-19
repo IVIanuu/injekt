@@ -87,7 +87,7 @@ class InjectablesScope(
   data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val isNoOp: Boolean = parent?.isDeclarationContainer == true &&
+  private val isNoOp: Boolean = parent?.allScopes?.any { it.isDeclarationContainer } == true &&
       typeParameters.isEmpty() &&
       (isEmpty || (initialInjectables.isEmpty() && callContext == parent.callContext))
 
