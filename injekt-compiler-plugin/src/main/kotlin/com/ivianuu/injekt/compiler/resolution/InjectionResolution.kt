@@ -451,15 +451,13 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
 
   return compareCallable(
     a.safeAs<CallableInjectable>()?.callable,
-    b.safeAs<CallableInjectable>()?.callable,
-    false
+    b.safeAs<CallableInjectable>()?.callable
   )
 }
 
 private fun InjectablesScope.compareCallable(
   a: CallableRef?,
-  b: CallableRef?,
-  compareCompilation: Boolean
+  b: CallableRef?
 ): Int {
   if (a == b) return 0
 
@@ -467,13 +465,6 @@ private fun InjectablesScope.compareCallable(
   if (b != null && a == null) return 1
   a!!
   b!!
-
-  if (compareCompilation) {
-    val isAExternal = a.callable.isExternalDeclaration(ctx)
-    val isBExternal = b.callable.isExternalDeclaration(ctx)
-    if (!isAExternal && isBExternal) return -1
-    if (!isBExternal && isAExternal) return 1
-  }
 
   val ownerA = a.callable.containingDeclaration
   val ownerB = b.callable.containingDeclaration
