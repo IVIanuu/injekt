@@ -55,7 +55,9 @@ class DivergenceTest {
   @Test fun testCanBreakCircularDependencyViaProvider() = singleAndMultiCodegen(
     """
       @Provide class A(b: B)
-      @Provide class B(a: (B) -> A)
+      @Provide class B(a: (B) -> A) {
+        val a = a(this)
+      }
     """,
     """
       fun invoke() = inject<B>()
