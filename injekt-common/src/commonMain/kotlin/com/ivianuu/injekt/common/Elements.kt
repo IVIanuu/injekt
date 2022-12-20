@@ -36,7 +36,7 @@ interface Elements<N> {
     @Provide inline fun <@Spread T : @Element<N> S, S : Any, N> element(
       key: TypeKey<S>,
       crossinline factory: () -> T
-    ) = object : ProvidedElement<N, S> {
+    ): ProvidedElement<N, S> = object : ProvidedElement<N, S> {
       override val key: TypeKey<S>
         get() = key
 
@@ -67,7 +67,7 @@ interface ProvidedElement<N, T : Any> {
     @Provide inline fun <@Spread T : @Eager<N> S, S : Any, N> element(
       key: TypeKey<S>,
       crossinline factory: () -> S
-    ) = object : ProvidedElement<N, @Initializer S> {
+    ): ProvidedElement<N, S> = object : ProvidedElement<N, @Initializer S> {
       override val key: TypeKey<S>
         get() = key
 
