@@ -11,27 +11,19 @@ import com.ivianuu.injekt.Tag
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 
-interface Scope<N> : Disposable {
+class Scope<N> : SynchronizedObject(), Disposable {
+  @PublishedApi internal val values = hashMapOf<Any, Any>()
+  @PublishedApi internal var _isDisposed = false
   val isDisposed: Boolean
-
-  operator fun <T : Any> invoke(key: Any, init: () -> T): T
-
-  operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
-    this(key.value, init)
-}
-
-fun <N> Scope(): Scope<N> = ScopeImpl()
-
-private class ScopeImpl<N> : SynchronizedObject(), Scope<N>, Disposable {
-  private val values = hashMapOf<Any, Any>()
-  private var _isDisposed = false
-  override val isDisposed: Boolean
     get() = synchronized(this) { _isDisposed }
 
-  override fun <T : Any> invoke(key: Any, init: () -> T): T = synchronized(this) {
+  inline operator fun <T : Any> invoke(key: Any, init: () -> T): T = synchronized(this) {
     check(!_isDisposed) { "Cannot use a disposed scope" }
     values.getOrPut(key, init) as T
   }
+
+  inline operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+    invoke(key.value, init)
 
   override fun dispose() {
     synchronized(this) {
