@@ -7,7 +7,7 @@
 object Build {
   const val applicationId = "com.ivianuu.injekt.samples.android"
   const val compileSdk = 32
-  const val minSdk = 30
+  const val minSdk = 27
   const val targetSdk = 30
   const val versionCode = 1
   const val versionName = "0.0.1"
