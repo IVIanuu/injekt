@@ -12,17 +12,18 @@ import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 
 class Scope<N> : SynchronizedObject(), Disposable {
-  @PublishedApi internal val values = hashMapOf<Any, Any>()
+  @PublishedApi internal val values = hashMapOf<Any, Any?>()
   @PublishedApi internal var _isDisposed = false
   val isDisposed: Boolean
     get() = synchronized(this) { _isDisposed }
 
-  inline operator fun <T : Any> invoke(key: Any, init: () -> T): T = synchronized(this) {
+  inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
     check(!_isDisposed) { "Cannot use a disposed scope" }
-    values.getOrPut(key, init) as T
+    val value = values.getOrPut(key) { init() ?: NULL }
+    (if (value !== NULL) value else null) as T
   }
 
-  inline operator fun <T : Any> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
     invoke(key.value, init)
 
   override fun dispose() {
@@ -37,6 +38,8 @@ class Scope<N> : SynchronizedObject(), Disposable {
     }
   }
 }
+
+@PublishedApi internal val NULL = Any()
 
 @Tag annotation class Scoped<N> {
   companion object {
