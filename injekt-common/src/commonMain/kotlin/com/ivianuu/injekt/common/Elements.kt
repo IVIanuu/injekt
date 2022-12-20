@@ -33,16 +33,17 @@ interface Elements<N> {
 
 @Tag annotation class Element<N> {
   companion object {
-    @Provide class Module<@Spread T : @Element<N> S, S : Any, N> {
-      @Provide inline fun element(key: TypeKey<S>, crossinline factory: () -> T) = object : ProvidedElement<N, S> {
-        override val key: TypeKey<S>
-          get() = key
+    @Provide inline fun <@Spread T : @Element<N> S, S : Any, N> element(
+      key: TypeKey<S>,
+      crossinline factory: () -> T
+    ) = object : ProvidedElement<N, S> {
+      override val key: TypeKey<S>
+        get() = key
 
-        override fun get(): T = factory()
-      }
-
-      @Provide inline fun accessor(element: T): S = element
+      override fun get(): T = factory()
     }
+
+    @Provide inline fun <@Spread T : @Element<N> S, S : Any, N> accessor(element: T): S = element
   }
 }
 
@@ -61,22 +62,23 @@ interface ProvidedElement<N, T : Any> {
 
 @Tag annotation class Eager<N> {
   companion object {
-    @Provide class Module<@Spread T : @Eager<N> S, S : Any, N> {
-      @Provide fun scoped(value: T): @Scoped<N> S = value
+    @Provide fun <@Spread T : @Eager<N> S, S : Any, N> scoped(value: T): @Scoped<N> S = value
 
-      @Provide inline fun element(key: TypeKey<S>, crossinline factory: () -> S) = object : ProvidedElement<N, @Initializer S> {
-        override val key: TypeKey<S>
-          get() = key
+    @Provide inline fun <@Spread T : @Eager<N> S, S : Any, N> element(
+      key: TypeKey<S>,
+      crossinline factory: () -> S
+    ) = object : ProvidedElement<N, @Initializer S> {
+      override val key: TypeKey<S>
+        get() = key
 
-        private var _value: Any? = null
-        override fun init() {
-          _value = factory()
-        }
-
-        override fun get(): S = _value as S
+      private var _value: Any? = null
+      override fun init() {
+        _value = factory()
       }
 
-      @Tag private annotation class Initializer
+      override fun get(): S = _value as S
     }
+
+    @Tag private annotation class Initializer
   }
 }
