@@ -28,9 +28,12 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
+import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
 import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescriptor
@@ -48,10 +51,13 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
+import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.lang.reflect.Field
@@ -139,12 +145,14 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
             }
           } +
           listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+            .plus(original.contextReceiverParameters)
             .plus(original.valueParameters)
             .joinToString(",") { parameter ->
               buildString {
                 when {
                   parameter === original.dispatchReceiverParameter -> append("d:")
                   parameter === original.extensionReceiverParameter -> append("e:")
+                  parameter in original.contextReceiverParameters -> append(":c")
                   else -> append("p:")
                 }
                 append(
@@ -170,12 +178,24 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
             }
           } +
           listOfNotNull(
-            original.dispatchReceiverParameter, original.extensionReceiverParameter
+            original.dispatchReceiverParameter,
+            original.extensionReceiverParameter
           )
-            .joinToString(",") {
-              it.type
-                .fullyAbbreviatedType
-                .uniqueTypeKey()
+            .plus(original.contextReceiverParameters)
+            .joinToString(",") { parameter ->
+              buildString {
+                when {
+                  parameter === original.dispatchReceiverParameter -> append("d:")
+                  parameter === original.extensionReceiverParameter -> append("e:")
+                  parameter in original.contextReceiverParameters -> append(":c")
+                  else -> append("p:")
+                }
+                append(
+                  parameter.type
+                    .fullyAbbreviatedType
+                    .uniqueTypeKey()
+                )
+              }
             } +
           ":" +
           original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
@@ -225,24 +245,59 @@ inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(): Name = when (injektIndex()) {
-  DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-  EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-  else -> name
+fun ParameterDescriptor.injektName(): Name {
+  val index = injektIndex()
+  val parentContextReceivers = containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters
+    ?: contextReceiverParameters.safeAs<ClassDescriptor>()?.contextReceivers
+    ?: emptyList()
+
+  return when  {
+    index == DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+    index == EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+    parentContextReceivers.isNotEmpty() &&
+        index <= parentContextReceivers.size -> Name.identifier("\$contextReceiver_$index")
+    else -> name
+  }
 }
 
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
-fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescriptor) {
-  index
-} else {
+fun ParameterDescriptor.injektIndex(): Int {
   val callable = containingDeclaration as? CallableDescriptor
-  when {
+  return when {
     original == callable?.dispatchReceiverParameter?.original ||
-        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
+    original is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-    else -> throw AssertionError("Unexpected descriptor $this")
+    else -> {
+      val contextReceivers = (containingDeclaration
+        .safeAs<ReceiverParameterDescriptor>()
+        ?.value
+        ?.safeAs<ImplicitClassReceiver>()
+        ?.classDescriptor
+        ?.contextReceivers ?:
+        callable?.contextReceiverParameters ?:
+        containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)
+
+      val contextReceiverIndex = contextReceivers?.indexOfFirst {
+        // todo find a better way to get the correct index
+        original.type === it.original.type
+      }
+
+      if (contextReceiverIndex != null && contextReceiverIndex != -1)
+        contextReceiverIndex
+      else {
+        val valueParameterIndex = callable?.valueParameters?.indexOfFirst {
+          original === it.original
+        }
+        if (valueParameterIndex != null && valueParameterIndex != -1)
+          callable.contextReceiverParameters.size + valueParameterIndex
+        else if (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor)
+          DISPATCH_RECEIVER_INDEX
+        else
+          throw AssertionError("Unexpected descriptor $this $javaClass")
+      }
+    }
   }
 }
 
@@ -373,3 +428,18 @@ val composeCompilerInClasspath = try {
 } catch (e: ClassNotFoundException) {
   false
 }
+
+val CallableDescriptor.allParametersWithContext: List<ParameterDescriptor>
+  get() = buildList {
+    addIfNotNull(dispatchReceiverParameter)
+    addIfNotNull(extensionReceiverParameter)
+    addAll(contextReceiverParameters)
+    addAll(valueParameters)
+  }
+
+val IrFunction.allParametersWithContext: List<IrValueParameter>
+  get() = buildList {
+    addIfNotNull(dispatchReceiverParameter)
+    addIfNotNull(extensionReceiverParameter)
+    addAll(valueParameters)
+  }

@@ -613,9 +613,25 @@ class ResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testCanResolveReceiverInDefaultValueOfParameter() = codegen(
+  @Test fun testCanResolveDispatchReceiverInDefaultValueOfParameter() = codegen(
+    """
+      class Dep {
+        fun invoke(dep: Dep = inject()) {
+        }
+      }
+    """
+  )
+
+  @Test fun testCanResolveExtensionReceiverInDefaultValueOfParameter() = codegen(
     """
       fun Foo.invoke(bar: Bar = Bar(inject())) {
+      }
+    """
+  )
+
+  @Test fun testCanResolveContextReceiverInDefaultValueOfParameter() = codegen(
+    """
+      context(Foo) fun invoke(bar: Bar = Bar(inject())) {
       }
     """
   )
@@ -1124,6 +1140,30 @@ class ResolveTest {
       fun invoke(@Inject scope: String) {
         val scope by produceState<Int>()
       }
+    """
+  )
+
+  @Test fun testCanResolveExtensionReceiverOfFunction() = codegen(
+    """
+      fun Foo.foo() = inject<Foo>()
+    """
+  )
+
+  @Test fun testCanResolveContextReceiverOfFunction() = codegen(
+    """
+      context(Foo) fun foo() = inject<Foo>()
+    """
+  )
+
+  @Test fun testCanResolveExtensionReceiverOfProperty() = codegen(
+    """
+      val Foo.foo get() = inject<Foo>()
+    """
+  )
+
+  @Test fun testCanResolveContextReceiverOfProperty() = codegen(
+    """
+      context(Foo) val foo get() = inject<Foo>()
     """
   )
 }

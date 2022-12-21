@@ -7,6 +7,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
@@ -14,7 +15,6 @@ import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.transform
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -52,6 +52,7 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -457,11 +458,14 @@ private fun FunctionParameterInjectablesScopes(
 ): InjectablesScope {
   val maxIndex = until?.injektIndex()
 
-  return function.allParameters
+  return function.allParametersWithContext
     .transform {
-      if ((maxIndex == null || it.injektIndex() < maxIndex) &&
-        (it === function.extensionReceiverParameter || it.isProvide(ctx)))
-          add(it.toCallableRef(ctx))
+      if (it !== function.dispatchReceiverParameter &&
+        (maxIndex == null || it.injektIndex() < maxIndex) &&
+        (it === function.dispatchReceiverParameter ||
+            it === function.extensionReceiverParameter ||
+            it in function.contextReceiverParameters || it.isProvide(ctx)))
+         add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -512,7 +516,10 @@ private fun PropertyInjectablesScope(
     callContext = property.callContext(ctx),
     parent = finalParent,
     ownerDescriptor = property,
-    initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx)),
+    initialInjectables = buildList {
+      addIfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx))
+      property.contextReceiverParameters.forEach { add(it.toCallableRef(ctx)) }
+    },
     typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
     ctx = ctx
   )
