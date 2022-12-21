@@ -209,7 +209,9 @@ fun Annotated.isInject(ctx: Context): Boolean {
 
     if (!isInject)
       isInject = this is ReceiverParameterDescriptor &&
-          this in (containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters ?: emptyList())
+          containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters?.any {
+            it.type == type
+          } == true
 
     if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true

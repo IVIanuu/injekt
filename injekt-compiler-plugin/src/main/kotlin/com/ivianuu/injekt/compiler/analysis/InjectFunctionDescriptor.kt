@@ -131,7 +131,7 @@ class InjectFunctionDescriptorImpl(
             ContextReceiver(this, it.type, null),
             Annotations.EMPTY
           )
-        } else emptyList()
+        } else underlyingDescriptor.contextReceiverParameters
   }
 
   override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
@@ -185,7 +185,7 @@ class InjectSimpleFunctionDescriptorImpl(
             ContextReceiver(this, it.type, null),
             Annotations.EMPTY
           )
-        } else emptyList()
+        } else underlyingDescriptor.contextReceiverParameters
   }
 
   override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
