@@ -4,19 +4,18 @@
 
 package com.ivianuu.injekt.samples.typeclasses
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 
 fun interface Ord<in T> {
-  fun compare(a: T, b: T): Int
+  fun T.compareTo(x: T): Int
 
   companion object {
-    @Provide val int = Ord<Int> { a, b -> a.compareTo(b) }
+    @Provide val int = Ord<Int> { x -> compareTo(x) }
   }
 }
 
-fun <T> List<T>.sorted(@Inject ord: Ord<T>): List<T> = sortedWith { a, b -> ord.compare(a, b) }
+context(Ord<T>) fun <T> List<T>.sortedWithOrd(): List<T> = sortedWith { a, b -> a.compareTo(b) }
 
 fun main() {
-  val items = listOf(5, 3, 4, 1, 2).sorted()
+  val items = listOf(5, 3, 4, 1, 2).sortedWithOrd()
 }

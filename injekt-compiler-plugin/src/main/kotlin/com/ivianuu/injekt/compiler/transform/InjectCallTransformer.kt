@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallContext
@@ -69,7 +70,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.allParameters
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -440,6 +440,7 @@ class InjectCallTransformer(
         injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
       )
       .apply {
+        contextReceiversCount = descriptor.contextReceiverParameters.size
         fillTypeParameters(injectable.callable)
         inject(this@classExpression, result.dependencyResults)
       }
@@ -462,6 +463,7 @@ class InjectCallTransformer(
         injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
       )
       .apply {
+        contextReceiversCount = descriptor.contextReceiverParameters.size
         fillTypeParameters(injectable.callable)
         inject(this@propertyExpression, result.dependencyResults)
       }
@@ -476,6 +478,7 @@ class InjectCallTransformer(
     return DeclarationIrBuilder(irCtx, symbol)
       .irCall(function.symbol, injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!)
       .apply {
+        contextReceiversCount = descriptor.contextReceiverParameters.size
         fillTypeParameters(injectable.callable)
         inject(this@functionExpression, result.dependencyResults)
       }
@@ -497,21 +500,17 @@ class InjectCallTransformer(
         .irGet(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           containingDeclaration.irConstructor(ctx, irCtx, localDeclarations)
-            .allParameters
-            .single { it.name == descriptor.name }
+            .allParametersWithContext
+            .single { it.descriptor.injektIndex() == descriptor.injektIndex() }
             .symbol
         )
       is FunctionDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           (parameterMap[descriptor] ?: containingDeclaration.irFunction(ctx, irCtx, localDeclarations)
-            .let { function ->
-              function.allParameters
-                .filter { it != function.dispatchReceiverParameter }
-            }
-            .singleOrNull { it.descriptor.injektIndex() == descriptor.injektIndex() })
-            ?.symbol
-            ?: error("")
+            .allParametersWithContext
+            .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
+            .symbol
         )
       is PropertyDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(

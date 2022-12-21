@@ -167,6 +167,55 @@ class InjectableDeclarationTest {
       .shouldBeTypeOf<Bar>()
   }
 
+  @Test fun testProvideContextFunction() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide fun bar() = Bar(this@Foo)
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = inject<Bar>()
+    """
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideContextProperty() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide val bar get() = Bar(this@Foo)
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+    """
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideContextClass() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide class Dep
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = inject<Dep>()
+    """
+  ) {
+    invokeSingleFile(Foo())
+  }
+
+  // todo @Test
+  fun testProvideContextConstructor() = singleAndMultiCodegen(
+    """
+      @Provide class Dep(foo: Any) {
+        context(Foo) constructor() : this(this@Foo)
+      }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = inject<Dep>() 
+    """
+  ) {
+    invokeSingleFile(Foo())
+  }
+
   @Test fun testProvideValueParameter() = codegen(
     """
       fun invoke(@Provide foo: Foo) = inject<Foo>()
@@ -427,6 +476,18 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
+  @Test fun testCanLeaveOutInjectContextLambdaParameters() = singleAndMultiCodegen(
+    """
+      val lambda: context(Unit) (@Inject Foo) -> Foo = { inject<Foo>() }
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = lambda(Unit)
+    """
+  ) {
+    val foo = Foo()
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+  }
+
   @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
     """
       val lambda: suspend (@Inject Foo) -> Foo = { inject<Foo>() }
@@ -451,6 +512,19 @@ class InjectableDeclarationTest {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
+
+  @Test fun testCanLeaveOutContextParameters() = singleAndMultiCodegen(
+    """
+      context(Foo) fun usesFoo() {
+      }
+    """,
+    """
+      @Provide val foo = Foo()
+      fun invoke() {
+        usesFoo()
+      }
+    """
+  )
 
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
