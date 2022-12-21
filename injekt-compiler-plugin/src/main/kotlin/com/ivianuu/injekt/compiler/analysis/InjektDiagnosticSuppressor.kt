@@ -39,6 +39,32 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     isSuppressed(diagnostic, null)
 
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
+    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
+      return true
+
+    // todo remove once compose fun interface support is fixed
+    if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
+      return true
+
+    // todo remove once compose fun interface support is fixed
+    if (diagnostic.factory.name.contains("TYPE_MISMATCH") &&
+      diagnostic is DiagnosticWithParameters2<*, *, *> &&
+      diagnostic.a.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true &&
+      diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
+      return true
+
+    if (diagnostic.factory == Errors.NO_CONTEXT_RECEIVER)
+      return true
+
+    if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
+      return true
+
+    if (diagnostic.factory == Errors.UNSUPPORTED_CONTEXTUAL_DECLARATION_CALL)
+      return true
+
+    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
+      return true
+
     if (bindingContext == null)
       return false
 
@@ -53,9 +79,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.filterNot { it.isInject(ctx) }
         ?.size
         ?.let { it <= 1 } == true
-
-    if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
-      return true
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
@@ -86,7 +109,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
           it.hasAnnotation(InjektFqNames.Inject) ||
               it.hasAnnotation(InjektFqNames.Provide)
         } == true)
-          return true
+        return true
     }
 
     if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER) {
@@ -98,29 +121,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.toTypeRef(ctx)
         ?.anyType { it.classifier.descriptor == typeParameter } == true
     }
-
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
-      return true
-
-    // todo remove once compose fun interface support is fixed
-    if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
-      return true
-
-    // todo remove once compose fun interface support is fixed
-    if (diagnostic.factory.name.contains("TYPE_MISMATCH") &&
-      diagnostic is DiagnosticWithParameters2<*, *, *> &&
-      diagnostic.a.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true &&
-      diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
-      return true
-
-    if (diagnostic.factory == Errors.NO_CONTEXT_RECEIVER)
-      return true
-
-    if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
-      return true
-
-    if (diagnostic.factory == Errors.UNSUPPORTED_CONTEXTUAL_DECLARATION_CALL)
-      return true
 
     return false
   }
