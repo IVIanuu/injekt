@@ -101,6 +101,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
     kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xallow-kotlin-package"
+    kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 
     val project = kotlinCompilation.target.project
 
@@ -268,6 +269,7 @@ interface InjektTask : Task {
     args.destinationAsFile = outputDir
     args.allowNoSourceFiles = true
     args.freeArgs += "-Xallow-kotlin-package"
+    args.freeArgs += "-Xcontext-receivers"
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
@@ -321,6 +323,7 @@ interface InjektTask : Task {
     args.addPluginOptions(options.get())
     args.outputFile = File(outputDir, "dummyOutput.js").canonicalPath
     args.freeArgs += "-Xallow-kotlin-package"
+    args.freeArgs += "-Xcontext-receivers"
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
@@ -378,6 +381,7 @@ interface InjektTask : Task {
     args.friendPaths = friendPaths.files.map { it.absolutePath }.toTypedArray()
     args.refinesPaths = refinesMetadataPaths.map { it.absolutePath }.toTypedArray()
     args.freeArgs += "-Xallow-kotlin-package"
+    args.freeArgs += "-Xcontext-receivers"
   }
 
   @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER", "EXPOSED_PARAMETER_TYPE")
@@ -403,7 +407,8 @@ interface InjektTask : Task {
   override val additionalCompilerOptions: Provider<Collection<String>>
     get() = project.provider {
       super.additionalCompilerOptions.get() + options.get().flatMap { listOf("-P", it.toArg()) } +
-          "-Xallow-kotlin-package"
+          "-Xallow-kotlin-package" +
+          "-Xcontext-receivers"
     }
 
   override fun configureCompilation(

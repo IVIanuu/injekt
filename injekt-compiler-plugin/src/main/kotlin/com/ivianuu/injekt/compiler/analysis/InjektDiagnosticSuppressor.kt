@@ -14,7 +14,6 @@ import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.builtins.isFunctionOrSuspendFunctionType
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -124,6 +123,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       return true
 
     if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
+      return true
+
+    if (diagnostic.factory == Errors.UNSUPPORTED_CONTEXTUAL_DECLARATION_CALL)
       return true
 
     return false
