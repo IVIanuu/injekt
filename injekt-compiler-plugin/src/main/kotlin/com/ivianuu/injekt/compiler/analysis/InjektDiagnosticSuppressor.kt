@@ -116,12 +116,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     if (diagnostic.factory == Errors.NO_CONTEXT_RECEIVER)
       return true
 
-    if (diagnostic.factory == Errors.EXPERIMENTAL_FEATURE_ERROR)
-      return true
-
-    if (diagnostic.factory == Errors.EXPERIMENTAL_FEATURE_WARNING)
-      return true
-
     if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
       return true
 
