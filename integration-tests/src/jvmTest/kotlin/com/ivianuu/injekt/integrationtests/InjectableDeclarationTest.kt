@@ -526,11 +526,10 @@ class InjectableDeclarationTest {
     """
   )
 
-  // todo @Test
-  fun testCanLeaveOutContextLambdaParameters() = codegen(
+  @Test fun testCanLeaveOutContextLambdaParameters() = codegen(
     """
-      context(Foo) fun withFoo(block: context(Foo) () -> Unit) {
-        block()
+      context(Foo) fun withFoo(block: context(Foo) (String) -> Unit) {
+        block("")
       }
     """
   )
