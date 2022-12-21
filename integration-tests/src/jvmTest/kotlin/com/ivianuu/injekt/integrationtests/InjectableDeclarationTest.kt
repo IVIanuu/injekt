@@ -526,6 +526,15 @@ class InjectableDeclarationTest {
     """
   )
 
+  // todo @Test
+  fun testCanLeaveOutContextLambdaParameters() = codegen(
+    """
+      context(Foo) fun withFoo(block: context(Foo) () -> Unit) {
+        block()
+      }
+    """
+  )
+
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
