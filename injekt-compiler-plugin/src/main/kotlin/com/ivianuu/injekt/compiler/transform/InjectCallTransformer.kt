@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isSubTypeOf
 import com.ivianuu.injekt.compiler.resolution.render
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -55,6 +56,7 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irString
@@ -72,10 +74,13 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import kotlin.collections.component1
@@ -486,9 +491,35 @@ class InjectCallTransformer(
 
   private fun receiverExpression(
     descriptor: ParameterDescriptor
-  ) = receiverAccessors.last {
+  ): IrExpression = receiverAccessors.lastOrNull {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-  }.second()
+  }?.second?.invoke() ?: if (descriptor is ReceiverParameterDescriptor &&
+      descriptor.value is ContextClassReceiver)
+    descriptor
+      .value
+      .cast<ContextClassReceiver>()
+      .declarationDescriptor
+      .cast<ClassDescriptor>()
+      .irClass(ctx, irCtx, localDeclarations)
+      .fields
+      .filter { it.name.asString().startsWith("contextReceiverField") }
+      .toList()
+      .get(
+        descriptor.value.cast<ContextClassReceiver>()
+          .declarationDescriptor
+          .cast<ClassDescriptor>()
+          .contextReceivers
+          .indexOfFirst { it.type == descriptor.type }
+      )
+      .let {
+        DeclarationIrBuilder(irCtx, it.symbol)
+          .irGetField(
+            receiverExpression(descriptor.containingDeclaration.cast<ClassDescriptor>().thisAsReceiverParameter),
+            it
+          )
+      }
+    else
+      throw AssertionError("unexpected receiver $descriptor")
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,

@@ -1166,4 +1166,12 @@ class ResolveTest {
       context(Foo) val foo get() = inject<Foo>()
     """
   )
+
+  @Test fun testCanResolveContextReceiverOfClass() = codegen(
+    """
+      context(Foo) class Dep {
+        val foo get() = inject<Foo>()
+      }
+    """
+  )
 }
