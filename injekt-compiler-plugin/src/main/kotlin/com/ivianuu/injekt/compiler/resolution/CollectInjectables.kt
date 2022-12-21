@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.transformTo
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -204,6 +206,10 @@ fun Annotated.isInject(ctx: Context): Boolean {
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return ctx.trace!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
     var isInject = hasAnnotation(InjektFqNames.Inject)
+
+    if (!isInject)
+      isInject = this is ReceiverParameterDescriptor &&
+          this in (containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters ?: emptyList())
 
     if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true

@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
@@ -117,9 +118,10 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
 
-    val requests = callee.callable.valueParameters
+    val requests = callee.callable.allParametersWithContext
       .transform {
-        if (valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument && it.isInject(ctx!!))
+        if ((valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument ||
+              it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!))
           add(it.toInjectableRequest(callee))
       }
 

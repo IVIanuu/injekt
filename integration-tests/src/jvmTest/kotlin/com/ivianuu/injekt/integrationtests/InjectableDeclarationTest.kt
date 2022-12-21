@@ -513,6 +513,19 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
+  @Test fun testCanLeaveOutContextParameters() = singleAndMultiCodegen(
+    """
+      context(Foo) fun usesFoo() {
+      }
+    """,
+    """
+      @Provide val foo = Foo()
+      fun invoke() {
+        usesFoo()
+      }
+    """
+  )
+
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)

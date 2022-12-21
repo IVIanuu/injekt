@@ -114,6 +114,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
       return true
 
+    if (diagnostic.factory == Errors.NO_CONTEXT_RECEIVER)
+      return true
+
     return false
   }
 }
