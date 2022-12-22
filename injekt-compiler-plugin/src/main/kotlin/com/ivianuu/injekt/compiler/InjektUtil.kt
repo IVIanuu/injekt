@@ -284,6 +284,7 @@ fun ParameterDescriptor.injektIndex(ctx: Context): Int =
         containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)
 
         val contextReceiverIndex = contextReceivers?.indexOfFirst {
+          // todo find a better way to get the correct index
           it.type.fullyAbbreviatedType == type.fullyAbbreviatedType
         }
 
