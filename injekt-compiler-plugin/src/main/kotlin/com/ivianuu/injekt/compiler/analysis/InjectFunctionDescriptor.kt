@@ -58,14 +58,14 @@ abstract class AbstractInjectFunctionDescriptor(
   final override val underlyingDescriptor: FunctionDescriptor,
   private val ctx: Context
 ) : InjectFunctionDescriptor {
-  private val valueParameters = underlyingDescriptor
+  private val valueParams = underlyingDescriptor
       .valueParameters
       .mapTo(mutableListOf()) { valueParameter ->
         InjectValueParameterDescriptor(this, valueParameter, ctx)
       }
 
   override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-    valueParameters.cast()
+    valueParams.cast()
 }
 
 fun FunctionDescriptor.toInjectFunctionDescriptor(
@@ -122,41 +122,37 @@ class InjectFunctionDescriptorImpl(
       ctx
     )
 
-  private val contextParams by lazy(LazyThreadSafetyMode.NONE) {
-    if (contextFunctionTypeParametersCount != null)
-      underlyingDescriptor.valueParameters.take(contextFunctionTypeParametersCount)
-        .map {
-          ReceiverParameterDescriptorImpl(
-            this,
-            ContextReceiver(this, it.type, null),
-            Annotations.EMPTY
-          )
-        } else underlyingDescriptor.contextReceiverParameters
-  }
+  private val contextParams = if (contextFunctionTypeParametersCount != null)
+    underlyingDescriptor.valueParameters.take(contextFunctionTypeParametersCount)
+      .map {
+        ReceiverParameterDescriptorImpl(
+          this,
+          ContextReceiver(this, it.type, null),
+          Annotations.EMPTY
+        )
+      } else underlyingDescriptor.contextReceiverParameters
 
   override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
     contextParams
 
-  private val valueParams by lazy(LazyThreadSafetyMode.NONE) {
-    super.getValueParameters()
-      .drop(contextFunctionTypeParametersCount ?: 0)
-      .mapTo(mutableListOf()) {
-        if (contextFunctionTypeParametersCount == null) it
-        else ValueParameterDescriptorImpl(
-          it.containingDeclaration,
-          null,
-          it.index - contextFunctionTypeParametersCount,
-          it.annotations,
-          it.name,
-          it.type,
-          it.declaresDefaultValue(),
-          it.isCrossinline,
-          it.isNoinline,
-          it.varargElementType,
-          it.source
-        )
-      }
-  }
+  private val valueParams = super.getValueParameters()
+    .drop(contextFunctionTypeParametersCount ?: 0)
+    .mapTo(mutableListOf()) {
+      if (contextFunctionTypeParametersCount == null) it
+      else ValueParameterDescriptorImpl(
+        it.containingDeclaration,
+        null,
+        it.index - contextFunctionTypeParametersCount,
+        it.annotations,
+        it.name,
+        it.type,
+        it.declaresDefaultValue(),
+        it.isCrossinline,
+        it.isNoinline,
+        it.varargElementType,
+        it.source
+      )
+    }
 
   override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
     valueParams
@@ -176,41 +172,37 @@ class InjectSimpleFunctionDescriptorImpl(
       ctx
     )
 
-  private val contextParams by lazy(LazyThreadSafetyMode.NONE) {
-    if (contextFunctionTypeParametersCount != null)
-      underlyingDescriptor.valueParameters.take(contextFunctionTypeParametersCount)
-        .map {
-          ReceiverParameterDescriptorImpl(
-            this,
-            ContextReceiver(this, it.type, null),
-            Annotations.EMPTY
-          )
-        } else underlyingDescriptor.contextReceiverParameters
-  }
+  private val contextParams = if (contextFunctionTypeParametersCount != null)
+    underlyingDescriptor.valueParameters.take(contextFunctionTypeParametersCount)
+      .map {
+        ReceiverParameterDescriptorImpl(
+          this,
+          ContextReceiver(this, it.type, null),
+          Annotations.EMPTY
+        )
+      } else underlyingDescriptor.contextReceiverParameters
 
   override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
     contextParams
 
-  private val valueParams by lazy(LazyThreadSafetyMode.NONE) {
-    super.getValueParameters()
-      .drop(contextFunctionTypeParametersCount ?: 0)
-      .mapTo(mutableListOf()) {
-        if (contextFunctionTypeParametersCount == null) it
-        else ValueParameterDescriptorImpl(
-          it.containingDeclaration,
-          null,
-          it.index - contextFunctionTypeParametersCount,
-          it.annotations,
-          it.name,
-          it.type,
-          it.declaresDefaultValue(),
-          it.isCrossinline,
-          it.isNoinline,
-          it.varargElementType,
-          it.source
-        )
-      }
-  }
+  private val valueParams = super.getValueParameters()
+    .drop(contextFunctionTypeParametersCount ?: 0)
+    .mapTo(mutableListOf()) {
+      if (contextFunctionTypeParametersCount == null) it
+      else ValueParameterDescriptorImpl(
+        it.containingDeclaration,
+        null,
+        it.index - contextFunctionTypeParametersCount,
+        it.annotations,
+        it.name,
+        it.type,
+        it.declaresDefaultValue(),
+        it.isCrossinline,
+        it.isNoinline,
+        it.varargElementType,
+        it.source
+      )
+    }
 
   override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
     valueParams

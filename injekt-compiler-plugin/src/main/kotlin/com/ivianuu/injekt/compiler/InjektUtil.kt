@@ -254,8 +254,10 @@ fun ParameterDescriptor.injektName(): Name {
   return when  {
     index == DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
     index == EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-    parentContextReceivers.isNotEmpty() &&
-        index <= parentContextReceivers.size -> Name.identifier("\$contextReceiver_$index")
+    this is ReceiverParameterDescriptor &&
+        parentContextReceivers.isNotEmpty() &&
+        index <= parentContextReceivers.size ->
+      Name.identifier("\$contextReceiver_$index")
     else -> name
   }
 }
