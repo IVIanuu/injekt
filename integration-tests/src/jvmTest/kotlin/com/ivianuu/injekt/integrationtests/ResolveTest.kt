@@ -1161,6 +1161,22 @@ class ResolveTest {
     """
   )
 
+  @Test fun testMeh() = singleAndMultiCodegen(
+    """
+      class ResourceProvider {
+        context(Foo, String) fun loadResource(id: Int, prefix: String): String = ""
+      }
+    """,
+    """
+      @Provide val foo = Foo()
+
+      context(ResourceProvider, String)
+      fun loadMessage(messageRes: Int) {
+        loadResource(0, "")
+      }
+    """
+  )
+
   @Test fun testCanResolveContextReceiverOfProperty() = codegen(
     """
       context(Foo) val foo get() = inject<Foo>()

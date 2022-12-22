@@ -5,6 +5,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
@@ -39,9 +40,17 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.KotlinCallDiagnostic
+import org.jetbrains.kotlin.resolve.calls.model.NoContextReceiver
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.tower.NewResolvedCallImpl
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
+import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker(
   private val withDeclarationGenerator: Boolean
@@ -120,10 +129,29 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val requests = callee.callable.allParametersWithContext
       .transform {
-        if ((valueArgumentsByIndex[it.injektIndex()] is DefaultValueArgument ||
-              it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!))
+        val index = it.injektIndex()
+        if ((index == DISPATCH_RECEIVER_INDEX && resolvedCall.dispatchReceiver is ContextReceiver) ||
+          ((valueArgumentsByIndex[index] is DefaultValueArgument ||
+              it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!)))
           add(it.toInjectableRequest(callee))
       }
+
+    // we fill the context receivers list up with dummy's to ensure
+    // that the compiler builds a correct ir tree
+    // we replace those dummy's later in ir phase
+    if (callee
+        .callable
+        .contextReceiverParameters.isNotEmpty()) {
+      resolvedCall.contextReceivers.cast<ArrayList<ReceiverValue>>().run {
+        clear()
+        val dummyReceiver = ImplicitClassReceiver(ctx!!.module.builtIns.unit)
+        repeat(callee
+          .callable
+          .contextReceiverParameters.size) {
+          add(dummyReceiver)
+        }
+      }
+    }
 
     if (requests.isEmpty()) return
 
