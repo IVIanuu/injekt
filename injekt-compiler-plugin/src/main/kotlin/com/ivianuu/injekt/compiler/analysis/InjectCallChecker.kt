@@ -40,11 +40,13 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.KotlinCallDiagnostic
 import org.jetbrains.kotlin.resolve.calls.model.NoContextReceiver
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.tower.NewResolvedCallImpl
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ContextReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
@@ -98,7 +100,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+    if (resultingDescriptor !is InjectFunctionDescriptor &&
+        resolvedCall.dispatchReceiver !is ContextReceiver &&
+        resolvedCall.dispatchReceiver !is ContextClassReceiver
+    ) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -130,7 +135,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     val requests = callee.callable.allParametersWithContext
       .transform {
         val index = it.injektIndex(ctx!!)
-        if ((index == DISPATCH_RECEIVER_INDEX && resolvedCall.dispatchReceiver is ContextReceiver) ||
+        if ((index == DISPATCH_RECEIVER_INDEX &&
+              (resolvedCall.dispatchReceiver is ContextReceiver || resolvedCall.dispatchReceiver is ContextClassReceiver)) ||
           ((valueArgumentsByIndex[index] is DefaultValueArgument ||
               it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!)))
           add(it.toInjectableRequest(callee, ctx!!))

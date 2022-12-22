@@ -1165,6 +1165,7 @@ class ResolveTest {
     """
       class ResourceProvider {
         context(AppContext, String) fun loadResource(id: Int, prefix: String): String = ""
+        fun load(id: Int): String = ""
       }
 
       typealias AppContext = Foo
@@ -1175,6 +1176,14 @@ class ResolveTest {
       context(ResourceProvider, String)
       fun loadMessage(messageRes: Int) {
         loadResource(0, "")
+      }
+
+      abstract class AbstractRepo(string: String)
+
+      context(ResourceProvider) class RepoImpl : AbstractRepo(load(0)) {
+        fun func() {
+          load(0)
+        }
       }
     """
   )
