@@ -1164,11 +1164,13 @@ class ResolveTest {
   @Test fun testMeh() = singleAndMultiCodegen(
     """
       class ResourceProvider {
-        context(Foo, String) fun loadResource(id: Int, prefix: String): String = ""
+        context(AppContext, String) fun loadResource(id: Int, prefix: String): String = ""
       }
+
+      typealias AppContext = Foo
     """,
     """
-      @Provide val foo = Foo()
+      @Provide val foo: AppContext = Foo()
 
       context(ResourceProvider, String)
       fun loadMessage(messageRes: Int) {
