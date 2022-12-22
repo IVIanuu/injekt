@@ -6,6 +6,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
+import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -245,8 +246,8 @@ inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(): Name {
-  val index = injektIndex()
+fun ParameterDescriptor.injektName(ctx: Context): Name {
+  val index = injektIndex(ctx)
   val parentContextReceivers = containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters
     ?: contextReceiverParameters.safeAs<ClassDescriptor>()?.contextReceivers
     ?: emptyList()
@@ -265,43 +266,44 @@ fun ParameterDescriptor.injektName(): Name {
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
-fun ParameterDescriptor.injektIndex(): Int {
-  val callable = containingDeclaration as? CallableDescriptor
-  return when {
-    original == callable?.dispatchReceiverParameter?.original ||
-    original is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
-    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-    else -> {
-      val contextReceivers = (containingDeclaration
-        .safeAs<ReceiverParameterDescriptor>()
-        ?.value
-        ?.safeAs<ImplicitClassReceiver>()
-        ?.classDescriptor
-        ?.contextReceivers ?:
+fun ParameterDescriptor.injektIndex(ctx: Context): Int =
+  ctx.trace.getOrPut(InjektWritableSlices.INJEKT_INDEX, this) {
+    val callable = containingDeclaration as? CallableDescriptor
+    when {
+      original == callable?.dispatchReceiverParameter?.original ||
+          original is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
+      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
+      else -> {
+        val contextReceivers = (containingDeclaration
+          .safeAs<ReceiverParameterDescriptor>()
+          ?.value
+          ?.safeAs<ImplicitClassReceiver>()
+          ?.classDescriptor
+          ?.contextReceivers ?:
         callable?.contextReceiverParameters ?:
         containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)
 
-      val contextReceiverIndex = contextReceivers?.indexOfFirst {
-        // todo find a better way to get the correct index
-        original.type === it.original.type
-      }
-
-      if (contextReceiverIndex != null && contextReceiverIndex != -1)
-        contextReceiverIndex
-      else {
-        val valueParameterIndex = callable?.valueParameters?.indexOfFirst {
-          original === it.original
+        val contextReceiverIndex = contextReceivers?.indexOfFirst {
+          // todo find a better way to get the correct index
+          type.toTypeRef(ctx) == type.toTypeRef(ctx)
         }
-        if (valueParameterIndex != null && valueParameterIndex != -1)
-          callable.contextReceiverParameters.size + valueParameterIndex
-        else if (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor)
-          DISPATCH_RECEIVER_INDEX
-        else
-          throw AssertionError("Unexpected descriptor $this $javaClass")
+
+        if (contextReceiverIndex != null && contextReceiverIndex != -1)
+          contextReceiverIndex
+        else {
+          val valueParameterIndex = callable?.valueParameters?.indexOfFirst {
+            original === it.original
+          }
+          if (valueParameterIndex != null && valueParameterIndex != -1)
+            callable.contextReceiverParameters.size + valueParameterIndex
+          else if (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor)
+            DISPATCH_RECEIVER_INDEX
+          else
+            throw AssertionError("Unexpected descriptor $this $javaClass $fqNameSafe $type")
+        }
       }
     }
   }
-}
 
 fun String.nextFrameworkKey(next: String) = "$this:$next"
 

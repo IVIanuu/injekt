@@ -168,7 +168,7 @@ class InjectCallTransformer(
         else -> putValueArgument(
           symbol.owner
             .valueParameters
-            .first { it.descriptor.injektIndex() == request.parameterIndex }
+            .first { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == request.parameterIndex }
             .index,
           expression
         )
@@ -532,7 +532,7 @@ class InjectCallTransformer(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           containingDeclaration.irConstructor(ctx, irCtx, localDeclarations)
             .allParametersWithContext
-            .single { it.descriptor.injektIndex() == descriptor.injektIndex() }
+            .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) }
             .symbol
         )
       is FunctionDescriptor -> DeclarationIrBuilder(irCtx, symbol)
@@ -540,19 +540,19 @@ class InjectCallTransformer(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           (parameterMap[descriptor] ?: containingDeclaration.irFunction(ctx, irCtx, localDeclarations)
             .allParametersWithContext
-            .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
+            .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) })
             .symbol
         )
       is PropertyDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           parameterMap[descriptor]?.symbol ?:
-          if (descriptor.injektIndex() == EXTENSION_RECEIVER_INDEX)
+          if (descriptor.injektIndex(this@InjectCallTransformer.ctx) == EXTENSION_RECEIVER_INDEX)
             containingDeclaration.irProperty(ctx, irCtx, localDeclarations)
               .getter!!.extensionReceiverParameter!!.symbol
           else
             containingDeclaration.irProperty(ctx, irCtx, localDeclarations)
-              .getter!!.valueParameters[descriptor.injektIndex()].symbol
+              .getter!!.valueParameters[descriptor.injektIndex(this@InjectCallTransformer.ctx)].symbol
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }

@@ -37,7 +37,7 @@ class InjectValueParameterDescriptor(
   underlyingDescriptor,
   underlyingDescriptor.index,
   underlyingDescriptor.annotations,
-  underlyingDescriptor.injektName(),
+  underlyingDescriptor.injektName(ctx),
   underlyingDescriptor.type,
   false,
   underlyingDescriptor.isCrossinline,

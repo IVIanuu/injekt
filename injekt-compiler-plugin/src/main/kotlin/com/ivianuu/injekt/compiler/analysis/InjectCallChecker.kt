@@ -125,15 +125,15 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
+      .mapKeys { it.key.injektIndex(ctx!!) }
 
     val requests = callee.callable.allParametersWithContext
       .transform {
-        val index = it.injektIndex()
+        val index = it.injektIndex(ctx!!)
         if ((index == DISPATCH_RECEIVER_INDEX && resolvedCall.dispatchReceiver is ContextReceiver) ||
           ((valueArgumentsByIndex[index] is DefaultValueArgument ||
               it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!)))
-          add(it.toInjectableRequest(callee))
+          add(it.toInjectableRequest(callee, ctx!!))
       }
 
     // we fill the context receivers list up with dummy's to ensure

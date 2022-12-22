@@ -462,12 +462,12 @@ private fun FunctionParameterInjectablesScopes(
   until: ValueParameterDescriptor? = null,
   ctx: Context
 ): InjectablesScope {
-  val maxIndex = until?.injektIndex()
+  val maxIndex = until?.injektIndex(ctx)
 
   return function.allParametersWithContext
     .transform {
       if (it !== function.dispatchReceiverParameter &&
-        (maxIndex == null || it.injektIndex() < maxIndex) &&
+        (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
         (it === function.dispatchReceiverParameter ||
             it === function.extensionReceiverParameter ||
             it in function.contextReceiverParameters || it.isProvide(ctx)))
@@ -491,7 +491,7 @@ private fun FunctionParameterInjectablesScope(
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
   return InjectablesScope(
-    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
+    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName(ctx)}",
     parent = parent,
     ownerDescriptor = function,
     initialInjectables = listOf(parameter),

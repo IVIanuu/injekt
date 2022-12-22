@@ -115,7 +115,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
 
     val parameterTypes = buildMap<Int, TypeRef> {
       for (parameter in allParametersWithContext)
-        this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
+        this[parameter.injektIndex(ctx)] = parameter.type.toTypeRef(ctx)
     }
 
     val info = CallableInfo(type, parameterTypes)

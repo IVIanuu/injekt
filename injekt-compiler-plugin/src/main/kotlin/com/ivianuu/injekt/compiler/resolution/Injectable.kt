@@ -178,7 +178,7 @@ fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = c
         it === callable.extensionReceiverParameter ||
         it in callable.contextReceiverParameters ||
         it.isProvide(ctx))
-          add(it.toInjectableRequest(this@getInjectableRequests))
+          add(it.toInjectableRequest(this@getInjectableRequests, ctx))
   }
 
 data class InjectableRequest(
@@ -191,17 +191,16 @@ data class InjectableRequest(
   val isInline: Boolean = false
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest {
-  return InjectableRequest(
-    type = callable.parameterTypes[injektIndex()]!!,
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
+  InjectableRequest(
+    type = callable.parameterTypes[injektIndex(ctx)]!!,
     callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(),
-    parameterIndex = injektIndex(),
+    parameterName = injektName(ctx),
+    parameterIndex = injektIndex(ctx),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this) &&
         safeAs<ValueParameterDescriptor>()?.isCrossinline != true
   )
-}
