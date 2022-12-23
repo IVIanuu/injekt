@@ -8,6 +8,7 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
+import com.ivianuu.injekt.inject
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 
@@ -17,14 +18,14 @@ class Scope<N> : SynchronizedObject(), Disposable {
   val isDisposed: Boolean
     get() = synchronized(this) { _isDisposed }
 
-  inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
+  inline fun <T> scoped(key: Any, init: () -> T): T = synchronized(this) {
     check(!_isDisposed) { "Cannot use a disposed scope" }
     val value = values.getOrPut(key) { init() ?: NULL }
     (if (value !== NULL) value else null) as T
   }
 
-  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
-    invoke(key.value, init)
+  context(TypeKey<T>) inline fun <T> scoped(init: () -> T): T =
+    scoped(inject<TypeKey<T>>().value, init)
 
   override fun dispose() {
     synchronized(this) {
@@ -43,10 +44,9 @@ class Scope<N> : SynchronizedObject(), Disposable {
 
 @Tag annotation class Scoped<N> {
   companion object {
-    @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
+    context(Scope<N>) @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       crossinline init: () -> T,
-      scope: Scope<N>,
       key: TypeKey<S>
-    ): S = scope(key) { init() }
+    ): S = scoped(key) { init() }
   }
 }
