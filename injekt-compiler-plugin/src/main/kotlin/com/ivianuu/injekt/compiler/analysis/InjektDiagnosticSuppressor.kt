@@ -71,15 +71,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
       ?: return false
 
-    if (diagnostic.factory == Errors.INAPPLICABLE_INFIX_MODIFIER ||
-      diagnostic.factory == Errors.INAPPLICABLE_OPERATOR_MODIFIER)
-      return diagnostic.psiElement.parent.parent.safeAs<KtNamedFunction>()
-        ?.descriptor<CallableDescriptor>(ctx)
-        ?.valueParameters
-        ?.filterNot { it.isInject(ctx) }
-        ?.size
-        ?.let { it <= 1 } == true
-
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
         bindingContext[BindingContext.ANNOTATION, diagnostic.psiElement.cast()]

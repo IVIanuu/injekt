@@ -10,59 +10,6 @@ import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
 class SuppressionTest {
-  @Test fun testCanUseInfixWithInject() = singleAndMultiCodegen(
-    """
-      interface Combine<T> {
-        fun plus(a: T, b: T): T
-      }
-
-      infix fun <T> T.combine(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
-      
-      @Provide object StringCombine : Combine<String> {
-        override fun plus(a: String, b: String) = a + b
-      }
-    """,
-    """
-      fun invoke() {
-        "a" combine "b"
-      } 
-    """
-  )
-
-  @Test fun testCanUseOperatorWithInject() = singleAndMultiCodegen(
-    """
-      interface Combine<T> {
-        fun plus(a: T, b: T): T
-      }
-  
-      operator fun <T> T.plus(other: T, @Inject combine: Combine<T>): T = combine.plus(this, other)
-  
-      @JvmInline value class Key(val value: String)
-  
-      @Provide object KeyCombine : Combine<Key> {
-          override fun plus(a: Key, b: Key) = Key(a.value + b.value)
-      }
-    """,
-    """
-      fun invoke() {
-        Key("a") + Key("b")
-      } 
-    """
-  )
-
-  @Test fun testCanUseUnaryPlusWithInject() = singleAndMultiCodegen(
-    """
-      operator fun <T> T.unaryPlus(@Inject builder: StringBuilder) {
-        builder.append(toString())
-      }
-    """,
-    """
-      fun invoke() = buildString {
-        +42
-      }
-    """
-  )
-
   @Test fun testDoesNotShowUnusedTypeParameterIfUsedInAnnotation() = codegen(
     """
       typealias ComponentScope<C> = @ComponentScopeTag<C> String
