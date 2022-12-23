@@ -10,7 +10,7 @@ import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
 
 interface Elements<N> {
-  operator fun <T> invoke(@Inject key: TypeKey<T>): T
+  fun <T> element(@Inject key: TypeKey<T>): T
 }
 
 @Provide class ElementsImpl<N>(
@@ -26,7 +26,7 @@ interface Elements<N> {
     elements.forEach { it.init() }
   }
 
-  override fun <T> invoke(@Inject key: TypeKey<T>): T =
+  override fun <T> element(@Inject key: TypeKey<T>): T =
     elements[key.value]?.get() as T
       ?: error("No element found for ${key.value} in ${this.key.value}")
 }
