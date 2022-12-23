@@ -7,7 +7,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.injektName
-import com.ivianuu.injekt.compiler.resolution.isInject
+import com.ivianuu.injekt.compiler.resolution.isContext
 import org.jetbrains.kotlin.builtins.contextFunctionTypeParamsCount
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -24,12 +24,12 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-interface InjectFunctionDescriptor : FunctionDescriptor {
+interface ContextFunctionDescriptor : FunctionDescriptor {
   val underlyingDescriptor: FunctionDescriptor
 }
 
-class InjectValueParameterDescriptor(
-  parent: InjectFunctionDescriptor,
+class ContextValueParameterDescriptor(
+  parent: ContextFunctionDescriptor,
   val underlyingDescriptor: ValueParameterDescriptor,
   val ctx: Context
 ) : ValueParameterDescriptorImpl(
@@ -46,46 +46,46 @@ class InjectValueParameterDescriptor(
   underlyingDescriptor.source
 ) {
   private val declaresDefaultValue =
-    underlyingDescriptor.isInject(ctx) || underlyingDescriptor.declaresDefaultValue()
+    underlyingDescriptor.isContext(ctx) || underlyingDescriptor.declaresDefaultValue()
   override fun declaresDefaultValue(): Boolean = declaresDefaultValue
 }
 
-val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
-  get() = (this as? InjectValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
+val ValueParameterDescriptor.hasDefaultValueIgnoringContext: Boolean
+  get() = (this as? ContextValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
     ?: hasDefaultValue()
 
-abstract class AbstractInjectFunctionDescriptor(
+abstract class AbstractContextFunctionDescriptor(
   final override val underlyingDescriptor: FunctionDescriptor,
   private val ctx: Context
-) : InjectFunctionDescriptor {
+) : ContextFunctionDescriptor {
   private val valueParams = underlyingDescriptor
       .valueParameters
       .mapTo(mutableListOf()) { valueParameter ->
-        InjectValueParameterDescriptor(this, valueParameter, ctx)
+        ContextValueParameterDescriptor(this, valueParameter, ctx)
       }
 
   override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
     valueParams.cast()
 }
 
-fun FunctionDescriptor.toInjectFunctionDescriptor(
+fun FunctionDescriptor.toContextFunctionDescriptor(
   dispatchReceiverType: KotlinType?,
   ctx: Context
-): InjectFunctionDescriptor? {
-  if (this is InjectFunctionDescriptor) return this
+): ContextFunctionDescriptor? {
+  if (this is ContextFunctionDescriptor) return this
   if (this is JavaMethodDescriptor) return null
-  if (allParametersWithContext.none { it.isInject(ctx) } &&
+  if (allParametersWithContext.none { it.isContext(ctx) } &&
       dispatchReceiverType?.contextFunctionTypeParamsCount().let {
         it == null || it == 0
       }) return null
   return when (this) {
-    is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, ctx)
-    is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(
+    is ClassConstructorDescriptor -> ContextConstructorDescriptorImpl(this, ctx)
+    is SimpleFunctionDescriptor -> ContextSimpleFunctionDescriptorImpl(
       this,
       dispatchReceiverType?.contextFunctionTypeParamsCount()?.takeIf { it > 0 },
       ctx
     )
-    else -> InjectFunctionDescriptorImpl(
+    else -> ContextFunctionDescriptorImpl(
       this,
       dispatchReceiverType?.contextFunctionTypeParamsCount()?.takeIf { it > 0 },
       ctx
@@ -93,13 +93,13 @@ fun FunctionDescriptor.toInjectFunctionDescriptor(
   }
 }
 
-class InjectConstructorDescriptorImpl(
+class ContextConstructorDescriptorImpl(
   underlyingDescriptor: ClassConstructorDescriptor,
   private val ctx: Context
-) : AbstractInjectFunctionDescriptor(underlyingDescriptor, ctx),
+) : AbstractContextFunctionDescriptor(underlyingDescriptor, ctx),
   ClassConstructorDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
-    InjectConstructorDescriptorImpl(
+    ContextConstructorDescriptorImpl(
       underlyingDescriptor
         .substitute(substitutor) as ClassConstructorDescriptor,
       ctx
@@ -109,14 +109,14 @@ class InjectConstructorDescriptorImpl(
     super.getValueParameters()
 }
 
-class InjectFunctionDescriptorImpl(
+class ContextFunctionDescriptorImpl(
   underlyingDescriptor: FunctionDescriptor,
   private val contextFunctionTypeParametersCount: Int?,
   private val ctx: Context
-) : AbstractInjectFunctionDescriptor(underlyingDescriptor, ctx),
+) : AbstractContextFunctionDescriptor(underlyingDescriptor, ctx),
   FunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-    InjectFunctionDescriptorImpl(
+    ContextFunctionDescriptorImpl(
       underlyingDescriptor.substitute(substitutor) as FunctionDescriptor,
       contextFunctionTypeParametersCount,
       ctx
@@ -158,14 +158,14 @@ class InjectFunctionDescriptorImpl(
     valueParams
 }
 
-class InjectSimpleFunctionDescriptorImpl(
+class ContextSimpleFunctionDescriptorImpl(
   underlyingDescriptor: SimpleFunctionDescriptor,
   private val contextFunctionTypeParametersCount: Int?,
   private val ctx: Context
-) : AbstractInjectFunctionDescriptor(underlyingDescriptor, ctx),
+) : AbstractContextFunctionDescriptor(underlyingDescriptor, ctx),
   SimpleFunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
-    InjectSimpleFunctionDescriptorImpl(
+    ContextSimpleFunctionDescriptorImpl(
       underlyingDescriptor
         .substitute(substitutor) as SimpleFunctionDescriptor,
       contextFunctionTypeParametersCount,

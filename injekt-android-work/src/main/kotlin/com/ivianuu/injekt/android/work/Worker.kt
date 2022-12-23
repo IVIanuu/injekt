@@ -14,7 +14,7 @@ import com.ivianuu.injekt.Tag
 import kotlin.reflect.KClass
 
 /**
- * Installs the injectable [ListenableWorker] in the [InjektWorkerFactory]
+ * Installs the provider [ListenableWorker] in the [InjektWorkerFactory]
  *
  * Example:
  * ```

@@ -25,7 +25,7 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
     val localDeclarations = LocalDeclarations()
     moduleFragment.transform(localDeclarations, null)
 
-    moduleFragment.transform(InjectCallTransformer(localDeclarations, pluginContext, ctx), null)
+    moduleFragment.transform(ContextCallTransformer(localDeclarations, pluginContext, ctx), null)
 
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, pluginContext)

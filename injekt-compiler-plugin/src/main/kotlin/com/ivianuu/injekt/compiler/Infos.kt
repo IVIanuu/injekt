@@ -4,7 +4,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
+import com.ivianuu.injekt.compiler.analysis.ContextFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
@@ -181,10 +181,10 @@ class ClassifierInfo(
   val tags: List<TypeRef>,
   val lazySuperTypes: Lazy<List<TypeRef>>,
   val primaryConstructorPropertyParameters: List<String>,
-  val lazyDeclaresInjectables: Lazy<Boolean>
+  val lazyDeclaresProviders: Lazy<Boolean>
 ) {
   val superTypes by lazySuperTypes
-  val declaresInjectables by lazyDeclaresInjectables
+  val declaresProviders by lazyDeclaresProviders
 }
 
 fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
@@ -233,7 +233,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
         tags = tags,
         lazySuperTypes = lazySuperTypes,
         primaryConstructorPropertyParameters = emptyList(),
-        lazyDeclaresInjectables = lazyOf(false)
+        lazyDeclaresProviders = lazyOf(false)
       )
     } else {
       val info = if (this is TypeParameterDescriptor) {
@@ -241,7 +241,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           tags = emptyList(),
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = emptyList(),
-          lazyDeclaresInjectables = lazyOf(false)
+          lazyDeclaresProviders = lazyOf(false)
         )
       } else {
         val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
@@ -257,7 +257,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           tags = tags,
           lazySuperTypes = lazySuperTypes,
           primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-          lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
+          lazyDeclaresProviders = lazy(LazyThreadSafetyMode.NONE) {
             defaultType
               .memberScope
               .getContributedDescriptors()
@@ -280,21 +280,21 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
   val tags: List<PersistedTypeRef>,
   val superTypes: List<PersistedTypeRef>,
   val primaryConstructorPropertyParameters: List<String>,
-  val declaresInjectables: Boolean
+  val declaresProviders: Boolean
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef(ctx) },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  lazyDeclaresInjectables = lazyOf(declaresInjectables)
+  lazyDeclaresProviders = lazyOf(declaresProviders)
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef(ctx) },
   superTypes = superTypes.map { it.toPersistedTypeRef(ctx) },
   primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
-  declaresInjectables = declaresInjectables
+  declaresProviders = declaresProviders
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(
@@ -346,7 +346,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (info.tags.none { it.shouldBePersisted() } &&
       info.primaryConstructorPropertyParameters.isEmpty() &&
       info.superTypes.none { it.shouldBePersisted() } &&
-      !info.declaresInjectables) return
+      !info.declaresProviders) return
 
     if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
 
@@ -394,7 +394,7 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
       LazyClassDescriptor::class,
       "annotations"
     ) { newAnnotations }
-    is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
+    is ContextFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
     else -> throw AssertionError("Cannot add annotation to $this $javaClass")
   }

@@ -9,7 +9,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.resolution.injectableConstructors
+import com.ivianuu.injekt.compiler.resolution.constructorProviders
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -41,7 +41,7 @@ import org.jetbrains.kotlin.resolve.source.getPsi
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
+class ProviderChecker(private val baseCtx: Context) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
@@ -65,8 +65,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     if (descriptor.hasAnnotation(InjektFqNames.Provide)) {
       descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
-      checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
+        .checkProvideCallableDoesNotHaveContextMarkedParameters(declaration, ctx)
+      checkSpreadingProvider(declaration, descriptor.typeParameters, ctx)
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
     }
@@ -80,7 +80,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     descriptor: ClassDescriptor,
     ctx: Context
   ) {
-    val provideConstructors = descriptor.injectableConstructors(ctx)
+    val provideConstructors = descriptor.constructorProviders(ctx)
     val isProvider = provideConstructors.isNotEmpty() ||
         descriptor.hasAnnotation(InjektFqNames.Provide)
 
@@ -150,7 +150,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     }
 
     if (isProvider) {
-      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, ctx)
+      checkSpreadingProvider(declaration, descriptor.declaredTypeParameters, ctx)
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, ctx)
     }
@@ -167,7 +167,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       (descriptor.isPrimary &&
           descriptor.constructedClass.hasAnnotation(InjektFqNames.Provide))) {
             descriptor.valueParameters
-              .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
+              .checkProvideCallableDoesNotHaveContextMarkedParameters(declaration, ctx)
     }
 
     checkExceptActual(declaration, descriptor, ctx)
@@ -214,10 +214,10 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       )
     }
 
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true) {
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Context) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Context) == true) {
       ctx.trace!!.report(
-        InjektErrors.INJECT_RECEIVER
+        InjektErrors.CONTEXT_EXTENSION_RECEIVER
           .on(
             declaration.safeAs<KtFunction>()?.receiverTypeReference
               ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
@@ -227,7 +227,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     }
   }
 
-  private fun checkSpreadingInjectable(
+  private fun checkSpreadingProvider(
     declaration: KtDeclaration,
     typeParameters: List<TypeParameterDescriptor>,
     ctx: Context
@@ -297,8 +297,8 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       for ((index, overriddenValueParameter) in
       overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
         val valueParameter = descriptor.valueParameters[index]
-        if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
-          valueParameter.hasAnnotation(InjektFqNames.Inject)) {
+        if (overriddenValueParameter.hasAnnotation(InjektFqNames.Context) !=
+          valueParameter.hasAnnotation(InjektFqNames.Context)) {
           return false
         }
       }
@@ -342,17 +342,17 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     }
   }
 
-  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
+  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveContextMarkedParameters(
     declaration: KtDeclaration,
     ctx: Context
   ) {
     if (isEmpty()) return
     for (parameter in this) {
-      if (parameter.hasAnnotation(InjektFqNames.Inject)) {
+      if (parameter.hasAnnotation(InjektFqNames.Context)) {
         ctx.trace!!.report(
-          InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
+          InjektErrors.CONTEXT_VALUE_PARAMETER_ON_PROVIDE_DECLARATION
             .on(
-              parameter.annotations.findAnnotation(InjektFqNames.Inject)
+              parameter.annotations.findAnnotation(InjektFqNames.Context)
                 ?.source?.getPsi() ?: declaration
             )
         )

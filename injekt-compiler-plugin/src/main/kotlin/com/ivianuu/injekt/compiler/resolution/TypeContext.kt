@@ -165,7 +165,7 @@ sealed interface ConstraintPosition {
   object Unknown : ConstraintPosition
 }
 
-fun buildContextForSpreadingInjectable(
+fun buildContextForSpreadingProvider(
   constraintType: TypeRef,
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
@@ -672,7 +672,7 @@ private fun findSuperTypeConstructorsAndIntersectResult(
   ctx: TypeCheckerContext
 ): TypeRef = intersectTypes(
   allCommonSuperTypeClassifiers(types)
-    .map { superTypeWithInjectableClassifier(types, it, depth, ctx) },
+    .map { superTypeWithProviderClassifier(types, it, depth, ctx) },
   ctx
 )
 
@@ -699,7 +699,7 @@ private fun collectAllSupertypes(type: TypeRef) = mutableSetOf<ClassifierRef>().
   }
 }
 
-private fun superTypeWithInjectableClassifier(
+private fun superTypeWithProviderClassifier(
   types: List<TypeRef>,
   classifier: ClassifierRef,
   depth: Int,

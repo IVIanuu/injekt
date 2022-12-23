@@ -11,7 +11,7 @@ Minimal example:
 
 fun main() {
     // inject instance
-    val bar = inject<Bar>()
+    val bar = context<Bar>()
     println("Got $bar")
 }
 ```

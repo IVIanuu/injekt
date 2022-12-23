@@ -23,11 +23,11 @@ class CallContextTest {
       @Provide suspend fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      @Composable fun invoke() = inject<Bar>()
+      @Composable fun invoke() = context<Bar>()
     """,
     config = { withCompose() }
   ) {
-    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.inject is a suspend function but current call context is composable")
+    compilationShouldHaveFailed("provider com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.context is a suspend function but current call context is composable")
   }
 
   @Test fun testComposableDependencyCannotBeRequestedFromNonComposable() = singleAndMultiCodegen(
@@ -36,32 +36,32 @@ class CallContextTest {
       @Provide @Composable fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      suspend fun invoke() = inject<Bar>()
+      suspend fun invoke() = context<Bar>()
     """,
     config = { withCompose() }
   ) {
-    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.inject is a composable function but current call context is suspend")
+    compilationShouldHaveFailed("provider com.ivianuu.injekt.integrationtests.bar() of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.context is a composable function but current call context is suspend")
   }
 
-  @Test fun testNonSuspendInjectableCanReceiveSuspendInjectableInSuspendContext() = singleAndMultiCodegen(
+  @Test fun testNonSuspendProviderCanReceiveSuspendProviderInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun foo() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = runBlocking { inject<Bar>() } 
+      fun invoke() = runBlocking { context<Bar>() } 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testNonComposableInjectableCanReceiveComposableInjectableInComposableContext() = singleAndMultiCodegen(
+  @Test fun testNonComposableProviderCanReceiveComposableProviderInComposableContext() = singleAndMultiCodegen(
     """
       @Provide @Composable fun foo() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = runComposing { inject<Bar>() } 
+      fun invoke() = runComposing { context<Bar>() } 
     """,
     config = { withCompose() }
   ) {
@@ -75,7 +75,7 @@ class CallContextTest {
         @Provide fun bar(foo: Foo) = Bar(foo)
       """,
       """
-        fun invoke() = inject<suspend () -> Bar>()
+        fun invoke() = context<suspend () -> Bar>()
       """
     ) {
       runBlocking {
@@ -92,7 +92,7 @@ class CallContextTest {
         @Provide fun bar(foo: Foo) = Bar(foo)
       """,
       """
-        fun invoke() = inject<@Composable () -> Bar>()
+        fun invoke() = context<@Composable () -> Bar>()
       """,
       config = { withCompose() }
     ) {
@@ -107,10 +107,10 @@ class CallContextTest {
     singleAndMultiCodegen(
       """
         @Provide suspend fun foo() = Foo()
-        @Provide fun lazyBar(): suspend () -> Bar = { Bar(inject()) }
+        @Provide fun lazyBar(): suspend () -> Bar = { Bar(context()) }
       """,
       """
-        fun invoke() = inject<suspend () -> Bar>()
+        fun invoke() = context<suspend () -> Bar>()
       """
     ) {
       runBlocking {
@@ -124,10 +124,10 @@ class CallContextTest {
     singleAndMultiCodegen(
       """
         @Provide @Composable fun foo() = Foo()
-        @Provide fun lazyBar(): @Composable () -> Bar = { Bar(inject()) }
+        @Provide fun lazyBar(): @Composable () -> Bar = { Bar(context()) }
       """,
       """
-        fun invoke() = inject<@Composable () -> Bar>()
+        fun invoke() = context<@Composable () -> Bar>()
       """,
       config = { withCompose() }
     ) {
@@ -145,10 +145,10 @@ class CallContextTest {
         fun interface LazyBar {
           suspend operator fun invoke(): Bar
         }
-        @Provide fun lazyBar() = LazyBar { Bar(inject()) }
+        @Provide fun lazyBar() = LazyBar { Bar(context()) }
       """,
       """
-        fun invoke(): suspend () -> Bar = { inject<LazyBar>()() }
+        fun invoke(): suspend () -> Bar = { context<LazyBar>()() }
       """
     ) {
       runBlocking {
@@ -165,10 +165,10 @@ class CallContextTest {
         fun interface LazyBar {
           @Composable operator fun invoke(): Bar
         }
-        @Provide fun lazyBar() = LazyBar { Bar(inject()) }
+        @Provide fun lazyBar() = LazyBar { Bar(context()) }
       """,
       """
-        fun invoke(): @Composable () -> Bar = { inject<LazyBar>()() }
+        fun invoke(): @Composable () -> Bar = { context<LazyBar>()() }
       """,
       config = { withCompose() }
     ) {
@@ -187,7 +187,7 @@ class CallContextTest {
       fun invoke() = runBlocking {
         run {
           run {
-            inject<Foo>()
+            context<Foo>()
           }
         }
       } 
@@ -206,7 +206,7 @@ class CallContextTest {
         fun invoke() = runComposing {
           run {
             run {
-              inject<Foo>()
+              context<Foo>()
             }
           }
         }
@@ -224,7 +224,7 @@ class CallContextTest {
       """,
       """
         fun invoke() = runBlocking {
-          val foo = inject<Foo>()
+          val foo = context<Foo>()
           foo
         }
       """
@@ -240,7 +240,7 @@ class CallContextTest {
       """,
       """
         fun invoke() = runComposing {
-          val foo = inject<Foo>()
+          val foo = context<Foo>()
           foo
         }
       """,
@@ -257,7 +257,7 @@ class CallContextTest {
       """,
       """
         suspend fun invoke() {
-          val foo = lazy(inject<Foo>()) {  }
+          val foo = lazy(context<Foo>()) {  }
         }
       """
     )
@@ -269,7 +269,7 @@ class CallContextTest {
       """,
       """
         @Composable fun invoke() {
-          val foo = lazy(inject<Foo>()) {  }
+          val foo = lazy(context<Foo>()) {  }
         }
       """,
       config = { withCompose() }
@@ -282,7 +282,7 @@ class CallContextTest {
       """,
       """       
         fun invoke(): suspend () -> Foo = {
-          val foo = run { inject<Foo>() }
+          val foo = run { context<Foo>() }
           foo
         }
       """
@@ -301,7 +301,7 @@ class CallContextTest {
       """,
       """
         fun invoke(): @Composable () -> Foo = {
-          val foo = run { inject<Foo>() }
+          val foo = run { context<Foo>() }
           foo
         }
       """,
@@ -321,7 +321,7 @@ class CallContextTest {
       """,
       """
         fun invoke(): suspend () -> Unit = {
-          val foo by lazy(run { inject<Foo>() }) {  }
+          val foo by lazy(run { context<Foo>() }) {  }
         }
       """
     )
@@ -333,7 +333,7 @@ class CallContextTest {
       """,
       """
         fun invoke(): @Composable () -> Unit = {
-          val foo by lazy(run { inject<Foo>() }) {  }
+          val foo by lazy(run { context<Foo>() }) {  }
         }
       """,
       config = { withCompose() }
@@ -342,7 +342,7 @@ class CallContextTest {
   @Test fun testSuspendCanBeRequestedFromInlineProviderInSuspendContext() = singleAndMultiCodegen(
     """
       @Provide suspend fun foo() = Foo()
-      suspend inline fun createFoo(@Inject provider: () -> Foo) = provider()
+      suspend inline fun createFoo(@Context provider: () -> Foo) = provider()
     """,
     """
      fun invoke() = runBlocking { createFoo() } 
@@ -355,7 +355,7 @@ class CallContextTest {
   @Test fun testComposableCanBeRequestedFromInlineProviderInComposableContext() = singleAndMultiCodegen(
     """
       @Provide @Composable fun foo() = Foo()
-      @Composable inline fun createFoo(@Inject provider: () -> Foo) = provider()
+      @Composable inline fun createFoo(@Context provider: () -> Foo) = provider()
     """,
     """
      fun invoke() = runComposing { createFoo() } 
@@ -371,11 +371,11 @@ class CallContextTest {
       @Provide suspend fun foo() = Foo()
     """,
     """
-      suspend fun invoke(foo: Foo = inject()) {
+      suspend fun invoke(foo: Foo = context()) {
       }
     """
   ) {
-    compilationShouldHaveFailed("injectable com.ivianuu.injekt.integrationtests.foo() of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject is a suspend function but current call context is default")
+    compilationShouldHaveFailed("provider com.ivianuu.injekt.integrationtests.foo() of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context is a suspend function but current call context is default")
   }
 
   @Test fun testCanRequestComposableDependencyInDefaultValueOfFunction() = singleAndMultiCodegen(
@@ -383,7 +383,7 @@ class CallContextTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      @Composable fun foo(foo: Foo = inject()) = foo
+      @Composable fun foo(foo: Foo = context()) = foo
 
       fun invoke(): @Composable () -> Foo = { foo() }
     """,
@@ -403,7 +403,7 @@ class CallContextTest {
       """,
       """
         val fooGetter: Foo
-          @Composable get() = inject()
+          @Composable get() = context()
 
         fun invoke(): @Composable () -> Foo = { fooGetter }
       """,
@@ -431,7 +431,7 @@ class CallContextTest {
       """,
       """
         fun invoke(): suspend () -> Foo = { 
-          WithLambda { inject<Foo>() }.invoke()
+          WithLambda { context<Foo>() }.invoke()
         }
       """
     ) {
@@ -457,7 +457,7 @@ class CallContextTest {
       """,
       """
         fun invoke(): @Composable () -> Foo = { 
-          WithLambda { inject<Foo>() }.invoke()
+          WithLambda { context<Foo>() }.invoke()
         }
       """,
       config = { withCompose() }

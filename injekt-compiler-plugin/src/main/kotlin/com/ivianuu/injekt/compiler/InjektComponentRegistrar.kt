@@ -4,8 +4,8 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectCallChecker
-import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
+import com.ivianuu.injekt.compiler.analysis.InjektCallChecker
+import com.ivianuu.injekt.compiler.analysis.ContextSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDeclarationGeneratorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
@@ -113,7 +113,7 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
   if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
     AnalysisHandlerExtension.registerExtension(
       this,
-      InjectCallChecker(configuration.get(WithCompilationKey) ?: false)
+      InjektCallChecker(configuration.get(WithCompilationKey) ?: false)
     )
 
   // extension point does not exist CLI for some reason
@@ -121,7 +121,7 @@ private fun MockProject.registerAnalysisExtensions(configuration: CompilerConfig
   SyntheticScopeProviderExtension.registerExtensionPoint(this)
   SyntheticScopeProviderExtension.registerExtension(
     this,
-    InjectSyntheticScopeProviderExtension()
+    ContextSyntheticScopeProviderExtension()
   )
 
   @Suppress("DEPRECATION")

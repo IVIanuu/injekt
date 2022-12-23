@@ -4,7 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Context
 import kotlin.jvm.JvmInline
 
 /**
@@ -15,4 +15,4 @@ import kotlin.jvm.JvmInline
 /**
  * Returns the [SourceKey] at this call site
  */
-inline fun sourceKey(@Inject x: SourceKey): SourceKey = x
+inline fun sourceKey(@Context x: SourceKey): SourceKey = x

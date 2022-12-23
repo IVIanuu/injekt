@@ -8,10 +8,10 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectablesLookupName
+import com.ivianuu.injekt.compiler.providersLookupName
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.nextFrameworkKey
-import com.ivianuu.injekt.compiler.subInjectablesLookupName
+import com.ivianuu.injekt.compiler.subProvidersLookupName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
@@ -21,32 +21,32 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.util.*
 
-class InjectablesScope(
+class ContextScope(
   val name: String,
-  val parent: InjectablesScope?,
+  val parent: ContextScope?,
   val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
   val typeScopeType: TypeRef? = null,
   val isDeclarationContainer: Boolean = true,
   val isEmpty: Boolean = false,
-  val initialInjectables: List<CallableRef> = emptyList(),
-  val injectablesPredicate: (CallableRef) -> Boolean = { true },
+  val initialProviders: List<CallableRef> = emptyList(),
+  val providersPredicate: (CallableRef) -> Boolean = { true },
   imports: List<ResolvedProviderImport> = emptyList(),
   val typeParameters: List<ClassifierRef> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
-  val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
+  val chain: MutableList<Pair<ContextRequest, Provider>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
-  val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
-  val typeScopes = mutableMapOf<TypeRefKey, InjectablesScope>()
+  val resultsByCandidate = mutableMapOf<Provider, ResolutionResult>()
+  val typeScopes = mutableMapOf<TypeRefKey, ContextScope>()
 
   private val imports = imports.toMutableList()
 
-  val injectables = mutableListOf<CallableRef>()
+  val providers = mutableListOf<CallableRef>()
 
-  data class InjectableKey(
+  data class ProviderKey(
     val uniqueKey: String,
     val originalType: TypeRef,
     val typeArguments: Map<ClassifierRef, TypeRef>,
@@ -60,11 +60,11 @@ class InjectablesScope(
     )
   }
 
-  private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
-  val spreadingInjectableKeys = mutableSetOf<InjectableKey>()
-  private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
+  private val spreadingProviders = mutableListOf<SpreadingProvider>()
+  val spreadingProviderKeys = mutableSetOf<ProviderKey>()
+  private val spreadingProviderCandidateTypes = mutableListOf<TypeRef>()
 
-  data class SpreadingInjectable(
+  data class SpreadingProvider(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
       it.isSpread
@@ -72,7 +72,7 @@ class InjectablesScope(
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
     val resultingFrameworkKeys: MutableSet<String> = mutableSetOf()
   ) {
-    fun copy() = SpreadingInjectable(
+    fun copy() = SpreadingProvider(
       callable,
       constraintType,
       processedCandidateTypes.toMutableSet(),
@@ -80,26 +80,26 @@ class InjectablesScope(
     )
   }
 
-  val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
+  val allScopes: List<ContextScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
   private val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
   data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
-  private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
+  private val providersByRequest = mutableMapOf<CallableRequestKey, List<CallableProvider>>()
 
   private val isNoOp: Boolean = parent?.allScopes?.any { it.isDeclarationContainer } == true &&
       typeParameters.isEmpty() &&
-      (isEmpty || (initialInjectables.isEmpty() && callContext == parent.callContext))
+      (isEmpty || (initialProviders.isEmpty() && callContext == parent.callContext))
 
-  val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
+  val scopeToUse: ContextScope = if (isNoOp) parent!!.scopeToUse else this
 
   init {
-    // we need them right here because otherwise we could possibly add duplicated spreading injectables
+    // we need them right here because otherwise we could possibly add duplicated spreading providers
     if (parent != null)
-      spreadingInjectableKeys.addAll(parent.spreadingInjectableKeys)
+      spreadingProviderKeys.addAll(parent.spreadingProviderKeys)
 
-    for (injectable in initialInjectables)
-      injectable.collectInjectables(
+    for (provider in initialProviders)
+      provider.collectProviders(
         scope = this,
         addImport = { importFqName, packageFqName ->
           this.imports += ResolvedProviderImport(
@@ -108,46 +108,46 @@ class InjectablesScope(
             packageFqName
           )
         },
-        addInjectable = { callable ->
-          injectables += callable
+        addProvider = { callable ->
+          providers += callable
           val typeWithFrameworkKey = callable.type
             .copy(frameworkKey = callable.callable.uniqueKey(ctx))
-          injectables += callable.copy(type = typeWithFrameworkKey)
-          spreadingInjectableCandidateTypes += typeWithFrameworkKey
+          providers += callable.copy(type = typeWithFrameworkKey)
+          spreadingProviderCandidateTypes += typeWithFrameworkKey
         },
-        addSpreadingInjectable = { callable ->
-          if (spreadingInjectableKeys.add(InjectableKey(callable, ctx)))
-            spreadingInjectables += SpreadingInjectable(callable)
+        addSpreadingProvider = { callable ->
+          if (spreadingProviderKeys.add(ProviderKey(callable, ctx)))
+            spreadingProviders += SpreadingProvider(callable)
         },
         ctx = ctx
       )
 
-    val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
-    val hasSpreadingInjectableCandidates = spreadingInjectableCandidateTypes.isNotEmpty()
+    val hasSpreadingProviders = spreadingProviders.isNotEmpty()
+    val hasSpreadingProviderCandidates = spreadingProviderCandidateTypes.isNotEmpty()
     if (parent != null) {
-      spreadingInjectables.addAll(
+      spreadingProviders.addAll(
         0,
-        // we only need to copy the parent injectables if we have any candidates to process
-        if (hasSpreadingInjectableCandidates) parent.spreadingInjectables.map { it.copy() }
-        else parent.spreadingInjectables
+        // we only need to copy the parent providers if we have any candidates to process
+        if (hasSpreadingProviderCandidates) parent.spreadingProviders.map { it.copy() }
+        else parent.spreadingProviders
       )
-      spreadingInjectableCandidateTypes.addAll(0, parent.spreadingInjectableCandidateTypes)
+      spreadingProviderCandidateTypes.addAll(0, parent.spreadingProviderCandidateTypes)
     }
 
     // only run if there is something meaningful to process
-    if ((hasSpreadingInjectables && spreadingInjectableCandidateTypes.isNotEmpty()) ||
-      (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
+    if ((hasSpreadingProviders && spreadingProviderCandidateTypes.isNotEmpty()) ||
+      (hasSpreadingProviderCandidates && spreadingProviders.isNotEmpty())
     ) {
-      spreadingInjectableCandidateTypes
+      spreadingProviderCandidateTypes
         .toList()
-        .forEach { spreadInjectables(it) }
+        .forEach { spreadProviders(it) }
     }
   }
 
   fun recordLookup(
     lookupLocation: LookupLocation,
     lookups: MutableSet<String>,
-    visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
+    visitedScopes: MutableSet<ContextScope> = mutableSetOf()
   ) {
     if (!visitedScopes.add(this)) return
 
@@ -156,48 +156,48 @@ class InjectablesScope(
     for (import in imports) {
       memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
         ?.first
-        ?.recordLookup(injectablesLookupName, lookupLocation)
-        ?.let { lookups += import.packageFqName.child(injectablesLookupName).asString() }
+        ?.recordLookup(providersLookupName, lookupLocation)
+        ?.let { lookups += import.packageFqName.child(providersLookupName).asString() }
       if (import.importPath!!.endsWith(".**")) {
         memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
           ?.first
-          ?.recordLookup(subInjectablesLookupName, lookupLocation)
-          ?.let { lookups += import.packageFqName.child(subInjectablesLookupName).asString() }
+          ?.recordLookup(subProvidersLookupName, lookupLocation)
+          ?.let { lookups += import.packageFqName.child(subProvidersLookupName).asString() }
       }
     }
   }
 
-  fun injectablesForRequest(
-    request: InjectableRequest,
-    requestingScope: InjectablesScope
-  ): List<Injectable> {
+  fun providersForRequest(
+    request: ContextRequest,
+    requestingScope: ContextScope
+  ): List<Provider> {
     // we return merged collections
     if (request.type.frameworkKey.isEmpty() &&
       request.type.classifier == ctx.listClassifier) return emptyList()
 
-    return injectablesForType(
+    return providersForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
     )
-      .let { allInjectables ->
-        if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allInjectables
-        else allInjectables.filter { it.callable.isValidForObjectRequest() }
+      .let { allProviders ->
+        if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allProviders
+        else allProviders.filter { it.callable.isValidForObjectRequest() }
       }
 
   }
 
-  private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
-    if (injectables.isEmpty())
-      return parent?.injectablesForType(key) ?: emptyList()
-    return injectablesByRequest.getOrPut(key) {
+  private fun providersForType(key: CallableRequestKey): List<CallableProvider> {
+    if (providers.isEmpty())
+      return parent?.providersForType(key) ?: emptyList()
+    return providersByRequest.getOrPut(key) {
       buildList {
-        parent?.injectablesForType(key)?.let { addAll(it) }
+        parent?.providersForType(key)?.let { addAll(it) }
 
-        for (candidate in injectables) {
+        for (candidate in providers) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
           val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
-          this += CallableInjectable(
-            this@InjectablesScope,
+          this += CallableProvider(
+            this@ContextScope,
             candidate.substitute(context.fixedTypeVariables)
           )
         }
@@ -205,12 +205,12 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
+  fun frameworkProviderForRequest(request: ContextRequest): Provider? {
     when {
       request.type.isFunctionType -> {
         val finalCallContext = if (request.isInline) callContext
         else request.type.callContext
-        return ProviderInjectable(
+        return FunctionProvider(
           type = request.type,
           ownerScope = this,
           dependencyCallContext = finalCallContext,
@@ -218,7 +218,7 @@ class InjectablesScope(
         )
       }
       request.type.classifier == ctx.listClassifier -> {
-        fun createInjectable(): ListInjectable? {
+        fun createProvider(): ListProvider? {
           val singleElementType = request.type.arguments[0]
           val collectionElementType = ctx.collectionClassifier.defaultType
             .withArguments(listOf(singleElementType))
@@ -229,7 +229,7 @@ class InjectablesScope(
             .values.map { it.type } + frameworkListElementsForType(singleElementType)
 
           return if (elements.isEmpty()) null
-          else ListInjectable(
+          else ListProvider(
             type = request.type,
             ownerScope = this,
             elements = elements,
@@ -238,15 +238,15 @@ class InjectablesScope(
           )
         }
 
-        val typeScope = TypeInjectablesScope(request.type, this, ctx)
+        val typeScope = TypeContextScope(request.type, this, ctx)
           .takeUnless { it.isEmpty }
-        return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
-        else createInjectable()
+        return if (typeScope != null) typeScope.frameworkProviderForRequest(request)
+        else createProvider()
       }
       request.type.classifier.fqName == InjektFqNames.TypeKey ->
-        return TypeKeyInjectable(request.type, this)
+        return TypeKeyProvider(request.type, this)
       request.type.classifier.fqName == InjektFqNames.SourceKey ->
-        return SourceKeyInjectable(request.type, this)
+        return SourceKeyProvider(request.type, this)
       else -> return null
     }
   }
@@ -255,13 +255,13 @@ class InjectablesScope(
     singleElementType: TypeRef,
     collectionElementType: TypeRef,
     key: CallableRequestKey
-  ): Map<InjectableKey, CallableRef> {
-    if (injectables.isEmpty())
+  ): Map<ProviderKey, CallableRef> {
+    if (providers.isEmpty())
       return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyMap()
 
     return buildMap {
-      fun addThisInjectables() {
-        for (candidate in injectables.toList()) {
+      fun addThisProviders() {
+        for (candidate in providers.toList()) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
 
           var context =
@@ -278,15 +278,15 @@ class InjectablesScope(
 
           val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
 
-          injectables += finalCandidate
+          providers += finalCandidate
 
-          this[InjectableKey(finalCandidate, ctx)] = finalCandidate
+          this[ProviderKey(finalCandidate, ctx)] = finalCandidate
         }
       }
 
       // if we are a type scope we wanna appear in the list before the other scopes
       if (typeScopeType != null)
-        addThisInjectables()
+        addThisProviders()
 
       parent?.listElementsForType(singleElementType, collectionElementType, key)
         ?.let { parentElements ->
@@ -295,7 +295,7 @@ class InjectablesScope(
         }
 
       if (typeScopeType == null)
-        addThisInjectables()
+        addThisProviders()
     }
   }
 
@@ -323,41 +323,41 @@ class InjectablesScope(
       }
     }
 
-  private fun spreadInjectables(candidateType: TypeRef) {
-    for (spreadingInjectable in spreadingInjectables.toList())
-      spreadInjectables(spreadingInjectable, candidateType)
+  private fun spreadProviders(candidateType: TypeRef) {
+    for (spreadingProvider in spreadingProviders.toList())
+      spreadProviders(spreadingProvider, candidateType)
   }
 
-  private fun spreadInjectables(
-    spreadingInjectable: SpreadingInjectable,
+  private fun spreadProviders(
+    spreadingProvider: SpreadingProvider,
     candidateType: TypeRef
   ) {
-    if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
-    if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
+    if (candidateType.frameworkKey in spreadingProvider.resultingFrameworkKeys) return
+    if (!spreadingProvider.processedCandidateTypes.add(candidateType)) return
 
-    val (context, substitutionMap) = buildContextForSpreadingInjectable(
-      spreadingInjectable.constraintType,
+    val (context, substitutionMap) = buildContextForSpreadingProvider(
+      spreadingProvider.constraintType,
       candidateType,
       allStaticTypeParameters,
       ctx
     )
     if (!context.isOk) return
 
-    val newInjectableType = spreadingInjectable.callable.type
+    val newProviderType = spreadingProvider.callable.type
       .substitute(substitutionMap)
       .copy(frameworkKey = "")
-    val newInjectable = spreadingInjectable.callable
+    val newProvider = spreadingProvider.callable
       .copy(
-        type = newInjectableType,
-        originalType = newInjectableType,
-        parameterTypes = spreadingInjectable.callable.parameterTypes
+        type = newProviderType,
+        originalType = newProviderType,
+        parameterTypes = spreadingProvider.callable.parameterTypes
           .mapValues { it.value.substitute(substitutionMap) },
-        typeArguments = spreadingInjectable.callable
+        typeArguments = spreadingProvider.callable
           .typeArguments
           .mapValues { it.value.substitute(substitutionMap) }
       )
 
-    newInjectable.collectInjectables(
+    newProvider.collectProviders(
       scope = this,
       addImport = { importFqName, packageFqName ->
         imports += ResolvedProviderImport(
@@ -366,29 +366,29 @@ class InjectablesScope(
           packageFqName
         )
       },
-      addInjectable = { innerCallable ->
+      addProvider = { innerCallable ->
         val finalInnerCallable = innerCallable
           .copy(originalType = innerCallable.type)
-        injectables += finalInnerCallable
+        providers += finalInnerCallable
         val innerCallableWithFrameworkKey = finalInnerCallable.copy(
           type = finalInnerCallable.type.copy(
-            frameworkKey = spreadingInjectable.callable.type.frameworkKey
+            frameworkKey = spreadingProvider.callable.type.frameworkKey
               .nextFrameworkKey(finalInnerCallable.callable.uniqueKey(ctx))
-              .also { spreadingInjectable.resultingFrameworkKeys += it }
+              .also { spreadingProvider.resultingFrameworkKeys += it }
           )
         )
-        injectables += innerCallableWithFrameworkKey
-        spreadingInjectableCandidateTypes += innerCallableWithFrameworkKey.type
-        spreadInjectables(innerCallableWithFrameworkKey.type)
+        providers += innerCallableWithFrameworkKey
+        spreadingProviderCandidateTypes += innerCallableWithFrameworkKey.type
+        spreadProviders(innerCallableWithFrameworkKey.type)
       },
-      addSpreadingInjectable = { newInnerCallable ->
-        val finalNewInnerInjectable = newInnerCallable
+      addSpreadingProvider = { newInnerCallable ->
+        val finalNewInnerProvider = newInnerCallable
           .copy(originalType = newInnerCallable.type)
-        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable, ctx))) {
-          val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
-          spreadingInjectables += newSpreadingInjectable
-          for (candidate in spreadingInjectableCandidateTypes.toList())
-            spreadInjectables(newSpreadingInjectable, candidate)
+        if (spreadingProviderKeys.add(ProviderKey(finalNewInnerProvider, ctx))) {
+          val newSpreadingProvider = SpreadingProvider(finalNewInnerProvider)
+          spreadingProviders += newSpreadingProvider
+          for (candidate in spreadingProviderCandidateTypes.toList())
+            spreadProviders(newSpreadingProvider, candidate)
         }
       },
       ctx = ctx
@@ -396,9 +396,9 @@ class InjectablesScope(
   }
 
   /**
-   * We add implicit injectables for objects under some circumstances to allow
+   * We add implicit providers for objects under some circumstances to allow
    * callables in it to resolve their dispatch receiver parameter
-   * Here we ensure that the user cannot resolve such implicit object injectable if they are not
+   * Here we ensure that the user cannot resolve such implicit object provider if they are not
    * provided by the user
    */
   private fun CallableRef.isValidForObjectRequest(): Boolean =
@@ -408,5 +408,5 @@ class InjectablesScope(
               .value !is ImplicitClassReceiver ||
             originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
 
-  override fun toString(): String = "InjectablesScope($name)"
+  override fun toString(): String = "ContextScope($name)"
 }

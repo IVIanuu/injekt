@@ -19,7 +19,7 @@ class DivergenceTest {
       @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -36,7 +36,7 @@ class DivergenceTest {
       @Provide fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   )
 
@@ -46,7 +46,7 @@ class DivergenceTest {
       @Provide class B(a: A)
     """,
     """
-      fun invoke() = inject<A>() 
+      fun invoke() = context<A>() 
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -60,7 +60,7 @@ class DivergenceTest {
       }
     """,
     """
-      fun invoke() = inject<B>()
+      fun invoke() = context<B>()
     """
   ) {
     invokeSingleFile()

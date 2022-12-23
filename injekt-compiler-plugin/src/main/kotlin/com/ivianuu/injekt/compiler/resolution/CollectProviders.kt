@@ -12,7 +12,7 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectablesLookupName
+import com.ivianuu.injekt.compiler.providersLookupName
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
@@ -53,10 +53,10 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.*
 
-fun TypeRef.collectInjectables(
+fun TypeRef.collectProviders(
   classBodyView: Boolean,
   ctx: Context
-): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
+): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_PROVIDERS, this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
     val unwrappedFunctionType = unwrapTags()
@@ -72,7 +72,7 @@ fun TypeRef.collectInjectables(
         callable.copy(
           type = unwrappedFunctionType.arguments.last(),
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
-            this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
+            this[DISPATCH_RECEIVER_INDEX] = this@collectProviders
           }
         ).substitute(
           unwrappedFunctionType.classifier.typeParameters
@@ -84,18 +84,18 @@ fun TypeRef.collectInjectables(
     return@getOrPut listOf(callable)
   }
 
-  // do not run any code for types which do not declare any injectables
-  if (!classifier.declaresInjectables && !classBodyView)
-    // at least include the companion object if it declares injectables
+  // do not run any code for types which do not declare any providers
+  if (!classifier.declaresProviders && !classBodyView)
+    // at least include the companion object if it declares providers
     return@getOrPut listOfNotNull(
       classifier.descriptor
         ?.safeAs<ClassDescriptor>()
         ?.companionObjectDescriptor
         ?.toClassifierRef(ctx)
-        ?.takeIf { it.declaresInjectables }
+        ?.takeIf { it.declaresProviders }
         ?.descriptor
         ?.cast<ClassDescriptor>()
-        ?.injectableReceiver(false, ctx)
+        ?.receiverProvider(false, ctx)
     )
 
   buildList {
@@ -103,7 +103,7 @@ fun TypeRef.collectInjectables(
       .descriptor
       ?.defaultType
       ?.memberScope
-      ?.collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
+      ?.collectProviders(classBodyView = classBodyView, ctx = ctx) { callable ->
         val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
           CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
@@ -119,9 +119,9 @@ fun TypeRef.collectInjectables(
 
         add(
           substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
+            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectProviders) {
               substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
+                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectProviders }
             } else substituted.parameterTypes
           )
         )
@@ -129,12 +129,12 @@ fun TypeRef.collectInjectables(
   }
 }
 
-fun ResolutionScope.collectInjectables(
+fun ResolutionScope.collectProviders(
   classBodyView: Boolean,
   onEach: (DeclarationDescriptor) -> Unit = {},
   name: Name? = null,
   ctx: Context,
-  includeNonProvideObjectsWithInjectables: Boolean = false,
+  includeNonProvideObjectsWithProviders: Boolean = false,
   consumer: (CallableRef) -> Unit
 ) {
   for (declaration in getContributedDescriptors()) {
@@ -148,17 +148,17 @@ fun ResolutionScope.collectInjectables(
             declaration
               .takeIf {
                 it.isProvide(ctx) ||
-                    (includeNonProvideObjectsWithInjectables &&
-                        it.toClassifierRef(ctx).declaresInjectables)
+                    (includeNonProvideObjectsWithProviders &&
+                        it.toClassifierRef(ctx).declaresProviders)
               }
-              ?.injectableReceiver(!classBodyView, ctx)
+              ?.receiverProvider(!classBodyView, ctx)
               ?.let(consumer)
         else {
-          declaration.injectableConstructors(ctx).forEach(consumer)
-          if (!classBodyView && !includeNonProvideObjectsWithInjectables)
+          declaration.constructorProviders(ctx).forEach(consumer)
+          if (!classBodyView && !includeNonProvideObjectsWithProviders)
             declaration.companionObjectDescriptor
-              ?.takeIf { it.classifierInfo(ctx).declaresInjectables }
-              ?.injectableReceiver(false, ctx)
+              ?.takeIf { it.classifierInfo(ctx).declaresProviders }
+              ?.receiverProvider(false, ctx)
               ?.let(consumer)
         }
       }
@@ -185,7 +185,7 @@ fun Annotated.isProvide(ctx: Context): Boolean {
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return ctx.trace!!.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
     var isProvide = hasAnnotation(InjektFqNames.Provide) ||
-        hasAnnotation(InjektFqNames.Inject)
+        hasAnnotation(InjektFqNames.Context)
 
     if (!isProvide && this is PropertyDescriptor)
       isProvide = primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true
@@ -201,34 +201,34 @@ fun Annotated.isProvide(ctx: Context): Boolean {
   }
 }
 
-fun Annotated.isInject(ctx: Context): Boolean {
+fun Annotated.isContext(ctx: Context): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.trace!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
-    var isInject = hasAnnotation(InjektFqNames.Inject)
+  return ctx.trace!!.getOrPut(InjektWritableSlices.IS_CONTEXT, key) {
+    var isContext = hasAnnotation(InjektFqNames.Context)
 
-    if (!isInject)
-      isInject = this is ReceiverParameterDescriptor &&
+    if (!isContext)
+      isContext = this is ReceiverParameterDescriptor &&
           containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters?.any {
             it.type == type
           } == true
 
-    if (!isInject && this is PropertyDescriptor)
-      isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true
+    if (!isContext && this is PropertyDescriptor)
+      isContext = primaryConstructorPropertyValueParameter(ctx)?.isContext(ctx) == true
 
-    if (!isInject && this is ParameterDescriptor)
-      isInject = type.isInject(ctx) ||
+    if (!isContext && this is ParameterDescriptor)
+      isContext = type.isContext(ctx) ||
           containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
 
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary)
-      isInject = constructedClass.isProvide(ctx)
+    if (!isContext && this is ClassConstructorDescriptor && isPrimary)
+      isContext = constructedClass.isProvide(ctx)
 
-    isInject
+    isContext
   }
 }
 
-fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
+fun ClassDescriptor.constructorProviders(ctx: Context): List<CallableRef> =
+  ctx.trace!!.getOrPut(InjektWritableSlices.CONSTRUCTOR_PROVIDERS, this) {
     constructors
       .transform { constructor ->
         if (constructor.hasAnnotation(InjektFqNames.Provide) ||
@@ -237,7 +237,7 @@ fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
       }
   }
 
-fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableRef {
+fun ClassDescriptor.receiverProvider(tagged: Boolean, ctx: Context): CallableRef {
   val callable = ReceiverParameterDescriptorImpl(
     this,
     ImplicitClassReceiver(this),
@@ -250,30 +250,30 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
   }
 }
 
-fun CallableRef.collectInjectables(
-  scope: InjectablesScope,
+fun CallableRef.collectProviders(
+  scope: ContextScope,
   addImport: (FqName, FqName) -> Unit,
-  addInjectable: (CallableRef) -> Unit,
-  addSpreadingInjectable: (CallableRef) -> Unit,
+  addProvider: (CallableRef) -> Unit,
+  addSpreadingProvider: (CallableRef) -> Unit,
   import: ResolvedProviderImport? = this.import,
   chainLength: Int = 0,
-  seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf(),
+  seen: MutableSet<ContextScope.ProviderKey> = mutableSetOf(),
   ctx: Context
 ) {
-  if (!seen.add(InjectablesScope.InjectableKey(this, ctx))) return
+  if (!seen.add(ContextScope.ProviderKey(this, ctx))) return
 
-  if (!scope.canSee(this, ctx) || !scope.injectablesPredicate(this)) return
+  if (!scope.canSee(this, ctx) || !scope.providersPredicate(this)) return
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
-    addSpreadingInjectable(this)
+    addSpreadingProvider(this)
     return
   }
 
   val nextCallable = if (type.isProvideFunctionType) {
-    addInjectable(this)
+    addProvider(this)
     copy(type = type.copy(frameworkKey = callable.uniqueKey(ctx)))
   } else this
-  addInjectable(nextCallable)
+  addProvider(nextCallable)
 
   nextCallable
     .type
@@ -282,7 +282,7 @@ fun CallableRef.collectInjectables(
         addImport(type.classifier.fqName, it)
       }
     }
-    .collectInjectables(
+    .collectProviders(
       scope.allScopes.any {
         it.ownerDescriptor == nextCallable.type.classifier.descriptor
       },
@@ -292,11 +292,11 @@ fun CallableRef.collectInjectables(
       val nextChainLength = chainLength + 1
       innerCallable
         .copy(import = import, chainLength = nextChainLength)
-        .collectInjectables(
+        .collectProviders(
           scope = scope,
           addImport = addImport,
-          addInjectable = addInjectable,
-          addSpreadingInjectable = addSpreadingInjectable,
+          addProvider = addProvider,
+          addSpreadingProvider = addSpreadingProvider,
           import = import,
           chainLength = nextChainLength,
           seen = seen,
@@ -305,7 +305,7 @@ fun CallableRef.collectInjectables(
     }
 }
 
-fun List<ProviderImport>.collectImportedInjectables(
+fun List<ProviderImport>.collectImportedProviders(
   ctx: Context,
   consumer: (CallableRef) -> Unit
 ) {
@@ -327,17 +327,17 @@ fun List<ProviderImport>.collectImportedInjectables(
           val (scope, packageObject) = memberScopeForFqName(currentPackage, lookupLocation, ctx)
             ?: continue
 
-          fun collectInjectables(
+          fun collectProviders(
             currentScope: MemberScope,
             currentPackageObject: ClassDescriptor?
           ) {
             if ((currentPackageObject != null &&
-                  currentPackageObject.toClassifierRef(ctx).declaresInjectables) ||
+                  currentPackageObject.toClassifierRef(ctx).declaresProviders) ||
               (currentPackageObject == null &&
-                  injectablesLookupName in currentScope.getFunctionNames())) {
+                  providersLookupName in currentScope.getFunctionNames())) {
               if (currentPackageObject != null) {
                 if (currentPackageObject.kind == ClassKind.OBJECT)
-                  consumer(currentPackageObject.injectableReceiver(false, ctx).copy(import = resolvedImport))
+                  consumer(currentPackageObject.receiverProvider(false, ctx).copy(import = resolvedImport))
 
                 fun collectPackageObjects(packageObject: ClassDescriptor) {
                   for (innerClass in packageObject.unsubstitutedInnerClassesScope
@@ -349,18 +349,18 @@ fun List<ProviderImport>.collectImportedInjectables(
                     if (innerClass.kind == ClassKind.OBJECT &&
                       !innerClass.isCompanionObject &&
                       !innerClass.isProvide(ctx))
-                      consumer(innerClass.injectableReceiver(false, ctx).copy(import = resolvedImport))
+                      consumer(innerClass.receiverProvider(false, ctx).copy(import = resolvedImport))
                     collectPackageObjects(innerClass)
                   }
                 }
 
                 collectPackageObjects(currentPackageObject)
               } else {
-                currentScope.collectInjectables(
+                currentScope.collectProviders(
                   false,
                   onEach = { declaration ->
                     if (declaration is ClassDescriptor)
-                      collectInjectables(
+                      collectProviders(
                         declaration.unsubstitutedInnerClassesScope,
                         declaration
                       )
@@ -373,7 +373,7 @@ fun List<ProviderImport>.collectImportedInjectables(
             }
           }
 
-          collectInjectables(scope, packageObject)
+          collectProviders(scope, packageObject)
 
           nextPackages += ctx.module.getSubPackagesOf(currentPackage) { true }
         }
@@ -385,13 +385,13 @@ fun List<ProviderImport>.collectImportedInjectables(
         val (scope, packageObject) = memberScopeForFqName(packageFqName, import.element.lookupLocation, ctx)
           ?: continue
 
-        // import all injectables in the package
-        if ((packageObject != null && packageObject.toClassifierRef(ctx).declaresInjectables) ||
-          (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
+        // import all providers in the package
+        if ((packageObject != null && packageObject.toClassifierRef(ctx).declaresProviders) ||
+          (packageObject == null && providersLookupName in scope.getFunctionNames())) {
           if (packageObject != null) consumer(
-            packageObject.injectableReceiver(false, ctx).copy(import = resolvedImport)
+            packageObject.receiverProvider(false, ctx).copy(import = resolvedImport)
           )
-          else scope.collectInjectables(false, ctx = ctx) {
+          else scope.collectProviders(false, ctx = ctx) {
             consumer(it.copy(import = resolvedImport))
           }
         }
@@ -404,10 +404,10 @@ fun List<ProviderImport>.collectImportedInjectables(
         val (scope, packageObject) = memberScopeForFqName(parentFqName, import.element.lookupLocation, ctx)
           ?: continue
 
-        // import all injectables with the specified name
-        if ((packageObject != null && packageObject.toClassifierRef(ctx).declaresInjectables) ||
-          (packageObject == null && injectablesLookupName in scope.getFunctionNames())) {
-          scope.collectInjectables(false, name = name, ctx = ctx) {
+        // import all providers with the specified name
+        if ((packageObject != null && packageObject.toClassifierRef(ctx).declaresProviders) ||
+          (packageObject == null && providersLookupName in scope.getFunctionNames())) {
+          scope.collectProviders(false, name = name, ctx = ctx) {
             consumer(it.copy(import = import.toResolvedImport(it.callable.findPackage().fqName)))
           }
         }
@@ -416,9 +416,9 @@ fun List<ProviderImport>.collectImportedInjectables(
   }
 }
 
-fun TypeRef.collectTypeScopeInjectables(ctx: Context): InjectablesWithLookups =
-  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
-    val injectables = mutableListOf<CallableRef>()
+fun TypeRef.collectTypeScopeProviders(ctx: Context): ProvidersWithLookups =
+  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_PROVIDERS, key) {
+    val providers = mutableListOf<CallableRef>()
     val lookedUpPackages = mutableSetOf<FqName>()
     val nextPackages = LinkedList<FqName>()
     val seenTypes = mutableSetOf<TypeRef>()
@@ -439,64 +439,64 @@ fun TypeRef.collectTypeScopeInjectables(ctx: Context): InjectablesWithLookups =
     while (nextPackages.isNotEmpty()) {
       val currentPackage = nextPackages.removeFirst()
 
-      val injectablesForPackage = collectPackageTypeScopeInjectables(currentPackage, ctx)
+      val providersForPackage = collectPackageTypeScopeProviders(currentPackage, ctx)
 
-      injectables += injectablesForPackage
+      providers += providersForPackage
 
-      injectablesForPackage.forEach { injectable ->
-        injectable.type.addNextPackages()
-        injectable.type.collectInjectables(false, ctx).forEach {
+      providersForPackage.forEach { provider ->
+        provider.type.addNextPackages()
+        provider.type.collectProviders(false, ctx).forEach {
           it.type.addNextPackages()
         }
       }
     }
 
-    InjectablesWithLookups(injectables, lookedUpPackages)
+    ProvidersWithLookups(providers, lookedUpPackages)
   }
 
-data class InjectablesWithLookups(
-  val injectables: List<CallableRef>,
+data class ProvidersWithLookups(
+  val providers: List<CallableRef>,
   val lookedUpPackages: Set<FqName>
 )
 
-private fun collectPackageTypeScopeInjectables(
+private fun collectPackageTypeScopeProviders(
   packageFqName: FqName,
   ctx: Context
 ): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
+  ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_PROVIDERS, packageFqName) {
     val packageFragments = packageFragmentsForFqName(packageFqName, ctx)
       .filterNot { it is BuiltInsPackageFragment }
 
     if (packageFragments.none {
-        injectablesLookupName in it.getMemberScope().getFunctionNames()
+        providersLookupName in it.getMemberScope().getFunctionNames()
     }) return@getOrPut emptyList()
 
-    val injectables = mutableListOf<CallableRef>()
+    val providers = mutableListOf<CallableRef>()
 
     val import = ResolvedProviderImport(null, "$packageFqName.*", packageFqName)
-    fun collectInjectables(scope: MemberScope) {
-      scope.collectInjectables(
+    fun collectProviders(scope: MemberScope) {
+      scope.collectProviders(
         onEach = { declaration ->
-          // only collect in nested scopes if the declaration does NOT declare any injectables
-          // otherwise they will be included later in the injectables scope itself
+          // only collect in nested scopes if the declaration does NOT declare any providers
+          // otherwise they will be included later in the providers scope itself
           if (declaration is ClassDescriptor &&
             (declaration.kind != ClassKind.OBJECT ||
-                !declaration.toClassifierRef(ctx).declaresInjectables))
-            collectInjectables(declaration.unsubstitutedInnerClassesScope)
+                !declaration.toClassifierRef(ctx).declaresProviders))
+            collectProviders(declaration.unsubstitutedInnerClassesScope)
         },
         classBodyView = false,
-        includeNonProvideObjectsWithInjectables = true,
+        includeNonProvideObjectsWithProviders = true,
         ctx = ctx
       ) {
-        injectables += it.copy(import = import)
+        providers += it.copy(import = import)
       }
     }
-    packageFragments.forEach { collectInjectables(it.getMemberScope()) }
+    packageFragments.forEach { collectProviders(it.getMemberScope()) }
 
-    injectables
+    providers
   }
 
-private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolean =
+private fun ContextScope.canSee(callable: CallableRef, ctx: Context): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
@@ -512,13 +512,13 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
         scopeFile == callable.callable.findPsi()?.containingFile
       })
 
-fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, ctx: Context): List<CallableRef> {
-  val existingInjectables: MutableSet<InjectablesScope.InjectableKey> = scope.allScopes
-    .transformTo<InjectablesScope, InjectablesScope.InjectableKey, MutableSet<InjectablesScope.InjectableKey>>(mutableSetOf()) {
-      for (injectable in it.injectables)
-        add(InjectablesScope.InjectableKey(injectable, ctx))
-      addAll(it.spreadingInjectableKeys)
+fun List<CallableRef>.filterNotExistingIn(scope: ContextScope, ctx: Context): List<CallableRef> {
+  val existingProviders: MutableSet<ContextScope.ProviderKey> = scope.allScopes
+    .transformTo<ContextScope, ContextScope.ProviderKey, MutableSet<ContextScope.ProviderKey>>(mutableSetOf()) {
+      for (provider in it.providers)
+        add(ContextScope.ProviderKey(provider, ctx))
+      addAll(it.spreadingProviderKeys)
     }
 
-  return filter { existingInjectables.add(InjectablesScope.InjectableKey(it, ctx)) }
+  return filter { existingProviders.add(ContextScope.ProviderKey(it, ctx)) }
 }

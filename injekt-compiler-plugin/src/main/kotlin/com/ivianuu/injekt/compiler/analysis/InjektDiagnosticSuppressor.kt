@@ -11,7 +11,6 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.resolution.anyType
-import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.builtins.isFunctionOrSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -22,7 +21,6 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticWithParameters2
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
@@ -80,7 +78,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         return true
     }
 
-    if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
+    if (diagnostic.factory == InjektErrors.UNUSED_PROVIDER_IMPORT) {
       val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath
       if (filePath != null) {
         return bindingContext[InjektWritableSlices.USED_IMPORT,
@@ -97,7 +95,7 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         ?.descriptor<CallableDescriptor>(ctx)
       if (descriptor?.hasAnnotation(InjektFqNames.Provide) == true ||
         descriptor?.valueParameters?.any {
-          it.hasAnnotation(InjektFqNames.Inject) ||
+          it.hasAnnotation(InjektFqNames.Context) ||
               it.hasAnnotation(InjektFqNames.Provide)
         } == true)
         return true

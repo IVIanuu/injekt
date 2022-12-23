@@ -225,7 +225,7 @@ interface InjektTask : Task {
   )
 }
 
-@CacheableTask abstract class InjektTaskJvm @Inject constructor(
+@CacheableTask abstract class InjektTaskJvm @Context constructor(
   objectFactory: ObjectFactory,
   workerExecutor: WorkerExecutor
 ) : KotlinCompile(KotlinJvmOptionsImpl(), workerExecutor, objectFactory), InjektTask {
@@ -288,7 +288,7 @@ interface InjektTask : Task {
   }
 }
 
-@CacheableTask abstract class InjektTaskJS @Inject constructor(
+@CacheableTask abstract class InjektTaskJS @Context constructor(
   objectFactory: ObjectFactory,
   workerExecutor: WorkerExecutor
 ) : Kotlin2JsCompile(KotlinJsOptionsImpl(), objectFactory, workerExecutor), InjektTask {
@@ -342,7 +342,7 @@ interface InjektTask : Task {
   }
 }
 
-@CacheableTask abstract class InjektTaskMetadata @Inject constructor(
+@CacheableTask abstract class InjektTaskMetadata @Context constructor(
   objectFactory: ObjectFactory,
   workerExecutor: WorkerExecutor
 ) : KotlinCompileCommon(KotlinMultiplatformCommonOptionsImpl(), workerExecutor, objectFactory), InjektTask {
@@ -400,7 +400,7 @@ interface InjektTask : Task {
   }
 }
 
-@CacheableTask abstract class InjektTaskNative @Inject constructor(
+@CacheableTask abstract class InjektTaskNative @Context constructor(
   injected: KotlinNativeCompilationData<*>,
   objectFactory: ObjectFactory
 ) : KotlinNativeCompile(injected, objectFactory), InjektTask {

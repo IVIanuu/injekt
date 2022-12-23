@@ -14,7 +14,7 @@ import org.junit.Test
 class TypeKeyTest {
   @Test fun testTypeKey() = codegen(
     """
-      fun invoke() = inject<TypeKey<String>>()
+      fun invoke() = context<TypeKey<String>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -22,7 +22,7 @@ class TypeKeyTest {
 
   @Test fun testNullableTypeKey() = codegen(
     """
-      fun invoke() = inject<TypeKey<String?>>()
+      fun invoke() = context<TypeKey<String?>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String?"
@@ -30,7 +30,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTypeParameters() = singleAndMultiCodegen(
     """
-      inline fun <T> listTypeKeyOf(@Inject single: TypeKey<T>) = inject<TypeKey<List<T>>>()
+      inline fun <T> listTypeKeyOf(@Context single: TypeKey<T>) = context<TypeKey<List<T>>>()
     """,
     """
       fun invoke() = listTypeKeyOf<String>()
@@ -41,7 +41,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithComposableType() = codegen(
     """
-      fun invoke() = inject<TypeKey<@Composable () -> Unit>>()
+      fun invoke() = context<TypeKey<@Composable () -> Unit>>()
     """,
     config = { withCompose() }
   ) {
@@ -50,7 +50,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTags() = codegen(
     """
-      fun invoke() = inject<TypeKey<@Tag2 String>>()
+      fun invoke() = context<TypeKey<@Tag2 String>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Tag2<kotlin.String>"
@@ -59,7 +59,7 @@ class TypeKeyTest {
   @Test fun testTypeKeyWithParameterizedTags() = codegen(
     """
       @Tag annotation class MyTag<T>
-      fun invoke() = inject<TypeKey<@MyTag<String> String>>()
+      fun invoke() = context<TypeKey<@MyTag<String> String>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyTag<kotlin.String, kotlin.String>"
@@ -67,7 +67,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithStar() = codegen(
     """
-      fun invoke() = inject<TypeKey<List<*>>>()
+      fun invoke() = context<TypeKey<List<*>>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"

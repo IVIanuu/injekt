@@ -6,7 +6,7 @@ package com.ivianuu.injekt.coroutines
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.context
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -20,7 +20,7 @@ class NamedCoroutineScopeTest {
 
   @Test fun testNamedScopeLifecycle() {
     @Provide val scope = Scope<MyScope>()
-    val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
+    val coroutineScope = context<NamedCoroutineScope<MyScope>>()
     coroutineScope.isActive.shouldBeTrue()
     scope.dispose()
     coroutineScope.isActive.shouldBeFalse()
@@ -29,7 +29,7 @@ class NamedCoroutineScopeTest {
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val scope = Scope<MyScope>()
     @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
-    val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
+    val coroutineScope = context<NamedCoroutineScope<MyScope>>()
     coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext
   }
 }

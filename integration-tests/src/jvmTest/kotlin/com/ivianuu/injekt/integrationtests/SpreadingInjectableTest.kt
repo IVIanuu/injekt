@@ -17,8 +17,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
-class SpreadingInjectableTest {
-  @Test fun testSpreadingInjectableFunction() = singleAndMultiCodegen(
+class SpreadingProviderTest {
+  @Test fun testSpreadingProviderFunction() = singleAndMultiCodegen(
     """
       @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
@@ -26,13 +26,13 @@ class SpreadingInjectableTest {
       @Provide fun foo(): @Trigger Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testSpreadingInjectableClass() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderClass() = singleAndMultiCodegen(
     """
       @Provide class MyModule<@Spread T : @Trigger S, S> {
         @Provide fun intoSet(instance: T): @Final S = instance
@@ -45,13 +45,13 @@ class SpreadingInjectableTest {
       @Provide fun string(): @Trigger String = ""
     """,
     """
-      fun invoke() = inject<List<@Final Foo>>() 
+      fun invoke() = context<List<@Final Foo>>() 
     """
   ) {
     invokeSingleFile<List<Foo>>().size shouldBe 1
   }
 
-  @Test fun testSpreadingNonInjectableClass() = codegen(
+  @Test fun testSpreadingNonProviderClass() = codegen(
     """
       class MyModule<@Spread T>
     """
@@ -59,7 +59,7 @@ class SpreadingInjectableTest {
     compilationShouldHaveFailed("a @Spread type parameter is only supported on @Provide functions and @Provide classes")
   }
 
-  @Test fun testSpreadingNonInjectableFunction() = codegen(
+  @Test fun testSpreadingNonProviderFunction() = codegen(
     """
       fun <@Spread T> triggerImpl() = Unit
     """
@@ -83,7 +83,7 @@ class SpreadingInjectableTest {
     compilationShouldHaveFailed("a declaration may have only one @Spread type parameter")
   }
 
-  @Test fun testSpreadingInjectableTriggeredByClass() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderTriggeredByClass() = singleAndMultiCodegen(
     """
       @Tag annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
@@ -91,13 +91,13 @@ class SpreadingInjectableTest {
       @Trigger @Provide class NotAny
     """,
     """
-      fun invoke() = inject<NotAny>() 
+      fun invoke() = context<NotAny>() 
     """
   ) {
     invokeSingleFile()
   }
 
-  @Test fun testSpreadingInjectableChain() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderChain() = singleAndMultiCodegen(
     """
       @Tag annotation class A
       
@@ -122,7 +122,7 @@ class SpreadingInjectableTest {
       @Provide fun dummy(): @A Long = 0L
     """,
     """
-      fun invoke() = inject<List<Foo>>().single() 
+      fun invoke() = context<List<Foo>>().single() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -137,7 +137,7 @@ class SpreadingInjectableTest {
       @Provide fun b(): @Trigger String = "b"
     """,
     """
-      fun invoke() = inject<List<String>>() 
+      fun invoke() = context<List<String>>() 
     """
   ) {
     invokeSingleFile<Set<String>>()
@@ -172,7 +172,7 @@ class SpreadingInjectableTest {
       @Provide fun stringPair() = "a" to "b"
     """,
     """
-     fun invoke() = inject<Int>() 
+     fun invoke() = context<Int>() 
     """
   )
 
@@ -185,7 +185,7 @@ class SpreadingInjectableTest {
       @Provide fun stringPair() = "a" to "b"
     """,
     """
-      fun invoke() = inject<Int>() 
+      fun invoke() = context<Int>() 
     """
   )
 
@@ -208,13 +208,13 @@ class SpreadingInjectableTest {
       }
     """,
     """
-      fun invoke() = inject<List<UiDecorator>>().size 
+      fun invoke() = context<List<UiDecorator>>().size 
     """
   ) {
     invokeSingleFile() shouldBe 1
   }
 
-  @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderWithModuleLikeSpreadingReturnType() = singleAndMultiCodegen(
     """
       @Tag annotation class SingleInstance
       
@@ -232,13 +232,13 @@ class SpreadingInjectableTest {
       @Provide val foo: @Tag1 Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     irShouldContain(1, "SingleInstance<@SingleInstance MyModule")
   }
 
-  @Test fun testSpreadingInjectableWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderWithModuleLikeSpreadingReturnType2() = singleAndMultiCodegen(
     """
       @Tag annotation class SingleInstance
       
@@ -256,13 +256,13 @@ class SpreadingInjectableTest {
       @Provide val foo: @Tag1 Foo = Foo()
     """,
     """
-      fun invoke() = inject<List<Foo>>()
+      fun invoke() = context<List<Foo>>()
     """
   ) {
     irShouldContain(1, "mutableListOf")
   }
 
-  @Test fun testNestedSpreadingInjectablesWithGenerics() = singleAndMultiCodegen(
+  @Test fun testNestedSpreadingProvidersWithGenerics() = singleAndMultiCodegen(
     """
       @Tag annotation class A<T>
       
@@ -273,13 +273,13 @@ class SpreadingInjectableTest {
       @Provide fun dummy(): @A<String> Long = 0L
     """,
     """
-      fun invoke() = inject<Unit>() 
+      fun invoke() = context<Unit>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type kotlin.Unit for parameter x of function com.ivianuu.injekt.context")
   }
 
-  @Test fun testSpreadingInjectableWithInvariantTypeParameter() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderWithInvariantTypeParameter() = singleAndMultiCodegen(
     """
       interface IntentKey
       
@@ -294,7 +294,7 @@ class SpreadingInjectableTest {
       @Provide val keyIntentFactoryImpl: KeyIntentFactory<IntentKeyImpl> = KeyIntentFactory { Any() }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

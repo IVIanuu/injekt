@@ -42,10 +42,10 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
 
     if (!hasSyntheticScopesExtension) {
       container.useInstance(ctx)
-      container.useImpl<InjectSyntheticScopes>()
+      container.useImpl<ContextSyntheticScopes>()
     }
 
-    container.useInstance(InjectableChecker(ctx))
+    container.useInstance(ProviderChecker(ctx))
     container.useInstance(TagChecker(ctx))
     container.useInstance(ProviderImportsChecker(ctx))
     if (!isIde)

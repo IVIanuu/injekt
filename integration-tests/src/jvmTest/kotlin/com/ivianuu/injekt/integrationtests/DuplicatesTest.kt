@@ -36,7 +36,7 @@ class DuplicatesTest {
         invokableSource(
           """
             @Providers("package1.**")
-            fun invoke() = inject<List<package1.ListElement>>()
+            fun invoke() = context<List<package1.ListElement>>()
           """
         )
       )
@@ -63,7 +63,7 @@ class DuplicatesTest {
         invokableSource(
           """
             @Providers("package1.*")
-            fun invoke() = inject<List<Pair<String, package1.MyType>>>()
+            fun invoke() = context<List<Pair<String, package1.MyType>>>()
           """
         )
       )
@@ -81,14 +81,14 @@ class DuplicatesTest {
       
         @Provide fun unitElement(unit: Unit): @Element<MyScope> Unit = unit
       
-        return inject<List<ProvidedElement<*, *>>>()
+        return context<List<ProvidedElement<*, *>>>()
       }
     """
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 1
   }
 
-  @Test fun testInjectableChainingDoesNotProduceDuplicates() = singleAndMultiCodegen(
+  @Test fun testProviderChainingDoesNotProduceDuplicates() = singleAndMultiCodegen(
     """
       class Dep {
         companion object {
@@ -97,13 +97,13 @@ class DuplicatesTest {
       }
     """,
     """
-      fun invoke() = inject<(Dep, Dep) -> List<Unit>>()(Dep(), Dep())
+      fun invoke() = context<(Dep, Dep) -> List<Unit>>()(Dep(), Dep())
     """
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 1
   }
 
-  @Test fun testSpreadingInjectableModuleDoesNotProduceDuplicates() = singleAndMultiCodegen(
+  @Test fun testSpreadingProviderModuleDoesNotProduceDuplicates() = singleAndMultiCodegen(
     """
       @Tag annotation class Trigger
 
@@ -115,7 +115,7 @@ class DuplicatesTest {
       @Provide val int: @Trigger Int = 42
       @Provide val string: @Trigger String = "42"
 
-      fun invoke() = inject<List<Pair<*, *>>>()
+      fun invoke() = context<List<Pair<*, *>>>()
     """
   ) {
     invokeSingleFile<List<*>>() shouldHaveSize 2

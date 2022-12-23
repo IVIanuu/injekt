@@ -26,7 +26,7 @@ fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef =
     isStarProjection = isStarProjection,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
-    isInject = isInject
+    isInject = isContext
   )
 
 fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
@@ -46,6 +46,6 @@ fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
     arguments = arguments,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide,
-    isInject = isInject
+    isContext = isInject
   )
 }

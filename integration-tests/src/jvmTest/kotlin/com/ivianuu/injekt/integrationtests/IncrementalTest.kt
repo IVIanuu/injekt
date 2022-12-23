@@ -112,12 +112,12 @@ class IncrementalTest {
           """
           package b
           
-          import com.ivianuu.injekt.inject
+          import com.ivianuu.injekt.context
           import com.ivianuu.injekt.Providers
           
           @Providers("a.a.**")
           fun main() {
-            inject<Int>()
+            context<Int>()
           }
         """
         )
@@ -149,7 +149,7 @@ class IncrementalTest {
           ?.outcome shouldBe TaskOutcome.UP_TO_DATE
       }
 
-    // injectable change
+    // provider change
 
     a = project.resolve("project/src/commonMain/kotlin/a/a/a.kt")
       .also {
@@ -176,7 +176,7 @@ class IncrementalTest {
           ?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-    // non injectable change
+    // non provider change
 
     a = project.resolve("project/src/commonMain/kotlin/a/a/a.kt")
       .also {

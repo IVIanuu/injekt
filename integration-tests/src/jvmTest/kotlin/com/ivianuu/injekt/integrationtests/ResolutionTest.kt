@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class ResolutionTest {
-  @Test fun testPrefersInternalInjectableOverExternal() = multiCodegen(
+  @Test fun testPrefersInternalProviderOverExternal() = multiCodegen(
     """
       @Provide lateinit var externalFoo: Foo
     """,
@@ -29,7 +29,7 @@ class ResolutionTest {
       fun invoke(internal: Foo, external: Foo): Foo {
         externalFoo = external
         internalFoo = internal
-        return inject<Foo>()
+        return context<Foo>()
       }
     """
   ) {
@@ -39,12 +39,12 @@ class ResolutionTest {
     result shouldBeSameInstanceAs internal
   }
 
-  @Test fun testPrefersObjectInjectableOverInternalInjectable() = codegen(
+  @Test fun testPrefersObjectProviderOverInternalProvider() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       object MyObject {
         @Provide lateinit var objectFoo: Foo
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
       }
 
       fun invoke(internal: Foo, objectFoo: Foo): Foo {
@@ -60,11 +60,11 @@ class ResolutionTest {
     objectFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersClassCompanionInjectableOverInternalInjectable() = codegen(
+  @Test fun testPrefersClassCompanionProviderOverInternalProvider() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       class MyClass {
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
         companion object {
           @Provide lateinit var companionFoo: Foo
         }
@@ -83,11 +83,11 @@ class ResolutionTest {
     companionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersClassInjectableOverInternalInjectable() = codegen(
+  @Test fun testPrefersClassProviderOverInternalProvider() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       class MyClass(@Provide val classFoo: Foo) {
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
       }
   
       fun invoke(internal: Foo, classFoo: Foo): Foo {
@@ -102,10 +102,10 @@ class ResolutionTest {
     classFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersClassInjectableOverClassCompanionInjectable() = codegen(
+  @Test fun testPrefersClassProviderOverClassCompanionProvider() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo) {
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
         companion object {
           @Provide lateinit var companionFoo: Foo
         }
@@ -123,11 +123,11 @@ class ResolutionTest {
     classFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
+  @Test fun testPrefersConstructorParameterProviderOverClassBodyProvider() = codegen(
     """
       lateinit var classBodyFoo: Foo
       class MyClass(@Provide constructorFoo: Foo) {
-        val finalFoo = inject<Foo>()
+        val finalFoo = context<Foo>()
         @Provide val classFoo get() = classBodyFoo
       }
 
@@ -143,11 +143,11 @@ class ResolutionTest {
     result shouldBeSameInstanceAs constructorFoo
   }
 
-  @Test fun testPrefersSubClassInjectableOverSuperClassInjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersSubClassProviderOverSuperClassProvider() = singleAndMultiCodegen(
     """
       abstract class MySuperClass(@Provide val superClassFoo: Foo)
       class MySubClass(@Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
-        fun finalFoo(): Foo = inject()
+        fun finalFoo(): Foo = context()
       }
     """,
     """
@@ -162,12 +162,12 @@ class ResolutionTest {
     result shouldBeSameInstanceAs subClassFoo
   }
 
-  @Test fun testPrefersFunctionParameterInjectableOverInternalInjectable() = codegen(
+  @Test fun testPrefersFunctionParameterProviderOverInternalProvider() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       fun invoke(internal: Foo, @Provide functionFoo: Foo): Foo {
         internalFoo = internal
-        return inject()
+        return context()
       }
     """
   ) {
@@ -177,10 +177,10 @@ class ResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionParameterInjectableOverClassInjectable() = codegen(
+  @Test fun testPrefersFunctionParameterProviderOverClassProvider() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo) {
-        fun resolve(@Provide functionFoo: Foo) = inject<Foo>()
+        fun resolve(@Provide functionFoo: Foo) = context<Foo>()
       }
 
       fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
@@ -194,12 +194,12 @@ class ResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionReceiverInjectableOverInternalInjectable() = codegen(
+  @Test fun testPrefersFunctionReceiverProviderOverInternalProvider() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
       fun Foo.invoke(internal: Foo): Foo {
         internalFoo = internal
-        return inject()
+        return context()
       }
     """
   ) {
@@ -209,10 +209,10 @@ class ResolutionTest {
     functionFoo shouldBeSameInstanceAs result
   }
 
-  @Test fun testPrefersFunctionReceiverInjectableOverClassInjectable() = codegen(
+  @Test fun testPrefersFunctionReceiverProviderOverClassProvider() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo) {
-        fun Foo.resolve() = inject<Foo>()
+        fun Foo.resolve() = context<Foo>()
       }
 
       fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
@@ -231,7 +231,7 @@ class ResolutionTest {
   @Test fun testPrefersProviderArgument() = codegen(
     """
       @Provide fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(Foo) -> Foo>()(foo)
+      fun invoke(foo: Foo) = context<(Foo) -> Foo>()(foo)
     """
   ) {
     val foo = Foo()
@@ -241,20 +241,20 @@ class ResolutionTest {
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
     """
       @Provide fun foo() = Foo()
-      fun invoke(foo: Foo) = inject<(Foo) -> (Foo) -> Foo>()(Foo())(foo)
+      fun invoke(foo: Foo) = context<(Foo) -> (Foo) -> Foo>()(Foo())(foo)
     """
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testPrefsInnerBlockInjectable() = codegen(
+  @Test fun testPrefsInnerBlockProvider() = codegen(
     """
       fun invoke(): Pair<String, String> {
-        @Provide val injectableA = "a"
-        return inject<String>() to run {
-          @Provide val injectableB = "b"
-          inject<String>()
+        @Provide val providerA = "a"
+        return context<String>() to run {
+          @Provide val providerB = "b"
+          context<String>()
         }
       }
     """
@@ -262,25 +262,25 @@ class ResolutionTest {
     invokeSingleFile() shouldBe ("a" to "b")
   }
 
-  @Test fun testPrefersResolvableInjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersResolvableProvider() = singleAndMultiCodegen(
     """
       @Provide fun a() = "a"
       @Provide fun b(long: Long) = "b"
     """,
     """
-      fun invoke() = inject<String>() 
+      fun invoke() = context<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "a"
   }
 
-  @Test fun testPrefersNearerInjectableOverBetterType() = codegen(
+  @Test fun testPrefersNearerProviderOverBetterType() = codegen(
     """
       fun invoke(): CharSequence {
         @Provide val a: String = "a"
         run {
           @Provide val b: CharSequence = "b"
-          return inject<CharSequence>()
+          return context<CharSequence>()
         }
       }
     """
@@ -288,37 +288,37 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "b"
   }
 
-  @Test fun testAmbiguousInjectables() = codegen(
+  @Test fun testAmbiguousProviders() = codegen(
     """
       @Provide val a = "a"
       @Provide val b = "b"
     """,
     """
-      fun invoke() = inject<String>() 
+      fun invoke() = context<String>() 
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
+      "ambiguous providers:\n\n" +
           "com.ivianuu.injekt.integrationtests.a\n" +
           "com.ivianuu.injekt.integrationtests.b\n\n" +
-          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
+          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.context"
     )
   }
 
-  @Test fun testCannotDeclareMultipleInjectablesOfTheSameTypeInTheSameCodeBlock() = codegen(
+  @Test fun testCannotDeclareMultipleProvidersOfTheSameTypeInTheSameCodeBlock() = codegen(
     """
       fun invoke() {
-        @Provide val injectableA = "a"
-        @Provide val injectableB = "b"
-        inject<String>()
+        @Provide val providerA = "a"
+        @Provide val providerB = "b"
+        context<String>()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableA\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableB\n\n" +
-          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
+      "ambiguous providers:\n\n" +
+          "com.ivianuu.injekt.integrationtests.invoke.providerA\n" +
+          "com.ivianuu.injekt.integrationtests.invoke.providerB\n\n" +
+          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.context"
     )
   }
 
@@ -328,7 +328,7 @@ class ResolutionTest {
       @Provide fun <T> anySet(): Set<T> = emptySet()
     """,
     """
-      fun invoke() = inject<Set<String>>() 
+      fun invoke() = context<Set<String>>() 
     """
   ) {
     invokeSingleFile() shouldBe setOf("a", "b", "c")
@@ -340,7 +340,7 @@ class ResolutionTest {
       @Provide fun <T> setSet(): Set<Set<T>> = setOf(setOf("a", "b", "c")) as Set<Set<T>>
     """,
     """
-      fun invoke() = inject<Set<Set<String>>>() 
+      fun invoke() = context<Set<Set<String>>>() 
     """
   ) {
     invokeSingleFile() shouldBe setOf(setOf("a", "b", "c"))
@@ -351,7 +351,7 @@ class ResolutionTest {
       interface Ord<in T>
       @Provide object IntOrd : Ord<Int>
       @Provide object NumberOrd : Ord<Number>
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(@Context ord: Ord<T>) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -368,7 +368,7 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
       @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
       @Provide fun <T : Int> intOrd(): Ord<T> = TODO()
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(@Context ord: Ord<T>) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -385,7 +385,7 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
       @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
       @Provide fun <T : Int> intOrd(long: Long): Ord<T> = TODO()
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(@Context ord: Ord<T>) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -400,24 +400,24 @@ class ResolutionTest {
       @Provide val nullable: String? = "nullable"
     """,
     """
-      fun invoke() = inject<String?>() 
+      fun invoke() = context<String?>() 
     """
   ) {
     invokeSingleFile() shouldBe "nonnull"
   }
 
-  @Test fun testDoesNotUseFrameworkInjectablesIfThereAreUserInjectables() = singleAndMultiCodegen(
+  @Test fun testDoesNotUseFrameworkProvidersIfThereAreUserProviders() = singleAndMultiCodegen(
     """
       @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
     """,
     """
-      fun invoke() = inject<() -> Foo>() 
+      fun invoke() = context<() -> Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
+    compilationShouldHaveFailed("no provider found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
   }
 
-  @Test fun testPrefersAnyInjectablesOverTypeScopeInjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersAnyProvidersOverTypeScopeProvider() = singleAndMultiCodegen(
     """
       class Dep(val value: String) {
         companion object {
@@ -427,7 +427,7 @@ class ResolutionTest {
       }
     """,
     """
-      fun invoke(@Provide string: String) = inject<Dep>().value
+      fun invoke(@Provide string: String) = context<Dep>().value
     """
   ) {
     invokeSingleFile("a") shouldBe "a"
@@ -451,13 +451,13 @@ class ResolutionTest {
       @Provide fun foo2() = Foo()
 
       fun invoke(): Foo {
-        fun inner(@Inject foo: Foo = Foo()) = foo
+        fun inner(@Context foo: Foo = Foo()) = foo
         return inner()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
+      "ambiguous providers:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo1\n" +
           "com.ivianuu.injekt.integrationtests.foo2\n\n" +
           "do all match type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
@@ -471,20 +471,20 @@ class ResolutionTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
 
       fun invoke(foo: Foo): Bar {
-        fun inner(@Inject bar: Bar = Bar(foo)) = bar
+        fun inner(@Context bar: Bar = Bar(foo)) = bar
         return inner()
       }
     """
   ) {
     compilationShouldHaveFailed(
       " \n" +
-          "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
+          "ambiguous providers of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
           "\n" +
           "I found:\n" +
           "\n" +
           "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
           "    bar = com.ivianuu.injekt.integrationtests.bar(\n" +
-          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ inject<com.ivianuu.injekt.test.Foo>()\n" +
+          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ context<com.ivianuu.injekt.test.Foo>()\n" +
           "    )\n" +
           "  )\n" +
           "\n" +
@@ -502,20 +502,20 @@ class ResolutionTest {
       listOf(
         source(
           """
-            object MyInjectables {
+            object MyProviders {
               @Provide val a = "a"
               @Provide val b = "b"
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            fun invoke() = @Providers("injectables.MyInjectables.a") run {
-              @Providers("injectables.MyInjectables.b") run {
-                inject<String>()
+            fun invoke() = @Providers("providers.MyProviders.a") run {
+              @Providers("providers.MyProviders.b") run {
+                context<String>()
               }
             }
           """
@@ -533,7 +533,7 @@ class ResolutionTest {
           """
             @Provide val value = "b"
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
@@ -542,7 +542,7 @@ class ResolutionTest {
             fun invoke(): String {
               @Provide val a = "a"
               return run {
-                @Providers("injectables.value") inject<String>()
+                @Providers("providers.value") context<String>()
               }
             }
           """
@@ -573,7 +573,7 @@ class ResolutionTest {
         invokableSource(
           """
             @Providers("explicit.value", "star.*")
-            fun invoke() = inject<String>()
+            fun invoke() = context<String>()
           """
         )
       )
@@ -602,7 +602,7 @@ class ResolutionTest {
         invokableSource(
           """
             @Providers("explicit.value", "internal.*")
-            fun invoke() = inject<String>()
+            fun invoke() = context<String>()
           """
         )
       )
@@ -622,7 +622,7 @@ class ResolutionTest {
 
             @Provide class PrintingLogger : Logger
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         ),
         source(
           """
@@ -635,23 +635,23 @@ class ResolutionTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*", "injectables.AndroidLogger.Companion.logger")
-            fun invoke() = inject<injectables.Logger>()
+            @Providers("providers.*", "providers.AndroidLogger.Companion.logger")
+            fun invoke() = context<providers.Logger>()
           """
         )
       )
     )
   ) {
-    invokeSingleFile()!!.javaClass.name shouldBe "injectables.AndroidLogger"
+    invokeSingleFile()!!.javaClass.name shouldBe "providers.AndroidLogger"
   }
 
-  @Test fun testDoesNotPreferInjectablesInTheSameFile() = codegen(
+  @Test fun testDoesNotPreferProvidersInTheSameFile() = codegen(
     """
       @Provide val otherFoo = Foo()
     """,
@@ -659,19 +659,19 @@ class ResolutionTest {
       @Provide val foo = Foo()
 
       fun invoke() {
-        inject<Foo>()
+        context<Foo>()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
+      "ambiguous providers:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo\n" +
           "com.ivianuu.injekt.integrationtests.otherFoo\n\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject"
+          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context"
     )
   }
 
-  @Test fun testPrefersInternalTypeScopeInjectableOverExternal() = multiCodegen(
+  @Test fun testPrefersInternalTypeScopeProviderOverExternal() = multiCodegen(
     listOf(
       listOf(
         source(
@@ -698,7 +698,7 @@ class ResolutionTest {
         ),
         invokableSource(
           """
-            fun invoke() = inject<typescope.MyType>().value
+            fun invoke() = context<typescope.MyType>().value
           """
         )
       )
@@ -707,7 +707,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "internal"
   }
 
-  @Test fun testPrefersSameCompilationAsTypeTypeScopeInjectableOverExternal() = multiCodegen(
+  @Test fun testPrefersSameCompilationAsTypeTypeScopeProviderOverExternal() = multiCodegen(
     listOf(
       listOf(
         source(
@@ -729,7 +729,7 @@ class ResolutionTest {
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<typescope.MyType>().value
+            fun invoke() = context<typescope.MyType>().value
           """
         )
       )
@@ -738,7 +738,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "type"
   }
 
-  @Test fun testPrefersInternalTypeScopeInjectableOverSameCompilationAsType() = multiCodegen(
+  @Test fun testPrefersInternalTypeScopeProviderOverSameCompilationAsType() = multiCodegen(
     listOf(
       listOf(
         source(
@@ -758,7 +758,7 @@ class ResolutionTest {
         ),
         invokableSource(
           """
-            fun invoke() = inject<typescope.MyType>()  
+            fun invoke() = context<typescope.MyType>()  
           """
         )
       )
@@ -767,7 +767,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "internal"
   }
 
-  @Test fun testPrefersTypeScopeInjectableOverNonAmbiguityError() = singleAndMultiCodegen(
+  @Test fun testPrefersTypeScopeProviderOverNonAmbiguityError() = singleAndMultiCodegen(
     """
       class MyDep {
         companion object {
@@ -778,11 +778,11 @@ class ResolutionTest {
       @Provide class Context1<A>(@Provide val a: A)
     """,
     """
-      fun invoke() = inject<MyDep>()
+      fun invoke() = context<MyDep>()
     """
   )
 
-  @Test fun testPrefersAmbiguityErrorOverTypeScopeInjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersAmbiguityErrorOverTypeScopeProvider() = singleAndMultiCodegen(
     """
       class MyDep {
         object TypeScope {
@@ -794,10 +794,10 @@ class ResolutionTest {
       @Provide val b = MyDep()
     """,
     """
-      fun invoke() = inject<MyDep>()
+      fun invoke() = context<MyDep>()
     """
   ) {
-    compilationShouldHaveFailed("ambiguous injectables")
+    compilationShouldHaveFailed("ambiguous providers")
   }
 
   @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
@@ -806,10 +806,10 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject foo1: Foo, @Inject foo2: Foo) = inject<Foo>()
+      fun createFoo(@Context foo1: Foo, @Context foo2: Foo) = context<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("ambiguous injectables")
+    compilationShouldHaveFailed("ambiguous providers")
   }
 
   @Test fun testDoesPreferShorterChain() = codegen(
@@ -818,7 +818,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject module: FooModule, @Inject foo: Foo) = inject<Foo>()
+      fun createFoo(@Context module: FooModule, @Context foo: Foo) = context<Foo>()
     """,
     """
       fun invoke(foo: Foo) = createFoo(FooModule(), foo)

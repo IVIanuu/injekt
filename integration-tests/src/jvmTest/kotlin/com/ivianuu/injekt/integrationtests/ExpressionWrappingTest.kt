@@ -12,51 +12,51 @@ import com.ivianuu.injekt.test.singleAndMultiCodegen
 import org.junit.Test
 
 class ExpressionWrappingTest {
-  @Test fun testDoesFunctionWrapInjectableWithMultipleUsages() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapProviderWithMultipleUsages() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
       @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = inject<Pair<Bar, Bar>>()
+      fun invoke() = context<Pair<Bar, Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
   }
 
-  @Test fun testDoesFunctionWrapInjectableWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapProviderWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
       @Provide fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
     """,
     """
-      fun invoke() = inject<Pair<Bar, () -> Bar>>()
+      fun invoke() = context<Pair<Bar, () -> Bar>>()
     """
   ) {
     irShouldContain(1, "bar(foo = ")
   }
 
-  @Test fun testDoesNotFunctionWrapInjectableWithSingleUsage() = singleAndMultiCodegen(
+  @Test fun testDoesNotFunctionWrapProviderWithSingleUsage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<Bar>()
+      fun invoke() = context<Bar>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Bar {")
   }
 
-  @Test fun testDoesNotWrapInjectableWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
+  @Test fun testDoesNotWrapProviderWithMultipleUsagesButWithoutDependencies() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = inject<Pair<Foo, Foo>>()
+      fun invoke() = context<Pair<Foo, Foo>>()
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Foo {")
@@ -76,55 +76,55 @@ class ExpressionWrappingTest {
       )
 
       fun invoke() {
-        inject<MyComponent>()
+        context<MyComponent>()
       }
     """
   )
 
-  @Test fun testDoesFunctionWrapListInjectablesWithSameElements() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapListProvidersWithSameElements() = singleAndMultiCodegen(
     """
       @Provide val a = "a"
       @Provide val b = "b"
       @Provide fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
     """,
     """
-      fun invoke() = inject<Pair<List<String>, () -> List<String>>>()
+      fun invoke() = context<Pair<List<String>, () -> List<String>>>()
     """
   ) {
     irShouldContain(1, "local fun function0(): List<String> {")
   }
 
-  @Test fun testDoesFunctionWrapProviderWithMultipleUsages() = singleAndMultiCodegen(
+  @Test fun testDoesFunctionWrapFunctionProviderWithMultipleUsages() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = inject<Pair<() -> Foo, () -> Foo>>()
+      fun invoke() = context<Pair<() -> Foo, () -> Foo>>()
     """
   ) {
     irShouldContain(1, "local fun function0(): Function0<Foo>")
   }
 
-  @Test fun testDoesNotFunctionWrapProviderWithSingleUsage() = singleAndMultiCodegen(
+  @Test fun testDoesNotFunctionWrapFunctionProviderWithSingleUsage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<() -> Foo>()
+      fun invoke() = context<() -> Foo>()
     """
   ) {
     irShouldNotContain("local fun function0(): Function0<Foo>")
   }
 
-  @Test fun testDoesNotFunctionWrapInlineProvider() = singleAndMultiCodegen(
+  @Test fun testDoesNotFunctionWrapInlineFunctionProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide inline fun bar(fooProvider: () -> Foo) = Bar(fooProvider())
       @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
     """,
     """
-      fun invoke() = inject<Pair<Bar, Bar>>()
+      fun invoke() = context<Pair<Bar, Bar>>()
     """
   ) {
     irShouldNotContain("local fun function0(): Function0<Foo>")

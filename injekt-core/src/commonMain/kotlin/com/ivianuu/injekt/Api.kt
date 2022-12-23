@@ -38,22 +38,22 @@ annotation class Provide
  * Automatically fills in a argument if no explicit argument was provided
  */
 @Target(
-  // fun func(@Inject foo: Foo)
+  // fun func(@Context foo: Foo)
   AnnotationTarget.VALUE_PARAMETER,
 
   // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
+  // val func: (@Context Foo) -> Bar = { bar() }
   AnnotationTarget.TYPE
 )
-annotation class Inject
+annotation class Context
 
 /**
- * Returns a provided instance of [T]
+ * Returns the context of [T]
  */
-inline fun <T> inject(@Inject x: T): T = x
+inline fun <T> context(@Context x: T): T = x
 
 /**
- * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
+ * Imports providers from the specified [importPaths] and use them when resolving providers inside the declaration
  */
 @Target(
   AnnotationTarget.CLASS,
@@ -82,9 +82,9 @@ annotation class Providers(vararg val importPaths: String)
  * @Provide val username: @Username String = "Foo"
  *
  * fun main() {
- *   val userId = inject<@UserId String>()
+ *   val userId = context<@UserId String>()
  *   // userId = 123
- *   val username = inject<@Username String>()
+ *   val username = context<@Username String>()
  *   // username = "Foo"
  * }
  * ```
@@ -93,7 +93,7 @@ annotation class Providers(vararg val importPaths: String)
 annotation class Tag
 
 /**
- * Creates a version of the annotated injectable for each other injectable whose type matches the constraints
+ * Creates a version of the annotated provider for each other provider whose type matches the constraints
  * of the the annotated type parameter
  */
 @Target(AnnotationTarget.TYPE_PARAMETER)

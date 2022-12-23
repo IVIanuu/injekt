@@ -21,16 +21,16 @@ class PersistenceTest {
       @Provide val value: CharSequence = "42"
     """,
     """
-      fun invoke() = inject<String>() 
+      fun invoke() = context<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "42"
   }
 
-  @Test fun testNonInjectableSecondaryConstructorWithInjectableParameters() = singleAndMultiCodegen(
+  @Test fun testNonProvidersecondaryConstructorWithProviderParameters() = singleAndMultiCodegen(
     """
       class MyClass {
-        constructor(@Inject unit: Unit)
+        constructor(@Context unit: Unit)
       }
     """,
     """
@@ -38,7 +38,7 @@ class PersistenceTest {
     """
   )
 
-  @Test fun testNonInjectableClassWithInjectableMembers() = singleAndMultiCodegen(
+  @Test fun testNonProviderClassWithProviderMembers() = singleAndMultiCodegen(
     """ 
       abstract class MyModule<T : S, S> {
         @Provide fun func(t: T): S = t
@@ -48,7 +48,7 @@ class PersistenceTest {
     """
       @Provide val myFooModule = MyModuleImpl<Foo>()
       @Provide val foo: @Tag1 Foo = Foo()
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
         """
   )
 
@@ -56,7 +56,7 @@ class PersistenceTest {
     """
       @Tag annotation class MyAlias<T>
       fun <T> largeFunc(${
-        (1..150).map { "@Inject p$it: @MyAlias<T> Any?" }.joinToString("\n,")
+        (1..150).map { "@Context p$it: @MyAlias<T> Any?" }.joinToString("\n,")
       }): String = ""
     """,
     """

@@ -19,32 +19,32 @@ import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class ResolveTest {
-  @Test fun testResolvesExternalInjectableInSamePackage() = singleAndMultiCodegen(
+  @Test fun testResolvesExternalProviderInSamePackage() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesExternalInjectableInDifferentPackage() = singleAndMultiCodegen(
+  @Test fun testResolvesExternalProviderInDifferentPackage() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            fun invoke() = inject<Foo>()
+            @Providers("providers.*")
+            fun invoke() = context<Foo>()
           """
         )
       )
@@ -53,18 +53,18 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesInternalInjectableFromDifferentPackageWithAllUnderImport() = codegen(
+  @Test fun testResolvesInternalProviderFromDifferentPackageWithAllUnderImport() = codegen(
     listOf(
       source(
         """
           @Provide val foo = Foo()
         """,
-        packageFqName = FqName("injectables")
+        packageFqName = FqName("providers")
       ),
       invokableSource(
         """
-          @Providers("injectables.*")
-          fun invoke() = inject<Foo>()
+          @Providers("providers.*")
+          fun invoke() = context<Foo>()
         """
       )
     )
@@ -72,19 +72,19 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesInjectableInSamePackageAndSameFile() = codegen(
+  @Test fun testResolvesProviderInSamePackageAndSameFile() = codegen(
     """
       @Provide val foo = Foo()
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionInjectableFromWithinTheClass() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionProviderFromWithinTheClass() = singleAndMultiCodegen(
     """
       class MyClass {
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
         companion object {
           @Provide val foo = Foo()
         }
@@ -97,7 +97,7 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionInjectableFromOuterClass() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionProviderFromOuterClass() = singleAndMultiCodegen(
     """
       class MyClass {
         companion object {
@@ -106,13 +106,13 @@ class ResolveTest {
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionClassInjectableFromOuterClass() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionClassProviderFromOuterClass() = singleAndMultiCodegen(
     """
       class MyClass {
         companion object {
@@ -123,15 +123,15 @@ class ResolveTest {
       }
     """,
     """
-        fun invoke() = inject<Foo>() 
+        fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassCompanionInjectableFromClassConstructor() = singleAndMultiCodegen(
+  @Test fun testResolvesClassCompanionProviderFromClassConstructor() = singleAndMultiCodegen(
     """
-      class MyClass(val foo: Foo = inject()) {
+      class MyClass(val foo: Foo = context()) {
         companion object {
           @Provide val foo = Foo()
         }
@@ -144,10 +144,10 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassConstructorPropertyInjectable() = singleAndMultiCodegen(
+  @Test fun testResolvesClassConstructorPropertyProvider() = singleAndMultiCodegen(
     """
       class MyClass(@Provide val foo: Foo = Foo()) {
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
       }
     """,
     """
@@ -157,11 +157,11 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesClassInjectable() = singleAndMultiCodegen(
+  @Test fun testResolvesClassProvider() = singleAndMultiCodegen(
     """
       class MyClass {
         @Provide val foo = Foo()
-        fun resolve() = inject<Foo>()
+        fun resolve() = context<Foo>()
       }
     """,
     """
@@ -171,69 +171,69 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testDerivedInjectable() = singleAndMultiCodegen(
+  @Test fun testDerivedProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      @Provide val bar: Bar = Bar(inject())
+      @Provide val bar: Bar = Bar(context())
     """,
     """
-      fun invoke() = inject<Bar>() 
+      fun invoke() = context<Bar>() 
     """
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testCanResolveSubTypeOfInjectable() = singleAndMultiCodegen(
+  @Test fun testCanResolveSubTypeOfProvider() = singleAndMultiCodegen(
     """
       interface Repo
       @Provide class RepoImpl : Repo
     """,
     """
-      fun invoke() = inject<Repo>() 
+      fun invoke() = context<Repo>() 
     """
   ) {
     invokeSingleFile()
   }
 
-  @Test fun testUnresolvedInjectable() = codegen(
+  @Test fun testUnresolvedProvider() = codegen(
     """
       fun invoke() {
-        inject<String>()
+        context<String>()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.String")
+    compilationShouldHaveFailed("no provider found of type kotlin.String")
   }
 
-  @Test fun testNestedUnresolvedInjectable() = singleAndMultiCodegen(
+  @Test fun testNestedUnresolvedProvider() = singleAndMultiCodegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<Bar>() 
+      fun invoke() = context<Bar>() 
     """
   ) {
-    compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed("\nno provider found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
   }
 
-  @Test fun testGenericInjectable() = singleAndMultiCodegen(
+  @Test fun testGenericProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      @Provide fun <T> injectableList(value: T): List<T> = listOf(value)
+      @Provide fun <T> providerList(value: T): List<T> = listOf(value)
     """,
     """
-      fun invoke() = inject<List<Foo>>() 
+      fun invoke() = context<List<Foo>>() 
     """
   ) {
     val (foo) = invokeSingleFile<List<Any>>()
     foo.shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testFunctionInvocationWithInjectables() = singleAndMultiCodegen(
+  @Test fun testFunctionInvocationWithProviders() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      fun usesFoo(@Inject foo: Foo) {
+      fun usesFoo(@Context foo: Foo) {
       }
     """,
     """
@@ -245,11 +245,11 @@ class ResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testLocalFunctionInvocationWithInjectables() = codegen(
+  @Test fun testLocalFunctionInvocationWithProviders() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke() {
-        fun usesFoo(@Inject foo: Foo) {
+        fun usesFoo(@Context foo: Foo) {
         }                    
         usesFoo()
       }
@@ -258,10 +258,10 @@ class ResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testConstructorInvocationWithInjectables() = singleAndMultiCodegen(
+  @Test fun testConstructorInvocationWithProviders() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      class UsesFoo(@Inject foo: Foo)
+      class UsesFoo(@Context foo: Foo)
     """,
     """
       fun invoke() {
@@ -272,13 +272,13 @@ class ResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testPrimaryConstructorInjectableWithReceiver() = singleAndMultiCodegen(
+  @Test fun testPrimaryConstructorProviderWithReceiver() = singleAndMultiCodegen(
     """
       class UsesFoo(@Provide val foo: Foo)
     """,
     """
       fun invoke(foo: Foo) = with(UsesFoo(foo)) {
-        inject<Foo>()
+        context<Foo>()
       }
     """
   ) {
@@ -286,11 +286,11 @@ class ResolveTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testLocalConstructorInvocationWithInjectables() = codegen(
+  @Test fun testLocalConstructorInvocationWithProviders() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke() {
-        class UsesFoo(@Inject foo: Foo)
+        class UsesFoo(@Context foo: Foo)
         UsesFoo()
       }
     """
@@ -298,10 +298,10 @@ class ResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testCanResolveInjectableOfInjectableThisFunction() = codegen(
+  @Test fun testCanResolveProviderOfProviderThisFunction() = codegen(
     """
       class Dep(@Provide val foo: Foo)
-      fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
+      fun invoke(foo: Foo) = with(Dep(foo)) { context<Foo>() }
     """
   ) {
     val foo = Foo()
@@ -316,99 +316,99 @@ class ResolveTest {
       @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
     """,
     """
-      fun invoke() = inject<@First Foo>() 
+      fun invoke() = context<@First Foo>() 
     """
   )
 
-  @Test fun testCannotResolveObjectWithoutInjectable() = singleAndMultiCodegen(
+  @Test fun testCannotResolveObjectWithoutProvider() = singleAndMultiCodegen(
     """
       object MyObject
     """,
     """
-      fun invoke() = inject<MyObject>() 
+      fun invoke() = context<MyObject>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable")
+    compilationShouldHaveFailed("no provider")
   }
 
-  @Test fun testCannotResolveObjectBySubTypeWithoutInjectable() = codegen(
+  @Test fun testCannotResolveObjectBySubTypeWithoutProvider() = codegen(
     """
       interface Json {
         companion object : Json
       }
     """,
     """
-      fun invoke() = inject<Json>()
+      fun invoke() = context<Json>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable")
+    compilationShouldHaveFailed("no provider")
   }
 
-  @Test fun testCanResolveObjectWithInjectable() = singleAndMultiCodegen(
+  @Test fun testCanResolveObjectWithProvider() = singleAndMultiCodegen(
     """
       @Provide object MyObject
     """,
     """
-      fun invoke() = inject<MyObject>() 
+      fun invoke() = context<MyObject>() 
     """
   )
 
-  @Test fun testCannotResolveExternalInternalInjectable() = multiCodegen(
+  @Test fun testCannotResolveExternalInternalProvider() = multiCodegen(
     """
       @Provide internal val foo = Foo()
     """,
     """
-     fun invoke() = inject<Foo>()
+     fun invoke() = context<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCannotResolvePrivateClassInjectableFromOuterScope() = singleAndMultiCodegen(
+  @Test fun testCannotResolvePrivateClassProviderFromOuterScope() = singleAndMultiCodegen(
     """
       @Provide class FooHolder {
         @Provide private val foo = Foo()
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCanResolvePrivateClassInjectableFromInnerScope() = codegen(
+  @Test fun testCanResolvePrivateClassProviderFromInnerScope() = codegen(
     """
       @Provide class FooHolder {
         @Provide private val foo = Foo()
-        fun invoke() = inject<Foo>()
+        fun invoke() = context<Foo>()
       }
     """
   )
 
-  @Test fun testCannotResolveProtectedInjectableFromOuterScope() = singleAndMultiCodegen(
+  @Test fun testCannotResolveProtectedProviderFromOuterScope() = singleAndMultiCodegen(
     """
       @Provide open class FooHolder {
         @Provide protected val foo = Foo()
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCanResolveProtectedInjectableFromSameClass() = codegen(
+  @Test fun testCanResolveProtectedProviderFromSameClass() = codegen(
     """
       @Provide open class FooHolder {
         @Provide protected val foo = Foo()
-        fun invoke() = inject<Foo>()
+        fun invoke() = context<Foo>()
       }
     """
   )
 
-  @Test fun testCanResolveProtectedInjectableFromSubClass() = singleAndMultiCodegen(
+  @Test fun testCanResolveProtectedProviderFromSubClass() = singleAndMultiCodegen(
     """
       abstract class AbstractFooHolder {
         @Provide protected val foo = Foo()
@@ -416,43 +416,43 @@ class ResolveTest {
     """,
     """
       class FooHolderImpl : AbstractFooHolder() {
-        fun invoke() = inject<Foo>()
+        fun invoke() = context<Foo>()
       } 
     """
   )
 
-  @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
+  @Test fun testCanResolvePrivateTopLevelProviderInSameFile() = codegen(
     """
       @Provide private val foo = Foo()
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   )
 
-  @Test fun testCanResolvePrivateTopLevelInjectableInSameFileMultiFile() = codegen(
+  @Test fun testCanResolvePrivateTopLevelProviderInSameFileMultiFile() = codegen(
     """
       // triggers creation of package scope
       fun invoke(@Provide unit: Unit) {
-        inject<Unit>()
+        context<Unit>()
       }
     """,
     """
       @Provide private val foo = Foo()
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   )
 
-  @Test fun testCannotResolvePrivateTopLevelInjectableInDifferentFile() = codegen(
+  @Test fun testCannotResolvePrivateTopLevelProviderInDifferentFile() = codegen(
     """
       @Provide private val foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCannotResolvePropertyWithTheSameNameAsAnInjectablePrimaryConstructorParameter() =
+  @Test fun testCannotResolvePropertyWithTheSameNameAsAnProviderPrimaryConstructorParameter() =
     singleAndMultiCodegen(
       """
         @Provide class MyClass(foo: Foo) {
@@ -460,13 +460,13 @@ class ResolveTest {
         }
       """,
       """
-        fun invoke() = inject<Foo>() 
+        fun invoke() = context<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+      compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
     }
 
-  @Test fun testAnonymousObjectCanResolveInjectablesOfOuterClass() = codegen(
+  @Test fun testAnonymousObjectCanResolveProvidersOfOuterClass() = codegen(
     """
       class MyClass {
         @Provide private val foo = Foo()
@@ -474,7 +474,7 @@ class ResolveTest {
         fun function() {
           object : Any() {
             override fun equals(other: Any?): Boolean {
-              inject<Foo>()
+              context<Foo>()
               return super.equals(other)
             }
           }
@@ -483,48 +483,48 @@ class ResolveTest {
     """
   )
 
-  @Test fun testCanResolveExplicitMarkedInjectableConstructorParameterFromOutsideTheClass() =
+  @Test fun testCanResolveExplicitMarkedProviderConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
         class MyClass(@Provide val foo: Foo)
       """,
       """
-        fun invoke(@Provide myClass: MyClass) = inject<Foo>() 
+        fun invoke(@Provide myClass: MyClass) = context<Foo>() 
       """
     )
 
-  @Test fun testCannotResolveImplicitInjectableConstructorParameterFromOutsideTheClass() =
+  @Test fun testCannotResolveImplicitProviderConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
         @Provide class MyClass(val foo: Foo)
       """,
       """
-        fun invoke() = inject<Foo>() 
+        fun invoke() = context<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+      compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
     }
 
-  @Test fun testCanResolveImplicitInjectableConstructorParameterFromInsideTheClass() = codegen(
+  @Test fun testCanResolveImplicitProviderConstructorParameterFromInsideTheClass() = codegen(
     """
       @Provide class MyClass(private val foo: Foo) {
-        fun invoke() = inject<Foo>()
+        fun invoke() = context<Foo>()
       }
     """
   )
 
-  @Test fun testResolvesInjectableWithTypeParameterInScope() = singleAndMultiCodegen(
+  @Test fun testResolvesProviderWithTypeParameterInScope() = singleAndMultiCodegen(
     """
       @Provide fun <T> list(): List<T> = emptyList()
     """,
     """
       fun <T> invoke() {
-        inject<List<T>>()
+        context<List<T>>()
       } 
     """
   )
 
-  @Test fun testCannotUseNonReifiedTypeParameterForReifiedInjectable() = singleAndMultiCodegen(
+  @Test fun testCannotUseNonReifiedTypeParameterForReifiedProvider() = singleAndMultiCodegen(
     """
       @Provide inline fun <reified T> set(): Set<T> {
         T::class
@@ -533,20 +533,20 @@ class ResolveTest {
     """,
     """
       fun <T> invoke() {
-        inject<Set<T>>()
+        context<Set<T>>()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.T> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
+      "type parameter T of provider com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.T> for parameter x of function com.ivianuu.injekt.context is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
     )
   }
 
-  @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
+  @Test fun testSafeCallWithcontext() = singleAndMultiCodegen(
       """
         @Provide val foo = Foo()
 
-        fun String.myFunc(@Inject foo: Foo) {
+        fun String.myFunc(@Context foo: Foo) {
         }
       """,
       """
@@ -555,10 +555,10 @@ class ResolveTest {
     )
 
   // todo @Test
-  fun testSmartcastWithInject() = codegen(
+  fun testSmartcastWithcontext() = codegen(
     """
       class MyType {
-        fun <T> doSomething(@Inject key: TypeKey<T>) {
+        fun <T> doSomething(@Context key: TypeKey<T>) {
         }
       }
       fun invoke(myType: MyType?) {
@@ -572,51 +572,51 @@ class ResolveTest {
   @Test fun testInvocationOfFunctionDeclaredInSuperClassWithInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass {
-        fun func(@Inject foo: Foo) {
+        fun func(@Context foo: Foo) {
         }
       }
 
       class MySubClass : MySuperClass()
     """,
     """
-      fun invoke(@Inject foo: Foo) = MySubClass().func()
+      fun invoke(@Context foo: Foo) = MySubClass().func()
     """
   )
 
   @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass<T> {
-        fun <S : T> func(@Inject s: S) {
+        fun <S : T> func(@Context s: S) {
         }
       }
 
       class MySubClass<T> : MySuperClass<T>()
     """,
     """
-      fun invoke(@Inject foo: Foo) = MySubClass<Any>().func<Foo>()
+      fun invoke(@Context foo: Foo) = MySubClass<Any>().func<Foo>()
     """
   )
 
   @Test fun testCanResolveProvideParameterInDefaultValueOfFollowingParameter() = codegen(
     """
-      fun invoke(@Provide foo: Foo, bar: Bar = Bar(inject())) {
+      fun invoke(@Provide foo: Foo, bar: Bar = Bar(context())) {
       }
     """
   )
 
   @Test fun testCannotResolveProvideParameterInDefaultValueOfPreviousParameter() = codegen(
     """
-      fun invoke(bar: Bar = Bar(inject()), @Provide foo: Foo) {
+      fun invoke(bar: Bar = Bar(context()), @Provide foo: Foo) {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveDispatchReceiverInDefaultValueOfParameter() = codegen(
     """
       class Dep {
-        fun invoke(dep: Dep = inject()) {
+        fun invoke(dep: Dep = context()) {
         }
       }
     """
@@ -624,14 +624,14 @@ class ResolveTest {
 
   @Test fun testCanResolveExtensionReceiverInDefaultValueOfParameter() = codegen(
     """
-      fun Foo.invoke(bar: Bar = Bar(inject())) {
+      fun Foo.invoke(bar: Bar = Bar(context())) {
       }
     """
   )
 
   @Test fun testCanResolveContextReceiverInDefaultValueOfParameter() = codegen(
     """
-      context(Foo) fun invoke(bar: Bar = Bar(inject())) {
+      context(Foo) fun invoke(bar: Bar = Bar(context())) {
       }
     """
   )
@@ -640,31 +640,31 @@ class ResolveTest {
     """
       class MyClass {
         @Provide val foo = Foo()
-        constructor(foo: Foo = inject())
+        constructor(foo: Foo = context())
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
-  @Test fun testCanResolvePrimaryConstructorInjectableInSuperTypeExpression() = codegen(
+  @Test fun testCanResolvePrimaryConstructorProviderInSuperTypeExpression() = codegen(
     """
       interface FooHolder {
         val foo: Foo
       }
-      fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+      fun FooHolder(@Context foo: Foo) = object : FooHolder {
         override val foo = foo
       }
       class MyClass(@Provide foo: Foo) : FooHolder by FooHolder()
     """
   )
 
-  @Test fun testCannotResolveSecondaryConstructorInjectableInSuperTypeExpression() = codegen(
+  @Test fun testCannotResolveSecondaryConstructorProviderInSuperTypeExpression() = codegen(
     """
       interface FooHolder {
         val foo: Foo
       }
-      fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+      fun FooHolder(@Context foo: Foo) = object : FooHolder {
         override val foo = foo
       }
       class MyClass() : FooHolder by FooHolder() {
@@ -672,28 +672,28 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.FooHolder")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.FooHolder")
   }
 
   @Test fun testCannotResolveClassProvideDeclarationInSuperTypeExpression() = codegen(
     """
-      abstract class MyAbstractClass(@Inject foo: Foo)
+      abstract class MyAbstractClass(@Context foo: Foo)
       class MyClass : MyAbstractClass() {
         @Provide val foo = Foo()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass")
   }
 
   @Test fun testCannotResolveThisInSuperTypeDelegation() = codegen(
     """
       interface Scope
 
-      class MyImpl : Scope by inject()
+      class MyImpl : Scope by context()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCannotResolveThisInSuperTypeDelegation2() = codegen(
@@ -701,19 +701,19 @@ class ResolveTest {
       interface Scope
 
       fun invoke() {
-        val myImpl = object : Scope by inject() {
+        val myImpl = object : Scope by context() {
         }
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveClassProvideDeclarationInSecondaryConstructorAfterSuperInit() = codegen(
     """
       class MyClass(unit: Unit) {
         constructor() : this(Unit) {
-          inject<Foo>()
+          context<Foo>()
         }
         @Provide val foo = Foo()
       }
@@ -723,52 +723,52 @@ class ResolveTest {
   @Test fun testCannotResolveClassProvideDeclarationInSecondaryConstructorBeforeSuperInit() = codegen(
     """
       class MyClass(foo: Foo) {
-        constructor() : this(inject())
+        constructor() : this(context())
         @Provide val foo = Foo()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
-  @Test fun testCanResolvePrimaryConstructorInjectableInInit() = codegen(
+  @Test fun testCanResolvePrimaryConstructorProviderInInit() = codegen(
     """
       class MyClass(@Provide foo: Foo) {
         init {
-          inject<Foo>()
+          context<Foo>()
         }
       }
     """
   )
 
-  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyInitializer() = codegen(
+  @Test fun testCanResolvePrimaryConstructorProviderInPropertyInitializer() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
-        val foo: Foo = inject()
+        val foo: Foo = context()
       }
     """
   )
 
-  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyInitializerLambda() = codegen(
+  @Test fun testCanResolvePrimaryConstructorProviderInPropertyInitializerLambda() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
-        val foo: Foo = run { inject() }
+        val foo: Foo = run { context() }
       }
     """
   )
 
-  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyDelegateInitializer() = codegen(
+  @Test fun testCanResolvePrimaryConstructorProviderInPropertyDelegateInitializer() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
-        val foo: Foo by lazy(inject<Foo>()) { Foo() }
+        val foo: Foo by lazy(context<Foo>()) { Foo() }
       }
     """
   )
 
-  @Test fun testCanResolvePrimaryConstructorInjectableInPropertyDelegateInitializerLambda() = codegen(
+  @Test fun testCanResolvePrimaryConstructorProviderInPropertyDelegateInitializerLambda() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
-        val foo: Foo by lazy { inject<Foo>() }
+        val foo: Foo by lazy { context<Foo>() }
       }
     """
   )
@@ -778,68 +778,68 @@ class ResolveTest {
       class MyClass(@Provide val _foo: Foo) {
         fun foo(): Foo = runBlocking {
           run {
-            inject()
+            context()
           }
         }
       }
     """
   )
 
-  @Test fun testCannotResolvePrimaryConstructorInjectableInPropertyGetter() = codegen(
+  @Test fun testCannotResolvePrimaryConstructorProviderInPropertyGetter() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
-        val foo: Foo get() = inject()
+        val foo: Foo get() = context()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCannotResolveLocalVariableFromWithinInitializer() = codegen(
     """
       fun invoke() {
-        @Provide val foo: Foo = inject()
+        @Provide val foo: Foo = context()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCannotResolveLocalVariableFromWithinDelegateInitializer() = codegen(
     """
       fun invoke() {
-        @Provide val foo: Foo by lazy(inject<Foo>()) { Foo() }
+        @Provide val foo: Foo by lazy(context<Foo>()) { Foo() }
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCannotResolveClassPropertyFromWithinInitializer() = codegen(
     """
       class MyClass {
-        @Provide private val foo: Foo = inject<Foo>()
+        @Provide private val foo: Foo = context<Foo>()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCannotResolveClassPropertyFromWithinDelegateInitializer() = codegen(
     """
       class MyClass {
-        @Provide private val foo: Foo by lazy(inject<Foo>()) { Foo() }
+        @Provide private val foo: Foo by lazy(context<Foo>()) { Foo() }
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
     """
       class MyClass {
         @Provide val foo: Foo = Foo()
-        @Provide val bar: Bar = Bar(inject())
+        @Provide val bar: Bar = Bar(context())
       }
     """
   )
@@ -848,7 +848,7 @@ class ResolveTest {
     """
       class MyClass {
         @Provide val foo: Foo = Foo()
-        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+        @Provide val bar: Bar by lazy(context<Foo>()) { Bar(foo) }
       }
     """
   )
@@ -856,18 +856,18 @@ class ResolveTest {
   @Test fun testCannotResolveClassPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar = Bar(inject())
+        @Provide val bar: Bar = Bar(context())
         @Provide val foo: Foo = Foo()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar = run { Bar(inject()) }
+        @Provide val bar: Bar = run { Bar(context()) }
         @Provide val foo: Foo = Foo()
       }
     """
@@ -876,18 +876,18 @@ class ResolveTest {
   @Test fun testCannotResolveClassPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredAfterIt() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+        @Provide val bar: Bar by lazy(context<Foo>()) { Bar(foo) }
         @Provide val foo: Foo = Foo()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveClassFunctionFromClassPropertyInitializer() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar = Bar(inject())
+        @Provide val bar: Bar = Bar(context())
         @Provide fun foo() = Foo()
       }
     """
@@ -896,7 +896,7 @@ class ResolveTest {
   @Test fun testCanResolveClassFunctionFromClassPropertyDelegateInitializer() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo()) }
+        @Provide val bar: Bar by lazy(context<Foo>()) { Bar(foo()) }
         @Provide fun foo() = Foo()
       }
     """
@@ -905,7 +905,7 @@ class ResolveTest {
   @Test fun testCanResolveClassComputedPropertyFromClassPropertyInitializer() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar = Bar(inject())
+        @Provide val bar: Bar = Bar(context())
         @Provide val foo get() = Foo()
       }
     """
@@ -914,7 +914,7 @@ class ResolveTest {
   @Test fun testCanResolveClassComputedPropertyFromClassPropertyDelegateInitializer() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+        @Provide val bar: Bar by lazy(context<Foo>()) { Bar(foo) }
         @Provide val foo get() = Foo()
       }
     """
@@ -925,7 +925,7 @@ class ResolveTest {
       class MyClass {
         @Provide val foo: Foo = Foo()
         init {
-          inject<Foo>()
+          context<Foo>()
         }
       }
     """
@@ -935,20 +935,20 @@ class ResolveTest {
     """
       class MyClass {
         init {
-          inject<Foo>()
+          context<Foo>()
         }
         @Provide val foo: Foo = Foo()
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveClassFunctionFromClassInitializer() = codegen(
     """
       class MyClass {
         init {
-          inject<Foo>()
+          context<Foo>()
         }
         @Provide fun foo() = Foo()
       }
@@ -959,7 +959,7 @@ class ResolveTest {
     """
       class MyClass {
         init {
-          inject<Foo>()
+          context<Foo>()
         }
         @Provide val foo get() = Foo()
       }
@@ -974,7 +974,7 @@ class ResolveTest {
 
       class MyClass : MySuperClass() {
         init {
-          inject<Foo>()
+          context<Foo>()
         }
       }
     """
@@ -982,45 +982,45 @@ class ResolveTest {
 
   @Test fun testCannotResolveTopLevelPropertyFromWithinInitializer() = codegen(
     """
-      @Provide private val foo: Foo = inject<Foo>()
+      @Provide private val foo: Foo = context<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
     """
       @Provide val foo: Foo = Foo()
-      @Provide val bar: Bar = Bar(inject())
+      @Provide val bar: Bar = Bar(context())
     """
   )
 
   @Test fun testCanResolveTopLevelPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredBeforeIt() = codegen(
     """
       @Provide val foo: Foo = Foo()
-      @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+      @Provide val bar: Bar by lazy(context<Foo>()) { Bar(foo) }
     """
   )
 
   @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredAfterIt() = codegen(
     """
-      @Provide val bar: Bar = Bar(inject())
+      @Provide val bar: Bar = Bar(context())
       @Provide val foo: Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
     """
-      @Provide val bar: Bar = run { Bar(inject()) }
+      @Provide val bar: Bar = run { Bar(context()) }
       @Provide val foo: Foo = Foo()
     """
   )
 
   @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerInDifferentFile() = codegen(
     """
-      @Provide val bar: Bar = Bar(inject())
+      @Provide val bar: Bar = Bar(context())
     """,
     """
       @Provide val foo: Foo = Foo()
@@ -1029,82 +1029,82 @@ class ResolveTest {
 
   @Test fun testCannotResolveTopLevelPropertyFromOtherPropertyDelegateInitializerIfItsDeclaredAfterIt() = codegen(
     """
-      @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(foo) }
+      @Provide val bar: Bar by lazy(context<Foo>()) { Bar(foo) }
       @Provide val foo: Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyInitializer() = codegen(
     """
-      @Provide val bar: Bar = Bar(inject())
+      @Provide val bar: Bar = Bar(context())
       @Provide fun foo() = Foo()
     """
   )
 
   @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyDelegateInitializer() = codegen(
     """
-      @Provide val bar: Bar by lazy(inject<Foo>()) { Bar(inject()) }
+      @Provide val bar: Bar by lazy(context<Foo>()) { Bar(context()) }
       @Provide fun foo() = Foo()
     """
   )
 
-  @Test fun testNestedClassCannotResolveOuterClassInjectables() = codegen(
+  @Test fun testNestedClassCannotResolveOuterClassProviders() = codegen(
     """
       class Outer(@Provide val foo: Foo = Foo()) {
         class Inner {
-          fun foo() = inject<Foo>()
+          fun foo() = context<Foo>()
         }
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
-  @Test fun testInnerClassCanResolveOuterClassInjectables() = codegen(
+  @Test fun testInnerClassCanResolveOuterClassProviders() = codegen(
     """
       class Outer(@Provide val foo: Foo = Foo()) {
         inner class Inner {
-          fun foo() = inject<Foo>()
+          fun foo() = context<Foo>()
         }
       }
     """
   )
 
-  @Test fun testNestedClassCanResolveOuterObjectInjectables() = codegen(
+  @Test fun testNestedClassCanResolveOuterObjectProviders() = codegen(
     """
       object Outer {
         @Provide private val foo: Foo = Foo()
 
         class Inner {
-          fun foo() = inject<Foo>()
+          fun foo() = context<Foo>()
         }
       }
     """
   )
 
-  @Test fun testNestedObjectCannotResolveOuterClassInjectables() = codegen(
+  @Test fun testNestedObjectCannotResolveOuterClassProviders() = codegen(
     """
       class Outer {
         @Provide private val foo: Foo = Foo()
 
         object Inner {
-          fun foo() = inject<Foo>()
+          fun foo() = context<Foo>()
         }
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.context")
   }
 
-  @Test fun testTaggedObjectInjectableIsNotApplicableToUntaggedType() = singleAndMultiCodegen(
+  @Test fun testTaggedObjectProviderIsNotApplicableToUntaggedType() = singleAndMultiCodegen(
     """
       interface Logger
 
       @Provide @Tag1 object NoopLogger : Logger
       
-      fun log(@Inject logger: Logger) {
+      fun log(@Context logger: Logger) {
       }
     """,
     """
@@ -1112,16 +1112,16 @@ class ResolveTest {
     """
   ) {
     compilationShouldHaveFailed(
-      "no injectable found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
+      "no provider found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
     )
   }
 
-  @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(
+  @Test fun testCanResolveOuterClassProviderFromFunctionInsideAnonymousObject() = codegen(
     """
       @Provide class HaloState(val foo: Foo) {
         val pointerInput = object : Any() {
           override fun equals(other: Any?): Boolean {
-            inject<Foo>()
+            context<Foo>()
             return true
           }
         }
@@ -1133,11 +1133,11 @@ class ResolveTest {
     """
       fun <T> produceState(
         vararg keys: Any?,
-        @Inject scope: String,
-        @Inject Nkey: SourceKey
+        @Context scope: String,
+        @Context Nkey: SourceKey
       ): State<T> = TODO()
 
-      fun invoke(@Inject scope: String) {
+      fun invoke(@Context scope: String) {
         val scope by produceState<Int>()
       }
     """
@@ -1145,19 +1145,19 @@ class ResolveTest {
 
   @Test fun testCanResolveExtensionReceiverOfFunction() = codegen(
     """
-      fun Foo.foo() = inject<Foo>()
+      fun Foo.foo() = context<Foo>()
     """
   )
 
   @Test fun testCanResolveContextReceiverOfFunction() = codegen(
     """
-      context(Foo) fun foo() = inject<Foo>()
+      context(Foo) fun foo() = context<Foo>()
     """
   )
 
   @Test fun testCanResolveExtensionReceiverOfProperty() = codegen(
     """
-      val Foo.foo get() = inject<Foo>()
+      val Foo.foo get() = context<Foo>()
     """
   )
 
@@ -1190,14 +1190,14 @@ class ResolveTest {
 
   @Test fun testCanResolveContextReceiverOfProperty() = codegen(
     """
-      context(Foo) val foo get() = inject<Foo>()
+      context(Foo) val foo get() = context<Foo>()
     """
   )
 
   @Test fun testCanResolveContextReceiverOfClass() = codegen(
     """
       context(Foo) class Dep {
-        val foo get() = inject<Foo>()
+        val foo get() = context<Foo>()
       }
     """
   )

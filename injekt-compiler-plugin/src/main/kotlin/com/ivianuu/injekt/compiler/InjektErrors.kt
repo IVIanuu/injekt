@@ -5,10 +5,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.CallContext
-import com.ivianuu.injekt.compiler.resolution.Injectable
-import com.ivianuu.injekt.compiler.resolution.InjectableRequest
+import com.ivianuu.injekt.compiler.resolution.Provider
+import com.ivianuu.injekt.compiler.resolution.ContextRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
+import com.ivianuu.injekt.compiler.resolution.FunctionProvider
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.callContext
 import com.ivianuu.injekt.compiler.resolution.isFunctionType
@@ -34,7 +34,7 @@ interface InjektErrors {
         "'${obj.text.removeSurrounding("\"")}'"
     }
 
-    @JvmField val UNRESOLVED_INJECTION =
+    @JvmField val UNRESOLVED_CONTEXT =
       DiagnosticFactory1.create<PsiElement, InjectionResult.Error>(Severity.ERROR)
         .also {
           MAP.put(
@@ -49,26 +49,26 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
+    @JvmField val CONTEXT_VALUE_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
-          MAP.put(it, "parameters of a injectable are automatically treated as inject parameters")
+          MAP.put(it, "value parameters of a provider are automatically treated as context parameters")
         }
 
     @JvmField val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
-          MAP.put(it, "parameters of a injectable are automatically provided")
+          MAP.put(it, "parameters of a provider are automatically provided")
         }
 
-    @JvmField val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    @JvmField val CONTEXT_EXTENSION_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
-        MAP.put(it, "receiver cannot be injected")
+        MAP.put(it, "extension receiver cannot be context")
       }
 
     @JvmField val PROVIDE_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
       .also {
-        MAP.put(it, "receiver is automatically provided")
+        MAP.put(it, "extension receiver is automatically provided")
       }
 
     @JvmField val PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR =
@@ -82,30 +82,30 @@ interface InjektErrors {
 
     @JvmField val PROVIDE_ANNOTATION_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "annotation class cannot be injectable") }
+        .also { MAP.put(it, "annotation class cannot be a provider") }
 
     @JvmField val PROVIDE_ENUM_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "enum class cannot be injectable") }
+        .also { MAP.put(it, "enum class cannot be a provider") }
 
     @JvmField val PROVIDE_INNER_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "inner class cannot be injectable") }
+        .also { MAP.put(it, "inner class cannot be a provider") }
 
     @JvmField val PROVIDE_ABSTRACT_CLASS =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract class cannot be injectable") }
+        .also { MAP.put(it, "abstract class cannot be a provider") }
 
     @JvmField val PROVIDE_INTERFACE =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "interface cannot be injectable") }
+        .also { MAP.put(it, "interface cannot be a provider") }
 
     @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED =
       DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "injectable variable must be initialized, delegated or marked with lateinit"
+            "provider variable must be initialized, delegated or marked with lateinit"
           )
         }
 
@@ -136,52 +136,52 @@ interface InjektErrors {
           )
         }
 
-    @JvmField val MALFORMED_INJECTABLE_IMPORT =
+    @JvmField val MALFORMED_PROVIDER_IMPORT =
       DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "cannot read injectable import: {0}",
+            "cannot read provider import: {0}",
             IMPORT_RENDERER
           )
         }
 
-    @JvmField val UNRESOLVED_INJECTABLE_IMPORT =
+    @JvmField val UNRESOLVED_PROVIDER_IMPORT =
       DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "unresolved injectable import: {0}",
+            "unresolved provider import: {0}",
             IMPORT_RENDERER
           )
         }
 
-    @JvmField val DUPLICATED_INJECTABLE_IMPORT =
+    @JvmField val DUPLICATED_PROVIDER_IMPORT =
       DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "duplicated injectable import: {0}",
+            "duplicated provider import: {0}",
             IMPORT_RENDERER
           )
         }
 
-    @JvmField val UNUSED_INJECTABLE_IMPORT =
+    @JvmField val UNUSED_PROVIDER_IMPORT =
       DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.WARNING)
         .also {
           MAP.put(
             it,
-            "unused injectable import: {0}",
+            "unused provider import: {0}",
             IMPORT_RENDERER
           )
         }
 
-    @JvmField val DECLARATION_PACKAGE_INJECTABLE_IMPORT =
+    @JvmField val DECLARATION_PACKAGE_PROVIDER_IMPORT =
       DiagnosticFactory1.create<PsiElement, PsiElement>(Severity.ERROR)
         .also {
           MAP.put(
             it,
-            "injectables of the same package are automatically imported: {0}",
+            "providers of the same package are automatically imported: {0}",
             IMPORT_RENDERER
           )
         }
@@ -219,7 +219,7 @@ private fun InjectionResult.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
+          "provider ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is a ${unwrappedFailure.candidate.callContext.name.lowercase(Locale.getDefault())} function " +
               "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase(Locale.getDefault())}."
@@ -232,7 +232,7 @@ private fun InjectionResult.Error.render(): String = buildString {
       if (failure == unwrappedFailure) {
         appendLine(
           "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
-              "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
+              "of provider ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is reified but type argument " +
               "${unwrappedFailure.argument.fqName} is not reified."
@@ -243,14 +243,14 @@ private fun InjectionResult.Error.render(): String = buildString {
     }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
       val errorMessage = if (failure == unwrappedFailure) {
-          "ambiguous injectables:\n\n${
+          "ambiguous providers:\n\n${
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
           }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
               "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
         } else {
-          "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
+          "ambiguous providers of type ${unwrappedFailureRequest.type.renderToString()} " +
               "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
         }
 
@@ -258,9 +258,9 @@ private fun InjectionResult.Error.render(): String = buildString {
     }
     is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
     is ResolutionResult.Failure.NoCandidates,
-    is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
+    is ResolutionResult.Failure.WithCandidate.DivergentProvider -> {
       appendLine(
-        "no injectable found of type " +
+        "no provider found of type " +
           "${unwrappedFailureRequest.type.renderToString()} for parameter " +
           "${unwrappedFailureRequest.parameterName} of function " +
           "${unwrappedFailureRequest.callableFqName}."
@@ -274,12 +274,12 @@ private fun InjectionResult.Error.render(): String = buildString {
     appendLine()
 
     fun printCall(
-      request: InjectableRequest,
+      request: ContextRequest,
       failure: ResolutionResult.Failure,
-      candidate: Injectable?,
+      candidate: Provider?,
       callContext: CallContext
     ) {
-      if (candidate is ProviderInjectable) {
+      if (candidate is FunctionProvider) {
         when (candidate.type.callContext) {
           CallContext.DEFAULT -> {}
           CallContext.COMPOSABLE -> append("@Composable ")
@@ -295,7 +295,7 @@ private fun InjectionResult.Error.render(): String = buildString {
         }
       }
       when (candidate) {
-        is ProviderInjectable -> {
+        is FunctionProvider -> {
           append("{ ")
           if (candidate.parameterDescriptors.isNotEmpty()) {
             for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
@@ -314,19 +314,19 @@ private fun InjectionResult.Error.render(): String = buildString {
         }
       }
       withIndent {
-        if (candidate is ProviderInjectable &&
+        if (candidate is FunctionProvider &&
           unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
           appendLine("${indent()}/* ${candidate.dependencyScopes.values.single().callContext.name.lowercase(Locale.getDefault())} call context */")
         }
         append(indent())
-        if (candidate !is ProviderInjectable) {
+        if (candidate !is FunctionProvider) {
           append("${request.parameterName} = ")
         }
         if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
             failure.candidate,
-            if (candidate is ProviderInjectable) request.type.callContext else callContext
+            if (candidate is FunctionProvider) request.type.callContext else callContext
           )
         } else {
           append("/* ")
@@ -348,18 +348,18 @@ private fun InjectionResult.Error.render(): String = buildString {
             }
             is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
             is ResolutionResult.Failure.NoCandidates,
-            is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
+            is ResolutionResult.Failure.WithCandidate.DivergentProvider -> append("missing:")
           }.let { }
           append(" */ ")
           if (failure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
             appendLine("${failure.candidate.callableFqName}()")
           } else {
-            appendLine("inject<${request.type.renderToString()}>()")
+            appendLine("context<${request.type.renderToString()}>()")
           }
         }
       }
       append(indent())
-      if (candidate is ProviderInjectable) appendLine("}")
+      if (candidate is FunctionProvider) appendLine("}")
       else appendLine(")")
     }
 
@@ -395,22 +395,22 @@ private fun InjectionResult.Error.render(): String = buildString {
         )
       }
       is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
-      is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
+      is ResolutionResult.Failure.WithCandidate.DivergentProvider -> {
         appendLine(
-          "but injectable ${unwrappedFailure.candidate.callableFqName} " +
+          "but provider ${unwrappedFailure.candidate.callableFqName} " +
               "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderToString()}.")
+        appendLine("but no providers were found that match type ${unwrappedFailureRequest.type.renderToString()}.")
       }
     }.let { }
   }
 }
 
 private fun ResolutionResult.Failure.unwrapDependencyFailure(
-  request: InjectableRequest
-): Pair<InjectableRequest, ResolutionResult.Failure> =
+  request: ContextRequest
+): Pair<ContextRequest, ResolutionResult.Failure> =
   if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
     dependencyFailure.unwrapDependencyFailure(dependencyRequest)
   else request to this

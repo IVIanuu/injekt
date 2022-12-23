@@ -4,7 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Context
 import kotlin.jvm.JvmInline
 
 /**
@@ -15,4 +15,4 @@ import kotlin.jvm.JvmInline
 /**
  * Returns the [TypeKey] of [T]
  */
-inline fun <T> typeKeyOf(@Inject x: TypeKey<T>): TypeKey<T> = x
+inline fun <T> typeKeyOf(@Context x: TypeKey<T>): TypeKey<T> = x

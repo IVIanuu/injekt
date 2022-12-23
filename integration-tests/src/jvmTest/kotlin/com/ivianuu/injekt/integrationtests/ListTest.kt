@@ -33,7 +33,7 @@ class ListTest {
       @Provide fun commandsB() = listOf(CommandB())
     """,
     """
-      fun invoke() = inject<List<Command>>() 
+      fun invoke() = context<List<Command>>() 
     """
   ) {
     val list = invokeSingleFile<List<Command>>()
@@ -48,11 +48,11 @@ class ListTest {
 
       class InnerObject {
         @Provide fun commandsB() = listOf(CommandB())
-        val list = inject<List<Command>>()
+        val list = context<List<Command>>()
       }
     """,
     """
-        fun invoke() = inject<List<Command>>() to InnerObject().list 
+        fun invoke() = context<List<Command>>() to InnerObject().list 
     """
   ) {
     val (parentList, childList) = invokeSingleFile<Pair<List<Command>, List<Command>>>()
@@ -65,10 +65,10 @@ class ListTest {
 
   @Test fun testListWithoutElements() = codegen(
     """
-      fun invoke() = inject<List<Command>>()
+      fun invoke() = context<List<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no provider found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter x of function com.ivianuu.injekt.context")
   }
 
   @Test fun testProviderList() = singleAndMultiCodegen(
@@ -76,7 +76,7 @@ class ListTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<List<(Foo) -> Bar>>() 
+      fun invoke() = context<List<(Foo) -> Bar>>() 
     """
   ) {
     val list = invokeSingleFile<List<(Foo) -> Bar>>().toList()
@@ -92,7 +92,7 @@ class ListTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<List<suspend (Foo) -> Bar>>() 
+      fun invoke() = context<List<suspend (Foo) -> Bar>>() 
     """
   ) {
     val list = invokeSingleFile<List<suspend (Foo) -> Bar>>().toList()
@@ -108,7 +108,7 @@ class ListTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<List<@Composable (Foo) -> Bar>>() 
+      fun invoke() = context<List<@Composable (Foo) -> Bar>>() 
     """,
     config = { withCompose() }
   ) {
@@ -129,11 +129,11 @@ class ListTest {
 
       class InnerObject {
         @Provide fun commandB(): Command = CommandB()
-        val list = inject<List<() -> Command>>()
+        val list = context<List<() -> Command>>()
       }
     """,
     """
-      fun invoke() = inject<List<() -> Command>>() to InnerObject().list 
+      fun invoke() = context<List<() -> Command>>() to InnerObject().list 
     """
   ) {
     val (parentList, childList) = invokeSingleFile<Pair<List<() -> Command>, List<() -> Command>>>()
@@ -145,9 +145,9 @@ class ListTest {
     childList[1]().shouldBeTypeOf<CommandB>()
   }
 
-  @Test fun testUsesAllProviderArgumentsForInjectableRequest() = codegen(
+  @Test fun testUsesAllProviderArgumentsForProviderRequest() = codegen(
     """
-      fun invoke(): List<Any> = inject<(String, String) -> List<String>>()("a", "b")
+      fun invoke(): List<Any> = context<(String, String) -> List<String>>()("a", "b")
     """
   ) {
     val list = invokeSingleFile<List<Any>>().toList()
@@ -174,7 +174,7 @@ class ListTest {
         ),
         invokableSource(
           """
-            fun invoke() = inject<List<Command>>() 
+            fun invoke() = context<List<Command>>() 
           """
         )
       )

@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
  *
  * Example:
  * ```
- * fun Notification.post(@Inject notificationManager: @SystemService NotificationManager) { ... }
+ * fun Notification.post(@Context notificationManager: @SystemService NotificationManager) { ... }
  * ```
  */
 @Tag annotation class SystemService {

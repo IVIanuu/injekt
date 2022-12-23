@@ -9,7 +9,7 @@ import androidx.work.Worker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.context
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.mockk
 import org.junit.Test
@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 class InjektWorkerTest {
   @Test fun testInjektWorker() {
-    val workerFactory = inject<WorkerFactory>()
+    val workerFactory = context<WorkerFactory>()
     workerFactory.createWorker(mockk(), TestWorker::class.java.name, mockk())
       .shouldBeTypeOf<TestWorker>()
   }

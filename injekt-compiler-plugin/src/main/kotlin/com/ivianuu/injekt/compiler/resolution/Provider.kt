@@ -6,7 +6,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.allParametersWithContext
-import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
+import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
@@ -26,24 +26,24 @@ import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-sealed interface Injectable {
+sealed interface Provider {
   val type: TypeRef
   val originalType: TypeRef get() = type
-  val dependencies: List<InjectableRequest> get() = emptyList()
-  val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
+  val dependencies: List<ContextRequest> get() = emptyList()
+  val dependencyScopes: Map<ContextRequest, ContextScope> get() = emptyMap()
   val callableFqName: FqName
   val callContext: CallContext get() = CallContext.DEFAULT
-  val ownerScope: InjectablesScope
+  val ownerScope: ContextScope
   val usageKey: Any get() = type
 }
 
-class CallableInjectable(
-  override val ownerScope: InjectablesScope,
+class CallableProvider(
+  override val ownerScope: ContextScope,
   val callable: CallableRef
-) : Injectable {
+) : Provider {
   override val type: TypeRef
     get() = callable.type
-  override val dependencies: List<InjectableRequest> = callable.getInjectableRequests(ownerScope.ctx)
+  override val dependencies: List<ContextRequest> = callable.getContextRequests(ownerScope.ctx)
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
@@ -55,22 +55,22 @@ class CallableInjectable(
     listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes, callable.type)
 
   override fun equals(other: Any?): Boolean =
-    other is CallableInjectable && other.usageKey == usageKey
+    other is CallableProvider && other.usageKey == usageKey
 
   override fun hashCode(): Int = usageKey.hashCode()
 }
 
-class ListInjectable(
+class ListProvider(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope,
+  override val ownerScope: ContextScope,
   elements: List<TypeRef>,
   val singleElementType: TypeRef,
   val collectionElementType: TypeRef
-) : Injectable {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.injectListOf")
-  override val dependencies: List<InjectableRequest> = elements
+) : Provider {
+  override val callableFqName: FqName = FqName("com.ivianuu.injekt.contextListOf")
+  override val dependencies: List<ContextRequest> = elements
     .mapIndexed { index, element ->
-      InjectableRequest(
+      ContextRequest(
         type = element,
         callableFqName = callableFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
@@ -81,19 +81,19 @@ class ListInjectable(
   override val dependencyScopes = dependencies.associateWith { ownerScope }
 }
 
-class ProviderInjectable(
+class FunctionProvider(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope,
+  override val ownerScope: ContextScope,
   val isInline: Boolean,
   dependencyCallContext: CallContext
-) : Injectable {
+) : Provider {
   override val callableFqName: FqName = when (type.callContext) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")
   }
-  override val dependencies: List<InjectableRequest> = listOf(
-    InjectableRequest(
+  override val dependencies: List<ContextRequest> = listOf(
+    ContextRequest(
       type = type.unwrapTags().arguments.last(),
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
@@ -117,12 +117,12 @@ class ProviderInjectable(
   override val dependencyScopes = mapOf(
     dependencies.single() to if (parameterDescriptors.isEmpty() &&
       ownerScope.callContext == dependencyCallContext) ownerScope
-    else InjectablesScope(
+    else ContextScope(
       name = "PROVIDER $type",
       parent = ownerScope,
       ctx = ownerScope.ctx,
       callContext = dependencyCallContext,
-      initialInjectables = parameterDescriptors
+      initialProviders = parameterDescriptors
         .mapIndexed { index, parameter ->
           parameter
             .toCallableRef(ownerScope.ctx)
@@ -140,19 +140,19 @@ class ProviderInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-class SourceKeyInjectable(
+class SourceKeyProvider(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope
-) : Injectable {
+  override val ownerScope: ContextScope
+) : Provider {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.sourceKey")
 }
 
-class TypeKeyInjectable(
+class TypeKeyProvider(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope
-) : Injectable {
+  override val ownerScope: ContextScope
+) : Provider {
   override val callableFqName: FqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
-  override val dependencies: List<InjectableRequest> = run {
+  override val dependencies: List<ContextRequest> = run {
     val typeParameterDependencies = mutableSetOf<ClassifierRef>()
     type.allTypes.forEach {
       if (it.classifier.isTypeParameter)
@@ -160,7 +160,7 @@ class TypeKeyInjectable(
     }
     typeParameterDependencies
       .mapIndexed { index, typeParameter ->
-        InjectableRequest(
+        ContextRequest(
           type = ownerScope.ctx.typeKeyClassifier!!.defaultType
             .withArguments(listOf(typeParameter.defaultType)),
           callableFqName = callableFqName,
@@ -172,16 +172,16 @@ class TypeKeyInjectable(
   }
 }
 
-fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParametersWithContext
+fun CallableRef.getContextRequests(ctx: Context): List<ContextRequest> = callable.allParametersWithContext
   .transform {
     if (it === callable.dispatchReceiverParameter ||
         it === callable.extensionReceiverParameter ||
         it in callable.contextReceiverParameters ||
         it.isProvide(ctx))
-          add(it.toInjectableRequest(this@getInjectableRequests, ctx))
+          add(it.toContextRequest(this@getContextRequests, ctx))
   }
 
-data class InjectableRequest(
+data class ContextRequest(
   val type: TypeRef,
   val callableFqName: FqName,
   val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
@@ -191,15 +191,15 @@ data class InjectableRequest(
   val isInline: Boolean = false
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
-  InjectableRequest(
+fun ParameterDescriptor.toContextRequest(callable: CallableRef, ctx: Context) =
+  ContextRequest(
     type = callable.parameterTypes[injektIndex(ctx)]!!,
     callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
     parameterIndex = injektIndex(ctx),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
+    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringContext,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this) &&
         safeAs<ValueParameterDescriptor>()?.isCrossinline != true

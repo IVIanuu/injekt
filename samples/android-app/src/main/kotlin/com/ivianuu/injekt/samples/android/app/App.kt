@@ -7,13 +7,13 @@ package com.ivianuu.injekt.samples.android.app
 import android.app.Application
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.context
 import com.ivianuu.injekt.samples.android.ui.ActivityScope
 import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
 
 class App : Application() {
   @Provide private val scope = Scope<AppScope>()
-  val appComponent by lazy { inject<AppComponent>() }
+  val appComponent by lazy { context<AppComponent>() }
 }
 
 object AppScope

@@ -19,13 +19,13 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class InjectableDeclarationTest {
+class ProviderDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
     """
       @Provide fun foo() = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -37,7 +37,7 @@ class InjectableDeclarationTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -50,7 +50,7 @@ class InjectableDeclarationTest {
       @Provide class Dep(val foo: Foo)
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = context<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -62,7 +62,7 @@ class InjectableDeclarationTest {
       class Dep @Provide constructor(val foo: Foo)
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = context<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -76,7 +76,7 @@ class InjectableDeclarationTest {
       }
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = context<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -91,7 +91,7 @@ class InjectableDeclarationTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = context<Dep>() 
     """
   )
 
@@ -103,7 +103,7 @@ class InjectableDeclarationTest {
       }
     """,
     """
-      fun invoke() = inject<Outer.Dep>() 
+      fun invoke() = context<Outer.Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Outer\$Dep"
@@ -114,12 +114,12 @@ class InjectableDeclarationTest {
       @Provide val foo = Foo()
       @Provide object Dep {
         init {
-          inject<Foo>()
+          context<Foo>()
         }
       }
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = context<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
@@ -131,13 +131,13 @@ class InjectableDeclarationTest {
       class Dep {
         @Provide companion object {
           init {
-            inject<Foo>()
+            context<Foo>()
           }
         }
       }
     """,
     """
-      fun invoke() = inject<Dep.Companion>() 
+      fun invoke() = context<Dep.Companion>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
@@ -148,7 +148,7 @@ class InjectableDeclarationTest {
       @Provide fun Foo.bar() = Bar(this)
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke(@Context foo: Foo) = context<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -160,7 +160,7 @@ class InjectableDeclarationTest {
       @Provide val Foo.bar get() = Bar(this)
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke(@Context foo: Foo) = context<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -172,7 +172,7 @@ class InjectableDeclarationTest {
       context(Foo) @Provide fun bar() = Bar(this@Foo)
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>()
+      fun invoke(@Context foo: Foo) = context<Bar>()
     """
   ) {
     invokeSingleFile(Foo())
@@ -184,7 +184,7 @@ class InjectableDeclarationTest {
       context(Foo) @Provide val bar get() = Bar(this@Foo)
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke(@Context foo: Foo) = context<Bar>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -196,7 +196,7 @@ class InjectableDeclarationTest {
       context(Foo) @Provide class Dep
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Dep>()
+      fun invoke(@Context foo: Foo) = context<Dep>()
     """
   ) {
     invokeSingleFile(Foo())
@@ -210,7 +210,7 @@ class InjectableDeclarationTest {
       }
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Dep>() 
+      fun invoke(@Context foo: Foo) = context<Dep>() 
     """
   ) {
     invokeSingleFile(Foo())
@@ -218,7 +218,7 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideValueParameter() = codegen(
     """
-      fun invoke(@Provide foo: Foo) = inject<Foo>()
+      fun invoke(@Provide foo: Foo) = context<Foo>()
     """
   ) {
     val foo = Foo()
@@ -227,7 +227,7 @@ class InjectableDeclarationTest {
 
   @Test fun testInjectValueParameter() = codegen(
     """
-      fun invoke(@Inject foo: Foo) = inject<Foo>()
+      fun invoke(@Context foo: Foo) = context<Foo>()
     """
   ) {
     val foo = Foo()
@@ -236,7 +236,7 @@ class InjectableDeclarationTest {
 
   @Test fun testMultipleInjectValueParameter() = codegen(
     """
-      fun invoke(@Inject foo: Foo, @Inject bar: Bar) = inject<Foo>() to inject<Bar>()
+      fun invoke(@Context foo: Foo, @Context bar: Bar) = context<Foo>() to context<Bar>()
     """
   ) {
     val foo = Foo()
@@ -250,7 +250,7 @@ class InjectableDeclarationTest {
     """
       fun invoke(foo: Foo): Foo {
         @Provide val providedFoo = foo
-        return inject()
+        return context()
       }
     """
   ) {
@@ -262,7 +262,7 @@ class InjectableDeclarationTest {
     """
       fun invoke(foo: Foo): Foo {
         @Provide val providedFoo by lazy { foo }
-        return inject()
+        return context()
       }
     """
   ) {
@@ -272,15 +272,15 @@ class InjectableDeclarationTest {
 
   @Test fun testInjectPrimaryConstructorParameterInClassInitializer() = singleAndMultiCodegen(
     """
-      class MyClass(@Inject foo: Foo) {
+      class MyClass(@Context foo: Foo) {
         val foo: Foo
         init {
-          this.foo = inject()
+          this.foo = context()
         }
       }
     """,
     """
-      fun invoke(@Inject foo: Foo) = MyClass().foo 
+      fun invoke(@Context foo: Foo) = MyClass().foo 
     """
   ) {
     val foo = Foo()
@@ -289,12 +289,12 @@ class InjectableDeclarationTest {
 
   @Test fun testInjectPrimaryConstructorParameterInClassBody() = singleAndMultiCodegen(
     """
-      class MyClass(@Inject foo: Foo) {
-        val foo: Foo = inject()
+      class MyClass(@Context foo: Foo) {
+        val foo: Foo = context()
       }
     """,
     """
-      fun invoke(@Inject foo: Foo) = MyClass().foo 
+      fun invoke(@Context foo: Foo) = MyClass().foo 
     """
   ) {
     val foo = Foo()
@@ -304,12 +304,12 @@ class InjectableDeclarationTest {
   @Test fun testClassDeclarationInClassBody() = singleAndMultiCodegen(
     """
       class MyClass(private val _foo: Foo) {
-        val foo: Foo = inject()
+        val foo: Foo = context()
         @Provide fun foo() = _foo
       }
     """,
     """
-      fun invoke(@Inject foo: Foo) = MyClass(foo).foo 
+      fun invoke(@Context foo: Foo) = MyClass(foo).foo 
     """
   ) {
     val foo = Foo()
@@ -320,13 +320,13 @@ class InjectableDeclarationTest {
     """
       class MyClass {
         val foo: Foo
-        constructor(@Inject foo: Foo) {
-          this.foo = inject()   
+        constructor(@Context foo: Foo) {
+          this.foo = context()   
         }
       }
     """,
     """
-       fun invoke(@Inject foo: Foo) = MyClass().foo 
+       fun invoke(@Context foo: Foo) = MyClass().foo 
     """
   ) {
     val foo = Foo()
@@ -341,7 +341,7 @@ class InjectableDeclarationTest {
     """,
     """
       @Providers("com.ivianuu.injekt.integrationtests.FooModule.foo")
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -356,7 +356,7 @@ class InjectableDeclarationTest {
     """,
     """
       @Providers("com.ivianuu.injekt.integrationtests.FooModule.*")
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -381,7 +381,7 @@ class InjectableDeclarationTest {
         invokableSource(
           """
             @Providers("providers.FooModule")
-            fun invoke() = inject<Foo>()
+            fun invoke() = context<Foo>()
           """
         )
       )
@@ -392,10 +392,10 @@ class InjectableDeclarationTest {
 
   @Test fun testInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
     """
-      inline fun <T, R> withProvidedInstance(value: T, block: (@Inject T) -> R) = block(value)
+      inline fun <T, R> withProvidedInstance(value: T, block: (@Context T) -> R) = block(value)
     """,
     """
-      fun invoke(foo: Foo) = withProvidedInstance(foo) { inject<Foo>() }
+      fun invoke(foo: Foo) = withProvidedInstance(foo) { context<Foo>() }
     """
   ) {
     val foo = Foo()
@@ -404,10 +404,10 @@ class InjectableDeclarationTest {
 
   @Test fun testMultipleInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
     """
-      inline fun <T, S, R> withProvidedInstances(@Provide t: T, @Provide s: S, block: (@Inject T, @Inject S) -> R) = block()
+      inline fun <T, S, R> withProvidedInstances(@Provide t: T, @Provide s: S, block: (@Context T, @Context S) -> R) = block()
     """,
     """
-      fun invoke(foo: Foo, bar: Bar) = withProvidedInstances(foo, bar) { _, _ -> inject<Foo>() to inject<Bar>() }
+      fun invoke(foo: Foo, bar: Bar) = withProvidedInstances(foo, bar) { _, _ -> context<Foo>() to context<Bar>() }
     """
   ) {
     val foo = Foo()
@@ -419,7 +419,7 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(
     """
-      fun usesFoo(@Inject foo: Foo) {
+      fun usesFoo(@Context foo: Foo) {
       }
     """,
     """
@@ -432,7 +432,7 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutConstructorInjectParameters() = singleAndMultiCodegen(
     """
-      class FooHolder(@Inject foo: Foo)
+      class FooHolder(@Context foo: Foo)
     """,
     """
       @Provide val foo = Foo()
@@ -444,7 +444,7 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutSuperConstructorInjectParameters() = singleAndMultiCodegen(
     """
-      abstract class AbstractFooHolder(@Inject foo: Foo)
+      abstract class AbstractFooHolder(@Context foo: Foo)
     """,
     """
       @Provide val foo = Foo()
@@ -454,10 +454,10 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutInjectLambdaParameters() = singleAndMultiCodegen(
     """
-      val lambda: (@Inject Foo) -> Foo = { inject<Foo>() }
+      val lambda: (@Context Foo) -> Foo = { context<Foo>() }
     """,
     """
-      fun invoke(@Inject foo: Foo) = lambda()
+      fun invoke(@Context foo: Foo) = lambda()
     """
   ) {
     val foo = Foo()
@@ -466,10 +466,10 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutInjectExtensionLambdaParameters() = singleAndMultiCodegen(
     """
-      val lambda: Unit.(@Inject Foo) -> Foo = { inject<Foo>() }
+      val lambda: Unit.(@Context Foo) -> Foo = { context<Foo>() }
     """,
     """
-      fun invoke(@Inject foo: Foo) = lambda(Unit)
+      fun invoke(@Context foo: Foo) = lambda(Unit)
     """
   ) {
     val foo = Foo()
@@ -478,10 +478,10 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutInjectContextLambdaParameters() = singleAndMultiCodegen(
     """
-      val lambda: context(Unit) (@Inject Foo) -> Foo = { inject<Foo>() }
+      val lambda: context(Unit) (@Context Foo) -> Foo = { context<Foo>() }
     """,
     """
-      fun invoke(@Inject foo: Foo) = with(Unit) { lambda() }
+      fun invoke(@Context foo: Foo) = with(Unit) { lambda() }
     """
   ) {
     val foo = Foo()
@@ -490,10 +490,10 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
     """
-      val lambda: suspend (@Inject Foo) -> Foo = { inject<Foo>() }
+      val lambda: suspend (@Context Foo) -> Foo = { context<Foo>() }
     """,
     """
-      fun invoke(@Inject foo: Foo) = runBlocking { lambda() }
+      fun invoke(@Context foo: Foo) = runBlocking { lambda() }
     """
   ) {
     val foo = Foo()
@@ -502,10 +502,10 @@ class InjectableDeclarationTest {
 
   @Test fun testCanLeaveOutInjectComposableLambdaParameters() = singleAndMultiCodegen(
     """
-      val lambda: @Composable (@Inject Foo) -> Foo = { inject<Foo>() }
+      val lambda: @Composable (@Context Foo) -> Foo = { context<Foo>() }
     """,
     """
-      fun invoke(@Inject foo: Foo) = runComposing { lambda() }
+      fun invoke(@Context foo: Foo) = runComposing { lambda() }
     """,
     config = { withCompose() }
   ) {
@@ -539,7 +539,7 @@ class InjectableDeclarationTest {
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
     """,
     """
-      fun invoke(foo: Foo) = withProvidedInstance(foo) { foo: @Provide Foo -> inject<Foo>() }
+      fun invoke(foo: Foo) = withProvidedInstance(foo) { foo: @Provide Foo -> context<Foo>() }
     """
   ) {
     val foo = Foo()
@@ -550,9 +550,9 @@ class InjectableDeclarationTest {
     """
       fun invoke(a: Foo, b: Foo) = run {
         @Provide val providedA = a
-        inject<Foo>() to run {
+        context<Foo>() to run {
           @Provide val providedB = b
-          inject<Foo>()
+          context<Foo>()
         }
       }
     """
@@ -566,7 +566,7 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideInTheMiddleOfABlock() = codegen(
     """
-      fun <T> injectOrNull(@Inject x: T? = null): T? = x
+      fun <T> injectOrNull(@Context x: T? = null): T? = x
       fun invoke(foo: Foo): Pair<Foo?, Foo?> {
         val a = injectOrNull<Foo>()
         @Provide val provided = foo
@@ -587,7 +587,7 @@ class InjectableDeclarationTest {
         @Provide class FooProvider(__foo: Foo = _foo) {
           val foo = __foo
         }
-        return inject<FooProvider>().foo
+        return context<FooProvider>().foo
       }
     """
   ) {
@@ -599,7 +599,7 @@ class InjectableDeclarationTest {
     """
       fun invoke(foo: Foo): Foo {
         @Provide fun foo() = foo
-        return inject<Foo>()
+        return context<Foo>()
       }
     """
   ) {
@@ -614,8 +614,8 @@ class InjectableDeclarationTest {
       fun invoke() {
         @Provide val instance = object : A, B  {
         }
-        inject<A>()
-        inject<B>()
+        context<A>()
+        context<B>()
       }
     """
   )
@@ -624,7 +624,7 @@ class InjectableDeclarationTest {
     """
       class Outer(@Provide val _foo: Foo) {
         val foo = Inner().foo
-        inner class Inner(@Inject val foo: Foo)
+        inner class Inner(@Context val foo: Foo)
       }
       fun invoke(foo: Foo): Foo = Outer(foo).foo
     """
@@ -637,7 +637,7 @@ class InjectableDeclarationTest {
     """
       class Outer(@Provide val _foo: Foo) {
         val foo = Inner().foo
-        class Inner(@Inject val foo: Foo)
+        class Inner(@Context val foo: Foo)
       }
       fun invoke(foo: Foo): Foo = Outer(foo).foo
     """
@@ -651,7 +651,7 @@ class InjectableDeclarationTest {
       @Provide suspend fun foo() = Foo()
     """,
     """
-      fun invoke() = runBlocking { inject<Foo>() } 
+      fun invoke() = runBlocking { context<Foo>() } 
     """
   ) {
     invokeSingleFile()
@@ -663,7 +663,7 @@ class InjectableDeclarationTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      fun invoke() = runComposing { inject<Foo>()  }
+      fun invoke() = runComposing { context<Foo>()  }
     """,
     config = { withCompose() }
   ) {
@@ -677,7 +677,7 @@ class InjectableDeclarationTest {
     """,
     """
       @Provide object MySubClass : MySuperClass(Foo())
-      fun invoke() = inject<Foo>()
+      fun invoke() = context<Foo>()
     """
   )
 
@@ -688,7 +688,7 @@ class InjectableDeclarationTest {
           @Provide fun foo() = Foo()
           
           override fun equals(other: Any?): Boolean {
-            inject<Foo>()
+            context<Foo>()
             return super.equals(other)
           }
         }
@@ -703,7 +703,7 @@ class InjectableDeclarationTest {
           @Provide val foo = Foo()
           
           override fun equals(other: Any?): Boolean {
-            inject<Foo>()
+            context<Foo>()
             return super.equals(other)
           }
         }
@@ -718,7 +718,7 @@ class InjectableDeclarationTest {
           @Provide fun foo() = Foo()
           
           override fun equals(other: Any?): Boolean {
-            inject<Foo>()
+            context<Foo>()
             return super.equals(other)
           }
         }
@@ -733,7 +733,7 @@ class InjectableDeclarationTest {
           @Provide private val foo = Foo()
           
           override fun equals(other: Any?): Boolean {
-            inject<Foo>()
+            context<Foo>()
             return super.equals(other)
           }
         }

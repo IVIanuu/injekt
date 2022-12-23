@@ -13,18 +13,18 @@ import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
-import com.ivianuu.injekt.compiler.resolution.CallableInjectable
+import com.ivianuu.injekt.compiler.resolution.CallableProvider
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
+import com.ivianuu.injekt.compiler.resolution.ElementContextScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isInject
+import com.ivianuu.injekt.compiler.resolution.isContext
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
+import com.ivianuu.injekt.compiler.resolution.toContextRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -40,21 +40,16 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
-import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
-import org.jetbrains.kotlin.resolve.calls.model.KotlinCallDiagnostic
-import org.jetbrains.kotlin.resolve.calls.model.NoContextReceiver
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.tower.NewResolvedCallImpl
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ContextReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
-import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker(
+@OptIn(IDEAPluginsCompatibilityAPI::class) class InjektCallChecker(
   private val withDeclarationGenerator: Boolean
 ) : KtTreeVisitorVoid(), AnalysisHandlerExtension {
   private var completionCount = 0
@@ -100,7 +95,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor &&
+    if (resultingDescriptor !is ContextFunctionDescriptor &&
         resolvedCall.dispatchReceiver !is ContextReceiver &&
         resolvedCall.dispatchReceiver !is ContextClassReceiver
     ) return
@@ -138,8 +133,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
         if ((index == DISPATCH_RECEIVER_INDEX &&
               (resolvedCall.dispatchReceiver is ContextReceiver || resolvedCall.dispatchReceiver is ContextClassReceiver)) ||
           ((valueArgumentsByIndex[index] is DefaultValueArgument ||
-              it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!)))
-          add(it.toInjectableRequest(callee, ctx!!))
+              it in callee.callable.contextReceiverParameters) && it.isContext(ctx!!)))
+          add(it.toContextRequest(callee, ctx!!))
       }
 
     // we fill the context receivers list up with dummy's to ensure
@@ -161,7 +156,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 
     if (requests.isEmpty()) return
 
-    val scope = ElementInjectablesScope(ctx!!, callExpression)
+    val scope = ElementContextScope(ctx!!, callExpression)
     val location = callExpression.lookupLocation
     val lookups = ctx!!.trace!!.getOrPut(InjektWritableSlices.LOOKUPS, file.virtualFilePath) {
       mutableMapOf()
@@ -173,7 +168,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
       lookups
     ) { _, result ->
       if (result is ResolutionResult.Success.Value &&
-        result.candidate is CallableInjectable) {
+        result.candidate is CallableProvider) {
         result.candidate.callable.import?.element?.let {
           ctx!!.trace!!.record(
             InjektWritableSlices.USED_IMPORT,
@@ -202,7 +197,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
         )
       }
       is InjectionResult.Error -> ctx!!.trace!!.report(
-        InjektErrors.UNRESOLVED_INJECTION.on(callExpression, result)
+        InjektErrors.UNRESOLVED_CONTEXT.on(callExpression, result)
       )
     }
   }

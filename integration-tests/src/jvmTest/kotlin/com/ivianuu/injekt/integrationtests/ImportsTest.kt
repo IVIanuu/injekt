@@ -26,7 +26,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("unresolved injectable import")
+    compilationShouldHaveFailed("unresolved provider import")
   }
 
   @Test fun testUnresolvedStarImport() = codegen(
@@ -36,7 +36,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("unresolved injectable import")
+    compilationShouldHaveFailed("unresolved provider import")
   }
 
   @Test fun testUnresolvedDoubleStarImport() = codegen(
@@ -46,7 +46,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("unresolved injectable import")
+    compilationShouldHaveFailed("unresolved provider import")
   }
 
   @Test fun testImportsJustAPackage() = codegen(
@@ -56,7 +56,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("unresolved injectable import")
+    compilationShouldHaveFailed("unresolved provider import")
   }
 
   @Test fun testMalformedImport() = codegen(
@@ -66,7 +66,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("cannot read injectable import")
+    compilationShouldHaveFailed("cannot read provider import")
   }
 
   @Test fun testDuplicatedImports() = codegen(
@@ -76,7 +76,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("duplicated injectable import")
+    compilationShouldHaveFailed("duplicated provider import")
   }
 
   @Test fun testUnusedImport() = codegen(
@@ -86,33 +86,33 @@ class ImportsTest {
       }
     """
   ) {
-    shouldContainMessage("unused injectable import")
+    shouldContainMessage("unused provider import")
   }
 
-  @Test fun testUsedInjectableImport() = singleAndMultiCodegen(
+  @Test fun testUsedProviderImport() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.foo")
-            fun invoke() = inject<Foo>()
+            @Providers("providers.foo")
+            fun invoke() = context<Foo>()
           """
         )
       )
     )
   ) {
-    shouldNotContainMessage("unused injectable import")
+    shouldNotContainMessage("unused provider import")
   }
 
-  @Test fun testClassImportIsNotMarkedUnusedIfACompanionClassInjectableWasUsed() = singleAndMultiCodegen(
+  @Test fun testClassImportIsNotMarkedUnusedIfACompanionClassProviderWasUsed() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -125,20 +125,20 @@ class ImportsTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.MyClass")
-            fun invoke() = inject<Foo>()
+            @Providers("providers.MyClass")
+            fun invoke() = context<Foo>()
           """
         )
       )
     )
   ) {
-    shouldNotContainMessage("unused injectable import")
+    shouldNotContainMessage("unused provider import")
   }
 
   @Test fun testUsedStarImport() = singleAndMultiCodegen(
@@ -148,20 +148,20 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            fun invoke() = inject<Foo>()
+            @Providers("providers.*")
+            fun invoke() = context<Foo>()
           """
         )
       )
     )
   ) {
-    shouldNotContainMessage("unused injectable import")
+    shouldNotContainMessage("unused provider import")
   }
 
   @Test fun testUsedDoubleStarImport() = singleAndMultiCodegen(
@@ -171,20 +171,20 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.**")
-            fun invoke() = inject<Foo>()
+            @Providers("providers.**")
+            fun invoke() = context<Foo>()
           """
         )
       )
     )
   ) {
-    shouldNotContainMessage("unused injectable import")
+    shouldNotContainMessage("unused provider import")
   }
 
   @Test fun testExplicitAndStarImportMarksStarAsUnused() = singleAndMultiCodegen(
@@ -207,13 +207,13 @@ class ImportsTest {
         invokableSource(
           """
             @Providers("explicit.value", "star.*")
-            fun invoke() = inject<String>()
+            fun invoke() = context<String>()
         """
         )
       )
     )
   ) {
-    shouldContainMessage("unused injectable import: 'star.*'")
+    shouldContainMessage("unused provider import: 'star.*'")
   }
 
   @Test fun testExplicitAndDoubleStarImportMarksDoubleStarAsUnused() = singleAndMultiCodegen(
@@ -236,13 +236,13 @@ class ImportsTest {
         invokableSource(
           """
             @Providers("explicit.value", "star.**")
-            fun invoke() = inject<String>()
+            fun invoke() = context<String>()
         """
         )
       )
     )
   ) {
-    shouldContainMessage("unused injectable import: 'star.**'")
+    shouldContainMessage("unused provider import: 'star.**'")
   }
 
   @Test fun testStarImportSamePackage() = codegen(
@@ -252,7 +252,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("injectables of the same package are automatically imported")
+    compilationShouldHaveFailed("providers of the same package are automatically imported")
   }
 
   @Test fun testDoubleStarImportSamePackage() = codegen(
@@ -262,10 +262,10 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("injectables of the same package are automatically imported")
+    compilationShouldHaveFailed("providers of the same package are automatically imported")
   }
 
-  @Test fun testImportInjectableSamePackage() = codegen(
+  @Test fun testImportProvidersamePackage() = codegen(
     """
       @Provide val foo = Foo()
       @Providers("com.ivianuu.injekt.integrationtests.foo")
@@ -273,7 +273,7 @@ class ImportsTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("injectables of the same package are automatically imported")
+    compilationShouldHaveFailed("providers of the same package are automatically imported")
   }
 
   @Test fun testClassWithImports() = singleAndMultiCodegen(
@@ -283,15 +283,15 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
+            @Providers("providers.*")
             class MyClass {
-              fun invoke() = inject<Foo>()
+              fun invoke() = context<Foo>()
             }
             fun invoke() = MyClass().invoke()
           """
@@ -309,17 +309,17 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
+            @Providers("providers.*")
             class MyClass {
               val foo: Foo
               constructor() {
-                foo = inject()
+                foo = context()
               }
             }
 
@@ -339,15 +339,15 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
+            @Providers("providers.*")
             class MyClass {
-              val foo: Foo = inject()
+              val foo: Foo = context()
             }
             fun invoke() = MyClass().foo
           """
@@ -367,18 +367,18 @@ class ImportsTest {
             interface FooHolder {
               val foo: Foo
             }
-            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+            fun FooHolder(@Context foo: Foo) = object : FooHolder {
               override val foo: Foo = foo
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            class MyClass : injectables.FooHolder by injectables.FooHolder()
+            @Providers("providers.*")
+            class MyClass : providers.FooHolder by providers.FooHolder()
             fun invoke() = MyClass().foo
           """
         )
@@ -397,18 +397,18 @@ class ImportsTest {
             interface FooHolder {
               val foo: Foo
             }
-            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+            fun FooHolder(@Context foo: Foo) = object : FooHolder {
               override val foo: Foo = foo
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            object MyObject : injectables.FooHolder by injectables.FooHolder()
+            @Providers("providers.*")
+            object MyObject : providers.FooHolder by providers.FooHolder()
             fun invoke() = MyObject.foo
           """
         )
@@ -427,17 +427,17 @@ class ImportsTest {
             interface FooHolder {
               val foo: Foo
             }
-            fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+            fun FooHolder(@Context foo: Foo) = object : FooHolder {
               override val foo: Foo = foo
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            class MyClass @Providers("injectables.*") constructor() : injectables.FooHolder by injectables.FooHolder()
+            class MyClass @Providers("providers.*") constructor() : providers.FooHolder by providers.FooHolder()
             fun invoke() = MyClass().foo
           """
         )
@@ -447,21 +447,21 @@ class ImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testFunctionWithInjectableImports() = singleAndMultiCodegen(
+  @Test fun testFunctionWithProviderImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            fun invoke() = inject<Foo>()
+            @Providers("providers.*")
+            fun invoke() = context<Foo>()
           """
         )
       )
@@ -477,15 +477,15 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
+            @Providers("providers.*")
             @JvmOverloads
-            fun invoke(foo: Foo = inject()) = foo
+            fun invoke(foo: Foo = context()) = foo
           """
         )
       )
@@ -494,22 +494,22 @@ class ImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testPropertyWithInjectableImports() = singleAndMultiCodegen(
+  @Test fun testPropertyWithProviderImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            val injectableFoo = inject<Foo>()
-            fun invoke() = injectableFoo
+            @Providers("providers.*")
+            val providerFoo = context<Foo>()
+            fun invoke() = providerFoo
           """
         )
       )
@@ -518,23 +518,23 @@ class ImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testLocalVariableWithInjectableImports() = singleAndMultiCodegen(
+  @Test fun testLocalVariableWithProviderImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
             fun invoke(): Foo {
-              @Providers("injectables.*")
-              val injectableFoo = inject<Foo>()
-              return injectableFoo
+              @Providers("providers.*")
+              val providerFoo = context<Foo>()
+              return providerFoo
             }
           """
         )
@@ -544,22 +544,22 @@ class ImportsTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testExpressionWithInjectableImports() = singleAndMultiCodegen(
+  @Test fun testExpressionWithProviderImports() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
             fun invoke(): Foo {
-              @Providers("injectables.*")
-              return inject<Foo>()
+              @Providers("providers.*")
+              return context<Foo>()
             }
           """
         )
@@ -582,22 +582,22 @@ class ImportsTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
             fun invoke(): Bar {
-              @Providers("injectables.*")
-              return inject<Bar>()
+              @Providers("providers.*")
+              return context<Bar>()
             }
           """
         )
       )
     )
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.inject.")
+    compilationShouldHaveFailed("no provider found of type com.ivianuu.injekt.test.Bar for parameter x of function com.ivianuu.injekt.context.")
   }
 
   @Test fun testDoubleStarImportImportsSubPackages() = singleAndMultiCodegen(
@@ -607,13 +607,13 @@ class ImportsTest {
           """
             @Provide val foo = Foo()
           """,
-          packageFqName = FqName("injectables.foo")
+          packageFqName = FqName("providers.foo")
         ),
         source(
           """
             @Provide fun bar(foo: Foo) = Bar(foo)
           """,
-          packageFqName = FqName("injectables.foo.bar")
+          packageFqName = FqName("providers.foo.bar")
         )
       ),
       listOf(
@@ -621,7 +621,7 @@ class ImportsTest {
           """
             fun invoke(): Bar {
               @Providers(".**")
-              return inject<Bar>()
+              return context<Bar>()
             }
           """
         )
@@ -643,7 +643,7 @@ class ImportsTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
@@ -651,7 +651,7 @@ class ImportsTest {
           """
             fun invoke(): Bar {
               @Providers(".**")
-              return inject<Bar>()
+              return context<Bar>()
             }
           """
         )

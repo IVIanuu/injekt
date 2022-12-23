@@ -31,7 +31,7 @@ class SuppressionTest {
 
   @Test fun testDoesNotWarnInlineWithInjectParams() = codegen(
     """
-      inline fun func(@Inject x: Unit) {
+      inline fun func(@Context x: Unit) {
       }
     """
   ) {

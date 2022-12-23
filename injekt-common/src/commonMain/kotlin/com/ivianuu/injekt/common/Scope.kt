@@ -4,11 +4,10 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.inject
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 
@@ -24,7 +23,7 @@ class Scope<N> : SynchronizedObject(), Disposable {
     (if (value !== NULL) value else null) as T
   }
 
-  inline fun <T> scoped(@Inject key: TypeKey<T>, init: () -> T): T =
+  inline fun <T> scoped(@Context key: TypeKey<T>, init: () -> T): T =
     scoped(key.value, init)
 
   override fun dispose() {

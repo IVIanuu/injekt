@@ -20,8 +20,8 @@ class SourceKeyTest {
 
   @Test fun testSourceKeyPassing() = codegen(
     """
-      fun a(@Inject key: SourceKey) = key
-      fun b(@Inject key: SourceKey) = a()
+      fun a(@Context key: SourceKey) = key
+      fun b(@Context key: SourceKey) = a()
       fun invoke() = b()
     """
   ) {

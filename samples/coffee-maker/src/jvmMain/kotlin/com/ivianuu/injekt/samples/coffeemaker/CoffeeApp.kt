@@ -5,12 +5,12 @@
 package com.ivianuu.injekt.samples.coffeemaker
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.context
 
 fun main() {
-  val heater = inject<Heater>()
+  val heater = context<Heater>()
   heater.on()
-  inject<Pump>()()
+  context<Pump>()()
   println(" [_]P coffee! [_]P ")
   heater.off()
 }

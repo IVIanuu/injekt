@@ -7,9 +7,9 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.injectablesLookupName
+import com.ivianuu.injekt.compiler.providersLookupName
 import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.subInjectablesLookupName
+import com.ivianuu.injekt.compiler.subProvidersLookupName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -202,7 +202,7 @@ class InjektDeclarationGeneratorExtension(
     resolveSession: ResolveSession,
     bodyResolver: BodyResolver
   ): List<File> {
-    val injectables = mutableListOf<DeclarationDescriptor>()
+    val providers = mutableListOf<DeclarationDescriptor>()
 
     file.accept(
       declarationRecursiveVisitor { declaration ->
@@ -212,25 +212,25 @@ class InjektDeclarationGeneratorExtension(
         when (declaration) {
           is KtClassOrObject -> {
             if (!declaration.isLocal && (declaration.isProvide()))
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
+              providers += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
           }
           is KtConstructor<*> -> {
             if (!declaration.isLocal && (declaration.isProvide()))
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
+              providers += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
           }
           is KtNamedFunction -> {
             if (!declaration.isLocal && declaration.isProvide())
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
+              providers += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
           }
           is KtProperty -> {
             if (!declaration.isLocal && declaration.isProvide())
-              injectables += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
+              providers += resolveDeclaration(declaration, resolveSession, bodyResolver, ctx)!!
           }
         }
       }
     )
 
-    if (injectables.isEmpty()) return emptyList()
+    if (providers.isEmpty()) return emptyList()
 
     val markerName = "_${
       module.moduleName(ctx)
@@ -242,18 +242,18 @@ class InjektDeclarationGeneratorExtension(
     }_ProvidersMarker"
 
     return buildList {
-      this += injectablesFile(file, markerName, injectables, ctx)
-      subInjectableFiles(file, markerName, injectables, ctx)
+      this += providersFile(file, markerName, providers, ctx)
+      subProviderFiles(file, markerName, providers, ctx)
     }
   }
 
-  private fun injectablesFile(
+  private fun providersFile(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
+    providers: List<DeclarationDescriptor>,
     ctx: Context
   ): File {
-    val injectablesCode = buildString {
+    val providersCode = buildString {
       appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
       appendLine()
 
@@ -266,12 +266,12 @@ class InjektDeclarationGeneratorExtension(
 
       appendLine()
 
-      for ((i, injectable) in injectables.withIndex()) {
-        val key = injectable.uniqueKey(ctx)
+      for ((i, provider) in providers.withIndex()) {
+        val key = provider.uniqueKey(ctx)
 
         appendLine("// $key")
 
-        appendLine("fun $injectablesLookupName(")
+        appendLine("fun $providersLookupName(")
         appendLine(" marker: $markerName,")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
@@ -292,21 +292,21 @@ class InjektDeclarationGeneratorExtension(
       }
     }
 
-    val injectablesFile = srcDir.resolve(
+    val providersFile = srcDir.resolve(
       (if (!file.packageFqName.isRoot)
         "${file.packageFqName.pathSegments().joinToString("/")}/"
-      else "") + "${file.name.removeSuffix(".kt")}Injectables.kt"
+      else "") + "${file.name.removeSuffix(".kt")}Providers.kt"
     )
-    injectablesFile.parentFile.mkdirs()
-    injectablesFile.createNewFile()
-    injectablesFile.writeText(injectablesCode)
-    return injectablesFile
+    providersFile.parentFile.mkdirs()
+    providersFile.createNewFile()
+    providersFile.writeText(providersCode)
+    return providersFile
   }
 
-  private fun MutableList<File>.subInjectableFiles(
+  private fun MutableList<File>.subProviderFiles(
     file: KtFile,
     markerName: String,
-    injectables: List<DeclarationDescriptor>,
+    providers: List<DeclarationDescriptor>,
     ctx: Context
   ) {
     if (file.packageFqName.isRoot) return
@@ -314,7 +314,7 @@ class InjektDeclarationGeneratorExtension(
     while (!current.isRoot) {
       current = current.parent()
 
-      val injectablesCode = buildString {
+      val providersCode = buildString {
         appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
         appendLine()
 
@@ -323,11 +323,11 @@ class InjektDeclarationGeneratorExtension(
           appendLine()
         }
 
-        for ((i, injectable) in injectables.withIndex()) {
-          val key = injectable.uniqueKey(ctx)
+        for ((i, provider) in providers.withIndex()) {
+          val key = provider.uniqueKey(ctx)
 
           appendLine("// $key")
-          appendLine("fun $subInjectablesLookupName(")
+          appendLine("fun $subProvidersLookupName(")
           appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
           repeat(i + 1) {
             appendLine("  index$it: Byte,")
@@ -348,21 +348,21 @@ class InjektDeclarationGeneratorExtension(
         }
       }
 
-      val injectablesKeyHash = injectables
+      val providersKeyHash = providers
         .joinToString { it.uniqueKey(ctx) }
         .hashCode()
         .toString()
         .filter { it.isLetterOrDigit() }
 
-      val subInjectablesFile = srcDir.resolve(
+      val subProvidersFile = srcDir.resolve(
         (if (!current.isRoot)
           "${current.pathSegments().joinToString("/")}/"
-        else "") + "${file.name.removeSuffix(".kt")}SubInjectables_${injectablesKeyHash}.kt"
+        else "") + "${file.name.removeSuffix(".kt")}SubProviders_${providersKeyHash}.kt"
       )
-      subInjectablesFile.parentFile.mkdirs()
-      subInjectablesFile.createNewFile()
-      subInjectablesFile.writeText(injectablesCode)
-      this += subInjectablesFile
+      subProvidersFile.parentFile.mkdirs()
+      subProvidersFile.createNewFile()
+      subProvidersFile.writeText(providersCode)
+      this += subProvidersFile
     }
   }
 

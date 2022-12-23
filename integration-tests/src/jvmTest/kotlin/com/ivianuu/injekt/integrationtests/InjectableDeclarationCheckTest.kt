@@ -13,13 +13,13 @@ import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
-class InjectableDeclarationCheckTest {
+class ProviderDeclarationCheckTest {
   @Test fun testProvideAnnotationClass() = codegen(
     """
       @Provide annotation class MyAnnotation
     """
   ) {
-    compilationShouldHaveFailed("annotation class cannot be injectable")
+    compilationShouldHaveFailed("annotation class cannot be a provider")
   }
 
   @Test fun testProvideConstructorOnAnnotationClass() = codegen(
@@ -27,7 +27,7 @@ class InjectableDeclarationCheckTest {
       annotation class MyAnnotation @Provide constructor()
     """
   ) {
-    compilationShouldHaveFailed("annotation class cannot be injectable")
+    compilationShouldHaveFailed("annotation class cannot be a provider")
   }
 
   @Test fun testProvideEnumClass() = codegen(
@@ -35,7 +35,7 @@ class InjectableDeclarationCheckTest {
       @Provide enum class MyEnum
     """
   ) {
-    compilationShouldHaveFailed("enum class cannot be injectable")
+    compilationShouldHaveFailed("enum class cannot be a provider")
   }
 
   @Test fun testProvideInnerClass() = codegen(
@@ -45,7 +45,7 @@ class InjectableDeclarationCheckTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("inner class cannot be injectable")
+    compilationShouldHaveFailed("inner class cannot be a provider")
   }
 
   @Test fun testProvideAbstractClass() = codegen(
@@ -53,7 +53,7 @@ class InjectableDeclarationCheckTest {
       @Provide abstract class MyClass
     """
   ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
+    compilationShouldHaveFailed("abstract class cannot be a provider")
   }
 
   @Test fun testProvideConstructorAbstractClass() = codegen(
@@ -61,7 +61,7 @@ class InjectableDeclarationCheckTest {
       abstract class MyClass @Provide constructor()
     """
   ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
+    compilationShouldHaveFailed("abstract class cannot be a provider")
   }
 
   @Test fun testProvideInterface() = codegen(
@@ -69,23 +69,23 @@ class InjectableDeclarationCheckTest {
       @Provide interface MyInterface
     """
   ) {
-    compilationShouldHaveFailed("interface cannot be injectable")
+    compilationShouldHaveFailed("interface cannot be a provider")
   }
 
-  @Test fun testInjectValueParameterOnProvideFunction() = codegen(
+  @Test fun testContextValueParameterOnProvideFunction() = codegen(
     """
-      @Provide fun bar(@Inject foo: Foo) = Bar(foo)
+      @Provide fun bar(@Context foo: Foo) = Bar(foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
+    compilationShouldHaveFailed("parameters of a provider are automatically treated as context parameters")
   }
 
-  @Test fun testInjectValueParameterOnProvideClass() = codegen(
+  @Test fun testInjectContextParameterOnProviderClass() = codegen(
     """
-      @Provide class MyBar(@Inject foo: Foo)
+      @Provide class MyBar(@Context foo: Foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically treated as inject parameters")
+    compilationShouldHaveFailed("parameters of a provider are automatically treated as context parameters")
   }
 
   @Test fun testProvideValueParameterOnProvideFunction() = codegen(
@@ -93,7 +93,7 @@ class InjectableDeclarationCheckTest {
       @Provide fun bar(@Provide foo: Foo) = Bar(foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically provided")
+    compilationShouldHaveFailed("parameters of a provider are automatically provided")
   }
 
   @Test fun testProvideValueParameterPropertyOnProvideClass() = codegen(
@@ -116,7 +116,7 @@ class InjectableDeclarationCheckTest {
       @Provide class MyBar(@Provide foo: Foo)
     """
   ) {
-    compilationShouldHaveFailed("parameters of a injectable are automatically provided")
+    compilationShouldHaveFailed("parameters of a provider are automatically provided")
   }
 
   @Test fun testInjectReceiverOnFunction() = codegen(
@@ -139,12 +139,12 @@ class InjectableDeclarationCheckTest {
     """
       fun invoke() {
         @Provide val a: String
-        inject<String>()
+        context<String>()
         a = ""
       }
     """
   ) {
-    compilationShouldHaveFailed("injectable variable must be initialized, delegated or marked with lateinit")
+    compilationShouldHaveFailed("provider variable must be initialized, delegated or marked with lateinit")
   }
 
   @Test fun testProvideFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
@@ -158,7 +158,7 @@ class InjectableDeclarationCheckTest {
         @Provide override fun foo() = Foo()
       }
 
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -176,7 +176,7 @@ class InjectableDeclarationCheckTest {
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -201,7 +201,7 @@ class InjectableDeclarationCheckTest {
   @Test fun testFunctionWithInjectParameterOverrideWithoutInjectAnnotation() = codegen(
     """
       abstract class MySuperClass {
-        abstract fun bar(@Inject foo: Foo): Bar
+        abstract fun bar(@Context foo: Foo): Bar
       }
     """,
     """

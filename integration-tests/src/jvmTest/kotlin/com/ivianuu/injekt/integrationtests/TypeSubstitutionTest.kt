@@ -9,7 +9,7 @@ import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.buildContext
-import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
+import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingProvider
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.compiler.resolution.wrap
@@ -86,7 +86,7 @@ class TypeSubstitutionTest {
       .let {
         it.withArguments(listOf(intType) + it.arguments.drop(1))
       }
-    val (_, map) = buildContextForSpreadingInjectable(
+    val (_, map) = buildContextForSpreadingProvider(
       scopedT.defaultType,
       substitutionType,
       emptyList(),
@@ -126,7 +126,7 @@ class TypeSubstitutionTest {
       ),
       source(
         """
-          fun invoke() = inject<KeyUi<DonationKey>>()
+          fun invoke() = context<KeyUi<DonationKey>>()
         """
       )
     )

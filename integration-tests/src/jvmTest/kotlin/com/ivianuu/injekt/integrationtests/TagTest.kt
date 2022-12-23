@@ -21,7 +21,7 @@ class TagTest {
     """,
     """
       fun invoke(): Pair<Foo, Foo> {
-        return inject<Foo>() to inject<@Tag1 Foo>()
+        return context<Foo>() to context<@Tag1 Foo>()
       } 
     """
   ) {
@@ -36,7 +36,7 @@ class TagTest {
       @Provide fun tagged(): @Tag1 String = ""
     """,
     """
-      fun invoke() = inject<Dep<String>>() 
+      fun invoke() = context<Dep<String>>() 
     """
   )
 
@@ -45,7 +45,7 @@ class TagTest {
       @Provide @Tag1 class Dep
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = context<@Tag1 Dep>()
     """
   )
 
@@ -54,7 +54,7 @@ class TagTest {
       class Dep @Provide @Tag1 constructor()
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = context<@Tag1 Dep>()
     """
   )
 
@@ -65,7 +65,7 @@ class TagTest {
       }
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = context<@Tag1 Dep>()
     """
   )
 
@@ -74,7 +74,7 @@ class TagTest {
       @Provide @Tag1 object Dep
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = context<@Tag1 Dep>()
     """
   )
 
@@ -91,7 +91,7 @@ class TagTest {
       @Tag annotation class MyTag 
     """,
     """
-      fun invoke(@Inject value: @MyTag String) {
+      fun invoke(@Context value: @MyTag String) {
       }
     """
   )
@@ -102,7 +102,7 @@ class TagTest {
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
     """,
     """
-      fun invoke() = inject<@MyTag<String> Foo>() 
+      fun invoke() = context<@MyTag<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -115,7 +115,7 @@ class TagTest {
       @Provide fun <T> taggedFoo(): @MyTag<T> Foo = Foo()
     """,
     """
-      fun invoke() = inject<@MyTag<String> Foo>() 
+      fun invoke() = context<@MyTag<String> Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -131,7 +131,7 @@ class TagTest {
       @Provide val foo: @UiState Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -145,7 +145,7 @@ class TagTest {
       @Provide val taggedFoo: TaggedFoo = Foo()
     """,
     """
-      fun invoke() = inject<TaggedFoo>()
+      fun invoke() = context<TaggedFoo>()
     """
   )
 
@@ -160,7 +160,7 @@ class TagTest {
       }
     """,
     """
-      fun invoke() = inject<ComponentScope<TestScope1>>()
+      fun invoke() = context<ComponentScope<TestScope1>>()
     """
   )
 }

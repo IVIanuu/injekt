@@ -21,13 +21,13 @@ class TypeScopeTest {
           """
             @Provide class Dep
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -45,13 +45,13 @@ class TypeScopeTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -67,13 +67,13 @@ class TypeScopeTest {
               @Provide val defaultDep = this
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -91,13 +91,13 @@ class TypeScopeTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<@injectables.MyTag String>()
+            fun invoke() = context<@providers.MyTag String>()
           """
         )
       )
@@ -115,13 +115,13 @@ class TypeScopeTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<Set<injectables.Dep>>()
+            fun invoke() = context<Set<providers.Dep>>()
           """
         )
       )
@@ -140,13 +140,13 @@ class TypeScopeTest {
             }
             class Dep : AbstractDep()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -162,13 +162,13 @@ class TypeScopeTest {
 
             @Provide val dep = Dep()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -184,13 +184,13 @@ class TypeScopeTest {
 
             @Provide class DepImpl : Dep
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -204,7 +204,7 @@ class TypeScopeTest {
           """
             @Tag annotation class MyTag {
               companion object {
-                @Provide val dep = injectables.Dep()
+                @Provide val dep = providers.Dep()
               }
             }
           """,
@@ -214,13 +214,13 @@ class TypeScopeTest {
           """
             @Provide @tags.MyTag class Dep
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -238,13 +238,13 @@ class TypeScopeTest {
               @Provide val dep = Dep() 
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -266,13 +266,13 @@ class TypeScopeTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -285,7 +285,7 @@ class TypeScopeTest {
         """
           class Dep
         """,
-        packageFqName = FqName("injectables")
+        packageFqName = FqName("providers")
       )
     ),
     listOf(
@@ -293,11 +293,11 @@ class TypeScopeTest {
         """
           @Provide val dep = Dep()
         """,
-        packageFqName = FqName("injectables")
+        packageFqName = FqName("providers")
       ),
       source(
         """
-          fun invoke() = inject<injectables.Dep>()
+          fun invoke() = context<providers.Dep>()
         """
       )
     )
@@ -310,7 +310,7 @@ class TypeScopeTest {
           """
             class Dep
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
@@ -318,18 +318,18 @@ class TypeScopeTest {
           """
             @Provide val dep = Dep()
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         ),
         source(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
     )
   )
 
-  @Test fun testTypeScopeWhichReferencesTypeInInjectableDeclaration() = singleAndMultiCodegen(
+  @Test fun testTypeScopeWhichReferencesTypeInProviderDeclaration() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -352,20 +352,20 @@ class TypeScopeTest {
               }
             }
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
     )
   )
 
-  @Test fun testClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
+  @Test fun testClassTypeScopeWithSpreadingProviders() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -378,20 +378,20 @@ class TypeScopeTest {
 
             @MyTag @Provide class Dep
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
     )
   )
 
-  @Test fun testNestedClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
+  @Test fun testNestedClassTypeScopeWithSpreadingProviders() = singleAndMultiCodegen(
     listOf(
       listOf(
         source(
@@ -422,13 +422,13 @@ class TypeScopeTest {
           """
             @tags1.MyTag1 @Provide class Dep
           """,
-          packageFqName = FqName("injectables")
+          packageFqName = FqName("providers")
         )
       ),
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<injectables.Dep>()
+            fun invoke() = context<providers.Dep>()
           """
         )
       )
@@ -462,7 +462,7 @@ class TypeScopeTest {
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<package2.AppContent>()
+            fun invoke() = context<package2.AppContent>()
           """
         )
       )
@@ -484,7 +484,7 @@ class TypeScopeTest {
       listOf(
         invokableSource(
           """
-            fun invoke() = inject<package1.MyType>()
+            fun invoke() = context<package1.MyType>()
           """
         )
       )

@@ -44,7 +44,7 @@ class ClassifierRef(
   val isSpread: Boolean = false,
   val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
-  val declaresInjectables: Boolean = false
+  val declaresProviders: Boolean = false
 ) {
   val superTypes by lazySuperTypes
 
@@ -68,10 +68,10 @@ class ClassifierRef(
     isSpread: Boolean = this.isSpread,
     primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
-    declaresInjectables: Boolean = this.declaresInjectables
+    declaresProviders: Boolean = this.declaresProviders
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject, isTag,
-    descriptor, tags, isSpread, primaryConstructorPropertyParameters, variance, declaresInjectables
+    descriptor, tags, isSpread, primaryConstructorPropertyParameters, variance, declaresProviders
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -129,7 +129,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
         .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      declaresInjectables = info.declaresInjectables
+      declaresProviders = info.declaresProviders
     )
   }
 
@@ -169,7 +169,7 @@ fun KotlinType.toTypeRef(
           else it
         },
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
-      isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
+      isContext = kotlinType.hasAnnotation(InjektFqNames.Context),
       isStarProjection = false,
       frameworkKey = "",
       variance = variance,
@@ -206,7 +206,7 @@ class TypeRef(
   val isMarkedNullable: Boolean = false,
   val arguments: List<TypeRef> = emptyList(),
   val isProvide: Boolean = false,
-  val isInject: Boolean = false,
+  val isContext: Boolean = false,
   val isStarProjection: Boolean = false,
   val frameworkKey: String = "",
   val variance: TypeVariance = TypeVariance.INV,
@@ -299,7 +299,7 @@ class TypeRef(
       result = 31 * result + isMarkedNullable.hashCode()
       result = 31 * result + arguments.hashCode()
       result = 31 * result + isProvide.hashCode()
-      result = 31 * result + isInject.hashCode()
+      result = 31 * result + isContext.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
@@ -330,7 +330,7 @@ fun TypeRef.copy(
   isMarkedNullable: Boolean = this.isMarkedNullable,
   arguments: List<TypeRef> = this.arguments,
   isProvide: Boolean = this.isProvide,
-  isInject: Boolean = this.isInject,
+  isContext: Boolean = this.isContext,
   isStarProjection: Boolean = this.isStarProjection,
   frameworkKey: String = this.frameworkKey,
   variance: TypeVariance = this.variance,
@@ -341,7 +341,7 @@ fun TypeRef.copy(
   isMarkedNullable,
   arguments,
   isProvide,
-  isInject,
+  isContext,
   isStarProjection,
   frameworkKey,
   variance,
@@ -388,21 +388,21 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     val newNullability = if (isStarProjection) substitution.isMarkedNullable
     else isMarkedNullable || substitution.isMarkedNullable
     val newIsProvide = isProvide || substitution.isProvide
-    val newIsInject = isInject || substitution.isInject
+    val newIsContext = isContext || substitution.isContext
     val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
     else variance
     return if (newNullability != substitution.isMarkedNullable ||
       newIsProvide != substitution.isProvide ||
-      newIsInject != substitution.isInject ||
+      newIsContext != substitution.isContext ||
       newVariance != substitution.variance
     ) {
       substitution.copy(
         // we copy nullability to support T : Any? -> String
         isMarkedNullable = newNullability,
-        // we copy injectable kind to support @Provide C -> @Provide String
-        // fallback to substitution injectable
+        // we copy provider kind to support @Provide C -> @Provide String
+        // fallback to substitution provider
         isProvide = newIsProvide,
-        isInject = newIsInject,
+        isContext = newIsContext,
         variance = newVariance
       )
     } else substitution
