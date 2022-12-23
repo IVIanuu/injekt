@@ -24,8 +24,8 @@ class Scope<N> : SynchronizedObject(), Disposable {
     (if (value !== NULL) value else null) as T
   }
 
-  context(TypeKey<T>) inline fun <T> scoped(init: () -> T): T =
-    scoped(inject<TypeKey<T>>().value, init)
+  inline fun <T> scoped(@Inject key: TypeKey<T>, init: () -> T): T =
+    scoped(key.value, init)
 
   override fun dispose() {
     synchronized(this) {
@@ -44,9 +44,10 @@ class Scope<N> : SynchronizedObject(), Disposable {
 
 @Tag annotation class Scoped<N> {
   companion object {
-    context(Scope<N>) @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
+    @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       crossinline init: () -> T,
+      scope: Scope<N>,
       key: TypeKey<S>
-    ): S = scoped(key) { init() }
+    ): S = scope.scoped(key) { init() }
   }
 }
