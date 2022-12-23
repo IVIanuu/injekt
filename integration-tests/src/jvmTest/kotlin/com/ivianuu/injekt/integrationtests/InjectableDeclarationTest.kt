@@ -481,7 +481,7 @@ class InjectableDeclarationTest {
       val lambda: context(Unit) (@Inject Foo) -> Foo = { inject<Foo>() }
     """,
     """
-      fun invoke(@Inject foo: Foo) = lambda(Unit)
+      fun invoke(@Inject foo: Foo) = with(Unit) { lambda() }
     """
   ) {
     val foo = Foo()
