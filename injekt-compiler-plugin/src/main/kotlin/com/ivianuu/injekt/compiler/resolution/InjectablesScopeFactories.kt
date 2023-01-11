@@ -345,8 +345,6 @@ private fun ClassInitInjectablesScope(
     "COMPANION INIT ${clazz.containingDeclaration.fqNameSafe} at ${injectableDeclaration?.name}"
   else "CLASS INIT ${clazz.fqNameSafe} at ${injectableDeclaration?.name}"
 
-  val thisInjectable = clazz.injectableReceiver(false, ctx)
-
   val classInitScope = InjectablesScope(
     name = name,
     parent = finalParent,
