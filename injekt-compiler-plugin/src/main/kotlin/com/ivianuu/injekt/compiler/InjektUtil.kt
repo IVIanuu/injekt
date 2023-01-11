@@ -120,19 +120,23 @@ fun Annotated.getTags(): List<AnnotationDescriptor> =
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
   ctx.trace!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
     when (val original = this.original) {
-      is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:${
-        original.valueParameters
-          .joinToString(",") {
-            it.type
-              .fullyAbbreviatedType
-              .uniqueTypeKey()
-          }
-      }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
-      is ClassDescriptor -> "class:$fqNameSafe"
+      is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
+          "${original.visibility.name}:" +
+          "${
+            original.valueParameters
+              .joinToString(",") {
+                it.type
+                  .fullyAbbreviatedType
+                  .uniqueTypeKey()
+              }
+          }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
+      is ClassDescriptor -> "class:$fqNameSafe:" +
+          "${original.visibility.name}:"
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
       }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
       is FunctionDescriptor -> "function:$fqNameSafe:" +
+          "${original.visibility.name}:" +
           original.typeParameters.joinToString {
             buildString {
               append(it.name.asString())
@@ -166,6 +170,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
           ":" +
           original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
       is PropertyDescriptor -> "property:$fqNameSafe:" +
+          "${original.visibility.name}:" +
           original.typeParameters.joinToString {
             buildString {
               append(it.name.asString())
@@ -210,7 +215,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
     }
   }
 
-private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
+fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
   return buildString {
     append(constructor.declarationDescriptor!!.fqNameSafe)
@@ -224,7 +229,7 @@ private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   }
 }
 
-private val KotlinType.fullyAbbreviatedType: KotlinType
+val KotlinType.fullyAbbreviatedType: KotlinType
   get() {
     val abbreviatedType = getAbbreviatedType()
     return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
