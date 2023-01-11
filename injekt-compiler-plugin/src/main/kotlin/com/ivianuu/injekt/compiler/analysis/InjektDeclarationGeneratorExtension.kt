@@ -417,7 +417,8 @@ class InjektDeclarationGeneratorExtension(
       uniqueKey(ctx) +
           "${visibility.name}:" +
           "${unsubstitutedPrimaryConstructor?.uniqueKey(ctx)}:" +
-          getTags().joinToString { it.type.fullyAbbreviatedType.uniqueTypeKey() }
+          "${contextReceivers.joinToString(",") { it.uniqueKey(ctx) }}:" +
+          getTags().joinToString(",") { it.type.fullyAbbreviatedType.uniqueTypeKey() }
     else -> uniqueKey(ctx)
   }
 }
