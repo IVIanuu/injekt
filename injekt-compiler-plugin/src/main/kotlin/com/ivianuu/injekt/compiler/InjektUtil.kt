@@ -130,8 +130,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
                   .uniqueTypeKey()
               }
           }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
-      is ClassDescriptor -> "class:$fqNameSafe:" +
-          "${original.visibility.name}:"
+      is ClassDescriptor -> "class:$fqNameSafe:"
       is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
         "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
       }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
