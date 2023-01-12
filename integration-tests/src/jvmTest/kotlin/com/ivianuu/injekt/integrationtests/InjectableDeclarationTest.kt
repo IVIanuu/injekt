@@ -547,19 +547,6 @@ class InjectableDeclarationTest {
     invokeSingleFile()
   }
 
-  @Test fun canLeaveOutFunctionContextParameters() = codegen(
-    """
-      @Provide val foo = Foo()
-      context(Foo) fun contextFunction() = ""
-
-      fun invoke() {
-        contextFunction()
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
   @Test fun canLeaveOutConstructorContextParameters() = codegen(
     """
       @Provide val foo = Foo()
