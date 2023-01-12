@@ -4,17 +4,16 @@
 
 plugins {
   kotlin("jvm")
-  id("org.jetbrains.intellij") version "1.3.1"
+  id("org.jetbrains.intellij") version "1.11.0"
 }
 
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 
 intellij {
-  version.set("2021.2.1")
   pluginName.set("Injekt ide plugin")
   updateSinceUntilBuild.set(false)
-  plugins.addAll("org.jetbrains.kotlin:213-1.7.10-release-333-IJ6777.52", "gradle", "gradle-java", "java")
+  plugins.addAll("org.jetbrains.kotlin", "gradle", "gradle-java", "java")
   localPath.set("/home/manu/android-studio")
 }
 

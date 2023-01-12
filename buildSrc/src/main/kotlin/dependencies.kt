@@ -42,7 +42,7 @@ object Deps {
 
   object Compose {
     const val version = "1.2.1"
-    const val compiler = "androidx.compose.compiler:compiler:1.3.2"
+    const val compiler = "androidx.compose.compiler:compiler:1.4.0-alpha02"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
@@ -63,7 +63,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.7.20"
+    const val version = "1.7.21"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
