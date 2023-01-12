@@ -46,7 +46,7 @@ fun interface AppUi {
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Text("Count ${model.state.value}", style = MaterialTheme.typography.subtitle1)
+      Text("Count ${model.state}", style = MaterialTheme.typography.subtitle1)
       Spacer(Modifier.height(8.dp))
       Button(onClick = model.incCounter) {
         Text("Inc")
@@ -60,26 +60,22 @@ fun interface AppUi {
 }
 
 data class CounterModel(
-  val state: Counter,
+  val state: Int,
   val incCounter: () -> Unit,
   val decCounter: () -> Unit
 )
 
-@Provide fun counterModel(
-  counter: Flow<Counter>,
-  incCounter: IncCounter,
-  decCounter: DecCounter,
-  scope: NamedCoroutineScope<ActivityScope>
-): @Composable () -> CounterModel = {
+context(Counter, IncCounter, DecCounter, NamedCoroutineScope<ActivityScope>)
+@Provide fun counterModel(): @Composable () -> CounterModel = {
   CounterModel(
-    state = counter.collectAsState(Counter(0)).value,
+    state = counter.collectAsState(0).value,
     incCounter = {
-      scope.launch {
+      launch {
         incCounter()
       }
     },
     decCounter = {
-      scope.launch {
+      launch {
         decCounter()
       }
     }
