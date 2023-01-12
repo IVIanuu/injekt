@@ -47,6 +47,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -213,6 +215,10 @@ fun Annotated.isInject(ctx: Context): Boolean {
             ?: containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)?.any {
             it.type == type
           } == true
+
+    if (!isInject)
+      isInject = this is ReceiverParameterDescriptor &&
+          (value is ContextClassReceiver || value is ContextReceiver)
 
     if (!isInject && this is PropertyDescriptor)
       isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true

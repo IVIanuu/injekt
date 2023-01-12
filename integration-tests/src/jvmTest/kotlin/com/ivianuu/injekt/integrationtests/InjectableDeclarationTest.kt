@@ -9,6 +9,7 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
 import com.ivianuu.injekt.test.withCompose
@@ -534,11 +535,12 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun canLeaveOutPropertyContextParameters() = codegen(
+  @Test fun canLeaveOutPropertyContextParameters() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       context(Foo) val contextProperty get() = ""
-
+    """,
+    """
       fun invoke() {
         contextProperty
       }
@@ -547,11 +549,12 @@ class InjectableDeclarationTest {
     invokeSingleFile()
   }
 
-  @Test fun canLeaveOutConstructorContextParameters() = codegen(
+  @Test fun canLeaveOutConstructorContextParameters() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       context(Foo) class ContextClass
-
+    """,
+    """
       fun invoke() {
         ContextClass()
       }
