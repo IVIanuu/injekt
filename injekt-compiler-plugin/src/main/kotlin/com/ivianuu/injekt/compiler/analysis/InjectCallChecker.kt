@@ -102,7 +102,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor &&
         resolvedCall.dispatchReceiver !is ContextReceiver &&
-        resolvedCall.dispatchReceiver !is ContextClassReceiver
+        resolvedCall.dispatchReceiver !is ContextClassReceiver &&
+        resultingDescriptor.contextReceiverParameters.isEmpty()
     ) return
 
     val callExpression = resolvedCall.call.callElement

@@ -534,6 +534,45 @@ class InjectableDeclarationTest {
     """
   )
 
+  @Test fun canLeaveOutPropertyContextParameters() = codegen(
+    """
+      @Provide val foo = Foo()
+      context(Foo) val contextProperty get() = ""
+
+      fun invoke() {
+        contextProperty
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun canLeaveOutFunctionContextParameters() = codegen(
+    """
+      @Provide val foo = Foo()
+      context(Foo) fun contextFunction() = ""
+
+      fun invoke() {
+        contextFunction()
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun canLeaveOutConstructorContextParameters() = codegen(
+    """
+      @Provide val foo = Foo()
+      context(Foo) class ContextClass
+
+      fun invoke() {
+        ContextClass()
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)

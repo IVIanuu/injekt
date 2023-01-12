@@ -7,6 +7,7 @@ package com.ivianuu.injekt.integrationtests
 import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.runComposing
