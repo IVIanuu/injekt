@@ -59,8 +59,8 @@ fun invokableSource(
 
 fun codegen(
   @Language("kotlin") source1: String,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
+  config: context(KotlinCompilation) () -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) () -> Unit = { compilationShouldBeOk() },
 ) = codegen(
   sources = listOf(invokableSource(source1)),
   config = config,
@@ -70,8 +70,8 @@ fun codegen(
 fun codegen(
   @Language("kotlin") source1: String,
   @Language("kotlin") source2: String,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
+  config: context(KotlinCompilation) () -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) () -> Unit = { compilationShouldBeOk() },
 ) = codegen(
   sources = listOf(source(source1), invokableSource(source2)),
   config = config,
@@ -80,11 +80,11 @@ fun codegen(
 
 fun codegen(
   sources: List<SourceFile>,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
+  config: context(KotlinCompilation) () -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) () -> Unit = { compilationShouldBeOk() },
 ) {
   val result = compile {
-    this.sources = sources.toList()
+    thisCompilation.sources = sources.toList()
     config()
   }
   println("Result: ${result.exitCode} m: ${result.messages}")
@@ -99,8 +99,8 @@ fun codegen(
 fun singleAndMultiCodegen(
   @Language("kotlin") source1: String,
   @Language("kotlin") source2: String,
-  config: KotlinCompilation.(Int) -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.(Boolean) -> Unit = { compilationShouldBeOk() }
+  config: context(KotlinCompilation) (Int) -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) (Boolean) -> Unit = { compilationShouldBeOk() }
 ) {
   singleAndMultiCodegen(
     listOf(listOf(source(source1)), listOf(invokableSource(source2))),
@@ -110,8 +110,8 @@ fun singleAndMultiCodegen(
 
 fun singleAndMultiCodegen(
   sources: List<List<SourceFile>>,
-  config: KotlinCompilation.(Int) -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.(Boolean) -> Unit = { compilationShouldBeOk() }
+  config: context(KotlinCompilation) (Int) -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) (Boolean) -> Unit = { compilationShouldBeOk() }
 ) {
   codegen(sources.flatten(), {
     workingDir = Files.createTempDirectory("single-compilation").toFile()
@@ -127,7 +127,7 @@ fun singleAndMultiCodegen(
 fun multiCodegen(
   @Language("kotlin") source1: String,
   @Language("kotlin") source2: String,
-  config: KotlinCompilation.(Int) -> Unit = {},
+  config: context(KotlinCompilation) (Int) -> Unit = {},
   assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() }
 ) {
   multiCodegen(
@@ -139,18 +139,18 @@ fun multiCodegen(
 
 fun multiCodegen(
   sources: List<List<SourceFile>>,
-  config: KotlinCompilation.(Int) -> Unit = {},
+  config: context(KotlinCompilation) (Int) -> Unit = {},
   assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() }
 ) {
   val prevCompilations = mutableListOf<KotlinCompilation>()
   val results = sources.mapIndexed { index, sourceFiles ->
     compile {
-      this.workingDir = Files.createTempDirectory("multi-compilation-$index").toFile()
-      this.sources = sourceFiles
-      this.moduleName = "multi-compilation-$index"
-      this.classpaths += prevCompilations.map { it.classesDir }
+      workingDir = Files.createTempDirectory("multi-compilation-$index").toFile()
+      thisCompilation.sources = sourceFiles
+      moduleName = "multi-compilation-$index"
+      classpaths += prevCompilations.map { it.classesDir }
       config(index)
-      prevCompilations += this
+      prevCompilations += thisCompilation
     }
   }
   object : KotlinCompilationAssertionScope {
@@ -163,11 +163,15 @@ fun multiCodegen(
   }.assertions()
 }
 
+// todo remove once its possible to reference a context receiver in lambdas
+context(KotlinCompilation)
+private val thisCompilation: KotlinCompilation get() = this@KotlinCompilation
+
 fun multiPlatformCodegen(
   @Language("kotlin") commonSource: String,
   @Language("kotlin") platformSource: String,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
+  config: context(KotlinCompilation) () -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) () -> Unit = { compilationShouldBeOk() },
 ) {
   multiPlatformCodegen(
     commonSources = listOf(source(commonSource)),
@@ -180,8 +184,8 @@ fun multiPlatformCodegen(
 fun multiPlatformCodegen(
   commonSources: List<SourceFile>,
   platformSources: List<SourceFile>,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
+  config: context(KotlinCompilation) () -> Unit = {},
+  assertions: context(KotlinCompilationAssertionScope) () -> Unit = { compilationShouldBeOk() },
 ) {
   val result = compile {
     kotlincArguments += "-Xmulti-platform=true"
@@ -195,8 +199,8 @@ fun multiPlatformCodegen(
           .invoke(it, workingDir.resolve("sources").also { it.mkdirs() })
       }
       .forEach { kotlincArguments += "-Xcommon-sources=$it" }
-    this.sources = platformSources + commonSources
-    config(this)
+    sources = platformSources + commonSources
+    config()
   }
   assertions(
     object : KotlinCompilationAssertionScope {
@@ -206,7 +210,7 @@ fun multiPlatformCodegen(
   )
 }
 
-fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
+fun compilation(block: context(KotlinCompilation) () -> Unit = {}) = KotlinCompilation().apply {
   compilerPlugins = listOf(InjektComponentRegistrar())
   commandLineProcessors = listOf(InjektCommandLineProcessor())
   inheritClassPath = true
@@ -239,27 +243,28 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   )
 }
 
-fun KotlinCompilation.withCompose() {
+context(KotlinCompilation) fun withCompose() {
   compilerPlugins += ComposeComponentRegistrar()
   commandLineProcessors += ComposeCommandLineProcessor()
 }
 
-fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
-
-fun KotlinCompilationAssertionScope.compilationShouldBeOk() {
-  result.exitCode shouldBe KotlinCompilation.ExitCode.OK
-}
+fun compile(block: context(KotlinCompilation) () -> Unit = {}) = compilation(block).compile()
 
 interface KotlinCompilationAssertionScope {
   val result: KotlinCompilation.Result
   val classLoader: ClassLoader get() = result.classLoader
 }
 
+context(KotlinCompilationAssertionScope) fun compilationShouldBeOk() {
+  result.exitCode shouldBe KotlinCompilation.ExitCode.OK
+}
+
+context(KotlinCompilationAssertionScope)
 @JvmName("invokeSingleFileTypeless")
-fun KotlinCompilationAssertionScope.invokeSingleFile(vararg args: Any?): Any? =
+fun invokeSingleFile(vararg args: Any?): Any? =
   invokeSingleFile<Any?>(*args)
 
-fun <T> KotlinCompilationAssertionScope.invokeSingleFile(vararg args: Any?): T {
+context(KotlinCompilationAssertionScope) fun <T> invokeSingleFile(vararg args: Any?): T {
   val generatedClass = classLoader.getSingleClass().java
   return generatedClass.declaredMethods
     .single { it.name == "invoke" && it.parameterTypes.size == args.size }
@@ -269,21 +274,22 @@ fun <T> KotlinCompilationAssertionScope.invokeSingleFile(vararg args: Any?): T {
 private fun ClassLoader.getSingleClass(): KClass<*> =
   loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
-fun KotlinCompilationAssertionScope.compilationShouldHaveFailed(message: String? = null) {
+context(KotlinCompilationAssertionScope) fun compilationShouldHaveFailed(message: String? = null) {
   result.exitCode shouldBe KotlinCompilation.ExitCode.COMPILATION_ERROR
   message?.let { shouldContainMessage(message) }
 }
 
-fun KotlinCompilationAssertionScope.shouldContainMessage(message: String) {
+context(KotlinCompilationAssertionScope) fun shouldContainMessage(message: String) {
   result.messages shouldContain message
 }
 
-fun KotlinCompilationAssertionScope.shouldNotContainMessage(message: String) {
+context(KotlinCompilationAssertionScope) fun shouldNotContainMessage(message: String) {
   result.messages shouldNotContain message
 }
 
+context(KotlinCompilationAssertionScope)
 @Suppress("Assert")
-inline fun KotlinCompilationAssertionScope.irAssertions(block: (String) -> Unit) {
+inline fun irAssertions(block: (String) -> Unit) {
   compilationShouldBeOk()
   result.outputDirectory
     .parentFile
@@ -300,8 +306,9 @@ inline fun KotlinCompilationAssertionScope.irAssertions(block: (String) -> Unit)
     .let(block)
 }
 
+context(KotlinCompilationAssertionScope)
 @Suppress("Assert")
-fun KotlinCompilationAssertionScope.irShouldContain(times: Int, text: String) {
+fun irShouldContain(times: Int, text: String) {
   irAssertions {
     val matchesCount = it.countMatches(text)
     assert(matchesCount == times) {
@@ -313,8 +320,9 @@ fun KotlinCompilationAssertionScope.irShouldContain(times: Int, text: String) {
 private fun String.countMatches(other: String): Int = split(other)
   .dropLastWhile { it.isEmpty() }.size - 1
 
+context(KotlinCompilationAssertionScope)
 @Suppress("Assert")
-fun KotlinCompilationAssertionScope.irShouldNotContain(text: String) {
+fun irShouldNotContain(text: String) {
   irAssertions {
     assert(text !in it) {
       "'$text' in source '$it'"
