@@ -9,6 +9,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.fullyAbbreviatedType
 import com.ivianuu.injekt.compiler.getTags
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injectablesLookupName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.subInjectablesLookupName
@@ -23,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
@@ -36,6 +38,7 @@ import org.jetbrains.kotlin.psi.declarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BodyResolver
+import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.lazy.ForceResolveUtil
@@ -416,9 +419,21 @@ class InjektDeclarationGeneratorExtension(
     is ClassDescriptor ->
       uniqueKey(ctx) +
           "${visibility.name}:" +
+          "${kind.name}:" +
           "${unsubstitutedPrimaryConstructor?.uniqueKey(ctx)}:" +
           "${contextReceivers.joinToString(",") { it.uniqueKey(ctx) }}:" +
           getTags().joinToString(",") { it.type.fullyAbbreviatedType.uniqueTypeKey() }
+    is FunctionDescriptor ->
+      uniqueKey(ctx) +
+          "$isSuspend:" +
+          "${hasAnnotation(InjektFqNames.Composable)}" +
+          valueParameters
+            .map { it.hasDefaultValue() }
+            .joinToString(",")
+    is PropertyDescriptor ->
+      uniqueKey(ctx) +
+          "${hasAnnotation(InjektFqNames.Composable) || 
+              getter?.hasAnnotation(InjektFqNames.Composable) == true}"
     else -> uniqueKey(ctx)
   }
 }
