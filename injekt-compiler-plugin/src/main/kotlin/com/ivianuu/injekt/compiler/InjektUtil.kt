@@ -123,7 +123,8 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
       is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
           "${original.visibility.name}:" +
           "${
-            original.valueParameters
+            original.contextReceiverParameters
+              .plus(original.valueParameters)
               .joinToString(",") {
                 it.type
                   .fullyAbbreviatedType
