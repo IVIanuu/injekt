@@ -8,10 +8,10 @@ plugins {
 
 kotlin {
   jvm()
-  js(IR) {
+  /*js(IR) {
     nodejs()
     browser()
-  }
+  }*/
 
   /*macosX64()
   mingwX64()

@@ -117,25 +117,6 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
         }
         project.tasks.register(injektTaskName, injektTaskClass)
           .also { injektTaskProvider ->
-            when (injektTaskClass) {
-              InjektTaskJvm::class.java -> {
-                KotlinCompileConfig(kotlinCompilation.cast())
-                  .execute(injektTaskProvider as TaskProvider<KotlinCompile>)
-              }
-              InjektTaskJS::class.java -> {
-                BaseKotlin2JsCompileConfig<Kotlin2JsCompile>(kotlinCompilation.cast())
-                  .execute(injektTaskProvider as TaskProvider<Kotlin2JsCompile>)
-                injektTaskProvider.configure {
-                  it as Kotlin2JsCompile
-                  it.incrementalJsKlib = false
-                }
-              }
-              InjektTaskMetadata::class.java -> {
-                KotlinCompileCommonConfig(kotlinCompilation.cast())
-                  .execute(injektTaskProvider as TaskProvider<KotlinCompileCommon>)
-              }
-            }
-
             injektTaskProvider.configure { injektTask ->
               if (injektTask is InjektTaskJvm) {
                 injektTask.compilerOptions.moduleName.convention(kotlinCompileTask.moduleName.map { "$it-injekt" })
@@ -160,6 +141,25 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
                 kotlinCompilation as KotlinCompilationData<*>,
                 kotlinCompileTask,
               )
+            }
+
+            when (injektTaskClass) {
+              InjektTaskJvm::class.java -> {
+                KotlinCompileConfig(kotlinCompilation.cast())
+                  .execute(injektTaskProvider as TaskProvider<KotlinCompile>)
+              }
+              InjektTaskJS::class.java -> {
+                BaseKotlin2JsCompileConfig<Kotlin2JsCompile>(kotlinCompilation.cast())
+                  .execute(injektTaskProvider as TaskProvider<Kotlin2JsCompile>)
+                injektTaskProvider.configure {
+                  it as Kotlin2JsCompile
+                  it.incrementalJsKlib = false
+                }
+              }
+              InjektTaskMetadata::class.java -> {
+                KotlinCompileCommonConfig(kotlinCompilation.cast())
+                  .execute(injektTaskProvider as TaskProvider<KotlinCompileCommon>)
+              }
             }
           }
       }
