@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.resolution.render
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
@@ -88,7 +89,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 class InjectCallTransformer(
   private val localDeclarations: LocalDeclarations,
   private val irCtx: IrPluginContext,

@@ -7,6 +7,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -49,7 +50,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 fun ClassDescriptor.irClass(
   ctx: Context,
   irCtx: IrPluginContext,
@@ -62,7 +63,7 @@ fun ClassDescriptor.irClass(
   return irCtx.referenceClass(fqNameSafe)!!.owner
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 fun ClassConstructorDescriptor.irConstructor(
   ctx: Context,
   irCtx: IrPluginContext,
@@ -79,7 +80,7 @@ fun ClassConstructorDescriptor.irConstructor(
     .owner
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 fun FunctionDescriptor.irFunction(
   ctx: Context,
   irCtx: IrPluginContext,
@@ -101,7 +102,7 @@ fun FunctionDescriptor.irFunction(
     .owner
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 fun PropertyDescriptor.irProperty(
   ctx: Context,
   irCtx: IrPluginContext,
@@ -118,7 +119,7 @@ fun PropertyDescriptor.irProperty(
     .owner
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 fun TypeRef.toIrType(
   irCtx: IrPluginContext,
   localDeclarations: LocalDeclarations,
@@ -194,7 +195,7 @@ fun TypeRef.toIrType(
   }
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
+@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(
   type: IrType,
   startOffset: Int = UNDEFINED_OFFSET,

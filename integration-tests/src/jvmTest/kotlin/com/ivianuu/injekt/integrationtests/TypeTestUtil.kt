@@ -2,6 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.Provide
@@ -21,6 +23,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.CliBindingTrace
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -35,7 +38,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
     """
     """,
     config = {
-      compilerPlugins += object : ComponentRegistrar {
+      componentRegistrars += object : ComponentRegistrar {
         override fun registerProjectComponents(
           project: MockProject,
           configuration: CompilerConfiguration,

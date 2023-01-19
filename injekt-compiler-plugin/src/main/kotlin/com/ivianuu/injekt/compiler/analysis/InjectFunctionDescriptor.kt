@@ -127,7 +127,7 @@ class InjectFunctionDescriptorImpl(
       .map {
         ReceiverParameterDescriptorImpl(
           this,
-          ContextReceiver(this, it.type, null),
+          ContextReceiver(this, it.type, null, null),
           Annotations.EMPTY
         )
       } else underlyingDescriptor.contextReceiverParameters
@@ -177,7 +177,7 @@ class InjectSimpleFunctionDescriptorImpl(
       .map {
         ReceiverParameterDescriptorImpl(
           this,
-          ContextReceiver(this, it.type, null),
+          ContextReceiver(this, it.type, null, null),
           Annotations.EMPTY
         )
       } else underlyingDescriptor.contextReceiverParameters

@@ -3,6 +3,7 @@
  */
 
 @file:Suppress("UNCHECKED_CAST")
+@file:OptIn(ExperimentalCompilerApi::class)
 
 package com.ivianuu.injekt.test
 
@@ -18,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 import java.net.URLClassLoader
@@ -85,7 +87,7 @@ fun codegen(
 ) {
   val result = compile {
     thisCompilation.sources = sources.toList()
-    config()
+    config(thisCompilation)
   }
   println("Result: ${result.exitCode} m: ${result.messages}")
   assertions(
@@ -116,12 +118,12 @@ fun singleAndMultiCodegen(
   codegen(sources.flatten(), {
     workingDir = Files.createTempDirectory("single-compilation").toFile()
     moduleName = "single-compilation"
-    config(-1)
-  }, { assertions(false) })
+    config(thisCompilation, -1)
+  }, { assertions(thisAssertionScope, false) })
   multiCodegen(sources, {
     workingDir = Files.createTempDirectory("multi-compilation-$it").toFile()
-    config(it)
-  }, { assertions(true) })
+    config(thisCompilation, it)
+  }, { assertions(thisAssertionScope, true) })
 }
 
 fun multiCodegen(
@@ -149,7 +151,7 @@ fun multiCodegen(
       thisCompilation.sources = sourceFiles
       moduleName = "multi-compilation-$index"
       classpaths += prevCompilations.map { it.classesDir }
-      config(index)
+      config(thisCompilation, index)
       prevCompilations += thisCompilation
     }
   }
@@ -166,6 +168,10 @@ fun multiCodegen(
 // todo remove once its possible to reference a context receiver in lambdas
 context(KotlinCompilation)
 private val thisCompilation: KotlinCompilation get() = this@KotlinCompilation
+
+// todo remove once its possible to reference a context receiver in lambdas
+context(KotlinCompilationAssertionScope)
+private val thisAssertionScope: KotlinCompilationAssertionScope get() = this@KotlinCompilationAssertionScope
 
 fun multiPlatformCodegen(
   @Language("kotlin") commonSource: String,
@@ -192,15 +198,13 @@ fun multiPlatformCodegen(
     commonSources
       .map {
         SourceFile::class.java
-          .getDeclaredMethod(
-            "writeIfNeeded\$kotlin_compile_testing",
-            File::class.java
-          )
+          .declaredMethods
+          .first { it.name.startsWith("writeIfNeeded") }
           .invoke(it, workingDir.resolve("sources").also { it.mkdirs() })
       }
       .forEach { kotlincArguments += "-Xcommon-sources=$it" }
     sources = platformSources + commonSources
-    config()
+    config(thisCompilation)
   }
   assertions(
     object : KotlinCompilationAssertionScope {
@@ -211,7 +215,7 @@ fun multiPlatformCodegen(
 }
 
 fun compilation(block: context(KotlinCompilation) () -> Unit = {}) = KotlinCompilation().apply {
-  compilerPlugins = listOf(InjektComponentRegistrar())
+  componentRegistrars = listOf(InjektComponentRegistrar())
   commandLineProcessors = listOf(InjektCommandLineProcessor())
   inheritClassPath = true
   useIR = true
@@ -220,7 +224,7 @@ fun compilation(block: context(KotlinCompilation) () -> Unit = {}) = KotlinCompi
   kotlincArguments += "-XXLanguage:+NewInference"
   kotlincArguments += "-Xcontext-receivers"
   dumpAllFiles = true
-  block()
+  block(thisCompilation)
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",
     "dumpDir",
@@ -244,7 +248,7 @@ fun compilation(block: context(KotlinCompilation) () -> Unit = {}) = KotlinCompi
 }
 
 context(KotlinCompilation) fun withCompose() {
-  compilerPlugins += ComposeComponentRegistrar()
+  componentRegistrars += ComposeComponentRegistrar()
   commandLineProcessors += ComposeCommandLineProcessor()
 }
 

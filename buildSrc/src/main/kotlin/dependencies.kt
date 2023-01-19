@@ -36,13 +36,13 @@ object Deps {
     const val work = "androidx.work:work-runtime-ktx:2.7.1"
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.18.5"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.19.0"
 
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
     const val version = "1.2.1"
-    const val compiler = "androidx.compose.compiler:compiler:1.4.0-alpha02"
+    const val compiler = "androidx.compose.compiler:compiler:1.4.0"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
@@ -58,12 +58,12 @@ object Deps {
 
   const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev692"
+  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev696"
 
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.7.21"
+    const val version = "1.8.0"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -71,10 +71,10 @@ object Deps {
 
   object KotlinSerialization {
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1"
   }
 
-  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.4.9"
+  const val kotlinCompileTesting = "dev.zacsweers.kctfork:core:0.1.0-1.8.0-Beta01"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
