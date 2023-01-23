@@ -22,6 +22,9 @@ intellij {
 }*/
 
 tasks {
+  buildSearchableOptions {
+    enabled = false
+  }
   instrumentCode {
     compilerVersion.set("201.7846.76")
   }
