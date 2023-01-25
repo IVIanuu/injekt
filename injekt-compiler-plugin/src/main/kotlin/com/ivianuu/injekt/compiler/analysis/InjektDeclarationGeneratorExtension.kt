@@ -418,21 +418,21 @@ class InjektDeclarationGeneratorExtension(
   private fun DeclarationDescriptor.adjustedUniqueKey(ctx: Context) = when (this) {
     is ClassDescriptor ->
       uniqueKey(ctx) +
-          "${visibility.name}:" +
+          ":${visibility.name}:" +
           "${kind.name}:" +
           "${unsubstitutedPrimaryConstructor?.uniqueKey(ctx)}:" +
           "${contextReceivers.joinToString(",") { it.uniqueKey(ctx) }}:" +
           getTags().joinToString(",") { it.type.fullyAbbreviatedType.uniqueTypeKey() }
     is FunctionDescriptor ->
       uniqueKey(ctx) +
-          "$isSuspend:" +
+          ":$isSuspend:" +
           "${hasAnnotation(InjektFqNames.Composable)}" +
           valueParameters
             .map { it.hasDefaultValue() }
             .joinToString(",")
     is PropertyDescriptor ->
       uniqueKey(ctx) +
-          "${hasAnnotation(InjektFqNames.Composable) || 
+          ":${hasAnnotation(InjektFqNames.Composable) || 
               getter?.hasAnnotation(InjektFqNames.Composable) == true}"
     else -> uniqueKey(ctx)
   }
