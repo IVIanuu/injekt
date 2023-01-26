@@ -3,7 +3,7 @@
  */
 
 import com.ivianuu.injekt.gradle.InjektPlugin
-import com.vanniktech.maven.publish.MavenPublishPluginExtension
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -57,8 +57,8 @@ allprojects {
   }
 
   plugins.withId("com.vanniktech.maven.publish") {
-    extensions.getByType<MavenPublishPluginExtension>()
-      .sonatypeHost = SonatypeHost.S01
+    extensions.getByType<MavenPublishBaseExtension>()
+      .publishToMavenCentral(SonatypeHost.S01)
   }
 
   if (project.name == "injekt-compiler-plugin" ||

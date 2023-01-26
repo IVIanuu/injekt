@@ -278,7 +278,7 @@ class InjektDeclarationGeneratorExtension(
 
         appendLine("// $key")
 
-        appendLine("fun $injectablesLookupName(")
+        appendLine("fun `$injectablesLookupName`(")
         appendLine(" marker: $markerName,")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
@@ -334,7 +334,7 @@ class InjektDeclarationGeneratorExtension(
           val key = provider.adjustedUniqueKey(ctx)
 
           appendLine("// $key")
-          appendLine("fun $subInjectablesLookupName(")
+          appendLine("fun `$subInjectablesLookupName`(")
           appendLine("  marker: ${file.packageFqName.child(markerName.asNameId())},")
           repeat(i + 1) {
             appendLine("  index$it: Byte,")
