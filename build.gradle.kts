@@ -16,7 +16,6 @@ buildscript {
     mavenLocal()
     google()
     mavenCentral()
-    jcenter()
     maven("https://plugins.gradle.org/m2")
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
   }
@@ -37,7 +36,6 @@ allprojects {
     mavenLocal()
     google()
     mavenCentral()
-    jcenter()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://plugins.gradle.org/m2")
   }
@@ -62,7 +60,8 @@ allprojects {
   }
 
   if (project.name == "injekt-compiler-plugin" ||
-    project.name == "injekt-gradle-plugin")
+    project.name == "injekt-gradle-plugin" ||
+    project.name == "injekt-ide-plugin")
     return@allprojects
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {

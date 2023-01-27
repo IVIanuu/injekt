@@ -14,7 +14,7 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:7.3.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:7.4.0"
 
   object AndroidX {
     object Activity {
@@ -54,11 +54,11 @@ object Deps {
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
   }
 
-  const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
+  const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.7.20"
 
   const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev696"
+  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev698"
 
   const val junit = "junit:junit:4.12"
 
@@ -84,5 +84,5 @@ object Deps {
 
   const val roboelectric = "org.robolectric:robolectric:4.4"
 
-  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.0"
+  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
 }
