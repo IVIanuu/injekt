@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -52,7 +51,6 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
@@ -61,6 +59,7 @@ import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import sun.misc.Unsafe
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.experimental.ExperimentalTypeInference
@@ -316,7 +315,15 @@ fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }
   field.isAccessible = true
-  val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+  val modifiersField = try {
+    Field::class.java.getDeclaredField("modifiers")
+  } catch (e: Throwable) {
+    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
+    getDeclaredFields0.isAccessible = true
+    getDeclaredFields0.invoke(Field::class.java, false)
+      .cast<Array<Field>>()
+      .single { it.name == "modifiers" }
+  }
   modifiersField.isAccessible = true
   modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
   return field.get(this) as T
@@ -326,7 +333,15 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }
   field.isAccessible = true
-  val modifiersField: Field = Field::class.java.getDeclaredField("modifiers")
+  val modifiersField = try {
+    Field::class.java.getDeclaredField("modifiers")
+  } catch (e: Throwable) {
+    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
+    getDeclaredFields0.isAccessible = true
+    getDeclaredFields0.invoke(Field::class.java, false)
+      .cast<Array<Field>>()
+      .single { it.name == "modifiers" }
+  }
   modifiersField.isAccessible = true
   modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
   val currentValue = field.get(this)
@@ -335,8 +350,8 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-val injectablesLookupName = "_injectables".asNameId()
-val subInjectablesLookupName = "_subInjectables".asNameId()
+val injectablesLookupName = "\$\$\$\$\$".asNameId()
+val subInjectablesLookupName = "\$\$\$\$\$\$\$\$\$\$".asNameId()
 
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND

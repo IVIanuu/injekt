@@ -6,7 +6,7 @@
 
 object Build {
   const val applicationId = "com.ivianuu.injekt.samples.android"
-  const val compileSdk = 32
+  const val compileSdk = 33
   const val minSdk = 27
   const val targetSdk = 30
   const val versionCode = 1
@@ -14,7 +14,7 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:7.3.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:7.4.0"
 
   object AndroidX {
     object Activity {
@@ -41,7 +41,7 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.2.1"
+    const val version = "1.3.0"
     const val compiler = "androidx.compose.compiler:compiler:1.4.0"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
@@ -54,11 +54,11 @@ object Deps {
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
   }
 
-  const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.4.20"
+  const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.7.20"
 
   const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev696"
+  const val injektGradlePlugin = "com.ivianuu.injekt:injekt-gradle-plugin:0.0.1-dev698"
 
   const val junit = "junit:junit:4.12"
 
@@ -78,11 +78,11 @@ object Deps {
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
-  const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.18.0"
+  const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.24.0"
 
   const val mockk = "io.mockk:mockk:1.11.0"
 
   const val roboelectric = "org.robolectric:robolectric:4.4"
 
-  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.0"
+  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
 }

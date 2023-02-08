@@ -3,7 +3,7 @@
  */
 
 import com.ivianuu.injekt.gradle.InjektPlugin
-import com.vanniktech.maven.publish.MavenPublishPluginExtension
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -16,7 +16,6 @@ buildscript {
     mavenLocal()
     google()
     mavenCentral()
-    jcenter()
     maven("https://plugins.gradle.org/m2")
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
   }
@@ -37,7 +36,6 @@ allprojects {
     mavenLocal()
     google()
     mavenCentral()
-    jcenter()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://plugins.gradle.org/m2")
   }
@@ -57,12 +55,15 @@ allprojects {
   }
 
   plugins.withId("com.vanniktech.maven.publish") {
-    extensions.getByType<MavenPublishPluginExtension>()
-      .sonatypeHost = SonatypeHost.S01
+    extensions.getByType<MavenPublishBaseExtension>().run {
+      publishToMavenCentral(SonatypeHost.S01)
+      signAllPublications()
+    }
   }
 
   if (project.name == "injekt-compiler-plugin" ||
-    project.name == "injekt-gradle-plugin")
+    project.name == "injekt-gradle-plugin" ||
+    project.name == "injekt-ide-plugin")
     return@allprojects
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
