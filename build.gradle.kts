@@ -55,8 +55,10 @@ allprojects {
   }
 
   plugins.withId("com.vanniktech.maven.publish") {
-    extensions.getByType<MavenPublishBaseExtension>()
-      .publishToMavenCentral(SonatypeHost.S01)
+    extensions.getByType<MavenPublishBaseExtension>().run {
+      publishToMavenCentral(SonatypeHost.S01)
+      signAllPublications()
+    }
   }
 
   if (project.name == "injekt-compiler-plugin" ||
