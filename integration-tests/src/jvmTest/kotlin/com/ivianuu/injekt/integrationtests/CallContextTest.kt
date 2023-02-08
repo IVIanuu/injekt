@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
 
 class CallContextTest {
-  @Test fun testSuspendCannotBeRequestedFromNonSuspend() = singleAndMultiCodegen(
+  @Test fun testSuspendCannotBeRequestedFromNonSuspend() = codegen(
     """
       @Provide suspend fun foo() = Foo()
       @Provide suspend fun bar(foo: Foo) = Bar(foo)

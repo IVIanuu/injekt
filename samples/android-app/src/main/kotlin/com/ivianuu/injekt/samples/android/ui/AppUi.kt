@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.coroutines.NamedCoroutineScope
+import com.ivianuu.injekt.samples.android.app.AppScope
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
 import com.ivianuu.injekt.samples.android.domain.IncCounter
@@ -60,22 +61,26 @@ fun interface AppUi {
 }
 
 data class CounterModel(
-  val state: Int,
+  val state: Counter,
   val incCounter: () -> Unit,
   val decCounter: () -> Unit
 )
 
-context(Counter, IncCounter, DecCounter, NamedCoroutineScope<ActivityScope>)
-@Provide fun counterModel(): @Composable () -> CounterModel = {
+@Provide fun counterModel(
+  counter: Flow<Counter>,
+  incCounter: IncCounter,
+  decCounter: DecCounter,
+  scope: NamedCoroutineScope<AppScope>
+): @Composable () -> CounterModel = {
   CounterModel(
-    state = counter.collectAsState(0).value,
+    state = counter.collectAsState(Counter(0)).value,
     incCounter = {
-      launch {
+      scope.launch {
         incCounter()
       }
     },
     decCounter = {
-      launch {
+      scope.launch {
         decCounter()
       }
     }

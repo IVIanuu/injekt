@@ -171,55 +171,6 @@ class InjectableDeclarationTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideContextFunction() = singleAndMultiCodegen(
-    """
-      context(Foo) @Provide fun bar() = Bar(this@Foo)
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = inject<Bar>()
-    """
-  ) {
-    invokeSingleFile(Foo())
-      .shouldBeTypeOf<Bar>()
-  }
-
-  @Test fun testProvideContextProperty() = singleAndMultiCodegen(
-    """
-      context(Foo) @Provide val bar get() = Bar(this@Foo)
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
-    """
-  ) {
-    invokeSingleFile(Foo())
-      .shouldBeTypeOf<Bar>()
-  }
-
-  @Test fun testProvideContextClass() = singleAndMultiCodegen(
-    """
-      context(Foo) @Provide class Dep
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = inject<Dep>()
-    """
-  ) {
-    invokeSingleFile(Foo())
-  }
-
-  // todo @Test
-  fun testProvideContextConstructor() = singleAndMultiCodegen(
-    """
-      @Provide class Dep(foo: Any) {
-        context(Foo) constructor() : this(this@Foo)
-      }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = inject<Dep>() 
-    """
-  ) {
-    invokeSingleFile(Foo())
-  }
-
   @Test fun testProvideValueParameter() = codegen(
     """
       fun invoke(@Provide foo: Foo) = inject<Foo>()
@@ -480,18 +431,6 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testCanLeaveOutInjectContextLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: context(Unit) (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = with(Unit) { lambda() }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
     """
       val lambda: suspend (@Inject Foo) -> Foo = { inject<Foo>() }
@@ -515,129 +454,6 @@ class InjectableDeclarationTest {
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testCanLeaveOutFunctionContextParameters() = singleAndMultiCodegen(
-    """
-      context(Foo) fun usesFoo() {
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        usesFoo()
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testCanLeaveOutSuspendFunctionContextParameters() = singleAndMultiCodegen(
-    """
-      context(Foo) suspend fun usesFoo() {
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() = runBlocking {
-        usesFoo()
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testCanLeaveOutComposableFunctionContextParameters() = singleAndMultiCodegen(
-    """
-      context(Foo) @Composable fun usesFoo() {
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() = runComposing {
-        usesFoo()
-      }
-    """,
-    config = { withCompose() }
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testCanLeaveOutContextLambdaParameters() = singleAndMultiCodegen(
-    """
-      context(Foo) fun withFoo(block: context(Foo) (String) -> Unit) {
-        block("")
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        withFoo {  }
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testCanLeaveOutSuspendContextLambdaParameters() = singleAndMultiCodegen(
-    """
-      context(Foo) suspend fun withFoo(block: suspend context(Foo) (String) -> Unit) {
-        block("")
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() = runBlocking {
-        withFoo {  }
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testCanLeaveOutComposableContextLambdaParameters() = singleAndMultiCodegen(
-    """
-      context(Foo) @Composable fun withFoo(block: @Composable context(Foo) (String) -> Unit) {
-        block("")
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() = runComposing {
-        withFoo {  }
-      }
-    """,
-    config = { withCompose() }
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun canLeaveOutPropertyContextParameters() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      context(Foo) val contextProperty get() = ""
-    """,
-    """
-      fun invoke() {
-        contextProperty
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun canLeaveOutConstructorContextParameters() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      context(Foo) class ContextClass
-    """,
-    """
-      fun invoke() {
-        ContextClass()
-      }
-    """
-  ) {
-    invokeSingleFile()
   }
 
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(

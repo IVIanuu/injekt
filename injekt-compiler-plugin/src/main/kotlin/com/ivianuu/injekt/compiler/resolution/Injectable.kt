@@ -5,13 +5,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -172,13 +172,12 @@ class TypeKeyInjectable(
   }
 }
 
-fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParametersWithContext
+fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParameters
   .transform {
     if (it === callable.dispatchReceiverParameter ||
-        it === callable.extensionReceiverParameter ||
-        it in callable.contextReceiverParameters ||
-        it.isProvide(ctx))
-          add(it.toInjectableRequest(this@getInjectableRequests, ctx))
+      it === callable.extensionReceiverParameter ||
+      it.isProvide(ctx))
+      add(it.toInjectableRequest(this@getInjectableRequests, ctx))
   }
 
 data class InjectableRequest(
@@ -193,12 +192,12 @@ data class InjectableRequest(
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
   InjectableRequest(
-    type = callable.parameterTypes[injektIndex(ctx)]!!,
+    type = callable.parameterTypes[injektIndex()]!!,
     callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
-    parameterIndex = injektIndex(ctx),
+    parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
         InlineUtil.isInlineParameter(this) &&

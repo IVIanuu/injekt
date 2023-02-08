@@ -632,13 +632,6 @@ class ResolveTest {
     """
   )
 
-  @Test fun testCanResolveContextReceiverInDefaultValueOfParameter() = codegen(
-    """
-      context(Foo) fun invoke(bar: Bar = Bar(inject())) {
-      }
-    """
-  )
-
   @Test fun testCannotResolveClassProvideDeclarationInClassConstructorParameterDefaultValue() = codegen(
     """
       class MyClass {
@@ -1152,56 +1145,9 @@ class ResolveTest {
     """
   )
 
-  @Test fun testCanResolveContextReceiverOfFunction() = codegen(
-    """
-      context(Foo) fun foo() = inject<Foo>()
-    """
-  )
-
   @Test fun testCanResolveExtensionReceiverOfProperty() = codegen(
     """
       val Foo.foo get() = inject<Foo>()
-    """
-  )
-
-  @Test fun testMeh() = singleAndMultiCodegen(
-    """
-      class ResourceProvider {
-        context(AppContext, String) fun loadResource(id: Int, prefix: String): String = ""
-        fun load(id: Int): String = ""
-      }
-
-      typealias AppContext = Foo
-    """,
-    """
-      @Provide val foo: AppContext = Foo()
-
-      context(ResourceProvider, String)
-      fun loadMessage(messageRes: Int) {
-        loadResource(0, "")
-      }
-
-      abstract class AbstractRepo(string: String)
-
-      context(ResourceProvider) class RepoImpl : AbstractRepo(load(0)) {
-        fun func() {
-          load(0)
-        }
-      }
-    """
-  )
-
-  @Test fun testCanResolveContextReceiverOfProperty() = codegen(
-    """
-      context(Foo) val foo get() = inject<Foo>()
-    """
-  )
-
-  @Test fun testCanResolveContextReceiverOfClass() = codegen(
-    """
-      context(Foo) class Dep {
-        val foo get() = inject<Foo>()
-      }
     """
   )
 }

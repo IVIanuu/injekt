@@ -421,7 +421,6 @@ class InjektDeclarationGeneratorExtension(
           ":${visibility.name}:" +
           "${kind.name}:" +
           "${unsubstitutedPrimaryConstructor?.uniqueKey(ctx)}:" +
-          "${contextReceivers.joinToString(",") { it.uniqueKey(ctx) }}:" +
           getTags().joinToString(",") { it.type.fullyAbbreviatedType.uniqueTypeKey() }
     is FunctionDescriptor ->
       uniqueKey(ctx) +
