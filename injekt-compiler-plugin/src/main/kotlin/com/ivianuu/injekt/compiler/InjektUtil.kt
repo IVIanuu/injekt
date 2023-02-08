@@ -122,8 +122,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
       is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
           "${original.visibility.name}:" +
           "${
-            original.contextReceiverParameters
-              .plus(original.valueParameters)
+            original.valueParameters
               .joinToString(",") {
                 it.type
                   .fullyAbbreviatedType
@@ -149,14 +148,12 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
             }
           } +
           listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-            .plus(original.contextReceiverParameters)
             .plus(original.valueParameters)
             .joinToString(",") { parameter ->
               buildString {
                 when {
                   parameter === original.dispatchReceiverParameter -> append("d:")
                   parameter === original.extensionReceiverParameter -> append("e:")
-                  parameter in original.contextReceiverParameters -> append(":c")
                   else -> append("p:")
                 }
                 append(
@@ -186,13 +183,11 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
             original.dispatchReceiverParameter,
             original.extensionReceiverParameter
           )
-            .plus(original.contextReceiverParameters)
             .joinToString(",") { parameter ->
               buildString {
                 when {
                   parameter === original.dispatchReceiverParameter -> append("d:")
                   parameter === original.extensionReceiverParameter -> append("e:")
-                  parameter in original.contextReceiverParameters -> append(":c")
                   else -> append("p:")
                 }
                 append(
@@ -250,64 +245,27 @@ inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(ctx: Context): Name {
-  val index = injektIndex(ctx)
-  val parentContextReceivers = containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters
-    ?: contextReceiverParameters.safeAs<ClassDescriptor>()?.contextReceivers
-    ?: emptyList()
-
-  return when  {
-    index == DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-    index == EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-    this is ReceiverParameterDescriptor &&
-        parentContextReceivers.isNotEmpty() &&
-        index <= parentContextReceivers.size ->
-      Name.identifier("\$contextReceiver_$index")
-    else -> name
-  }
+fun ParameterDescriptor.injektName(ctx: Context): Name = when (injektIndex()) {
+  DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+  EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+  else -> name
 }
 
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
-fun ParameterDescriptor.injektIndex(ctx: Context): Int =
-  ctx.trace.getOrPut(InjektWritableSlices.INJEKT_INDEX, this) {
-    val callable = containingDeclaration as? CallableDescriptor
-    when {
-      original == callable?.dispatchReceiverParameter?.original ||
-          original is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
-      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-      else -> {
-        val contextReceivers = (containingDeclaration
-          .safeAs<ReceiverParameterDescriptor>()
-          ?.value
-          ?.safeAs<ImplicitClassReceiver>()
-          ?.classDescriptor
-          ?.contextReceivers ?:
-        callable?.contextReceiverParameters ?:
-        containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)
+fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescriptor) {
+  index
+} else {
+  val callable = containingDeclaration as? CallableDescriptor
+  when {
+    original == callable?.dispatchReceiverParameter?.original ||
+        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
 
-        val contextReceiverIndex = contextReceivers?.indexOfFirst {
-          // todo find a better way to get the correct index
-          it.type.fullyAbbreviatedType == type.fullyAbbreviatedType
-        }
-
-        if (contextReceiverIndex != null && contextReceiverIndex != -1)
-          contextReceiverIndex
-        else {
-          val valueParameterIndex = callable?.valueParameters?.indexOfFirst {
-            original === it.original
-          }
-          if (valueParameterIndex != null && valueParameterIndex != -1)
-            callable.contextReceiverParameters.size + valueParameterIndex
-          else if (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor)
-            DISPATCH_RECEIVER_INDEX
-          else
-            throw AssertionError("Unexpected descriptor $this $javaClass $fqNameSafe $type")
-        }
-      }
-    }
+    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
+    else -> throw AssertionError("Unexpected descriptor $this")
   }
+}
 
 fun String.nextFrameworkKey(next: String) = "$this:$next"
 
@@ -452,18 +410,3 @@ val composeCompilerInClasspath = try {
 } catch (e: ClassNotFoundException) {
   false
 }
-
-val CallableDescriptor.allParametersWithContext: List<ParameterDescriptor>
-  get() = buildList {
-    addIfNotNull(dispatchReceiverParameter)
-    addIfNotNull(extensionReceiverParameter)
-    addAll(contextReceiverParameters)
-    addAll(valueParameters)
-  }
-
-val IrFunction.allParametersWithContext: List<IrValueParameter>
-  get() = buildList {
-    addIfNotNull(dispatchReceiverParameter)
-    addIfNotNull(extensionReceiverParameter)
-    addAll(valueParameters)
-  }

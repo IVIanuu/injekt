@@ -9,22 +9,18 @@ import com.ivianuu.injekt.samples.android.data.CounterDb
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-@JvmInline value class Counter(val counter: Flow<Int>)
+@JvmInline value class Counter(val value: Int)
 
-context(CounterDb) @Provide fun counter() = Counter(counter.map { it })
+@Provide fun counter(db: CounterDb) = db.counter.map { Counter(it) }
 
-fun interface IncCounter {
-  suspend fun incCounter()
+fun interface IncCounter : suspend () -> Unit
+
+@Provide fun incCounter(db: CounterDb) = IncCounter {
+  db.updateCounter { inc() }
 }
 
-context(CounterDb) @Provide fun incCounter() = IncCounter {
-  updateCounter { inc() }
-}
+fun interface DecCounter : suspend () -> Unit
 
-fun interface DecCounter {
-  suspend fun decCounter()
-}
-
-context(CounterDb) @Provide fun decCounter() = DecCounter {
-  updateCounter { dec() }
+@Provide fun decCounter(db: CounterDb) = DecCounter {
+  db.updateCounter { dec() }
 }

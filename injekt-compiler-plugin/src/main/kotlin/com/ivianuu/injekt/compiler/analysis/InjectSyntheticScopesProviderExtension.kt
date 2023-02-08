@@ -58,14 +58,14 @@ class InjectSyntheticScopes(
 
 private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
-    constructor.toInjectFunctionDescriptor(null, ctx) as? ConstructorDescriptor
+    constructor.toInjectFunctionDescriptor(ctx) as? ConstructorDescriptor
 
   override fun getSyntheticConstructors(
     contributedClassifier: ClassifierDescriptor,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedClassifier.safeAs<ClassDescriptor>()
     ?.constructors
-    ?.mapNotNull { it.toInjectFunctionDescriptor(null, ctx) } ?: emptyList()
+    ?.mapNotNull { it.toInjectFunctionDescriptor(ctx) } ?: emptyList()
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
@@ -73,10 +73,10 @@ private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.De
         for (declaration in receiverType.memberScope.getContributedDescriptors()) {
           if (declaration is ClassDescriptor && declaration.isInner) {
             for (constructor in declaration.constructors)
-              constructor.toInjectFunctionDescriptor(receiverType, ctx)
+              constructor.toInjectFunctionDescriptor(ctx)
                 ?.let { add(it) }
           } else
-            declaration.safeAs<FunctionDescriptor>()?.toInjectFunctionDescriptor(receiverType, ctx)
+            declaration.safeAs<FunctionDescriptor>()?.toInjectFunctionDescriptor(ctx)
               ?.let { add(it) }
         }
       }
@@ -88,13 +88,13 @@ private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.De
   ): Collection<FunctionDescriptor> = receiverTypes
     .transform { receiverType ->
       for (function in receiverType.memberScope.getContributedFunctions(name, location))
-        function.toInjectFunctionDescriptor(receiverType, ctx)?.let { add(it) }
+        function.toInjectFunctionDescriptor(ctx)?.let { add(it) }
       receiverType.memberScope.getContributedClassifier(name, location)
         ?.safeAs<ClassDescriptor>()
         ?.takeIf { it.isInner }
         ?.constructors
         ?.forEach { constructor ->
-          constructor.toInjectFunctionDescriptor(null, ctx)?.let { add(it) }
+          constructor.toInjectFunctionDescriptor(ctx)?.let { add(it) }
         }
     }
 
@@ -102,5 +102,5 @@ private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.De
     contributedFunctions: Collection<FunctionDescriptor>,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedFunctions
-    .mapNotNull { it.toInjectFunctionDescriptor(null, ctx) }
+    .mapNotNull { it.toInjectFunctionDescriptor(ctx) }
 }

@@ -7,7 +7,6 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
@@ -15,6 +14,7 @@ import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.transform
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -310,10 +310,7 @@ private fun ClassInjectablesScope(
     name = name,
     parent = finalParent,
     ownerDescriptor = clazz,
-    initialInjectables = buildList {
-      add(clazz.injectableReceiver(false, ctx))
-      clazz.contextReceivers.forEach { add(it.toCallableRef(ctx)) }
-    },
+    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
     ctx = ctx
   )
@@ -349,10 +346,7 @@ private fun ClassInitInjectablesScope(
     name = name,
     parent = finalParent,
     ownerDescriptor = clazz,
-    initialInjectables = buildList {
-      add(clazz.injectableReceiver(false, ctx))
-      clazz.contextReceivers.forEach { add(it.toCallableRef(ctx)) }
-    },
+    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectablesScope true
       psiProperty.getParentOfType<KtClass>(false) != psiClass ||
@@ -460,16 +454,16 @@ private fun FunctionParameterInjectablesScopes(
   until: ValueParameterDescriptor? = null,
   ctx: Context
 ): InjectablesScope {
-  val maxIndex = until?.injektIndex(ctx)
+  val maxIndex = until?.injektIndex()
 
-  return function.allParametersWithContext
+  return function.allParameters
     .transform {
       if (it !== function.dispatchReceiverParameter &&
-        (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
+        (maxIndex == null || it.injektIndex() < maxIndex) &&
         (it === function.dispatchReceiverParameter ||
             it === function.extensionReceiverParameter ||
-            it in function.contextReceiverParameters || it.isProvide(ctx)))
-         add(it.toCallableRef(ctx))
+            it.isProvide(ctx)))
+        add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -520,10 +514,7 @@ private fun PropertyInjectablesScope(
     callContext = property.callContext(ctx),
     parent = finalParent,
     ownerDescriptor = property,
-    initialInjectables = buildList {
-      addIfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx))
-      property.contextReceiverParameters.forEach { add(it.toCallableRef(ctx)) }
-    },
+    initialInjectables = listOfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx)),
     typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
     ctx = ctx
   )

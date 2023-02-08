@@ -28,26 +28,6 @@ class InjektProjectInitializer : ProjectManagerListener {
   override fun projectOpened(project: Project) {
     StorageComponentContainerContributor.registerExtension(
       project,
-      object : StorageComponentContainerContributor {
-        override fun registerModuleComponents(
-          container: StorageComponentContainer,
-          platform: TargetPlatform,
-          moduleDescriptor: ModuleDescriptor
-        ) {
-          moduleDescriptor.moduleInfo
-            ?.safeAs<ModuleSourceInfo>()
-            ?.module
-            ?.languageVersionSettings
-            ?.updatePrivateFinalField<MutableMap<LanguageFeature, LanguageFeature.State>>(
-              LanguageVersionSettingsImpl::class, "specificFeatures") {
-              toMutableMap()
-                .apply { put(LanguageFeature.ContextReceivers, LanguageFeature.State.ENABLED) }
-            }
-        }
-      }
-    )
-    StorageComponentContainerContributor.registerExtension(
-      project,
       InjektStorageComponentContainerContributor()
     )
     SyntheticScopeProviderExtension.registerExtension(

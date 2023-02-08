@@ -9,7 +9,6 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
@@ -28,6 +27,7 @@ import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -42,12 +42,9 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.KotlinCallDiagnostic
-import org.jetbrains.kotlin.resolve.calls.model.NoContextReceiver
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.tower.NewResolvedCallImpl
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
-import org.jetbrains.kotlin.resolve.scopes.receivers.ContextReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
@@ -100,11 +97,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor &&
-        resolvedCall.dispatchReceiver !is ContextReceiver &&
-        resolvedCall.dispatchReceiver !is ContextClassReceiver &&
-        resultingDescriptor.contextReceiverParameters.isEmpty()
-    ) return
+    if (resultingDescriptor !is InjectFunctionDescriptor) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -131,34 +124,14 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex(ctx!!) }
+      .mapKeys { it.key.injektIndex() }
 
-    val requests = callee.callable.allParametersWithContext
+    val requests = callee.callable.allParameters
       .transform {
-        val index = it.injektIndex(ctx!!)
-        if ((index == DISPATCH_RECEIVER_INDEX &&
-              (resolvedCall.dispatchReceiver is ContextReceiver || resolvedCall.dispatchReceiver is ContextClassReceiver)) ||
-          ((valueArgumentsByIndex[index] is DefaultValueArgument ||
-              it in callee.callable.contextReceiverParameters) && it.isInject(ctx!!)))
+        val index = it.injektIndex()
+        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx!!))
           add(it.toInjectableRequest(callee, ctx!!))
       }
-
-    // we fill the context receivers list up with dummy's to ensure
-    // that the compiler builds a correct ir tree
-    // we replace those dummy's later in ir phase
-    if (callee
-        .callable
-        .contextReceiverParameters.isNotEmpty()) {
-      resolvedCall.contextReceivers.cast<ArrayList<ReceiverValue>>().run {
-        clear()
-        val dummyReceiver = ImplicitClassReceiver(ctx!!.module.builtIns.unit)
-        repeat(callee
-          .callable
-          .contextReceiverParameters.size) {
-          add(dummyReceiver)
-        }
-      }
-    }
 
     if (requests.isEmpty()) return
 

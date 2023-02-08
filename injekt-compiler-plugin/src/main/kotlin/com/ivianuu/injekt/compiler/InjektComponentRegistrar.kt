@@ -40,12 +40,6 @@ import java.util.*
     project: MockProject,
     configuration: CompilerConfiguration,
   ) {
-    configuration.get(CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS)!!
-      .updatePrivateFinalField<MutableMap<LanguageFeature, LanguageFeature.State>>(LanguageVersionSettingsImpl::class, "specificFeatures") {
-        toMutableMap()
-          .apply { put(LanguageFeature.ContextReceivers, LanguageFeature.State.ENABLED) }
-      }
-
     if (configuration.get(SrcDirKey) != null)
       project.registerCodegenExtensions(configuration)
 
