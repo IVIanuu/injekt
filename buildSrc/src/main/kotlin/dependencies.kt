@@ -6,7 +6,7 @@
 
 object Build {
   const val applicationId = "com.ivianuu.injekt.samples.android"
-  const val compileSdk = 32
+  const val compileSdk = 33
   const val minSdk = 27
   const val targetSdk = 30
   const val versionCode = 1
@@ -41,7 +41,7 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.2.1"
+    const val version = "1.3.0"
     const val compiler = "androidx.compose.compiler:compiler:1.4.0"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
