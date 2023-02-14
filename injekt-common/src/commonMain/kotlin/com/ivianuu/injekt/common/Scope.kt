@@ -8,7 +8,6 @@ import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
-import com.ivianuu.injekt.inject
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 
@@ -18,14 +17,14 @@ class Scope<N> : SynchronizedObject(), Disposable {
   val isDisposed: Boolean
     get() = synchronized(this) { _isDisposed }
 
-  inline fun <T> scoped(key: Any, init: () -> T): T = synchronized(this) {
+  inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
     check(!_isDisposed) { "Cannot use a disposed scope" }
     val value = values.getOrPut(key) { init() ?: NULL }
     (if (value !== NULL) value else null) as T
   }
 
-  inline fun <T> scoped(@Inject key: TypeKey<T>, init: () -> T): T =
-    scoped(key.value, init)
+  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+    invoke(key.value, init)
 
   override fun dispose() {
     synchronized(this) {
@@ -48,6 +47,6 @@ class Scope<N> : SynchronizedObject(), Disposable {
       crossinline init: () -> T,
       scope: Scope<N>,
       key: TypeKey<S>
-    ): S = scope.scoped(key) { init() }
+    ): S = scope(key) { init() }
   }
 }
