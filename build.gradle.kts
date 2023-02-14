@@ -40,20 +40,6 @@ allprojects {
     maven("https://plugins.gradle.org/m2")
   }
 
-  plugins.withId("java-base") {
-    extensions.getByName<JavaPluginExtension>("java").apply {
-      toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-      }
-    }
-  }
-
-  tasks.withType<KotlinJvmCompile>().configureEach {
-    kotlinOptions {
-      jvmTarget = "11"
-    }
-  }
-
   plugins.withId("com.vanniktech.maven.publish") {
     extensions.getByType<MavenPublishBaseExtension>().run {
       publishToMavenCentral(SonatypeHost.S01)
@@ -63,8 +49,22 @@ allprojects {
 
   if (project.name == "injekt-compiler-plugin" ||
     project.name == "injekt-gradle-plugin" ||
-    project.name == "injekt-ide-plugin")
+    project.name == "injekt-ide-plugin") {
+    plugins.withId("java-base") {
+      extensions.getByName<JavaPluginExtension>("java").apply {
+        toolchain {
+          languageVersion.set(JavaLanguageVersion.of(11))
+        }
+      }
+    }
+
+    tasks.withType<KotlinJvmCompile>().configureEach {
+      kotlinOptions {
+        jvmTarget = "11"
+      }
+    }
     return@allprojects
+    }
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
