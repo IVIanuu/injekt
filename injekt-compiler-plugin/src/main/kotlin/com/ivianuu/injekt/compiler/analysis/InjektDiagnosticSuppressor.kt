@@ -37,9 +37,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     isSuppressed(diagnostic, null)
 
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
-    if (diagnostic.factory == Errors.FINAL_UPPER_BOUND)
-      return true
-
     // todo remove once compose fun interface support is fixed
     if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
       return true
@@ -51,23 +48,11 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
       return true
 
-    if (diagnostic.factory == Errors.NO_CONTEXT_RECEIVER)
-      return true
-
-    if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
-      return true
-
-    if (diagnostic.factory == Errors.UNSUPPORTED_CONTEXTUAL_DECLARATION_CALL)
-      return true
-
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
     if (bindingContext == null)
       return false
-
-    val ctx = bindingContext[InjektWritableSlices.INJEKT_CONTEXT, Unit]
-      ?: return false
 
     if (diagnostic.factory == Errors.WRONG_ANNOTATION_TARGET) {
       val annotationDescriptor =
@@ -88,27 +73,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
               diagnostic.psiElement.endOffset
             )] != null
       }
-    }
-
-    if (diagnostic.factory == Errors.NOTHING_TO_INLINE) {
-      val descriptor = diagnostic.psiElement.getParentOfType<KtNamedDeclaration>(false)
-        ?.descriptor<CallableDescriptor>(ctx)
-      if (descriptor?.hasAnnotation(InjektFqNames.Provide) == true ||
-        descriptor?.valueParameters?.any {
-          it.hasAnnotation(InjektFqNames.Inject) ||
-              it.hasAnnotation(InjektFqNames.Provide)
-        } == true)
-        return true
-    }
-
-    if (diagnostic.factory == Errors.UNUSED_TYPEALIAS_PARAMETER) {
-      val typeParameter = diagnostic.psiElement
-        .cast<KtTypeParameter>().descriptor<TypeParameterDescriptor>(ctx)
-      return diagnostic.psiElement.getParentOfType<KtTypeAlias>(false)
-        ?.descriptor<TypeAliasDescriptor>(ctx)
-        ?.expandedType
-        ?.toTypeRef(ctx)
-        ?.anyType { it.classifier.descriptor == typeParameter } == true
     }
 
     return false

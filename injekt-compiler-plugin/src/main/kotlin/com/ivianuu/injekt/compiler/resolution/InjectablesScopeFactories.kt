@@ -482,7 +482,7 @@ private fun FunctionParameterInjectablesScope(
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
   return InjectablesScope(
-    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName(ctx)}",
+    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
     parent = parent,
     ownerDescriptor = function,
     initialInjectables = listOf(parameter),

@@ -196,7 +196,7 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context)
     callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(ctx),
+    parameterName = injektName(),
     parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
     isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&

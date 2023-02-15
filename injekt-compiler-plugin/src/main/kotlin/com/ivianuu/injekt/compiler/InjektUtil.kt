@@ -239,7 +239,7 @@ inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(ctx: Context): Name = when (injektIndex()) {
+fun ParameterDescriptor.injektName(): Name = when (injektIndex()) {
   DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
   EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
   else -> name
