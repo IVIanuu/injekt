@@ -195,7 +195,7 @@ fun TypeRef.toIrType(
   }
 }
 
-@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
+@OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(
   type: IrType,
   startOffset: Int = UNDEFINED_OFFSET,

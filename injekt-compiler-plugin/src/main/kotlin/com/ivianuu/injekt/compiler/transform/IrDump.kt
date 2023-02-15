@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import java.io.File
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrModuleFragment.dumpToFiles(dumpDir: File, irCtx: IrPluginContext) {
   files
     .filter {
