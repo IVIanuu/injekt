@@ -89,10 +89,7 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
-  private inner class RootContext(
-    val rootCtx: InjectionResult.Success,
-    val startOffset: Int
-  ) {
+  private inner class RootContext(val rootCtx: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
     var variableIndex = 0
