@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
 import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 interface InjectFunctionDescriptor : FunctionDescriptor {
@@ -58,6 +59,7 @@ abstract class AbstractInjectFunctionDescriptor(
         InjectValueParameterDescriptor(this, valueParameter, ctx)
       }
 
+  @OptIn(UnsafeCastFunction::class)
   override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
     valueParams.cast()
 }

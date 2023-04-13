@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInline
 import org.jetbrains.kotlin.resolve.inline.InlineUtil.isInlineParameter
 import org.jetbrains.kotlin.resolve.sam.getSingleAbstractMethodOrNull
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
+import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 enum class CallContext {
@@ -44,7 +45,7 @@ enum class CallContext {
 
 fun CallContext.canCall(other: CallContext) = this == other || other == CallContext.DEFAULT
 
-fun CallableDescriptor.callContext(ctx: Context): CallContext {
+@OptIn(UnsafeCastFunction::class) fun CallableDescriptor.callContext(ctx: Context): CallContext {
   if (this is ConstructorDescriptor) return CallContext.DEFAULT
 
   if (this !is FunctionDescriptor && this !is PropertyDescriptor) return CallContext.DEFAULT

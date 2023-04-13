@@ -35,16 +35,11 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
-import org.jetbrains.kotlin.gradle.plugin.mpp.AbstractKotlinNativeCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.enabledOnCurrentHost
-import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinCompilationData
-import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinNativeCompilationData
-import org.jetbrains.kotlin.gradle.plugin.pluginConfigurationName
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
 import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.configuration.AbstractKotlinCompileConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 import org.jetbrains.kotlin.gradle.tasks.TaskOutputsBackup
@@ -59,6 +54,8 @@ import org.jetbrains.kotlin.gradle.tasks.configuration.BaseKotlin2JsCompileConfi
 import org.jetbrains.kotlin.gradle.tasks.configuration.KotlinCompileCommonConfig
 import org.jetbrains.kotlin.gradle.tasks.configuration.KotlinCompileConfig
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilationInfo
+import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
@@ -137,18 +134,18 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
               }
 
               injektTask.configureCompilation(
-                kotlinCompilation as KotlinCompilationData<*>,
+                kotlinCompilation,
                 kotlinCompileTask,
               )
             }
 
             when (injektTaskClass) {
               InjektTaskJvm::class.java -> {
-                KotlinCompileConfig(kotlinCompilation.cast())
+                KotlinCompileConfig(KotlinCompilationInfo(kotlinCompilation))
                   .execute(injektTaskProvider as TaskProvider<KotlinCompile>)
               }
               InjektTaskJS::class.java -> {
-                BaseKotlin2JsCompileConfig<Kotlin2JsCompile>(kotlinCompilation.cast())
+                BaseKotlin2JsCompileConfig<Kotlin2JsCompile>(KotlinCompilationInfo(kotlinCompilation))
                   .execute(injektTaskProvider as TaskProvider<Kotlin2JsCompile>)
                 injektTaskProvider.configure {
                   it as Kotlin2JsCompile
@@ -156,7 +153,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
                 }
               }
               InjektTaskMetadata::class.java -> {
-                KotlinCompileCommonConfig(kotlinCompilation.cast())
+                KotlinCompileCommonConfig(KotlinCompilationInfo(kotlinCompilation))
                   .execute(injektTaskProvider as TaskProvider<KotlinCompileCommon>)
               }
             }
@@ -164,18 +161,19 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       }
       is KotlinNativeCompile -> {
         val injektTaskClass = InjektTaskNative::class.java
-        val pluginConfigurationName =
-          (kotlinCompileTask.compilation as AbstractKotlinNativeCompilation).pluginConfigurationName
         project.tasks.register(injektTaskName, injektTaskClass, kotlinCompileTask.compilation).also {
           it.configure { injektTask ->
             getSubpluginOptions(project, sourceSetName, false).forEach { option ->
               kotlinCompileTask.compilerPluginOptions.addPluginArgument("com.ivianuu.injekt", option)
             }
-            injektTask.onlyIf { kotlinCompileTask.compilation.konanTarget.enabledOnCurrentHost }
+            injektTask.onlyIf { injektTask.konanTarget.enabledOnCurrentHost }
             configure(injektTask)
-            injektTask.compilerPluginClasspath = project.configurations.getByName(pluginConfigurationName)
+            injektTask.compilerPluginClasspath = kotlinCompileTask.compilerPluginClasspath
             injektTask.commonSources.from(kotlinCompileTask.commonSources)
             injektTask.compilerPluginOptions.addPluginArgument(kotlinCompileTask.compilerPluginOptions)
+            injektTask.doFirst {
+              outputDir.deleteRecursively()
+            }
           }
         }
       }
@@ -209,7 +207,7 @@ interface InjektTask : Task {
   @get:OutputDirectory var outputDir: File
 
   fun configureCompilation(
-    kotlinCompilation: KotlinCompilationData<*>,
+    kotlinCompilation: KotlinCompilation<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   )
 }
@@ -223,7 +221,7 @@ interface InjektTask : Task {
   objectFactory
 ), InjektTask {
   override fun configureCompilation(
-    kotlinCompilation: KotlinCompilationData<*>,
+    kotlinCompilation: KotlinCompilation<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) {
     kotlinCompile as KotlinCompile
@@ -280,7 +278,7 @@ interface InjektTask : Task {
   workerExecutor
 ), InjektTask {
   override fun configureCompilation(
-    kotlinCompilation: KotlinCompilationData<*>,
+    kotlinCompilation: KotlinCompilation<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) {
     kotlinCompile as Kotlin2JsCompile
@@ -336,7 +334,7 @@ interface InjektTask : Task {
   objectFactory
 ), InjektTask {
   override fun configureCompilation(
-    kotlinCompilation: KotlinCompilationData<*>,
+    kotlinCompilation: KotlinCompilation<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) {
     kotlinCompile as KotlinCompileCommon
@@ -387,8 +385,8 @@ interface InjektTask : Task {
   }
 }
 
-@CacheableTask abstract class InjektTaskNative @Inject constructor(
-  compilation: KotlinNativeCompilationData<*>,
+@CacheableTask abstract class InjektTaskNative @Inject internal constructor(
+  compilation: KotlinCompilationInfo,
   objectFactory: ObjectFactory,
   providerFactory: ProviderFactory,
   execOperations: ExecOperations
@@ -400,7 +398,7 @@ interface InjektTask : Task {
     }
 
   override fun configureCompilation(
-    kotlinCompilation: KotlinCompilationData<*>,
+    kotlinCompilation: KotlinCompilation<*>,
     kotlinCompile: AbstractKotlinCompile<*>,
   ) = Unit
 }
