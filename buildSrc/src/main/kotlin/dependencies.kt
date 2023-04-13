@@ -54,7 +54,7 @@ object Deps {
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
   }
 
-  const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.7.20"
+  const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
 
   const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
 
