@@ -17,8 +17,8 @@ class ElementsTest {
 
     val elements = inject<Elements<TestScope>>()
 
-    elements.element() shouldBe 42
-    elements.element() shouldBe "42"
+    elements.element<Int>() shouldBe 42
+    elements.element<String>() shouldBe "42"
   }
 
   @Test fun testEager() {
