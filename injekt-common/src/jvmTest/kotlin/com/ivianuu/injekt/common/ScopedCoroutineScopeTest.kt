@@ -13,13 +13,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import org.junit.Test
+import kotlin.coroutines.CoroutineContext
 
-class NamedCoroutineScopeTest {
+class ScopedCoroutineScopeTest {
   private object MyScope
 
-  @Test fun testNamedScopeLifecycle() {
+  @Test fun testScopedScopeLifecycle() {
     @Provide val scopedObjects = ScopedObjects<MyScope>()
-    val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
+    val coroutineScope = inject<ScopedCoroutineScope<MyScope>>()
     coroutineScope.isActive.shouldBeTrue()
     scopedObjects.dispose()
     coroutineScope.isActive.shouldBeFalse()
@@ -27,8 +28,8 @@ class NamedCoroutineScopeTest {
 
   @Test fun testCanSpecifyCustomCoroutineContext() {
     @Provide val scopedObjects = ScopedObjects<MyScope>()
-    @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
-    val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
+    @Provide val customContext: @ScopedCoroutineScopeTag.Context<MyScope> CoroutineContext = Dispatchers.Main
+    val coroutineScope = inject<ScopedCoroutineScope<MyScope>>()
     coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext
   }
 }
