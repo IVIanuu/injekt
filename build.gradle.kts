@@ -18,6 +18,7 @@ buildscript {
     mavenCentral()
     maven("https://plugins.gradle.org/m2")
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    maven("https://androidx.dev/storage/compose-compiler/repository")
   }
   dependencies {
     classpath(Deps.androidGradlePlugin)
@@ -38,6 +39,7 @@ allprojects {
     mavenCentral()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://plugins.gradle.org/m2")
+    maven("https://androidx.dev/storage/compose-compiler/repository")
   }
 
   plugins.withId("com.vanniktech.maven.publish") {
@@ -50,7 +52,7 @@ allprojects {
   if (project.name == "injekt-compiler-plugin" ||
     project.name == "injekt-gradle-plugin" ||
     project.name == "injekt-ide-plugin") {
-    plugins.withId("java-base") {
+    /*plugins.withId("java-base") {
       extensions.getByName<JavaPluginExtension>("java").apply {
         toolchain {
           languageVersion.set(JavaLanguageVersion.of(17))
@@ -62,7 +64,8 @@ allprojects {
       kotlinOptions {
         jvmTarget = "17"
       }
-    }
+    }*/
+    
     return@allprojects
   }
 

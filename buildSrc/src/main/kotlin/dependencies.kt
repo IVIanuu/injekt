@@ -42,7 +42,7 @@ object Deps {
 
   object Compose {
     const val version = "1.4.0"
-    const val compiler = "org.jetbrains.compose.compiler:compiler:1.4.5"
+    const val compiler = "androidx.compose.compiler:compiler:1.4.6-dev-k1.8.21-290a127309e"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
@@ -63,7 +63,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.8.20"
+    const val version = "1.8.21"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -74,15 +74,15 @@ object Deps {
     const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0"
   }
 
-  const val kotlinCompileTesting = "dev.zacsweers.kctfork:core:0.2.1"
+  const val kotlinCompileTesting = "com.github.tschuchortdev:kotlin-compile-testing:1.5.0"
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.24.0"
 
-  const val mockk = "io.mockk:mockk:1.11.0"
+  const val mockk = "io.mockk:mockk:1.35.5"
 
-  const val roboelectric = "org.robolectric:robolectric:4.4"
+  const val roboelectric = "org.robolectric:robolectric:4.10.3"
 
   const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
 }
