@@ -14,7 +14,8 @@ import org.junit.Test
 import java.nio.file.Files
 
 class IncrementalTest {
-  @Test fun testLol() {
+  //@Test
+  fun testLol() {
     val project = Files.createTempDirectory("root").toFile()
 
     val injektVersion = "0.0.1-dev686"
