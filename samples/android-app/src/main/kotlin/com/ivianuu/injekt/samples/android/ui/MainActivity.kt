@@ -20,15 +20,15 @@ class MainActivity : ComponentActivity() {
     val scopedObjects = ScopedObjects<ActivityScope>()
     lifecycleScope.coroutineContext.job.invokeOnCompletion { scopedObjects.dispose() }
 
-    val component = (application as App).appComponent.mainActivityComponent(scopedObjects)
+    val context = (application as App).appContext.mainActivityContext(scopedObjects)
     setContent {
-      component.appTheme {
-        component.appUi()
+      context.appTheme {
+        context.appUi()
       }
     }
   }
 }
 
-@Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)
+@Provide data class MainActivityContext(val appTheme: AppTheme, val appUi: AppUi)
 
 object ActivityScope

@@ -13,7 +13,7 @@ import kotlin.coroutines.CoroutineContext
 
 typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope
 
-@Tag annotation class NamedCoroutineScopeTag<out N> {
+@Tag annotation class NamedCoroutineScopeTag<N> {
   companion object {
     @Provide fun <N> scope(
       context: NamedCoroutineContext<N>
@@ -28,7 +28,7 @@ typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope
 
 typealias NamedCoroutineContext<N> = @NamedCoroutineContextTag<N> CoroutineContext
 
-@Tag annotation class NamedCoroutineContextTag<out N> {
+@Tag annotation class NamedCoroutineContextTag<N> {
   companion object {
     @Provide inline fun <N> context(context: DefaultCoroutineContext): NamedCoroutineContext<N> = context
   }

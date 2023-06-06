@@ -10,15 +10,15 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
 
-class ElementsTest {
-  @Test fun testElements() {
-    @Provide val int: @Element<TestScope> Int = 42
-    @Provide val string: @Element<TestScope> String = "42"
+class ContextLocatorTest {
+  @Test fun testContextLocator() {
+    @Provide val int: @Locatable<TestScope> Int = 42
+    @Provide val string: @Locatable<TestScope> String = "42"
 
-    val elements = inject<Elements<TestScope>>()
+    val contextLocator = inject<ContextLocator<TestScope>>()
 
-    elements.element<Int>() shouldBe 42
-    elements.element<String>() shouldBe "42"
+    contextLocator.invoke<Int>() shouldBe 42
+    contextLocator.invoke<String>() shouldBe "42"
   }
 
   @Test fun testEager() {
@@ -32,7 +32,7 @@ class ElementsTest {
     }
 
     @Provide val scopedObjects = ScopedObjects<TestScope>()
-    @Provide val elements = inject<Elements<TestScope>>()
+    @Provide val contextLocator = inject<ContextLocator<TestScope>>()
     callCount shouldBe 1
     val a = inject<Foo>()
     callCount shouldBe 1

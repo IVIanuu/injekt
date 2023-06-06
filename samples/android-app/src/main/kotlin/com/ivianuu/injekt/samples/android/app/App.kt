@@ -9,13 +9,13 @@ import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.common.ScopedObjects
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.samples.android.ui.ActivityScope
-import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
+import com.ivianuu.injekt.samples.android.ui.MainActivityContext
 
 class App : Application() {
   @Provide private val scopedObjects = ScopedObjects<AppScope>()
-  val appComponent by lazy { inject<AppComponent>() }
+  val appContext by lazy { inject<AppContext>() }
 }
 
 object AppScope
 
-@Provide data class AppComponent(val mainActivityComponent: (ScopedObjects<ActivityScope>) -> MainActivityComponent)
+@Provide data class AppContext(val mainActivityContext: (ScopedObjects<ActivityScope>) -> MainActivityContext)
