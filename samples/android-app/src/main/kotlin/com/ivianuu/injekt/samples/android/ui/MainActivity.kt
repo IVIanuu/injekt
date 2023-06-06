@@ -9,7 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.Scope
+import com.ivianuu.injekt.common.ScopedObjects
 import com.ivianuu.injekt.samples.android.app.App
 import kotlinx.coroutines.job
 
@@ -17,10 +17,10 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    val scope = Scope<ActivityScope>()
-    lifecycleScope.coroutineContext.job.invokeOnCompletion { scope.dispose() }
+    val scopedObjects = ScopedObjects<ActivityScope>()
+    lifecycleScope.coroutineContext.job.invokeOnCompletion { scopedObjects.dispose() }
 
-    val component = (application as App).appComponent.mainActivityComponent(scope)
+    val component = (application as App).appComponent.mainActivityComponent(scopedObjects)
     setContent {
       component.appTheme {
         component.appUi()
