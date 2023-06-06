@@ -80,7 +80,7 @@ object Deps {
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.24.0"
 
-  const val mockk = "io.mockk:mockk:1.35.5"
+  const val mockk = "io.mockk:mockk:1.11.0"
 
   const val roboelectric = "org.robolectric:robolectric:4.10.3"
 
