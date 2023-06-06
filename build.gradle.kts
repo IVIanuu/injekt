@@ -64,7 +64,7 @@ allprojects {
       }
     }
     return@allprojects
-    }
+  }
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
