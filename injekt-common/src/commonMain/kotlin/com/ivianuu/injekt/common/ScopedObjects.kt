@@ -18,7 +18,7 @@ class ScopedObjects<N> : SynchronizedObject(), Disposable {
     get() = synchronized(this) { _isDisposed }
 
   inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
-    check(!_isDisposed) { "Cannot use a disposed scope" }
+    check(!_isDisposed) { "Cannot use disposed scoped objects" }
     val value = values.getOrPut(key) { init() ?: NULL }
     (if (value !== NULL) value else null) as T
   }
