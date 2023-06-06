@@ -30,6 +30,6 @@ typealias NamedCoroutineContext<N> = @NamedCoroutineContextTag<N> CoroutineConte
 
 @Tag annotation class NamedCoroutineContextTag<N> {
   companion object {
-    @Provide inline fun <N> context(context: DefaultContext): NamedCoroutineContext<N> = context
+    @Provide inline fun <N> context(context: DefaultCoroutineContext): NamedCoroutineContext<N> = context
   }
 }
