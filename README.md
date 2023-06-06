@@ -251,8 +251,6 @@ dependencies {
   classpath("com.ivianuu.injekt:injekt-core:${latest_version}")
   // optional - common utilities
   classpath("com.ivianuu.injekt:injekt-common:${latest_version}")
-  // optional - coroutines utilities
-  classpath("com.ivianuu.injekt:injekt-coroutines:${latest_version}")
   // optional - android utilities
   classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
   // optional - androidx work utilities

@@ -17,7 +17,6 @@ kotlin {
         implementation(Deps.gradleTestKit)
         implementation(project(":injekt-common"))
         implementation(project(":injekt-core"))
-        implementation(project(":injekt-coroutines"))
         implementation(project(":test-util"))
         implementation(Deps.junit)
         implementation(Deps.kotestAssertions)

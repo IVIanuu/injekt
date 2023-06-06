@@ -19,7 +19,7 @@ android {
 }
 
 dependencies {
-  api(project(":injekt-coroutines"))
+  api(project(":injekt-common"))
   api(Deps.AndroidX.Activity.activity)
   api(Deps.AndroidX.Lifecycle.runtime)
   testImplementation(Deps.AndroidX.Test.core)

@@ -20,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.coroutines.NamedCoroutineScope
+import com.ivianuu.injekt.common.NamedCoroutineScope
 import com.ivianuu.injekt.samples.android.app.AppScope
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
