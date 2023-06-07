@@ -15,25 +15,25 @@ interface ContextLocator<N> {
 
 @Provide class ContextLocatorImpl<N>(
   private val key: TypeKey<ContextLocator<N>>,
-  contexts: List<ProvidedContext<N, *>>
+  services: List<ProvidedContext<N, *>>
 ) : ContextLocator<N> {
-  private val contexts = buildMap {
-    for (context in contexts)
-      this[context.key.value] = context
+  private val services = buildMap {
+    for (service in services)
+      this[service.key.value] = service
   }
 
   init {
-    contexts.forEach { it.init() }
+    services.forEach { it.init() }
   }
 
   override fun <T> invoke(@Inject key: TypeKey<T>): T =
-    contexts[key.value]?.get() as T
-      ?: error("No context found for ${key.value} in ${this.key.value}")
+    services[key.value]?.get() as T
+      ?: error("No service found for ${key.value} in ${this.key.value}")
 }
 
 @Tag annotation class Locatable<N> {
   companion object {
-    @Provide inline fun <@Spread T : @Locatable<N> S, S : Any, N> context(
+    @Provide inline fun <@Spread T : @Locatable<N> S, S : Any, N> service(
       key: TypeKey<S>,
       crossinline factory: () -> T
     ): ProvidedContext<N, S> = object : ProvidedContext<N, S> {
@@ -43,7 +43,7 @@ interface ContextLocator<N> {
       override fun get(): T = factory()
     }
 
-    @Provide inline fun <@Spread T : @Locatable<N> S, S : Any, N> accessor(context: T): S = context
+    @Provide inline fun <@Spread T : @Locatable<N> S, S : Any, N> accessor(service: T): S = service
   }
 }
 
