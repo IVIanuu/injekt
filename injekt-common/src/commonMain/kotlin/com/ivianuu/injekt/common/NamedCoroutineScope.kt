@@ -11,23 +11,25 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
-typealias ScopedCoroutineScope<N> = @ScopedCoroutineScopeTag<N> CoroutineScope
+typealias NamedCoroutineScope<N> = @NamedCoroutineScopeTag<N> CoroutineScope
 
-@Tag annotation class ScopedCoroutineScopeTag<N> {
+@Tag annotation class NamedCoroutineScopeTag<N> {
   companion object {
     @Provide fun <N> scope(
-      context: @Context<N> CoroutineContext
-    ): @Scoped<N> ScopedCoroutineScope<N> = object : CoroutineScope, Disposable {
+      context: NamedCoroutineContext<N>
+    ): @Scoped<N> NamedCoroutineScope<N> = object : CoroutineScope, Disposable {
       override val coroutineContext: CoroutineContext = context + SupervisorJob()
       override fun dispose() {
         coroutineContext.cancel()
       }
     }
   }
+}
 
-  @Tag annotation class Context<N> {
-    companion object {
-      @Provide inline fun <N> default(context: DefaultCoroutineContext): @Context<N> CoroutineContext = context
-    }
+typealias NamedCoroutineContext<N> = @NamedCoroutineContextTag<N> CoroutineContext
+
+@Tag annotation class NamedCoroutineContextTag<N> {
+  companion object {
+    @Provide inline fun <N> context(context: DefaultCoroutineContext): NamedCoroutineContext<N> = context
   }
 }

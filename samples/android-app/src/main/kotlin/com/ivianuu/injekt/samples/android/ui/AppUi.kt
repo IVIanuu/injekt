@@ -4,7 +4,6 @@
 
 package com.ivianuu.injekt.samples.android.ui
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.ScopedCoroutineScope
+import com.ivianuu.injekt.common.NamedCoroutineScope
 import com.ivianuu.injekt.samples.android.app.AppScope
 import com.ivianuu.injekt.samples.android.domain.Counter
 import com.ivianuu.injekt.samples.android.domain.DecCounter
@@ -33,7 +32,6 @@ fun interface AppUi {
   @Composable operator fun invoke()
 }
 
-@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Provide fun appUi(models: Model<CounterModel>) = AppUi {
   Scaffold(
     topBar = {
@@ -76,7 +74,7 @@ fun interface Model<T> {
   counter: Flow<Counter>,
   incCounter: IncCounter,
   decCounter: DecCounter,
-  scope: ScopedCoroutineScope<AppScope>
+  scope: NamedCoroutineScope<AppScope>
 ) = Model {
   CounterModel(
     state = counter.collectAsState(Counter(0)).value,
