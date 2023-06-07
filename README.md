@@ -172,7 +172,7 @@ All elements which match the T or Collection\<T\> will be included in the result
 # Scoping
 TODO
 
-# Context locator api
+# Elements api
 TODO
 
 # Distinguish between types

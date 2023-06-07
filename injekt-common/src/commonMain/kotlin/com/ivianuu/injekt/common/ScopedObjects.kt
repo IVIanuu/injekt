@@ -11,7 +11,7 @@ import com.ivianuu.injekt.Tag
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 
-class ScopedObjects<N> : SynchronizedObject(), Disposable {
+class ScopedObjects<out N> : SynchronizedObject(), Disposable {
   @PublishedApi internal val values = hashMapOf<Any, Any?>()
   @PublishedApi internal var _isDisposed = false
   val isDisposed: Boolean
@@ -41,7 +41,7 @@ class ScopedObjects<N> : SynchronizedObject(), Disposable {
 
 @PublishedApi internal val NULL = Any()
 
-@Tag annotation class Scoped<N> {
+@Tag annotation class Scoped<out N> {
   companion object {
     @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       crossinline init: () -> T,

@@ -32,7 +32,7 @@ fun interface AppUi {
   @Composable operator fun invoke()
 }
 
-@Provide fun appUi(models: Model<CounterModel>) = AppUi {
+@Provide fun appUi(models: @Composable () -> CounterModel) = AppUi {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -66,16 +66,12 @@ data class CounterModel(
   val decCounter: () -> Unit
 )
 
-fun interface Model<T> {
-  @Composable operator fun invoke(): T
-}
-
 @Provide fun counterModel(
   counter: Flow<Counter>,
   incCounter: IncCounter,
   decCounter: DecCounter,
   scope: NamedCoroutineScope<AppScope>
-) = Model {
+): @Composable () -> CounterModel = {
   CounterModel(
     state = counter.collectAsState(Counter(0)).value,
     incCounter = {
