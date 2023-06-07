@@ -31,7 +31,7 @@ class ElementsTest {
       return Foo()
     }
 
-    @Provide val scopedObjects = ScopedObjects<TestScope>()
+    @Provide val scope = Scope<TestScope>()
     @Provide val elements = inject<Elements<TestScope>>()
     callCount shouldBe 1
     val a = inject<Foo>()

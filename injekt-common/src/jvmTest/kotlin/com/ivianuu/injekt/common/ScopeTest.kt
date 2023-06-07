@@ -19,17 +19,17 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class ScopedObjectsTest {
-  @Test fun testScopedObjects() {
-    val scopedObjects = ScopedObjects<TestScope>()
-    scopedObjects.invoke { "a" } shouldBe "a"
-    scopedObjects.invoke { "b" } shouldBe "a"
+class ScopeTest {
+  @Test fun testScope() {
+    val scope = Scope<TestScope>()
+    scope.invoke { "a" } shouldBe "a"
+    scope.invoke { "b" } shouldBe "a"
   }
 
-  @Test fun scopedObjectsConcurrencyStressTest() = runBlocking(
+  @Test fun scopeConcurrencyStressTest() = runBlocking(
     newFixedThreadPoolContext(64, "ctx")
   ) {
-    val scopedObjects = ScopedObjects<TestScope>()
+    val scope = Scope<TestScope>()
 
     class CallCountHolder {
       private val _callCount = atomic(0)
@@ -41,7 +41,7 @@ class ScopedObjectsTest {
 
     val jobs = (1..64).map {
       launch(start = CoroutineStart.LAZY) {
-        scopedObjects.invoke {
+        scope.invoke {
           holder.inc()
         }
       }
@@ -54,27 +54,27 @@ class ScopedObjectsTest {
   }
 
   @Test fun testDispose() {
-    val scopedObjects = ScopedObjects<TestScope>()
+    val scope = Scope<TestScope>()
     var disposeCalls = 0
-    scopedObjects.invoke {
+    scope.invoke {
       Disposable {
         disposeCalls++
       }
     }
     disposeCalls shouldBe 0
-    scopedObjects.isDisposed shouldBe false
-    scopedObjects.dispose()
+    scope.isDisposed shouldBe false
+    scope.dispose()
     disposeCalls shouldBe 1
-    scopedObjects.isDisposed shouldBe true
-    scopedObjects.dispose()
+    scope.isDisposed shouldBe true
+    scope.dispose()
     disposeCalls shouldBe 1
   }
 
-  @Test fun testCannotUseDisposedScopedObjects() {
-    val scopedObjects = ScopedObjects<TestScope>()
-    shouldNotThrow<IllegalStateException> { scopedObjects.invoke { 42 } }
-    scopedObjects.dispose()
-    shouldThrow<IllegalStateException> { scopedObjects.invoke { 42 } }
+  @Test fun testCannotUseADisposedScope() {
+    val scope = Scope<TestScope>()
+    shouldNotThrow<IllegalStateException> { scope.invoke { 42 } }
+    scope.dispose()
+    shouldThrow<IllegalStateException> { scope.invoke { 42 } }
   }
 
   @Test fun testScopedTag() {
@@ -87,7 +87,7 @@ class ScopedObjectsTest {
       return Foo()
     }
 
-    @Provide val scopedObjects = ScopedObjects<TestScope>()
+    @Provide val scope = Scope<TestScope>()
     callCount shouldBe 0
     val a = inject<Foo>()
     callCount shouldBe 1

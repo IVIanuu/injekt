@@ -6,16 +6,16 @@ package com.ivianuu.injekt.samples.android.app
 
 import android.app.Application
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.ScopedObjects
+import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.samples.android.ui.ActivityScope
 import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
 
 class App : Application() {
-  @Provide private val scopedObjects = ScopedObjects<AppScope>()
+  @Provide private val scope = Scope<AppScope>()
   val appComponent by lazy { inject<AppComponent>() }
 }
 
 object AppScope
 
-@Provide data class AppComponent(val mainActivityComponent: (ScopedObjects<ActivityScope>) -> MainActivityComponent)
+@Provide data class AppComponent(val mainActivityComponent: (Scope<ActivityScope>) -> MainActivityComponent)

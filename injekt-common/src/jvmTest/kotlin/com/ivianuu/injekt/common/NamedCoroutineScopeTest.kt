@@ -18,15 +18,15 @@ class NamedCoroutineScopeTest {
   private object MyScope
 
   @Test fun testNamedScopeLifecycle() {
-    @Provide val scopedObjects = ScopedObjects<MyScope>()
+    @Provide val scope = Scope<MyScope>()
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
     coroutineScope.isActive.shouldBeTrue()
-    scopedObjects.dispose()
+    scope.dispose()
     coroutineScope.isActive.shouldBeFalse()
   }
 
   @Test fun testCanSpecifyCustomCoroutineContext() {
-    @Provide val scopedObjects = ScopedObjects<MyScope>()
+    @Provide val scope = Scope<MyScope>()
     @Provide val customContext: NamedCoroutineContext<MyScope> = Dispatchers.Main
     val coroutineScope = inject<NamedCoroutineScope<MyScope>>()
     coroutineScope.coroutineContext.minusKey(Job.Key) shouldBeSameInstanceAs customContext
