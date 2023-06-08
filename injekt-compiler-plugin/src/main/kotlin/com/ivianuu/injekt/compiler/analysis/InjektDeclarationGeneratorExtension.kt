@@ -355,16 +355,11 @@ class InjektDeclarationGeneratorExtension(
         }
       }
 
-      val providersKeyHash = providers
-        .joinToString { it.adjustedUniqueKey(ctx) }
-        .hashCode()
-        .toString()
-        .filter { it.isLetterOrDigit() }
-
       val subProvidersFile = srcDir.resolve(
         (if (!current.isRoot)
           "${current.pathSegments().joinToString("/")}/"
-        else "") + "${file.name.removeSuffix(".kt")}SubProviders_${providersKeyHash}.kt"
+        else "") + "${file.name.removeSuffix(".kt")}SubProviders_" +
+            "${file.virtualFilePath.hashCode().toString().filter { it.isLetterOrDigit() }}.kt"
       )
       subProvidersFile.parentFile.mkdirs()
       subProvidersFile.createNewFile()
