@@ -70,7 +70,7 @@ class ListInjectable(
   val singleElementType: TypeRef,
   val collectionElementType: TypeRef
 ) : Injectable {
-  override val callableFqName: FqName = FqName("com.ivianuu.injekt.injectListOf")
+  override val callableFqName = FqName("listOf")
   override val dependencies: List<InjectableRequest> = elements
     .mapIndexed { index, element ->
       InjectableRequest(
@@ -90,7 +90,7 @@ class ProviderInjectable(
   val isInline: Boolean,
   dependencyCallContext: CallContext
 ) : Injectable {
-  override val callableFqName: FqName = when (type.callContext) {
+  override val callableFqName = when (type.callContext) {
     CallContext.DEFAULT -> FqName("providerOf")
     CallContext.COMPOSABLE -> FqName("composableProviderOf")
     CallContext.SUSPEND -> FqName("suspendProviderOf")
