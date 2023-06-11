@@ -9,13 +9,9 @@ interface Api
 
 @Provide object ApiImpl : Api
 
-interface Repository {
-  suspend fun loadAll(): List<User>
-}
+interface Repository
 
-@Provide class RepositoryImpl(private val api: Api) : Repository {
-  ...
-}
+@Provide class RepositoryImpl(private val api: Api) : Repository
 
 suspend fun loadUserById(id: Long, @Inject repository: Repository): User? = ...
 
@@ -95,8 +91,8 @@ suspend fun main() {
 }
 ```
 
-2. Injekt will also consider declarations imported with the ```@Providers(...)```.
-The ```@Providers``` can be placed anywhere in a file and will only affect the nested scope.
+2. Injekt will also consider declarations imported with the ```@Providers(...)``` annotation.
+The ```@Providers``` annotation can be placed anywhere in a file and will only affect the nested scope.
 ```kotlin
 // file wide imports
 @file:Providers("injectables.*")
@@ -170,7 +166,25 @@ fun main() {
 All elements which match the T or Collection\<T\> will be included in the resulting list.
 
 # Scoping
-TODO
+The core injekt doesn't know anything about scoping, but there is a api in the common module.
+You have to annotate your class or the return type of a function or a property with ```@Scoped``` tag.
+```kotlin
+// classes
+@Provide @Scoped<UiScope> class Db
+```
+Then you have to provide a ```Scope``` instance.
+```kotlin
+// classes
+@Provide val uiScope = Scope<UiScope>()
+```
+Then you can inject your class.
+```kotlin
+// classes
+fun onCreate() {
+   @Provide val uiScope = Scope<UiScope>()
+   val db = inject<Db>()
+}
+```
 
 # Elements api
 TODO
