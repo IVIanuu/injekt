@@ -12,7 +12,7 @@ import com.ivianuu.injekt.samples.android.ui.ActivityScope
 import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
 
 class App : Application() {
-  @Provide private val scope = Scope<AppScope>()
+  @Provide private val appScope = Scope<AppScope>()
   val appComponent by lazy { inject<AppComponent>() }
 }
 
