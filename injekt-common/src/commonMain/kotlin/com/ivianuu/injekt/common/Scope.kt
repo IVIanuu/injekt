@@ -37,9 +37,11 @@ class Scope<N> : SynchronizedObject(), Disposable {
       (it as? Disposable)?.dispose()
     }
   }
-}
 
-@PublishedApi internal val NULL = Any()
+  companion object {
+    @PublishedApi internal val NULL = Any()
+  }
+}
 
 @Tag annotation class Scoped<N> {
   companion object {
