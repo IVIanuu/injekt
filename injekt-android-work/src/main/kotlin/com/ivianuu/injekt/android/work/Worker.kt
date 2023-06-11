@@ -28,9 +28,9 @@ import kotlin.reflect.KClass
  */
 @Tag annotation class InjektWorker {
   companion object {
-    @Provide inline fun <@Spread T : @InjektWorker S, S : ListenableWorker> workerFactory(
+    @Provide inline fun <@Spread T : @InjektWorker ListenableWorker> workerFactory(
       noinline factory: (Context, WorkerParameters) -> T,
-      workerClass: KClass<S>
+      workerClass: KClass<T>
     ): Pair<String, SingleWorkerFactory> = workerClass.java.name to factory
 
     @Provide val defaultWorkers get() = emptyList<Pair<String, SingleWorkerFactory>>()
