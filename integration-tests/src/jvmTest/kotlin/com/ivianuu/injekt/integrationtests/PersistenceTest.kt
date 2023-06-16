@@ -6,8 +6,10 @@
 
 package com.ivianuu.injekt.integrationtests
 
+import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
@@ -69,5 +71,30 @@ class PersistenceTest {
     """
   ) {
     invokeSingleFile()
+  }
+
+  @Test fun testSupportsDeclarationSiteVariance() = codegen(
+    """
+      interface Decorator<T>
+
+      class MergedDecorator<T>(val decorators: List<Any>)
+
+      @Provide fun <T> mergedDecorator(decorators: List<Decorator<in T>>): MergedDecorator<T> =
+        MergedDecorator(decorators)
+
+      @Provide fun anyDecorator(): Decorator<Any> = object : Decorator<Any> {
+      }
+
+      @Provide fun stringDecorator(): Decorator<String> = object : Decorator<String> {
+      }
+    """,
+    """
+      fun invoke() {
+        inject<MergedDecorator<Any>>()
+      }
+    """
+  ) {
+    val decorators = invokeSingleFile<List<Any>>()
+    decorators.shouldHaveSize(2)
   }
 }
