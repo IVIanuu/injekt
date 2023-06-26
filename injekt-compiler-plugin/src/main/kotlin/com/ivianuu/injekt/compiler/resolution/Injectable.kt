@@ -35,7 +35,6 @@ sealed interface Injectable {
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScopes: Map<InjectableRequest, InjectablesScope> get() = emptyMap()
   val callableFqName: FqName
-  val callContext: CallContext get() = CallContext.DEFAULT
   val ownerScope: InjectablesScope
   val usageKey: Any get() = type
 }
@@ -50,8 +49,6 @@ class CallableInjectable(
   override val callableFqName: FqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
-  override val callContext: CallContext
-    get() = callable.callable.callContext(ownerScope.ctx)
   override val originalType: TypeRef
     get() = callable.originalType
   override val usageKey: Any =
@@ -87,14 +84,9 @@ class ListInjectable(
 class ProviderInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope,
-  val isInline: Boolean,
-  dependencyCallContext: CallContext
+  val isInline: Boolean
 ) : Injectable {
-  override val callableFqName = when (type.callContext) {
-    CallContext.DEFAULT -> FqName("providerOf")
-    CallContext.COMPOSABLE -> FqName("composableProviderOf")
-    CallContext.SUSPEND -> FqName("suspendProviderOf")
-  }
+  override val callableFqName = FqName("providerOf")
   override val dependencies: List<InjectableRequest> = listOf(
     InjectableRequest(
       type = type.unwrapTags().arguments.last(),
@@ -116,15 +108,13 @@ class ProviderInjectable(
     .valueParameters
     .map { ProviderValueParameterDescriptor(it) }
 
-  // only create a new scope if we have parameters or a different call context then our parent
+  // only create a new scope if we have parameters
   override val dependencyScopes = mapOf(
-    dependencies.single() to if (parameterDescriptors.isEmpty() &&
-      ownerScope.callContext == dependencyCallContext) ownerScope
+    dependencies.single() to if (parameterDescriptors.isEmpty()) ownerScope
     else InjectablesScope(
       name = "PROVIDER $type",
       parent = ownerScope,
       ctx = ownerScope.ctx,
-      callContext = dependencyCallContext,
       initialInjectables = parameterDescriptors
         .mapIndexed { index, parameter ->
           parameter

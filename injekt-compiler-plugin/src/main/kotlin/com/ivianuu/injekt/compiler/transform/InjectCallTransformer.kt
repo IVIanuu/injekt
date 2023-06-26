@@ -14,7 +14,6 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.resolution.CallContext
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
@@ -55,7 +54,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
@@ -190,18 +188,8 @@ class InjectCallTransformer(
         returnType = result.candidate.type.toIrType(irCtx, localDeclarations, ctx)
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
-        isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
         parent = irScope.getLocalDeclarationParent()
-
-        if (result.candidate.callContext == CallContext.COMPOSABLE) {
-          annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
-            .irCallConstructor(
-              irCtx.referenceConstructors(InjektFqNames.Composable)
-                .single(),
-              emptyList()
-            )
-        }
 
         this.body = DeclarationIrBuilder(irCtx, symbol).run {
           irBlockBody {
