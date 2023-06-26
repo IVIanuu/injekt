@@ -27,7 +27,6 @@ import java.util.*
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  val callContext: CallContext = CallContext.DEFAULT,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
   val typeScopeType: TypeRef? = null,
@@ -91,8 +90,7 @@ class InjectablesScope(
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   private val isNoOp: Boolean = parent?.allScopes?.any { it.isDeclarationContainer } == true &&
-      typeParameters.isEmpty() &&
-      (isEmpty || (initialInjectables.isEmpty() && callContext == parent.callContext))
+      typeParameters.isEmpty() && (isEmpty || initialInjectables.isEmpty())
 
   val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
 
@@ -210,16 +208,11 @@ class InjectablesScope(
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
     when {
-      request.type.isFunctionType -> {
-        val finalCallContext = if (request.isInline) callContext
-        else request.type.callContext
-        return ProviderInjectable(
-          type = request.type,
-          ownerScope = this,
-          dependencyCallContext = finalCallContext,
-          isInline = request.isInline
-        )
-      }
+      request.type.isFunctionType -> return ProviderInjectable(
+        type = request.type,
+        ownerScope = this,
+        isInline = request.isInline
+      )
       request.type.classifier == ctx.listClassifier -> {
         fun createInjectable(): ListInjectable? {
           val singleElementType = request.type.arguments[0]
@@ -246,11 +239,15 @@ class InjectablesScope(
         return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
         else createInjectable()
       }
-      request.type.classifier.fqName == InjektFqNames.TypeKey ->
+      request.type.classifier.fqName == InjektFqNames.TypeKey -> {
         return TypeKeyInjectable(request.type, this)
-      request.type.classifier.fqName == InjektFqNames.SourceKey ->
+      }
+      request.type.classifier.fqName == InjektFqNames.SourceKey -> {
         return SourceKeyInjectable(request.type, this)
-      else -> return null
+      }
+      else -> {
+        return null
+      }
     }
   }
 

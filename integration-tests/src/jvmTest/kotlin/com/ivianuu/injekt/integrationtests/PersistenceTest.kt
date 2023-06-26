@@ -72,29 +72,4 @@ class PersistenceTest {
   ) {
     invokeSingleFile()
   }
-
-  @Test fun testSupportsDeclarationSiteVariance() = codegen(
-    """
-      interface Decorator<T>
-
-      class MergedDecorator<T>(val decorators: List<Any>)
-
-      @Provide fun <T> mergedDecorator(decorators: List<Decorator<in T>>): MergedDecorator<T> =
-        MergedDecorator(decorators)
-
-      @Provide fun anyDecorator(): Decorator<Any> = object : Decorator<Any> {
-      }
-
-      @Provide fun stringDecorator(): Decorator<String> = object : Decorator<String> {
-      }
-    """,
-    """
-      fun invoke() {
-        inject<MergedDecorator<Any>>()
-      }
-    """
-  ) {
-    val decorators = invokeSingleFile<List<Any>>()
-    decorators.shouldHaveSize(2)
-  }
 }

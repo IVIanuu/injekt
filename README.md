@@ -120,7 +120,7 @@ or in a package of the injected type
 
 # Function injection
 Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters dynamically,
-break circular dependencies or you aren't in the right call context yet.
+or to break circular dependencies.
 You can do this by injecting a function.
 ```kotlin
 // inject a function to create multiple Tokens
@@ -140,18 +140,10 @@ fun run(@Inject tokenFactory: () -> Token) {
    val foo = foo(this)
 }
 
-// inject a function to create a dependency in suspend context
-fun startService(@Inject dbFactory: suspend () -> Db) {
-  scope.launch {
-    val db = dbFactory()
-  }
-}
-
 // inject functions in a inline function to create a conditional Logger with zero overhead
 @Provide inline fun logger(isDebug: IsDebug, loggerImpl: () -> LoggerImpl, noOpLogger: () -> NoOpLogger): Logger =
   if (isDebug) loggerImpl() else noOpLogger()
 ```
-You can also inject ```suspend``` and ```@Composable``` functions.
 
 # Multi injection
 You can inject all injectables of a given type by injecting a ```List<T>```
