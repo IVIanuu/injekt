@@ -206,49 +206,43 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? {
-    when {
-      request.type.isFunctionType -> return ProviderInjectable(
-        type = request.type,
-        ownerScope = this,
-        isInline = request.isInline
-      )
-      request.type.classifier == ctx.listClassifier -> {
-        fun createInjectable(): ListInjectable? {
-          val singleElementType = request.type.arguments[0]
-          val collectionElementType = ctx.collectionClassifier.defaultType
-            .withArguments(listOf(singleElementType))
+  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
+    request.type.isFunctionType -> ProviderInjectable(
+      type = request.type,
+      ownerScope = this,
+      isInline = request.isInline
+    )
+    request.type.classifier == ctx.listClassifier -> {
+      fun createInjectable(): ListInjectable? {
+        val singleElementType = request.type.arguments[0]
+        val collectionElementType = ctx.collectionClassifier.defaultType
+          .withArguments(listOf(singleElementType))
 
-          val key = CallableRequestKey(request.type, allStaticTypeParameters)
+        val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-          val elements = listElementsForType(singleElementType, collectionElementType, key)
-            .values.map { it.type } + frameworkListElementsForType(singleElementType)
+        val elements = listElementsForType(singleElementType, collectionElementType, key)
+          .values.map { it.type } + frameworkListElementsForType(singleElementType)
 
-          return if (elements.isEmpty()) null
-          else ListInjectable(
-            type = request.type,
-            ownerScope = this,
-            elements = elements,
-            singleElementType = singleElementType,
-            collectionElementType = collectionElementType
-          )
-        }
+        return if (elements.isEmpty()) null
+        else ListInjectable(
+          type = request.type,
+          ownerScope = this,
+          elements = elements,
+          singleElementType = singleElementType,
+          collectionElementType = collectionElementType
+        )
+      }
 
-        val typeScope = TypeInjectablesScope(request.type, this, ctx)
-          .takeUnless { it.isEmpty }
-        return if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
-        else createInjectable()
-      }
-      request.type.classifier.fqName == InjektFqNames.TypeKey -> {
-        return TypeKeyInjectable(request.type, this)
-      }
-      request.type.classifier.fqName == InjektFqNames.SourceKey -> {
-        return SourceKeyInjectable(request.type, this)
-      }
-      else -> {
-        return null
-      }
+      val typeScope = TypeInjectablesScope(request.type, this, ctx)
+        .takeUnless { it.isEmpty }
+      if (typeScope != null) typeScope.frameworkInjectableForRequest(request)
+      else createInjectable()
     }
+    request.type.classifier.fqName == InjektFqNames.TypeKey ->
+      TypeKeyInjectable(request.type, this)
+    request.type.classifier.fqName == InjektFqNames.SourceKey ->
+      SourceKeyInjectable(request.type, this)
+    else -> null
   }
 
   private fun listElementsForType(
