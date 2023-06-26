@@ -95,7 +95,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+    val substitutionMap = buildMap {
       for ((parameter, argument) in resolvedCall.typeArguments)
         this[parameter.toClassifierRef(ctx!!)] = argument.toTypeRef(ctx!!)
 

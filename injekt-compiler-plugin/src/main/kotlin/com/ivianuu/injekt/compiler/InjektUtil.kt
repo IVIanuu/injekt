@@ -258,7 +258,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   when {
     original == callable?.dispatchReceiverParameter?.original ||
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
-
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
     else -> throw AssertionError("Unexpected descriptor $this")
   }
@@ -331,11 +330,9 @@ fun classifierDescriptorForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
   ctx: Context
-): ClassifierDescriptor? {
-  return if (fqName.isRoot) null
-  else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)?.first
-    ?.getContributedClassifier(fqName.shortName(), lookupLocation)
-}
+): ClassifierDescriptor? = if (fqName.isRoot) null
+else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)?.first
+  ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
 fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
   ctx.trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
@@ -400,10 +397,3 @@ fun packageFragmentsForFqName(
   fqName: FqName,
   ctx: Context
 ): List<PackageFragmentDescriptor> = ctx.module.getPackage(fqName).fragments
-
-val composeCompilerInClasspath = try {
-  Class.forName("androidx.compose.compiler.plugins.kotlin.analysis.ComposeWritableSlices")
-  true
-} catch (e: ClassNotFoundException) {
-  false
-}

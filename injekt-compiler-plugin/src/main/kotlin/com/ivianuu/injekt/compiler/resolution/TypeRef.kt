@@ -242,7 +242,7 @@ class TypeRef(
   private var _superTypes: List<TypeRef>? = null
   val superTypes: List<TypeRef> get() {
     if (_superTypes == null) {
-      val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+      val substitutionMap = buildMap {
         for ((index, parameter) in classifier.typeParameters.withIndex())
           this[parameter] = arguments[index]
       }

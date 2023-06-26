@@ -509,7 +509,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
 
 fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, ctx: Context): List<CallableRef> {
   val existingInjectables: MutableSet<InjectablesScope.InjectableKey> = scope.allScopes
-    .transformTo<InjectablesScope, InjectablesScope.InjectableKey, MutableSet<InjectablesScope.InjectableKey>>(mutableSetOf()) {
+    .transformTo(mutableSetOf()) {
       for (injectable in it.injectables)
         add(InjectablesScope.InjectableKey(injectable, ctx))
       addAll(it.spreadingInjectableKeys)

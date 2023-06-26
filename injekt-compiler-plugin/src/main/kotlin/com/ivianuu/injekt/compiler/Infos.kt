@@ -117,7 +117,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
       tags.wrap(returnType?.toTypeRef(ctx) ?: ctx.nullableAnyType)
     }
 
-    val parameterTypes = buildMap<Int, TypeRef> {
+    val parameterTypes = buildMap {
       for (parameter in allParameters)
         this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
     }
