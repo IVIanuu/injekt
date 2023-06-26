@@ -90,25 +90,23 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
-  private inner class RootContext(val rootCtx: InjectionResult.Success, val startOffset: Int) {
+  private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
-    var variableIndex = 0
+    var declarationIndex = 0
 
-    private val rootContextParents = buildList<InjectablesScope> {
-      val seenScopes = mutableSetOf<InjectablesScope>()
+    private val rootContextParents = buildSet {
       fun InjectablesScope.add() {
-        if (!seenScopes.add(this)) return
-        add(this)
+        if (!add(this)) return
         parent?.add()
         typeScopes.forEach { it.value.add() }
       }
 
-      rootCtx.scope.add()
+      result.scope.add()
     }
 
     fun mapScopeIfNeeded(scope: InjectablesScope) =
-      if (scope in rootContextParents) rootCtx.scope else scope
+      if (scope in rootContextParents) result.scope else scope
         .allScopes.last { it.isDeclarationContainer }
   }
 
@@ -121,7 +119,7 @@ class InjectCallTransformer(
     val symbol = irScope.scopeOwnerSymbol
     val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
     val statements =
-      if (scope == rootContext.rootCtx.scope) rootContext.statements else mutableListOf()
+      if (scope == rootContext.result.scope) rootContext.statements else mutableListOf()
     val parameterMap: MutableMap<ParameterDescriptor, IrValueParameter> =
       parent?.parameterMap ?: mutableMapOf()
 
@@ -139,12 +137,12 @@ class InjectCallTransformer(
 
     private fun expressionForImpl(result: ResolutionResult.Success.Value): IrExpression =
       wrapExpressionInFunctionIfNeeded(result) {
-        when (result.candidate) {
-          is CallableInjectable -> callableExpression(result, result.candidate.cast())
-          is ProviderInjectable -> providerExpression(result, result.candidate.cast())
-          is ListInjectable -> listExpression(result, result.candidate.cast())
+        when (val candidate = result.candidate) {
+          is CallableInjectable -> callableExpression(result, candidate)
+          is ProviderInjectable -> providerExpression(result, candidate)
+          is ListInjectable -> listExpression(result, candidate)
           is SourceKeyInjectable -> sourceKeyExpression()
-          is TypeKeyInjectable -> typeKeyExpression(result, result.candidate.cast())
+          is TypeKeyInjectable -> typeKeyExpression(result, candidate)
         }
       }
   }
@@ -173,41 +171,40 @@ class InjectCallTransformer(
   private fun ResolutionResult.Success.Value.shouldWrap(
     ctx: RootContext
   ): Boolean = (candidate !is ProviderInjectable || !candidate.isInline) &&
-      (dependencyResults.isNotEmpty() && ctx.rootCtx.usages[this.usageKey]!!.size > 1)
+      (dependencyResults.isNotEmpty() && ctx.result.usages[usageKey]!!.size > 1)
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
-    rawExpressionProvider: () -> IrExpression
-  ): IrExpression = if (!result.shouldWrap(rootContext)) rawExpressionProvider()
+    unwrappedExpression: () -> IrExpression
+  ): IrExpression = if (!result.shouldWrap(rootContext)) unwrappedExpression()
   else with(result.safeAs<ResolutionResult.Success.Value>()
     ?.highestScope?.let { findScopeContext(it) } ?: this) {
-    functionWrappedExpressions.getOrPut(result.candidate.type) {
+    functionWrappedExpressions.getOrPut(result.candidate.type) expression@ {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
-        name = "function${rootContext.variableIndex++}".asNameId()
+        name = "function${rootContext.declarationIndex++}".asNameId()
         returnType = result.candidate.type.toIrType(irCtx, localDeclarations, ctx)
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
       }.apply {
         parent = irScope.getLocalDeclarationParent()
 
-        this.body = DeclarationIrBuilder(irCtx, symbol).run {
+        body = DeclarationIrBuilder(irCtx, symbol).run {
           irBlockBody {
-            +irReturn(rawExpressionProvider())
+            +irReturn(unwrappedExpression())
           }
         }
 
         statements += this
       }
 
-      val expression: ScopeContext.() -> IrExpression = {
+      return@expression {
         DeclarationIrBuilder(irCtx, symbol)
           .irCall(
             function.symbol,
             result.candidate.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
           )
       }
-      expression
     }
   }.invoke(this)
 
@@ -217,7 +214,7 @@ class InjectCallTransformer(
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
     .irLambda(
       injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
-      parameterNameProvider = { "p${rootContext.variableIndex++}" }
+      parameterNameProvider = { "p${rootContext.declarationIndex++}" }
     ) { function ->
       val dependencyResult = result.dependencyResults.values.single()
       val dependencyScope = injectable.dependencyScopes.values.single()
@@ -228,8 +225,8 @@ class InjectCallTransformer(
       )
 
       fun ScopeContext.createExpression(): IrExpression {
-        for ((index, a) in injectable.parameterDescriptors.withIndex())
-          parameterMap[a] = function.valueParameters[index]
+        for ((index, parameter) in injectable.parameterDescriptors.withIndex())
+          parameterMap[parameter] = function.valueParameters[index]
         return expressionFor(dependencyResult.cast())
           .also {
             injectable.parameterDescriptors.forEach {
@@ -265,7 +262,7 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: ListInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol).irBlock {
-    val tmpSet = irTemporary(
+    val tmpList = irTemporary(
       irCall(mutableListOf)
         .apply {
           putTypeArgument(
@@ -273,7 +270,7 @@ class InjectCallTransformer(
             injectable.singleElementType.toIrType(irCtx, localDeclarations, ctx).typeOrNull
           )
         },
-      nameHint = "${rootContext.variableIndex++}"
+      nameHint = "${rootContext.declarationIndex++}"
     )
 
     result.dependencyResults
@@ -282,18 +279,18 @@ class InjectCallTransformer(
           return@forEach
         if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx)) {
           +irCall(listAddAll).apply {
-            dispatchReceiver = irGet(tmpSet)
+            dispatchReceiver = irGet(tmpList)
             putValueArgument(0, expressionFor(dependency))
           }
         } else {
           +irCall(listAdd).apply {
-            dispatchReceiver = irGet(tmpSet)
+            dispatchReceiver = irGet(tmpList)
             putValueArgument(0, expressionFor(dependency))
           }
         }
       }
 
-    +irGet(tmpSet)
+    +irGet(tmpList)
   }
 
   private val sourceKeyConstructor = irCtx.referenceClass(InjektFqNames.SourceKey)
