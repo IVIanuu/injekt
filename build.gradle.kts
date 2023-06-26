@@ -51,23 +51,8 @@ allprojects {
 
   if (project.name == "injekt-compiler-plugin" ||
     project.name == "injekt-gradle-plugin" ||
-    project.name == "injekt-ide-plugin") {
-    /*plugins.withId("java-base") {
-      extensions.getByName<JavaPluginExtension>("java").apply {
-        toolchain {
-          languageVersion.set(JavaLanguageVersion.of(17))
-        }
-      }
-    }
-
-    tasks.withType<KotlinJvmCompile>().configureEach {
-      kotlinOptions {
-        jvmTarget = "17"
-      }
-    }*/
-    
+    project.name == "injekt-ide-plugin")
     return@allprojects
-  }
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
