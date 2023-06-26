@@ -15,12 +15,8 @@ import kotlinx.coroutines.flow.map
 
 fun interface IncCounter : suspend () -> Unit
 
-@Provide fun incCounter(db: CounterDb) = IncCounter {
-  db.updateCounter { inc() }
-}
+@Provide fun incCounter(db: CounterDb) = IncCounter { db.updateCounter { inc() } }
 
 fun interface DecCounter : suspend () -> Unit
 
-@Provide fun decCounter(db: CounterDb) = DecCounter {
-  db.updateCounter { dec() }
-}
+@Provide fun decCounter(db: CounterDb) = DecCounter { db.updateCounter { dec() } }

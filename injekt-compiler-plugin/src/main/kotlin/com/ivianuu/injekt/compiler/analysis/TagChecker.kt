@@ -23,8 +23,8 @@ class TagChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     val ctx = baseCtx.withTrace(context.trace)
 
-    if (descriptor.hasAnnotation(InjektFqNames.Tag) && descriptor is ClassDescriptor) {
-      if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true) {
+    if (descriptor is ClassDescriptor && descriptor.hasAnnotation(InjektFqNames.Tag))
+      if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
         ctx.trace!!.report(
           InjektErrors.TAG_WITH_VALUE_PARAMETERS
             .on(
@@ -32,7 +32,5 @@ class TagChecker(private val baseCtx: Context) : DeclarationChecker {
                 ?.source?.getPsi() ?: declaration
             )
         )
-      }
-    }
   }
 }

@@ -31,8 +31,8 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
   ) {
     val resulting = resolvedCall.resultingDescriptor
     if (resulting !is ConstructorDescriptor ||
-        resulting.constructedClass.fqNameSafe != InjektFqNames.Providers)
-          return
+      resulting.constructedClass.fqNameSafe != InjektFqNames.Providers)
+      return
     val ctx = baseCtx.withTrace(context.trace)
     val imports = resolvedCall.getProviderImports()
 
@@ -101,7 +101,7 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
                     (it is ClassConstructorDescriptor &&
                         it.constructedClass.name == shortName))
           }
-        if (importedDeclarations == null || importedDeclarations.isEmpty()) {
+        if (importedDeclarations.isNullOrEmpty()) {
           ctx.trace!!.report(
             InjektErrors.UNRESOLVED_INJECTABLE_IMPORT
               .on(element!!, element)
@@ -110,12 +110,11 @@ class ProviderImportsChecker(private val baseCtx: Context) : CallChecker {
         }
       }
 
-      if (!isIde) {
+      if (!isIde)
         ctx.trace!!.report(
           InjektErrors.UNUSED_INJECTABLE_IMPORT
             .on(element!!, element)
         )
-      }
     }
   }
 }
