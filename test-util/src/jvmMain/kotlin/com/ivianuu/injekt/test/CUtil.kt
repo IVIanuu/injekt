@@ -21,7 +21,6 @@ import io.kotest.matchers.string.shouldNotContain
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.name.FqName
-import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Files
 import kotlin.reflect.KClass
@@ -236,11 +235,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     "withCompilation",
     true.toString()
   )
-}
-
-fun KotlinCompilation.withCompose() {
-  componentRegistrars += ComposeComponentRegistrar()
-  commandLineProcessors += ComposeCommandLineProcessor()
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()

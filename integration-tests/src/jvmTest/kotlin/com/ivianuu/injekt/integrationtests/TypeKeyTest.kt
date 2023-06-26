@@ -9,7 +9,6 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
@@ -45,8 +44,7 @@ class TypeKeyTest {
   @Test fun testTypeKeyWithComposableType() = codegen(
     """
       fun invoke() = inject<TypeKey<@Composable () -> Unit>>()
-    """,
-    config = { withCompose() }
+    """
   ) {
     invokeSingleFile() shouldBe "androidx.compose.runtime.Composable<kotlin.Function0<kotlin.Unit>>"
   }

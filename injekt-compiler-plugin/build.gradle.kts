@@ -32,7 +32,6 @@ artifacts {
 
 dependencies {
   compileOnly(Deps.Kotlin.compilerEmbeddable)
-  compileOnly(Deps.Compose.compiler)
   implementation(Deps.KotlinSerialization.json)
 }
 

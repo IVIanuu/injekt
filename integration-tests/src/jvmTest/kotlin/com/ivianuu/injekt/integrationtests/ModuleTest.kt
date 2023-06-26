@@ -6,17 +6,13 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import androidx.compose.runtime.Composable
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.runComposing
 import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.matchers.types.shouldBeTypeOf
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
 

@@ -10,19 +10,9 @@ import com.intellij.openapi.project.ProjectManagerListener
 import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.updatePrivateFinalField
-import org.jetbrains.kotlin.analyzer.moduleInfo
-import org.jetbrains.kotlin.config.LanguageFeature
-import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
-import org.jetbrains.kotlin.container.StorageComponentContainer
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.idea.caches.project.ModuleSourceInfo
-import org.jetbrains.kotlin.idea.project.languageVersionSettings
-import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektProjectInitializer : ProjectManagerListener {
   override fun projectOpened(project: Project) {

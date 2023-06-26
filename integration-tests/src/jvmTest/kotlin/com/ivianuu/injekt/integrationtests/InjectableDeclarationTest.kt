@@ -11,10 +11,8 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
-import com.ivianuu.injekt.test.withCompose
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
@@ -443,19 +441,6 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testCanLeaveOutInjectComposableLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: @Composable (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = runComposing { lambda() }
-    """,
-    config = { withCompose() }
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
@@ -575,19 +560,6 @@ class InjectableDeclarationTest {
     """
       fun invoke() = runBlocking { inject<Foo>() } 
     """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testProvideComposableFunction() = singleAndMultiCodegen(
-    """
-      @Provide @Composable fun foo() = Foo()
-    """,
-    """
-      fun invoke() = runComposing { inject<Foo>()  }
-    """,
-    config = { withCompose() }
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Foo>()

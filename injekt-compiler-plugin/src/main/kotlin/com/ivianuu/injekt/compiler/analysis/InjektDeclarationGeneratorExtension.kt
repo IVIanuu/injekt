@@ -47,7 +47,8 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Base64
+import java.util.Date
 
 class InjektDeclarationGeneratorExtension(
   private val srcDir: File,
@@ -420,14 +421,10 @@ class InjektDeclarationGeneratorExtension(
     is FunctionDescriptor ->
       uniqueKey(ctx) +
           ":$isSuspend:" +
-          "${hasAnnotation(InjektFqNames.Composable)}" +
           valueParameters
             .map { it.hasDefaultValue() }
             .joinToString(",")
-    is PropertyDescriptor ->
-      uniqueKey(ctx) +
-          ":${hasAnnotation(InjektFqNames.Composable) || 
-              getter?.hasAnnotation(InjektFqNames.Composable) == true}"
+    is PropertyDescriptor -> uniqueKey(ctx)
     else -> uniqueKey(ctx)
   }
 }
