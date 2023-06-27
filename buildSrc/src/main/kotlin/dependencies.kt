@@ -32,8 +32,6 @@ object Deps {
       const val core = "androidx.test:core-ktx:1.4.0"
       const val junit = "androidx.test.ext:junit:1.0.0"
     }
-
-    const val work = "androidx.work:work-runtime-ktx:2.7.1"
   }
 
   const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.20.2"
