@@ -4,7 +4,6 @@
 
 include(
   ":injekt-android",
-  ":injekt-android-work",
   ":injekt-common",
   ":injekt-compiler-plugin",
   ":injekt-core",
