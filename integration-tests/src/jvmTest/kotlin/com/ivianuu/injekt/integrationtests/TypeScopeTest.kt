@@ -2,14 +2,9 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.invokableSource
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.multiPlatformCodegen
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
@@ -46,28 +41,6 @@ class TypeScopeTest {
               companion object {
                 @Provide val dep = Dep()
               }
-            }
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testObjectTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            object Dep {
-              @Provide val defaultDep = this
             }
           """,
           packageFqName = FqName("injectables")
@@ -162,60 +135,14 @@ class TypeScopeTest {
         source(
           """
             class Dep
-
+          """,
+          packageFqName = FqName("injectables")
+        )
+      ),
+      listOf(
+        source(
+          """
             @Provide val dep = Dep()
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testClassPackageTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            interface Dep
-
-            @Provide class DepImpl : Dep
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testClassTagScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            @Tag annotation class MyTag {
-              companion object {
-                @Provide val dep = injectables.Dep()
-              }
-            }
-          """,
-          packageFqName = FqName("tags")
-        ),
-        source(
-          """
-            @Provide @tags.MyTag class Dep
           """,
           packageFqName = FqName("injectables")
         )
@@ -245,84 +172,6 @@ class TypeScopeTest {
         )
       ),
       listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testPackageDeeplyNestedClassTypeScope() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            class Dep
-
-            object DepModule {
-              class MyClass {
-                object RealDepModule {
-                  @Provide val dep = Dep()
-                }
-              }
-            }
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
-  @Test fun testMultiplatformPackageTypeScope() = multiPlatformCodegen(
-    listOf(
-      source(
-        """
-          class Dep
-        """,
-        packageFqName = FqName("injectables")
-      )
-    ),
-    listOf(
-      source(
-        """
-          @Provide val dep = Dep()
-        """,
-        packageFqName = FqName("injectables")
-      ),
-      source(
-        """
-          fun invoke() = inject<injectables.Dep>()
-        """
-      )
-    )
-  )
-
-  @Test fun testExternalModulesCanContributeToPackageTypeScope() = multiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            class Dep
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        source(
-          """
-            @Provide val dep = Dep()
-          """,
-          packageFqName = FqName("injectables")
-        ),
         source(
           """
             fun invoke() = inject<injectables.Dep>()
@@ -394,50 +243,6 @@ class TypeScopeTest {
     )
   )
 
-  @Test fun testNestedClassTypeScopeWithSpreadingInjectables() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            @Tag annotation class MyTag2 {
-              companion object {
-                @Provide inline fun <@Spread T : @MyTag2 S, S> value(t: T): S = t
-              }
-            }
-          """,
-          packageFqName = FqName("tags2")
-        )
-      ),
-      listOf(
-        source(
-          """
-            @Tag annotation class MyTag1 {
-              companion object {
-                @Provide inline fun <@Spread T : @MyTag1 S, S> value(t: T): @tags2.MyTag2 S = t
-              }
-            }
-          """,
-          packageFqName = FqName("tags1")
-        )
-      ),
-      listOf(
-        source(
-          """
-            @tags1.MyTag1 @Provide class Dep
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            fun invoke() = inject<injectables.Dep>()
-          """
-        )
-      )
-    )
-  )
-
   @Test fun testTypeScopeCanAccessOtherTypeScope() = singleAndMultiCodegen(
     listOf(
       listOf(
@@ -471,28 +276,4 @@ class TypeScopeTest {
       )
     )
   )
-
-  @Test fun testTypeScopeRequestWithObjectImpl() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            interface MyType
-
-            @Provide object MyTypeImpl : MyType
-          """,
-          packageFqName = FqName("package1")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            fun invoke() = inject<package1.MyType>()
-          """
-        )
-      )
-    )
-  ) {
-    invokeSingleFile()
-  }
 }

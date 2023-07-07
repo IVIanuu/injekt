@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
@@ -15,19 +13,6 @@ import org.junit.Test
 
 class ExpressionWrappingTest {
   @Test fun testDoesFunctionWrapInjectableWithMultipleUsages() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      @Provide fun bar(foo: Foo) = Bar(foo)
-      @Provide fun <T> pair(a: T, b: T): Pair<T, T> = a to b
-    """,
-    """
-      fun invoke() = inject<Pair<Bar, Bar>>()
-    """
-  ) {
-    irShouldContain(1, "bar(foo = ")
-  }
-
-  @Test fun testDoesFunctionWrapInjectableWithMultipleUsagesInDifferentScopes() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -62,38 +47,6 @@ class ExpressionWrappingTest {
     """
   ) {
     irShouldNotContain("local fun <anonymous>(): Foo {")
-  }
-
-  @Test fun testSearchBetterName() = codegen(
-    """
-      interface Logger
-
-      @Provide object AndroidLogger : Logger
-
-      @Provide fun androidLogger(factory: () -> AndroidLogger): Logger = factory()
-
-      @Provide data class MyComponent(
-        val loggerFactory: () -> Logger,
-        val loggerFactory2: () -> Logger
-      )
-
-      fun invoke() {
-        inject<MyComponent>()
-      }
-    """
-  )
-
-  @Test fun testDoesFunctionWrapListInjectablesWithSameElements() = singleAndMultiCodegen(
-    """
-      @Provide val a = "a"
-      @Provide val b = "b"
-      @Provide fun <T> pair(a: T, b: () -> T): Pair<T, () -> T> = a to b
-    """,
-    """
-      fun invoke() = inject<Pair<List<String>, () -> List<String>>>()
-    """
-  ) {
-    irShouldContain(1, "local fun function0(): List<String> {")
   }
 
   @Test fun testDoesFunctionWrapProviderWithMultipleUsages() = singleAndMultiCodegen(

@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
@@ -24,8 +22,7 @@ import org.junit.Test
 class ImportsTest {
   @Test fun testUnresolvedImport() = codegen(
     """
-      @Providers("a")
-      fun invoke() {
+      @Providers("a") fun invoke() {
       }
     """
   ) {
@@ -34,8 +31,7 @@ class ImportsTest {
 
   @Test fun testUnresolvedStarImport() = codegen(
     """
-      @Providers("a.*")
-      fun invoke() {
+      @Providers("a.*") fun invoke() {
       }
     """
   ) {
@@ -44,8 +40,7 @@ class ImportsTest {
 
   @Test fun testUnresolvedDoubleStarImport() = codegen(
     """
-      @Providers("a.**")
-      fun invoke() {
+      @Providers("a.**") fun invoke() {
       }
     """
   ) {
@@ -54,8 +49,7 @@ class ImportsTest {
 
   @Test fun testImportsJustAPackage() = codegen(
     """
-      @Providers("kotlin.collections")
-      fun invoke() {
+      @Providers("kotlin.collections") fun invoke() {
       }
     """
   ) {
@@ -64,8 +58,7 @@ class ImportsTest {
 
   @Test fun testMalformedImport() = codegen(
     """
-      @Providers("-_;-")
-      fun invoke() {
+      @Providers("-_;-") fun invoke() {
       }
     """
   ) {
@@ -74,8 +67,7 @@ class ImportsTest {
 
   @Test fun testDuplicatedImports() = codegen(
     """
-      @Providers("kotlin.collections.*", "kotlin.collections.*")
-      fun invoke() {
+      @Providers("kotlin.collections.*", "kotlin.collections.*") fun invoke() {
       }
     """
   ) {
@@ -84,8 +76,7 @@ class ImportsTest {
 
   @Test fun testUnusedImport() = codegen(
     """
-      @Providers("kotlin.collections.*")
-      fun invoke() {
+      @Providers("kotlin.collections.*") fun invoke() {
       }
     """
   ) {
@@ -105,8 +96,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.foo")
-            fun invoke() = inject<Foo>()
+            @Providers("injectables.foo") fun invoke() = inject<Foo>()
           """
         )
       )
@@ -134,8 +124,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.MyClass")
-            fun invoke() = inject<Foo>()
+            @Providers("injectables.MyClass") fun invoke() = inject<Foo>()
           """
         )
       )
@@ -157,8 +146,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            fun invoke() = inject<Foo>()
+            @Providers("injectables.*") fun invoke() = inject<Foo>()
           """
         )
       )
@@ -180,8 +168,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.**")
-            fun invoke() = inject<Foo>()
+            @Providers("injectables.**") fun invoke() = inject<Foo>()
           """
         )
       )
@@ -209,8 +196,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("explicit.value", "star.*")
-            fun invoke() = inject<String>()
+            @Providers("explicit.value", "star.*") fun invoke() = inject<String>()
         """
         )
       )
@@ -238,8 +224,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("explicit.value", "star.**")
-            fun invoke() = inject<String>()
+            @Providers("explicit.value", "star.**") fun invoke() = inject<String>()
         """
         )
       )
@@ -250,8 +235,7 @@ class ImportsTest {
 
   @Test fun testStarImportSamePackage() = codegen(
     """
-      @Providers("com.ivianuu.injekt.integrationtests.*")
-      fun invoke() {
+      @Providers("com.ivianuu.injekt.integrationtests.*") fun invoke() {
       }
     """
   ) {
@@ -260,8 +244,7 @@ class ImportsTest {
 
   @Test fun testDoubleStarImportSamePackage() = codegen(
     """
-      @Providers("com.ivianuu.injekt.integrationtests.**")
-      fun invoke() {
+      @Providers("com.ivianuu.injekt.integrationtests.**") fun invoke() {
       }
     """
   ) {
@@ -271,8 +254,7 @@ class ImportsTest {
   @Test fun testImportInjectableSamePackage() = codegen(
     """
       @Provide val foo = Foo()
-      @Providers("com.ivianuu.injekt.integrationtests.foo")
-      fun invoke() {
+      @Providers("com.ivianuu.injekt.integrationtests.foo") fun invoke() {
       }
     """
   ) {
@@ -292,8 +274,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            class MyClass {
+            @Providers("injectables.*") class MyClass {
               fun invoke() = inject<Foo>()
             }
             fun invoke() = MyClass().invoke()
@@ -318,8 +299,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            class MyClass {
+            @Providers("injectables.*") class MyClass {
               val foo: Foo
               constructor() {
                 foo = inject()
@@ -348,8 +328,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            class MyClass {
+            @Providers("injectables.*") class MyClass {
               val foo: Foo = inject()
             }
             fun invoke() = MyClass().foo
@@ -463,8 +442,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            fun invoke() = inject<Foo>()
+            @Providers("injectables.*") fun invoke() = inject<Foo>()
           """
         )
       )
@@ -510,8 +488,7 @@ class ImportsTest {
       listOf(
         invokableSource(
           """
-            @Providers("injectables.*")
-            val injectableFoo = inject<Foo>()
+            @Providers("injectables.*") val injectableFoo = inject<Foo>()
             fun invoke() = injectableFoo
           """
         )
@@ -535,8 +512,7 @@ class ImportsTest {
         invokableSource(
           """
             fun invoke(): Foo {
-              @Providers("injectables.*")
-              val injectableFoo = inject<Foo>()
+              @Providers("injectables.*") val injectableFoo = inject<Foo>()
               return injectableFoo
             }
           """
@@ -561,8 +537,7 @@ class ImportsTest {
         invokableSource(
           """
             fun invoke(): Foo {
-              @Providers("injectables.*")
-              return inject<Foo>()
+              @Providers("injectables.*") return inject<Foo>()
             }
           """
         )
@@ -592,8 +567,7 @@ class ImportsTest {
         invokableSource(
           """
             fun invoke(): Bar {
-              @Providers("injectables.*")
-              return inject<Bar>()
+              @Providers("injectables.*") return inject<Bar>()
             }
           """
         )
@@ -623,8 +597,7 @@ class ImportsTest {
         invokableSource(
           """
             fun invoke(): Bar {
-              @Providers(".**")
-              return inject<Bar>()
+              @Providers(".**") return inject<Bar>()
             }
           """
         )
@@ -653,8 +626,7 @@ class ImportsTest {
         invokableSource(
           """
             fun invoke(): Bar {
-              @Providers(".**")
-              return inject<Bar>()
+              @Providers(".**") return inject<Bar>()
             }
           """
         )

@@ -7,8 +7,6 @@
 
 package com.ivianuu.injekt.test
 
-import androidx.compose.compiler.plugins.kotlin.ComposeCommandLineProcessor
-import androidx.compose.compiler.plugins.kotlin.ComposeComponentRegistrar
 import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.compiler.transform.dumpAllFiles

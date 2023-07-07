@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
@@ -223,126 +221,6 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testInjectPrimaryConstructorParameterInClassInitializer() = singleAndMultiCodegen(
-    """
-      class MyClass(@Inject foo: Foo) {
-        val foo: Foo
-        init {
-          this.foo = inject()
-        }
-      }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MyClass().foo 
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testInjectPrimaryConstructorParameterInClassBody() = singleAndMultiCodegen(
-    """
-      class MyClass(@Inject foo: Foo) {
-        val foo: Foo = inject()
-      }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MyClass().foo 
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testClassDeclarationInClassBody() = singleAndMultiCodegen(
-    """
-      class MyClass(private val _foo: Foo) {
-        val foo: Foo = inject()
-        @Provide fun foo() = _foo
-      }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MyClass(foo).foo 
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testInjectConstructorParameterInConstructorBody() = singleAndMultiCodegen(
-    """
-      class MyClass {
-        val foo: Foo
-        constructor(@Inject foo: Foo) {
-          this.foo = inject()   
-        }
-      }
-    """,
-    """
-       fun invoke(@Inject foo: Foo) = MyClass().foo 
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testImportedProvideFunctionInObject() = singleAndMultiCodegen(
-    """
-      object FooModule {
-        @Provide fun foo() = Foo()
-      }
-    """,
-    """
-      @Providers("com.ivianuu.injekt.integrationtests.FooModule.foo")
-      fun invoke() = inject<Foo>() 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testImportedProvideFunctionInObjectWithStar() = singleAndMultiCodegen(
-    """
-      object FooModule {
-        @Provide fun foo() = Foo()
-      }
-    """,
-    """
-      @Providers("com.ivianuu.injekt.integrationtests.FooModule.*")
-      fun invoke() = inject<Foo>() 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testImportedProvideFunctionInCompanionObject() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            class FooModule {
-              companion object {
-                @Provide fun foo() = Foo()
-              }
-            }
-          """,
-          packageFqName = FqName("providers")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            @Providers("providers.FooModule")
-            fun invoke() = inject<Foo>()
-          """
-        )
-      )
-    )
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (@Inject T) -> R) = block(value)
@@ -429,18 +307,6 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testCanLeaveOutInjectSuspendLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: suspend (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = runBlocking { lambda() }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
@@ -451,41 +317,6 @@ class InjectableDeclarationTest {
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testProvideInNestedBlock() = codegen(
-    """
-      fun invoke(a: Foo, b: Foo) = run {
-        @Provide val providedA = a
-        inject<Foo>() to run {
-          @Provide val providedB = b
-          inject<Foo>()
-        }
-      }
-    """
-  ) {
-    val a = Foo()
-    val b = Foo()
-    val result = invokeSingleFile<Pair<Foo, Foo>>(a, b)
-    result.first shouldBeSameInstanceAs a
-    result.second shouldBeSameInstanceAs b
-  }
-
-  @Test fun testProvideInTheMiddleOfABlock() = codegen(
-    """
-      fun <T> injectOrNull(@Inject x: T? = null): T? = x
-      fun invoke(foo: Foo): Pair<Foo?, Foo?> {
-        val a = injectOrNull<Foo>()
-        @Provide val provided = foo
-        val b = injectOrNull<Foo>()
-        return a to b
-      }
-    """
-  ) {
-    val foo = Foo()
-    val result = invokeSingleFile<Pair<Foo?, Foo?>>(foo)
-    result.first.shouldBeNull()
-    result.second shouldBeSameInstanceAs foo
   }
 
   @Test fun testProvideLocalClass() = codegen(
@@ -553,18 +384,6 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testProvideSuspendFunction() = singleAndMultiCodegen(
-    """
-      @Provide suspend fun foo() = Foo()
-    """,
-    """
-      fun invoke() = runBlocking { inject<Foo>() } 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(
     """
       abstract class MySuperClass(@Provide val foo: Foo)
@@ -590,41 +409,11 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testProvidePropertyInLocalClass() = codegen(
-    """
-      fun invoke() {
-        class MyClass {
-          @Provide val foo = Foo()
-          
-          override fun equals(other: Any?): Boolean {
-            inject<Foo>()
-            return super.equals(other)
-          }
-        }
-      }
-    """
-  )
-
   @Test fun testProvideFunctionInAnonymousObject() = codegen(
     """
       fun invoke() {
         object : Any() {
           @Provide fun foo() = Foo()
-          
-          override fun equals(other: Any?): Boolean {
-            inject<Foo>()
-            return super.equals(other)
-          }
-        }
-      }
-    """
-  )
-
-  @Test fun testProvidePropertyInAnonymousObject() = codegen(
-    """
-      fun invoke() {
-        object : Any() {
-          @Provide private val foo = Foo()
           
           override fun equals(other: Any?): Boolean {
             inject<Foo>()

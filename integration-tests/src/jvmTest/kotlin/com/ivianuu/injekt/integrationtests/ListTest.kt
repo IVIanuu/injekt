@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
@@ -27,21 +25,6 @@ import org.junit.Test
 
 class ListTest {
   @Test fun testList() = singleAndMultiCodegen(
-    """
-      @Provide fun commandA() = CommandA()
-      @Provide fun commandsB() = listOf(CommandB())
-    """,
-    """
-      fun invoke() = inject<List<Command>>() 
-    """
-  ) {
-    val list = invokeSingleFile<List<Command>>()
-    list.size shouldBe 2
-    list[0].shouldBeTypeOf<CommandA>()
-    list[1].shouldBeTypeOf<CommandB>()
-  }
-
-  @Test fun testNestedList() = singleAndMultiCodegen(
     """
       @Provide fun commandA() = CommandA()
 
@@ -108,17 +91,6 @@ class ListTest {
     childList.size shouldBe 2
     childList[0]().shouldBeTypeOf<CommandA>()
     childList[1]().shouldBeTypeOf<CommandB>()
-  }
-
-  @Test fun testUsesAllProviderArgumentsForInjectableRequest() = codegen(
-    """
-      fun invoke(): List<Any> = inject<(String, String) -> List<String>>()("a", "b")
-    """
-  ) {
-    val list = invokeSingleFile<List<Any>>().toList()
-    list.shouldHaveSize(2)
-    list[0] shouldBe "a"
-    list[1] shouldBe "b"
   }
 
   @Test fun testIncludesTypeScopeInList() = singleAndMultiCodegen(

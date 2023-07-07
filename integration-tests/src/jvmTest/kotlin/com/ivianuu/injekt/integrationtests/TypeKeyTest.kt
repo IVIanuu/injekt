@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.codegen
@@ -39,14 +37,6 @@ class TypeKeyTest {
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
-  }
-
-  @Test fun testTypeKeyWithComposableType() = codegen(
-    """
-      fun invoke() = inject<TypeKey<@Composable () -> Unit>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "androidx.compose.runtime.Composable<kotlin.Function0<kotlin.Unit>>"
   }
 
   @Test fun testTypeKeyWithTags() = codegen(

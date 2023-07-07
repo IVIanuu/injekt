@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
-
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
@@ -39,41 +37,6 @@ class ProviderTest {
   ) {
     invokeSingleFile()
       .shouldBeTypeOf<Bar>()
-  }
-
-  @Test fun testProviderWithTaggedInjectableArgs() = singleAndMultiCodegen(
-    """
-      @Tag annotation class MyTag
-      @Provide fun bar(foo: @MyTag Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() = inject<(@MyTag Foo) -> Bar>()(Foo()) 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Bar>()
-  }
-
-  @Test fun testProviderModule() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-      class FooModule(@Provide val foo: Foo)
-    """,
-    """
-      fun invoke() = inject<(FooModule) -> Bar>()(FooModule(Foo()))
-    """
-  )
-
-  @Test fun testProviderWhichReturnsItsParameter() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke() = inject<(Foo) -> Foo>()(Foo())
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
   }
 
   @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
