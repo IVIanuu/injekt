@@ -16,6 +16,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 dependencies {
   implementation(Deps.AndroidX.Activity.activity)
   implementation(Deps.AndroidX.Activity.compose)
+  implementation(project(":injekt-common"))
   implementation(Deps.Compose.material)
   kotlinCompilerPluginClasspath(Deps.Compose.compiler)
 }
