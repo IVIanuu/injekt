@@ -3,7 +3,6 @@
  */
 
 include(
-  ":injekt-android",
   ":injekt-common",
   ":injekt-compiler-plugin",
   ":injekt-core",

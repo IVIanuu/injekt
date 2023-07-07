@@ -1,8 +1,0 @@
-<!--
-  ~ Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
-  -->
-
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.ivianuu.injekt.android">
-    <application android:name=".AndroidTestApp"/>
-</manifest>
