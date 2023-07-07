@@ -53,46 +53,6 @@ class ListTest {
     compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter x of function com.ivianuu.injekt.inject")
   }
 
-  @Test fun testProviderList() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() = inject<List<(Foo) -> Bar>>() 
-    """
-  ) {
-    val list = invokeSingleFile<List<(Foo) -> Bar>>().toList()
-    list.size shouldBe 1
-    val provider = list.single()
-    val foo = Foo()
-    val bar = provider(foo)
-    foo shouldBeSameInstanceAs bar.foo
-  }
-
-  @Test fun testNestedProviderList() = singleAndMultiCodegen(
-    """
-      @Provide fun bar(foo: Foo): Any = Bar(foo)
-
-      @Provide fun commandA(): Command = CommandA()
-
-      class InnerObject {
-        @Provide fun commandB(): Command = CommandB()
-        val list = inject<List<() -> Command>>()
-      }
-    """,
-    """
-      fun invoke() = inject<List<() -> Command>>() to InnerObject().list 
-    """
-  ) {
-    val (parentList, childList) = invokeSingleFile<Pair<List<() -> Command>, List<() -> Command>>>()
-      .let { it.first.toList() to it.second.toList() }
-    parentList.size shouldBe 1
-    parentList[0]().shouldBeTypeOf<CommandA>()
-    childList.size shouldBe 2
-    childList[0]().shouldBeTypeOf<CommandA>()
-    childList[1]().shouldBeTypeOf<CommandB>()
-  }
-
   @Test fun testIncludesTypeScopeInList() = singleAndMultiCodegen(
     listOf(
       listOf(

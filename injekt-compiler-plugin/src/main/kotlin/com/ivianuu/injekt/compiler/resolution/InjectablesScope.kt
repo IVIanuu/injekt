@@ -221,7 +221,7 @@ class InjectablesScope(
         val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
         val elements = listElementsForType(singleElementType, collectionElementType, key)
-          .values.map { it.type } + frameworkListElementsForType(singleElementType)
+          .values.map { it.type }
 
         return if (elements.isEmpty()) null
         else ListInjectable(
@@ -293,39 +293,12 @@ class InjectablesScope(
     }
   }
 
-  private fun frameworkListElementsForType(singleElementType: TypeRef): List<TypeRef> =
-    if (!singleElementType.isFunctionType) emptyList()
-    else {
-      val providerReturnType = singleElementType.arguments.last()
-      val innerKey = CallableRequestKey(providerReturnType, allStaticTypeParameters)
-
-      buildList {
-        fun TypeRef.add() {
-          this@buildList += singleElementType.copy(
-            arguments = singleElementType.arguments
-              .dropLast(1) + this
-          )
-        }
-
-        for (candidate in listElementsForType(
-          providerReturnType, ctx.collectionClassifier
-            .defaultType.withArguments(listOf(providerReturnType)), innerKey).values)
-          candidate.type.add()
-
-        for (candidateType in frameworkListElementsForType(providerReturnType))
-          candidateType.add()
-      }
-    }
-
   private fun spreadInjectables(candidateType: TypeRef) {
     for (spreadingInjectable in spreadingInjectables.toList())
       spreadInjectables(spreadingInjectable, candidateType)
   }
 
-  private fun spreadInjectables(
-    spreadingInjectable: SpreadingInjectable,
-    candidateType: TypeRef
-  ) {
+  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
     if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
     if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
 
