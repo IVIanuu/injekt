@@ -160,9 +160,10 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
   }
 
   private fun KSDeclaration.uniqueKey() = buildString {
+    modifiers.forEach { append(it) }
+
     when (this@uniqueKey) {
       is KSClassDeclaration -> {
-        modifiers.forEach { append(it) }
         superTypes.forEach { append(it.uniqueTypeKey()) }
 
         annotations
@@ -175,7 +176,6 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       }
 
       is KSFunctionDeclaration -> {
-        modifiers.forEach { append(it) }
         parameters.forEach {
           append(it.type.uniqueTypeKey())
           append(it.hasDefault)
@@ -184,7 +184,6 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       }
 
       is KSPropertyDeclaration -> {
-        modifiers.forEach { append(it) }
         append(extensionReceiver?.uniqueTypeKey())
         append(type.uniqueTypeKey())
       }
