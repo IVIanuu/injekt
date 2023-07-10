@@ -26,6 +26,7 @@ buildscript {
     classpath(Deps.injektGradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
+    classpath(Deps.Ksp.gradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)
     classpath(Deps.shadowGradlePlugin)
   }
@@ -50,40 +51,41 @@ allprojects {
 
   if (project.name == "injekt-compiler-plugin" ||
     project.name == "injekt-gradle-plugin" ||
-    project.name == "injekt-ide-plugin")
+    project.name == "injekt-ide-plugin" ||
+    project.name == "injekt-ksp")
     return@allprojects
+
+  project.pluginManager.apply("com.google.devtools.ksp")
+  project.dependencies.add("ksp", project(":injekt-ksp"))
 
   fun setupCompilation(compilation: KotlinCompilation<*>) {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
-    InjektPlugin().applyToCompilation(compilation)
+
+    InjektPlugin().applyToCompilation(compilation).get().forEach {
+     // compilation.kotlinOptions.options.freeCompilerArgs.add("plugin:com.ivianuu.injekt:${it.key}=${it.value}")
+    }
   }
 
   afterEvaluate {
     when {
       pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform") -> {
         extensions.getByType(KotlinMultiplatformExtension::class.java).run {
-          project.afterEvaluate {
-            targets
-              .flatMap { it.compilations }
-              .forEach { setupCompilation(it) }
-          }
+          targets
+            .flatMap { it.compilations }
+            .forEach { setupCompilation(it) }
         }
       }
       pluginManager.hasPlugin("org.jetbrains.kotlin.android") -> {
         extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
-          project.afterEvaluate {
-            target.compilations
-              .forEach { setupCompilation(it) }
-          }
+          target.compilations
+            .forEach { setupCompilation(it) }
         }
       }
       pluginManager.hasPlugin("org.jetbrains.kotlin.jvm") -> {
         extensions.getByType(KotlinJvmProjectExtension::class.java).run {
-          project.afterEvaluate {
-            target.compilations
-              .forEach { setupCompilation(it) }
-          }
+          target.compilations
+            .forEach { setupCompilation(it) }
         }
       }
     }

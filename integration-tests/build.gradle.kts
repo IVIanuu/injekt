@@ -9,6 +9,12 @@ plugins {
 kotlin {
   jvm()
 
+  targets.forEach {
+    it.compilations.forEach {
+      it.kotlinOptions.freeCompilerArgs += "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi"
+    }
+  }
+
   sourceSets {
     named("jvmTest") {
       dependencies {

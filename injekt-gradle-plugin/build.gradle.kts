@@ -22,6 +22,7 @@ dependencies {
   compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.Kotlin.gradlePlugin)
   compileOnly(Deps.Kotlin.gradlePluginApi)
+  api(Deps.Ksp.gradlePlugin)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

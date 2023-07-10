@@ -8,6 +8,7 @@ include(
   ":injekt-core",
   ":injekt-gradle-plugin",
   ":injekt-ide-plugin",
+  ":injekt-ksp",
   ":integration-tests",
   ":sample",
   ":test-util"

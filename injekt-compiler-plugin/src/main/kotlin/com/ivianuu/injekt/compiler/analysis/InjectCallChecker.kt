@@ -42,10 +42,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
-@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker(
-  private val withDeclarationGenerator: Boolean
-) : KtTreeVisitorVoid(), AnalysisHandlerExtension {
-  private var completionCount = 0
+@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : KtTreeVisitorVoid(), AnalysisHandlerExtension {
   private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
   private var ctx: Context? = null
 
@@ -55,10 +52,6 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
-    if ((completionCount < 1 && withDeclarationGenerator) ||
-      (completionCount > 0 && !withDeclarationGenerator))
-      return null.also { completionCount++ }
-
     ctx = Context(module, bindingTrace)
     files.forEach { it.accept(this) }
     ctx = null

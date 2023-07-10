@@ -10,9 +10,14 @@ package com.ivianuu.injekt.test
 import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.compiler.transform.dumpAllFiles
+import com.ivianuu.injekt.ksp.InjektSymbolProcessor
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import com.tschuchort.compiletesting.kspIncremental
+import com.tschuchort.compiletesting.kspWithCompilation
+import com.tschuchort.compiletesting.symbolProcessorProviders
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
@@ -89,7 +94,7 @@ fun codegen(
   println("Result: ${result.exitCode} m: ${result.messages}")
   assertions(
     object : KotlinCompilationAssertionScope {
-      override val result: KotlinCompilation.Result
+      override val result: JvmCompilationResult
         get() = result
     }
   )
@@ -153,7 +158,7 @@ fun multiCodegen(
     }
   }
   object : KotlinCompilationAssertionScope {
-    override val result: KotlinCompilation.Result
+    override val result: JvmCompilationResult
       get() = results.last()
     override val classLoader: ClassLoader = URLClassLoader(
       results.flatMap { it.classLoader.urLs.toList() }
@@ -197,15 +202,20 @@ fun multiPlatformCodegen(
   }
   assertions(
     object : KotlinCompilationAssertionScope {
-      override val result: KotlinCompilation.Result
+      override val result: JvmCompilationResult
         get() = result
     }
   )
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-  componentRegistrars = listOf(InjektComponentRegistrar())
-  commandLineProcessors = listOf(InjektCommandLineProcessor())
+  symbolProcessorProviders += InjektSymbolProcessor.Provider()
+  kspIncremental = false
+  kspWithCompilation = true
+
+  componentRegistrars += InjektComponentRegistrar()
+  commandLineProcessors += InjektCommandLineProcessor()
+
   inheritClassPath = true
   useIR = true
   jvmTarget = "1.8"
@@ -216,29 +226,16 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",
     "dumpDir",
-    workingDir.resolve("injekt/dump").absolutePath
-  )
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
-    "cacheDir",
-    workingDir.resolve("injekt/cache").absolutePath
-  )
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
-    "srcDir",
-    workingDir.resolve("injekt/src").absolutePath
-  )
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
-    "withCompilation",
-    true.toString()
+    workingDir.resolve("injekt/dump")
+      .also { it.mkdirs() }
+      .absolutePath
   )
 }
 
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
 
 interface KotlinCompilationAssertionScope {
-  val result: KotlinCompilation.Result
+  val result: JvmCompilationResult
   val classLoader: ClassLoader get() = result.classLoader
 }
 
