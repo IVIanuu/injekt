@@ -34,7 +34,7 @@ object Deps {
     }
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.20.2"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.21.0"
 
   object AutoService {
     private const val version = "1.1.0"
@@ -67,7 +67,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.8.21"
+    const val version = "1.9.0"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -79,14 +79,14 @@ object Deps {
   }
 
   object Ksp {
-    const val version = "1.8.21-1.0.11"
+    const val version = "1.9.0-1.0.11"
     const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
     const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
   }
 
   object KotlinCompileTesting {
-    private const val version = "0.2.0"
+    private const val version = "0.3.0"
     const val kotlinCompileTesting = "dev.zacsweers.kctfork:core:$version"
     const val ksp = "dev.zacsweers.kctfork:ksp:$version"
   }

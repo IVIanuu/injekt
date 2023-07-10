@@ -11,6 +11,7 @@ import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.compiler.transform.dumpAllFiles
 import com.ivianuu.injekt.ksp.InjektSymbolProcessor
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
@@ -93,7 +94,7 @@ fun codegen(
   println("Result: ${result.exitCode} m: ${result.messages}")
   assertions(
     object : KotlinCompilationAssertionScope {
-      override val result: KotlinCompilation.Result
+      override val result: JvmCompilationResult
         get() = result
     }
   )
@@ -157,7 +158,7 @@ fun multiCodegen(
     }
   }
   object : KotlinCompilationAssertionScope {
-    override val result: KotlinCompilation.Result
+    override val result: JvmCompilationResult
       get() = results.last()
     override val classLoader: ClassLoader = URLClassLoader(
       results.flatMap { it.classLoader.urLs.toList() }
@@ -201,7 +202,7 @@ fun multiPlatformCodegen(
   }
   assertions(
     object : KotlinCompilationAssertionScope {
-      override val result: KotlinCompilation.Result
+      override val result: JvmCompilationResult
         get() = result
     }
   )
@@ -234,7 +235,7 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
 fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
 
 interface KotlinCompilationAssertionScope {
-  val result: KotlinCompilation.Result
+  val result: JvmCompilationResult
   val classLoader: ClassLoader get() = result.classLoader
 }
 
