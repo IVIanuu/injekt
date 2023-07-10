@@ -23,7 +23,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       try {
         target.project(":injekt-ksp")
       } catch (e: UnknownProjectException) {
-        "com.ivianuu.injekt:injekt-ksp-plugin:${BuildConfig.VERSION}"
+        "com.ivianuu.injekt:injekt-ksp:${BuildConfig.VERSION}"
       }
     )
   }
