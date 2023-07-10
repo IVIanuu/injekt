@@ -78,13 +78,6 @@ object Deps {
     const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
   }
 
-  object Ksp {
-    const val version = "1.9.0-1.0.11"
-    const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
-    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
-    const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
-  }
-
   object KotlinCompileTesting {
     private const val version = "0.3.0"
     const val kotlinCompileTesting = "dev.zacsweers.kctfork:core:$version"
@@ -92,6 +85,13 @@ object Deps {
   }
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
+
+  object Ksp {
+    const val version = "1.9.0-1.0.11"
+    const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
+    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
+    const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
+  }
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.24.0"
 
