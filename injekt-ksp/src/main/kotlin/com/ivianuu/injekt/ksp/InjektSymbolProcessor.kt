@@ -176,6 +176,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       }
 
       is KSFunctionDeclaration -> {
+        append(extensionReceiver?.uniqueTypeKey())
         parameters.forEach {
           append(it.type.uniqueTypeKey())
           append(it.hasDefault)
