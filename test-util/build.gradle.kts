@@ -8,13 +8,22 @@ plugins {
 
 kotlin {
   jvm()
+
+  targets.forEach {
+    it.compilations.forEach {
+      it.kotlinOptions.freeCompilerArgs += "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi"
+    }
+  }
   
   sourceSets {
     named("jvmMain") {
       dependencies {
-        api(project(":injekt-core"))
         api(project(":injekt-common"))
         api(project(":injekt-compiler-plugin"))
+        api(project(":injekt-ksp"))
+
+        api(Deps.Ksp.api)
+        api(Deps.Ksp.symbolProcessing)
 
         api(Deps.Compose.compiler)
         api(Deps.Compose.runtime)
@@ -25,7 +34,8 @@ kotlin {
         api(Deps.Coroutines.test)
 
         api(Deps.Kotlin.compilerEmbeddable)
-        api(Deps.kotlinCompileTesting)
+        api(Deps.KotlinCompileTesting.kotlinCompileTesting)
+        api(Deps.KotlinCompileTesting.ksp)
 
         api(Deps.kotestAssertions)
 

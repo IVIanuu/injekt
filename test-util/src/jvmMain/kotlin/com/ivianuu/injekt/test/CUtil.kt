@@ -10,9 +10,13 @@ package com.ivianuu.injekt.test
 import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.compiler.transform.dumpAllFiles
+import com.ivianuu.injekt.ksp.InjektSymbolProcessor
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import com.tschuchort.compiletesting.kspIncremental
+import com.tschuchort.compiletesting.kspWithCompilation
+import com.tschuchort.compiletesting.symbolProcessorProviders
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
@@ -204,8 +208,13 @@ fun multiPlatformCodegen(
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-  componentRegistrars = listOf(InjektComponentRegistrar())
-  commandLineProcessors = listOf(InjektCommandLineProcessor())
+  symbolProcessorProviders += InjektSymbolProcessor.Provider()
+  kspIncremental = false
+  kspWithCompilation = true
+
+  componentRegistrars += InjektComponentRegistrar()
+  commandLineProcessors += InjektCommandLineProcessor()
+
   inheritClassPath = true
   useIR = true
   jvmTarget = "1.8"
