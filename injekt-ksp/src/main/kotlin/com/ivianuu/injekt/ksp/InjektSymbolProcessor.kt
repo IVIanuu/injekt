@@ -16,6 +16,7 @@ import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
@@ -27,6 +28,8 @@ import com.ivianuu.injekt.compiler.uniqueTypeKey
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import org.jetbrains.org.objectweb.asm.TypeReference
 import java.util.Base64
 
 @OptIn(UnsafeCastFunction::class)
@@ -160,14 +163,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     when (this@uniqueKey) {
       is KSClassDeclaration -> {
         modifiers.forEach { append(it) }
-        superTypes.forEach {
-          append(
-            it.resolve()
-              .cast<KSTypeImpl>()
-              .kotlinType
-              .uniqueTypeKey()
-          )
-        }
+        superTypes.forEach { append(it.uniqueTypeKey()) }
 
         annotations
           .filter {
@@ -175,25 +171,28 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
               it.annotationType.resolve().declaration.qualifiedName?.asString() == InjektFqNames.Tag.asString()
             }
           }
-          .forEach { append(it.annotationType.cast<KSTypeImpl>().kotlinType.uniqueTypeKey()) }
+          .forEach { append(it.annotationType.uniqueTypeKey()) }
       }
 
       is KSFunctionDeclaration -> {
         modifiers.forEach { append(it) }
         parameters.forEach {
-          append(it.type.resolve().cast<KSTypeImpl>().kotlinType.uniqueTypeKey())
+          append(it.type.uniqueTypeKey())
           append(it.hasDefault)
         }
-        append(returnType?.resolve()?.cast<KSTypeImpl>()?.kotlinType?.uniqueTypeKey())
+        append(returnType?.uniqueTypeKey())
       }
 
       is KSPropertyDeclaration -> {
         modifiers.forEach { append(it) }
-        append(extensionReceiver?.resolve()?.cast<KSTypeImpl>()?.kotlinType?.uniqueTypeKey())
-        append(type.resolve().cast<KSTypeImpl>().kotlinType.uniqueTypeKey())
+        append(extensionReceiver?.uniqueTypeKey())
+        append(type.uniqueTypeKey())
       }
     }
   }
+
+  private fun KSTypeReference.uniqueTypeKey() = resolve().safeAs<KSTypeImpl>()
+    ?.kotlinType?.uniqueTypeKey() ?: "error"
 
   @AutoService(SymbolProcessorProvider::class)
   class Provider : SymbolProcessorProvider {
