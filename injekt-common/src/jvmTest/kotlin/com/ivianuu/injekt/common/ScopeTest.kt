@@ -96,3 +96,5 @@ class ScopeTest {
     a shouldBeSameInstanceAs b
   }
 }
+
+private object TestScope
