@@ -8,6 +8,7 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
+  id("com.google.devtools.ksp")
 }
 
 //apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -31,6 +32,8 @@ artifacts {
 }
 
 dependencies {
+  implementation(Deps.AutoService.annotations)
+  ksp(Deps.AutoService.processor)
   compileOnly(Deps.Kotlin.compilerEmbeddable)
   implementation(Deps.KotlinSerialization.json)
 }

@@ -106,9 +106,4 @@ kotlin {
   }
 }
 
-dependencies {
-  configurations["kotlinCompilerPluginClasspath"]
-    .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
-}
-
 plugins.apply("com.vanniktech.maven.publish")

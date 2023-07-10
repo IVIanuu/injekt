@@ -7,7 +7,6 @@ package com.ivianuu.injekt.integrationtests
 import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.singleAndMultiCodegen
 import com.ivianuu.injekt.test.source
-import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
