@@ -119,6 +119,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(ctx!!, callExpression)
+
     val location = callExpression.lookupLocation
     memberScopeForFqName(InjektFqNames.InjectablesPackage, location, ctx!!)
       ?.recordLookup(InjektFqNames.InjectablesLookup.shortName(), location)
