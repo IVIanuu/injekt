@@ -12,7 +12,6 @@ import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Severity
@@ -25,107 +24,19 @@ interface InjektErrors {
   companion object {
     @JvmField val MAP = DiagnosticFactoryToRendererMap("Injekt")
 
-    @JvmField val UNRESOLVED_INJECTION =
-      DiagnosticFactory1.create<PsiElement, InjectionResult.Error>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "{0}",
-            object : DiagnosticParameterRenderer<InjectionResult.Error> {
-              override fun render(
-                obj: InjectionResult.Error,
-                renderingContext: RenderingContext,
-              ): String = obj.render()
-            }
-          )
-        }
-
-    @JvmField val INJECT_PARAMETER_ON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(it, "parameters of a injectable are automatically treated as inject parameters")
-        }
-
-    @JvmField val PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(it, "parameters of a injectable are automatically provided")
-        }
-
-    @JvmField val INJECT_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+    @JvmField val INJEKT_ERROR = DiagnosticFactory1.create<PsiElement, String>(Severity.ERROR)
       .also {
-        MAP.put(it, "receiver cannot be injected")
+        MAP.put(
+          it,
+          "{0}",
+          object : DiagnosticParameterRenderer<String> {
+            override fun render(
+              obj: String,
+              renderingContext: RenderingContext,
+            ): String = obj
+          }
+        )
       }
-
-    @JvmField val PROVIDE_RECEIVER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-      .also {
-        MAP.put(it, "receiver is automatically provided")
-      }
-
-    @JvmField val PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "class cannot be marked with @Provide if it has a @Provide primary constructor"
-          )
-        }
-
-    @JvmField val PROVIDE_ANNOTATION_CLASS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "annotation class cannot be injectable") }
-
-    @JvmField val PROVIDE_ENUM_CLASS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "enum class cannot be injectable") }
-
-    @JvmField val PROVIDE_INNER_CLASS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "inner class cannot be injectable") }
-
-    @JvmField val PROVIDE_ABSTRACT_CLASS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "abstract class cannot be injectable") }
-
-    @JvmField val PROVIDE_INTERFACE =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also { MAP.put(it, "interface cannot be injectable") }
-
-    @JvmField val PROVIDE_VARIABLE_MUST_BE_INITIALIZED =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "injectable variable must be initialized, delegated or marked with lateinit"
-          )
-        }
-
-    @JvmField val MULTIPLE_SPREADS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "a declaration may have only one @Spread type parameter"
-          )
-        }
-
-    @JvmField val SPREAD_ON_NON_PROVIDE_DECLARATION =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
-          )
-        }
-
-    @JvmField val TAG_WITH_VALUE_PARAMETERS =
-      DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
-        .also {
-          MAP.put(
-            it,
-            "tag cannot have value parameters"
-          )
-        }
 
     init {
       Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
@@ -140,7 +51,11 @@ interface InjektErrors {
   }
 }
 
-private fun InjectionResult.Error.render(): String = buildString {
+fun Context.reportError(element: PsiElement, message: String) {
+  trace!!.report(InjektErrors.INJEKT_ERROR.on(element, message))
+}
+
+fun InjectionResult.Error.render(): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++

@@ -13,6 +13,8 @@ import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
+import com.ivianuu.injekt.compiler.render
+import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
@@ -140,9 +142,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
           result
         )
       }
-      is InjectionResult.Error -> ctx!!.trace!!.report(
-        InjektErrors.UNRESOLVED_INJECTION.on(callExpression, result)
-      )
+      is InjectionResult.Error -> ctx!!.reportError(callExpression, result.render())
     }
   }
 }

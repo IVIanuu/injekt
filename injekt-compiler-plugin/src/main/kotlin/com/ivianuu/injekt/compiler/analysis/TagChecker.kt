@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.reportError
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -22,15 +23,12 @@ class TagChecker(private val baseCtx: Context) : DeclarationChecker {
     context: DeclarationCheckerContext
   ) {
     val ctx = baseCtx.withTrace(context.trace)
-
     if (descriptor is ClassDescriptor && descriptor.hasAnnotation(InjektFqNames.Tag) &&
       descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
-      ctx.trace!!.report(
-        InjektErrors.TAG_WITH_VALUE_PARAMETERS
-          .on(
-            descriptor.annotations.findAnnotation(InjektFqNames.Tag)
-              ?.source?.getPsi() ?: declaration
-          )
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+          ?.source?.getPsi() ?: declaration,
+        "tag cannot have value parameters"
       )
   }
 }

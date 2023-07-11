@@ -11,6 +11,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
@@ -88,67 +89,54 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
         descriptor.hasAnnotation(InjektFqNames.Provide)
 
     if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_ANNOTATION_CLASS
-          .on(
-            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
-              ?.source?.getPsi() ?: declaration
-          )
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+          ?.source?.getPsi() ?: declaration,
+        "annotation class cannot be injectable"
       )
     }
 
     if (isProvider && descriptor.kind == ClassKind.ENUM_CLASS) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_ENUM_CLASS
-          .on(
-            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
-              ?.source?.getPsi() ?: declaration
-          )
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+          ?.source?.getPsi() ?: declaration,
+        "enum class cannot be injectable"
       )
     }
 
     if (isProvider && descriptor.isInner) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_INNER_CLASS
-          .on(
-            declaration.modifierList
-              ?.getModifier(KtTokens.INNER_KEYWORD)
-              ?: declaration
-          )
+      ctx.reportError(
+        declaration.modifierList
+          ?.getModifier(KtTokens.INNER_KEYWORD)
+          ?: declaration,
+        "inner class cannot be injectable"
       )
     }
 
     if (descriptor.kind == ClassKind.INTERFACE &&
       descriptor.hasAnnotation(InjektFqNames.Provide)) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_INTERFACE
-          .on(
-            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
-              ?.source?.getPsi() ?: declaration
-          )
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+          ?.source?.getPsi() ?: declaration,
+        "interface cannot be injectable"
       )
     }
 
     if (isProvider && descriptor.modality == Modality.ABSTRACT) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_ABSTRACT_CLASS
-          .on(
-            declaration.modalityModifier()
-              ?: declaration
-          )
+      ctx.reportError(
+        declaration.modalityModifier()
+          ?: declaration,
+        "abstract class cannot be injectable"
       )
     }
 
     if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
-      descriptor.unsubstitutedPrimaryConstructor
-        ?.hasAnnotation(InjektFqNames.Provide) == true
+      descriptor.unsubstitutedPrimaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true
     ) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_ON_CLASS_WITH_PRIMARY_PROVIDE_CONSTRUCTOR
-          .on(
-            descriptor.annotations.findAnnotation(InjektFqNames.Provide)
-              ?.source?.getPsi() ?: declaration
-          )
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+          ?.source?.getPsi() ?: declaration,
+        "class cannot be marked with @Provide if it has a @Provide primary constructor"
       )
     }
 
@@ -196,7 +184,7 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       !descriptor.isDelegated &&
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
-      ctx.trace!!.report(InjektErrors.PROVIDE_VARIABLE_MUST_BE_INITIALIZED.on(declaration))
+      ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
     }
   }
 
@@ -206,28 +194,22 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     ctx: Context
   ) {
     if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Provide) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true) {
-      ctx.trace!!.report(
-        InjektErrors.PROVIDE_RECEIVER
-          .on(
-            declaration.safeAs<KtFunction>()?.receiverTypeReference
-              ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-              ?: declaration
-          )
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true)
+      ctx.reportError(
+        declaration.safeAs<KtFunction>()?.receiverTypeReference
+          ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
+          ?: declaration,
+        "receiver is automatically provided"
       )
-    }
 
     if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true) {
-      ctx.trace!!.report(
-        InjektErrors.INJECT_RECEIVER
-          .on(
-            declaration.safeAs<KtFunction>()?.receiverTypeReference
-              ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-              ?: declaration
-          )
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true)
+      ctx.reportError(
+        declaration.safeAs<KtFunction>()?.receiverTypeReference
+          ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
+          ?: declaration,
+        "receiver cannot be injected"
       )
-    }
   }
 
   private fun checkSpreadingInjectable(
@@ -240,12 +222,10 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
       spreadParameters
         .drop(1)
         .forEach {
-          ctx.trace!!.report(
-            InjektErrors.MULTIPLE_SPREADS
-              .on(
-                it.annotations.findAnnotation(InjektFqNames.Spread)
-                  ?.source?.getPsi() ?: declaration
-              )
+          ctx.reportError(
+            it.annotations.findAnnotation(InjektFqNames.Spread)
+              ?.source?.getPsi() ?: declaration,
+            "a declaration may have only one @Spread type parameter"
           )
         }
     }
@@ -335,12 +315,10 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     if (typeParameters.isEmpty()) return
     for (typeParameter in typeParameters) {
       if (typeParameter.hasAnnotation(InjektFqNames.Spread))
-        ctx.trace!!.report(
-          InjektErrors.SPREAD_ON_NON_PROVIDE_DECLARATION
-            .on(
-              typeParameter.annotations.findAnnotation(InjektFqNames.Spread)
-                ?.source?.getPsi() ?: typeParameter.findPsi()!!
-            )
+        ctx.reportError(
+          typeParameter.annotations.findAnnotation(InjektFqNames.Spread)
+            ?.source?.getPsi() ?: typeParameter.findPsi()!!,
+          "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
         )
     }
   }
@@ -352,23 +330,19 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     if (isEmpty()) return
     for (parameter in this) {
       if (parameter.hasAnnotation(InjektFqNames.Inject)) {
-        ctx.trace!!.report(
-          InjektErrors.INJECT_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(
-              parameter.annotations.findAnnotation(InjektFqNames.Inject)
-                ?.source?.getPsi() ?: declaration
-            )
+        ctx.reportError(
+          parameter.annotations.findAnnotation(InjektFqNames.Inject)
+            ?.source?.getPsi() ?: declaration,
+          "parameters of a injectable are automatically treated as inject parameters"
         )
       }
       if (parameter.hasAnnotation(InjektFqNames.Provide) &&
         parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
       ) {
-        ctx.trace!!.report(
-          InjektErrors.PROVIDE_PARAMETER_ON_PROVIDE_DECLARATION
-            .on(
-              parameter.annotations.findAnnotation(InjektFqNames.Provide)
-                ?.source?.getPsi() ?: declaration
-            )
+        ctx.reportError(
+          parameter.annotations.findAnnotation(InjektFqNames.Provide)
+            ?.source?.getPsi() ?: declaration,
+          "parameters of a injectable are automatically provided"
         )
       }
     }
