@@ -7,7 +7,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -41,14 +40,11 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
@@ -279,9 +275,6 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-val injectablesLookupName = "\$\$\$\$\$".asNameId()
-val subInjectablesLookupName = "\$\$\$\$\$\$\$\$\$\$".asNameId()
-
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
@@ -306,14 +299,13 @@ fun classifierDescriptorForFqName(
   lookupLocation: LookupLocation,
   ctx: Context
 ): ClassifierDescriptor? = if (fqName.isRoot) null
-else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)?.first
+else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
   ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
 fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
   ctx.trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-      ?.first
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.takeIf { it.uniqueKey(ctx) == key }
       ?: functionDescriptorsForFqName(fqName.parent(), ctx)
@@ -337,7 +329,6 @@ private fun functionDescriptorsForFqName(
   ctx: Context
 ): Collection<FunctionDescriptor> =
   memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.first
     ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
     ?: emptyList()
 
@@ -345,7 +336,7 @@ private fun propertyDescriptorsForFqName(
   fqName: FqName,
   ctx: Context
 ): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)?.first
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
     ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
     ?: emptyList()
 
@@ -353,19 +344,19 @@ fun memberScopeForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
   ctx: Context
-): Pair<MemberScope, ClassDescriptor?>? {
+): MemberScope? {
   val pkg = ctx.module.getPackage(fqName)
 
-  if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope to null
+  if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
-  val (parentMemberScope) = memberScopeForFqName(fqName.parent(), lookupLocation, ctx) ?: return null
+  val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation, ctx) ?: return null
 
   val classDescriptor = parentMemberScope.getContributedClassifier(
     fqName.shortName(),
     lookupLocation
   ) as? ClassDescriptor ?: return null
 
-  return classDescriptor.unsubstitutedMemberScope to classDescriptor
+  return classDescriptor.unsubstitutedMemberScope
 }
 
 fun packageFragmentsForFqName(

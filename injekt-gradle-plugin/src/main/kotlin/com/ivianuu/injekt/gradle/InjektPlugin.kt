@@ -28,17 +28,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     )
   }
 
-  override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
-    kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xallow-kotlin-package"
-
-    val project = kotlinCompilation.target.project
-
-    val sourceSetName = kotlinCompilation.defaultSourceSet.name
-
-    return project.provider {
-      listOf(SubpluginOption("dumpDir", "injekt/dump/$sourceSetName"))
+  override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
+    kotlinCompilation.target.project.provider {
+      listOf(SubpluginOption("dumpDir", "${kotlinCompilation.target.project.buildDir.resolve("injekt/dump/${kotlinCompilation.defaultSourceSet.name}")}"))
     }
-  }
 
   override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 

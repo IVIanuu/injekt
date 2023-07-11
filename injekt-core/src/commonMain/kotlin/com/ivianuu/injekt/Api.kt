@@ -34,6 +34,8 @@ package com.ivianuu.injekt
 )
 annotation class Provide
 
+inline fun <F : Function<*>> provider(f: F): @Provide F = f
+
 /**
  * Automatically fills in a argument if no explicit argument was provided
  */
@@ -51,21 +53,6 @@ annotation class Inject
  * Returns a provided instance of [T]
  */
 inline fun <T> inject(@Inject x: T): T = x
-
-/**
- * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
- */
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.PROPERTY,
-  AnnotationTarget.CONSTRUCTOR,
-  AnnotationTarget.FUNCTION,
-  AnnotationTarget.FILE,
-  AnnotationTarget.LOCAL_VARIABLE,
-  AnnotationTarget.EXPRESSION
-)
-@Retention(AnnotationRetention.SOURCE)
-annotation class Providers(vararg val importPaths: String)
 
 /**
  * Marks an annotation as an tag which can then be used

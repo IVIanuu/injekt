@@ -11,7 +11,6 @@ object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
   val Inject = InjektPackage.child("Inject".asNameId())
   val Provide = InjektPackage.child("Provide".asNameId())
-  val Providers = InjektPackage.child("Providers".asNameId())
   val Tag = InjektPackage.child("Tag".asNameId())
   val Spread = InjektPackage.child("Spread".asNameId())
 
@@ -19,6 +18,9 @@ object InjektFqNames {
   val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
   val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
   val TypeParameterInfo = InternalPackage.child("TypeParameterInfo".asNameId())
+
+  val InjectablesPackage = InternalPackage.child("injectables".asNameId())
+  val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())
 
   val CommonPackage = InjektPackage.child("common".asNameId())
   val SourceKey = CommonPackage.child("SourceKey".asNameId())

@@ -18,18 +18,10 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
-import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.injectablesLookupName
-import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.subInjectablesLookupName
 import com.ivianuu.injekt.compiler.uniqueTypeKey
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import org.jetbrains.org.objectweb.asm.TypeReference
 import java.util.Base64
 
 @OptIn(UnsafeCastFunction::class)
@@ -51,35 +43,34 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         .substringAfterLast("/")
     }_ProvidersMarker"
 
-    generateProviders(file, markerName, providers)
-    generateSubProviders(file, markerName, providers)
-  }
-
-  private fun generateProviders(
-    file: KSFile,
-    markerName: String,
-    providers: List<KSDeclaration>
-  ) {
-    val code = buildString {
-      appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
-      appendLine()
-
+    val markerCode = buildString {
       if (file.packageName.asString().isNotEmpty()) {
         appendLine("package ${file.packageName.asString()}")
         appendLine()
       }
 
       appendLine("object $markerName")
+    }
 
+    environment.codeGenerator.createNewFile(
+      dependencies = Dependencies(false, file),
+      packageName = file.packageName.asString(),
+      fileName = file.fileName.removeSuffix(".kt") + "Marker",
+    ).write(markerCode.toByteArray())
+
+    val injectablesLookupCode = buildString {
+      appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
+      appendLine()
+
+      appendLine("package ${InjektFqNames.InjectablesPackage}")
       appendLine()
 
       for ((i, provider) in providers.withIndex()) {
         val key = provider.uniqueKey()
 
         appendLine("// $key")
-
-        appendLine("fun `$injectablesLookupName`(")
-        appendLine(" marker: $markerName,")
+        appendLine("fun `${InjektFqNames.InjectablesLookup.shortName()}`(")
+        appendLine("  marker: ${file.packageName.asString()}.${markerName},")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
         }
@@ -101,62 +92,10 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
 
     environment.codeGenerator.createNewFile(
       dependencies = Dependencies(false, file),
-      packageName = file.packageName.asString(),
-      fileName = file.fileName.removeSuffix(".kt") + "Providers",
-    ).write(code.toByteArray())
-  }
-
-  private fun generateSubProviders(
-    file: KSFile,
-    markerName: String,
-    providers: List<KSDeclaration>
-  ) {
-    if (file.packageName.asString().isEmpty()) return
-    var current = FqName(file.packageName.asString())
-    while (!current.isRoot) {
-      current = current.parent()
-
-      val code = buildString {
-        appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
-        appendLine()
-
-        if (!current.isRoot) {
-          appendLine("package $current")
-          appendLine()
-        }
-
-        for ((i, provider) in providers.withIndex()) {
-          val key = provider.uniqueKey()
-
-          appendLine("// $key")
-          appendLine("fun `$subInjectablesLookupName`(")
-          appendLine("  marker: ${file.packageName.asString()}.${markerName},")
-          repeat(i + 1) {
-            appendLine("  index$it: Byte,")
-          }
-
-          val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
-
-          finalKey
-            .filter { it.isLetterOrDigit() }
-            .chunked(256)
-            .forEachIndexed { index, value ->
-              appendLine("  hash_${index}_$value: Int,")
-            }
-
-          appendLine(") {")
-          appendLine("}")
-          appendLine()
-        }
-      }
-
-      environment.codeGenerator.createNewFile(
-        dependencies = Dependencies(false, file),
-        packageName = current.asString(),
-        fileName = "${file.fileName.removeSuffix(".kt")}SubProviders_" +
-            file.filePath.hashCode().toString().filter { it.isLetterOrDigit() },
-      ).write(code.toByteArray())
-    }
+      packageName = InjektFqNames.InjectablesPackage.asString(),
+      fileName = "${file.fileName.removeSuffix(".kt")}Injectables_" +
+          file.filePath.hashCode().toString().filter { it.isLetterOrDigit() },
+    ).write(injectablesLookupCode.toByteArray())
   }
 
   private fun KSDeclaration.uniqueKey() = buildString {

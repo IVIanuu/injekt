@@ -6,15 +6,14 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
-import com.ivianuu.injekt.compiler.resolution.CallableInjectable
+import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
@@ -120,29 +119,12 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(ctx!!, callExpression)
-    val location = callExpression.lookupLocation
-    val lookups = ctx!!.trace!!.getOrPut(InjektWritableSlices.LOOKUPS, file.virtualFilePath) {
-      mutableMapOf()
-    }.getOrPut(location) { mutableSetOf() }
-    val result = scope.resolveRequests(
-      callee,
-      requests,
-      location,
-      lookups
-    ) { _, result ->
-      if (result is ResolutionResult.Success.Value &&
-        result.candidate is CallableInjectable) {
-        result.candidate.callable.import?.element?.let {
-          ctx!!.trace!!.record(
-            InjektWritableSlices.USED_IMPORT,
-            SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-            Unit
-          )
-        }
-      }
-    }
 
-    when (result) {
+    val location = callExpression.lookupLocation
+    memberScopeForFqName(InjektFqNames.InjectablesPackage, location, ctx!!)
+      ?.recordLookup(InjektFqNames.InjectablesLookup.shortName(), location)
+
+    when (val result = scope.resolveRequests(callee, requests)) {
       is InjectionResult.Success -> {
         ctx!!.trace!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,

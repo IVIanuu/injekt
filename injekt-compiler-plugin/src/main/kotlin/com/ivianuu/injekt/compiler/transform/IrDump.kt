@@ -30,20 +30,6 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, irCtx: IrPluginContext) {
               )
             )
           )
-
-          appendLine()
-
-          val lookups = irCtx.bindingContext[InjektWritableSlices.LOOKUPS, irFile.fileEntry.name]
-
-          if (lookups != null) {
-            appendLine("lookups:")
-            lookups.forEach { (location, lookups) ->
-              appendLine("${location.location!!.position}:")
-              lookups.sorted().forEach {
-                appendLine("  $it")
-              }
-            }
-          }
         }
       } catch (e: Throwable) {
         e.stackTraceToString()
