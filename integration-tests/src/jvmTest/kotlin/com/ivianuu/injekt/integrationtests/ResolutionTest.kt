@@ -382,7 +382,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "nonnull"
   }
 
-  @Test fun testDoesNotUseFrameworkInjectablesIfThereAreUserInjectables() = singleAndMultiCodegen(
+  @Test fun testPrefersUserInjectableErrorOverFrameworkInjectable() = singleAndMultiCodegen(
     """
       @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
     """,
