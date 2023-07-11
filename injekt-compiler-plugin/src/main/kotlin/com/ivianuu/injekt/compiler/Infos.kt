@@ -243,15 +243,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           lazyDeclaresInjectables = lazyOf(false)
         )
       } else {
-        val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
-          ?.unsubstitutedPrimaryConstructor
-          ?.valueParameters
-          ?.transform {
-            if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
-              add(it.name.asString())
-          }
-          ?: emptyList()
-
         ClassifierInfo(
           tags = tags,
           lazySuperTypes = lazySuperTypes,

@@ -411,20 +411,6 @@ class ResolveTest {
     compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo")
   }
 
-  @Test fun testCannotResolvePropertyWithTheSameNameAsAnInjectablePrimaryConstructorParameter() =
-    singleAndMultiCodegen(
-      """
-        @Provide class MyClass(foo: Foo) {
-          val foo = foo
-        }
-      """,
-      """
-        fun invoke() = inject<Foo>() 
-      """
-    ) {
-      compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject")
-    }
-
   @Test fun testAnonymousObjectCanResolveInjectablesOfOuterClass() = codegen(
     """
       class MyClass {
