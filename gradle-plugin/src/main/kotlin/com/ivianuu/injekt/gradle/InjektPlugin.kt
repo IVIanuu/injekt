@@ -20,7 +20,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     target.pluginManager.apply("com.google.devtools.ksp")
     target.dependencies.add(
       "ksp",
-      "com.ivianuu.injekt:injekt-ksp:${BuildConfig.VERSION}"
+      "com.ivianuu.injekt:ksp:${BuildConfig.VERSION}"
     )
   }
 
@@ -34,7 +34,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = "com.ivianuu.injekt",
-    artifactId = "injekt-compiler-plugin",
+    artifactId = "compiler",
     version = BuildConfig.VERSION
   )
 }
