@@ -7,14 +7,11 @@ plugins {
   id("org.jetbrains.intellij") version "1.11.0"
 }
 
-//apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-
 intellij {
   pluginName.set("Injekt ide plugin")
   updateSinceUntilBuild.set(false)
   plugins.addAll("org.jetbrains.kotlin", "gradle", "gradle-java", "java")
-  localPath.set("/usr/local/bin/android-studio")
+  localPath.set("/home/manu/android-studio")
 }
 
 /*tasks.withType<PublishTask> {

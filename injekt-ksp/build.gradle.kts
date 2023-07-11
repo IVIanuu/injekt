@@ -7,8 +7,6 @@ plugins {
   id("com.google.devtools.ksp")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-
 dependencies {
   implementation(project(":injekt-compiler-plugin"))
   implementation(Deps.AutoService.annotations)

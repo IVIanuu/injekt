@@ -54,35 +54,6 @@ annotation class Inject
  */
 inline fun <A> inject(@Inject a: A): A = a
 
-inline fun <A, R> inject(@Inject a: A, block: context (A) () -> R) = block(a)
-
-inline fun <A, B, R> inject(@Inject a: A, @Inject b: B, block: context (A, B) () -> R) = block(a, b)
-
-inline fun <A, B, C, R> inject(
-  @Inject a: A,
-  @Inject b: B,
-  @Inject c: C,
-  block: context (A, B, C) () -> R,
-) =
-  block(a, b, c)
-
-inline fun <A, B, C, D, R> inject(
-  @Inject a: A,
-  @Inject b: B,
-  @Inject c: C,
-  @Inject d: D,
-  block: context (A, B, C, D) () -> R,
-) = block(a, b, c, d)
-
-inline fun <A, B, C, D, E, R> inject(
-  @Inject a: A,
-  @Inject b: B,
-  @Inject c: C,
-  @Inject d: D,
-  @Inject e: E,
-  block: context (A, B, C, D, E) () -> R,
-) = block(a, b, c, d, e)
-
 /**
  * Marks an annotation as an tag which can then be used
  * to distinct types
