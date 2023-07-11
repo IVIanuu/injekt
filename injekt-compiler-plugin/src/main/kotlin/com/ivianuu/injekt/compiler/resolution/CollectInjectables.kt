@@ -59,9 +59,7 @@ fun TypeRef.collectInjectables(
 ): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
-    val unwrappedFunctionType = unwrapTags()
-    val callable = unwrappedFunctionType
-      .classifier
+    val callable = classifier
       .descriptor!!
       .defaultType
       .memberScope
@@ -70,13 +68,16 @@ fun TypeRef.collectInjectables(
       .toCallableRef(ctx)
       .let { callable ->
         callable.copy(
-          type = unwrappedFunctionType.arguments.last(),
+          type = arguments.last(),
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           }
         ).substitute(
-          unwrappedFunctionType.classifier.typeParameters
-            .zip(unwrappedFunctionType.arguments)
+          classifier.typeParameters
+            .zip(
+              arguments
+                .map { it.copy(isInject = true) }
+            )
             .toMap()
         )
       }

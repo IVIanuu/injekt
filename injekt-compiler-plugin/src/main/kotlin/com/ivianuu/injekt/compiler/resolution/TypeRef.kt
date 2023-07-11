@@ -475,7 +475,8 @@ val TypeRef.coveringSet: Set<ClassifierRef>
 val TypeRef.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
 val TypeRef.isProvideFunctionType: Boolean
-  get() = isProvide && isFunctionType
+  get() = isProvide &&
+      (isFunctionType || classifier.fqName.asString().startsWith("kotlin.reflect.KFunction"))
 
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function")

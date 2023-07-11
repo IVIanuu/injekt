@@ -169,7 +169,8 @@ fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = c
   .transform {
     if (it === callable.dispatchReceiverParameter ||
       it === callable.extensionReceiverParameter ||
-      it.isProvide(ctx))
+      it.isProvide(ctx) ||
+      parameterTypes[it.injektIndex()]?.isInject == true)
       add(it.toInjectableRequest(this@getInjectableRequests, ctx))
   }
 

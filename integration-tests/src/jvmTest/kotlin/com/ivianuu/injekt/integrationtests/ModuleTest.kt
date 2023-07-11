@@ -102,4 +102,15 @@ class ModuleTest {
     val foos = invokeSingleFile<List<Foo>>()
     foos shouldBe foos.distinct()
   }
+
+  @Test fun testLambdaModuleKFunction() = codegen(
+    """
+      @Provide val foo = Foo()
+      fun createBar(foo: Foo) = Bar(foo)
+      @Provide val barProvider: @Provide KFunction1<Foo, Bar> = ::createBar
+      fun invoke() = inject<Bar>()
+    """
+  ) {
+    invokeSingleFile()
+  }
 }
