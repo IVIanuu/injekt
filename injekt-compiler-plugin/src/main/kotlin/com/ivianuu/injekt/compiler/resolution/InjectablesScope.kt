@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.util.UUID
 
-class InjectablesScope(
+context(Context) class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   val ownerDescriptor: DeclarationDescriptor? = null,
@@ -28,9 +28,10 @@ class InjectablesScope(
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   val typeParameters: List<ClassifierRef> = emptyList(),
-  val nesting: Int = parent?.nesting?.inc() ?: 0,
-  val ctx: Context
+  val nesting: Int = parent?.nesting?.inc() ?: 0
 ) {
+  val context get() = this@Context
+
   val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
@@ -43,8 +44,8 @@ class InjectablesScope(
     val typeArguments: Map<ClassifierRef, TypeRef>,
     val parameterTypes: Map<Int, TypeRef>
   ) {
-    constructor(callable: CallableRef, ctx: Context) : this(
-      callable.callable.uniqueKey(ctx),
+    constructor(callable: CallableRef, context: Context) : this(
+      with(context) { callable.callable.uniqueKey() },
       callable.originalType,
       callable.typeArguments,
       callable.parameterTypes
@@ -86,15 +87,14 @@ class InjectablesScope(
         addInjectable = { callable ->
           injectables += callable
           val typeWithFrameworkKey = callable.type
-            .copy(frameworkKey = callable.callable.uniqueKey(ctx))
+            .copy(frameworkKey = callable.callable.uniqueKey())
           injectables += callable.copy(type = typeWithFrameworkKey)
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
         addSpreadingInjectable = { callable ->
-          if (spreadingInjectableKeys.add(InjectableKey(callable, ctx)))
+          if (spreadingInjectableKeys.add(InjectableKey(callable, this@Context)))
             spreadingInjectables += SpreadingInjectable(callable)
-        },
-        ctx = ctx
+        }
       )
 
     val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
@@ -124,8 +124,8 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.frameworkKey.isEmpty() &&
-      request.type.classifier == ctx.listClassifier) return emptyList()
+    if (request.type.frameworkKey.isEmpty() && request.type.classifier == listClassifier)
+      return emptyList()
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
@@ -146,7 +146,7 @@ class InjectablesScope(
 
         for (candidate in injectables) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-          val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
+          val context = candidate.type.buildContext(key.type, key.staticTypeParameters)
           if (!context.isOk) continue
           this += CallableInjectable(
             this@InjectablesScope,
@@ -162,9 +162,9 @@ class InjectablesScope(
       type = request.type,
       ownerScope = this
     )
-    request.type.classifier == ctx.listClassifier -> {
+    request.type.classifier == listClassifier -> {
       val singleElementType = request.type.arguments[0]
-      val collectionElementType = ctx.collectionClassifier.defaultType
+      val collectionElementType = collectionClassifier.defaultType
         .withArguments(listOf(singleElementType))
 
       val key = CallableRequestKey(request.type, allStaticTypeParameters)
@@ -207,9 +207,9 @@ class InjectablesScope(
         if (candidate.type.frameworkKey != key.type.frameworkKey) continue
 
         var context =
-          candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
+          candidate.type.buildContext(singleElementType, key.staticTypeParameters)
         if (!context.isOk)
-          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
+          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters)
         if (!context.isOk) continue
 
         val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
@@ -222,7 +222,7 @@ class InjectablesScope(
 
         injectables += finalCandidate
 
-        this[InjectableKey(finalCandidate, ctx)] = finalCandidate
+        this[InjectableKey(finalCandidate, this@Context)] = finalCandidate
       }
     }
   }
@@ -239,8 +239,7 @@ class InjectablesScope(
     val (context, substitutionMap) = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
       candidateType,
-      allStaticTypeParameters,
-      ctx
+      allStaticTypeParameters
     )
     if (!context.isOk) return
 
@@ -267,7 +266,7 @@ class InjectablesScope(
         val innerCallableWithFrameworkKey = finalInnerCallable.copy(
           type = finalInnerCallable.type.copy(
             frameworkKey = spreadingInjectable.callable.type.frameworkKey
-              .nextFrameworkKey(finalInnerCallable.callable.uniqueKey(ctx))
+              .nextFrameworkKey(finalInnerCallable.callable.uniqueKey())
               .also { spreadingInjectable.resultingFrameworkKeys += it }
           )
         )
@@ -278,14 +277,13 @@ class InjectablesScope(
       addSpreadingInjectable = { newInnerCallable ->
         val finalNewInnerInjectable = newInnerCallable
           .copy(originalType = newInnerCallable.type)
-        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable, ctx))) {
+        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable, this@Context))) {
           val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
           spreadingInjectables += newSpreadingInjectable
           for (candidate in spreadingInjectableCandidateTypes.toList())
             spreadInjectables(newSpreadingInjectable, candidate)
         }
-      },
-      ctx = ctx
+      }
     )
   }
 

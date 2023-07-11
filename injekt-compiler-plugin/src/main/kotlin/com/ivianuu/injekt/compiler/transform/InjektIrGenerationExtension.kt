@@ -16,16 +16,21 @@ var dumpAllFiles = false
 
 class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    val ctx = Context(
-      pluginContext.moduleDescriptor,
-      DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
-    )
-    val localDeclarations = LocalDeclarations()
-    moduleFragment.transform(localDeclarations, null)
+    with(pluginContext) {
+      with(
+        Context(
+          pluginContext.moduleDescriptor,
+          DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
+        )
+      ) {
+        val localDeclarations = LocalDeclarations()
+        moduleFragment.transform(localDeclarations, null)
 
-    moduleFragment.transform(InjectCallTransformer(localDeclarations, pluginContext, ctx), null)
+        moduleFragment.transform(with(localDeclarations) { InjectCallTransformer() }, null)
 
-    moduleFragment.patchDeclarationParents()
-    moduleFragment.dumpToFiles(dumpDir, ctx)
+        moduleFragment.patchDeclarationParents()
+        moduleFragment.dumpToFiles(dumpDir)
+      }
+    }
   }
 }

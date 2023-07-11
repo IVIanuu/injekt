@@ -24,20 +24,20 @@ import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
 
-  override val ctx: Context get() = this
+  override val ctx2: Context get() = this
 
   override fun isDenotable(type: TypeRef): Boolean = true
 
-  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef(ctx) }
-  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef(ctx) }
-  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef(ctx = ctx) }
-  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
+  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef() }
+  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef() }
+  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef() }
+  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef() }
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
-      ?.toClassifierRef(ctx)
+      ?.toClassifierRef()
   }
 }
 
@@ -45,9 +45,9 @@ private val slices = mutableMapOf<String, BasicWritableSlice<*, *>>()
 fun <K, V> sliceOf(kind: String): WritableSlice<K, V> =
   slices.getOrPut(kind) { BasicWritableSlice<K, V>(RewritePolicy.DO_NOTHING) } as BasicWritableSlice<K, V>
 
-fun <K, V> Context.cachedOrNull(kind: String, key: K): V? = trace?.get(sliceOf<K, V>(kind), key)
+context(Context) fun <K, V> cachedOrNull(kind: String, key: K): V? = trace?.get(sliceOf<K, V>(kind), key)
 
-inline fun <K, V> Context.cached(
+context(Context) inline fun <K, V> cached(
   kind: String,
   key: K,
   computation: () -> V

@@ -63,11 +63,11 @@ import kotlin.reflect.KClass
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
-  ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
+context(Context) fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
+  trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
-fun DeclarationDescriptor.isExternalDeclaration(ctx: Context): Boolean =
-  moduleName(ctx) != ctx.module.moduleName(ctx)
+context(Context) fun DeclarationDescriptor.isExternalDeclaration(): Boolean =
+  moduleName() != module.moduleName()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -87,7 +87,7 @@ fun Annotated.getTags(): List<AnnotationDescriptor> =
     inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
   }
 
-fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
+context(Context) fun DeclarationDescriptor.uniqueKey(): String = cached("unique_key", original) {
   when (val original = this.original) {
     is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
         "${original.visibility.name}:" +
@@ -173,7 +173,7 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_k
         original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
     is TypeAliasDescriptor -> "typealias:$fqNameSafe"
     is TypeParameterDescriptor ->
-      "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
+      "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey()}"
     is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
     is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
     is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
@@ -217,8 +217,8 @@ inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(ctx: Context): Name {
-  val index = injektIndex(ctx)
+context(Context) fun ParameterDescriptor.injektName(): Name {
+  val index = injektIndex()
   val parentContextReceivers = containingDeclaration.safeAs<CallableDescriptor>()?.contextReceiverParameters
     ?: contextReceiverParameters.safeAs<ClassDescriptor>()?.contextReceivers
     ?: emptyList()
@@ -237,8 +237,8 @@ fun ParameterDescriptor.injektName(ctx: Context): Name {
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
-fun ParameterDescriptor.injektIndex(ctx: Context): Int =
-  ctx.cached("injekt_index", this) {
+context(Context) fun ParameterDescriptor.injektIndex(): Int =
+  cached("injekt_index", this) {
     val callable = containingDeclaration as? CallableDescriptor
     when (original) {
       callable?.dispatchReceiverParameter?.original, is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
@@ -318,67 +318,59 @@ val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)
 
-fun DeclarationDescriptor.moduleName(ctx: Context): String =
+context(Context) fun DeclarationDescriptor.moduleName(): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")
-    ?: ctx.module.name.asString().removeSurrounding("<", ">")
+    ?: module.name.asString().removeSurrounding("<", ">")
 
-fun classifierDescriptorForFqName(
+context(Context) fun classifierDescriptorForFqName(
   fqName: FqName,
-  lookupLocation: LookupLocation,
-  ctx: Context
+  lookupLocation: LookupLocation
 ): ClassifierDescriptor? = if (fqName.isRoot) null
-else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
+else memberScopeForFqName(fqName.parent(), lookupLocation)
   ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
-fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
-  ctx.cached("classifier_for_key", key) {
+context(Context) fun classifierDescriptorForKey(key: String): ClassifierDescriptor =
+  cached("classifier_for_key", key) {
     val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
+    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.takeIf { it.uniqueKey(ctx) == key }
-      ?: functionDescriptorsForFqName(fqName.parent(), ctx)
+      ?.takeIf { it.uniqueKey() == key }
+      ?: functionDescriptorsForFqName(fqName.parent())
         .transform { addAll(it.typeParameters) }
         .firstOrNull {
-          it.uniqueKey(ctx) == key
+          it.uniqueKey() == key
         }
-      ?: propertyDescriptorsForFqName(fqName.parent(), ctx)
+      ?: propertyDescriptorsForFqName(fqName.parent())
         .transform { addAll(it.typeParameters) }
-        .firstOrNull { it.uniqueKey(ctx) == key }
-      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
+        .firstOrNull { it.uniqueKey() == key }
+      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
         .safeAs<ClassifierDescriptorWithTypeParameters>()
         ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(ctx) == key }
+        ?.firstOrNull { it.uniqueKey() == key }
       ?: error("Could not get for $fqName $key")
     classifier
   }
 
-private fun functionDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<FunctionDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
+context(Context) private fun functionDescriptorsForFqName(fqName: FqName): Collection<FunctionDescriptor> =
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
     ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
     ?: emptyList()
 
-private fun propertyDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
+context(Context) private fun propertyDescriptorsForFqName(fqName: FqName): Collection<PropertyDescriptor> =
+  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND)
     ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
     ?: emptyList()
 
-fun memberScopeForFqName(
+context(Context) fun memberScopeForFqName(
   fqName: FqName,
-  lookupLocation: LookupLocation,
-  ctx: Context
+  lookupLocation: LookupLocation
 ): MemberScope? {
-  val pkg = ctx.module.getPackage(fqName)
+  val pkg = module.getPackage(fqName)
 
   if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
 
-  val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation, ctx) ?: return null
+  val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation) ?: return null
 
   val classDescriptor = parentMemberScope.getContributedClassifier(
     fqName.shortName(),
@@ -388,10 +380,8 @@ fun memberScopeForFqName(
   return classDescriptor.unsubstitutedMemberScope
 }
 
-fun packageFragmentsForFqName(
-  fqName: FqName,
-  ctx: Context
-): List<PackageFragmentDescriptor> = ctx.module.getPackage(fqName).fragments
+context(Context) fun packageFragmentsForFqName(fqName: FqName): List<PackageFragmentDescriptor> =
+  module.getPackage(fqName).fragments
 
 val CallableDescriptor.allParametersWithContext: List<ParameterDescriptor>
   get() = buildList {

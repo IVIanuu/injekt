@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
 
 package com.ivianuu.injekt.compiler.transform
 
@@ -53,88 +53,69 @@ import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
-fun ClassDescriptor.irClass(
-  ctx: Context,
-  irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations
-): IrClass {
+context (Context, IrPluginContext, LocalDeclarations)
+fun ClassDescriptor.irClass(): IrClass {
   if (visibility == DescriptorVisibilities.LOCAL)
-    return localDeclarations.localClasses
-      .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+    return localClasses
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
 
-  return irCtx.referenceClass(fqNameSafe)!!.owner
+  return referenceClass(fqNameSafe)!!.owner
 }
 
-@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
-fun ClassConstructorDescriptor.irConstructor(
-  ctx: Context,
-  irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations
-): IrConstructor {
+context (Context, IrPluginContext, LocalDeclarations)
+fun ClassConstructorDescriptor.irConstructor(): IrConstructor {
   if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
-    return localDeclarations.localClasses
-      .single { it.descriptor.uniqueKey(ctx) == constructedClass.uniqueKey(ctx) }
+    return localClasses
+      .single { it.descriptor.uniqueKey() == constructedClass.uniqueKey() }
       .constructors
-      .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+      .single { it.descriptor.uniqueKey() == uniqueKey() }
 
-  return irCtx.referenceConstructors(constructedClass.fqNameSafe)
-    .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+  return referenceConstructors(constructedClass.fqNameSafe)
+    .single { it.descriptor.uniqueKey() == uniqueKey() }
     .owner
 }
 
+context (Context, IrPluginContext, LocalDeclarations)
 @OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
-fun FunctionDescriptor.irFunction(
-  ctx: Context,
-  irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations
-): IrFunction {
+fun FunctionDescriptor.irFunction(): IrFunction {
   if (visibility == DescriptorVisibilities.LOCAL)
-    return localDeclarations.localFunctions.single {
-      it.descriptor.uniqueKey(ctx) == uniqueKey(ctx)
+    return localFunctions.single {
+      it.descriptor.uniqueKey() == uniqueKey()
     }
 
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
-        return localDeclarations.localClasses.flatMap { it.declarations }
-          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+        return localClasses.flatMap { it.declarations }
+          .single { it.descriptor.uniqueKey() == uniqueKey() }
           .cast()
 
-  return irCtx.referenceFunctions(fqNameSafe)
-    .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+  return referenceFunctions(fqNameSafe)
+    .single { it.descriptor.uniqueKey() == uniqueKey() }
     .owner
 }
 
-@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
-fun PropertyDescriptor.irProperty(
-  ctx: Context,
-  irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations
-): IrProperty {
+context (Context, IrPluginContext, LocalDeclarations)
+fun PropertyDescriptor.irProperty(): IrProperty {
   if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
       ?.visibility == DescriptorVisibilities.LOCAL)
-        return localDeclarations.localClasses.flatMap { it.declarations }
-          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+        return localClasses.flatMap { it.declarations }
+          .single { it.descriptor.uniqueKey() == uniqueKey() }
           .cast()
 
-  return irCtx.referenceProperties(fqNameSafe)
-    .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+  return referenceProperties(fqNameSafe)
+    .single { it.descriptor.uniqueKey() == uniqueKey() }
     .owner
 }
 
-@OptIn(FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class)
-fun TypeRef.toIrType(
-  irCtx: IrPluginContext,
-  localDeclarations: LocalDeclarations,
-  ctx: Context
-): IrTypeArgument {
+context (Context, IrPluginContext, LocalDeclarations)
+fun TypeRef.toIrType(): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
-    classifier.isTag -> arguments.last().toIrType(irCtx, localDeclarations, ctx)
+    classifier.isTag -> arguments.last().toIrType()
       .typeOrNull!!
       .cast<IrSimpleType>()
       .let { type ->
-        val tagConstructor = irCtx.referenceClass(classifier.fqName)!!
+        val tagConstructor = referenceClass(classifier.fqName)!!
           .constructors.single()
         IrSimpleTypeImpl(
           type.originalKotlinType,
@@ -142,24 +123,19 @@ fun TypeRef.toIrType(
           type.nullability,
           type.arguments,
           listOf(
-            DeclarationIrBuilder(irCtx, tagConstructor)
+            DeclarationIrBuilder(this@IrPluginContext, tagConstructor)
               .irCall(
                 tagConstructor,
                 tagConstructor.owner.returnType
                   .classifierOrFail
                   .typeWith(
                     arguments.dropLast(1)
-                      .map {
-                        it.toIrType(irCtx, localDeclarations, ctx).typeOrNull ?: irCtx.irBuiltIns.anyNType
-                      }
+                      .map { it.toIrType().typeOrNull ?: irBuiltIns.anyNType }
                   )
               ).apply {
                 tagConstructor.owner.typeParameters.indices
                   .forEach { index ->
-                    putTypeArgument(
-                      index,
-                      arguments[index].toIrType(irCtx, localDeclarations, ctx).typeOrNull!!
-                    )
+                    putTypeArgument(index, arguments[index].toIrType().typeOrNull!!)
                   }
               }
           ) + type.annotations,
@@ -167,38 +143,35 @@ fun TypeRef.toIrType(
         )
       }
     else -> {
-      val key = classifier.descriptor!!.uniqueKey(ctx)
+      val key = classifier.descriptor!!.uniqueKey()
       val fqName = FqName(key.split(":")[1])
-      val irClassifier = localDeclarations.localClasses.singleOrNull {
-        it.descriptor.uniqueKey(ctx) == key
-      }
+      val irClassifier = localClasses.singleOrNull { it.descriptor.uniqueKey() == key }
         ?.symbol
-        ?: irCtx.referenceClass(fqName)
-        ?: irCtx.referenceFunctions(fqName.parent())
+        ?: referenceClass(fqName)
+        ?: referenceFunctions(fqName.parent())
           .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+          .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
-        ?: irCtx.referenceProperties(fqName.parent())
+        ?: referenceProperties(fqName.parent())
           .flatMap { it.owner.getter!!.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+          .singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
-        ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
+        ?: (referenceClass(fqName.parent()) ?: referenceTypeAlias(fqName.parent()))
           ?.owner
           ?.typeParameters
-          ?.singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+          ?.singleOrNull { it.descriptor.uniqueKey() == key }
           ?.symbol
         ?: error("Could not get for $fqName $key")
       IrSimpleTypeImpl(
-        irClassifier,
-        isMarkedNullable,
-        arguments.map { it.toIrType(irCtx, localDeclarations, ctx) },
-        emptyList()
+        classifier = irClassifier,
+        hasQuestionMark = isMarkedNullable,
+        arguments = arguments.map { it.toIrType() },
+        annotations = emptyList()
       )
     }
   }
 }
 
-@OptIn(ObsoleteDescriptorBasedAPI::class)
 fun IrBuilderWithScope.irLambda(
   type: IrType,
   startOffset: Int = UNDEFINED_OFFSET,

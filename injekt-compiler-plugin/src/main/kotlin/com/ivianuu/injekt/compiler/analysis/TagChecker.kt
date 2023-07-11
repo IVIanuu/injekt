@@ -15,16 +15,15 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.source.getPsi
 
-class TagChecker(private val baseCtx: Context) : DeclarationChecker {
+context(Context) class TagChecker : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
-  ) {
-    val ctx = baseCtx.withTrace(context.trace)
+  ) = with(withTrace(context.trace)) {
     if (descriptor is ClassDescriptor && descriptor.hasAnnotation(InjektFqNames.Tag) &&
       descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
-      ctx.reportError(
+      reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Tag)
           ?.source?.getPsi() ?: declaration,
         "tag cannot have value parameters"

@@ -22,9 +22,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     container: StorageComponentContainer,
     platform: TargetPlatform,
     moduleDescriptor: ModuleDescriptor,
-  ) {
-    val ctx = Context(moduleDescriptor, null)
-
+  ) = with(Context(moduleDescriptor, null)) {
     val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
       StorageComponentContainer::class,
       "componentStorage"
@@ -41,13 +39,13 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
       }
 
     if (!hasSyntheticScopesExtension) {
-      container.useInstance(ctx)
+      container.useInstance(this@with)
       container.useImpl<InjectSyntheticScopes>()
     }
 
-    container.useInstance(InjectableChecker(ctx))
-    container.useInstance(TagChecker(ctx))
+    container.useInstance(InjectableChecker())
+    container.useInstance(TagChecker())
     if (!isIde)
-      container.useInstance(InfoPatcher(ctx))
+      container.useInstance(InfoPatcher())
   }
 }

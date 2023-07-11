@@ -21,10 +21,10 @@ import org.jetbrains.kotlin.types.model.TypeVariance
   val isInject: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef =
+context(Context) fun TypeRef.toPersistedTypeRef(): PersistedTypeRef =
   PersistedTypeRef(
-    classifierKey = classifier.descriptor?.uniqueKey(ctx) ?: "",
-    arguments = arguments.map { it.toPersistedTypeRef(ctx) },
+    classifierKey = classifier.descriptor?.uniqueKey() ?: "",
+    arguments = arguments.map { it.toPersistedTypeRef() },
     isStarProjection = isStarProjection,
     variance = variance,
     isMarkedNullable = isMarkedNullable,
@@ -32,19 +32,18 @@ fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef =
     isInject = isInject
   )
 
-fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
+context(Context) fun PersistedTypeRef.toTypeRef(): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = classifierDescriptorForKey(classifierKey, ctx)
-    .toClassifierRef(ctx)
+  val classifier = classifierDescriptorForKey(classifierKey)
+    .toClassifierRef()
   val arguments = if (classifier.isTag) {
     arguments
-      .map { it.toTypeRef(ctx) } +
+      .map { it.toTypeRef() } +
         listOfNotNull(
-          if (arguments.size < classifier.typeParameters.size)
-            ctx.nullableAnyType
+          if (arguments.size < classifier.typeParameters.size) nullableAnyType
           else null
         )
-  } else arguments.map { it.toTypeRef(ctx) }
+  } else arguments.map { it.toTypeRef() }
   return classifier.untaggedType.copy(
     arguments = arguments,
     variance = variance,

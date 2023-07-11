@@ -44,9 +44,8 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
-@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : KtTreeVisitorVoid(), AnalysisHandlerExtension {
+@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
   private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
-  private var ctx: Context? = null
 
   override fun analysisCompleted(
     project: Project,
@@ -54,31 +53,36 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
-    ctx = Context(module, bindingTrace)
-    files.forEach { it.accept(this) }
-    ctx = null
+    with(Context(module, bindingTrace)) {
+      files.forEach {
+        it.accept(
+          object : KtTreeVisitorVoid() {
+            override fun visitCallExpression(expression: KtCallExpression) {
+              super.visitCallExpression(expression)
+              expression.getResolvedCall(trace!!.bindingContext)
+                ?.let { checkCall(it) }
+            }
+
+            override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
+              super.visitSimpleNameExpression(expression)
+              expression.getResolvedCall(trace!!.bindingContext)
+                ?.let { checkCall(it) }
+            }
+
+            override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
+              super.visitConstructorDelegationCall(call)
+              call.getResolvedCall(trace!!.bindingContext)
+                ?.let { checkCall(it) }
+            }
+          }
+        )
+      }
+    }
+
     return null
   }
 
-  override fun visitCallExpression(expression: KtCallExpression) {
-    super.visitCallExpression(expression)
-    expression.getResolvedCall(ctx!!.trace!!.bindingContext)
-      ?.let { checkCall(it) }
-  }
-
-  override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
-    super.visitSimpleNameExpression(expression)
-    expression.getResolvedCall(ctx!!.trace!!.bindingContext)
-      ?.let { checkCall(it) }
-  }
-
-  override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
-    super.visitConstructorDelegationCall(call)
-    call.getResolvedCall(ctx!!.trace!!.bindingContext)
-      ?.let { checkCall(it) }
-  }
-
-  private fun checkCall(resolvedCall: ResolvedCall<*>) {
+  context(Context) private fun checkCall(resolvedCall: ResolvedCall<*>) {
     if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
@@ -90,7 +94,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val substitutionMap = buildMap {
       for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef(ctx!!)] = argument.toTypeRef(ctx!!)
+        this[parameter.toClassifierRef()] = argument.toTypeRef()
 
       fun TypeRef.putAll() {
         for ((index, parameter) in classifier.typeParameters.withIndex()) {
@@ -100,36 +104,36 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx!!)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx!!)?.putAll()
+      resolvedCall.dispatchReceiver?.type?.toTypeRef()?.putAll()
+      resolvedCall.extensionReceiver?.type?.toTypeRef()?.putAll()
     }
 
     val callee = resultingDescriptor
-      .toCallableRef(ctx!!)
+      .toCallableRef()
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex(ctx!!) }
+      .mapKeys { it.key.injektIndex() }
 
     val requests = callee.callable.allParametersWithContext
       .transform {
-        val index = it.injektIndex(ctx!!)
-        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx!!))
-          add(it.toInjectableRequest(callee, ctx!!))
+        val index = it.injektIndex()
+        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject())
+          add(it.toInjectableRequest(callee))
       }
 
     if (requests.isEmpty()) return
 
-    val scope = ElementInjectablesScope(ctx!!, callExpression)
+    val scope = ElementInjectablesScope(callExpression)
 
     val location = callExpression.lookupLocation
-    memberScopeForFqName(InjektFqNames.InjectablesPackage, location, ctx!!)
+    memberScopeForFqName(InjektFqNames.InjectablesPackage, location)
       ?.recordLookup(InjektFqNames.InjectablesLookup.shortName(), location)
 
-    when (val result = scope.resolveRequests(callee, requests)) {
+    when (val result = with(scope) { resolveRequests(callee, requests) }) {
       is InjectionResult.Success -> {
-        ctx!!.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.virtualFilePath) { Unit }
-        ctx!!.cached(
+        cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.virtualFilePath) { Unit }
+        cached(
           INJECTION_RESULT_KEY,
           SourcePosition(
             file.virtualFilePath,
@@ -138,7 +142,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
           )
         ) { result }
       }
-      is InjectionResult.Error -> ctx!!.reportError(callExpression, result.render())
+      is InjectionResult.Error -> reportError(callExpression, result.render())
     }
   }
 }

@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
@@ -47,88 +47,85 @@ import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-fun TypeRef.collectInjectables(
-  classBodyView: Boolean,
-  ctx: Context
-): List<CallableRef> = ctx.cached("type_injectables", this to classBodyView) {
-  // special case to support @Provide () -> Foo
-  if (isProvideFunctionType) {
-    val callable = classifier
-      .descriptor!!
-      .defaultType
-      .memberScope
-      .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-      .first()
-      .toCallableRef(ctx)
-      .let { callable ->
-        callable.copy(
-          type = arguments.last(),
-          parameterTypes = callable.parameterTypes.toMutableMap().apply {
-            this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
-          }
-        ).substitute(
-          classifier.typeParameters
-            .zip(
-              arguments
-                .map { it.copy(isInject = true) }
-            )
-            .toMap()
-        )
-      }
-
-    return@cached listOf(callable)
-  }
-
-  // do not run any code for types which do not declare any injectables
-  if (!classifier.declaresInjectables && !classBodyView)
-    // at least include the companion object if it declares injectables
-    return@cached listOfNotNull(
-      classifier.descriptor
-        ?.safeAs<ClassDescriptor>()
-        ?.companionObjectDescriptor
-        ?.toClassifierRef(ctx)
-        ?.takeIf { it.declaresInjectables }
-        ?.descriptor
-        ?.cast<ClassDescriptor>()
-        ?.injectableReceiver(false, ctx)
-    )
-
-  buildList {
-    classifier
-      .descriptor
-      ?.defaultType
-      ?.memberScope
-      ?.collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
-        val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-          CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
-            .overriddenTreeAsSequence(false)
-            .last()
-            .containingDeclaration
-            .cast<ClassDescriptor>()
-            .toClassifierRef(ctx)
-          classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
-            .zip(subtypeView(originalClassifier)!!.arguments)
-        } else classifier.typeParameters.zip(arguments).toMap()
-        val substituted = callable.substitute(substitutionMap)
-
-        add(
-          substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-              substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-            } else substituted.parameterTypes
+context(Context) fun TypeRef.collectInjectables(classBodyView: Boolean): List<CallableRef> =
+  cached("type_injectables", this to classBodyView) {
+    // special case to support @Provide () -> Foo
+    if (isProvideFunctionType) {
+      val callable = classifier
+        .descriptor!!
+        .defaultType
+        .memberScope
+        .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
+        .first()
+        .toCallableRef()
+        .let { callable ->
+          callable.copy(
+            type = arguments.last(),
+            parameterTypes = callable.parameterTypes.toMutableMap().apply {
+              this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
+            }
+          ).substitute(
+            classifier.typeParameters
+              .zip(
+                arguments
+                  .map { it.copy(isInject = true) }
+              )
+              .toMap()
           )
-        )
-      }
-  }
-}
+        }
 
-fun ResolutionScope.collectInjectables(
+      return@cached listOf(callable)
+    }
+
+    // do not run any code for types which do not declare any injectables
+    if (!classifier.declaresInjectables && !classBodyView)
+    // at least include the companion object if it declares injectables
+      return@cached listOfNotNull(
+        classifier.descriptor
+          ?.safeAs<ClassDescriptor>()
+          ?.companionObjectDescriptor
+          ?.toClassifierRef()
+          ?.takeIf { it.declaresInjectables }
+          ?.descriptor
+          ?.cast<ClassDescriptor>()
+          ?.injectableReceiver(false)
+      )
+
+    buildList {
+      classifier
+        .descriptor
+        ?.defaultType
+        ?.memberScope
+        ?.collectInjectables(classBodyView = classBodyView) { callable ->
+          val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+            CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+            val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
+              .overriddenTreeAsSequence(false)
+              .last()
+              .containingDeclaration
+              .cast<ClassDescriptor>()
+              .toClassifierRef()
+            classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
+              .zip(subtypeView(originalClassifier)!!.arguments)
+          } else classifier.typeParameters.zip(arguments).toMap()
+          val substituted = callable.substitute(substitutionMap)
+
+          add(
+            substituted.copy(
+              parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
+                substituted.parameterTypes.toMutableMap()
+                  .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
+              } else substituted.parameterTypes
+            )
+          )
+        }
+    }
+  }
+
+context(Context) fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
   onEach: (DeclarationDescriptor) -> Unit = {},
   name: Name? = null,
-  ctx: Context,
   includeNonProvideObjectsWithInjectables: Boolean = false,
   consumer: (CallableRef) -> Unit
 ) {
@@ -142,84 +139,84 @@ fun ResolutionScope.collectInjectables(
           (!classBodyView || !declaration.isCompanionObject))
             declaration
               .takeIf {
-                it.isProvide(ctx) ||
+                it.isProvide() ||
                     (includeNonProvideObjectsWithInjectables &&
-                        it.toClassifierRef(ctx).declaresInjectables)
+                        it.toClassifierRef().declaresInjectables)
               }
-              ?.injectableReceiver(!classBodyView, ctx)
+              ?.injectableReceiver(!classBodyView)
               ?.let(consumer)
         else {
-          declaration.injectableConstructors(ctx).forEach(consumer)
+          declaration.injectableConstructors().forEach(consumer)
           if (!classBodyView && !includeNonProvideObjectsWithInjectables)
             declaration.companionObjectDescriptor
-              ?.takeIf { it.classifierInfo(ctx).declaresInjectables }
-              ?.injectableReceiver(false, ctx)
+              ?.takeIf { it.classifierInfo().declaresInjectables }
+              ?.injectableReceiver(false)
               ?.let(consumer)
         }
       }
       is CallableMemberDescriptor -> {
-        if (declaration.isProvide(ctx))
-          consumer(declaration.toCallableRef(ctx))
+        if (declaration.isProvide())
+          consumer(declaration.toCallableRef())
       }
       is VariableDescriptor -> {
-        if (declaration.isProvide(ctx))
-          consumer(declaration.toCallableRef(ctx))
+        if (declaration.isProvide())
+          consumer(declaration.toCallableRef())
       }
     }
   }
 }
 
-fun Annotated.isProvide(ctx: Context): Boolean {
+context(Context) fun Annotated.isProvide(): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.cached("is_provide", key) {
+  return cached("is_provide", key) {
     var isProvide = hasAnnotation(InjektFqNames.Provide) ||
         hasAnnotation(InjektFqNames.Inject)
 
     if (!isProvide && this is ParameterDescriptor)
-      isProvide = type.isProvide(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
+      isProvide = type.isProvide() ||
+          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide() == true
 
     if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
-      isProvide = constructedClass.isProvide(ctx)
+      isProvide = constructedClass.isProvide()
 
     isProvide
   }
 }
 
-fun Annotated.isInject(ctx: Context): Boolean {
+context(Context) fun Annotated.isInject(): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.cached("is_inject", key) {
+  return cached("is_inject", key) {
     var isInject = hasAnnotation(InjektFqNames.Inject)
 
     if (!isInject && this is ParameterDescriptor)
-      isInject = type.isInject(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
+      isInject = type.isInject() ||
+          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide() == true
 
     if (!isInject && this is ClassConstructorDescriptor && isPrimary)
-      isInject = constructedClass.isProvide(ctx)
+      isInject = constructedClass.isProvide()
 
     isInject
   }
 }
 
-fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
-  ctx.cached("injectable_constructors", this) {
+context(Context) fun ClassDescriptor.injectableConstructors(): List<CallableRef> =
+  cached("injectable_constructors", this) {
     constructors
       .transform { constructor ->
         if (constructor.hasAnnotation(InjektFqNames.Provide) ||
           (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
-            add(constructor.toCallableRef(ctx))
+            add(constructor.toCallableRef())
       }
   }
 
-fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableRef {
+context(Context) fun ClassDescriptor.injectableReceiver(tagged: Boolean): CallableRef {
   val callable = ReceiverParameterDescriptorImpl(
     this,
     ImplicitClassReceiver(this),
     Annotations.EMPTY
-  ).toCallableRef(ctx)
+  ).toCallableRef()
   return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
   else {
     val taggedType = callable.type.classifier.tags.wrap(callable.type)
@@ -227,17 +224,16 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
   }
 }
 
-fun CallableRef.collectInjectables(
+context(Context) fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
   chainLength: Int = 0,
-  seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf(),
-  ctx: Context
+  seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf()
 ) {
-  if (!seen.add(InjectablesScope.InjectableKey(this, ctx))) return
+  if (!seen.add(InjectablesScope.InjectableKey(this, this@Context))) return
 
-  if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
+  if (!scope.canSee(this) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
@@ -246,7 +242,7 @@ fun CallableRef.collectInjectables(
 
   val nextCallable = if (type.isProvideFunctionType) {
     addInjectable(this)
-    copy(type = type.copy(frameworkKey = callable.uniqueKey(ctx)))
+    copy(type = type.copy(frameworkKey = callable.uniqueKey()))
   } else this
   addInjectable(nextCallable)
 
@@ -255,8 +251,7 @@ fun CallableRef.collectInjectables(
     .collectInjectables(
       scope.allScopes.any {
         it.ownerDescriptor == nextCallable.type.classifier.descriptor
-      },
-      ctx
+      }
     )
     .forEach { innerCallable ->
       val nextChainLength = chainLength + 1
@@ -267,27 +262,23 @@ fun CallableRef.collectInjectables(
           addInjectable = addInjectable,
           addSpreadingInjectable = addSpreadingInjectable,
           chainLength = nextChainLength,
-          seen = seen,
-          ctx = ctx
+          seen = seen
         )
     }
 }
 
-fun collectGlobalInjectables(ctx: Context): List<CallableRef> = buildList {
-  packagesWithInjectables(ctx)
+context(Context) fun collectGlobalInjectables(): List<CallableRef> = buildList {
+  packagesWithInjectables()
     .forEach {
-      collectPackageInjectables(it, ctx).forEach { add(it) }
+      collectPackageInjectables(it).forEach { add(it) }
     }
 }
 
-fun collectPackageInjectables(
-  packageFqName: FqName,
-  ctx: Context
-): List<CallableRef> =
-  ctx.cached("package_injectables", packageFqName) {
-    if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
+context(Context) fun collectPackageInjectables(packageFqName: FqName): List<CallableRef> =
+  cached("package_injectables", packageFqName) {
+    if (packageFqName !in packagesWithInjectables()) return@cached emptyList()
 
-    val packageFragments = packageFragmentsForFqName(packageFqName, ctx)
+    val packageFragments = packageFragmentsForFqName(packageFqName)
       .filterNot { it is BuiltInsPackageFragment }
 
     val injectables = mutableListOf<CallableRef>()
@@ -299,12 +290,11 @@ fun collectPackageInjectables(
           // otherwise they will be included later in the injectables scope itself
           if (declaration is ClassDescriptor &&
             (declaration.kind != ClassKind.OBJECT ||
-                !declaration.toClassifierRef(ctx).declaresInjectables))
+                !declaration.toClassifierRef().declaresInjectables))
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
         },
         classBodyView = false,
-        includeNonProvideObjectsWithInjectables = true,
-        ctx = ctx
+        includeNonProvideObjectsWithInjectables = true
       ) {
         injectables += it
       }
@@ -314,11 +304,11 @@ fun collectPackageInjectables(
     injectables
   }
 
-private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolean =
+context(Context) private fun InjectablesScope.canSee(callable: CallableRef): Boolean =
   callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
+          callable.callable.moduleName() == module.moduleName()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parents.any { callableParent ->
@@ -330,9 +320,9 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
         scopeFile == callable.callable.findPsi()?.containingFile
       })
 
-fun packagesWithInjectables(ctx: Context): Set<FqName> =
-  ctx.cached("packages_with_injectables", Unit) {
-    memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
+context(Context) fun packagesWithInjectables(): Set<FqName> =
+  cached("packages_with_injectables", Unit) {
+    memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND)
       ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.mapTo(mutableSetOf()) {
         it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!

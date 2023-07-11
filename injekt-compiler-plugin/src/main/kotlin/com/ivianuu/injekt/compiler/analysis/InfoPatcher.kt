@@ -16,37 +16,35 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
+context(Context) class InfoPatcher() : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
     context: DeclarationCheckerContext
-  ) {
-    val ctx = baseCtx.withTrace(context.trace)
-
+  ) = with(withTrace(context.trace)) {
     // requesting infos triggers saving them
     when (descriptor) {
       is ClassDescriptor -> {
         if (descriptor.visibility.shouldPersistInfo()) {
-          descriptor.classifierInfo(ctx)
+          descriptor.classifierInfo()
           descriptor.declaredTypeParameters
-            .forEach { it.classifierInfo(ctx) }
+            .forEach { it.classifierInfo() }
           descriptor.constructors
-            .forEach { it.callableInfo(ctx) }
+            .forEach { it.callableInfo() }
         }
       }
       is CallableDescriptor -> {
         if (descriptor.visibility.shouldPersistInfo()) {
-          descriptor.callableInfo(ctx)
+          descriptor.callableInfo()
           descriptor.typeParameters
-            .forEach { it.classifierInfo(ctx) }
+            .forEach { it.classifierInfo() }
         }
       }
       is TypeAliasDescriptor -> {
         if (descriptor.visibility.shouldPersistInfo()) {
-          descriptor.classifierInfo(ctx)
+          descriptor.classifierInfo()
           descriptor.declaredTypeParameters
-            .forEach { it.classifierInfo(ctx) }
+            .forEach { it.classifierInfo() }
         }
       }
     }

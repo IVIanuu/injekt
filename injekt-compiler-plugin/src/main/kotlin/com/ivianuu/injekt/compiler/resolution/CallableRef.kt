@@ -43,10 +43,10 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   )
 }
 
-fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
-  ctx.cached("callable_ref", this) {
-    val info = callableInfo(ctx)
-    val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
+context(Context) fun CallableDescriptor.toCallableRef(): CallableRef =
+  cached("callable_ref", this) {
+    val info = callableInfo()
+    val typeParameters = typeParameters.map { it.toClassifierRef() }
 
     CallableRef(
       callable = this,

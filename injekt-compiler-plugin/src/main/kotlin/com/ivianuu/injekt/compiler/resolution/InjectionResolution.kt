@@ -123,7 +123,7 @@ data class UsageKey(
   val highestScope: InjectablesScope
 )
 
-fun InjectablesScope.resolveRequests(
+context(InjectablesScope) fun resolveRequests(
   callee: CallableRef,
   requests: List<InjectableRequest>
 ): InjectionResult {
@@ -146,20 +146,20 @@ fun InjectablesScope.resolveRequests(
   }
   val usages = mutableMapOf<UsageKey, MutableSet<InjectableRequest>>()
   return if (failure == null) InjectionResult.Success(
-    this,
+    this@InjectablesScope,
     callee,
     successes,
     usages
   ).also { it.postProcess(usages) }
   else InjectionResult.Error(
-    this,
+    this@InjectablesScope,
     callee,
     failureRequest!!,
     failure
   )
 }
 
-private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
+context(InjectablesScope) private fun resolveRequest(request: InjectableRequest): ResolutionResult {
   if (request.type.hasErrors)
     return ResolutionResult.Failure.NoCandidates(request)
 
@@ -173,18 +173,18 @@ private fun InjectablesScope.resolveRequest(request: InjectableRequest): Resolut
   return result
 }
 
-private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
+context(InjectablesScope) private fun tryToResolveRequestWithUserInjectables(
   request: InjectableRequest
-): ResolutionResult? = injectablesForRequest(request, this)
+): ResolutionResult? = injectablesForRequest(request, this@InjectablesScope)
   .takeIf { it.isNotEmpty() }
   ?.let { resolveCandidates(request, it) }
 
-private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
+context(InjectablesScope) private fun tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest
 ): ResolutionResult? =
   frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it) }
 
-private fun InjectablesScope.computeForCandidate(
+context(InjectablesScope) private fun computeForCandidate(
   request: InjectableRequest,
   candidate: Injectable,
   compute: () -> ResolutionResult,
@@ -271,7 +271,7 @@ private fun InjectablesScope.resolveCandidates(
   }
 }
 
-private fun InjectablesScope.resolveCandidate(
+context(InjectablesScope) private fun resolveCandidate(
   request: InjectableRequest,
   candidate: Injectable
 ): ResolutionResult = computeForCandidate(request, candidate) {
@@ -293,13 +293,15 @@ private fun InjectablesScope.resolveCandidate(
   if (candidate.dependencies.isEmpty())
     return@computeForCandidate ResolutionResult.Success.Value(
       candidate,
-      this,
+      this@InjectablesScope,
       emptyMap()
     )
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
-    when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
+    when (val dependencyResult = with((candidate.dependencyScope ?: this@InjectablesScope)) {
+      resolveRequest(dependency)
+    }) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
@@ -320,12 +322,12 @@ private fun InjectablesScope.resolveCandidate(
   }
   return@computeForCandidate ResolutionResult.Success.Value(
     candidate,
-    this,
+    this@InjectablesScope,
     successDependencyResults
   )
 }
 
-private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
+context(InjectablesScope) private fun compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
   if (a === b) return 0
 
   if (a != null && b == null) return -1
@@ -355,7 +357,7 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   }
 }
 
-private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int {
+context(InjectablesScope) private fun compareCandidate(a: Injectable?, b: Injectable?): Int {
   if (a === b) return 0
 
   if (a != null && b == null) return -1
@@ -375,10 +377,7 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   )
 }
 
-private fun InjectablesScope.compareCallable(
-  a: CallableRef?,
-  b: CallableRef?
-): Int {
+context(InjectablesScope) private fun compareCallable(a: CallableRef?, b: CallableRef?): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
@@ -410,7 +409,7 @@ private fun InjectablesScope.compareCallable(
   return 0
 }
 
-private fun InjectablesScope.compareType(
+context(InjectablesScope) private fun compareType(
   a: TypeRef?,
   b: TypeRef?,
   comparedTypes: MutableSet<Pair<TypeRef, TypeRef>> = mutableSetOf()
@@ -452,15 +451,17 @@ private fun InjectablesScope.compareType(
   }
 
   if (a.classifier != b.classifier) {
-    val aSubTypeOfB = a.isSubTypeOf(b, ctx)
-    val bSubTypeOfA = b.isSubTypeOf(a, ctx)
-    if (aSubTypeOfB && !bSubTypeOfA) return -1
-    if (bSubTypeOfA && !aSubTypeOfB) return 1
-    val aCommonSuperType = commonSuperType(a.superTypes, ctx = ctx)
-    val bCommonSuperType = commonSuperType(b.superTypes, ctx = ctx)
-    val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
+    with(context) {
+      val aSubTypeOfB = a.isSubTypeOf(b)
+      val bSubTypeOfA = b.isSubTypeOf(a)
+      if (aSubTypeOfB && !bSubTypeOfA) return -1
+      if (bSubTypeOfA && !aSubTypeOfB) return 1
+      val aCommonSuperType = commonSuperType(a.superTypes)
+      val bCommonSuperType = commonSuperType(b.superTypes)
+      val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
+      if (diff < 0) return -1
+      if (diff > 0) return 1
+    }
   } else {
     val diff = compareSameClassifier(a, b)
     if (diff < 0) return -1

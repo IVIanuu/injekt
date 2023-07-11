@@ -34,13 +34,12 @@ class InjectSyntheticScopeProviderExtension : SyntheticScopeProviderExtension {
   override fun getScopes(
     moduleDescriptor: ModuleDescriptor,
     javaSyntheticPropertiesScope: JavaSyntheticPropertiesScope
-  ): List<SyntheticScope> {
-    val ctx = Context(
+  ): List<SyntheticScope> = with(
+    Context(
       moduleDescriptor,
       DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
     )
-    return listOf(InjectSyntheticScope(ctx))
-  }
+  ) { listOf(InjectSyntheticScope()) }
 }
 
 class InjectSyntheticScopes(
@@ -52,23 +51,23 @@ class InjectSyntheticScopes(
 ) : SyntheticScopes {
   private val delegate = FunInterfaceConstructorsScopeProvider(
     storageManager, lookupTracker, samResolver, samConversionOracle)
-  override val scopes: Collection<SyntheticScope> = delegate.scopes + InjectSyntheticScope(
+  override val scopes: Collection<SyntheticScope> = delegate.scopes + with(
     ctx.withTrace(
       DelegatingBindingTrace(BindingContext.EMPTY, "synthetic scopes")
     )
-  )
+  ) { InjectSyntheticScope() }
 }
 
-private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.Default() {
+context(Context) private class InjectSyntheticScope : SyntheticScope.Default() {
   override fun getSyntheticConstructor(constructor: ConstructorDescriptor): ConstructorDescriptor? =
-    constructor.toInjectFunctionDescriptor(ctx) as? ConstructorDescriptor
+    constructor.toInjectFunctionDescriptor() as? ConstructorDescriptor
 
   override fun getSyntheticConstructors(
     contributedClassifier: ClassifierDescriptor,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedClassifier.safeAs<ClassDescriptor>()
     ?.constructors
-    ?.mapNotNull { it.toInjectFunctionDescriptor(ctx) } ?: emptyList()
+    ?.mapNotNull { it.toInjectFunctionDescriptor() } ?: emptyList()
 
   override fun getSyntheticMemberFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor> =
     receiverTypes
@@ -76,10 +75,10 @@ private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.De
         for (declaration in receiverType.memberScope.getContributedDescriptors()) {
           if (declaration is ClassDescriptor && declaration.isInner) {
             for (constructor in declaration.constructors)
-              constructor.toInjectFunctionDescriptor(ctx)
+              constructor.toInjectFunctionDescriptor()
                 ?.let { add(it) }
           } else
-            declaration.safeAs<FunctionDescriptor>()?.toInjectFunctionDescriptor(ctx)
+            declaration.safeAs<FunctionDescriptor>()?.toInjectFunctionDescriptor()
               ?.let { add(it) }
         }
       }
@@ -91,13 +90,13 @@ private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.De
   ): Collection<FunctionDescriptor> = receiverTypes
     .transform { receiverType ->
       for (function in receiverType.memberScope.getContributedFunctions(name, location))
-        function.toInjectFunctionDescriptor(ctx)?.let { add(it) }
+        function.toInjectFunctionDescriptor()?.let { add(it) }
       receiverType.memberScope.getContributedClassifier(name, location)
         ?.safeAs<ClassDescriptor>()
         ?.takeIf { it.isInner }
         ?.constructors
         ?.forEach { constructor ->
-          constructor.toInjectFunctionDescriptor(ctx)?.let { add(it) }
+          constructor.toInjectFunctionDescriptor()?.let { add(it) }
         }
     }
 
@@ -105,5 +104,5 @@ private class InjectSyntheticScope(private val ctx: Context) : SyntheticScope.De
     contributedFunctions: Collection<FunctionDescriptor>,
     location: LookupLocation
   ): Collection<FunctionDescriptor> = contributedFunctions
-    .mapNotNull { it.toInjectFunctionDescriptor(ctx) }
+    .mapNotNull { it.toInjectFunctionDescriptor() }
 }

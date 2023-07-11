@@ -3,12 +3,19 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   id("com.github.johnrengelman.shadow")
   id("com.google.devtools.ksp")
+}
+
+tasks.withType<KotlinCompile> {
+  kotlinOptions {
+    freeCompilerArgs += "-Xcontext-receivers"
+  }
 }
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {

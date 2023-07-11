@@ -13,11 +13,11 @@ import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import java.io.File
 
-fun IrModuleFragment.dumpToFiles(dumpDir: File, ctx: Context) {
+context(Context) fun IrModuleFragment.dumpToFiles(dumpDir: File) {
   files
     .filter {
       dumpAllFiles ||
-          ctx.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
+          cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
     }
     .forEach { irFile ->
       val file = File(irFile.fileEntry.name)

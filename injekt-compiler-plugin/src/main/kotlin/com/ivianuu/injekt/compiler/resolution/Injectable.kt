@@ -37,18 +37,18 @@ sealed interface Injectable {
   val usageKey: Any get() = type
 }
 
-class CallableInjectable(
+context(Context) class CallableInjectable(
   override val ownerScope: InjectablesScope,
   val callable: CallableRef
 ) : Injectable {
   override val type: TypeRef get() = callable.type
-  override val dependencies = callable.getInjectableRequests(ownerScope.ctx)
+  override val dependencies = callable.getInjectableRequests()
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val originalType: TypeRef get() = callable.originalType
   override val usageKey =
-    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes, callable.type)
+    listOf(callable.callable.uniqueKey(), callable.parameterTypes, callable.type)
 
   override fun equals(other: Any?): Boolean =
     other is CallableInjectable && other.usageKey == usageKey
@@ -76,7 +76,7 @@ class ListInjectable(
     }
 }
 
-class ProviderInjectable(
+context(Context) class ProviderInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
 ) : Injectable {
@@ -103,11 +103,10 @@ class ProviderInjectable(
   override val dependencyScope = InjectableScopeOrParent(
     name = "PROVIDER $type",
     parent = ownerScope,
-    ctx = ownerScope.ctx,
     initialInjectables = parameterDescriptors
       .mapIndexed { index, parameter ->
         parameter
-          .toCallableRef(ownerScope.ctx)
+          .toCallableRef()
           .copy(type = type.arguments[index])
       }
   )
@@ -128,7 +127,7 @@ class SourceKeyInjectable(
   override val callableFqName = FqName("com.ivianuu.injekt.common.sourceKey")
 }
 
-class TypeKeyInjectable(
+context(Context) class TypeKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
 ) : Injectable {
@@ -137,7 +136,7 @@ class TypeKeyInjectable(
     .filter { it.classifier.isTypeParameter }
     .mapIndexed { index, typeParameter ->
       InjectableRequest(
-        type = ownerScope.ctx.typeKeyClassifier!!.defaultType
+        type = typeKeyClassifier!!.defaultType
           .withArguments(listOf(typeParameter.classifier.defaultType)),
         callableFqName = callableFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
@@ -147,14 +146,14 @@ class TypeKeyInjectable(
     }
 }
 
-fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParametersWithContext
+context(Context) fun CallableRef.getInjectableRequests(): List<InjectableRequest> = callable.allParametersWithContext
   .transform {
     if (it === callable.dispatchReceiverParameter ||
       it === callable.extensionReceiverParameter ||
       it in callable.contextReceiverParameters ||
-      it.isProvide(ctx) ||
-      parameterTypes[it.injektIndex(ctx)]?.isInject == true)
-      add(it.toInjectableRequest(this@getInjectableRequests, ctx))
+      it.isProvide() ||
+      parameterTypes[it.injektIndex()]?.isInject == true)
+      add(it.toInjectableRequest(this@getInjectableRequests))
   }
 
 data class InjectableRequest(
@@ -166,13 +165,13 @@ data class InjectableRequest(
   val isRequired: Boolean = true
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
+context(Context) fun ParameterDescriptor.toInjectableRequest(callable: CallableRef) =
   InjectableRequest(
-    type = callable.parameterTypes[injektIndex(ctx)]!!,
+    type = callable.parameterTypes[injektIndex()]!!,
     callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(ctx),
-    parameterIndex = injektIndex(ctx),
+    parameterName = injektName(),
+    parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject
   )

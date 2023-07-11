@@ -92,13 +92,13 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
-  ctx.cached("classifier_ref", this) {
-    val info = classifierInfo(ctx)
+context(Context) fun ClassifierDescriptor.toClassifierRef(): ClassifierRef =
+  cached("classifier_ref", this) {
+    val info = classifierInfo()
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
       ?.declaredTypeParameters
-      ?.map { it.toClassifierRef(ctx) }
+      ?.map { it.toClassifierRef() }
       ?.toMutableList()
       ?: mutableListOf()
 
@@ -106,16 +106,16 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
 
     if (isTag) {
       typeParameters += ClassifierRef(
-        key = "${uniqueKey(ctx)}.\$TT",
+        key = "${uniqueKey()}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
-        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
+        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(nullableAnyType) },
         variance = TypeVariance.OUT
       )
     }
 
     ClassifierRef(
-      key = original.uniqueKey(ctx),
+      key = original.uniqueKey(),
       fqName = original.fqNameSafe,
       typeParameters = typeParameters,
       lazySuperTypes = info.lazySuperTypes,
@@ -130,8 +130,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
     )
   }
 
-fun KotlinType.toTypeRef(
-  ctx: Context,
+context(Context) fun KotlinType.toTypeRef(
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV
 ): TypeRef {
@@ -141,10 +140,10 @@ fun KotlinType.toTypeRef(
       unwrapped.constructor.isDenotable -> unwrapped
       unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
         .commonSupertype(unwrapped.constructor.supertypes)
-      else -> return ctx.nullableAnyType
+      else -> return nullableAnyType
     }
 
-    val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef(ctx)
+    val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef()
 
     val rawType = TypeRef(
       classifier = classifier,
@@ -155,14 +154,13 @@ fun KotlinType.toTypeRef(
         .take(classifier.typeParameters.size)
         .map {
           it.type.toTypeRef(
-            ctx = ctx,
             isStarProjection = it.isStarProjection,
             variance = it.projectionKind.convertVariance()
           )
         }
         .let {
           if (classifier.isTag && it.size != classifier.typeParameters.size)
-            it + ctx.nullableAnyType
+            it + nullableAnyType
           else it
         },
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
@@ -176,7 +174,7 @@ fun KotlinType.toTypeRef(
     val tagAnnotations = unwrapped.getTags()
     var r = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
-        .map { it.type.toTypeRef(ctx) }
+        .map { it.type.toTypeRef() }
         .map {
           it.copy(
             arguments = it.arguments,
