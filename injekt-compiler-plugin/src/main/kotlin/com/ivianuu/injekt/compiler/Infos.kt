@@ -183,7 +183,6 @@ fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
 class ClassifierInfo(
   val tags: List<TypeRef>,
   val lazySuperTypes: Lazy<List<TypeRef>>,
-  val primaryConstructorPropertyParameters: List<String>,
   val lazyDeclaresInjectables: Lazy<Boolean>
 ) {
   val superTypes by lazySuperTypes
@@ -235,7 +234,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       ClassifierInfo(
         tags = tags,
         lazySuperTypes = lazySuperTypes,
-        primaryConstructorPropertyParameters = emptyList(),
         lazyDeclaresInjectables = lazyOf(false)
       )
     } else {
@@ -243,7 +241,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
         ClassifierInfo(
           tags = emptyList(),
           lazySuperTypes = lazySuperTypes,
-          primaryConstructorPropertyParameters = emptyList(),
           lazyDeclaresInjectables = lazyOf(false)
         )
       } else {
@@ -259,7 +256,6 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
         ClassifierInfo(
           tags = tags,
           lazySuperTypes = lazySuperTypes,
-          primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
           lazyDeclaresInjectables = lazy(LazyThreadSafetyMode.NONE) {
             defaultType
               .memberScope
@@ -282,21 +278,18 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
 @Serializable data class PersistedClassifierInfo(
   val tags: List<PersistedTypeRef>,
   val superTypes: List<PersistedTypeRef>,
-  val primaryConstructorPropertyParameters: List<String>,
   val declaresInjectables: Boolean
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef(ctx) },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } },
-  primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   lazyDeclaresInjectables = lazyOf(declaresInjectables)
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef(ctx) },
   superTypes = superTypes.map { it.toPersistedTypeRef(ctx) },
-  primaryConstructorPropertyParameters = primaryConstructorPropertyParameters,
   declaresInjectables = declaresInjectables
 )
 
@@ -347,7 +340,6 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(
     if (!visibility.shouldPersistInfo()) return
 
     if (info.tags.none { it.shouldBePersisted() } &&
-      info.primaryConstructorPropertyParameters.isEmpty() &&
       info.superTypes.none { it.shouldBePersisted() } &&
       !info.declaresInjectables) return
 

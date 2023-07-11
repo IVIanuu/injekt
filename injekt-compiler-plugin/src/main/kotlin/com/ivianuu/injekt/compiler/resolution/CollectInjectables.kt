@@ -19,7 +19,6 @@ import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
-import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.transformTo
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -164,14 +163,8 @@ fun ResolutionScope.collectInjectables(
         }
       }
       is CallableMemberDescriptor -> {
-        if (declaration.isProvide(ctx) &&
-          (declaration !is PropertyDescriptor ||
-              classBodyView ||
-              declaration.hasAnnotation(InjektFqNames.Provide) ||
-              declaration.primaryConstructorPropertyValueParameter(ctx)
-                ?.hasAnnotation(InjektFqNames.Provide) == true)) {
+        if (declaration.isProvide(ctx))
           consumer(declaration.toCallableRef(ctx))
-        }
       }
       is VariableDescriptor -> {
         if (declaration.isProvide(ctx))
@@ -187,9 +180,6 @@ fun Annotated.isProvide(ctx: Context): Boolean {
   return ctx.trace!!.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
     var isProvide = hasAnnotation(InjektFqNames.Provide) ||
         hasAnnotation(InjektFqNames.Inject)
-
-    if (!isProvide && this is PropertyDescriptor)
-      isProvide = primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true
 
     if (!isProvide && this is ParameterDescriptor)
       isProvide = type.isProvide(ctx) ||
@@ -207,9 +197,6 @@ fun Annotated.isInject(ctx: Context): Boolean {
   val key = if (this is KotlinType) System.identityHashCode(this) else this
   return ctx.trace!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
     var isInject = hasAnnotation(InjektFqNames.Inject)
-
-    if (!isInject && this is PropertyDescriptor)
-      isInject = primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true
 
     if (!isInject && this is ParameterDescriptor)
       isInject = type.isInject(ctx) ||

@@ -45,7 +45,6 @@ class ClassifierRef(
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
-  val primaryConstructorPropertyParameters: List<Name> = emptyList(),
   val variance: TypeVariance = TypeVariance.INV,
   val declaresInjectables: Boolean = false
 ) {
@@ -69,12 +68,11 @@ class ClassifierRef(
     descriptor: ClassifierDescriptor? = this.descriptor,
     tags: List<TypeRef> = this.tags,
     isSpread: Boolean = this.isSpread,
-    primaryConstructorPropertyParameters: List<Name> = this.primaryConstructorPropertyParameters,
     variance: TypeVariance = this.variance,
     declaresInjectables: Boolean = this.declaresInjectables
   ) = ClassifierRef(
     key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject, isTag,
-    descriptor, tags, isSpread, primaryConstructorPropertyParameters, variance, declaresInjectables
+    descriptor, tags, isSpread, variance, declaresInjectables
   )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
@@ -129,8 +127,6 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       descriptor = this,
       tags = info.tags,
       isSpread = hasAnnotation(InjektFqNames.Spread),
-      primaryConstructorPropertyParameters = info.primaryConstructorPropertyParameters
-        .map { it.asNameId() },
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
       declaresInjectables = info.declaresInjectables
     )

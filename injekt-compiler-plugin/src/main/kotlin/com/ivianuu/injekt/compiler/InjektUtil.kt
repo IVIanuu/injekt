@@ -62,31 +62,6 @@ import java.lang.reflect.Modifier
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
-fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
-  ctx: Context
-): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
-  .map { it.containingDeclaration }
-  .filterIsInstance<ClassDescriptor>()
-  .mapNotNull { clazz ->
-    if (clazz.isDeserializedDeclaration()) {
-      val clazzClassifier = clazz.toClassifierRef(ctx)
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.name == name &&
-              it.name in clazzClassifier.primaryConstructorPropertyParameters
-        }
-    } else {
-      clazz.unsubstitutedPrimaryConstructor
-        ?.valueParameters
-        ?.firstOrNull {
-          it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
-              it.name == name
-        }
-    }
-  }
-  .firstOrNull()
-
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =

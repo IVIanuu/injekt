@@ -147,7 +147,7 @@ class ResolveTest {
 
   @Test fun testResolvesClassConstructorPropertyInjectable() = singleAndMultiCodegen(
     """
-      class MyClass(@Provide val foo: Foo = Foo()) {
+      class MyClass(@property:Provide val foo: Foo = Foo()) {
         fun resolve() = inject<Foo>()
       }
     """,
@@ -275,7 +275,7 @@ class ResolveTest {
 
   @Test fun testPrimaryConstructorInjectableWithReceiver() = singleAndMultiCodegen(
     """
-      class UsesFoo(@Provide val foo: Foo)
+      class UsesFoo(@property:Provide val foo: Foo)
     """,
     """
       fun invoke(foo: Foo) = with(UsesFoo(foo)) {
@@ -301,7 +301,7 @@ class ResolveTest {
 
   @Test fun testCanResolveInjectableOfInjectableThisFunction() = codegen(
     """
-      class Dep(@Provide val foo: Foo)
+      class Dep(@property:Provide val foo: Foo)
       fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
     """
   ) {
@@ -487,7 +487,7 @@ class ResolveTest {
   @Test fun testCanResolveExplicitMarkedInjectableConstructorParameterFromOutsideTheClass() =
     singleAndMultiCodegen(
       """
-        class MyClass(@Provide val foo: Foo)
+        class MyClass(@property:Provide val foo: Foo)
       """,
       """
         fun invoke(@Provide myClass: MyClass) = inject<Foo>() 
@@ -508,7 +508,7 @@ class ResolveTest {
 
   @Test fun testCanResolveImplicitInjectableConstructorParameterFromInsideTheClass() = codegen(
     """
-      @Provide class MyClass(private val foo: Foo) {
+      @Provide class MyClass(@property:Provide private val foo: Foo) {
         fun invoke() = inject<Foo>()
       }
     """
@@ -769,7 +769,7 @@ class ResolveTest {
 
   @Test fun testCannotResolvePrimaryConstructorParameterInFunctionWithMultipleNestedBlocks() = codegen(
     """
-      class MyClass(@Provide val _foo: Foo) {
+      class MyClass(@property:Provide val _foo: Foo) {
         fun foo(): Foo = runBlocking {
           run {
             inject()
@@ -1058,7 +1058,7 @@ class ResolveTest {
 
   @Test fun testInnerClassCanResolveOuterClassInjectables() = codegen(
     """
-      class Outer(@Provide val foo: Foo = Foo()) {
+      class Outer(@property:Provide val foo: Foo = Foo()) {
         inner class Inner {
           fun foo() = inject<Foo>()
         }
@@ -1112,7 +1112,7 @@ class ResolveTest {
 
   @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(
     """
-      @Provide class HaloState(val foo: Foo) {
+      @Provide class HaloState(@property:Provide val foo: Foo) {
         val pointerInput = object : Any() {
           override fun equals(other: Any?): Boolean {
             inject<Foo>()

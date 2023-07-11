@@ -380,7 +380,7 @@ class InjectableDeclarationTest {
 
   @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(
     """
-      abstract class MySuperClass(@Provide val foo: Foo)
+      abstract class MySuperClass(@property:Provide val foo: Foo)
     """,
     """
       @Provide object MySubClass : MySuperClass(Foo())

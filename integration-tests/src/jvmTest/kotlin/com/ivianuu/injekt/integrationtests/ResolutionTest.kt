@@ -86,7 +86,7 @@ class ResolutionTest {
   @Test fun testPrefersClassInjectableOverInternalInjectable() = codegen(
     """
       @Provide lateinit var internalFoo: Foo
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
       }
   
@@ -104,7 +104,7 @@ class ResolutionTest {
 
   @Test fun testPrefersClassInjectableOverClassCompanionInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
         companion object {
           @Provide lateinit var companionFoo: Foo
@@ -145,8 +145,8 @@ class ResolutionTest {
 
   @Test fun testPrefersSubClassInjectableOverSuperClassInjectable() = singleAndMultiCodegen(
     """
-      abstract class MySuperClass(@Provide val superClassFoo: Foo)
-      class MySubClass(@Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
+      abstract class MySuperClass(@property:Provide val superClassFoo: Foo)
+      class MySubClass(@property:Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
         fun finalFoo(): Foo = inject()
       }
     """,
