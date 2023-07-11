@@ -18,7 +18,6 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     val scope = Scope<ActivityScope>()
-    lifecycleScope.coroutineContext.job.invokeOnCompletion { scope.dispose() }
 
     val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
