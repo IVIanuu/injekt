@@ -19,6 +19,9 @@ object InjektFqNames {
   val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
   val TypeParameterInfo = InternalPackage.child("TypeParameterInfo".asNameId())
 
+  val InjectablesPackage = InternalPackage.child("injectables".asNameId())
+  val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())
+
   val CommonPackage = InjektPackage.child("common".asNameId())
   val SourceKey = CommonPackage.child("SourceKey".asNameId())
   val TypeKey = CommonPackage.child("TypeKey".asNameId())

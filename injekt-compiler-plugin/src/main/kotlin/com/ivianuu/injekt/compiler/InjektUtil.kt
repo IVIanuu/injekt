@@ -279,9 +279,6 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-val injectablesLookupName = "\$\$\$\$\$".asNameId()
-val subInjectablesLookupName = "\$\$\$\$\$\$\$\$\$\$".asNameId()
-
 val KtElement?.lookupLocation: LookupLocation
   get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
   else KotlinLookupLocation(this)

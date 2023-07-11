@@ -14,8 +14,6 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectablesLookupName
-import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
@@ -37,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.containingPackage
 import org.jetbrains.kotlin.descriptors.impl.ReceiverParameterDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -328,9 +327,7 @@ fun collectPackageInjectables(
   ctx: Context
 ): List<CallableRef> =
   ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_INJECTABLES, packageFqName) {
-    if (packageFragmentsForFqName(packageFqName, ctx).none {
-        injectablesLookupName in it.getMemberScope().getFunctionNames()
-      }) return@getOrPut emptyList()
+    if (packageFqName !in packagesWithInjectables(ctx)) return@getOrPut emptyList()
 
     val scope = memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND, ctx)
       ?: return@getOrPut emptyList()
@@ -347,12 +344,10 @@ private fun collectPackageTypeScopeInjectables(
   ctx: Context
 ): List<CallableRef> =
   ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
+    if (packageFqName !in packagesWithInjectables(ctx)) return@getOrPut emptyList()
+
     val packageFragments = packageFragmentsForFqName(packageFqName, ctx)
       .filterNot { it is BuiltInsPackageFragment }
-
-    if (packageFragments.none {
-        injectablesLookupName in it.getMemberScope().getFunctionNames()
-    }) return@getOrPut emptyList()
 
     val injectables = mutableListOf<CallableRef>()
 
@@ -403,4 +398,12 @@ fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, ctx: Context)
     }
 
   return filter { existingInjectables.add(InjectablesScope.InjectableKey(it, ctx)) }
+}
+
+fun packagesWithInjectables(ctx: Context) = ctx.trace.getOrPut(InjektWritableSlices.PACKAGES_WITH_INJECTABLES, Unit) {
+  memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
+    ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
+    ?.mapTo(mutableSetOf()) {
+      it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
+    } ?: emptySet()
 }

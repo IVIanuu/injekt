@@ -10,14 +10,10 @@ import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.injectablesLookupName
-import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.nextFrameworkKey
-import com.ivianuu.injekt.compiler.subInjectablesLookupName
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -132,20 +128,6 @@ class InjectablesScope(
       spreadingInjectableCandidateTypes
         .toList()
         .forEach { spreadInjectables(it) }
-    }
-  }
-
-  fun recordLookup(
-    lookupLocation: LookupLocation,
-    visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
-  ) {
-    if (!visitedScopes.add(this)) return
-
-    parent?.recordLookup(lookupLocation, visitedScopes)
-    typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
-    file?.packageFqName?.let {
-      memberScopeForFqName(it, lookupLocation, ctx)
-        ?.recordLookup(injectablesLookupName, lookupLocation)
     }
   }
 
