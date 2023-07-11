@@ -34,6 +34,8 @@ package com.ivianuu.injekt
 )
 annotation class Provide
 
+inline fun <F : Function<*>> provider(f: F): @Provide F = f
+
 /**
  * Automatically fills in a argument if no explicit argument was provided
  */
