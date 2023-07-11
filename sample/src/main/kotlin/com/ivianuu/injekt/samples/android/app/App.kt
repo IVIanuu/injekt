@@ -10,10 +10,12 @@ import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.samples.android.ui.ActivityScope
 import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
+import com.ivianuu.injekt.injectContext
 
 class App : Application() {
-  @Provide private val appScope = Scope<AppScope>()
-  val appComponent by lazy { inject<AppComponent>() }
+  val appComponent by lazy {
+    injectContext<_, AppComponent>(Scope<AppScope>()) { inject() }
+  }
 }
 
 object AppScope

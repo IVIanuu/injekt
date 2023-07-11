@@ -35,6 +35,9 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
       diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
       return true
 
+    if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
+      return true
+
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
