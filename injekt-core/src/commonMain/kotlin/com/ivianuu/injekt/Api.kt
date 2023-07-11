@@ -50,15 +50,15 @@ inline fun <F : Function<*>> provider(f: F): @Provide F = f
 annotation class Inject
 
 /**
- * Returns a provided instance of [T]
+ * Returns a provided instance of [A]
  */
-inline fun <T> inject(@Inject x: T): T = x
+inline fun <A> inject(@Inject a: A): A = a
 
-inline fun <A, R> injectContext(@Inject a: A, block: context (A) () -> R) = block(a)
+inline fun <A, R> inject(@Inject a: A, block: context (A) () -> R) = block(a)
 
-inline fun <A, B, R> injectContext(@Inject a: A, @Inject b: B, block: context (A, B) () -> R) = block(a, b)
+inline fun <A, B, R> inject(@Inject a: A, @Inject b: B, block: context (A, B) () -> R) = block(a, b)
 
-inline fun <A, B, C, R> injectContext(
+inline fun <A, B, C, R> inject(
   @Inject a: A,
   @Inject b: B,
   @Inject c: C,
@@ -66,7 +66,7 @@ inline fun <A, B, C, R> injectContext(
 ) =
   block(a, b, c)
 
-inline fun <A, B, C, D, R> injectContext(
+inline fun <A, B, C, D, R> inject(
   @Inject a: A,
   @Inject b: B,
   @Inject c: C,
@@ -74,7 +74,7 @@ inline fun <A, B, C, D, R> injectContext(
   block: context (A, B, C, D) () -> R,
 ) = block(a, b, c, d)
 
-inline fun <A, B, C, D, E, R> injectContext(
+inline fun <A, B, C, D, E, R> inject(
   @Inject a: A,
   @Inject b: B,
   @Inject c: C,
