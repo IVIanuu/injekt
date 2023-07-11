@@ -239,7 +239,7 @@ fun CallableRef.collectInjectables(
 ) {
   if (!seen.add(InjectablesScope.InjectableKey(this, ctx))) return
 
-  if (!scope.canSee(this, ctx) || !scope.injectablesPredicate(this)) return
+  if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)

@@ -140,11 +140,11 @@ class InjectablesScope(
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
     )
+      .filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
       .let { allInjectables ->
         if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allInjectables
         else allInjectables.filter { it.callable.isValidForObjectRequest() }
       }
-
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
