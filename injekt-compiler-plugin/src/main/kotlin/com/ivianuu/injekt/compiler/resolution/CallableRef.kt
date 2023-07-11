@@ -17,7 +17,6 @@ data class CallableRef(
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val import: ResolvedProviderImport?,
   val chainLength: Int
 )
 
@@ -60,7 +59,6 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType
       },
-      import = null,
       chainLength = 0
     )
   }

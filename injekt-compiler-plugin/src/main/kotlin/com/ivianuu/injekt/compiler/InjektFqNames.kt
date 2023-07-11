@@ -11,7 +11,6 @@ object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
   val Inject = InjektPackage.child("Inject".asNameId())
   val Provide = InjektPackage.child("Provide".asNameId())
-  val Providers = InjektPackage.child("Providers".asNameId())
   val Tag = InjektPackage.child("Tag".asNameId())
   val Spread = InjektPackage.child("Spread".asNameId())
 

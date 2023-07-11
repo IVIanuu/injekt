@@ -31,48 +31,6 @@ class ResolveTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testResolvesExternalInjectableInDifferentPackage() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            @Provide val foo = Foo()
-          """,
-          packageFqName = FqName("injectables")
-        )
-      ),
-      listOf(
-        invokableSource(
-          """
-            @Providers("injectables.*")
-            fun invoke() = inject<Foo>()
-          """
-        )
-      )
-    )
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testResolvesInternalInjectableFromDifferentPackageWithAllUnderImport() = codegen(
-    listOf(
-      source(
-        """
-          @Provide val foo = Foo()
-        """,
-        packageFqName = FqName("injectables")
-      ),
-      invokableSource(
-        """
-          @Providers("injectables.*")
-          fun invoke() = inject<Foo>()
-        """
-      )
-    )
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testResolvesInjectableInSamePackageAndSameFile() = codegen(
     """
       @Provide val foo = Foo()

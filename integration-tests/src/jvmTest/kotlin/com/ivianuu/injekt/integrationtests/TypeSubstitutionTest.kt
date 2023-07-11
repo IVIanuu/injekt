@@ -77,7 +77,7 @@ class TypeSubstitutionTest {
       FqName("com.ivianuu.injekt.common.Scoped.Companion"),
       NoLookupLocation.FROM_BACKEND,
       ctx
-    )!!.first
+    )!!
       .getContributedFunctions("scoped".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters

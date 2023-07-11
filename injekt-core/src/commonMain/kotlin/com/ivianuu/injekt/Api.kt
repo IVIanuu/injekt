@@ -52,20 +52,7 @@ annotation class Inject
  */
 inline fun <T> inject(@Inject x: T): T = x
 
-/**
- * Imports injectables from the specified [importPaths] and use them when resolving injectables inside the declaration
- */
-@Target(
-  AnnotationTarget.CLASS,
-  AnnotationTarget.PROPERTY,
-  AnnotationTarget.CONSTRUCTOR,
-  AnnotationTarget.FUNCTION,
-  AnnotationTarget.FILE,
-  AnnotationTarget.LOCAL_VARIABLE,
-  AnnotationTarget.EXPRESSION
-)
-@Retention(AnnotationRetention.SOURCE)
-annotation class Providers(vararg val importPaths: String)
+inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
 /**
  * Marks an annotation as an tag which can then be used

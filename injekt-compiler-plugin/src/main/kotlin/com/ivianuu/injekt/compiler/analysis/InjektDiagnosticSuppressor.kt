@@ -56,18 +56,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
         return true
     }
 
-    if (diagnostic.factory == InjektErrors.UNUSED_INJECTABLE_IMPORT) {
-      val filePath = diagnostic.psiElement.containingFile.safeAs<KtFile>()?.virtualFilePath
-      if (filePath != null) {
-        return bindingContext[InjektWritableSlices.USED_IMPORT,
-            SourcePosition(
-              filePath,
-              diagnostic.psiElement.startOffset,
-              diagnostic.psiElement.endOffset
-            )] != null
-      }
-    }
-
     return false
   }
 }

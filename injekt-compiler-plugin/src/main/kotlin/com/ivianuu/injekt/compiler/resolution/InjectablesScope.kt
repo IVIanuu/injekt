@@ -34,7 +34,6 @@ class InjectablesScope(
   val isEmpty: Boolean = false,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  imports: List<ResolvedProviderImport> = emptyList(),
   val typeParameters: List<ClassifierRef> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
@@ -43,8 +42,6 @@ class InjectablesScope(
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
   val typeScopes = mutableMapOf<TypeRefKey, InjectablesScope>()
-
-  private val imports = imports.toMutableList()
 
   val injectables = mutableListOf<CallableRef>()
 
@@ -102,13 +99,6 @@ class InjectablesScope(
     for (injectable in initialInjectables)
       injectable.collectInjectables(
         scope = this,
-        addImport = { importFqName, packageFqName ->
-          this.imports += ResolvedProviderImport(
-            null,
-            "${importFqName}.*",
-            packageFqName
-          )
-        },
         addInjectable = { callable ->
           injectables += callable
           val typeWithFrameworkKey = callable.type
@@ -147,24 +137,15 @@ class InjectablesScope(
 
   fun recordLookup(
     lookupLocation: LookupLocation,
-    lookups: MutableSet<String>,
     visitedScopes: MutableSet<InjectablesScope> = mutableSetOf()
   ) {
     if (!visitedScopes.add(this)) return
 
-    parent?.recordLookup(lookupLocation, lookups, visitedScopes)
-    typeScopes.forEach { it.value.recordLookup(lookupLocation, lookups, visitedScopes) }
-    for (import in imports) {
-      memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
-        ?.first
+    parent?.recordLookup(lookupLocation, visitedScopes)
+    typeScopes.forEach { it.value.recordLookup(lookupLocation, visitedScopes) }
+    file?.packageFqName?.let {
+      memberScopeForFqName(it, lookupLocation, ctx)
         ?.recordLookup(injectablesLookupName, lookupLocation)
-        ?.let { lookups += import.packageFqName.child(injectablesLookupName).asString() }
-      if (import.importPath!!.endsWith(".**")) {
-        memberScopeForFqName(import.packageFqName, lookupLocation, ctx)
-          ?.first
-          ?.recordLookup(subInjectablesLookupName, lookupLocation)
-          ?.let { lookups += import.packageFqName.child(subInjectablesLookupName).asString() }
-      }
     }
   }
 
@@ -326,13 +307,6 @@ class InjectablesScope(
 
     newInjectable.collectInjectables(
       scope = this,
-      addImport = { importFqName, packageFqName ->
-        imports += ResolvedProviderImport(
-          null,
-          "${importFqName}.*",
-          packageFqName
-        )
-      },
       addInjectable = { innerCallable ->
         val finalInnerCallable = innerCallable
           .copy(originalType = innerCallable.type)

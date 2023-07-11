@@ -121,28 +121,8 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val scope = ElementInjectablesScope(ctx!!, callExpression)
     val location = callExpression.lookupLocation
-    val lookups = ctx!!.trace!!.getOrPut(InjektWritableSlices.LOOKUPS, file.virtualFilePath) {
-      mutableMapOf()
-    }.getOrPut(location) { mutableSetOf() }
-    val result = scope.resolveRequests(
-      callee,
-      requests,
-      location,
-      lookups
-    ) { _, result ->
-      if (result is ResolutionResult.Success.Value &&
-        result.candidate is CallableInjectable) {
-        result.candidate.callable.import?.element?.let {
-          ctx!!.trace!!.record(
-            InjektWritableSlices.USED_IMPORT,
-            SourcePosition(file.virtualFilePath, it.startOffset, it.endOffset),
-            Unit
-          )
-        }
-      }
-    }
 
-    when (result) {
+    when (val result = scope.resolveRequests(callee, requests, location)) {
       is InjectionResult.Success -> {
         ctx!!.trace!!.record(
           InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,

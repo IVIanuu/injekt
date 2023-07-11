@@ -27,7 +27,6 @@ object InjektWritableSlices {
   val INJEKT_CONTEXT = BasicWritableSlice<Unit, Context>(RewritePolicy.DO_NOTHING)
   val INJECTION_RESULT = BasicWritableSlice<SourcePosition, InjectionResult.Success>(RewritePolicy.DO_NOTHING)
   val INJECTIONS_OCCURRED_IN_FILE = BasicWritableSlice<String, Unit>(RewritePolicy.DO_NOTHING)
-  val USED_IMPORT = BasicWritableSlice<SourcePosition, Unit>(RewritePolicy.DO_NOTHING)
   val INJECTABLE_CONSTRUCTORS = BasicWritableSlice<ClassDescriptor, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val IS_PROVIDE = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
   val IS_INJECT = BasicWritableSlice<Any, Boolean>(RewritePolicy.DO_NOTHING)
@@ -40,10 +39,10 @@ object InjektWritableSlices {
   val DECLARATION_SCOPE = BasicWritableSlice<DescriptorWithParentScope, InjectablesScope>(RewritePolicy.DO_NOTHING)
   val TYPE_SCOPE_INJECTABLES = BasicWritableSlice<TypeRefKey, InjectablesWithLookups>(RewritePolicy.DO_NOTHING)
   val TYPE_INJECTABLES = BasicWritableSlice<Pair<TypeRef, Boolean>, List<CallableRef>>(RewritePolicy.DO_NOTHING)
+  val PACKAGE_INJECTABLES = BasicWritableSlice<FqName, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val PACKAGE_TYPE_SCOPE_INJECTABLES = BasicWritableSlice<FqName, List<CallableRef>>(RewritePolicy.DO_NOTHING)
   val CLASSIFIER_FOR_KEY = BasicWritableSlice<String, ClassifierDescriptor>(RewritePolicy.DO_NOTHING)
   val UNIQUE_KEY = BasicWritableSlice<DeclarationDescriptor, String>(RewritePolicy.DO_NOTHING)
-  val LOOKUPS = BasicWritableSlice<String, MutableMap<LookupLocation, MutableSet<String>>>(RewritePolicy.DO_NOTHING)
 }
 
 data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)
