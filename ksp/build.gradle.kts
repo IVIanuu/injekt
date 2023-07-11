@@ -8,7 +8,7 @@ plugins {
 }
 
 dependencies {
-  implementation(project(":injekt-compiler-plugin"))
+  implementation(project(":compiler"))
   implementation(Deps.AutoService.annotations)
   ksp(Deps.AutoService.processor)
   compileOnly(Deps.Kotlin.compilerEmbeddable)

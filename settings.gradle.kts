@@ -3,12 +3,12 @@
  */
 
 include(
-  ":injekt-common",
-  ":injekt-compiler-plugin",
-  ":injekt-core",
-  ":injekt-gradle-plugin",
-  ":injekt-ide-plugin",
-  ":injekt-ksp",
+  ":common",
+  ":compiler",
+  ":core",
+  ":gradle-plugin",
+  ":ide",
+  ":ksp",
   ":integration-tests",
   ":sample"
 )

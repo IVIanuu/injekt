@@ -33,7 +33,7 @@ kotlin {
   sourceSets {
     val commonMain by getting {
       dependencies {
-        api(project(":injekt-core"))
+        api(project(":core"))
         api(Deps.Coroutines.core)
       }
     }

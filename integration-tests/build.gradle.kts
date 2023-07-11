@@ -19,9 +19,9 @@ kotlin {
   sourceSets {
     named("jvmTest") {
       dependencies {
-        implementation(project(":injekt-common"))
-        implementation(project(":injekt-compiler-plugin"))
-        implementation(project(":injekt-ksp"))
+        implementation(project(":common"))
+        implementation(project(":compiler"))
+        implementation(project(":ksp"))
 
         implementation(Deps.Compose.runtime)
 
