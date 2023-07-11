@@ -4,9 +4,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
@@ -43,7 +40,7 @@ class TypeKeyTest {
       fun invoke() = inject<TypeKey<@Tag2 String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.test.Tag2<kotlin.String>"
+    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.Tag2<kotlin.String>"
   }
 
   @Test fun testTypeKeyWithParameterizedTags() = codegen(

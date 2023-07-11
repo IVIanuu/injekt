@@ -4,6 +4,7 @@
 
 plugins {
   kotlin("multiplatform")
+  id("com.ivianuu.injekt")
 }
 
 kotlin {

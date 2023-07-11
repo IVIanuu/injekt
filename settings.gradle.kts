@@ -10,6 +10,5 @@ include(
   ":injekt-ide-plugin",
   ":injekt-ksp",
   ":integration-tests",
-  ":sample",
-  ":test-util"
+  ":sample"
 )

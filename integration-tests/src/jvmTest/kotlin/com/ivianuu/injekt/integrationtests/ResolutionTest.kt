@@ -4,12 +4,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.irShouldContain
-import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
@@ -420,7 +414,7 @@ class ResolutionTest {
       "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo1\n" +
           "com.ivianuu.injekt.integrationtests.foo2\n\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
+          "do all match type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
     )
   }
 
@@ -438,13 +432,13 @@ class ResolutionTest {
   ) {
     compilationShouldHaveFailed(
       " \n" +
-          "ambiguous injectables of type com.ivianuu.injekt.test.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
+          "ambiguous injectables of type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
           "\n" +
           "I found:\n" +
           "\n" +
           "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
           "    bar = com.ivianuu.injekt.integrationtests.bar(\n" +
-          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.test.Foo */ inject<com.ivianuu.injekt.test.Foo>()\n" +
+          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.integrationtests.Foo */ inject<com.ivianuu.injekt.integrationtests.Foo>()\n" +
           "    )\n" +
           "  )\n" +
           "\n" +
@@ -453,7 +447,7 @@ class ResolutionTest {
           "com.ivianuu.injekt.integrationtests.foo1\n" +
           "com.ivianuu.injekt.integrationtests.foo2\n" +
           "\n" +
-          "do all match type com.ivianuu.injekt.test.Foo."
+          "do all match type com.ivianuu.injekt.integrationtests.Foo."
     )
   }
 
@@ -473,7 +467,7 @@ class ResolutionTest {
       "ambiguous injectables:\n\n" +
           "com.ivianuu.injekt.integrationtests.foo\n" +
           "com.ivianuu.injekt.integrationtests.otherFoo\n\n" +
-          "do all match type com.ivianuu.injekt.test.Foo for parameter x of function com.ivianuu.injekt.inject"
+          "do all match type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject"
     )
   }
 

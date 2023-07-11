@@ -5,6 +5,7 @@
 plugins {
   id("com.android.application")
   kotlin("android")
+  id("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")

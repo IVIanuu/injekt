@@ -4,13 +4,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Command
-import com.ivianuu.injekt.test.CommandA
-import com.ivianuu.injekt.test.CommandB
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
@@ -42,6 +35,6 @@ class ListTest {
       fun invoke() = inject<List<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.Command> for parameter x of function com.ivianuu.injekt.inject")
   }
 }

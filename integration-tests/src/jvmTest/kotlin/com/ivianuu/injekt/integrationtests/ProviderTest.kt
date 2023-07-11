@@ -4,12 +4,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.Bar
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.singleAndMultiCodegen
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
@@ -43,6 +37,6 @@ class ProviderTest {
       fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.test.Foo> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.integrationtests.Foo> for parameter x of function com.ivianuu.injekt.inject")
   }
 }

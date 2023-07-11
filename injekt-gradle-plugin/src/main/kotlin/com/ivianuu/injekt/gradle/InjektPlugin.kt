@@ -20,11 +20,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     target.pluginManager.apply("com.google.devtools.ksp")
     target.dependencies.add(
       "ksp",
-      try {
-        target.project(":injekt-ksp")
-      } catch (e: UnknownProjectException) {
-        "com.ivianuu.injekt:injekt-ksp:${BuildConfig.VERSION}"
-      }
+      "com.ivianuu.injekt:injekt-ksp:${BuildConfig.VERSION}"
     )
   }
 

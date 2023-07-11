@@ -13,8 +13,6 @@ import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.withArguments
 import com.ivianuu.injekt.compiler.resolution.wrap
-import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.source
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.shouldBe

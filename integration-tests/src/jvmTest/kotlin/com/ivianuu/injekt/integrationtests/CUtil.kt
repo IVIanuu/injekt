@@ -5,7 +5,7 @@
 @file:Suppress("UNCHECKED_CAST")
 @file:OptIn(ExperimentalCompilerApi::class)
 
-package com.ivianuu.injekt.test
+package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
@@ -46,7 +46,6 @@ fun source(
       appendLine("import com.ivianuu.injekt.*")
       appendLine("import com.ivianuu.injekt.common.*")
       appendLine("import com.ivianuu.injekt.internal.*")
-      appendLine("import com.ivianuu.injekt.test.*")
       appendLine("import kotlin.reflect.*")
       appendLine("import kotlinx.coroutines.*")
       appendLine()

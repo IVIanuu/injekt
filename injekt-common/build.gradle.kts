@@ -5,6 +5,7 @@
 plugins {
   kotlin("multiplatform")
   id("kotlinx-atomicfu")
+  id("com.ivianuu.injekt")
 }
 
 kotlin {

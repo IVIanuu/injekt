@@ -4,6 +4,7 @@
 
 plugins {
   kotlin("multiplatform")
+  id("com.ivianuu.injekt")
 }
 
 kotlin {
@@ -18,12 +19,27 @@ kotlin {
   sourceSets {
     named("jvmTest") {
       dependencies {
-        implementation(Deps.AndroidX.Activity.compose)
-        implementation(Deps.Compose.runtime)
-        implementation(Deps.gradleTestKit)
         implementation(project(":injekt-common"))
-        implementation(project(":injekt-core"))
-        implementation(project(":test-util"))
+        implementation(project(":injekt-compiler-plugin"))
+        implementation(project(":injekt-ksp"))
+
+        implementation(Deps.Compose.runtime)
+
+        implementation(Deps.Ksp.api)
+        implementation(Deps.Ksp.symbolProcessing)
+
+        implementation(Deps.classGraph)
+
+        implementation(Deps.Kotlin.compilerEmbeddable)
+        implementation(Deps.KotlinCompileTesting.kotlinCompileTesting)
+        implementation(Deps.KotlinCompileTesting.ksp)
+
+        implementation(Deps.kotestAssertions)
+
+        implementation(Deps.junit)
+        implementation(Deps.AndroidX.Test.core)
+        implementation(Deps.AndroidX.Test.junit)
+        implementation(Deps.roboelectric)
         implementation(Deps.junit)
         implementation(Deps.kotestAssertions)
       }
@@ -36,8 +52,4 @@ tasks.withType<Test> {
     "--add-opens", "java.base/java.lang=ALL-UNNAMED",
     "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
   )
-}
-
-dependencies {
-  kotlinCompilerPluginClasspath(Deps.Compose.compiler)
 }
