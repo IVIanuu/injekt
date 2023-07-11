@@ -14,7 +14,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.cachedOrNull
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable

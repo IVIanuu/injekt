@@ -6,9 +6,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
-import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.cachedOrNull
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
 import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions

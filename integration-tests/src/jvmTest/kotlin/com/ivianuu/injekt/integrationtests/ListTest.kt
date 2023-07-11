@@ -9,13 +9,10 @@ import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.compilationShouldHaveFailed
-import com.ivianuu.injekt.test.invokableSource
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.singleAndMultiCodegen
-import com.ivianuu.injekt.test.source
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
-import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
 class ListTest {

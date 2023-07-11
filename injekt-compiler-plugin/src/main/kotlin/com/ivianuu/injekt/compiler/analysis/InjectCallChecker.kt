@@ -7,7 +7,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
 import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
-import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.allParametersWithContext
