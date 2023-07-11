@@ -80,8 +80,7 @@ class ListInjectable(
 
 class ProviderInjectable(
   override val type: TypeRef,
-  override val ownerScope: InjectablesScope,
-  val isInline: Boolean
+  override val ownerScope: InjectablesScope
 ) : Injectable {
   override val callableFqName = FqName("providerOf")
   override val dependencies = listOf(
@@ -89,8 +88,7 @@ class ProviderInjectable(
       type = type.arguments.last(),
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
-      parameterIndex = 0,
-      isInline = isInline
+      parameterIndex = 0
     )
   )
 
@@ -167,8 +165,7 @@ data class InjectableRequest(
   val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
-  val isRequired: Boolean = true,
-  val isInline: Boolean = false
+  val isRequired: Boolean = true
 )
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
@@ -179,8 +176,5 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context)
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
     parameterIndex = injektIndex(ctx),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject,
-    isInline = callable.callable.safeAs<FunctionDescriptor>()?.isInline == true &&
-        InlineUtil.isInlineParameter(this) &&
-        safeAs<ValueParameterDescriptor>()?.isCrossinline != true
+    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject
   )

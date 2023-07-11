@@ -160,8 +160,7 @@ class InjectablesScope(
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
     request.type.isFunctionType -> ProviderInjectable(
       type = request.type,
-      ownerScope = this,
-      isInline = request.isInline
+      ownerScope = this
     )
     request.type.classifier == ctx.listClassifier -> {
       val singleElementType = request.type.arguments[0]

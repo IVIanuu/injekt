@@ -159,8 +159,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.Value.shouldWrap(
     ctx: RootContext
-  ): Boolean = (candidate !is ProviderInjectable || !candidate.isInline) &&
-      (dependencyResults.isNotEmpty() && ctx.result.usages[usageKey]!!.size > 1)
+  ): Boolean = dependencyResults.isNotEmpty() && ctx.result.usages[usageKey]!!.size > 1
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
