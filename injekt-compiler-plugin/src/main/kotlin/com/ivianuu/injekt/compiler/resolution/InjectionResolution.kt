@@ -173,12 +173,8 @@ private fun InjectablesScope.resolveRequest(request: InjectableRequest): Resolut
   resultsByType[request.type]?.let { return it }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request)
-    .let { userResult ->
-      if (userResult is ResolutionResult.Success ||
-        userResult is ResolutionResult.Failure.CandidateAmbiguity)
-            userResult
-      else tryToResolveRequestWithFrameworkInjectable(request) ?: userResult
-    } ?: ResolutionResult.Failure.NoCandidates(this, request)
+    ?: tryToResolveRequestWithFrameworkInjectable(request)
+    ?: ResolutionResult.Failure.NoCandidates(this, request)
 
   resultsByType[request.type] = result
   return result
