@@ -54,8 +54,8 @@ allprojects {
 
   configurations.forEach {
     it.resolutionStrategy.dependencySubstitution {
-      substitute(module("com.ivianuu.injekt:injekt-ksp")).using(project(":ksp"))
-      substitute(module("com.ivianuu.injekt:injekt-compiler-plugin")).using(project(":compiler"))
+      substitute(module("com.ivianuu.injekt:ksp")).using(project(":ksp"))
+      substitute(module("com.ivianuu.injekt:compiler")).using(project(":compiler"))
     }
   }
 }
