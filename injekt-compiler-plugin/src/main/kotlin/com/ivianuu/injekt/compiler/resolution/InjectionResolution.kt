@@ -35,7 +35,7 @@ sealed interface InjectionResult {
 
 sealed interface ResolutionResult {
   sealed interface Success : ResolutionResult {
-    object DefaultValue : Success
+    data object DefaultValue : Success
 
     data class Value(
       val candidate: Injectable,
@@ -58,11 +58,10 @@ sealed interface ResolutionResult {
         scope.allScopes
           .sortedBy { it.nesting }
           .firstOrNull { candidateScope ->
-            candidateScope.isDeclarationContainer &&
-                anchorScopes.all {
-                  candidateScope.canSeeInjectablesOf(it) ||
-                      candidateScope.canSeeInjectablesOf(scope)
-                }
+            anchorScopes.all {
+              candidateScope.canSeeInjectablesOf(it) ||
+                  candidateScope.canSeeInjectablesOf(scope)
+            }
           } ?: scope
       }
 
@@ -166,9 +165,6 @@ fun InjectablesScope.resolveRequests(
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
   if (request.type.hasErrors)
     return ResolutionResult.Failure.NoCandidates(this, request)
-
-  if (scopeToUse != this)
-    return scopeToUse.resolveRequest(request)
 
   resultsByType[request.type]?.let { return it }
 

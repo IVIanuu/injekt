@@ -110,8 +110,7 @@ class ProviderInjectable(
 
   // only create a new scope if we have parameters
   override val dependencyScopes = mapOf(
-    dependencies.single() to if (parameterDescriptors.isEmpty()) ownerScope
-    else InjectablesScope(
+    dependencies.single() to InjectableScopeOrParent(
       name = "PROVIDER $type",
       parent = ownerScope,
       ctx = ownerScope.ctx,

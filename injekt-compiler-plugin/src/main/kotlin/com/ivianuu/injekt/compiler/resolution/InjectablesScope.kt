@@ -25,8 +25,6 @@ class InjectablesScope(
   val parent: InjectablesScope?,
   val ownerDescriptor: DeclarationDescriptor? = null,
   val file: KtFile? = null,
-  val isDeclarationContainer: Boolean = true,
-  val isEmpty: Boolean = false,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   val typeParameters: List<ClassifierRef> = emptyList(),
@@ -54,7 +52,8 @@ class InjectablesScope(
   }
 
   private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
-  private val spreadingInjectableKeys = mutableSetOf<InjectableKey>()
+  private val spreadingInjectableKeys: MutableSet<InjectableKey> =
+    parent?.spreadingInjectableKeys?.toMutableSet() ?: mutableSetOf()
   private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
 
   data class SpreadingInjectable(
@@ -80,16 +79,7 @@ class InjectablesScope(
   data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
-  private val isNoOp: Boolean = parent?.allScopes?.any { it.isDeclarationContainer } == true &&
-      typeParameters.isEmpty() && (isEmpty || initialInjectables.isEmpty())
-
-  val scopeToUse: InjectablesScope = if (isNoOp) parent!!.scopeToUse else this
-
   init {
-    // we need them right here because otherwise we could possibly add duplicated spreading injectables
-    if (parent != null)
-      spreadingInjectableKeys.addAll(parent.spreadingInjectableKeys)
-
     for (injectable in initialInjectables)
       injectable.collectInjectables(
         scope = this,

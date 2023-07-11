@@ -97,7 +97,6 @@ class InjectCallTransformer(
 
     fun mapScopeIfNeeded(scope: InjectablesScope) =
       if (scope in result.scope.allScopes) result.scope else scope
-        .allScopes.last { it.isDeclarationContainer }
   }
 
   private inner class ScopeContext(

@@ -54,7 +54,6 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     ctx = Context(module, bindingTrace)
     files.forEach { it.accept(this) }
     ctx = null
-
     return null
   }
 
