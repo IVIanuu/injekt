@@ -206,11 +206,10 @@ class InjectCallTransformer(
       parameterNameProvider = { "p${rootContext.declarationIndex++}" }
     ) { function ->
       val dependencyResult = result.dependencyResults.values.single()
-      val dependencyScope = injectable.dependencyScopes.values.single()
-      val dependencyScopeContext = if (dependencyScope == this@providerExpression.scope) null
+      val dependencyScopeContext = if (injectable.dependencyScope == this@providerExpression.scope) null
       else ScopeContext(
         this@providerExpression, rootContext,
-        dependencyScope, scope
+        injectable.dependencyScope, scope
       )
 
       fun ScopeContext.createExpression(): IrExpression {

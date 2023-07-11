@@ -107,10 +107,7 @@ sealed interface ResolutionResult {
         get() = 0
     }
 
-    data class NoCandidates(
-      val scope: InjectablesScope,
-      val request: InjectableRequest
-    ) : Failure {
+    data class NoCandidates(val request: InjectableRequest) : Failure {
       override val failureOrdering: Int
         get() = 3
     }
@@ -164,13 +161,13 @@ fun InjectablesScope.resolveRequests(
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
   if (request.type.hasErrors)
-    return ResolutionResult.Failure.NoCandidates(this, request)
+    return ResolutionResult.Failure.NoCandidates(request)
 
   resultsByType[request.type]?.let { return it }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request)
     ?: tryToResolveRequestWithFrameworkInjectable(request)
-    ?: ResolutionResult.Failure.NoCandidates(this, request)
+    ?: ResolutionResult.Failure.NoCandidates(request)
 
   resultsByType[request.type] = result
   return result
@@ -302,14 +299,13 @@ private fun InjectablesScope.resolveCandidate(
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
-    val dependencyScope = candidate.dependencyScopes[dependency] ?: this
-    when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
+    when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
           dependency.isRequired && candidate is ProviderInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
-            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependencyScope, dependency)
+            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
           dependency.isRequired ||
               dependencyResult.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
