@@ -24,17 +24,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     isSuppressed(diagnostic, null)
 
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
-    // todo remove once compose fun interface support is fixed
-    if (diagnostic.factory.name == "COMPOSABLE_INVOCATION")
-      return true
-
-    // todo remove once compose fun interface support is fixed
-    if (diagnostic.factory.name.contains("TYPE_MISMATCH") &&
-      diagnostic is DiagnosticWithParameters2<*, *, *> &&
-      diagnostic.a.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true &&
-      diagnostic.b.safeAs<KotlinType>()?.isFunctionOrSuspendFunctionType == true)
-      return true
-
     if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
       return true
 

@@ -9,7 +9,7 @@
     <vendor email="ivianuu@gmail.com" url="https://github.com/IVIanuu/injekt">Injekt</vendor>
 
     <idea-version>2022.3.1</idea-version>
-    <idea-version since-build="201.8743.12" until-build="223.*" />
+    <idea-version since-build="201.8743.12" until-build="231.*" />
     <version>0.0.1-dev506</version>
 
     <description><![CDATA[Idea plugin for the injekt library]]></description>
