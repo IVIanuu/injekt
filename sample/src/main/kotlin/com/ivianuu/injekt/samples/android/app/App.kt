@@ -14,7 +14,7 @@ import com.ivianuu.injekt.injectContext
 
 class App : Application() {
   val appComponent by lazy {
-    injectContext<_, AppComponent>(Scope<AppScope>()) { inject() }
+    inject<_, AppComponent>(Scope<AppScope>()) { inject() }
   }
 }
 
