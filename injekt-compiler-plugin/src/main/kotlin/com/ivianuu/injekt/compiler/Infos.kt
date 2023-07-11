@@ -19,7 +19,6 @@ import com.ivianuu.injekt.compiler.resolution.wrap
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -117,8 +116,8 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
     }
 
     val parameterTypes = buildMap {
-      for (parameter in allParameters)
-        this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
+      for (parameter in allParametersWithContext)
+        this[parameter.injektIndex(ctx)] = parameter.type.toTypeRef(ctx)
     }
 
     val info = CallableInfo(type, parameterTypes)

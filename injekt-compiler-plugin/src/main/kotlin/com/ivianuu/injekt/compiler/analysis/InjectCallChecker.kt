@@ -9,6 +9,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
@@ -24,7 +25,6 @@ import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -107,11 +107,11 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
+      .mapKeys { it.key.injektIndex(ctx!!) }
 
-    val requests = callee.callable.allParameters
+    val requests = callee.callable.allParametersWithContext
       .transform {
-        val index = it.injektIndex()
+        val index = it.injektIndex(ctx!!)
         if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx!!))
           add(it.toInjectableRequest(callee, ctx!!))
       }

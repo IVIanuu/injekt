@@ -66,6 +66,8 @@ allprojects {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
 
+    compilation.kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+
     compilation.compileTaskProvider.get().cast<BaseKotlinCompile>().pluginOptions.add(
       CompilerPluginConfig().apply {
         InjektPlugin().applyToCompilation(compilation).get().forEach {

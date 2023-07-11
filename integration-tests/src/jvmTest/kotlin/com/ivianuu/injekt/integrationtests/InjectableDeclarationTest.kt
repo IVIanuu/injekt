@@ -161,6 +161,30 @@ class InjectableDeclarationTest {
       .shouldBeTypeOf<Bar>()
   }
 
+  @Test fun testProvideContextFunction() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide fun bar() = Bar(inject())
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+    """
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideContextProperty() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide val bar get() = Bar(inject())
+    """,
+    """
+      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+    """
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
+
   @Test fun testProvideValueParameter() = codegen(
     """
       fun invoke(@Provide foo: Foo) = inject<Foo>()

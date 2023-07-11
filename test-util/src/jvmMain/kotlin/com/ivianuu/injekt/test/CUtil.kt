@@ -221,6 +221,7 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   jvmTarget = "1.8"
   verbose = false
   kotlincArguments += "-XXLanguage:+NewInference"
+  kotlincArguments += "-Xcontext-receivers"
   dumpAllFiles = true
   block()
   pluginOptions += PluginOption(

@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
+import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
@@ -70,7 +71,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.allParameters
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -150,7 +150,7 @@ class InjectCallTransformer(
         else -> putValueArgument(
           symbol.owner
             .valueParameters
-            .first { it.descriptor.injektIndex() == request.parameterIndex }
+            .first { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == request.parameterIndex }
             .index,
           expression
         )
@@ -473,28 +473,28 @@ class InjectCallTransformer(
         .irGet(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           containingDeclaration.irConstructor(ctx, irCtx, localDeclarations)
-            .allParameters
-            .single { it.descriptor.injektIndex() == descriptor.injektIndex() }
+            .allParametersWithContext
+            .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) }
             .symbol
         )
       is FunctionDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           (parameterMap[descriptor] ?: containingDeclaration.irFunction(ctx, irCtx, localDeclarations)
-            .allParameters
-            .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
+            .allParametersWithContext
+            .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) })
             .symbol
         )
       is PropertyDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
           injectable.type.toIrType(irCtx, localDeclarations, ctx).typeOrNull!!,
           parameterMap[descriptor]?.symbol ?:
-          if (descriptor.injektIndex() == EXTENSION_RECEIVER_INDEX)
+          if (descriptor.injektIndex(this@InjectCallTransformer.ctx) == EXTENSION_RECEIVER_INDEX)
             containingDeclaration.irProperty(ctx, irCtx, localDeclarations)
               .getter!!.extensionReceiverParameter!!.symbol
           else
             containingDeclaration.irProperty(ctx, irCtx, localDeclarations)
-              .getter!!.valueParameters[descriptor.injektIndex()].symbol
+              .getter!!.valueParameters[descriptor.injektIndex(this@InjectCallTransformer.ctx)].symbol
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }

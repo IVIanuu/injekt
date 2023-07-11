@@ -5,9 +5,9 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.isInject
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -32,7 +32,7 @@ class InjectValueParameterDescriptor(
   underlyingDescriptor,
   underlyingDescriptor.index,
   underlyingDescriptor.annotations,
-  underlyingDescriptor.injektName(),
+  underlyingDescriptor.injektName(ctx),
   underlyingDescriptor.type,
   false,
   underlyingDescriptor.isCrossinline,
@@ -67,7 +67,7 @@ abstract class AbstractInjectFunctionDescriptor(
 fun FunctionDescriptor.toInjectFunctionDescriptor(ctx: Context): InjectFunctionDescriptor? {
   if (this is InjectFunctionDescriptor) return this
   if (this is JavaMethodDescriptor) return null
-  if (allParameters.none { it.isInject(ctx) }) return null
+  if (allParametersWithContext.none { it.isInject(ctx) }) return null
   return when (this) {
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, ctx)
     is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this, ctx)
