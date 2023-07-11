@@ -70,22 +70,28 @@ allprojects {
   afterEvaluate {
     when {
       pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform") -> {
-        extensions.getByType(KotlinMultiplatformExtension::class.java).run {
-          targets
-            .flatMap { it.compilations }
-            .forEach { setupCompilation(it) }
+        afterEvaluate {
+          extensions.getByType(KotlinMultiplatformExtension::class.java).run {
+            targets
+              .flatMap { it.compilations }
+              .forEach { setupCompilation(it) }
+          }
         }
       }
       pluginManager.hasPlugin("org.jetbrains.kotlin.android") -> {
-        extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
-          target.compilations
-            .forEach { setupCompilation(it) }
+        afterEvaluate {
+          extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
+            target.compilations
+              .forEach { setupCompilation(it) }
+          }
         }
       }
       pluginManager.hasPlugin("org.jetbrains.kotlin.jvm") -> {
-        extensions.getByType(KotlinJvmProjectExtension::class.java).run {
-          target.compilations
-            .forEach { setupCompilation(it) }
+        afterEvaluate {
+          extensions.getByType(KotlinJvmProjectExtension::class.java).run {
+            target.compilations
+              .forEach { setupCompilation(it) }
+          }
         }
       }
     }
