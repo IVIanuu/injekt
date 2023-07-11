@@ -58,13 +58,4 @@ allprojects {
       substitute(module("com.ivianuu.injekt:injekt-compiler-plugin")).using(project(":injekt-compiler-plugin"))
     }
   }
-
-  if (project.name == "injekt-compiler-plugin" ||
-    project.name == "injekt-gradle-plugin" ||
-    project.name == "injekt-ide-plugin" ||
-    project.name == "injekt-ksp")
-    return@allprojects
-
-  project.pluginManager.apply("com.google.devtools.ksp")
-  project.dependencies.add("ksp", project(":injekt-ksp"))
 }
