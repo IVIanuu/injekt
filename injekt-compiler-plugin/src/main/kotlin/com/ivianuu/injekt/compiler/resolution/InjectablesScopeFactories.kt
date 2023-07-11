@@ -162,9 +162,7 @@ private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
       val parentsBetweenInitializerAndPosition = position.parentsWithSelf
         .takeWhile { it != propertyInitializerOrDelegateExpression }
         .toList()
-      if (parentsBetweenInitializerAndPosition.none {
-          it is KtNamedDeclaration || it is KtClassOrObject || it is KtFunctionLiteral
-        })
+      if (parentsBetweenInitializerAndPosition.none { it is KtNamedDeclaration       })
           return false
     }
 
@@ -174,9 +172,7 @@ private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
       val parentsBetweenInitializerAndPosition = position.parents
         .takeWhile { it != classInitializer }
         .toList()
-      if (parentsBetweenInitializerAndPosition.none {
-          it is KtNamedDeclaration || it is KtClassOrObject || it is KtFunctionLiteral
-      })
+      if (parentsBetweenInitializerAndPosition.none { it is KtNamedDeclaration })
         return false
     }
   }
