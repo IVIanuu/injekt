@@ -52,8 +52,6 @@ annotation class Inject
  */
 inline fun <T> inject(@Inject x: T): T = x
 
-inline fun <F : Function<*>> provider(f: F): @Provide F = f
-
 /**
  * Marks an annotation as an tag which can then be used
  * to distinct types
