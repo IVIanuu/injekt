@@ -115,8 +115,7 @@ class InjectCallTransformer(
     fun findScopeContext(scopeToFind: InjectablesScope): ScopeContext {
       val finalScope = rootContext.mapScopeIfNeeded(scopeToFind)
       if (finalScope == scope) return this@ScopeContext
-      return parent?.findScopeContext(finalScope)
-        ?: error("wtf")
+      return parent!!.findScopeContext(finalScope)
     }
 
     fun expressionFor(result: ResolutionResult.Success.Value): IrExpression {

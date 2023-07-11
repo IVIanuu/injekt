@@ -338,16 +338,12 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   if (b is ResolutionResult.Success && a !is ResolutionResult.Success) return 1
 
   if (a is ResolutionResult.Success && b is ResolutionResult.Success) {
-    if (a !is ResolutionResult.Success.DefaultValue &&
-      b is ResolutionResult.Success.DefaultValue
-    ) return -1
-    if (b !is ResolutionResult.Success.DefaultValue &&
-      a is ResolutionResult.Success.DefaultValue
-    ) return 1
+    if (a !is ResolutionResult.Success.DefaultValue && b is ResolutionResult.Success.DefaultValue)
+      return -1
+    if (b !is ResolutionResult.Success.DefaultValue && a is ResolutionResult.Success.DefaultValue)
+      return 1
 
-    if (a is ResolutionResult.Success.Value &&
-      b is ResolutionResult.Success.Value
-    )
+    if (a is ResolutionResult.Success.Value && b is ResolutionResult.Success.Value)
       return compareCandidate(a.candidate, b.candidate)
 
     return 0
