@@ -14,7 +14,7 @@ import java.io.File
 
 var dumpAllFiles = false
 
-class InjektIrGenerationExtension(private val dumpDir: File?) : IrGenerationExtension {
+class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     val ctx = Context(
       pluginContext.moduleDescriptor,
@@ -26,7 +26,6 @@ class InjektIrGenerationExtension(private val dumpDir: File?) : IrGenerationExte
     moduleFragment.transform(InjectCallTransformer(localDeclarations, pluginContext, ctx), null)
 
     moduleFragment.patchDeclarationParents()
-    if (dumpDir != null)
-      moduleFragment.dumpToFiles(dumpDir, pluginContext)
+    moduleFragment.dumpToFiles(dumpDir, pluginContext)
   }
 }

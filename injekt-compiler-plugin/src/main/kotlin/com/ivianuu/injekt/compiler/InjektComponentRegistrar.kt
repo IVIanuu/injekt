@@ -38,7 +38,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
     IrGenerationExtension.registerExtensionWithLoadingOrder(
       project,
       LoadingOrder.FIRST,
-      InjektIrGenerationExtension(configuration.get(DumpDirKey))
+      InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
     )
 
     if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)

@@ -5,10 +5,14 @@
 import com.ivianuu.injekt.gradle.InjektPlugin
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.dokka.utilities.cast
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.CompilerPluginConfig
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.tasks.BaseKotlinCompile
 
 buildscript {
   repositories {
@@ -62,9 +66,13 @@ allprojects {
     configurations["kotlinCompilerPluginClasspath"]
       .dependencies.add(dependencies.project(":injekt-compiler-plugin"))
 
-    InjektPlugin().applyToCompilation(compilation).get().forEach {
-     // compilation.kotlinOptions.options.freeCompilerArgs.add("plugin:com.ivianuu.injekt:${it.key}=${it.value}")
-    }
+    compilation.compileTaskProvider.get().cast<BaseKotlinCompile>().pluginOptions.add(
+      CompilerPluginConfig().apply {
+        InjektPlugin().applyToCompilation(compilation).get().forEach {
+          addPluginArgument("com.ivianuu.injekt", it)
+        }
+      }
+    )
   }
 
   afterEvaluate {

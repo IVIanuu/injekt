@@ -34,6 +34,6 @@ val DumpDirOption = CliOption(
   optionName = "dumpDir",
   valueDescription = "dumpDir",
   description = "dumpDir",
-  required = false
+  required = true
 )
 val DumpDirKey = CompilerConfigurationKey<File>("dumpDir")
