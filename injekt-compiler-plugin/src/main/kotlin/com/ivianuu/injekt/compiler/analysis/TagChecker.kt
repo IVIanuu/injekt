@@ -23,14 +23,14 @@ class TagChecker(private val baseCtx: Context) : DeclarationChecker {
   ) {
     val ctx = baseCtx.withTrace(context.trace)
 
-    if (descriptor is ClassDescriptor && descriptor.hasAnnotation(InjektFqNames.Tag))
-      if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
-        ctx.trace!!.report(
-          InjektErrors.TAG_WITH_VALUE_PARAMETERS
-            .on(
-              descriptor.annotations.findAnnotation(InjektFqNames.Tag)
-                ?.source?.getPsi() ?: declaration
-            )
-        )
+    if (descriptor is ClassDescriptor && descriptor.hasAnnotation(InjektFqNames.Tag) &&
+      descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
+      ctx.trace!!.report(
+        InjektErrors.TAG_WITH_VALUE_PARAMETERS
+          .on(
+            descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+              ?.source?.getPsi() ?: declaration
+          )
+      )
   }
 }
