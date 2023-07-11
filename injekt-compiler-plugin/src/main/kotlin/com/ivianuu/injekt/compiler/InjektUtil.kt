@@ -89,100 +89,99 @@ fun Annotated.getTags(): List<AnnotationDescriptor> =
     inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
   }
 
-fun DeclarationDescriptor.uniqueKey(ctx: Context): String =
-  ctx.trace!!.getOrPut(InjektWritableSlices.UNIQUE_KEY, original) {
-    when (val original = this.original) {
-      is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
-          "${original.visibility.name}:" +
-          "${
-            original.contextReceiverParameters
-              .plus(original.valueParameters)
-              .joinToString(",") {
-                it.type
+fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
+  when (val original = this.original) {
+    is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
+        "${original.visibility.name}:" +
+        "${
+          original.contextReceiverParameters
+            .plus(original.valueParameters)
+            .joinToString(",") {
+              it.type
+                .fullyAbbreviatedType
+                .uniqueTypeKey()
+            }
+        }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
+    is ClassDescriptor -> "class:$fqNameSafe"
+    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
+      "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
+    }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
+    is FunctionDescriptor -> "function:$fqNameSafe:" +
+        "${original.visibility.name}:" +
+        original.typeParameters.joinToString {
+          buildString {
+            append(it.name.asString())
+            it.upperBounds.forEach { upperBound ->
+              append(
+                upperBound
                   .fullyAbbreviatedType
                   .uniqueTypeKey()
-              }
-          }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
-      is ClassDescriptor -> "class:$fqNameSafe"
-      is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
-        "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-      }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
-      is FunctionDescriptor -> "function:$fqNameSafe:" +
-          "${original.visibility.name}:" +
-          original.typeParameters.joinToString {
+              )
+            }
+          }
+        } +
+        listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+          .plus(original.contextReceiverParameters)
+          .plus(original.valueParameters)
+          .joinToString(",") { parameter ->
             buildString {
-              append(it.name.asString())
-              it.upperBounds.forEach { upperBound ->
-                append(
-                  upperBound
-                    .fullyAbbreviatedType
-                    .uniqueTypeKey()
-                )
+              when {
+                parameter === original.dispatchReceiverParameter -> append("d:")
+                parameter === original.extensionReceiverParameter -> append("e:")
+                parameter in original.contextReceiverParameters -> append(":c")
+                else -> append("p:")
               }
+              append(
+                parameter.type
+                  .fullyAbbreviatedType
+                  .uniqueTypeKey()
+              )
             }
           } +
-          listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-            .plus(original.contextReceiverParameters)
-            .plus(original.valueParameters)
-            .joinToString(",") { parameter ->
-              buildString {
-                when {
-                  parameter === original.dispatchReceiverParameter -> append("d:")
-                  parameter === original.extensionReceiverParameter -> append("e:")
-                  parameter in original.contextReceiverParameters -> append(":c")
-                  else -> append("p:")
-                }
-                append(
-                  parameter.type
-                    .fullyAbbreviatedType
-                    .uniqueTypeKey()
-                )
-              }
-            } +
-          ":" +
-          original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
-      is PropertyDescriptor -> "property:$fqNameSafe:" +
-          "${original.visibility.name}:" +
-          original.typeParameters.joinToString {
+        ":" +
+        original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
+    is PropertyDescriptor -> "property:$fqNameSafe:" +
+        "${original.visibility.name}:" +
+        original.typeParameters.joinToString {
+          buildString {
+            append(it.name.asString())
+            it.upperBounds.forEach { upperBound ->
+              append(
+                upperBound
+                  .fullyAbbreviatedType
+                  .uniqueTypeKey()
+              )
+            }
+          }
+        } +
+        listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+          .plus(original.contextReceiverParameters)
+          .joinToString(",") { parameter ->
             buildString {
-              append(it.name.asString())
-              it.upperBounds.forEach { upperBound ->
-                append(
-                  upperBound
-                    .fullyAbbreviatedType
-                    .uniqueTypeKey()
-                )
+              when {
+                parameter === original.dispatchReceiverParameter -> append("d:")
+                parameter === original.extensionReceiverParameter -> append("e:")
+                parameter in original.contextReceiverParameters -> append(":c")
+                else -> append("p:")
               }
+              append(
+                parameter.type
+                  .fullyAbbreviatedType
+                  .uniqueTypeKey()
+              )
             }
           } +
-          listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-            .plus(original.contextReceiverParameters)
-            .joinToString(",") { parameter ->
-              buildString {
-                when {
-                  parameter === original.dispatchReceiverParameter -> append("d:")
-                  parameter === original.extensionReceiverParameter -> append("e:")
-                  parameter in original.contextReceiverParameters -> append(":c")
-                  else -> append("p:")
-                }
-                append(
-                  parameter.type
-                    .fullyAbbreviatedType
-                    .uniqueTypeKey()
-                )
-              }
-            } +
-          ":" +
-          original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
-      is TypeAliasDescriptor -> "typealias:$fqNameSafe"
-      is TypeParameterDescriptor ->
-        "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
-      is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-      is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-      is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-      else -> error("Unexpected declaration $this")
-    }
+        ":" +
+        original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
+    is TypeAliasDescriptor -> "typealias:$fqNameSafe"
+    is TypeParameterDescriptor ->
+      "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
+    is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+    is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+    is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+    else -> error("Unexpected declaration $this")
   }
+}
 
 fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
   if (depth > 15) return ""
@@ -241,21 +240,18 @@ const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
 fun ParameterDescriptor.injektIndex(ctx: Context): Int =
-  ctx.trace.getOrPut(InjektWritableSlices.INJEKT_INDEX, this) {
+  ctx.cached("injekt_index", this) {
     val callable = containingDeclaration as? CallableDescriptor
-    when {
-      original == callable?.dispatchReceiverParameter?.original ||
-          original is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
-      original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
+    when (original) {
+      callable?.dispatchReceiverParameter?.original, is LazyClassReceiverParameterDescriptor -> DISPATCH_RECEIVER_INDEX
+      callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
       else -> {
         val contextReceivers = (containingDeclaration
           .safeAs<ReceiverParameterDescriptor>()
           ?.value
           ?.safeAs<ImplicitClassReceiver>()
           ?.classDescriptor
-          ?.contextReceivers ?:
-        callable?.contextReceiverParameters ?:
-        containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)
+          ?.contextReceivers ?: callable?.contextReceiverParameters ?: containingDeclaration.safeAs<ClassDescriptor>()?.contextReceivers)
 
         val contextReceiverIndex = contextReceivers?.indexOfFirst {
           // todo find a better way to get the correct index
@@ -329,16 +325,6 @@ fun DeclarationDescriptor.moduleName(ctx: Context): String =
     ?.removeSurrounding("<", ">")
     ?: ctx.module.name.asString().removeSurrounding("<", ">")
 
-inline fun <K, V> BindingTrace?.getOrPut(
-  slice: WritableSlice<K, V>,
-  key: K,
-  computation: () -> V
-): V {
-  this?.get(slice, key)?.let { return it }
-  return computation()
-    .also { this?.record(slice, key, it) }
-}
-
 fun classifierDescriptorForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
@@ -348,7 +334,7 @@ else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
   ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
 fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
-  ctx.trace.getOrPut(InjektWritableSlices.CLASSIFIER_FOR_KEY, key) {
+  ctx.cached("classifier_for_key", key) {
     val fqName = FqName(key.split(":")[1])
     val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
       ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)

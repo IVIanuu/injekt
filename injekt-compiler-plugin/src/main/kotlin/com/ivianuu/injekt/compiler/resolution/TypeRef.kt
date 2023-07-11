@@ -8,10 +8,9 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -94,7 +93,7 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
 }
 
 fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
-  ctx.trace!!.getOrPut(InjektWritableSlices.CLASSIFIER_REF, this) {
+  ctx.cached("classifier_ref", this) {
     val info = classifierInfo(ctx)
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()

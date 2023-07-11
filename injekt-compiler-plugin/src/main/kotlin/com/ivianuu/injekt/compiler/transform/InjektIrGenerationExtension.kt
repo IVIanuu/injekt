@@ -26,6 +26,6 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
     moduleFragment.transform(InjectCallTransformer(localDeclarations, pluginContext, ctx), null)
 
     moduleFragment.patchDeclarationParents()
-    moduleFragment.dumpToFiles(dumpDir, pluginContext)
+    moduleFragment.dumpToFiles(dumpDir, ctx)
   }
 }

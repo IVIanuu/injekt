@@ -4,7 +4,10 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
+import com.ivianuu.injekt.compiler.cached
+import com.ivianuu.injekt.compiler.cachedOrNull
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
@@ -12,11 +15,11 @@ import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import java.io.File
 
-fun IrModuleFragment.dumpToFiles(dumpDir: File, irCtx: IrPluginContext) {
+fun IrModuleFragment.dumpToFiles(dumpDir: File, ctx: Context) {
   files
     .filter {
-      dumpAllFiles || irCtx.bindingContext[InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
-          it.fileEntry.name] != null
+      dumpAllFiles ||
+          ctx.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
     }
     .forEach { irFile ->
       val file = File(irFile.fileEntry.name)

@@ -9,10 +9,9 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
@@ -52,7 +51,7 @@ import java.util.*
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
-): List<CallableRef> = ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_INJECTABLES, this to classBodyView) {
+): List<CallableRef> = ctx.cached("type_injectables", this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType) {
     val callable = classifier
@@ -78,13 +77,13 @@ fun TypeRef.collectInjectables(
         )
       }
 
-    return@getOrPut listOf(callable)
+    return@cached listOf(callable)
   }
 
   // do not run any code for types which do not declare any injectables
   if (!classifier.declaresInjectables && !classBodyView)
     // at least include the companion object if it declares injectables
-    return@getOrPut listOfNotNull(
+    return@cached listOfNotNull(
       classifier.descriptor
         ?.safeAs<ClassDescriptor>()
         ?.companionObjectDescriptor
@@ -174,7 +173,7 @@ fun ResolutionScope.collectInjectables(
 fun Annotated.isProvide(ctx: Context): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.trace!!.getOrPut(InjektWritableSlices.IS_PROVIDE, key) {
+  return ctx.cached("is_provide", key) {
     var isProvide = hasAnnotation(InjektFqNames.Provide) ||
         hasAnnotation(InjektFqNames.Inject)
 
@@ -192,7 +191,7 @@ fun Annotated.isProvide(ctx: Context): Boolean {
 fun Annotated.isInject(ctx: Context): Boolean {
   @Suppress("IMPLICIT_CAST_TO_ANY")
   val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.trace!!.getOrPut(InjektWritableSlices.IS_INJECT, key) {
+  return ctx.cached("is_inject", key) {
     var isInject = hasAnnotation(InjektFqNames.Inject)
 
     if (!isInject && this is ParameterDescriptor)
@@ -207,7 +206,7 @@ fun Annotated.isInject(ctx: Context): Boolean {
 }
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.INJECTABLE_CONSTRUCTORS, this) {
+  ctx.cached("injectable_constructors", this) {
     constructors
       .transform { constructor ->
         if (constructor.hasAnnotation(InjektFqNames.Provide) ||
@@ -286,8 +285,8 @@ fun collectPackageInjectables(
   packageFqName: FqName,
   ctx: Context
 ): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_INJECTABLES, packageFqName) {
-    if (packageFqName !in packagesWithInjectables(ctx)) return@getOrPut emptyList()
+  ctx.cached("package_injectables", packageFqName) {
+    if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
 
     val packageFragments = packageFragmentsForFqName(packageFqName, ctx)
       .filterNot { it is BuiltInsPackageFragment }
@@ -333,7 +332,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
       })
 
 fun packagesWithInjectables(ctx: Context): Set<FqName> =
-  ctx.trace.getOrPut(InjektWritableSlices.PACKAGES_WITH_INJECTABLES, Unit) {
+  ctx.cached("packages_with_injectables", Unit) {
     memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
       ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.mapTo(mutableSetOf()) {

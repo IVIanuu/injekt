@@ -2,17 +2,37 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(UnsafeCastFunction::class)
+
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.CallableRef
+import com.ivianuu.injekt.compiler.resolution.ClassifierRef
+import com.ivianuu.injekt.compiler.resolution.DescriptorWithParentScope
+import com.ivianuu.injekt.compiler.resolution.InjectablesScope
+import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.copy
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
+import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
+import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @Suppress("NewApi")
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
@@ -34,3 +54,26 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeChec
       ?.toClassifierRef(ctx)
   }
 }
+
+private val slices = mutableMapOf<String, BasicWritableSlice<*, *>>()
+fun <K, V> sliceOf(kind: String): WritableSlice<K, V> =
+  slices.getOrPut(kind) { BasicWritableSlice<K, V>(RewritePolicy.DO_NOTHING) } as BasicWritableSlice<K, V>
+
+fun <K, V> Context.cachedOrNull(kind: String, key: K): V? = trace?.get(sliceOf<K, V>(kind), key)
+
+inline fun <K, V> Context.cached(
+  kind: String,
+  key: K,
+  computation: () -> V
+): V {
+  return if (trace == null) computation()
+  else {
+    val slice = sliceOf<K, V>(kind)
+    trace.get(slice, key) ?: computation().also { trace.record(slice, key, it) }
+  }
+}
+
+data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)
+
+const val INJECTIONS_OCCURRED_IN_FILE_KEY = "injections_occurred_in_file"
+const val INJECTION_RESULT_KEY = "injection_result"

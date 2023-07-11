@@ -62,7 +62,7 @@ data class CallableInfo(val type: TypeRef, val parameterTypes: Map<Int, TypeRef>
 
 fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
   if (this is PropertyAccessorDescriptor) correspondingProperty.callableInfo(ctx)
-  else ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_INFO, this) {
+  else ctx.cached("callable_info", this) {
     if (isDeserializedDeclaration()) {
       val info = annotations
         .findAnnotation(InjektFqNames.CallableInfo)
@@ -100,7 +100,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
           )
         }
 
-        return@getOrPut finalInfo
+        return@cached finalInfo
       }
     }
 
@@ -123,7 +123,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
     val info = CallableInfo(type, parameterTypes)
 
     // important to cache the info before persisting it
-    ctx.trace.record(InjektWritableSlices.CALLABLE_INFO, this, info)
+    ctx.trace!!.record(sliceOf("callable_info"), this, info)
 
     persistInfoIfNeeded(info, ctx)
 
@@ -189,7 +189,7 @@ class ClassifierInfo(
 }
 
 fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
-  ctx.trace!!.getOrPut(InjektWritableSlices.CLASSIFIER_INFO, this) {
+  ctx.cached("classifier_info", this) {
     if (isDeserializedDeclaration()) {
       (if (this is TypeParameterDescriptor) {
         containingDeclaration
@@ -209,7 +209,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           ?.decode<PersistedClassifierInfo>()
           ?.toClassifierInfo(ctx)
       })?.let {
-        return@getOrPut it
+        return@cached it
       }
     }
 
@@ -256,7 +256,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       }
 
       // important to cache the info before persisting it
-      ctx.trace.record(InjektWritableSlices.CLASSIFIER_INFO, this, info)
+      ctx.trace!!.record(sliceOf("classifier_info"), this, info)
 
       persistInfoIfNeeded(info, ctx)
 

@@ -9,7 +9,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
@@ -52,7 +51,6 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     context: DeclarationCheckerContext,
   ) {
     val ctx = baseCtx.withTrace(context.trace)
-    ctx.trace!!.record(InjektWritableSlices.INJEKT_CONTEXT, Unit, ctx)
     when (descriptor) {
       is SimpleFunctionDescriptor -> checkFunction(declaration, descriptor, ctx)
       is ConstructorDescriptor -> checkConstructor(declaration, descriptor, ctx)

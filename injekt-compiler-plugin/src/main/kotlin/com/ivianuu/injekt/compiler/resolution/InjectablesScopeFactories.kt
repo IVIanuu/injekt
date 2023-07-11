@@ -7,10 +7,9 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.allParametersWithContext
+import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.descriptor
-import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -65,81 +64,79 @@ fun ElementInjectablesScope(
     .first { (it as KtElement).isScopeOwner(position, ctx) }
     .cast<KtElement>()
 
-  if (scopeOwner !is KtBlockExpression)
-    ctx.trace!!.bindingContext.get(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner)
-      ?.let { return it }
+  fun createScope(): InjectablesScope {
+    val parentScope = scopeOwner.parents
+      .firstOrNull { (it as KtElement).isScopeOwner(position, ctx) }
+      ?.let { ElementInjectablesScope(ctx, it.cast(), position) }
 
-  val parentScope = scopeOwner.parents
-    .firstOrNull { (it as KtElement).isScopeOwner(position, ctx) }
-    ?.let { ElementInjectablesScope(ctx, it.cast(), position) }
-
-  val scope = when (scopeOwner) {
-    is KtFile -> FileInjectablesScope(scopeOwner, ctx)
-    is KtClassOrObject -> ClassInjectablesScope(
-      scopeOwner.descriptor(ctx)!!,
-      parentScope!!,
-      ctx
-    )
-    is KtConstructor<*> -> {
-      if (scopeOwner.bodyExpression.let { it == null || it !in position.parents }) {
-        ConstructorPreInitInjectablesScope(
-          scopeOwner.descriptor(ctx)!!,
-          parentScope!!,
-          ctx
-        )
-      } else FunctionInjectablesScope(
+    return when (scopeOwner) {
+      is KtFile -> FileInjectablesScope(scopeOwner, ctx)
+      is KtClassOrObject -> ClassInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
         ctx
       )
-    }
-    is KtFunction -> FunctionInjectablesScope(
-      scopeOwner.descriptor(ctx)!!,
-      parentScope!!,
-      ctx
-    )
-    is KtParameter -> ValueParameterDefaultValueInjectablesScope(
-      scopeOwner.descriptor(ctx)!!,
-      parentScope!!,
-      ctx
-    )
-    is KtProperty -> {
-      when (val descriptor = scopeOwner.descriptor<VariableDescriptor>(ctx)!!) {
-        is PropertyDescriptor -> {
-          if (scopeOwner.delegateExpressionOrInitializer != null &&
-            scopeOwner.delegateExpressionOrInitializer!! in element.parentsWithSelf)
-            PropertyInitInjectablesScope(descriptor, parentScope!!, position, ctx)
-          else
-            PropertyInjectablesScope(descriptor, parentScope!!, ctx)
-        }
-        is LocalVariableDescriptor -> LocalVariableInjectablesScope(descriptor, parentScope!!, ctx)
-        else -> throw AssertionError("Unexpected variable descriptor $descriptor")
+      is KtConstructor<*> -> {
+        if (scopeOwner.bodyExpression.let { it == null || it !in position.parents }) {
+          ConstructorPreInitInjectablesScope(
+            scopeOwner.descriptor(ctx)!!,
+            parentScope!!,
+            ctx
+          )
+        } else FunctionInjectablesScope(
+          scopeOwner.descriptor(ctx)!!,
+          parentScope!!,
+          ctx
+        )
       }
+      is KtFunction -> FunctionInjectablesScope(
+        scopeOwner.descriptor(ctx)!!,
+        parentScope!!,
+        ctx
+      )
+      is KtParameter -> ValueParameterDefaultValueInjectablesScope(
+        scopeOwner.descriptor(ctx)!!,
+        parentScope!!,
+        ctx
+      )
+      is KtProperty -> {
+        when (val descriptor = scopeOwner.descriptor<VariableDescriptor>(ctx)!!) {
+          is PropertyDescriptor -> {
+            if (scopeOwner.delegateExpressionOrInitializer != null &&
+              scopeOwner.delegateExpressionOrInitializer!! in element.parentsWithSelf)
+              PropertyInitInjectablesScope(descriptor, parentScope!!, position, ctx)
+            else
+              PropertyInjectablesScope(descriptor, parentScope!!, ctx)
+          }
+          is LocalVariableDescriptor -> LocalVariableInjectablesScope(descriptor, parentScope!!, ctx)
+          else -> throw AssertionError("Unexpected variable descriptor $descriptor")
+        }
+      }
+      is KtSuperTypeList -> scopeOwner.getParentOfType<KtClassOrObject>(false)
+        ?.descriptor<ClassDescriptor>(ctx)
+        ?.unsubstitutedPrimaryConstructor
+        ?.let { ConstructorPreInitInjectablesScope(it, parentScope!!, ctx) }
+        ?: parentScope!!
+      is KtClassInitializer -> ClassInitInjectablesScope(
+        clazz = scopeOwner.getParentOfType<KtClassOrObject>(false)!!.descriptor(ctx)!!,
+        parent = parentScope!!,
+        position = position,
+        ctx = ctx
+      )
+      is KtClassBody -> scopeOwner.getParentOfType<KtClassOrObject>(false)
+        ?.descriptor<ClassDescriptor>(ctx)
+        ?.unsubstitutedPrimaryConstructor
+        ?.let { FunctionInjectablesScope(it, parentScope!!, ctx) }
+        ?: parentScope!!
+      is KtBlockExpression -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!, ctx)
+      else -> throw AssertionError("Unexpected scope owner $scopeOwner")
     }
-    is KtSuperTypeList -> scopeOwner.getParentOfType<KtClassOrObject>(false)
-      ?.descriptor<ClassDescriptor>(ctx)
-      ?.unsubstitutedPrimaryConstructor
-      ?.let { ConstructorPreInitInjectablesScope(it, parentScope!!, ctx) }
-      ?: parentScope!!
-    is KtClassInitializer -> ClassInitInjectablesScope(
-      clazz = scopeOwner.getParentOfType<KtClassOrObject>(false)!!.descriptor(ctx)!!,
-      parent = parentScope!!,
-      position = position,
-      ctx = ctx
-    )
-    is KtClassBody -> scopeOwner.getParentOfType<KtClassOrObject>(false)
-      ?.descriptor<ClassDescriptor>(ctx)
-      ?.unsubstitutedPrimaryConstructor
-      ?.let { FunctionInjectablesScope(it, parentScope!!, ctx) }
-      ?: parentScope!!
-    is KtBlockExpression -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!, ctx)
-    else -> throw AssertionError("Unexpected scope owner $scopeOwner")
   }
 
-  if (scopeOwner !is KtBlockExpression)
-    ctx.trace!!.record(InjektWritableSlices.ELEMENT_SCOPE, scopeOwner, scope)
-
-  return scope
+  return if (scopeOwner !is KtBlockExpression)
+    ctx.cached("element_scope", scopeOwner) { createScope() }
+  else
+    createScope()
 }
 
 private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
@@ -221,7 +218,7 @@ private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
 }
 
 private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
-  ctx.trace!!.getOrPut(InjektWritableSlices.ELEMENT_SCOPE, file) {
+  ctx.cached("file_scope", file) {
     InjectableScopeOrParent(
       file = file,
       name = "FILE ${file.name}",
@@ -273,8 +270,8 @@ private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.trace!!.getOrPut(
-  InjektWritableSlices.DECLARATION_SCOPE,
+): InjectablesScope = ctx.cached(
+  "class_scope",
   DescriptorWithParentScope(clazz, parent.name)
 ) {
   val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
@@ -376,8 +373,8 @@ private fun FunctionInjectablesScope(
   function: FunctionDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.trace!!.getOrPut(
-  InjektWritableSlices.DECLARATION_SCOPE,
+): InjectablesScope = ctx.cached(
+  "function_scope",
   DescriptorWithParentScope(function, parent.name)
 ) {
   val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
@@ -445,8 +442,8 @@ private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.trace!!.getOrPut(
-  InjektWritableSlices.DECLARATION_SCOPE,
+): InjectablesScope = ctx.cached(
+  "property_scope",
   DescriptorWithParentScope(property, parent.name)
 ) {
   InjectableScopeOrParent(
@@ -492,8 +489,8 @@ private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.trace!!.getOrPut(
-  InjektWritableSlices.DECLARATION_SCOPE,
+): InjectablesScope = ctx.cached(
+  "local_variable_scope",
   DescriptorWithParentScope(variable, parent.name)
 ) {
   InjectableScopeOrParent(
@@ -523,7 +520,7 @@ private fun BlockExpressionInjectablesScope(
   if (visibleInjectableDeclarations.isEmpty()) return parent
   val injectableDeclaration = visibleInjectableDeclarations.last()
   val key = block to injectableDeclaration
-  return ctx.trace!!.getOrPut(InjektWritableSlices.BLOCK_SCOPE, key) {
+  return ctx.cached("block_scope", key) {
     val finalParent = if (visibleInjectableDeclarations.size > 1)
       BlockExpressionInjectablesScope(block, injectableDeclaration.findPsi().cast(), parent, ctx)
     else parent
@@ -544,7 +541,7 @@ private fun BlockExpressionInjectablesScope(
 }
 
 fun GlobalInjectablesScope(ctx: Context): InjectablesScope =
-  ctx.trace.getOrPut(InjektWritableSlices.GLOBAL_SCOPE, Unit) {
+  ctx.cached("global_scope", Unit) {
     val (externalInjectables, internalInjectables) = collectGlobalInjectables(ctx)
       .partition { it.callable.isExternalDeclaration(ctx) }
 

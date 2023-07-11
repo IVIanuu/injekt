@@ -9,11 +9,13 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
+import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.cached
+import com.ivianuu.injekt.compiler.cachedOrNull
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.resolution.CallableInjectable
 import com.ivianuu.injekt.compiler.resolution.CallableRef
@@ -568,10 +570,10 @@ class InjectCallTransformer(
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    val injectionResult = irCtx.bindingContext[
-        InjektWritableSlices.INJECTION_RESULT,
-        SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
-    ] ?: return result
+    val injectionResult = ctx.cachedOrNull<_, InjectionResult.Success?>(
+      INJECTION_RESULT_KEY,
+      SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
+    ) ?: return result
 
     // some ir transformations reuse the start and end offsets
     // we ensure that were not transforming wrong calls

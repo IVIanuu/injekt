@@ -5,11 +5,13 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
+import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.allParametersWithContext
+import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
@@ -127,20 +129,15 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     when (val result = scope.resolveRequests(callee, requests)) {
       is InjectionResult.Success -> {
-        ctx!!.trace!!.record(
-          InjektWritableSlices.INJECTIONS_OCCURRED_IN_FILE,
-          file.virtualFilePath,
-          Unit
-        )
-        ctx!!.trace!!.record(
-          InjektWritableSlices.INJECTION_RESULT,
+        ctx!!.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.virtualFilePath) { Unit }
+        ctx!!.cached(
+          INJECTION_RESULT_KEY,
           SourcePosition(
             file.virtualFilePath,
             callExpression.startOffset,
             callExpression.endOffset
-          ),
-          result
-        )
+          )
+        ) { result }
       }
       is InjectionResult.Error -> ctx!!.reportError(callExpression, result.render())
     }

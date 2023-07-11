@@ -5,9 +5,8 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.getOrPut
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 
 data class CallableRef(
@@ -45,7 +44,7 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
 }
 
 fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
-  ctx.trace!!.getOrPut(InjektWritableSlices.CALLABLE_REF, this) {
+  ctx.cached("callable_ref", this) {
     val info = callableInfo(ctx)
     val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
 
