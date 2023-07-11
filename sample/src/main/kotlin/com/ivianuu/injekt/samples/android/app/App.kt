@@ -10,7 +10,6 @@ import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.inject
 import com.ivianuu.injekt.samples.android.ui.ActivityScope
 import com.ivianuu.injekt.samples.android.ui.MainActivityComponent
-import com.ivianuu.injekt.injectContext
 
 class App : Application() {
   val appComponent by lazy {
