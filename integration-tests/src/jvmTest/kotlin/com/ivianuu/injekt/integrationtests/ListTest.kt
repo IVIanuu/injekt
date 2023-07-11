@@ -47,34 +47,4 @@ class ListTest {
   ) {
     compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.test.Command> for parameter x of function com.ivianuu.injekt.inject")
   }
-
-  @Test fun testIncludesTypeScopeInList() = singleAndMultiCodegen(
-    listOf(
-      listOf(
-        source(
-          """
-            @Provide fun commandB() = CommandB()
-          """,
-          packageFqName = FqName("com.ivianuu.injekt.test")
-        )
-      ),
-      listOf(
-        source(
-          """
-            @Provide fun commandsA() = listOf(CommandA())
-          """
-        ),
-        invokableSource(
-          """
-            fun invoke() = inject<List<Command>>() 
-          """
-        )
-      )
-    )
-  ) {
-    val list = invokeSingleFile<List<Command>>()
-    list.size shouldBe 2
-    list[0].shouldBeTypeOf<CommandB>()
-    list[1].shouldBeTypeOf<CommandA>()
-  }
 }

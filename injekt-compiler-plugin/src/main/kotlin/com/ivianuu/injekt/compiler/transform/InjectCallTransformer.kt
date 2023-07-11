@@ -95,18 +95,8 @@ class InjectCallTransformer(
 
     var declarationIndex = 0
 
-    private val rootContextParents = buildSet {
-      fun InjectablesScope.add() {
-        if (!add(this)) return
-        parent?.add()
-        typeScopes.forEach { it.value.add() }
-      }
-
-      result.scope.add()
-    }
-
     fun mapScopeIfNeeded(scope: InjectablesScope) =
-      if (scope in rootContextParents) result.scope else scope
+      if (scope in result.scope.allScopes) result.scope else scope
         .allScopes.last { it.isDeclarationContainer }
   }
 

@@ -6,7 +6,6 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -47,8 +46,7 @@ sealed interface ResolutionResult {
         val anchorScopes = mutableSetOf<InjectablesScope>()
 
         fun collectScopesRecursive(result: Value) {
-          if (result.candidate is CallableInjectable &&
-            result.candidate.ownerScope.typeScopeType == null)
+          if (result.candidate is CallableInjectable)
             anchorScopes += result.candidate.ownerScope
           for (dependency in result.dependencyResults.values)
             if (dependency is Value)
@@ -137,7 +135,7 @@ fun InjectablesScope.resolveRequests(
   var failureRequest: InjectableRequest? = null
   var failure: ResolutionResult.Failure? = null
   for (request in requests) {
-    when (val result = resolveRequest(request, false)) {
+    when (val result = resolveRequest(request)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
         if (request.isRequired || result.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity) {
@@ -165,36 +163,21 @@ fun InjectablesScope.resolveRequests(
   )
 }
 
-private fun InjectablesScope.resolveRequest(
-  request: InjectableRequest,
-  fromTypeScope: Boolean
-): ResolutionResult {
+private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
   if (request.type.hasErrors)
     return ResolutionResult.Failure.NoCandidates(this, request)
 
   if (scopeToUse != this)
-    return scopeToUse.resolveRequest(request, fromTypeScope)
+    return scopeToUse.resolveRequest(request)
 
   resultsByType[request.type]?.let { return it }
 
   val result: ResolutionResult = tryToResolveRequestWithUserInjectables(request)
     .let { userResult ->
       if (userResult is ResolutionResult.Success ||
-          userResult is ResolutionResult.Failure.CandidateAmbiguity)
+        userResult is ResolutionResult.Failure.CandidateAmbiguity)
             userResult
-      else if (!fromTypeScope) {
-        tryToResolveRequestInTypeScope(request)
-          ?.takeUnless { it is ResolutionResult.Failure.NoCandidates }
-          .let { typeScopeResult ->
-            when (typeScopeResult) {
-              is ResolutionResult.Failure.CandidateAmbiguity -> typeScopeResult
-              is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> userResult
-              else -> if (compareResult(userResult, typeScopeResult) < 0) userResult else typeScopeResult
-            }
-          }
-          ?: tryToResolveRequestWithFrameworkInjectable(request)
-          ?: userResult
-      } else userResult
+      else tryToResolveRequestWithFrameworkInjectable(request) ?: userResult
     } ?: ResolutionResult.Failure.NoCandidates(this, request)
 
   resultsByType[request.type] = result
@@ -206,20 +189,6 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
 ): ResolutionResult? = injectablesForRequest(request, this)
   .takeIf { it.isNotEmpty() }
   ?.let { resolveCandidates(request, it) }
-
-private fun InjectablesScope.tryToResolveRequestInTypeScope(
-  request: InjectableRequest
-): ResolutionResult? =
-  // try the type scope if the requested type is not a framework type
-  if (request.type.frameworkKey.isEmpty() &&
-    !request.type.isFunctionType &&
-    request.type.classifier != ctx.listClassifier &&
-    request.type.classifier.fqName != InjektFqNames.TypeKey &&
-    request.type.classifier.fqName != InjektFqNames.SourceKey) {
-    TypeInjectablesScope(request.type, this, ctx)
-      .takeUnless { it.isEmpty }
-      ?.resolveRequest(request, true)
-  } else null
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest
@@ -342,7 +311,7 @@ private fun InjectablesScope.resolveCandidate(
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
     val dependencyScope = candidate.dependencyScopes[dependency] ?: this
-    when (val dependencyResult = dependencyScope.resolveRequest(dependency, false)) {
+    when (val dependencyResult = dependencyScope.resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
         when {
@@ -410,11 +379,6 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
 
   a!!
   b!!
-
-  val aIsFromTypeScope = a.ownerScope.typeScopeType != null
-  val bIsFromTypeScope = b.ownerScope.typeScopeType != null
-  if (!aIsFromTypeScope && bIsFromTypeScope) return -1
-  if (!bIsFromTypeScope && aIsFromTypeScope) return 1
 
   val aScopeNesting = a.ownerScope.nesting
   val bScopeNesting = b.ownerScope.nesting

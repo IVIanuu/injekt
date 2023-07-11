@@ -18,9 +18,7 @@ import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.transform
-import com.ivianuu.injekt.compiler.transformTo
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -31,13 +29,11 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.containingPackage
 import org.jetbrains.kotlin.descriptors.impl.ReceiverParameterDescriptorImpl
-import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
@@ -279,71 +275,18 @@ fun CallableRef.collectInjectables(
     }
 }
 
-fun TypeRef.collectTypeScopeInjectables(ctx: Context): InjectablesWithLookups =
-  ctx.trace!!.getOrPut(InjektWritableSlices.TYPE_SCOPE_INJECTABLES, key) {
-    val injectables = mutableListOf<CallableRef>()
-    val lookedUpPackages = mutableSetOf<FqName>()
-    val nextPackages = LinkedList<FqName>()
-    val seenTypes = mutableSetOf<TypeRef>()
-
-    fun TypeRef.addNextPackages() {
-      if (!seenTypes.add(this)) return
-
-      val packageFqName = classifier.descriptor?.findPackage()?.fqName
-      if (packageFqName != null && lookedUpPackages.add(packageFqName))
-        nextPackages += packageFqName
-
-      allTypes.forEach { it.addNextPackages() }
-      classifier.tags.forEach { it.addNextPackages() }
+fun collectGlobalInjectables(ctx: Context): List<CallableRef> = buildList {
+  packagesWithInjectables(ctx)
+    .forEach {
+      collectPackageInjectables(it, ctx).forEach { add(it) }
     }
-
-    addNextPackages()
-
-    while (nextPackages.isNotEmpty()) {
-      val currentPackage = nextPackages.removeFirst()
-
-      val injectablesForPackage = collectPackageTypeScopeInjectables(currentPackage, ctx)
-
-      injectables += injectablesForPackage
-
-      injectablesForPackage.forEach { injectable ->
-        injectable.type.addNextPackages()
-        injectable.type.collectInjectables(false, ctx).forEach {
-          it.type.addNextPackages()
-        }
-      }
-    }
-
-    InjectablesWithLookups(injectables, lookedUpPackages)
-  }
-
-data class InjectablesWithLookups(
-  val injectables: List<CallableRef>,
-  val lookedUpPackages: Set<FqName>
-)
+}
 
 fun collectPackageInjectables(
   packageFqName: FqName,
   ctx: Context
 ): List<CallableRef> =
   ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_INJECTABLES, packageFqName) {
-    if (packageFqName !in packagesWithInjectables(ctx)) return@getOrPut emptyList()
-
-    val scope = memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND, ctx)
-      ?: return@getOrPut emptyList()
-
-    buildList {
-      scope.collectInjectables(false, ctx = ctx) {
-        add(it)
-      }
-    }
-  }
-
-private fun collectPackageTypeScopeInjectables(
-  packageFqName: FqName,
-  ctx: Context
-): List<CallableRef> =
-  ctx.trace!!.getOrPut(InjektWritableSlices.PACKAGE_TYPE_SCOPE_INJECTABLES, packageFqName) {
     if (packageFqName !in packagesWithInjectables(ctx)) return@getOrPut emptyList()
 
     val packageFragments = packageFragmentsForFqName(packageFqName, ctx)
@@ -389,21 +332,11 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
         scopeFile == callable.callable.findPsi()?.containingFile
       })
 
-fun List<CallableRef>.filterNotExistingIn(scope: InjectablesScope, ctx: Context): List<CallableRef> {
-  val existingInjectables: MutableSet<InjectablesScope.InjectableKey> = scope.allScopes
-    .transformTo(mutableSetOf()) {
-      for (injectable in it.injectables)
-        add(InjectablesScope.InjectableKey(injectable, ctx))
-      addAll(it.spreadingInjectableKeys)
-    }
-
-  return filter { existingInjectables.add(InjectablesScope.InjectableKey(it, ctx)) }
-}
-
-fun packagesWithInjectables(ctx: Context) = ctx.trace.getOrPut(InjektWritableSlices.PACKAGES_WITH_INJECTABLES, Unit) {
-  memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
-    ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?.mapTo(mutableSetOf()) {
-      it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
-    } ?: emptySet()
-}
+fun packagesWithInjectables(ctx: Context): Set<FqName> =
+  ctx.trace.getOrPut(InjektWritableSlices.PACKAGES_WITH_INJECTABLES, Unit) {
+    memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
+      ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
+      ?.mapTo(mutableSetOf()) {
+        it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
+      } ?: emptySet()
+  }

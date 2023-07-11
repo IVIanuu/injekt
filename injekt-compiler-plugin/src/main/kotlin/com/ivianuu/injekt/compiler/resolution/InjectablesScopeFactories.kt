@@ -7,14 +7,12 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.getOrPut
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -29,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
@@ -231,7 +228,7 @@ private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
     InjectablesScope(
       file = file,
       name = "FILE ${file.name}",
-      parent = null,
+      parent = GlobalInjectablesScope(ctx),
       ctx = ctx,
       initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
     )
@@ -262,7 +259,7 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    parent = null,
+    parent = GlobalInjectablesScope(ctx),
     ctx = ctx,
     initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
   )
@@ -546,78 +543,26 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun TypeInjectablesScope(
-  type: TypeRef,
-  parent: InjectablesScope,
-  ctx: Context
-): InjectablesScope {
-  val finalParent = parent.scopeToUse
-  return finalParent.typeScopes.getOrPut(type.key) {
-    val injectablesWithLookups = type.collectTypeScopeInjectables(ctx)
+fun GlobalInjectablesScope(ctx: Context): InjectablesScope =
+  ctx.trace.getOrPut(InjektWritableSlices.GLOBAL_SCOPE, Unit) {
+    val (externalInjectables, internalInjectables) = collectGlobalInjectables(ctx)
+      .partition { it.callable.isExternalDeclaration(ctx) }
 
-    val newInjectables = injectablesWithLookups.injectables
-      .filterNotExistingIn(finalParent, ctx)
+    val externalScope = InjectablesScope(
+      name = "EXTERNAL GLOBAL",
+      parent = null,
+      initialInjectables = externalInjectables,
+      ctx = ctx
+    )
 
-    if (newInjectables.isEmpty()) {
-      return@getOrPut InjectablesScope(
-        name = "EMPTY TYPE ${type.renderToString()}",
-        parent = finalParent,
-        isEmpty = true,
-        isDeclarationContainer = false,
-        ctx = ctx
-      )
-    }
-
-    val externalInjectables = mutableListOf<CallableRef>()
-    val typeInjectables = mutableListOf<CallableRef>()
-    val internalInjectables = mutableListOf<CallableRef>()
-
-    val thisModuleName = ctx.module.moduleName(ctx)
-    val typeModuleName = type.classifier.descriptor!!.moduleName(ctx)
-    for (callable in newInjectables) {
-      when (callable.callable.moduleName(ctx)) {
-        thisModuleName -> internalInjectables += callable
-        typeModuleName -> typeInjectables += callable
-        else -> externalInjectables += callable
-      }
-    }
-
-    var result = finalParent
-
-    if (externalInjectables.isNotEmpty()) {
-      result = InjectablesScope(
-        name = "EXTERNAL TYPE ${type.renderToString()}",
-        parent = result,
-        initialInjectables = externalInjectables,
-        typeScopeType = type,
-        isDeclarationContainer = false,
-        ctx = ctx
-      )
-    }
-    if (typeInjectables.isNotEmpty()) {
-      result = InjectablesScope(
-        name = "TYPE TYPE ${type.renderToString()}",
-        parent = result,
-        initialInjectables = typeInjectables,
-        typeScopeType = type,
-        isDeclarationContainer = false,
-        ctx = ctx
-      )
-    }
-    if (internalInjectables.isNotEmpty()) {
-      result = InjectablesScope(
-        name = "INTERNAL TYPE ${type.renderToString()}",
-        parent = result,
-        initialInjectables = internalInjectables,
-        typeScopeType = type,
-        isDeclarationContainer = false,
-        ctx = ctx
-      )
-    }
-
-    result
+    if (internalInjectables.isEmpty()) externalScope
+    else InjectablesScope(
+      name = "INTERNAL GLOBAL",
+      parent = externalScope,
+      initialInjectables = internalInjectables,
+      ctx = ctx
+    )
   }
-}
 
 data class DescriptorWithParentScope(
   val declaration: DeclarationDescriptor,
