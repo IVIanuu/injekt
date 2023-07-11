@@ -83,10 +83,9 @@ class InjectableDeclarationTest {
         @Provide constructor(foo: Foo)
         @Provide constructor(bar: Bar)
       }
-      @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = inject<(Foo) -> Dep>() to inject<(Bar) -> Dep>()
     """
   )
 
