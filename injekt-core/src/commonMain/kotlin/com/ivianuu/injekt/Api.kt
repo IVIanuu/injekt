@@ -50,9 +50,9 @@ inline fun <F : Function<*>> provider(f: F): @Provide F = f
 annotation class Inject
 
 /**
- * Returns a provided instance of [A]
+ * Returns a provided instance of [T]
  */
-inline fun <A> inject(@Inject a: A): A = a
+inline fun <T> inject(@Inject x: T): T = x
 
 /**
  * Marks an annotation as an tag which can then be used
