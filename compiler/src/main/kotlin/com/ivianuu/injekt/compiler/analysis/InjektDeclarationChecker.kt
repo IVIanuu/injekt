@@ -43,7 +43,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
+class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecker {
   override fun check(
     declaration: KtDeclaration,
     descriptor: DeclarationDescriptor,
@@ -144,6 +144,9 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
     }
 
     checkExceptActual(declaration, descriptor, ctx)
+
+    if (descriptor.hasAnnotation(InjektFqNames.Tag))
+      checkTag(declaration, descriptor, ctx)
   }
 
   private fun checkConstructor(
@@ -343,5 +346,14 @@ class InjectableChecker(private val baseCtx: Context) : DeclarationChecker {
         )
       }
     }
+  }
+
+  private fun checkTag(declaration: KtDeclaration, descriptor: ClassDescriptor, ctx: Context) {
+    if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+          ?.source?.getPsi() ?: declaration,
+        "tag cannot have value parameters"
+      )
   }
 }

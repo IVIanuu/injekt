@@ -45,8 +45,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
       container.useImpl<InjectSyntheticScopes>()
     }
 
-    container.useInstance(InjectableChecker(ctx))
-    container.useInstance(TagChecker(ctx))
+    container.useInstance(InjektDeclarationChecker(ctx))
     if (!isIde)
       container.useInstance(InfoPatcher(ctx))
   }
