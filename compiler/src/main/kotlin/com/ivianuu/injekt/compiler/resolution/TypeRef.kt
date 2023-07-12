@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.types.model.convertVariance
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class ClassifierRef(
+data class ClassifierRef(
   val key: String,
   val fqName: FqName,
   val typeParameters: List<ClassifierRef> = emptyList(),
@@ -54,24 +54,6 @@ class ClassifierRef(
     variance = variance
   )
   val defaultType = tags.wrap(untaggedType)
-
-  fun copy(
-    key: String = this.key,
-    fqName: FqName = this.fqName,
-    typeParameters: List<ClassifierRef> = this.typeParameters,
-    lazySuperTypes: Lazy<List<TypeRef>> = this.lazySuperTypes,
-    isTypeParameter: Boolean = this.isTypeParameter,
-    isObject: Boolean = this.isObject,
-    isTag: Boolean = this.isTag,
-    descriptor: ClassifierDescriptor? = this.descriptor,
-    tags: List<TypeRef> = this.tags,
-    isSpread: Boolean = this.isSpread,
-    variance: TypeVariance = this.variance,
-    declaresInjectables: Boolean = this.declaresInjectables
-  ) = ClassifierRef(
-    key, fqName, typeParameters, lazySuperTypes, isTypeParameter, isObject, isTag,
-    descriptor, tags, isSpread, variance, declaresInjectables
-  )
 
   override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
   override fun hashCode(): Int = key.hashCode()
