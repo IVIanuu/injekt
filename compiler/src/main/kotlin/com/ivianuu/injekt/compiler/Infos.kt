@@ -62,7 +62,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
   else ctx.cached("callable_info", this) {
     if (isDeserializedDeclaration()) {
       val info = annotations
-        .findAnnotation(InjektFqNames.CallableInfo)
+        .findAnnotation(InjektFqNames.DeclarationInfo)
         ?.readChunkedValue()
         ?.decode<PersistedCallableInfo>()
         ?.toCallableInfo(ctx)
@@ -134,7 +134,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
       safeAs<ConstructorDescriptor>()?.visibility?.shouldPersistInfo() != true)
         return
 
-  if (hasAnnotation(InjektFqNames.CallableInfo))
+  if (hasAnnotation(InjektFqNames.DeclarationInfo))
     return
 
   val shouldPersistInfo = info.type.shouldBePersisted() ||
@@ -147,7 +147,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
   updateAnnotation(
     AnnotationDescriptorImpl(
       ctx.module.findClassAcrossModuleDependencies(
-        ClassId.topLevel(InjektFqNames.CallableInfo)
+        ClassId.topLevel(InjektFqNames.DeclarationInfo)
       )?.defaultType ?: return,
       mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
       SourceElement.NO_SOURCE
@@ -195,7 +195,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           ?.toClassifierInfo(ctx)
       } else {
         annotations
-          .findAnnotation(InjektFqNames.ClassifierInfo)
+          .findAnnotation(InjektFqNames.DeclarationInfo)
           ?.readChunkedValue()
           ?.cast<String>()
           ?.decode<PersistedClassifierInfo>()
@@ -301,14 +301,14 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: 
     if (info.tags.none { it.shouldBePersisted() } &&
       info.superTypes.none { it.shouldBePersisted() }) return
 
-    if (hasAnnotation(InjektFqNames.ClassifierInfo)) return
+    if (hasAnnotation(InjektFqNames.DeclarationInfo)) return
 
     val serializedInfo = info.toPersistedClassifierInfo(ctx).encode()
 
     updateAnnotation(
       AnnotationDescriptorImpl(
         ctx.module.findClassAcrossModuleDependencies(
-          ClassId.topLevel(InjektFqNames.ClassifierInfo)
+          ClassId.topLevel(InjektFqNames.DeclarationInfo)
         )?.defaultType ?: return,
         mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
         SourceElement.NO_SOURCE

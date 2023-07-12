@@ -15,8 +15,7 @@ object InjektFqNames {
   val Spread = InjektPackage.child("Spread".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
-  val CallableInfo = InternalPackage.child("CallableInfo".asNameId())
-  val ClassifierInfo = InternalPackage.child("ClassifierInfo".asNameId())
+  val DeclarationInfo = InternalPackage.child("DeclarationInfo".asNameId())
   val TypeParameterInfo = InternalPackage.child("TypeParameterInfo".asNameId())
 
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
