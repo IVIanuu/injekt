@@ -43,10 +43,7 @@ fun TypeRef.isEqualTo(other: TypeRef, ctx: TypeCheckerContext): Boolean {
   return isSubTypeOf(other, ctx) && other.isSubTypeOf(this, ctx)
 }
 
-fun TypeRef.isSubTypeOf(
-  superType: TypeRef,
-  ctx: TypeCheckerContext
-): Boolean {
+fun TypeRef.isSubTypeOf(superType: TypeRef, ctx: TypeCheckerContext): Boolean {
   if (this == superType) return true
 
   ctx.addSubTypeConstraint(this, superType)
@@ -615,22 +612,6 @@ private fun uniquify(types: List<TypeRef>, ctx: TypeCheckerContext): List<TypeRe
   return uniqueTypes
 }
 
-private fun filterSupertypes(list: List<TypeRef>, ctx: TypeCheckerContext): List<TypeRef> {
-  val supertypes = list.toMutableList()
-  val iterator = supertypes.iterator()
-  while (iterator.hasNext()) {
-    val potentialSubType = iterator.next()
-    val isSubType = supertypes.any { supertype ->
-      supertype !== potentialSubType &&
-          potentialSubType.isSubTypeOf(supertype, ctx)
-    }
-
-    if (isSubType) iterator.remove()
-  }
-
-  return supertypes
-}
-
 private fun commonSuperTypeForNotNullTypes(
   types: List<TypeRef>,
   depth: Int,
@@ -641,7 +622,7 @@ private fun commonSuperTypeForNotNullTypes(
   val uniqueTypes = uniquify(types, ctx)
   if (uniqueTypes.size == 1) return uniqueTypes.single()
 
-  val explicitSupertypes = filterSupertypes(uniqueTypes, ctx)
+  val explicitSupertypes = filterTypes(uniqueTypes) { lower, upper -> lower.isSubTypeOf(upper, ctx) }
   if (explicitSupertypes.size == 1) return explicitSupertypes.single()
 
   return findSuperTypeConstructorsAndIntersectResult(explicitSupertypes, depth, ctx)
@@ -823,19 +804,10 @@ private fun intersectTypesWithoutIntersectionType(
   else ctx.ctx.nullableAnyType
 }
 
-private fun filterTypes(
-  types: Collection<TypeRef>,
-  predicate: (TypeRef, TypeRef) -> Boolean
-): Collection<TypeRef> {
-  val filteredTypes = types.toMutableList()
-  val iterator = filteredTypes.iterator()
-  while (iterator.hasNext()) {
-    val upper = iterator.next()
-    val shouldFilter = filteredTypes.any { lower -> lower !== upper && predicate(lower, upper) }
-    if (shouldFilter) iterator.remove()
+private fun filterTypes(types: Collection<TypeRef>, predicate: (TypeRef, TypeRef) -> Boolean) = types
+  .filterNot { upper ->
+    types.any { lower -> lower !== upper && predicate(lower, upper) }
   }
-  return filteredTypes
-}
 
 private fun isStrictSupertype(
   subtype: TypeRef,
