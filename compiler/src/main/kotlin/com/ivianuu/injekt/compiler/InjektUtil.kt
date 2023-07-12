@@ -388,11 +388,6 @@ fun memberScopeForFqName(
   return classDescriptor.unsubstitutedMemberScope
 }
 
-fun packageFragmentsForFqName(
-  fqName: FqName,
-  ctx: Context
-): List<PackageFragmentDescriptor> = ctx.module.getPackage(fqName).fragments
-
 val CallableDescriptor.allParametersWithContext: List<ParameterDescriptor>
   get() = buildList {
     addIfNotNull(dispatchReceiverParameter)

@@ -15,7 +15,6 @@ import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.packageFragmentsForFqName
 import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment
@@ -287,9 +286,6 @@ fun collectPackageInjectables(
   ctx.cached("package_injectables", packageFqName) {
     if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
 
-    val packageFragments = packageFragmentsForFqName(packageFqName, ctx)
-      .filterNot { it is BuiltInsPackageFragment }
-
     val injectables = mutableListOf<CallableRef>()
 
     fun collectInjectables(scope: MemberScope) {
@@ -309,7 +305,8 @@ fun collectPackageInjectables(
         injectables += it
       }
     }
-    packageFragments.forEach { collectInjectables(it.getMemberScope()) }
+
+    collectInjectables(memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND, ctx)!!)
 
     injectables
   }
