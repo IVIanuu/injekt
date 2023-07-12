@@ -176,10 +176,7 @@ fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
  * Stores information about a classifier which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-class ClassifierInfo(
-  val tags: List<TypeRef>,
-  val lazySuperTypes: Lazy<List<TypeRef>>
-) {
+class ClassifierInfo(val tags: List<TypeRef>, val lazySuperTypes: Lazy<List<TypeRef>>) {
   val superTypes by lazySuperTypes
 }
 
@@ -258,10 +255,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifier
   superTypes = superTypes.map { it.toPersistedTypeRef(ctx) }
 )
 
-private fun ClassifierDescriptor.persistInfoIfNeeded(
-  info: ClassifierInfo,
-  ctx: Context
-) {
+private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: Context) {
   if (this is TypeParameterDescriptor) {
     val container = containingDeclaration
     if (container is TypeAliasDescriptor) return
