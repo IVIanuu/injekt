@@ -167,32 +167,18 @@ fun buildContextForSpreadingInjectable(
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
   ctx: TypeCheckerContext
-): Pair<TypeContext, Map<ClassifierRef, TypeRef>> {
+): TypeContext {
   val candidateTypeParameters = mutableListOf<ClassifierRef>()
   candidateType.allTypes.forEach {
     if (it.classifier.isTypeParameter)
       candidateTypeParameters += it.classifier
   }
-  val typeCtx = candidateType.buildContext(
+  return candidateType.buildContext(
     constraintType,
     candidateTypeParameters + staticTypeParameters,
     true,
     ctx
   )
-
-  val map = if (typeCtx.isOk) {
-    val swapMap = mutableMapOf<ClassifierRef, TypeRef>()
-    val rawMap = typeCtx.fixedTypeVariables
-    rawMap.forEach { (key, value) ->
-      if (value.classifier in candidateTypeParameters) {
-        swapMap[value.classifier] = key.defaultType
-      }
-    }
-    rawMap
-      .filterKeys { it !in candidateTypeParameters }
-      .mapValues { it.value.substitute(swapMap) }
-  } else emptyMap()
-  return typeCtx to map
 }
 
 fun TypeRef.buildContext(

@@ -84,15 +84,15 @@ class TypeSubstitutionTest {
       .let {
         it.withArguments(listOf(intType) + it.arguments.drop(1))
       }
-    val (_, map) = buildContextForSpreadingInjectable(
+    val context = buildContextForSpreadingInjectable(
       scopedT.defaultType,
       substitutionType,
       emptyList(),
       ctx
     )
-    map[scopedT] shouldBe substitutionType
-    map[scopedU] shouldBe stringType
-    map[scopedN] shouldBe intType
+    context.fixedTypeVariables[scopedT] shouldBe substitutionType
+    context.fixedTypeVariables[scopedU] shouldBe stringType
+    context.fixedTypeVariables[scopedN] shouldBe intType
   }
 
   @Test fun todoExtractToTypeOnlyTest() = codegen(

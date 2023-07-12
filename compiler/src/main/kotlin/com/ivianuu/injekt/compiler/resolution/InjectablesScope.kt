@@ -236,7 +236,7 @@ class InjectablesScope(
     if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
     if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
 
-    val (context, substitutionMap) = buildContextForSpreadingInjectable(
+    val context = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
       candidateType,
       allStaticTypeParameters,
@@ -245,17 +245,17 @@ class InjectablesScope(
     if (!context.isOk) return
 
     val newInjectableType = spreadingInjectable.callable.type
-      .substitute(substitutionMap)
+      .substitute(context.fixedTypeVariables)
       .copy(frameworkKey = "")
     val newInjectable = spreadingInjectable.callable
       .copy(
         type = newInjectableType,
         originalType = newInjectableType,
         parameterTypes = spreadingInjectable.callable.parameterTypes
-          .mapValues { it.value.substitute(substitutionMap) },
+          .mapValues { it.value.substitute(context.fixedTypeVariables) },
         typeArguments = spreadingInjectable.callable
           .typeArguments
-          .mapValues { it.value.substitute(substitutionMap) }
+          .mapValues { it.value.substitute(context.fixedTypeVariables) }
       )
 
     newInjectable.collectInjectables(
