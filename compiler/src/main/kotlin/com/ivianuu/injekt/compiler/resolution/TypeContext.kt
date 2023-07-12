@@ -92,8 +92,6 @@ sealed interface TypeContextError {
     val superType: TypeRef,
     val kind: ConstraintKind
   ) : TypeContextError
-
-  data object NotEnoughInformation : TypeContextError
 }
 
 class VariableWithConstraints(val typeVariable: ClassifierRef) {
@@ -304,22 +302,16 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
         .filterKeys { it !in fixedTypeVariables }
         .values
       if (unfixedTypeVariables.isEmpty()) break
-      var typeVariableToFix = unfixedTypeVariables
+      val typeVariableToFix = unfixedTypeVariables
         .firstOrNull { typeVariable ->
           typeVariable.getNestedTypeVariables()
             .all { it.classifier in fixedTypeVariables }
-        }
-      if (typeVariableToFix == null) {
-        typeVariableToFix = unfixedTypeVariables.first()
-      }
-      if (!fixVariable(typeVariableToFix)) {
-        addError(TypeContextError.NotEnoughInformation)
-        break
-      }
+        } ?: unfixedTypeVariables.first()
+      fixVariable(typeVariableToFix)
     }
   }
 
-  private fun fixVariable(variableWithConstraints: VariableWithConstraints): Boolean {
+  private fun fixVariable(variableWithConstraints: VariableWithConstraints) {
     val type = getFixedType(variableWithConstraints)
 
     addInitialEqualityConstraint(variableWithConstraints.typeVariable.defaultType, type)
@@ -335,8 +327,6 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
       }
 
     fixedTypeVariables[variableWithConstraints.typeVariable] = type
-
-    return true
   }
 
   private fun getFixedType(variableWithConstraints: VariableWithConstraints): TypeRef {

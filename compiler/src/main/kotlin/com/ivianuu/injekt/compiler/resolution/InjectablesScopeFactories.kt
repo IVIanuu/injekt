@@ -61,12 +61,12 @@ fun ElementInjectablesScope(
   position: KtElement = element
 ): InjectablesScope {
   val scopeOwner = element.parentsWithSelf
-    .first { (it as KtElement).isScopeOwner(position, ctx) }
+    .first { (it as KtElement).isScopeOwner(position) }
     .cast<KtElement>()
 
   fun createScope(): InjectablesScope {
     val parentScope = scopeOwner.parents
-      .firstOrNull { (it as KtElement).isScopeOwner(position, ctx) }
+      .firstOrNull { (it as KtElement).isScopeOwner(position) }
       ?.let { ElementInjectablesScope(ctx, it.cast(), position) }
 
     return when (scopeOwner) {
@@ -139,7 +139,7 @@ fun ElementInjectablesScope(
     createScope()
 }
 
-private fun KtElement.isScopeOwner(position: KtElement, ctx: Context): Boolean {
+private fun KtElement.isScopeOwner(position: KtElement): Boolean {
   if (this is KtFile ||
     this is KtClassInitializer ||
     this is KtProperty ||

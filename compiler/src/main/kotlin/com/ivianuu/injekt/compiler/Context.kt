@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
-
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
