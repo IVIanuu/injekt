@@ -198,7 +198,7 @@ fun KotlinType.toTypeRef(
   }
 }
 
-class TypeRef(
+data class TypeRef(
   val classifier: ClassifierRef,
   val isMarkedNullable: Boolean = false,
   val arguments: List<TypeRef> = emptyList(),
@@ -321,30 +321,6 @@ fun TypeRef.withNullability(isMarkedNullable: Boolean) =
 fun TypeRef.withVariance(variance: TypeVariance) =
   if (this.variance == variance) this
   else copy(variance = variance)
-
-fun TypeRef.copy(
-  classifier: ClassifierRef = this.classifier,
-  isMarkedNullable: Boolean = this.isMarkedNullable,
-  arguments: List<TypeRef> = this.arguments,
-  isProvide: Boolean = this.isProvide,
-  isInject: Boolean = this.isInject,
-  isStarProjection: Boolean = this.isStarProjection,
-  frameworkKey: String = this.frameworkKey,
-  variance: TypeVariance = this.variance,
-  source: ClassifierRef? = this.source,
-  isError: Boolean = this.isError
-) = TypeRef(
-  classifier,
-  isMarkedNullable,
-  arguments,
-  isProvide,
-  isInject,
-  isStarProjection,
-  frameworkKey,
-  variance,
-  source,
-  isError
-)
 
 val STAR_PROJECTION_TYPE = TypeRef(
   classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
