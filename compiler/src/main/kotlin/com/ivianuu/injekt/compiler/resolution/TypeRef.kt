@@ -43,8 +43,7 @@ data class ClassifierRef(
   val descriptor: ClassifierDescriptor? = null,
   val tags: List<TypeRef> = emptyList(),
   val isSpread: Boolean = false,
-  val variance: TypeVariance = TypeVariance.INV,
-  val declaresInjectables: Boolean = false
+  val variance: TypeVariance = TypeVariance.INV
 ) {
   val superTypes by lazySuperTypes
 
@@ -107,8 +106,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       descriptor = this,
       tags = info.tags,
       isSpread = hasAnnotation(InjektFqNames.Spread),
-      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV,
-      declaresInjectables = info.declaresInjectables
+      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
 

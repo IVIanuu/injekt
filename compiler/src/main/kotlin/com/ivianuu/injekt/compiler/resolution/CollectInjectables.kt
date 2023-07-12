@@ -77,20 +77,6 @@ fun TypeRef.collectInjectables(
     return@cached listOf(callable)
   }
 
-  // do not run any code for types which do not declare any injectables
-  if (!classifier.declaresInjectables && !classBodyView)
-    // at least include the companion object if it declares injectables
-    return@cached listOfNotNull(
-      classifier.descriptor
-        ?.safeAs<ClassDescriptor>()
-        ?.companionObjectDescriptor
-        ?.toClassifierRef(ctx)
-        ?.takeIf { it.declaresInjectables }
-        ?.descriptor
-        ?.cast<ClassDescriptor>()
-        ?.injectableReceiver(false, ctx)
-    )
-
   buildList {
     classifier
       .descriptor
@@ -142,7 +128,8 @@ fun ResolutionScope.collectInjectables(
               .takeIf {
                 it.isProvide(ctx) ||
                     (includeNonProvideObjectsWithInjectables &&
-                        it.toClassifierRef(ctx).declaresInjectables)
+                        it.defaultType.memberScope.getContributedDescriptors()
+                          .any { it.isProvide(ctx) })
               }
               ?.injectableReceiver(!classBodyView, ctx)
               ?.let(consumer)
@@ -150,7 +137,10 @@ fun ResolutionScope.collectInjectables(
           declaration.injectableConstructors(ctx).forEach(consumer)
           if (!classBodyView && !includeNonProvideObjectsWithInjectables)
             declaration.companionObjectDescriptor
-              ?.takeIf { it.classifierInfo(ctx).declaresInjectables }
+              ?.takeIf {
+                it.defaultType.memberScope.getContributedDescriptors()
+                  .any { it.isProvide(ctx) }
+              }
               ?.injectableReceiver(false, ctx)
               ?.let(consumer)
         }
@@ -294,7 +284,8 @@ fun collectPackageInjectables(
           // otherwise they will be included later in the injectables scope itself
           if (declaration is ClassDescriptor &&
             (declaration.kind != ClassKind.OBJECT ||
-                !declaration.toClassifierRef(ctx).declaresInjectables))
+                declaration.defaultType.memberScope.getContributedDescriptors()
+                  .none { it.isProvide(ctx) }))
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
         },
         classBodyView = false,
