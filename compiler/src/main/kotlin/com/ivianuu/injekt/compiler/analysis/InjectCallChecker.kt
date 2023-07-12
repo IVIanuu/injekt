@@ -102,6 +102,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
       resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx!!)?.putAll()
       resolvedCall.extensionReceiver?.type?.toTypeRef(ctx!!)?.putAll()
+      resolvedCall.contextReceivers.forEach { it.type.toTypeRef(ctx!!).putAll() }
     }
 
     val callee = resultingDescriptor

@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -149,10 +150,8 @@ class TypeKeyInjectable(
 
 fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParametersWithContext
   .transform {
-    if (it === callable.dispatchReceiverParameter ||
-      it === callable.extensionReceiverParameter ||
-      it in callable.contextReceiverParameters ||
-      it.isProvide(ctx) ||
+    if (it is ReceiverParameterDescriptor ||
+      it.isInject(ctx) ||
       parameterTypes[it.injektIndex(ctx)]?.isInject == true)
       add(it.toInjectableRequest(this@getInjectableRequests, ctx))
   }

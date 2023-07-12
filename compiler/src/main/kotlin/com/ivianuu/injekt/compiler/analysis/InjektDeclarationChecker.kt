@@ -111,7 +111,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     }
 
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(InjektFqNames.Provide)) {
+      descriptor.hasAnnotation(InjektFqNames.Provide)
+    ) {
       ctx.reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Provide)
           ?.source?.getPsi() ?: declaration,
@@ -145,8 +146,13 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
 
     checkExceptActual(declaration, descriptor, ctx)
 
-    if (descriptor.hasAnnotation(InjektFqNames.Tag))
-      checkTag(declaration, descriptor, ctx)
+    if (descriptor.hasAnnotation(InjektFqNames.Tag) &&
+      descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
+      ctx.reportError(
+        descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+          ?.source?.getPsi() ?: declaration,
+        "tag cannot have value parameters"
+      )
   }
 
   private fun checkConstructor(
@@ -346,14 +352,5 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
         )
       }
     }
-  }
-
-  private fun checkTag(declaration: KtDeclaration, descriptor: ClassDescriptor, ctx: Context) {
-    if (descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
-      ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Tag)
-          ?.source?.getPsi() ?: declaration,
-        "tag cannot have value parameters"
-      )
   }
 }
