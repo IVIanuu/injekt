@@ -96,7 +96,7 @@ sealed interface TypeContextError {
     val kind: ConstraintKind
   ) : TypeContextError
 
-  object NotEnoughInformation : TypeContextError
+  data object NotEnoughInformation : TypeContextError
 }
 
 class VariableWithConstraints(val typeVariable: ClassifierRef) {
@@ -160,9 +160,9 @@ enum class ConstraintKind {
 }
 
 sealed interface ConstraintPosition {
-  object FixVariable : ConstraintPosition
-  object DeclaredUpperBound : ConstraintPosition
-  object Unknown : ConstraintPosition
+  data object FixVariable : ConstraintPosition
+  data object DeclaredUpperBound : ConstraintPosition
+  data object Unknown : ConstraintPosition
 }
 
 fun buildContextForSpreadingInjectable(
@@ -600,29 +600,13 @@ fun commonSuperType(
 
   val commonSuperType = commonSuperTypeForNotNullTypes(notNullTypes, depth, ctx)
   return if (notAllNotNull)
-    refineNullabilityForUndefinedNullability(types, commonSuperType, ctx)
+    commonSuperType.takeIf { it.classifier.isTypeParameter }
       ?: commonSuperType.withNullability(true)
   else
     commonSuperType
 }
 
-private fun refineNullabilityForUndefinedNullability(
-  types: List<TypeRef>,
-  commonSuperType: TypeRef,
-  ctx: TypeCheckerContext
-): TypeRef? {
-  if (!commonSuperType.classifier.isTypeParameter) return null
-
-  /*val actuallyNotNull =
-      types.all { hasPathByNotMarkedNullableNodes(it, commonSuperType.typeConstructor()) }
-  return if (actuallyNotNull) commonSuperType else null*/
-  return commonSuperType
-}
-
-private fun uniquify(
-  types: List<TypeRef>,
-  ctx: TypeCheckerContext
-): List<TypeRef> {
+private fun uniquify(types: List<TypeRef>, ctx: TypeCheckerContext): List<TypeRef> {
   val uniqueTypes = mutableListOf<TypeRef>()
   for (type in types) {
     val isNewUniqueType = uniqueTypes.none { it.isEqualTo(type, ctx) }
@@ -631,10 +615,7 @@ private fun uniquify(
   return uniqueTypes
 }
 
-private fun filterSupertypes(
-  list: List<TypeRef>,
-  ctx: TypeCheckerContext
-): List<TypeRef> {
+private fun filterSupertypes(list: List<TypeRef>, ctx: TypeCheckerContext): List<TypeRef> {
   val supertypes = list.toMutableList()
   val iterator = supertypes.iterator()
   while (iterator.hasNext()) {
@@ -806,15 +787,15 @@ private fun calculateArgument(
   }
 }
 
-internal fun intersectTypes(types: List<TypeRef>, ctx: TypeCheckerContext): TypeRef {
+private fun intersectTypes(types: List<TypeRef>, ctx: TypeCheckerContext): TypeRef {
   if (types.size == 1) return types.single()
 
-  val resultNullability = types.fold(ResultNullability.START, ResultNullability::combine)
+  val resultNullability = types.fold(false) { nullability, type ->
+    nullability || type.isNullableType
+  }
 
   val correctNullability = types.mapTo(mutableSetOf()) {
-    if (resultNullability == ResultNullability.NOT_NULL) {
-      it.withNullability(false)
-    } else it
+    it.withNullability(resultNullability)
   }
 
   return intersectTypesWithoutIntersectionType(correctNullability, ctx)
@@ -860,32 +841,4 @@ private fun isStrictSupertype(
   subtype: TypeRef,
   supertype: TypeRef,
   ctx: TypeCheckerContext
-): Boolean = subtype.isSubTypeOf(supertype, ctx.ctx) &&
-    !supertype.isSubTypeOf(subtype, ctx.ctx)
-
-private enum class ResultNullability {
-  START {
-    override fun combine(nextType: TypeRef) = nextType.resultNullability
-  },
-  ACCEPT_NULL {
-    override fun combine(nextType: TypeRef) = nextType.resultNullability
-  },
-  UNKNOWN {
-    override fun combine(nextType: TypeRef) =
-      nextType.resultNullability.let {
-        if (it == ACCEPT_NULL) this else it
-      }
-  },
-  NOT_NULL {
-    override fun combine(nextType: TypeRef) = this
-  };
-
-  abstract fun combine(nextType: TypeRef): ResultNullability
-
-  protected val TypeRef.resultNullability: ResultNullability
-    get() = when {
-      isMarkedNullable -> ACCEPT_NULL
-      !isNullableType -> NOT_NULL
-      else -> UNKNOWN
-    }
-}
+): Boolean = subtype.isSubTypeOf(supertype, ctx.ctx) && !supertype.isSubTypeOf(subtype, ctx.ctx)
