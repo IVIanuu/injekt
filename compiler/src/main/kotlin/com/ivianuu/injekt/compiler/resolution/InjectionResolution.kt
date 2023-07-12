@@ -375,10 +375,7 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   )
 }
 
-private fun InjectablesScope.compareCallable(
-  a: CallableRef?,
-  b: CallableRef?
-): Int {
+private fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
   if (a == b) return 0
 
   if (a != null && b == null) return -1
