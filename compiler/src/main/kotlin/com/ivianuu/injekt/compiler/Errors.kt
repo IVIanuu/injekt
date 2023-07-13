@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.renderToString
+import com.ivianuu.injekt.compiler.resolution.unwrapDependencyFailure
 import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
@@ -220,10 +221,3 @@ fun InjectionResult.Error.render(): String = buildString {
     }.let { }
   }
 }
-
-private fun ResolutionResult.Failure.unwrapDependencyFailure(
-  request: InjectableRequest
-): Pair<InjectableRequest, ResolutionResult.Failure> =
-  if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
-    dependencyFailure.unwrapDependencyFailure(dependencyRequest)
-  else request to this

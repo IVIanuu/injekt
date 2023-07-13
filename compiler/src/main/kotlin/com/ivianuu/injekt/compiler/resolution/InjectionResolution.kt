@@ -134,7 +134,8 @@ fun InjectablesScope.resolveRequests(
     when (val result = resolveRequest(request)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
-        if (request.isRequired || result.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity) {
+        if (request.isRequired ||
+          result.unwrapDependencyFailure(request).second is ResolutionResult.Failure.CandidateAmbiguity) {
           if (compareResult(result, failure) < 0) {
             failureRequest = request
             failure = result
@@ -307,7 +308,7 @@ private fun InjectablesScope.resolveCandidate(
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
           dependency.isRequired ||
-              dependencyResult.unwrapDependencyFailure() is ResolutionResult.Failure.CandidateAmbiguity ->
+              dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.CandidateAmbiguity ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
               candidate,
               dependency,
@@ -494,7 +495,9 @@ fun InjectionResult.visitRecursive(action: (InjectableRequest, ResolutionResult)
     result.visitRecursive(request, action)
 }
 
-private fun ResolutionResult.Failure.unwrapDependencyFailure(): ResolutionResult.Failure =
+fun ResolutionResult.Failure.unwrapDependencyFailure(
+  request: InjectableRequest
+): Pair<InjectableRequest, ResolutionResult.Failure> =
   if (this is ResolutionResult.Failure.WithCandidate.DependencyFailure)
-    dependencyFailure.unwrapDependencyFailure()
-  else this
+    dependencyFailure.unwrapDependencyFailure(dependencyRequest)
+  else request to this

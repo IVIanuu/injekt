@@ -8,6 +8,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.Context
+import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
+import com.ivianuu.injekt.compiler.cachedOrNull
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -28,6 +31,7 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
@@ -42,13 +46,17 @@ import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
 import org.jetbrains.kotlin.ir.types.impl.originalKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.FakeOverridesStrategy
+import org.jetbrains.kotlin.ir.util.KotlinLikeDumpOptions
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
+import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
+import java.io.File
 
 fun ClassDescriptor.irClass(irCtx: IrPluginContext): IrClass =
   irCtx.symbolTable.referenceClass(this).ensureBound(irCtx).owner
@@ -155,4 +163,40 @@ fun IrBuilderWithScope.irLambda(
     function = lambda,
     origin = IrStatementOrigin.LAMBDA
   )
+}
+
+fun IrModuleFragment.dumpToFiles(dumpDir: File, ctx: Context) {
+  files
+    .filter {
+      dumpAllFiles ||
+          ctx.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
+    }
+    .forEach { irFile ->
+      val file = File(irFile.fileEntry.name)
+      val content = try {
+        buildString {
+          appendLine(
+            irFile.dumpKotlinLike(
+              KotlinLikeDumpOptions(
+                useNamedArguments = true,
+                printFakeOverridesStrategy = FakeOverridesStrategy.NONE
+              )
+            )
+          )
+        }
+      } catch (e: Throwable) {
+        e.stackTraceToString()
+      }
+      val newFile = dumpDir
+        .resolve(irFile.fqName.asString().replace(".", "/"))
+        .also { it.mkdirs() }
+        .resolve(file.name.removeSuffix(".kt"))
+      try {
+        newFile.createNewFile()
+        newFile.writeText(content)
+        println("Generated $newFile:\n$content")
+      } catch (e: Throwable) {
+        throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
+      }
+    }
 }
