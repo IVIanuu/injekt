@@ -167,8 +167,7 @@ class InjectCallTransformer(
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
         name = irScope.inventNameForTemporary("function").asNameId()
-        returnType = result.candidate.type.toIrType(irCtx)
-          .typeOrNull!!
+        returnType = result.candidate.type.toIrType(irCtx).typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
       }.apply {
         parent = irScope.getLocalDeclarationParent()
