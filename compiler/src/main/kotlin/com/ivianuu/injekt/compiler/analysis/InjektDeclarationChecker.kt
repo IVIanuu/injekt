@@ -107,8 +107,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     }
 
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(InjektFqNames.Provide)
-    ) {
+      descriptor.hasAnnotation(InjektFqNames.Provide)) {
       ctx.reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Provide)
           ?.source?.getPsi() ?: declaration,
@@ -258,19 +257,16 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     overriddenDescriptor: MemberDescriptor
   ): Boolean {
     if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
-      !descriptor.hasAnnotation(InjektFqNames.Provide)) {
-        return false
-    }
+      !descriptor.hasAnnotation(InjektFqNames.Provide))
+      return false
 
-    if (descriptor is CallableMemberDescriptor) {
+    if (descriptor is CallableMemberDescriptor)
       for ((index, overriddenValueParameter) in
       overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
-        val valueParameter = descriptor.valueParameters[index]
-        if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
-          valueParameter.hasAnnotation(InjektFqNames.Inject)) {
-          return false
-        }
-      }
+      val valueParameter = descriptor.valueParameters[index]
+      if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
+        valueParameter.hasAnnotation(InjektFqNames.Inject))
+        return false
     }
 
     val (typeParameters, overriddenTypeParameters) = when (descriptor) {
@@ -286,9 +282,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
       val typeParameter = typeParameters[index]
       if (typeParameter.hasAnnotation(InjektFqNames.Spread) !=
-        overriddenTypeParameter.hasAnnotation(InjektFqNames.Spread)) {
+        overriddenTypeParameter.hasAnnotation(InjektFqNames.Spread))
         return false
-      }
     }
 
     return true
@@ -299,13 +294,12 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context
   ) {
     if (typeParameters.isEmpty()) return
-    for (typeParameter in typeParameters) {
+    for (typeParameter in typeParameters)
       if (typeParameter.hasAnnotation(InjektFqNames.Spread))
         ctx.reportError(
           typeParameter.annotations.findAnnotation(InjektFqNames.Spread)
             ?.source?.getPsi() ?: typeParameter.findPsi()!!,
           "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
         )
-    }
   }
 }
