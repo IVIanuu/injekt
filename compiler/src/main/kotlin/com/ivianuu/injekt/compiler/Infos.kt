@@ -6,7 +6,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
@@ -346,7 +345,6 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
       LazyClassDescriptor::class,
       "annotations"
     ) { newAnnotations }
-    is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
     else -> throw AssertionError("Cannot add annotation to $this $javaClass")
   }

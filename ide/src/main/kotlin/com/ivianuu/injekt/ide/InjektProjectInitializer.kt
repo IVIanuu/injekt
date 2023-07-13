@@ -9,7 +9,6 @@ package com.ivianuu.injekt.ide
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
-import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.updatePrivateFinalField
@@ -23,7 +22,6 @@ import org.jetbrains.kotlin.idea.base.projectStructure.languageVersionSettings
 import org.jetbrains.kotlin.idea.caches.project.ModuleSourceInfo
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
@@ -54,10 +52,7 @@ class InjektProjectInitializer : ProjectManagerListener {
       project,
       InjektStorageComponentContainerContributor()
     )
-    SyntheticScopeProviderExtension.registerExtension(
-      project,
-      InjectSyntheticScopeProviderExtension()
-    )
+
     @Suppress("DEPRECATION")
     Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
       .registerExtension(InjektDiagnosticSuppressor())

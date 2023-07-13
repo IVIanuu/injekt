@@ -8,8 +8,6 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.InjectCallChecker
-import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
-import com.ivianuu.injekt.compiler.analysis.InjektCallResolutionInterceptorExtension
 import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
 import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -22,11 +20,9 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.extensions.internal.CandidateInterceptor
 import org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
 import java.util.*
 
 @OptIn(ExperimentalCompilerApi::class)
@@ -40,14 +36,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
       project,
       InjektStorageComponentContainerContributor()
     )
+
     IrGenerationExtension.registerExtensionWithLoadingOrder(
       project,
       LoadingOrder.FIRST,
       InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
-    )
-    CandidateInterceptor.registerExtension(
-      project,
-      InjektCallResolutionInterceptorExtension()
     )
 
     if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
@@ -55,14 +48,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project,
         InjectCallChecker()
       )
-
-    // extension point does not exist CLI for some reason
-    // but it's still queried later
-    SyntheticScopeProviderExtension.registerExtensionPoint(project)
-    SyntheticScopeProviderExtension.registerExtension(
-      project,
-      InjectSyntheticScopeProviderExtension()
-    )
 
     @Suppress("DEPRECATION")
     Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)

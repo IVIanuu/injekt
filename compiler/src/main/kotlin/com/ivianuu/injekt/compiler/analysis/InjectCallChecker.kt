@@ -85,7 +85,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
     if (!checkedCalls.add(resolvedCall)) return
 
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+    if (resultingDescriptor.contextReceiverParameters.isEmpty()) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -111,22 +111,17 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
       .toCallableRef(ctx)
       .substitute(substitutionMap)
 
-    val requests = resultingDescriptor.underlyingDescriptor.contextReceiverParameters
+    val requests = resultingDescriptor.contextReceiverParameters
       .map { it.toInjectableRequest(callee, ctx) }
-
 
     // we fill the context receivers list up with dummy's to ensure
     // that the compiler builds a correct ir tree
     // we replace those dummy's later in ir phase
-    if (resultingDescriptor
-        .underlyingDescriptor
-        .contextReceiverParameters.isNotEmpty()) {
-      resolvedCall.contextReceivers.cast<ArrayList<ReceiverValue>>().run {
-        clear()
-        val dummyReceiver = ImplicitClassReceiver(ctx!!.module.builtIns.unit)
-        repeat(resultingDescriptor.underlyingDescriptor.contextReceiverParameters.size) {
-          add(dummyReceiver)
-        }
+    resolvedCall.contextReceivers.cast<ArrayList<ReceiverValue>>().run {
+      clear()
+      val dummyReceiver = ImplicitClassReceiver(ctx.module.builtIns.unit)
+      repeat(resultingDescriptor.contextReceiverParameters.size) {
+        add(dummyReceiver)
       }
     }
 
