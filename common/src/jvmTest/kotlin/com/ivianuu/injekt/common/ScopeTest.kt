@@ -53,30 +53,6 @@ class ScopeTest {
     holder.get() shouldBe 1
   }
 
-  @Test fun testDispose() {
-    val scope = Scope<TestScope>()
-    var disposeCalls = 0
-    scope.invoke {
-      Disposable {
-        disposeCalls++
-      }
-    }
-    disposeCalls shouldBe 0
-    scope.isDisposed shouldBe false
-    scope.dispose()
-    disposeCalls shouldBe 1
-    scope.isDisposed shouldBe true
-    scope.dispose()
-    disposeCalls shouldBe 1
-  }
-
-  @Test fun testCannotUseADisposedScope() {
-    val scope = Scope<TestScope>()
-    shouldNotThrow<IllegalStateException> { scope.invoke { 42 } }
-    scope.dispose()
-    shouldThrow<IllegalStateException> { scope.invoke { 42 } }
-  }
-
   @Test fun testScopedTag() {
     var callCount = 0
 
