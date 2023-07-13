@@ -111,15 +111,12 @@ fun TypeRef.collectInjectables(
 fun ResolutionScope.collectInjectables(
   classBodyView: Boolean,
   onEach: (DeclarationDescriptor) -> Unit = {},
-  name: Name? = null,
   ctx: Context,
   includeNonProvideObjectsWithInjectables: Boolean = false,
   consumer: (CallableRef) -> Unit
 ) {
   for (declaration in getContributedDescriptors()) {
     onEach(declaration)
-    if (name != null && declaration.name != name) continue
-
     when (declaration) {
       is ClassDescriptor -> {
         if (declaration.kind == ClassKind.OBJECT &&
