@@ -12,7 +12,6 @@ import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.lookupLocation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.render
 import com.ivianuu.injekt.compiler.reportError
