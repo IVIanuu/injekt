@@ -35,8 +35,6 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
   }
 
   private fun processFile(file: KSFile, providers: List<KSDeclaration>) {
-    if (providers.isEmpty()) return
-
     val markerName = "_${
       file.fileName.removeSuffix(".kt")
         .substringAfterLast(".")
@@ -84,8 +82,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
             appendLine("  hash_${index}_$value: Int,")
           }
 
-        appendLine(") {")
-        appendLine("}")
+        appendLine(") = Unit")
         appendLine()
       }
     }
@@ -113,7 +110,6 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
           }
           .forEach { append(it.annotationType.uniqueTypeKey()) }
       }
-
       is KSFunctionDeclaration -> {
         append(extensionReceiver?.uniqueTypeKey())
         parameters.forEach {
@@ -122,7 +118,6 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         }
         append(returnType?.uniqueTypeKey())
       }
-
       is KSPropertyDeclaration -> {
         append(extensionReceiver?.uniqueTypeKey())
         append(type.uniqueTypeKey())
