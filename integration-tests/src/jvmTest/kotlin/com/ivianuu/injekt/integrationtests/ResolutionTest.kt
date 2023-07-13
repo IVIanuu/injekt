@@ -145,20 +145,20 @@ class ResolutionTest {
     invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
-  @Test fun testPrefersFunctionReceiverInjectableOverInternalInjectable() = codegen(
+  @Test fun testPrefersFunctionExtensionReceiverInjectableOverInternalInjectable() = codegen(
     """
       @Provide val internalFoo = Foo()
-      fun Foo.invoke() = inject<Foo>()
+      fun @receiver:Provide Foo.invoke() = inject<Foo>()
     """
   ) {
     val expected = Foo()
     invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
-  @Test fun testPrefersFunctionReceiverInjectableOverClassInjectable() = codegen(
+  @Test fun testPrefersFunctionExtensionReceiverInjectableOverClassInjectable() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo = Foo()) {
-        fun Foo.resolve() = inject<Foo>()
+        fun @receiver:Provide Foo.resolve() = inject<Foo>()
       }
 
       fun invoke(functionFoo: Foo): Foo {

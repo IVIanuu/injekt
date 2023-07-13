@@ -50,7 +50,6 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -406,9 +405,7 @@ private fun FunctionParameterInjectablesScopes(
     .transform {
       if (it !== function.dispatchReceiverParameter &&
         (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
-        (it === function.extensionReceiverParameter ||
-            it in function.contextReceiverParameters ||
-            it.isProvide(ctx)))
+        (it.isProvide(ctx) || function.isProvide(ctx)))
         add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->
@@ -452,8 +449,9 @@ private fun PropertyInjectablesScope(
     parent = parent,
     ownerDescriptor = property,
     initialInjectables = buildList {
-      addIfNotNull(property.extensionReceiverParameter?.toCallableRef(ctx))
-      property.contextReceiverParameters.forEach { add(it.toCallableRef(ctx)) }
+      property.allParametersWithContext
+        .filter { it.isProvide(ctx) || property.isProvide(ctx) }
+        .forEach { add(it.toCallableRef(ctx)) }
     },
     typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
     ctx = ctx

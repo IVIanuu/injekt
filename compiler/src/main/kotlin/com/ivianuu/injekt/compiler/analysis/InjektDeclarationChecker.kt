@@ -199,15 +199,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     declaration: KtDeclaration,
     ctx: Context
   ) {
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Provide) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Provide) == true)
-      ctx.reportError(
-        declaration.safeAs<KtFunction>()?.receiverTypeReference
-          ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-          ?: declaration,
-        "receiver is automatically provided"
-      )
-
     if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
       descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true)
       ctx.reportError(

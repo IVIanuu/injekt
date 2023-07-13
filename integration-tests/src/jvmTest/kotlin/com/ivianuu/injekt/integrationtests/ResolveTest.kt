@@ -221,20 +221,6 @@ class ResolveTest {
     invokeSingleFile()
   }
 
-  @Test fun testPrimaryConstructorInjectableWithReceiver() = singleAndMultiCodegen(
-    """
-      class UsesFoo(@property:Provide val foo: Foo)
-    """,
-    """
-      fun invoke(foo: Foo) = with(UsesFoo(foo)) {
-        inject<Foo>()
-      }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testLocalConstructorInvocationWithInjectables() = codegen(
     """
       @Provide val foo = Foo()
@@ -245,16 +231,6 @@ class ResolveTest {
     """
   ) {
     invokeSingleFile()
-  }
-
-  @Test fun testCanResolveInjectableOfInjectableThisFunction() = codegen(
-    """
-      class Dep(@property:Provide val foo: Foo)
-      fun invoke(foo: Foo) = with(Dep(foo)) { inject<Foo>() }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanResolveStarProjectedType() = singleAndMultiCodegen(
@@ -448,6 +424,12 @@ class ResolveTest {
     """
   )
 
+  fun main() {
+    fun <T> lol() {
+
+    }
+  }
+
   @Test fun testResolvesInjectableWithTypeParameterInScope() = singleAndMultiCodegen(
     """
       @Provide fun <T> list(): List<T> = emptyList()
@@ -559,14 +541,14 @@ class ResolveTest {
 
   @Test fun testCanResolveExtensionReceiverInDefaultValueOfParameter() = codegen(
     """
-      fun Foo.invoke(bar: Bar = Bar(inject())) {
+      fun @receiver:Provide Foo.invoke(bar: Bar = Bar(inject())) {
       }
     """
   )
 
   @Test fun testCanResolveContextReceiverInDefaultValueOfParameter() = codegen(
     """
-      context(Foo) fun invoke(bar: Bar = Bar(inject())) {
+      context((@Provide Foo)) fun invoke(bar: Bar = Bar(inject())) {
       }
     """
   )
@@ -1080,25 +1062,25 @@ class ResolveTest {
 
   @Test fun testCanResolveExtensionReceiverOfFunction() = codegen(
     """
-      fun Foo.foo() = inject<Foo>()
+      fun @receiver:Provide Foo.foo() = inject<Foo>()
     """
   )
 
   @Test fun testCanResolveExtensionReceiverOfProperty() = codegen(
     """
-      val Foo.foo get() = inject<Foo>()
+      val @receiver:Provide Foo.foo get() = inject<Foo>()
     """
   )
 
   @Test fun testCanResolveContextReceiverOfFunction() = codegen(
     """
-      context(Foo) fun foo() = inject<Foo>()
+      context((@Provide Foo)) fun foo() = inject<Foo>()
     """
   )
 
   @Test fun testCanResolveContextReceiverOfProperty() = codegen(
     """
-      context(Foo) val foo get() = inject<Foo>()
+      context((@Provide Foo)) val foo get() = inject<Foo>()
     """
   )
 

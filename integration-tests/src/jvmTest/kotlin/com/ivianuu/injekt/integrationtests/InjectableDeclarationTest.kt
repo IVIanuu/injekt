@@ -132,52 +132,48 @@ class InjectableDeclarationTest {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
   }
 
-  @Test fun testProvideExtensionFunction() = singleAndMultiCodegen(
+  @Test fun testProvideFunctionExtensionReceiver() = singleAndMultiCodegen(
     """
-      @Provide fun Foo.bar() = Bar(this)
+      fun @receiver:Provide Foo.bar() = Bar(inject())
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke() = with(Foo()) { bar() }
     """
   ) {
-    invokeSingleFile(Foo())
-      .shouldBeTypeOf<Bar>()
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideExtensionProperty() = singleAndMultiCodegen(
+  @Test fun testProvideFunctionContextReceiver() = singleAndMultiCodegen(
     """
-      @Provide val Foo.bar get() = Bar(this)
+      context((@Provide Foo)) fun bar() = Bar(inject())
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke() = with(Foo()) { bar() }
     """
   ) {
-    invokeSingleFile(Foo())
-      .shouldBeTypeOf<Bar>()
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideContextFunction() = singleAndMultiCodegen(
+  @Test fun testProvidePropertyExtensionReceiver() = singleAndMultiCodegen(
     """
-      context(Foo) @Provide fun bar() = Bar(inject())
+      val @receiver:Provide Foo.bar get() = Bar(inject())
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke() = with(Foo()) { bar }
     """
   ) {
-    invokeSingleFile(Foo())
-      .shouldBeTypeOf<Bar>()
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideContextProperty() = singleAndMultiCodegen(
+  @Test fun testProvidePropertyContextReceiver() = singleAndMultiCodegen(
     """
-      context(Foo) @Provide val bar get() = Bar(inject())
+      context((@Provide Foo)) val bar get() = Bar(inject())
     """,
     """
-      fun invoke(@Inject foo: Foo) = inject<Bar>() 
+      fun invoke() = with(Foo()) { bar }
     """
   ) {
-    invokeSingleFile(Foo())
-      .shouldBeTypeOf<Bar>()
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
   @Test fun testProvideValueParameter() = codegen(
