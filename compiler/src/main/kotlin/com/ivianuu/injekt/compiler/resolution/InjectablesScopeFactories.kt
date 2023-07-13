@@ -76,17 +76,12 @@ fun ElementInjectablesScope(
         ctx
       )
       is KtConstructor<*> -> {
-        if (scopeOwner.bodyExpression.let { it == null || it !in position.parents }) {
+        if (scopeOwner.bodyExpression.let { it == null || it !in position.parents })
           ConstructorPreInitInjectablesScope(
             scopeOwner.descriptor(ctx)!!,
             parentScope!!,
             ctx
-          )
-        } else FunctionInjectablesScope(
-          scopeOwner.descriptor(ctx)!!,
-          parentScope!!,
-          ctx
-        )
+          ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)
       }
       is KtFunction -> FunctionInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
@@ -339,7 +334,12 @@ private fun ConstructorPreInitInjectablesScope(
   parent: InjectablesScope,
   ctx: Context
 ): InjectablesScope {
-  val parameterScopes = FunctionParameterInjectablesScopes(parent, constructor, null, ctx)
+  val parameterScopes = FunctionParameterInjectablesScopes(
+    parent = ClassCompanionInjectablesScope(constructor.constructedClass, parent, ctx),
+    function = constructor,
+    until = null,
+    ctx = ctx
+  )
   val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
     it.toClassifierRef(ctx)
   }
@@ -359,7 +359,13 @@ private fun ValueParameterDefaultValueInjectablesScope(
   ctx: Context
 ): InjectablesScope {
   val function = valueParameter.containingDeclaration.cast<FunctionDescriptor>()
-  val parameterScopes = FunctionParameterInjectablesScopes(parent, function, valueParameter, ctx)
+  val parameterScopes = FunctionParameterInjectablesScopes(
+    if (function is ConstructorDescriptor) ClassCompanionInjectablesScope(function.constructedClass, parent, ctx)
+    else parent,
+    function,
+    valueParameter,
+    ctx
+  )
   return InjectableScopeOrParent(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
@@ -573,7 +579,5 @@ fun InjectableScopeOrParent(
   typeParameters: List<ClassifierRef> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
-): InjectablesScope {
-  return if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, initialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
-}
+): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
+else InjectablesScope(name, parent, owner, initialInjectables, injectablesPredicate, typeParameters, nesting, ctx)

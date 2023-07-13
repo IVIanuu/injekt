@@ -49,7 +49,7 @@ class ResolveTest {
   @Test fun testResolvesClassCompanionInjectableFromOuterClass() = singleAndMultiCodegen(
     """
       class MyClass {
-        companion object {
+        @Provide companion object {
           @Provide val foo = Foo()
         }
       }

@@ -78,7 +78,7 @@ fun TypeRef.collectInjectables(
       .descriptor
       ?.defaultType
       ?.memberScope
-      ?.collectInjectables(classBodyView = classBodyView, ctx = ctx) { callable ->
+      ?.collectMemberInjectables(ctx = ctx) { callable ->
         val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
           CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
@@ -104,40 +104,14 @@ fun TypeRef.collectInjectables(
   }
 }
 
-fun ResolutionScope.collectInjectables(
-  classBodyView: Boolean,
+fun ResolutionScope.collectMemberInjectables(
   onEach: (DeclarationDescriptor) -> Unit = {},
   ctx: Context,
-  includeNonProvideObjectsWithInjectables: Boolean = false,
   consumer: (CallableRef) -> Unit
 ) {
   for (declaration in getContributedDescriptors()) {
     onEach(declaration)
     when (declaration) {
-      is ClassDescriptor -> {
-        if (declaration.kind == ClassKind.OBJECT &&
-          (!classBodyView || !declaration.isCompanionObject))
-            declaration
-              .takeIf {
-                it.isProvide() ||
-                    (includeNonProvideObjectsWithInjectables &&
-                        it.defaultType.memberScope.getContributedDescriptors()
-                          .any { it.isProvide() })
-              }
-              ?.injectableReceiver(!classBodyView, ctx)
-              ?.let(consumer)
-        else {
-          declaration.injectableConstructors(ctx).forEach(consumer)
-          if (!classBodyView && !includeNonProvideObjectsWithInjectables)
-            declaration.companionObjectDescriptor
-              ?.takeIf {
-                it.defaultType.memberScope.getContributedDescriptors()
-                  .any { it.isProvide() }
-              }
-              ?.injectableReceiver(false, ctx)
-              ?.let(consumer)
-        }
-      }
       is CallableMemberDescriptor -> {
         if (declaration.isProvide())
           consumer(declaration.toCallableRef(ctx))
@@ -233,18 +207,17 @@ fun collectPackageInjectables(
     val injectables = mutableListOf<CallableRef>()
 
     fun collectInjectables(scope: MemberScope) {
-      scope.collectInjectables(
+      scope.collectMemberInjectables(
         onEach = { declaration ->
-          // only collect in nested scopes if the declaration does NOT declare any injectables
-          // otherwise they will be included later in the injectables scope itself
-          if (declaration is ClassDescriptor &&
-            (declaration.kind != ClassKind.OBJECT ||
-                declaration.defaultType.memberScope.getContributedDescriptors()
-                  .none { it.isProvide() }))
+          if (declaration is ClassDescriptor) {
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
+
+            if (declaration.kind == ClassKind.OBJECT && declaration.isProvide())
+              injectables += declaration.injectableReceiver(true, ctx)
+            else
+              injectables += declaration.injectableConstructors(ctx)
+          }
         },
-        classBodyView = false,
-        includeNonProvideObjectsWithInjectables = true,
         ctx = ctx
       ) {
         injectables += it
