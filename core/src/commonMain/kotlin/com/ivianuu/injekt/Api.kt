@@ -36,6 +36,7 @@ annotation class Provide
 
 inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
+@JvmName("provideExtension")
 inline fun <A, R> A.provide(block: context(A) () -> R) = block(this)
 
 inline fun <A, R> provide(a: A, block: context((@Provide A)) () -> R): R = block(a)
