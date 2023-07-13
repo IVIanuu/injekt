@@ -28,7 +28,7 @@ class Scope<N> : SynchronizedObject() {
 }
 
 @Tag annotation class Scoped<N> {
-  companion object {
+  @Provide companion object {
     @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       crossinline init: () -> T,
       scope: Scope<N>,
