@@ -18,7 +18,7 @@ class ModuleTest {
       }
     """,
     """
-      fun invoke() = inject<Bar>() 
+      fun invoke() = context<Bar>() 
     """
   )
 
@@ -31,7 +31,7 @@ class ModuleTest {
       @Provide val stringModule = MyModule("__")
     """,
     """
-        fun invoke() = inject<Pair<Foo, Foo>>() 
+        fun invoke() = context<Pair<Foo, Foo>>() 
     """
   )
 
@@ -46,8 +46,8 @@ class ModuleTest {
     """,
     """
       fun invoke() {
-        inject<Pair<Foo, Foo>>()
-        inject<Pair<Bar, Bar>>()
+        context<Pair<Foo, Foo>>()
+        context<Pair<Bar, Bar>>()
       } 
     """
   )
@@ -61,13 +61,13 @@ class ModuleTest {
       }
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = context<Dep>() 
     """
   )
 
   @Test fun testLambdaModule() = codegen(
     """
-      fun invoke() = inject<(@Provide () -> Foo) -> Foo>()
+      fun invoke() = context<(@Provide () -> Foo) -> Foo>()
     """
   ) {
     val foo = Foo()
@@ -79,7 +79,7 @@ class ModuleTest {
       @Provide val fooModule: @Provide () -> @Provide () -> Foo = { { Foo() } }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -92,7 +92,7 @@ class ModuleTest {
       @Provide val foo1Lambda: @Provide () -> Foo = { foo1 }
       private val foo2 = Foo()
       @Provide val foo2Lambda: @Provide () -> Foo = { foo2 }
-      fun invoke() = inject<List<Foo>>()
+      fun invoke() = context<List<Foo>>()
     """
   ) {
     val foos = invokeSingleFile<List<Foo>>()
@@ -104,7 +104,7 @@ class ModuleTest {
       @Provide val foo = Foo()
       fun createBar(foo: Foo) = Bar(foo)
       @Provide val barProvider: @Provide KFunction1<Foo, Bar> = ::createBar
-      fun invoke() = inject<Bar>()
+      fun invoke() = context<Bar>()
     """
   ) {
     invokeSingleFile()

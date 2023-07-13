@@ -181,7 +181,7 @@ fun InjectionResult.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          appendLine("inject<${request.type.renderToString()}>()")
+          appendLine("context<${request.type.renderToString()}>()")
         }
       }
       append(indent())

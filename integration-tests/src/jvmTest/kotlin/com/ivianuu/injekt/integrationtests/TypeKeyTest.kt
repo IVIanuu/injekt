@@ -10,7 +10,7 @@ import org.junit.Test
 class TypeKeyTest {
   @Test fun testTypeKey() = codegen(
     """
-      fun invoke() = inject<TypeKey<String>>()
+      fun invoke() = context<TypeKey<String>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -18,7 +18,7 @@ class TypeKeyTest {
 
   @Test fun testNullableTypeKey() = codegen(
     """
-      fun invoke() = inject<TypeKey<String?>>()
+      fun invoke() = context<TypeKey<String?>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String?"
@@ -26,7 +26,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTypeParameters() = singleAndMultiCodegen(
     """
-      inline fun <T> listTypeKeyOf(@Inject single: TypeKey<T>) = inject<TypeKey<List<T>>>()
+      context(TypeKey<T>) inline fun <T> listTypeKeyOf() = context<TypeKey<List<T>>>()
     """,
     """
       fun invoke() = listTypeKeyOf<String>()
@@ -37,7 +37,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTags() = codegen(
     """
-      fun invoke() = inject<TypeKey<@Tag2 String>>()
+      fun invoke() = context<TypeKey<@Tag2 String>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.Tag2<kotlin.String>"
@@ -46,7 +46,7 @@ class TypeKeyTest {
   @Test fun testTypeKeyWithParameterizedTags() = codegen(
     """
       @Tag annotation class MyTag<T>
-      fun invoke() = inject<TypeKey<@MyTag<String> String>>()
+      fun invoke() = context<TypeKey<@MyTag<String> String>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyTag<kotlin.String, kotlin.String>"
@@ -54,7 +54,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithStar() = codegen(
     """
-      fun invoke() = inject<TypeKey<List<*>>>()
+      fun invoke() = context<TypeKey<List<*>>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"

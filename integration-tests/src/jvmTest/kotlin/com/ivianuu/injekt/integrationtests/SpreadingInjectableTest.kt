@@ -18,7 +18,7 @@ class SpreadingInjectableTest {
       @Provide fun foo(): @Trigger Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -37,7 +37,7 @@ class SpreadingInjectableTest {
       @Provide fun string(): @Trigger String = ""
     """,
     """
-      fun invoke() = inject<List<@Final Foo>>() 
+      fun invoke() = context<List<@Final Foo>>() 
     """
   ) {
     invokeSingleFile<List<Foo>>().size shouldBe 1
@@ -83,7 +83,7 @@ class SpreadingInjectableTest {
       @Trigger @Provide class NotAny
     """,
     """
-      fun invoke() = inject<NotAny>() 
+      fun invoke() = context<NotAny>() 
     """
   ) {
     invokeSingleFile()
@@ -112,7 +112,7 @@ class SpreadingInjectableTest {
       @Provide fun dummy(): @A Long = 0L
     """,
     """
-      fun invoke() = inject<List<Foo>>().single() 
+      fun invoke() = context<List<Foo>>().single() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -127,7 +127,7 @@ class SpreadingInjectableTest {
       @Provide fun b(): @Trigger String = "b"
     """,
     """
-      fun invoke() = inject<List<String>>() 
+      fun invoke() = context<List<String>>() 
     """
   ) {
     invokeSingleFile<Set<String>>()

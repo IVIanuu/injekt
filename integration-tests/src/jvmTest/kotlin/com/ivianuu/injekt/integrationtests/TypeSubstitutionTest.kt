@@ -124,7 +124,7 @@ class TypeSubstitutionTest {
       ),
       source(
         """
-          fun invoke() = inject<KeyUi<DonationKey>>()
+          fun invoke() = context<KeyUi<DonationKey>>()
         """
       )
     )

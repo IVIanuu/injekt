@@ -15,11 +15,11 @@ class ListTest {
 
       class InnerObject {
         @Provide fun commandsB() = listOf(CommandB())
-        val list = inject<List<Command>>()
+        val list = context<List<Command>>()
       }
     """,
     """
-        fun invoke() = inject<List<Command>>() to InnerObject().list 
+        fun invoke() = context<List<Command>>() to InnerObject().list 
     """
   ) {
     val (parentList, childList) = invokeSingleFile<Pair<List<Command>, List<Command>>>()
@@ -32,9 +32,9 @@ class ListTest {
 
   @Test fun testListWithoutElements() = codegen(
     """
-      fun invoke() = inject<List<Command>>()
+      fun invoke() = context<List<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.Command> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.Command> for parameter \$contextReceiver_0 of function com.ivianuu.injekt.context")
   }
 }

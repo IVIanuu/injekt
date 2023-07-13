@@ -5,9 +5,6 @@
 package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.inject
-import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.atomicfu.atomic
@@ -65,9 +62,9 @@ class ScopeTest {
 
     @Provide val scope = Scope<TestScope>()
     callCount shouldBe 0
-    val a = inject<Foo>()
+    val a = context<Foo>()
     callCount shouldBe 1
-    val b = inject<Foo>()
+    val b = context<Foo>()
     callCount shouldBe 1
     a shouldBeSameInstanceAs b
   }

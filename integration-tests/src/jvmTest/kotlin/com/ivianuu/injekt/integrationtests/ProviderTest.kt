@@ -13,7 +13,7 @@ class ProviderTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke(): Foo = inject<() -> Foo>()()
+      fun invoke(): Foo = context<() -> Foo>()()
     """
   ) {
     invokeSingleFile()
@@ -25,7 +25,7 @@ class ProviderTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<(Foo) -> Bar>()(Foo()) 
+      fun invoke() = context<(Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile()
@@ -34,9 +34,9 @@ class ProviderTest {
 
   @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
     """ 
-      fun invoke(): Foo = inject<() -> Foo>()()
+      fun invoke(): Foo = context<() -> Foo>()()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.integrationtests.Foo> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.integrationtests.Foo> for parameter \$contextReceiver_0 of function com.ivianuu.injekt.context")
   }
 }

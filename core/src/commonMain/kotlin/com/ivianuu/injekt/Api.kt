@@ -88,9 +88,9 @@ context((T)) inline fun <T> context(): T = this@T
  * @Provide val username: @Username String = "Foo"
  *
  * fun main() {
- *   val userId = inject<@UserId String>()
+ *   val userId = context<@UserId String>()
  *   // userId = 123
- *   val username = inject<@Username String>()
+ *   val username = context<@Username String>()
  *   // username = "Foo"
  * }
  * ```

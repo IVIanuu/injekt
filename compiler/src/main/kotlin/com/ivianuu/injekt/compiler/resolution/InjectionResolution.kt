@@ -32,15 +32,11 @@ sealed interface InjectionResult {
 }
 
 sealed interface ResolutionResult {
-  sealed interface Success : ResolutionResult {
-    data object DefaultValue : Success
-
-    data class Value(
-      val candidate: Injectable,
-      val scope: InjectablesScope,
-      val dependencyResults: Map<InjectableRequest, Success>
-    ) : Success
-  }
+  data class Success(
+    val candidate: Injectable,
+    val scope: InjectablesScope,
+    val dependencyResults: Map<InjectableRequest, Success>
+  ) : ResolutionResult
 
   sealed interface Failure : ResolutionResult {
     val failureOrdering: Int
@@ -74,7 +70,7 @@ sealed interface ResolutionResult {
 
     data class CandidateAmbiguity(
       val request: InjectableRequest,
-      val candidateResults: List<Success.Value>
+      val candidateResults: List<Success>
     ) : Failure {
       override val failureOrdering: Int
         get() = 0
@@ -97,16 +93,10 @@ fun InjectablesScope.resolveRequests(
   for (request in requests) {
     when (val result = resolveRequest(request)) {
       is ResolutionResult.Success -> successes[request] = result
-      is ResolutionResult.Failure ->
-        if (request.isRequired ||
-          result.unwrapDependencyFailure(request).second is ResolutionResult.Failure.CandidateAmbiguity) {
-          if (compareResult(result, failure) < 0) {
-            failureRequest = request
-            failure = result
-          }
-        } else {
-          successes[request] = ResolutionResult.Success.DefaultValue
-        }
+      is ResolutionResult.Failure -> if (compareResult(result, failure) < 0) {
+        failureRequest = request
+        failure = result
+      }
     }
   }
   return if (failure == null) InjectionResult.Success(this, callee, successes)
@@ -187,11 +177,7 @@ private fun InjectablesScope.resolveCandidates(
     .toCollection(LinkedList())
   while (remaining.isNotEmpty()) {
     val candidate = remaining.removeFirst()
-    if (compareCandidate(
-        successes.firstOrNull()
-          ?.safeAs<ResolutionResult.Success.Value>()?.candidate, candidate
-      ) < 0
-    ) {
+    if (compareCandidate(successes.firstOrNull()?.candidate, candidate) < 0) {
       // we cannot get a better result
       break
     }
@@ -241,7 +227,7 @@ private fun InjectablesScope.resolveCandidate(
   }
 
   if (candidate.dependencies.isEmpty())
-    return@computeForCandidate ResolutionResult.Success.Value(
+    return@computeForCandidate ResolutionResult.Success(
       candidate,
       this,
       emptyMap()
@@ -252,23 +238,20 @@ private fun InjectablesScope.resolveCandidate(
     when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> {
-        when {
-          dependency.isRequired && candidate is ProviderInjectable &&
+        return@computeForCandidate when {
+          candidate is ProviderInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
-            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
-          dependency.isRequired ||
-              dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.CandidateAmbiguity ->
-            return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
-              candidate,
-              dependency,
-              dependencyResult
-            )
-          else -> successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+                ResolutionResult.Failure.NoCandidates(dependency)
+          else -> ResolutionResult.Failure.WithCandidate.DependencyFailure(
+            candidate,
+            dependency,
+            dependencyResult
+          )
         }
       }
     }
   }
-  return@computeForCandidate ResolutionResult.Success.Value(
+  return@computeForCandidate ResolutionResult.Success(
     candidate,
     this,
     successDependencyResults
@@ -287,21 +270,13 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   if (a is ResolutionResult.Success && b !is ResolutionResult.Success) return -1
   if (b is ResolutionResult.Success && a !is ResolutionResult.Success) return 1
 
-  if (a is ResolutionResult.Success && b is ResolutionResult.Success) {
-    if (a !is ResolutionResult.Success.DefaultValue && b is ResolutionResult.Success.DefaultValue)
-      return -1
-    if (b !is ResolutionResult.Success.DefaultValue && a is ResolutionResult.Success.DefaultValue)
-      return 1
-
-    if (a is ResolutionResult.Success.Value && b is ResolutionResult.Success.Value)
-      return compareCandidate(a.candidate, b.candidate)
-
-    return 0
+  return if (a is ResolutionResult.Success && b is ResolutionResult.Success) {
+    compareCandidate(a.candidate, b.candidate)
   } else {
     a as ResolutionResult.Failure
     b as ResolutionResult.Failure
 
-    return a.failureOrdering.compareTo(b.failureOrdering)
+    a.failureOrdering.compareTo(b.failureOrdering)
   }
 }
 

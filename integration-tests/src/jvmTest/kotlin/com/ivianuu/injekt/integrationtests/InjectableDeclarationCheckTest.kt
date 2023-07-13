@@ -81,19 +81,11 @@ class InjectableDeclarationCheckTest {
     """
   )
 
-  @Test fun testInjectReceiverOnFunction() = codegen(
-    """
-      fun @receiver:Inject Foo.bar() = Bar(this)
-    """
-  ) {
-    compilationShouldHaveFailed("receiver cannot be injected")
-  }
-
   @Test fun testProvideLocalVariableWithoutInitializer() = codegen(
     """
       fun invoke() {
         @Provide val a: String
-        inject<String>()
+        context<String>()
         a = ""
       }
     """
@@ -112,7 +104,7 @@ class InjectableDeclarationCheckTest {
         @Provide override fun foo() = Foo()
       }
 
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -130,7 +122,7 @@ class InjectableDeclarationCheckTest {
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = context<Foo>() 
     """
   ) {
     invokeSingleFile()
@@ -150,21 +142,6 @@ class InjectableDeclarationCheckTest {
     """
   ) {
     compilationShouldHaveFailed("'foo' overrides nothing")
-  }
-
-  @Test fun testFunctionWithInjectParameterOverrideWithoutInjectAnnotation() = codegen(
-    """
-      abstract class MySuperClass {
-        abstract fun bar(@Inject foo: Foo): Bar
-      }
-    """,
-    """
-      class MySubClass : MySuperClass() {
-        override fun bar(foo: Foo) = Bar(foo)
-      } 
-    """
-  ) {
-    compilationShouldHaveFailed("'bar' overrides nothing")
   }
 
   @Test fun testNonSpreadTypeParameterOverrideWithSpreadOverridden() = singleAndMultiCodegen(

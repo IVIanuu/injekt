@@ -137,8 +137,7 @@ data class InjectableRequest(
   val callableFqName: FqName,
   val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
   val parameterName: Name,
-  val parameterIndex: Int,
-  val isRequired: Boolean = true
+  val parameterIndex: Int
 )
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
@@ -148,6 +147,5 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context)
       ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
-    parameterIndex = injektIndex(ctx),
-    isRequired = this !is ValueParameterDescriptor || !declaresDefaultValue()
+    parameterIndex = injektIndex(ctx)
   )
