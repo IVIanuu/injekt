@@ -78,7 +78,7 @@ fun TypeRef.collectInjectables(
       .descriptor
       ?.defaultType
       ?.memberScope
-      ?.collectMemberInjectables(ctx = ctx) { callable ->
+      ?.collectMemberInjectables(ctx) { callable ->
         val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
           CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
@@ -105,8 +105,8 @@ fun TypeRef.collectInjectables(
 }
 
 fun ResolutionScope.collectMemberInjectables(
-  onEach: (DeclarationDescriptor) -> Unit = {},
   ctx: Context,
+  onEach: (DeclarationDescriptor) -> Unit = {},
   consumer: (CallableRef) -> Unit
 ) {
   for (declaration in getContributedDescriptors()) {
@@ -208,6 +208,7 @@ fun collectPackageInjectables(
 
     fun collectInjectables(scope: MemberScope) {
       scope.collectMemberInjectables(
+        ctx = ctx,
         onEach = { declaration ->
           if (declaration is ClassDescriptor) {
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
@@ -217,8 +218,7 @@ fun collectPackageInjectables(
             else
               injectables += declaration.injectableConstructors(ctx)
           }
-        },
-        ctx = ctx
+        }
       ) {
         injectables += it
       }
