@@ -9,30 +9,43 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import org.junit.Test
 
 class ResolutionTest {
+  @Test fun testPrefersFileInjectableOverInternalPackageInjectable() = codegen(
+    """
+      @Provide val internalFoo = Foo()
+    """,
+    """
+      @Provide lateinit var fileFoo: Foo
+      fun invoke(foo: Foo): Foo {
+        fileFoo = foo
+        return inject()
+      }
+    """
+  ) {
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
+  }
+
   @Test fun testPrefersObjectInjectableOverInternalInjectable() = codegen(
     """
-      @Provide lateinit var internalFoo: Foo
+      @Provide val internalFoo = Foo()
       object MyObject {
         @Provide lateinit var objectFoo: Foo
         fun resolve() = inject<Foo>()
       }
 
-      fun invoke(internal: Foo, objectFoo: Foo): Foo {
-        internalFoo = internal
+      fun invoke(objectFoo: Foo): Foo {
         MyObject.objectFoo = objectFoo
         return MyObject.resolve()
       }
     """
   ) {
-    val internal = Foo()
-    val objectFoo = Foo()
-    val result = invokeSingleFile(internal, objectFoo)
-    objectFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersClassCompanionInjectableOverInternalInjectable() = codegen(
     """
-      @Provide lateinit var internalFoo: Foo
+      @Provide val internalFoo = Foo()
       class MyClass {
         fun resolve() = inject<Foo>()
         companion object {
@@ -40,36 +53,28 @@ class ResolutionTest {
         }
       }
 
-      fun invoke(internal: Foo, companionFoo: Foo): Foo {
-        internalFoo = internal
+      fun invoke(companionFoo: Foo): Foo {
         MyClass.companionFoo = companionFoo
         return MyClass().resolve()
       }
     """
   ) {
-    val internal = Foo()
-    val companionFoo = Foo()
-    val result = invokeSingleFile(internal, companionFoo)
-    companionFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersClassInjectableOverInternalInjectable() = codegen(
     """
-      @Provide lateinit var internalFoo: Foo
+      @Provide val internalFoo = Foo()
       class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
       }
   
-      fun invoke(internal: Foo, classFoo: Foo): Foo {
-        internalFoo = internal
-        return MyClass(classFoo).resolve()
-      }
+      fun invoke(classFoo: Foo) = MyClass(classFoo).resolve()
     """
   ) {
-    val internal = Foo()
-    val classFoo = Foo()
-    val result = invokeSingleFile(internal, classFoo)
-    classFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersClassInjectableOverClassCompanionInjectable() = codegen(
@@ -77,145 +82,114 @@ class ResolutionTest {
       class MyClass(@property:Provide val classFoo: Foo) {
         fun resolve() = inject<Foo>()
         companion object {
-          @Provide lateinit var companionFoo: Foo
+          @Provide val companionFoo = Foo()
         }
       }
 
-      fun invoke(classFoo: Foo, companionFoo: Foo): Foo {
-        MyClass.companionFoo = companionFoo
-        return MyClass(classFoo).resolve()
-      }
+      fun invoke(classFoo: Foo) = MyClass(classFoo).resolve()
     """
   ) {
-    val classFoo = Foo()
-    val companionFoo = Foo()
-    val result = invokeSingleFile(classFoo, companionFoo)
-    classFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
     """
-      lateinit var classBodyFoo: Foo
       class MyClass(@Provide constructorFoo: Foo) {
         val finalFoo = inject<Foo>()
-        @Provide val classFoo get() = classBodyFoo
+        @Provide val classFoo = Foo()
       }
 
-      fun invoke(constructorFoo: Foo, _classBodyFoo: Foo): Foo {
-        classBodyFoo = _classBodyFoo
-        return MyClass(constructorFoo).finalFoo
-      }
+      fun invoke(constructorFoo: Foo) = MyClass(constructorFoo).finalFoo
     """
   ) {
-    val constructorFoo = Foo()
-    val classBodyFoo = Foo()
-    val result = invokeSingleFile(constructorFoo, classBodyFoo)
-    result shouldBeSameInstanceAs constructorFoo
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersSubClassInjectableOverSuperClassInjectable() = singleAndMultiCodegen(
     """
-      abstract class MySuperClass(@property:Provide val superClassFoo: Foo)
-      class MySubClass(@property:Provide val subClassFoo: Foo, superClassFoo: Foo) : MySuperClass(superClassFoo) {
+      abstract class MySuperClass(@property:Provide val superClassFoo: Foo = Foo())
+      class MySubClass(@property:Provide val subClassFoo: Foo) : MySuperClass() {
         fun finalFoo(): Foo = inject()
       }
     """,
     """
-      fun invoke(subClassFoo: Foo, superClassFoo: Foo): Foo {
-        return MySubClass(subClassFoo, superClassFoo).finalFoo()
-      } 
+      fun invoke(subClassFoo: Foo) = MySubClass(subClassFoo).finalFoo()
     """
   ) {
-    val subClassFoo = Foo()
-    val superClassFoo = Foo()
-    val result = invokeSingleFile(subClassFoo, superClassFoo)
-    result shouldBeSameInstanceAs subClassFoo
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersFunctionParameterInjectableOverInternalInjectable() = codegen(
     """
-      @Provide lateinit var internalFoo: Foo
-      fun invoke(internal: Foo, @Provide functionFoo: Foo): Foo {
-        internalFoo = internal
-        return inject()
-      }
+      @Provide val internalFoo = Foo()
+      fun invoke(@Provide functionFoo: Foo) = inject<Foo>()
     """
   ) {
-    val internal = Foo()
-    val functionFoo = Foo()
-    val result = invokeSingleFile(internal, functionFoo)
-    functionFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersFunctionParameterInjectableOverClassInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@Provide val classFoo: Foo = Foo()) {
         fun resolve(@Provide functionFoo: Foo) = inject<Foo>()
       }
 
-      fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
-        return MyClass(classFoo).resolve(functionFoo)
-      }
+      fun invoke(functionFoo: Foo) = MyClass().resolve(functionFoo)
     """
   ) {
-    val classFoo = Foo()
-    val functionFoo = Foo()
-    val result = invokeSingleFile(classFoo, functionFoo)
-    functionFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersFunctionReceiverInjectableOverInternalInjectable() = codegen(
     """
-      @Provide lateinit var internalFoo: Foo
-      fun Foo.invoke(internal: Foo): Foo {
-        internalFoo = internal
-        return inject()
-      }
+      @Provide val internalFoo = Foo()
+      fun Foo.invoke() = inject<Foo>()
     """
   ) {
-    val internal = Foo()
-    val functionFoo = Foo()
-    val result = invokeSingleFile(functionFoo, internal)
-    functionFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersFunctionReceiverInjectableOverClassInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo) {
+      class MyClass(@Provide val classFoo: Foo = Foo()) {
         fun Foo.resolve() = inject<Foo>()
       }
 
-      fun invoke(classFoo: Foo, functionFoo: Foo): Foo {
-        return with(MyClass(classFoo)) {
+      fun invoke(functionFoo: Foo): Foo {
+        return with(MyClass()) {
           functionFoo.resolve()
         }
       }
     """
   ) {
-    val classFoo = Foo()
-    val functionFoo = Foo()
-    val result = invokeSingleFile(classFoo, functionFoo)
-    functionFoo shouldBeSameInstanceAs result
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersProviderArgument() = codegen(
     """
-      @Provide fun foo() = Foo()
+      @Provide val foo = Foo()
       fun invoke(foo: Foo) = inject<(Foo) -> Foo>()(foo)
     """
   ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
     """
-      @Provide fun foo() = Foo()
+      @Provide val foo = Foo()
       fun invoke(foo: Foo) = inject<(Foo) -> (Foo) -> Foo>()(Foo())(foo)
     """
   ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+    val expected = Foo()
+    invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
   @Test fun testPrefsInnerBlockInjectable() = codegen(
@@ -448,26 +422,6 @@ class ResolutionTest {
           "com.ivianuu.injekt.integrationtests.foo2\n" +
           "\n" +
           "do all match type com.ivianuu.injekt.integrationtests.Foo."
-    )
-  }
-
-  @Test fun testDoesNotPreferInjectablesInTheSameFile() = codegen(
-    """
-      @Provide val otherFoo = Foo()
-    """,
-    """
-      @Provide val foo = Foo()
-
-      fun invoke() {
-        inject<Foo>()
-      }
-    """
-  ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.foo\n" +
-          "com.ivianuu.injekt.integrationtests.otherFoo\n\n" +
-          "do all match type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject"
     )
   }
 

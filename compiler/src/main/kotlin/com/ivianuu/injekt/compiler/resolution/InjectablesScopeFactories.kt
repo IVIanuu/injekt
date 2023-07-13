@@ -225,6 +225,7 @@ private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
       parent = GlobalInjectablesScope(ctx),
       ctx = ctx,
       initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
+        .filter { it.callable.findPsi()?.containingFile == file }
     )
   }
 
