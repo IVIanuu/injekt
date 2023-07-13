@@ -313,10 +313,6 @@ fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transfo
   return newValue
 }
 
-val KtElement?.lookupLocation: LookupLocation
-  get() = if (this == null || isIde) NoLookupLocation.FROM_BACKEND
-  else KotlinLookupLocation(this)
-
 fun DeclarationDescriptor.moduleName(ctx: Context): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")

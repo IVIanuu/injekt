@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
 import org.jetbrains.kotlin.psi.KtFile
@@ -123,7 +124,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val scope = ElementInjectablesScope(ctx!!, callExpression)
 
-    val location = callExpression.lookupLocation
+    val location = KotlinLookupLocation(callExpression)
     memberScopeForFqName(InjektFqNames.InjectablesPackage, location, ctx!!)
       ?.recordLookup(InjektFqNames.InjectablesLookup.shortName(), location)
 
