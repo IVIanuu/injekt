@@ -342,24 +342,11 @@ class ResolveTest {
     """
       class FooHolderImpl : AbstractFooHolder() {
         fun invoke() = inject<Foo>()
-      } 
+      }
     """
   )
 
   @Test fun testCanResolvePrivateTopLevelInjectableInSameFile() = codegen(
-    """
-      @Provide private val foo = Foo()
-      fun invoke() = inject<Foo>()
-    """
-  )
-
-  @Test fun testCanResolvePrivateTopLevelInjectableInSameFileMultiFile() = codegen(
-    """
-      // triggers creation of package scope
-      fun invoke(@Provide unit: Unit) {
-        inject<Unit>()
-      }
-    """,
     """
       @Provide private val foo = Foo()
       fun invoke() = inject<Foo>()

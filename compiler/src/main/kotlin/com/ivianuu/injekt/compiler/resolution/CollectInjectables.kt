@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
@@ -33,8 +32,9 @@ import org.jetbrains.kotlin.descriptors.impl.ReceiverParameterDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
-import org.jetbrains.kotlin.resolve.descriptorUtil.parents
+import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
@@ -233,9 +233,9 @@ fun CallableRef.collectInjectables(
   nextCallable
     .type
     .collectInjectables(
-      scope.allScopes.any {
-        it.ownerDescriptor == nextCallable.type.classifier.descriptor
-      },
+      nextCallable.type.classifier.descriptor?.parentsWithSelf
+        ?.mapNotNull { it.findPsi() }
+        ?.any { callableParent -> scope.allScopes.any { it.owner == callableParent } } == true,
       ctx
     )
     .forEach { innerCallable ->
@@ -294,14 +294,11 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
           callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
-      callable.callable.parents.any { callableParent ->
-        allScopes.any { it.ownerDescriptor == callableParent }
-      } || (callable.callable.visibility == DescriptorVisibilities.PRIVATE &&
-      callable.callable.containingDeclaration is PackageFragmentDescriptor &&
-      run {
-        val scopeFile = allScopes.firstNotNullOfOrNull { it.file }
-        scopeFile == callable.callable.findPsi()?.containingFile
-      })
+      callable.callable.parentsWithSelf.mapNotNull { it.findPsi() }.any { callableParent ->
+        allScopes.any { it.owner == callableParent }
+      } ||
+      (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
+          callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })
 
 fun packagesWithInjectables(ctx: Context): Set<FqName> =
   ctx.cached("packages_with_injectables", Unit) {

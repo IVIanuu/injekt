@@ -12,9 +12,8 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.nextFrameworkKey
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -23,8 +22,7 @@ import java.util.UUID
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  val ownerDescriptor: DeclarationDescriptor? = null,
-  val file: KtFile? = null,
+  val owner: KtElement? = null,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
   val typeParameters: List<ClassifierRef> = emptyList(),
