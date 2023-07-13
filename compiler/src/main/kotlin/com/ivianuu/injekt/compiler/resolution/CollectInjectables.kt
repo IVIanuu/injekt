@@ -254,16 +254,13 @@ fun CallableRef.collectInjectables(
 
 fun collectGlobalInjectables(ctx: Context): List<CallableRef> = buildList {
   packagesWithInjectables(ctx)
-    .forEach {
-      collectPackageInjectables(it, ctx).forEach { add(it) }
-    }
+    .forEach { collectPackageInjectables(it, ctx).forEach { add(it) } }
 }
 
 fun collectPackageInjectables(
   packageFqName: FqName,
   ctx: Context
-): List<CallableRef> =
-  ctx.cached("package_injectables", packageFqName) {
+): List<CallableRef> = ctx.cached("package_injectables", packageFqName) {
     if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
 
     val injectables = mutableListOf<CallableRef>()
