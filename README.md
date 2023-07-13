@@ -77,47 +77,6 @@ fun run(@Provide config: Config) {
 }
 ```
 
-You can also declare ```suspend``` and ```@Composable``` provide functions.
-
-# How injectables will be resolved
-1. Injekt looks at all provided injectables in the current scope 
-e.g. enclosing local variables, function parameters, classes, injectables in the current package and so on
-and chooses the closest most specific one.
-```kotlin
-suspend fun main() {
-  @Provide val dispatcher: IoDispatcher = ...
-  withContext(inject<CoroutineDispatcher>()) {
-  }
-}
-```
-
-2. Injekt will also consider declarations imported with the ```@Providers(...)``` annotation.
-The ```@Providers``` annotation can be placed anywhere in a file and will only affect the nested scope.
-```kotlin
-// file wide imports
-@file:Providers("injectables.*")
-
-package mypackage
-
-// class wide imports
-@Providers("network.Api") 
-class MyClass {
-  // function wide imports
-  @Providers("domain.*")
-  fun main() {
-    // expression wide imports
-    @Providers("data.*") 
-    runApp()
-  }
-}
-```
-
-3. If no injectable was found injekt will look into the package of the injected type and also in 
-   the packages of all of it's arguments and super types.
-
-Provider imports are only required if the injectable is not in the current scope 
-or in a package of the injected type
-
 # Function injection
 Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters dynamically,
 or to break circular dependencies.
@@ -158,7 +117,7 @@ fun main() {
 All elements which match the T or Collection\<T\> will be included in the resulting list.
 
 # Scoping
-The core injekt doesn't know anything about scoping, but there is a api in the common module.
+The core of injekt doesn't know anything about scoping, but there is a api in the common module.
 You have to annotate your class or the return type of a function or a property with ```@Scoped``` tag.
 ```kotlin
 // classes
@@ -177,9 +136,6 @@ fun onCreate() {
    val db = inject<Db>()
 }
 ```
-
-# Elements api
-TODO
 
 # Distinguish between types
 Sometimes you have multiple injectables of the same type
@@ -214,18 +170,6 @@ fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId)
 # Injectable chaining
 TODO
 
-# Coroutines
-TODO
-
-# Compose
-TODO
-
-# Android
-TODO
-
-# Android work
-TODO
-
 # Type keys
 TODO
 
@@ -254,13 +198,9 @@ plugins {
 
 dependencies {
   // core runtime
-  classpath("com.ivianuu.injekt:injekt-core:${latest_version}")
+  classpath("com.ivianuu.injekt:core:${latest_version}")
   // optional - common utilities
-  classpath("com.ivianuu.injekt:injekt-common:${latest_version}")
-  // optional - android utilities
-  classpath("com.ivianuu.injekt:injekt-android:${latest_version}")
-  // optional - androidx work utilities
-  classpath("com.ivianuu.injekt:injekt-android-work:${latest_version}")
+  classpath("com.ivianuu.injekt:common:${latest_version}")
 }
 ```
 It's also required to install the Injekt IDE plugin
