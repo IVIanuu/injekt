@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -39,7 +38,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
@@ -109,32 +107,20 @@ fun TypeRef.toIrType(
           type.abbreviation
         )
       }
-    else -> {
-      val symbol = when (val descriptor = classifier.descriptor) {
-        is ClassDescriptor -> irCtx.symbolTable.referenceClass(descriptor)
-        is TypeAliasDescriptor -> irCtx.symbolTable.referenceTypeAlias(descriptor)
-        is TypeParameterDescriptor -> irCtx.referenceFunctions(descriptor.fqNameSafe.parent())
-          .flatMap { it.owner.typeParameters }
-          .singleOrNull { it.descriptor.uniqueKey(ctx) == classifier.key }
-          ?.symbol
-          ?: irCtx.referenceProperties(descriptor.fqNameSafe.parent())
-            .flatMap { it.owner.getter!!.typeParameters }
-            .singleOrNull { it.descriptor.uniqueKey(ctx) == classifier.key }
-            ?.symbol
-          ?: (irCtx.referenceClass(descriptor.fqNameSafe.parent()) ?: irCtx.referenceTypeAlias(descriptor.fqNameSafe.parent()))
-            ?.owner
-            ?.typeParameters
-            ?.singleOrNull { it.descriptor.uniqueKey(ctx) == classifier.key }
-            ?.symbol
-        else -> throw AssertionError("Unexpected descriptor $descriptor")
-      }!!.ensureBound(irCtx)
-      IrSimpleTypeImpl(
-        symbol as IrClassifierSymbol,
-        isMarkedNullable,
-        arguments.map { it.toIrType(irCtx, ctx) },
-        emptyList()
-      )
-    }
+    else -> IrSimpleTypeImpl(
+      if (classifier.isTypeParameter) {
+        when (val container = classifier.descriptor!!.containingDeclaration) {
+          is FunctionDescriptor -> container.irFunction(irCtx).typeParameters
+          is ClassDescriptor -> container.irClass(irCtx).typeParameters
+          is TypeAliasDescriptor -> irCtx.symbolTable.referenceTypeAlias(container).owner.typeParameters
+          is PropertyDescriptor -> container.irProperty(irCtx).getter!!.typeParameters
+          else -> throw AssertionError("Unexpected container $container")
+        }.single { it.descriptor.uniqueKey(ctx) == classifier.key }.symbol
+      } else irCtx.symbolTable.referenceClassifier(classifier.descriptor!!).ensureBound(irCtx),
+      isMarkedNullable,
+      arguments.map { it.toIrType(irCtx, ctx) },
+      emptyList()
+    )
   }
 }
 
