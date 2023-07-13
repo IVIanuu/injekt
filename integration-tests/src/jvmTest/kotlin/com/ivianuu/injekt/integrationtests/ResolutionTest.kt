@@ -482,20 +482,4 @@ class ResolutionTest {
   ) {
     compilationShouldHaveFailed("ambiguous injectables")
   }
-
-  @Test fun testDoesPreferShorterChain() = codegen(
-    """
-      @Provide class FooModule {
-        @Provide fun foo() = Foo()
-      }
-
-      fun createFoo(@Inject module: FooModule, @Inject foo: Foo) = inject<Foo>()
-    """,
-    """
-      fun invoke(foo: Foo) = createFoo(FooModule(), foo)
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
 }

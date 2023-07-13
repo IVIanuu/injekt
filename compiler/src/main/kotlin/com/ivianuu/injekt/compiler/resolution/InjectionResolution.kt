@@ -399,11 +399,6 @@ private fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): 
   if (diff < 0) return -1
   if (diff > 0) return 1
 
-  if (a.chainLength < b.chainLength)
-    return -1
-  if (b.chainLength < a.chainLength)
-    return 1
-
   return 0
 }
 

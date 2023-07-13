@@ -214,7 +214,6 @@ fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
-  chainLength: Int = 0,
   seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf(),
   ctx: Context
 ) {
@@ -242,14 +241,11 @@ fun CallableRef.collectInjectables(
       ctx
     )
     .forEach { innerCallable ->
-      val nextChainLength = chainLength + 1
       innerCallable
-        .copy(chainLength = nextChainLength)
         .collectInjectables(
           scope = scope,
           addInjectable = addInjectable,
           addSpreadingInjectable = addSpreadingInjectable,
-          chainLength = nextChainLength,
           seen = seen,
           ctx = ctx
         )

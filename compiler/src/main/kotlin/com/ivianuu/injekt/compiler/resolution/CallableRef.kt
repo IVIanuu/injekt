@@ -15,8 +15,7 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
-  val typeArguments: Map<ClassifierRef, TypeRef>,
-  val chainLength: Int
+  val typeArguments: Map<ClassifierRef, TypeRef>
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -57,7 +56,6 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType
-      },
-      chainLength = 0
+      }
     )
   }
