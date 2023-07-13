@@ -93,8 +93,6 @@ class InjectCallTransformer(
   private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
-    var declarationIndex = 0
-
     fun mapScopeIfNeeded(scope: InjectablesScope) =
       if (scope in result.scope.allScopes) result.scope else scope
   }
@@ -168,9 +166,8 @@ class InjectCallTransformer(
     functionWrappedExpressions.getOrPut(result.candidate.type) expression@ {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
-        name = "function${rootContext.declarationIndex++}".asNameId()
-        returnType = result.candidate.type.toIrType(irCtx)
-          .typeOrNull!!
+        name = irScope.inventNameForTemporary("function").asNameId()
+        returnType = result.candidate.type.toIrType(irCtx).typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
       }.apply {
         parent = irScope.getLocalDeclarationParent()
@@ -198,10 +195,7 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: ProviderInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
-    .irLambda(
-      injectable.type.toIrType(irCtx).typeOrNull!!,
-      parameterNameProvider = { "p${rootContext.declarationIndex++}" }
-    ) { function ->
+    .irLambda(injectable.type.toIrType(irCtx).typeOrNull!!) { function ->
       val dependencyResult = result.dependencyResults.values.single()
       val dependencyScopeContext = if (injectable.dependencyScope == this@providerExpression.scope) null
       else ScopeContext(
@@ -222,9 +216,8 @@ class InjectCallTransformer(
 
       val expression = dependencyScopeContext?.run { createExpression() } ?: createExpression()
 
-      if (dependencyScopeContext == null || dependencyScopeContext.statements.isEmpty()) expression
-      else irBlock {
-        dependencyScopeContext.statements.forEach { +it }
+      irBlock {
+        dependencyScopeContext?.statements?.forEach { +it }
         +expression
       }
     }
@@ -254,8 +247,7 @@ class InjectCallTransformer(
             0,
             injectable.singleElementType.toIrType(irCtx).typeOrNull
           )
-        },
-      nameHint = "${rootContext.declarationIndex++}"
+        }
     )
 
     result.dependencyResults

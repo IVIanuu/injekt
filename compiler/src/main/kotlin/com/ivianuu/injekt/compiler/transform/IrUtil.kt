@@ -129,7 +129,6 @@ fun IrBuilderWithScope.irLambda(
   type: IrType,
   startOffset: Int = UNDEFINED_OFFSET,
   endOffset: Int = UNDEFINED_OFFSET,
-  parameterNameProvider: (Int) -> String = { "p$it" },
   body: IrBuilderWithScope.(IrFunction) -> IrExpression,
 ): IrExpression {
   type as IrSimpleType
@@ -147,7 +146,7 @@ fun IrBuilderWithScope.irLambda(
     type.arguments.forEachIndexed { index, typeArgument ->
       if (index < type.arguments.lastIndex) {
         addValueParameter(
-          parameterNameProvider(index),
+          scope.inventNameForTemporary("p"),
           typeArgument.typeOrNull!!
         )
       }
