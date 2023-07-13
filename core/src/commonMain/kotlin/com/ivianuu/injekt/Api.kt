@@ -36,6 +36,8 @@ annotation class Provide
 
 inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
+inline fun <T, R> provide(x: T, block: (@Provide T).() -> R): R = block(x)
+
 /**
  * Automatically fills in a argument if no explicit argument was provided
  */
