@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.MemberDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -31,7 +30,6 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.modalityModifier
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -65,8 +63,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context
   ) {
     if (descriptor.hasAnnotation(InjektFqNames.Provide)) {
-      descriptor.valueParameters
-        .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
       checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
     } else {
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
@@ -160,13 +156,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: ConstructorDescriptor,
     ctx: Context
   ) {
-    if (descriptor.hasAnnotation(InjektFqNames.Provide) ||
-      (descriptor.isPrimary &&
-          descriptor.constructedClass.hasAnnotation(InjektFqNames.Provide))) {
-            descriptor.valueParameters
-              .checkProvideCallableDoesNotHaveInjectMarkedParameters(declaration, ctx)
-    }
-
     checkExceptActual(declaration, descriptor, ctx)
   }
 
@@ -317,31 +306,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
             ?.source?.getPsi() ?: typeParameter.findPsi()!!,
           "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
         )
-    }
-  }
-
-  private fun List<ParameterDescriptor>.checkProvideCallableDoesNotHaveInjectMarkedParameters(
-    declaration: KtDeclaration,
-    ctx: Context
-  ) {
-    if (isEmpty()) return
-    for (parameter in this) {
-      if (parameter.hasAnnotation(InjektFqNames.Inject)) {
-        ctx.reportError(
-          parameter.annotations.findAnnotation(InjektFqNames.Inject)
-            ?.source?.getPsi() ?: declaration,
-          "parameters of a injectable are automatically treated as inject parameters"
-        )
-      }
-      if (parameter.hasAnnotation(InjektFqNames.Provide) &&
-        parameter.findPsi().safeAs<KtParameter>()?.hasValOrVar() != true
-      ) {
-        ctx.reportError(
-          parameter.annotations.findAnnotation(InjektFqNames.Provide)
-            ?.source?.getPsi() ?: declaration,
-          "parameters of a injectable are automatically provided"
-        )
-      }
     }
   }
 }

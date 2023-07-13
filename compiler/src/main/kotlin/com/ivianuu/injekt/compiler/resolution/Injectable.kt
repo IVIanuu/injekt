@@ -12,12 +12,10 @@ import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
-import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -40,7 +38,8 @@ class CallableInjectable(
   val callable: CallableRef
 ) : Injectable {
   override val type: TypeRef get() = callable.type
-  override val dependencies = callable.getInjectableRequests(ownerScope.ctx)
+  override val dependencies = callable.callable.allParametersWithContext
+    .map { it.toInjectableRequest(callable, ownerScope.ctx) }
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
@@ -133,14 +132,6 @@ class TypeKeyInjectable(
       )
     }
 }
-
-fun CallableRef.getInjectableRequests(ctx: Context): List<InjectableRequest> = callable.allParametersWithContext
-  .transform {
-    if (it is ReceiverParameterDescriptor ||
-      it.isInject(ctx) ||
-      parameterTypes[it.injektIndex(ctx)]?.isInject == true)
-      add(it.toInjectableRequest(this@getInjectableRequests, ctx))
-  }
 
 data class InjectableRequest(
   val type: TypeRef,

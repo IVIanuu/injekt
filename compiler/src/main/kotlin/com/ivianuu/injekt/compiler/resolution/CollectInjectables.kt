@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
@@ -38,7 +37,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -121,10 +119,10 @@ fun ResolutionScope.collectInjectables(
           (!classBodyView || !declaration.isCompanionObject))
             declaration
               .takeIf {
-                it.isProvide(ctx) ||
+                it.isProvide() ||
                     (includeNonProvideObjectsWithInjectables &&
                         it.defaultType.memberScope.getContributedDescriptors()
-                          .any { it.isProvide(ctx) })
+                          .any { it.isProvide() })
               }
               ?.injectableReceiver(!classBodyView, ctx)
               ?.let(consumer)
@@ -134,58 +132,29 @@ fun ResolutionScope.collectInjectables(
             declaration.companionObjectDescriptor
               ?.takeIf {
                 it.defaultType.memberScope.getContributedDescriptors()
-                  .any { it.isProvide(ctx) }
+                  .any { it.isProvide() }
               }
               ?.injectableReceiver(false, ctx)
               ?.let(consumer)
         }
       }
       is CallableMemberDescriptor -> {
-        if (declaration.isProvide(ctx))
+        if (declaration.isProvide())
           consumer(declaration.toCallableRef(ctx))
       }
       is VariableDescriptor -> {
-        if (declaration.isProvide(ctx))
+        if (declaration.isProvide())
           consumer(declaration.toCallableRef(ctx))
       }
     }
   }
 }
 
-fun Annotated.isProvide(ctx: Context): Boolean {
-  @Suppress("IMPLICIT_CAST_TO_ANY")
-  val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.cached("is_provide", key) {
-    var isProvide = hasAnnotation(InjektFqNames.Provide) ||
-        hasAnnotation(InjektFqNames.Inject)
+fun Annotated.isProvide(): Boolean =
+  (hasAnnotation(InjektFqNames.Provide) || (this is ParameterDescriptor) && type.isProvide()) || isInject()
 
-    if (!isProvide && this is ParameterDescriptor)
-      isProvide = type.isProvide(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
-
-    if (!isProvide && this is ClassConstructorDescriptor && isPrimary)
-      isProvide = constructedClass.isProvide(ctx)
-
-    isProvide
-  }
-}
-
-fun Annotated.isInject(ctx: Context): Boolean {
-  @Suppress("IMPLICIT_CAST_TO_ANY")
-  val key = if (this is KotlinType) System.identityHashCode(this) else this
-  return ctx.cached("is_inject", key) {
-    var isInject = hasAnnotation(InjektFqNames.Inject)
-
-    if (!isInject && this is ParameterDescriptor)
-      isInject = type.isInject(ctx) ||
-          containingDeclaration.safeAs<FunctionDescriptor>()?.isProvide(ctx) == true
-
-    if (!isInject && this is ClassConstructorDescriptor && isPrimary)
-      isInject = constructedClass.isProvide(ctx)
-
-    isInject
-  }
-}
+fun Annotated.isInject(): Boolean = hasAnnotation(InjektFqNames.Inject) ||
+    (this is ParameterDescriptor && type.isInject())
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.cached("injectable_constructors", this) {
@@ -271,7 +240,7 @@ fun collectPackageInjectables(
           if (declaration is ClassDescriptor &&
             (declaration.kind != ClassKind.OBJECT ||
                 declaration.defaultType.memberScope.getContributedDescriptors()
-                  .none { it.isProvide(ctx) }))
+                  .none { it.isProvide() }))
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
         },
         classBodyView = false,

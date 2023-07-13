@@ -117,7 +117,7 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
     val requests = callee.callable.allParametersWithContext
       .transform {
         val index = it.injektIndex(ctx)
-        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx))
+        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject())
           add(it.toInjectableRequest(callee, ctx))
       }
 
