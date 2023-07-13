@@ -2,6 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(UnsafeCastFunction::class)
+
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
@@ -37,7 +39,11 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
+import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
   private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
@@ -107,6 +113,22 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val requests = resultingDescriptor.underlyingDescriptor.contextReceiverParameters
       .map { it.toInjectableRequest(callee, ctx) }
+
+
+    // we fill the context receivers list up with dummy's to ensure
+    // that the compiler builds a correct ir tree
+    // we replace those dummy's later in ir phase
+    if (resultingDescriptor
+        .underlyingDescriptor
+        .contextReceiverParameters.isNotEmpty()) {
+      resolvedCall.contextReceivers.cast<ArrayList<ReceiverValue>>().run {
+        clear()
+        val dummyReceiver = ImplicitClassReceiver(ctx!!.module.builtIns.unit)
+        repeat(resultingDescriptor.underlyingDescriptor.contextReceiverParameters.size) {
+          add(dummyReceiver)
+        }
+      }
+    }
 
     if (requests.isEmpty()) return
 

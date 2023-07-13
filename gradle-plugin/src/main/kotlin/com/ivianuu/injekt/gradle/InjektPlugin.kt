@@ -25,6 +25,8 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
     kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+    kotlinCompilation.kotlinOptions.freeCompilerArgs += "-Xallow-kotlin-package"
+
     return kotlinCompilation.target.project.provider {
       listOf(SubpluginOption("dumpDir", "${kotlinCompilation.target.project.buildDir.resolve("injekt/dump/${kotlinCompilation.defaultSourceSet.name}")}"))
     }
