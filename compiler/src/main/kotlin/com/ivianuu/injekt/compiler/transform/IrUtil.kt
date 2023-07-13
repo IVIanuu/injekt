@@ -8,9 +8,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
@@ -69,13 +67,10 @@ fun FunctionDescriptor.irFunction(irCtx: IrPluginContext): IrFunction =
 fun PropertyDescriptor.irProperty(irCtx: IrPluginContext): IrProperty =
   irCtx.symbolTable.referenceProperty(this).ensureBound(irCtx).owner
 
-fun TypeRef.toIrType(
-  irCtx: IrPluginContext,
-  ctx: Context
-): IrTypeArgument {
+fun TypeRef.toIrType(irCtx: IrPluginContext): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
   return when {
-    classifier.isTag -> arguments.last().toIrType(irCtx, ctx)
+    classifier.isTag -> arguments.last().toIrType(irCtx)
       .typeOrNull!!
       .cast<IrSimpleType>()
       .let { type ->
@@ -93,14 +88,12 @@ fun TypeRef.toIrType(
                   .classifierOrFail
                   .typeWith(
                     arguments.dropLast(1)
-                      .map {
-                        it.toIrType(irCtx, ctx).typeOrNull ?: irCtx.irBuiltIns.anyNType
-                      }
+                      .map { it.toIrType(irCtx).typeOrNull ?: irCtx.irBuiltIns.anyNType }
                   )
               ).apply {
                 tagConstructor.owner.typeParameters.indices
                   .forEach { index ->
-                    putTypeArgument(index, arguments[index].toIrType(irCtx, ctx).typeOrNull!!)
+                    putTypeArgument(index, arguments[index].toIrType(irCtx).typeOrNull!!)
                   }
               }
           ) + type.annotations,
@@ -115,10 +108,10 @@ fun TypeRef.toIrType(
           is TypeAliasDescriptor -> irCtx.symbolTable.referenceTypeAlias(container).owner.typeParameters
           is PropertyDescriptor -> container.irProperty(irCtx).getter!!.typeParameters
           else -> throw AssertionError("Unexpected container $container")
-        }.single { it.descriptor.uniqueKey(ctx) == classifier.key }.symbol
+        }.single { it.descriptor.name == classifier.descriptor.name }.symbol
       } else irCtx.symbolTable.referenceClassifier(classifier.descriptor!!).ensureBound(irCtx),
       isMarkedNullable,
-      arguments.map { it.toIrType(irCtx, ctx) },
+      arguments.map { it.toIrType(irCtx) },
       emptyList()
     )
   }

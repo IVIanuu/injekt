@@ -73,7 +73,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -157,9 +156,8 @@ class InjectCallTransformer(
     }
   }
 
-  private fun ResolutionResult.Success.Value.shouldWrap(
-    ctx: RootContext
-  ): Boolean = dependencyResults.isNotEmpty() && ctx.result.usages[usageKey]!!.size > 1
+  private fun ResolutionResult.Success.Value.shouldWrap(ctx: RootContext): Boolean =
+    dependencyResults.isNotEmpty() && ctx.result.usages[usageKey]!!.size > 1
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
@@ -171,7 +169,7 @@ class InjectCallTransformer(
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
         name = "function${rootContext.declarationIndex++}".asNameId()
-        returnType = result.candidate.type.toIrType(irCtx, ctx)
+        returnType = result.candidate.type.toIrType(irCtx)
           .typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
       }.apply {
@@ -190,7 +188,7 @@ class InjectCallTransformer(
         DeclarationIrBuilder(irCtx, symbol)
           .irCall(
             function.symbol,
-            result.candidate.type.toIrType(irCtx, ctx).typeOrNull!!
+            result.candidate.type.toIrType(irCtx).typeOrNull!!
           )
       }
     }
@@ -201,7 +199,7 @@ class InjectCallTransformer(
     injectable: ProviderInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
     .irLambda(
-      injectable.type.toIrType(irCtx, ctx).typeOrNull!!,
+      injectable.type.toIrType(irCtx).typeOrNull!!,
       parameterNameProvider = { "p${rootContext.declarationIndex++}" }
     ) { function ->
       val dependencyResult = result.dependencyResults.values.single()
@@ -254,7 +252,7 @@ class InjectCallTransformer(
         .apply {
           putTypeArgument(
             0,
-            injectable.singleElementType.toIrType(irCtx, ctx).typeOrNull
+            injectable.singleElementType.toIrType(irCtx).typeOrNull
           )
         },
       nameHint = "${rootContext.declarationIndex++}"
@@ -280,8 +278,8 @@ class InjectCallTransformer(
     +irGet(tmpList)
   }
 
-  private val sourceKeyConstructor = irCtx.referenceClass(InjektFqNames.SourceKey)
-    ?.constructors?.single()
+  private val sourceKeyConstructor =
+    irCtx.referenceClass(InjektFqNames.SourceKey)?.constructors?.single()
 
   private fun ScopeContext.sourceKeyExpression(): IrExpression =
     DeclarationIrBuilder(irCtx, symbol).run {
@@ -365,7 +363,7 @@ class InjectCallTransformer(
     }
 
     irCall(typeKeyConstructor!!).apply {
-      putTypeArgument(0, injectable.type.arguments.single().toIrType(irCtx, ctx).cast())
+      putTypeArgument(0, injectable.type.arguments.single().toIrType(irCtx).cast())
       putValueArgument(0, stringExpression)
     }
   }
@@ -408,7 +406,7 @@ class InjectCallTransformer(
   } else {
     val constructor = descriptor.irConstructor(irCtx)
     DeclarationIrBuilder(irCtx, symbol)
-      .irCall(constructor.symbol, injectable.type.toIrType(irCtx, ctx).typeOrNull!!)
+      .irCall(constructor.symbol, injectable.type.toIrType(irCtx).typeOrNull!!)
       .apply {
         fillTypeParameters(injectable.callable)
         inject(this@classExpression, result.dependencyResults)
@@ -429,7 +427,7 @@ class InjectCallTransformer(
     return DeclarationIrBuilder(irCtx, symbol)
       .irCall(
         getter.symbol,
-        injectable.type.toIrType(irCtx, ctx).typeOrNull!!
+        injectable.type.toIrType(irCtx).typeOrNull!!
       )
       .apply {
         fillTypeParameters(injectable.callable)
@@ -444,7 +442,7 @@ class InjectCallTransformer(
   ): IrExpression {
     val function = descriptor.irFunction(irCtx)
     return DeclarationIrBuilder(irCtx, symbol)
-      .irCall(function.symbol, injectable.type.toIrType(irCtx, ctx).typeOrNull!!)
+      .irCall(function.symbol, injectable.type.toIrType(irCtx).typeOrNull!!)
       .apply {
         fillTypeParameters(injectable.callable)
         inject(this@functionExpression, result.dependencyResults)
@@ -465,7 +463,7 @@ class InjectCallTransformer(
       is ClassDescriptor -> receiverExpression(descriptor)
       is ClassConstructorDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
-          injectable.type.toIrType(irCtx, ctx).typeOrNull!!,
+          injectable.type.toIrType(irCtx).typeOrNull!!,
           containingDeclaration.irConstructor(irCtx)
             .allParametersWithContext
             .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) }
@@ -473,7 +471,7 @@ class InjectCallTransformer(
         )
       is FunctionDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
-          injectable.type.toIrType(irCtx, ctx).typeOrNull!!,
+          injectable.type.toIrType(irCtx).typeOrNull!!,
           (parameterMap[descriptor] ?: containingDeclaration.irFunction(irCtx)
             .allParametersWithContext
             .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) })
@@ -481,7 +479,7 @@ class InjectCallTransformer(
         )
       is PropertyDescriptor -> DeclarationIrBuilder(irCtx, symbol)
         .irGet(
-          injectable.type.toIrType(irCtx, ctx).typeOrNull!!,
+          injectable.type.toIrType(irCtx).typeOrNull!!,
           parameterMap[descriptor]?.symbol ?:
           if (descriptor.injektIndex(this@InjectCallTransformer.ctx) == EXTENSION_RECEIVER_INDEX)
             containingDeclaration.irProperty(irCtx)
@@ -498,7 +496,7 @@ class InjectCallTransformer(
       .typeArguments
       .values
       .forEachIndexed { index, typeArgument ->
-        putTypeArgument(index, typeArgument.toIrType(irCtx, ctx).typeOrNull)
+        putTypeArgument(index, typeArgument.toIrType(irCtx).typeOrNull)
       }
   }
 
@@ -509,12 +507,12 @@ class InjectCallTransformer(
     DeclarationIrBuilder(irCtx, symbol)
       .irCall(
         irCtx.symbolTable.referenceSimpleFunction(descriptor.getter!!),
-        injectable.type.toIrType(irCtx, ctx).typeOrNull!!
+        injectable.type.toIrType(irCtx).typeOrNull!!
       )
   } else {
     DeclarationIrBuilder(irCtx, symbol)
       .irGet(
-        injectable.type.toIrType(irCtx, ctx).typeOrNull!!,
+        injectable.type.toIrType(irCtx).typeOrNull!!,
         localVariables.single { it.descriptor == descriptor }.symbol
       )
   }

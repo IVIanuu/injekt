@@ -11,7 +11,6 @@ import com.ivianuu.injekt.compiler.resolution.ClassifierRef
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
-import com.ivianuu.injekt.compiler.resolution.isProvide
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef

@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 
 @Suppress("NewApi")
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
