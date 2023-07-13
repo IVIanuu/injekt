@@ -2,16 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-import com.ivianuu.injekt.gradle.InjektPlugin
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
-import org.jetbrains.dokka.utilities.cast
-import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.CompilerPluginConfig
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.tasks.BaseKotlinCompile
 
 buildscript {
   repositories {
@@ -52,12 +44,10 @@ allprojects {
     }
   }
 
-  afterEvaluate {
-    configurations.forEach {
-      it.resolutionStrategy.dependencySubstitution {
-        substitute(module("com.ivianuu.injekt:ksp:${Deps.Injekt.version}")).using(project(":ksp"))
-        substitute(module("com.ivianuu.injekt:compiler:${Deps.Injekt.version}")).using(project(":compiler"))
-      }
+  configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+      substitute(module("com.ivianuu.injekt:ksp:${Deps.Injekt.version}")).using(project(":ksp"))
+      substitute(module("com.ivianuu.injekt:compiler:${Deps.Injekt.version}")).using(project(":compiler"))
     }
   }
 }
