@@ -62,7 +62,10 @@ object Deps {
 
   const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
 
-  const val injektGradlePlugin = "com.ivianuu.injekt:gradle-plugin:0.0.1-dev717"
+  object Injekt {
+    const val version = "0.0.1-dev717"
+    const val gradlePlugin = "com.ivianuu.injekt:gradle-plugin:$version"
+  }
 
   const val junit = "junit:junit:4.12"
 

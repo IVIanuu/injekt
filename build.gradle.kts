@@ -26,7 +26,7 @@ buildscript {
     classpath(Deps.androidGradlePlugin)
     classpath(Deps.atomicFuGradlePlugin)
     classpath(Deps.dokkaGradlePlugin)
-    classpath(Deps.injektGradlePlugin)
+    classpath(Deps.Injekt.gradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
     classpath(Deps.Ksp.gradlePlugin)
@@ -52,10 +52,12 @@ allprojects {
     }
   }
 
-  configurations.forEach {
-    it.resolutionStrategy.dependencySubstitution {
-      substitute(module("com.ivianuu.injekt:ksp")).using(project(":ksp"))
-      substitute(module("com.ivianuu.injekt:compiler")).using(project(":compiler"))
+  afterEvaluate {
+    configurations.forEach {
+      it.resolutionStrategy.dependencySubstitution {
+        substitute(module("com.ivianuu.injekt:ksp:${Deps.Injekt.version}")).using(project(":ksp"))
+        substitute(module("com.ivianuu.injekt:compiler:${Deps.Injekt.version}")).using(project(":compiler"))
+      }
     }
   }
 }
