@@ -227,7 +227,6 @@ fun CallableRef.collectInjectables(
   }
 
   val nextCallable = if (type.isProvideFunctionType) {
-    addInjectable(this)
     copy(type = type.copy(frameworkKey = callable.uniqueKey(ctx)))
   } else this
   addInjectable(nextCallable)

@@ -87,7 +87,8 @@ class InjectablesScope(
           injectables += callable
           val typeWithFrameworkKey = callable.type
             .copy(frameworkKey = callable.callable.uniqueKey(ctx))
-          injectables += callable.copy(type = typeWithFrameworkKey)
+          if (callable.type.frameworkKey != typeWithFrameworkKey.frameworkKey)
+            injectables += callable.copy(type = typeWithFrameworkKey)
           spreadingInjectableCandidateTypes += typeWithFrameworkKey
         },
         addSpreadingInjectable = { callable ->

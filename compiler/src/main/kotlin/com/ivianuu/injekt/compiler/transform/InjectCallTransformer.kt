@@ -89,8 +89,44 @@ class InjectCallTransformer(
   private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
+    val usages = buildMap<Any, Int> {
+      fun ResolutionResult.Success.collectUsagesRecursive() {
+        if (this !is ResolutionResult.Success.Value) return
+        val key = usageKey()
+        put(key, getOrPut(key) { 0 }.inc())
+        dependencyResults.forEach { it.value.collectUsagesRecursive() }
+      }
+
+      result.results.forEach { it.value.collectUsagesRecursive() }
+    }
+
     fun mapScopeIfNeeded(scope: InjectablesScope) =
       if (scope in result.scope.allScopes) result.scope else scope
+  }
+
+  private fun ResolutionResult.Success.Value.usageKey(): Any {
+    val anchorScopes = mutableSetOf<InjectablesScope>()
+
+    fun collectScopesRecursive(result: ResolutionResult.Success.Value) {
+      if (result.candidate is CallableInjectable)
+        anchorScopes += result.candidate.ownerScope
+      for (dependency in result.dependencyResults.values)
+        if (dependency is ResolutionResult.Success.Value)
+          collectScopesRecursive(dependency)
+    }
+
+    collectScopesRecursive(this)
+
+    val highestScope = scope.allScopes
+      .sortedBy { it.nesting }
+      .firstOrNull { candidateScope ->
+        anchorScopes.all {
+          it in candidateScope.allScopes ||
+              scope in candidateScope.allScopes
+        }
+      } ?: scope
+
+    return listOf(candidate::class, candidate.type, highestScope)
   }
 
   private inner class ScopeContext(
@@ -151,14 +187,14 @@ class InjectCallTransformer(
   }
 
   private fun ResolutionResult.Success.Value.shouldWrap(ctx: RootContext): Boolean =
-    dependencyResults.isNotEmpty() && ctx.result.usages[usageKey]!!.size > 1
+    dependencyResults.isNotEmpty() && ctx.usages[usageKey()]!! > 1
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
     unwrappedExpression: () -> IrExpression
   ): IrExpression = if (!result.shouldWrap(rootContext)) unwrappedExpression()
   else with(result.safeAs<ResolutionResult.Success.Value>()
-    ?.highestScope?.let { findScopeContext(it) } ?: this) {
+    ?.scope?.let { findScopeContext(it) } ?: this) {
     functionWrappedExpressions.getOrPut(result.candidate.type) expression@ {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED

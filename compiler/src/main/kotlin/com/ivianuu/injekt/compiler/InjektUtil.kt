@@ -200,16 +200,10 @@ val KotlinType.fullyAbbreviatedType: KotlinType
 
 @OptIn(ExperimentalTypeInference::class)
 inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> =
-  transformTo(mutableListOf(), block)
-
-@OptIn(ExperimentalTypeInference::class)
-inline fun <T, R, C : MutableCollection<in R>> Collection<T>.transformTo(
-  destination: C,
-  @BuilderInference block: C.(T) -> Unit
-) = destination.apply {
-  for (item in this@transformTo)
-    block(item)
-}
+  mutableListOf<R>().apply {
+    for (item in this@transform)
+      block(item)
+  }
 
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")

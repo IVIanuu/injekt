@@ -12,7 +12,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.LinkedList
-import kotlin.reflect.KClass
 
 sealed interface InjectionResult {
   val scope: InjectablesScope
@@ -21,8 +20,7 @@ sealed interface InjectionResult {
   data class Success(
     override val scope: InjectablesScope,
     override val callee: CallableRef,
-    val results: Map<InjectableRequest, ResolutionResult.Success>,
-    val usages: Map<UsageKey, MutableSet<InjectableRequest>>
+    val results: Map<InjectableRequest, ResolutionResult.Success>
   ) : InjectionResult
 
   data class Error(
@@ -41,32 +39,7 @@ sealed interface ResolutionResult {
       val candidate: Injectable,
       val scope: InjectablesScope,
       val dependencyResults: Map<InjectableRequest, Success>
-    ) : Success {
-      val highestScope: InjectablesScope = run {
-        val anchorScopes = mutableSetOf<InjectablesScope>()
-
-        fun collectScopesRecursive(result: Value) {
-          if (result.candidate is CallableInjectable)
-            anchorScopes += result.candidate.ownerScope
-          for (dependency in result.dependencyResults.values)
-            if (dependency is Value)
-              collectScopesRecursive(dependency)
-        }
-
-        collectScopesRecursive(this)
-
-        scope.allScopes
-          .sortedBy { it.nesting }
-          .firstOrNull { candidateScope ->
-            anchorScopes.all {
-              candidateScope.canSeeInjectablesOf(it) ||
-                  candidateScope.canSeeInjectablesOf(scope)
-            }
-          } ?: scope
-      }
-
-      val usageKey = UsageKey(candidate.usageKey, candidate::class, highestScope)
-    }
+    ) : Success
   }
 
   sealed interface Failure : ResolutionResult {
@@ -114,15 +87,6 @@ sealed interface ResolutionResult {
   }
 }
 
-private fun InjectablesScope.canSeeInjectablesOf(other: InjectablesScope): Boolean =
-  other in allScopes
-
-data class UsageKey(
-  val key: Any,
-  val type: KClass<out Injectable>,
-  val highestScope: InjectablesScope
-)
-
 fun InjectablesScope.resolveRequests(
   callee: CallableRef,
   requests: List<InjectableRequest>
@@ -145,19 +109,8 @@ fun InjectablesScope.resolveRequests(
         }
     }
   }
-  val usages = mutableMapOf<UsageKey, MutableSet<InjectableRequest>>()
-  return if (failure == null) InjectionResult.Success(
-    this,
-    callee,
-    successes,
-    usages
-  ).also { it.postProcess(usages) }
-  else InjectionResult.Error(
-    this,
-    callee,
-    failureRequest!!,
-    failure
-  )
+  return if (failure == null) InjectionResult.Success(this, callee, successes)
+  else InjectionResult.Error(this, callee, failureRequest!!, failure)
 }
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
@@ -231,10 +184,6 @@ private fun InjectablesScope.resolveCandidates(
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
     .sortedWith { a, b -> compareCandidate(a, b) }
-    .distinctBy {
-      if (it is CallableInjectable) it.usageKey
-      else it
-    }
     .toCollection(LinkedList())
   while (remaining.isNotEmpty()) {
     val candidate = remaining.removeFirst()
@@ -461,38 +410,6 @@ private fun InjectablesScope.compareType(
   }
 
   return 0
-}
-
-private fun InjectionResult.Success.postProcess(
-  usages: MutableMap<UsageKey, MutableSet<InjectableRequest>>
-) {
-  visitRecursive { request, result ->
-    if (result is ResolutionResult.Success.Value)
-      usages.getOrPut(result.usageKey) { mutableSetOf() } += request
-  }
-}
-
-fun ResolutionResult.visitRecursive(
-  request: InjectableRequest,
-  action: (InjectableRequest, ResolutionResult) -> Unit
-) {
-  action(request, this)
-  if (this is ResolutionResult.Success.Value) {
-    dependencyResults
-      .forEach { (request, result) ->
-        result.visitRecursive(request, action)
-      }
-  }
-}
-
-fun InjectionResult.visitRecursive(action: (InjectableRequest, ResolutionResult) -> Unit) {
-  val results = when (this) {
-    is InjectionResult.Success -> results
-    is InjectionResult.Error -> mapOf(failureRequest to failure)
-  }
-
-  for ((request, result) in results)
-    result.visitRecursive(request, action)
 }
 
 fun ResolutionResult.Failure.unwrapDependencyFailure(

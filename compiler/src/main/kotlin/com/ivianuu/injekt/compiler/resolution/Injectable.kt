@@ -13,7 +13,6 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.transform
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -35,7 +34,6 @@ sealed interface Injectable {
   val dependencyScope: InjectablesScope? get() = null
   val callableFqName: FqName
   val ownerScope: InjectablesScope
-  val usageKey: Any get() = type
 }
 
 class CallableInjectable(
@@ -48,13 +46,6 @@ class CallableInjectable(
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
   override val originalType: TypeRef get() = callable.originalType
-  override val usageKey =
-    listOf(callable.callable.uniqueKey(ownerScope.ctx), callable.parameterTypes, callable.type)
-
-  override fun equals(other: Any?): Boolean =
-    other is CallableInjectable && other.usageKey == usageKey
-
-  override fun hashCode(): Int = usageKey.hashCode()
 }
 
 class ListInjectable(
