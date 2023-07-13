@@ -137,7 +137,7 @@ class InjectableDeclarationTest {
       fun @receiver:Provide Foo.bar() = Bar(context())
     """,
     """
-      fun invoke() = with(Foo()) { bar() }
+      fun invoke() = provide(Foo()) { bar() }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Bar>()
@@ -159,7 +159,7 @@ class InjectableDeclarationTest {
       val @receiver:Provide Foo.bar get() = Bar(context())
     """,
     """
-      fun invoke() = with(Foo()) { bar }
+      fun invoke() = provide(Foo()) { bar }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Bar>()
@@ -170,10 +170,72 @@ class InjectableDeclarationTest {
       context((@Provide Foo)) val bar get() = Bar(context())
     """,
     """
-      fun invoke() = with(Foo()) { bar }
+      fun invoke() = provide(Foo()) { bar }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideClassContextReceiver() = singleAndMultiCodegen(
+    """
+      context((@Provide Foo)) class Dep {
+        fun resolve() = Bar(context<Foo>())
+      }
+    """,
+    """
+      fun invoke() = provide(Foo()) { Dep().resolve() }
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideContextFunction() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide fun bar() = Bar(this@Foo)
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = context<Bar>()
+    """
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideContextProperty() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide val bar get() = Bar(this@Foo)
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = context<Bar>() 
+    """
+  ) {
+    invokeSingleFile(Foo())
+      .shouldBeTypeOf<Bar>()
+  }
+
+  @Test fun testProvideContextClass() = singleAndMultiCodegen(
+    """
+      context(Foo) @Provide class Dep
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = context<Dep>()
+    """
+  ) {
+    invokeSingleFile(Foo())
+  }
+
+  // todo @Test
+  fun testProvideContextConstructor() = singleAndMultiCodegen(
+    """
+      @Provide class Dep(foo: Any) {
+        context(Foo) constructor() : this(this@Foo)
+      }
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = context<Dep>() 
+    """
+  ) {
+    invokeSingleFile(Foo())
   }
 
   @Test fun testProvideValueParameter() = codegen(

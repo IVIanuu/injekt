@@ -435,7 +435,7 @@ class ResolveTest {
     """
       class MyClass {
         @Provide val foo = Foo()
-        constructor(foo: Foo = context())
+        constructor(foo: Foo = context<Foo>())
       }
     """
   ) {
@@ -539,7 +539,7 @@ class ResolveTest {
   @Test fun testCanResolvePrimaryConstructorInjectableInPropertyInitializer() = codegen(
     """
       class MyClass(@Provide _foo: Foo) {
-        val foo: Foo = context()
+        val foo: Foo = context<Foo>()
       }
     """
   )
@@ -662,7 +662,7 @@ class ResolveTest {
   @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
     """
       class MyClass {
-        @Provide val bar: Bar = run { Bar(context()) }
+        @Provide val bar: Bar = run { Bar(context<Foo>()) }
         @Provide val foo: Foo = Foo()
       }
     """

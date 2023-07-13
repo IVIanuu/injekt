@@ -277,7 +277,10 @@ private fun ClassInjectablesScope(
     name = name,
     parent = finalParent,
     owner = clazz.findPsi().cast(),
-    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
+    initialInjectables = buildList {
+      add(clazz.injectableReceiver(false, ctx))
+      clazz.contextReceivers.forEach { add(it.toCallableRef(ctx)) }
+    },
     typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
     ctx = ctx
   )
@@ -312,7 +315,10 @@ private fun ClassInitInjectablesScope(
     name = name,
     parent = parent,
     owner = clazz.findPsi().cast(),
-    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
+    initialInjectables = buildList {
+      add(clazz.injectableReceiver(false, ctx))
+      clazz.contextReceivers.forEach { add(it.toCallableRef(ctx)) }
+    },
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectableScopeOrParent true
       psiProperty.getParentOfType<KtClass>(false) != psiClass ||
@@ -411,7 +417,8 @@ private fun FunctionParameterInjectablesScopes(
     .transform {
       if (it !== function.dispatchReceiverParameter &&
         (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
-        (it.isProvide() || function.isProvide()))
+        (it in function.contextReceiverParameters ||
+            (it.isProvide() || function.isProvide())))
         add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->

@@ -111,7 +111,7 @@ class ResolutionTest {
     """
       abstract class MySuperClass(@property:Provide val superClassFoo: Foo = Foo())
       class MySubClass(@property:Provide val subClassFoo: Foo) : MySuperClass() {
-        fun finalFoo(): Foo = context()
+        fun finalFoo(): Foo = context<Foo>()
       }
     """,
     """

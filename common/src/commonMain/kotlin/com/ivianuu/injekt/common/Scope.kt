@@ -13,13 +13,13 @@ import kotlinx.atomicfu.locks.synchronized
 class Scope<N> : SynchronizedObject() {
   @PublishedApi internal val values = hashMapOf<Any, Any?>()
 
-  inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
+  inline fun <T> scoped(key: Any, init: () -> T): T = synchronized(this) {
     val value = values.getOrPut(key) { init() ?: NULL }
     (if (value !== NULL) value else null) as T
   }
 
-  context(TypeKey<T>) inline operator fun <T> invoke(init: () -> T): T =
-    invoke(value, init)
+  context(TypeKey<T>) inline fun <T> scoped(init: () -> T): T =
+    scoped(value, init)
 
   companion object {
     @PublishedApi internal val NULL = Any()
@@ -32,6 +32,6 @@ class Scope<N> : SynchronizedObject() {
       crossinline init: () -> T,
       scope: Scope<N>,
       key: TypeKey<S>
-    ): S = scope(key) { init() }
+    ): S = scope.scoped(key) { init() }
   }
 }

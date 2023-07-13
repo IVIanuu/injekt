@@ -53,11 +53,13 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -69,12 +71,15 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.receivers.ContextClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -406,6 +411,7 @@ class InjectCallTransformer(
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
     .irCall(descriptor.irCallable(irCtx).symbol, injectable.type.toIrType(irCtx).typeOrNull!!)
     .apply {
+      contextReceiversCount = descriptor.contextReceiverParameters.size
       fillTypeParameters(injectable.callable)
       inject(this@functionExpression, result.dependencyResults)
     }
@@ -414,7 +420,19 @@ class InjectCallTransformer(
     descriptor: ParameterDescriptor
   ): IrExpression = receiverAccessors.lastOrNull {
     descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-  }?.second?.invoke() ?: throw AssertionError("unexpected receiver $descriptor")
+  }?.second?.invoke() ?: if (descriptor is ReceiverParameterDescriptor &&
+    descriptor.value is ContextClassReceiver
+  )
+    classContextReceiverAccessors[
+      descriptor.containingDeclaration
+        .cast<ClassDescriptor>()
+        .irClass(irCtx)
+    ]!!.last {
+      it.first ==
+          descriptor.containingDeclaration.cast<ClassDescriptor>().contextReceivers.indexOf(descriptor)
+    }.second()
+  else
+    throw AssertionError("unexpected receiver $descriptor")
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
@@ -460,6 +478,7 @@ class InjectCallTransformer(
   }
 
   private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
+  private val classContextReceiverAccessors = mutableMapOf<IrClass, MutableList<Pair<Int, () -> IrExpression>>>()
   private val localVariables = mutableListOf<IrVariable>()
 
   override fun visitClassNew(declaration: IrClass): IrStatement {
@@ -469,8 +488,60 @@ class InjectCallTransformer(
           .irGet(declaration.thisReceiver!!)
       }
     )
+    val contextReceiverAccessors =
+      classContextReceiverAccessors.getOrPut(declaration) { mutableListOf() }
+    declaration.descriptor.contextReceivers.forEachIndexed { index, descriptor ->
+      contextReceiverAccessors.push(
+        index to {
+          descriptor
+            .value
+            .cast<ContextClassReceiver>()
+            .declarationDescriptor
+            .cast<ClassDescriptor>()
+            .irClass(irCtx)
+            .fields
+            .filter { it.name.asString().startsWith("contextReceiverField") }
+            .toList()
+            .get(
+              descriptor.value.cast<ContextClassReceiver>()
+                .declarationDescriptor
+                .cast<ClassDescriptor>()
+                .contextReceivers
+                .indexOfFirst { it.type == descriptor.type }
+            )
+            .let {
+              DeclarationIrBuilder(irCtx, it.symbol)
+                .irGetField(
+                  receiverExpression(descriptor.containingDeclaration.cast<ClassDescriptor>().thisAsReceiverParameter),
+                  it
+                )
+            }
+        }
+      )
+    }
     val result = super.visitClassNew(declaration)
+    repeat(declaration.descriptor.contextReceivers.size) { contextReceiverAccessors.pop() }
     receiverAccessors.pop()
+    return result
+  }
+
+  override fun visitConstructor(declaration: IrConstructor): IrStatement {
+    val contextReceiverAccessors =
+      classContextReceiverAccessors.getOrPut(declaration.constructedClass) { mutableListOf() }
+    declaration.constructedClass.descriptor.contextReceivers.forEachIndexed { index, _ ->
+      contextReceiverAccessors.push(
+        index to {
+          DeclarationIrBuilder(
+            irCtx,
+            declaration.symbol
+          ).irGet(declaration.valueParameters[index])
+        }
+      )
+    }
+    val result = super.visitConstructor(declaration)
+    repeat(declaration.constructedClass.descriptor.contextReceivers.size) {
+      contextReceiverAccessors.pop()
+    }
     return result
   }
 
