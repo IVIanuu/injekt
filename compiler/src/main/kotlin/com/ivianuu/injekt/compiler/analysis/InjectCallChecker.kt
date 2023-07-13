@@ -9,23 +9,19 @@ import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
 import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.cached
-import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.render
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
 import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -39,7 +35,6 @@ import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
@@ -104,22 +99,14 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
       resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
       resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.contextReceivers.forEach { it.type.toTypeRef(ctx).putAll() }
     }
 
     val callee = resultingDescriptor
       .toCallableRef(ctx)
       .substitute(substitutionMap)
 
-    val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex(ctx) }
-
-    val requests = callee.callable.allParametersWithContext
-      .transform {
-        val index = it.injektIndex(ctx)
-        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject())
-          add(it.toInjectableRequest(callee, ctx))
-      }
+    val requests = resultingDescriptor.underlyingDescriptor.contextReceiverParameters
+      .map { it.toInjectableRequest(callee, ctx) }
 
     if (requests.isEmpty()) return
 

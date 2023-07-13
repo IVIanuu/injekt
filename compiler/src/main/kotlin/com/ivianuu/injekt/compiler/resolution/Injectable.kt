@@ -8,7 +8,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.allParametersWithContext
-import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
@@ -150,5 +149,5 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context)
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
     parameterIndex = injektIndex(ctx),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject
+    isRequired = this !is ValueParameterDescriptor || !declaresDefaultValue()
   )

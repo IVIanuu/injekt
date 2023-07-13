@@ -5,58 +5,28 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.allParametersWithContext
-import com.ivianuu.injekt.compiler.resolution.isInject
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
-import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.types.TypeSubstitutor
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 interface InjectFunctionDescriptor : FunctionDescriptor {
   val underlyingDescriptor: FunctionDescriptor
 }
 
-class InjectValueParameterDescriptor(
-  private val parent: InjectFunctionDescriptor,
-  val underlyingDescriptor: ValueParameterDescriptor,
-  val ctx: Context
-) : ValueParameterDescriptor by underlyingDescriptor {
-  private val declaresDefaultValue =
-    underlyingDescriptor.isInject() || underlyingDescriptor.declaresDefaultValue()
-  override fun declaresDefaultValue(): Boolean = declaresDefaultValue
-
-  override fun getContainingDeclaration(): CallableDescriptor = parent
-}
-
-val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
-  get() = (this as? InjectValueParameterDescriptor)?.underlyingDescriptor?.hasDefaultValue()
-    ?: hasDefaultValue()
-
 abstract class AbstractInjectFunctionDescriptor(
-  final override val underlyingDescriptor: FunctionDescriptor,
-  private val ctx: Context
+  override val underlyingDescriptor: FunctionDescriptor
 ) : InjectFunctionDescriptor {
-  private val valueParams = underlyingDescriptor
-      .valueParameters
-      .mapTo(mutableListOf()) { valueParameter ->
-        InjectValueParameterDescriptor(this, valueParameter, ctx)
-      }
-
-  @OptIn(UnsafeCastFunction::class)
-  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-    valueParams.cast()
+  override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
+    emptyList()
 }
 
 fun FunctionDescriptor.toInjectFunctionDescriptor(ctx: Context): InjectFunctionDescriptor? {
   if (this is InjectFunctionDescriptor) return this
   if (this is JavaMethodDescriptor) return null
-  if (allParametersWithContext.none { it.isInject() }) return null
+  if (contextReceiverParameters.isEmpty()) return null
   return when (this) {
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, ctx)
     is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this, ctx)
@@ -67,7 +37,7 @@ fun FunctionDescriptor.toInjectFunctionDescriptor(ctx: Context): InjectFunctionD
 class InjectConstructorDescriptorImpl(
   underlyingDescriptor: ClassConstructorDescriptor,
   private val ctx: Context
-) : AbstractInjectFunctionDescriptor(underlyingDescriptor, ctx),
+) : AbstractInjectFunctionDescriptor(underlyingDescriptor),
   ClassConstructorDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): ClassConstructorDescriptor =
     InjectConstructorDescriptorImpl(
@@ -76,14 +46,14 @@ class InjectConstructorDescriptorImpl(
       ctx
     )
 
-  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-    super.getValueParameters()
+  override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
+    underlyingDescriptor.contextReceiverParameters
 }
 
 class InjectFunctionDescriptorImpl(
   underlyingDescriptor: FunctionDescriptor,
   private val ctx: Context
-) : AbstractInjectFunctionDescriptor(underlyingDescriptor, ctx),
+) : AbstractInjectFunctionDescriptor(underlyingDescriptor),
   FunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
     InjectFunctionDescriptorImpl(
@@ -91,14 +61,14 @@ class InjectFunctionDescriptorImpl(
       ctx
     )
 
-  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-    super.getValueParameters()
+  override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
+    underlyingDescriptor.contextReceiverParameters
 }
 
 class InjectSimpleFunctionDescriptorImpl(
   underlyingDescriptor: SimpleFunctionDescriptor,
   private val ctx: Context
-) : AbstractInjectFunctionDescriptor(underlyingDescriptor, ctx),
+) : AbstractInjectFunctionDescriptor(underlyingDescriptor),
   SimpleFunctionDescriptor by underlyingDescriptor {
   override fun substitute(substitutor: TypeSubstitutor): FunctionDescriptor =
     InjectSimpleFunctionDescriptorImpl(
@@ -107,6 +77,6 @@ class InjectSimpleFunctionDescriptorImpl(
       ctx
     )
 
-  override fun getValueParameters(): MutableList<ValueParameterDescriptor> =
-    super.getValueParameters()
+  override fun getContextReceiverParameters(): List<ReceiverParameterDescriptor> =
+    underlyingDescriptor.contextReceiverParameters
 }

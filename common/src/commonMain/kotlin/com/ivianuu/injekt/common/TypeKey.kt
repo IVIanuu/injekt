@@ -4,8 +4,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-
 /**
  * A key for a injekt type of [T] which can be used as a [Map] key or similar
  */
@@ -14,4 +12,4 @@ import com.ivianuu.injekt.Inject
 /**
  * Returns the [TypeKey] of [T]
  */
-inline fun <T> typeKeyOf(@Inject x: TypeKey<T>): TypeKey<T> = x
+context(TypeKey<T>) inline fun <T> typeKeyOf(): TypeKey<T> = this@TypeKey

@@ -4,8 +4,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-
 /**
  * A key which is unique for each root call site
  */
@@ -14,4 +12,4 @@ import com.ivianuu.injekt.Inject
 /**
  * Returns the [SourceKey] at this call site
  */
-inline fun sourceKey(@Inject x: SourceKey): SourceKey = x
+context(SourceKey) inline fun sourceKey(): SourceKey = this@SourceKey

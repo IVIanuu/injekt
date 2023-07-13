@@ -20,6 +20,12 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     isSuppressed(diagnostic, null)
 
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
+    if (diagnostic.factory == Errors.SUBTYPING_BETWEEN_CONTEXT_RECEIVERS)
+      return true
+
+    if (diagnostic.factory == Errors.NO_CONTEXT_RECEIVER)
+      return true
+
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 

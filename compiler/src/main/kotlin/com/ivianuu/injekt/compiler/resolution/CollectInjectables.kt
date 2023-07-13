@@ -62,10 +62,7 @@ fun TypeRef.collectInjectables(
           }
         ).substitute(
           classifier.typeParameters
-            .zip(
-              arguments
-                .map { it.copy(isInject = true) }
-            )
+            .zip(arguments)
             .toMap()
         )
       }
@@ -125,10 +122,7 @@ fun ResolutionScope.collectMemberInjectables(
 }
 
 fun Annotated.isProvide(): Boolean =
-  (hasAnnotation(InjektFqNames.Provide) || (this is ParameterDescriptor) && type.isProvide()) || isInject()
-
-fun Annotated.isInject(): Boolean = hasAnnotation(InjektFqNames.Inject) ||
-    (this is ParameterDescriptor && type.isInject())
+  hasAnnotation(InjektFqNames.Provide) || (this is ParameterDescriptor) && type.isProvide()
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.cached("injectable_constructors", this) {

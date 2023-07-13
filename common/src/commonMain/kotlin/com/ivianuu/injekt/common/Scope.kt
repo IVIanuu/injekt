@@ -4,7 +4,6 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.Spread
 import com.ivianuu.injekt.Tag
@@ -19,8 +18,8 @@ class Scope<N> : SynchronizedObject() {
     (if (value !== NULL) value else null) as T
   }
 
-  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
-    invoke(key.value, init)
+  context(TypeKey<T>) inline operator fun <T> invoke(init: () -> T): T =
+    invoke(value, init)
 
   companion object {
     @PublishedApi internal val NULL = Any()

@@ -36,25 +36,42 @@ annotation class Provide
 
 inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
-inline fun <T, R> provide(x: T, block: (@Provide T).() -> R): R = block(x)
+inline fun <A, R> provide(
+  a: A,
+  block: context((@Provide A)) () -> R
+): R = block(a)
 
-/**
- * Automatically fills in a argument if no explicit argument was provided
- */
-@Target(
-  // fun func(@Inject foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
+inline fun <A, B, R> provide(
+  a: A,
+  b: B,
+  block: context((@Provide A), (@Provide B)) () -> R
+): R = block(a, b)
 
-  // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
-)
-annotation class Inject
+inline fun <A, B, C, R> provide(
+  a: A,
+  b: B,
+  c: C,
+  block: context((@Provide A), (@Provide B), (@Provide C)) () -> R
+): R = block(a, b, c)
 
-/**
- * Returns a provided instance of [T]
- */
-inline fun <T> inject(@Inject x: T): T = x
+inline fun <A, B, C, D, R> provide(
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  block: context((@Provide A), (@Provide B), (@Provide C), (@Provide D)) () -> R
+): R = block(a, b, c, d)
+
+inline fun <A, B, C, D, E, R> provide(
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  e: E,
+  block: context((@Provide A), (@Provide B), (@Provide C), (@Provide D), (@Provide E)) () -> R
+): R = block(a, b, c, d, e)
+
+context((T)) inline fun <T> context(): T = this@T
 
 /**
  * Marks an annotation as an tag which can then be used

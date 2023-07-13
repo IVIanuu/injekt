@@ -11,7 +11,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -29,7 +28,6 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.modalityModifier
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -69,7 +67,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     }
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
-    checkReceiver(descriptor, declaration, ctx)
   }
 
   private fun checkClass(
@@ -164,7 +161,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context
   ) {
     checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
-    checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
   }
@@ -180,21 +176,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
       ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
     }
-  }
-
-  private fun checkReceiver(
-    descriptor: CallableDescriptor,
-    declaration: KtDeclaration,
-    ctx: Context
-  ) {
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true)
-      ctx.reportError(
-        declaration.safeAs<KtFunction>()?.receiverTypeReference
-          ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-          ?: declaration,
-        "receiver cannot be injected"
-      )
   }
 
   private fun checkSpreadingInjectable(
@@ -259,15 +240,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
       !descriptor.hasAnnotation(InjektFqNames.Provide))
       return false
-
-    if (descriptor is CallableMemberDescriptor)
-      for ((index, overriddenValueParameter) in
-      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
-      val valueParameter = descriptor.valueParameters[index]
-      if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
-        valueParameter.hasAnnotation(InjektFqNames.Inject))
-        return false
-    }
 
     val (typeParameters, overriddenTypeParameters) = when (descriptor) {
       is CallableMemberDescriptor ->
