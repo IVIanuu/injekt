@@ -6,13 +6,12 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.allParametersWithContext
-import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.resolution.isInject
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
 import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.types.TypeSubstitutor
@@ -24,25 +23,15 @@ interface InjectFunctionDescriptor : FunctionDescriptor {
 }
 
 class InjectValueParameterDescriptor(
-  parent: InjectFunctionDescriptor,
+  private val parent: InjectFunctionDescriptor,
   val underlyingDescriptor: ValueParameterDescriptor,
   val ctx: Context
-) : ValueParameterDescriptorImpl(
-  parent,
-  underlyingDescriptor,
-  underlyingDescriptor.index,
-  underlyingDescriptor.annotations,
-  underlyingDescriptor.injektName(ctx),
-  underlyingDescriptor.type,
-  false,
-  underlyingDescriptor.isCrossinline,
-  underlyingDescriptor.isNoinline,
-  underlyingDescriptor.varargElementType,
-  underlyingDescriptor.source
-) {
+) : ValueParameterDescriptor by underlyingDescriptor {
   private val declaresDefaultValue =
     underlyingDescriptor.isInject() || underlyingDescriptor.declaresDefaultValue()
   override fun declaresDefaultValue(): Boolean = declaresDefaultValue
+
+  override fun getContainingDeclaration(): CallableDescriptor = parent
 }
 
 val ValueParameterDescriptor.hasDefaultValueIgnoringInject: Boolean
