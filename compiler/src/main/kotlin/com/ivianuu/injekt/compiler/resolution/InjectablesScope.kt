@@ -7,16 +7,11 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.nextFrameworkKey
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.util.UUID
 
 class InjectablesScope(
@@ -128,12 +123,7 @@ class InjectablesScope(
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
-    )
-      .filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
-      .let { allInjectables ->
-        if (request.parameterIndex == DISPATCH_RECEIVER_INDEX) allInjectables
-        else allInjectables.filter { it.callable.isValidForObjectRequest() }
-      }
+    ).filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
@@ -287,19 +277,6 @@ class InjectablesScope(
       ctx = ctx
     )
   }
-
-  /**
-   * We add implicit injectables for objects under some circumstances to allow
-   * callables in it to resolve their dispatch receiver parameter
-   * Here we ensure that the user cannot resolve such implicit object injectable if they are not
-   * provided by the user
-   */
-  private fun CallableRef.isValidForObjectRequest(): Boolean =
-    !originalType.classifier.isObject ||
-        (callable !is ReceiverParameterDescriptor ||
-            callable.cast<ReceiverParameterDescriptor>()
-              .value !is ImplicitClassReceiver ||
-            originalType.classifier.descriptor!!.hasAnnotation(InjektFqNames.Provide))
 
   override fun toString(): String = "InjectablesScope($name)"
 }
