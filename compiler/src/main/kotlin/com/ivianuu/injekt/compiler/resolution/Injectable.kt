@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed interface Injectable {
   val type: TypeRef
-  val originalType: TypeRef get() = type
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScope: InjectablesScope? get() = null
   val callableFqName: FqName
@@ -45,7 +44,6 @@ class CallableInjectable(
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
-  override val originalType: TypeRef get() = callable.originalType
 }
 
 class ListInjectable(
@@ -103,9 +101,6 @@ class ProviderInjectable(
           .copy(type = type.arguments[index])
       }
   )
-
-  override val originalType: TypeRef
-    get() = type.classifier.defaultType
 
   // required to distinct between individual providers in codegen
   class ProviderValueParameterDescriptor(
