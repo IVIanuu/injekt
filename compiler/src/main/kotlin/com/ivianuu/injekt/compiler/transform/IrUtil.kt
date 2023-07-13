@@ -13,12 +13,10 @@ import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -28,10 +26,8 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
@@ -51,21 +47,16 @@ import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 fun ClassDescriptor.irClass(irCtx: IrPluginContext): IrClass =
   irCtx.symbolTable.referenceClass(this).ensureBound(irCtx).owner
 
-fun ClassConstructorDescriptor.irConstructor(irCtx: IrPluginContext): IrConstructor =
-  irCtx.symbolTable.referenceConstructor(this).ensureBound(irCtx).owner
-
-fun FunctionDescriptor.irFunction(irCtx: IrPluginContext): IrFunction =
-  irCtx.symbolTable.referenceFunction(this).ensureBound(irCtx).owner
-
-fun PropertyDescriptor.irProperty(irCtx: IrPluginContext): IrProperty =
-  irCtx.symbolTable.referenceProperty(this).ensureBound(irCtx).owner
+fun CallableDescriptor.irCallable(irCtx: IrPluginContext): IrFunction =
+  if (this is PropertyDescriptor)
+    irCtx.symbolTable.referenceProperty(this).ensureBound(irCtx).owner.getter!!
+  else irCtx.symbolTable.referenceFunction(this).ensureBound(irCtx).owner
 
 fun TypeRef.toIrType(irCtx: IrPluginContext): IrTypeArgument {
   if (isStarProjection) return IrStarProjectionImpl
@@ -103,10 +94,8 @@ fun TypeRef.toIrType(irCtx: IrPluginContext): IrTypeArgument {
     else -> IrSimpleTypeImpl(
       if (classifier.isTypeParameter) {
         when (val container = classifier.descriptor!!.containingDeclaration) {
-          is FunctionDescriptor -> container.irFunction(irCtx).typeParameters
+          is CallableDescriptor -> container.irCallable(irCtx).typeParameters
           is ClassDescriptor -> container.irClass(irCtx).typeParameters
-          is TypeAliasDescriptor -> irCtx.symbolTable.referenceTypeAlias(container).owner.typeParameters
-          is PropertyDescriptor -> container.irProperty(irCtx).getter!!.typeParameters
           else -> throw AssertionError("Unexpected container $container")
         }.single { it.descriptor.name == classifier.descriptor.name }.symbol
       } else irCtx.symbolTable.referenceClassifier(classifier.descriptor!!).ensureBound(irCtx),
@@ -139,8 +128,6 @@ fun IrBuilderWithScope.irLambda(
     name = Name.special("<anonymous>")
     this.returnType = returnType
     visibility = DescriptorVisibilities.LOCAL
-    isSuspend = type.classifier.descriptor.fqNameSafe.asString()
-      .startsWith("kotlin.coroutines.SuspendFunction")
   }.apply {
     parent = scope.getLocalDeclarationParent()
     type.arguments.forEachIndexed { index, typeArgument ->
