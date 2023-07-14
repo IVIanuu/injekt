@@ -36,7 +36,60 @@ annotation class Provide
 
 inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
-inline fun <T, R> provide(x: T, block: (@Provide T).() -> R): R = block(x)
+inline fun <A, R> provide(a: A, block: (@Provide A) -> R): R = block(a)
+
+data class ProvideModule2<A, B>(
+  @property:Provide val _a: A,
+  @property:Provide val _b: B
+)
+
+inline fun <A, B, R> provide(a: A, b: B, block: (@Provide ProvideModule2<A, B>) -> R): R =
+  block(ProvideModule2(a, b))
+
+data class ProvideModule3<A, B, C>(
+  @property:Provide val _a: A,
+  @property:Provide val _b: B,
+  @property:Provide val _c: C
+)
+
+inline fun <A, B, C, R> provide(
+  a: A,
+  b: B,
+  c: C,
+  block: (@Provide ProvideModule3<A, B, C>) -> R
+): R = block(ProvideModule3(a, b, c))
+
+data class ProvideModule4<A, B, C, D>(
+  @property:Provide val _a: A,
+  @property:Provide val _b: B,
+  @property:Provide val _c: C,
+  @property:Provide val _D: D
+)
+
+inline fun <A, B, C, D, R> provide(
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  block: (@Provide ProvideModule4<A, B, C, D>) -> R
+): R = block(ProvideModule4(a, b, c, d))
+
+data class ProvideModule5<A, B, C, D, E>(
+  @property:Provide val _a: A,
+  @property:Provide val _b: B,
+  @property:Provide val _c: C,
+  @property:Provide val _D: D,
+  @property:Provide val _e: E
+)
+
+inline fun <A, B, C, D, E, R> provide(
+  a: A,
+  b: B,
+  c: C,
+  d: D,
+  e: E,
+  block: (@Provide ProvideModule5<A, B, C, D, E>) -> R
+): R = block(ProvideModule5(a, b, c, d, e))
 
 /**
  * Automatically fills in a argument if no explicit argument was provided
