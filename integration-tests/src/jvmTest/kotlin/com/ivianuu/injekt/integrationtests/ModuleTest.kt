@@ -86,6 +86,20 @@ class ModuleTest {
       .shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testModuleIdentity() = codegen(
+    """
+      class FooModule {
+        @Provide val foo = Foo()
+      }
+      @Provide val fooModule1 = FooModule()
+      @Provide val fooModule2 = FooModule()
+      fun invoke() = inject<List<Foo>>()
+    """
+  ) {
+    val foos = invokeSingleFile<List<Foo>>()
+    foos shouldBe foos.distinct()
+  }
+
   @Test fun testLambdaModuleIdentity() = codegen(
     """
       private val foo1 = Foo()

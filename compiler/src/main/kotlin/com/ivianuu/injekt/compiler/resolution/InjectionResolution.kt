@@ -136,7 +136,7 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest
 ): ResolutionResult? =
-  frameworkInjectableForType(request.type)?.let { resolveCandidate(request, it) }
+  frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it) }
 
 private fun InjectablesScope.computeForCandidate(
   request: InjectableRequest,

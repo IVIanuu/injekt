@@ -2,16 +2,12 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
-
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.nextFrameworkKey
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import java.util.UUID
 
 class InjectablesScope(
@@ -76,13 +72,10 @@ class InjectablesScope(
     for (injectable in initialInjectables)
       injectable.collectInjectables(
         scope = this,
-        addInjectable = { callable ->
+        addInjectable = { callable, unique ->
           injectables += callable
-          val typeWithFrameworkKey = callable.type
-            .copy(frameworkKey = callable.callable.uniqueKey(ctx))
-          if (callable.type.frameworkKey != typeWithFrameworkKey.frameworkKey)
-            injectables += callable.copy(type = typeWithFrameworkKey)
-          spreadingInjectableCandidateTypes += typeWithFrameworkKey
+          if (unique)
+            spreadingInjectableCandidateTypes += callable.type
         },
         addSpreadingInjectable = { callable ->
           if (spreadingInjectableKeys.add(InjectableKey(callable, ctx)))
@@ -146,31 +139,31 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForType(type: TypeRef): Injectable? = when {
-    type.isFunctionType -> LambdaInjectable(type, this)
-    type.classifier == ctx.listClassifier -> {
-      val singleElementType = type.arguments[0]
+  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
+    request.type.isFunctionType -> LambdaInjectable(this, request)
+    request.type.classifier == ctx.listClassifier -> {
+      val singleElementType = request.type.arguments[0]
       val collectionElementType = ctx.collectionClassifier.defaultType
         .withArguments(listOf(singleElementType))
 
-      val key = CallableRequestKey(type, allStaticTypeParameters)
+      val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
       val elements = listElementsForType(singleElementType, collectionElementType, key)
         .values.map { it.type }
 
       if (elements.isEmpty()) null
       else ListInjectable(
-        type = type,
+        type = request.type,
         ownerScope = this,
         elements = elements,
         singleElementType = singleElementType,
         collectionElementType = collectionElementType
       )
     }
-    type.classifier.fqName == InjektFqNames.TypeKey ->
-      TypeKeyInjectable(type, this)
-    type.classifier.fqName == InjektFqNames.SourceKey ->
-      SourceKeyInjectable(type, this)
+    request.type.classifier.fqName == InjektFqNames.TypeKey ->
+      TypeKeyInjectable(request.type, this)
+    request.type.classifier.fqName == InjektFqNames.SourceKey ->
+      SourceKeyInjectable(request.type, this)
     else -> null
   }
 
@@ -190,7 +183,7 @@ class InjectablesScope(
         }
 
       for (candidate in injectables.toList()) {
-        if (candidate.type.frameworkKey != key.type.frameworkKey) continue
+        if (candidate.type.frameworkKey.isNotEmpty()) continue
 
         var context =
           candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
@@ -246,20 +239,16 @@ class InjectablesScope(
 
     newInjectable.collectInjectables(
       scope = this,
-      addInjectable = { innerCallable ->
-        val finalInnerCallable = innerCallable
-          .copy(originalType = innerCallable.type)
-        injectables += finalInnerCallable
-        val innerCallableWithFrameworkKey = finalInnerCallable.copy(
-          type = finalInnerCallable.type.copy(
-            frameworkKey = spreadingInjectable.callable.type.frameworkKey
-              .nextFrameworkKey(finalInnerCallable.callable.uniqueKey(ctx))
-              .also { spreadingInjectable.resultingFrameworkKeys += it }
-          )
-        )
-        injectables += innerCallableWithFrameworkKey
-        spreadingInjectableCandidateTypes += innerCallableWithFrameworkKey.type
-        spreadInjectables(innerCallableWithFrameworkKey.type)
+      addInjectable = { innerCallable, unique ->
+        if (!unique) {
+          val finalInnerCallable = innerCallable
+            .copy(originalType = innerCallable.type)
+          injectables += finalInnerCallable
+        } else {
+          injectables += innerCallable
+          spreadingInjectableCandidateTypes += innerCallable.type
+          spreadInjectables(innerCallable.type)
+        }
       },
       addSpreadingInjectable = { newInnerCallable ->
         val finalNewInnerInjectable = newInnerCallable

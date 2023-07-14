@@ -64,10 +64,11 @@ class ListInjectable(
 }
 
 class LambdaInjectable(
-  override val type: TypeRef,
-  override val ownerScope: InjectablesScope
+  override val ownerScope: InjectablesScope,
+  request: InjectableRequest
 ) : Injectable {
-  override val callableFqName = FqName("lambdaOf")
+  override val type = request.type
+  override val callableFqName = request.callableFqName.child(request.parameterName)
   override val dependencies = listOf(
     InjectableRequest(
       type = type.arguments.last(),
@@ -85,7 +86,7 @@ class LambdaInjectable(
     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
     .first()
     .valueParameters
-    .map { ParameterDescriptor(it) }
+    .map { ParameterDescriptor(it, this) }
 
   override val dependencyScope = InjectableScopeOrParent(
     name = "LAMBDA $type",
@@ -101,7 +102,8 @@ class LambdaInjectable(
 
   // required to distinct between individual lambdas in codegen
   class ParameterDescriptor(
-    private val delegate: ValueParameterDescriptor
+    private val delegate: ValueParameterDescriptor,
+    val lambdaInjectable: LambdaInjectable
   ) : ValueParameterDescriptor by delegate
 }
 
@@ -143,7 +145,8 @@ data class InjectableRequest(
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
   InjectableRequest(
     type = callable.parameterTypes[injektIndex(ctx)]!!,
-    callableFqName = callable.callableFqName,
+    callableFqName = if (this is LambdaInjectable.ParameterDescriptor)
+      lambdaInjectable.callableFqName else callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
     parameterIndex = injektIndex(ctx),

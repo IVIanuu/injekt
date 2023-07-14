@@ -305,8 +305,6 @@ fun ParameterDescriptor.injektIndex(ctx: Context): Int =
     }
   }
 
-fun String.nextFrameworkKey(next: String) = "$this:$next"
-
 fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }

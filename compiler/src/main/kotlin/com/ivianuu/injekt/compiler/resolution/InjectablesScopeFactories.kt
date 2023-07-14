@@ -215,7 +215,7 @@ private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
   ctx.cached("file_scope", file) {
     InjectableScopeOrParent(
       name = "FILE ${file.name}",
-      parent = GlobalInjectablesScope(ctx),
+      parent = InternalGlobalInjectablesScope(ctx, file),
       owner = file,
       ctx = ctx,
       initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
@@ -241,7 +241,7 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
 
   return InjectableScopeOrParent(
     name = "FILE INIT ${file.name} at ${injectableDeclaration?.name}",
-    parent = GlobalInjectablesScope(ctx),
+    parent = InternalGlobalInjectablesScope(ctx, file),
     owner = file,
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectableScopeOrParent true
@@ -546,22 +546,27 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun GlobalInjectablesScope(ctx: Context): InjectablesScope =
-  ctx.cached("global_scope", Unit) {
-    val (externalInjectables, internalInjectables) = collectGlobalInjectables(ctx)
-      .partition { it.callable.isExternalDeclaration(ctx) }
-
-    val externalScope = InjectablesScope(
-      name = "EXTERNAL GLOBAL",
-      parent = null,
-      initialInjectables = externalInjectables,
+fun InternalGlobalInjectablesScope(ctx: Context, file: KtFile): InjectablesScope =
+  ctx.cached("internal_global_scope", file.virtualFilePath) {
+    InjectableScopeOrParent(
+      name = "INTERNAL GLOBAL EXCEPT $file",
+      parent = ExternalGlobalInjectablesScope(ctx),
+      initialInjectables = collectGlobalInjectables(ctx)
+        .filter {
+          !it.callable.isExternalDeclaration(ctx) &&
+              it.callable.findPsi()?.containingFile != file
+        },
       ctx = ctx
     )
+  }
 
-    InjectableScopeOrParent(
-      name = "INTERNAL GLOBAL",
-      parent = externalScope,
-      initialInjectables = internalInjectables,
+fun ExternalGlobalInjectablesScope(ctx: Context): InjectablesScope =
+  ctx.cached("external_global_scope", Unit) {
+    InjectablesScope(
+      name = "EXTERNAL GLOBAL",
+      parent = null,
+      initialInjectables = collectGlobalInjectables(ctx)
+        .filter { it.callable.isExternalDeclaration(ctx) },
       ctx = ctx
     )
   }

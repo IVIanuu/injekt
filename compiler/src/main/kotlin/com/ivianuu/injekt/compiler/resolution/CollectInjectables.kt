@@ -18,7 +18,6 @@ import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.transform
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -49,6 +48,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import java.util.UUID
 
 fun TypeRef.collectInjectables(
   classBodyView: Boolean,
@@ -179,7 +179,7 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
-  addInjectable: (CallableRef) -> Unit,
+  addInjectable: (CallableRef, Boolean) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
   seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf(),
   ctx: Context
@@ -193,12 +193,15 @@ fun CallableRef.collectInjectables(
     return
   }
 
-  if (type.isUnconstrained(scope.allStaticTypeParameters))
-    return
+  if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = if (!type.isProvideFunctionType) this
-  else copy(type = type.copy(frameworkKey = callable.uniqueKey(ctx)))
-  addInjectable(nextCallable)
+  // add the "real" injectable without framework keys to allow user code to inject this injectable
+  addInjectable(this, false)
+
+  // also add a internal injectable to make sure that child injectables
+  // a guaranteed to use the correct dispatch receiver
+  val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
+  addInjectable(nextCallable, true)
 
   nextCallable
     .type
