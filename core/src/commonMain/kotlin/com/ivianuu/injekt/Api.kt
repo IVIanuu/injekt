@@ -38,15 +38,15 @@ inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
 inline fun <A, R> provide(a: A, block: (@Provide A) -> R): R = block(a)
 
-data class ProvideModule2<A, B>(
+@Provide data class Providers2<A, B>(
   @property:Provide val _a: A,
   @property:Provide val _b: B
 )
 
-inline fun <A, B, R> provide(a: A, b: B, block: (@Provide ProvideModule2<A, B>) -> R): R =
-  block(ProvideModule2(a, b))
+inline fun <A, B, R> provide(a: A, b: B, block: (@Provide Providers2<A, B>) -> R): R =
+  block(Providers2(a, b))
 
-data class ProvideModule3<A, B, C>(
+@Provide data class Providers3<A, B, C>(
   @property:Provide val _a: A,
   @property:Provide val _b: B,
   @property:Provide val _c: C
@@ -56,10 +56,10 @@ inline fun <A, B, C, R> provide(
   a: A,
   b: B,
   c: C,
-  block: (@Provide ProvideModule3<A, B, C>) -> R
-): R = block(ProvideModule3(a, b, c))
+  block: (@Provide Providers3<A, B, C>) -> R
+): R = block(Providers3(a, b, c))
 
-data class ProvideModule4<A, B, C, D>(
+@Provide data class Providers4<A, B, C, D>(
   @property:Provide val _a: A,
   @property:Provide val _b: B,
   @property:Provide val _c: C,
@@ -71,10 +71,10 @@ inline fun <A, B, C, D, R> provide(
   b: B,
   c: C,
   d: D,
-  block: (@Provide ProvideModule4<A, B, C, D>) -> R
-): R = block(ProvideModule4(a, b, c, d))
+  block: (@Provide Providers4<A, B, C, D>) -> R
+): R = block(Providers4(a, b, c, d))
 
-data class ProvideModule5<A, B, C, D, E>(
+@Provide data class Providers5<A, B, C, D, E>(
   @property:Provide val _a: A,
   @property:Provide val _b: B,
   @property:Provide val _c: C,
@@ -88,8 +88,8 @@ inline fun <A, B, C, D, E, R> provide(
   c: C,
   d: D,
   e: E,
-  block: (@Provide ProvideModule5<A, B, C, D, E>) -> R
-): R = block(ProvideModule5(a, b, c, d, e))
+  block: (@Provide Providers5<A, B, C, D, E>) -> R
+): R = block(Providers5(a, b, c, d, e))
 
 /**
  * Automatically fills in a argument if no explicit argument was provided
