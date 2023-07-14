@@ -146,34 +146,31 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isFunctionType -> LambdaInjectable(
-      type = request.type,
-      ownerScope = this
-    )
-    request.type.classifier == ctx.listClassifier -> {
-      val singleElementType = request.type.arguments[0]
+  fun frameworkInjectableForType(type: TypeRef): Injectable? = when {
+    type.isFunctionType -> LambdaInjectable(type, this)
+    type.classifier == ctx.listClassifier -> {
+      val singleElementType = type.arguments[0]
       val collectionElementType = ctx.collectionClassifier.defaultType
         .withArguments(listOf(singleElementType))
 
-      val key = CallableRequestKey(request.type, allStaticTypeParameters)
+      val key = CallableRequestKey(type, allStaticTypeParameters)
 
       val elements = listElementsForType(singleElementType, collectionElementType, key)
         .values.map { it.type }
 
       if (elements.isEmpty()) null
       else ListInjectable(
-        type = request.type,
+        type = type,
         ownerScope = this,
         elements = elements,
         singleElementType = singleElementType,
         collectionElementType = collectionElementType
       )
     }
-    request.type.classifier.fqName == InjektFqNames.TypeKey ->
-      TypeKeyInjectable(request.type, this)
-    request.type.classifier.fqName == InjektFqNames.SourceKey ->
-      SourceKeyInjectable(request.type, this)
+    type.classifier.fqName == InjektFqNames.TypeKey ->
+      TypeKeyInjectable(type, this)
+    type.classifier.fqName == InjektFqNames.SourceKey ->
+      SourceKeyInjectable(type, this)
     else -> null
   }
 
