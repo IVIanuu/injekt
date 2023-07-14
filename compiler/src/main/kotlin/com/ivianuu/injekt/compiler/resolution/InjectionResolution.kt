@@ -7,6 +7,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -150,12 +151,20 @@ private fun InjectablesScope.computeForCandidate(
 
   if (chain.isNotEmpty()) {
     for (i in chain.lastIndex downTo 0) {
-      val prev = chain[i]
+      val (_, previousCandidate) = chain[i]
 
-      if (prev.second.callableFqName == candidate.callableFqName &&
-        prev.second.type.coveringSet == candidate.type.coveringSet &&
-        (prev.second.type.typeSize < candidate.type.typeSize ||
-            prev.second.type == candidate.type)) {
+      val isSameCallable = if (candidate is CallableInjectable &&
+        candidate.callable.callable.containingDeclaration.fqNameSafe
+          .asString().startsWith("kotlin.Function") &&
+          previousCandidate is CallableInjectable &&
+          previousCandidate.callable.callable.containingDeclaration.fqNameSafe
+            .asString().startsWith("kotlin.Function"))
+        candidate.dependencies.first().type == previousCandidate.dependencies.first().type
+        else previousCandidate.callableFqName == candidate.callableFqName
+      if (isSameCallable &&
+        previousCandidate.type.coveringSet == candidate.type.coveringSet &&
+        (previousCandidate.type.typeSize < candidate.type.typeSize ||
+            previousCandidate.type == candidate.type)) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
         return result
