@@ -111,14 +111,14 @@ class SourceKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
 ) : Injectable {
-  override val callableFqName = FqName("com.ivianuu.injekt.common.sourceKey")
+  override val callableFqName = FqName("sourceKey")
 }
 
 class TypeKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
 ) : Injectable {
-  override val callableFqName = FqName("com.ivianuu.injekt.common.typeKeyOf<${type.renderToString()}>")
+  override val callableFqName = FqName("typeKeyOf<${type.renderToString()}>")
   override val dependencies = type.allTypes
     .filter { it.classifier.isTypeParameter }
     .mapIndexed { index, typeParameter ->
