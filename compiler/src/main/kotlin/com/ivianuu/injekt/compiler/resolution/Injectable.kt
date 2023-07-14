@@ -69,7 +69,7 @@ class LambdaInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
 ) : Injectable {
-  override val callableFqName = FqName("injectLambda")
+  override val callableFqName = FqName("lambdaOf")
   override val dependencies = listOf(
     InjectableRequest(
       type = type.arguments.last(),
