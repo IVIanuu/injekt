@@ -68,7 +68,7 @@ class LambdaInjectable(
   request: InjectableRequest
 ) : Injectable {
   override val type = request.type
-  override val callableFqName = request.callableFqName.child(request.parameterName)
+  override val callableFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
     InjectableRequest(
       type = type.arguments.last(),
@@ -86,7 +86,7 @@ class LambdaInjectable(
     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
     .first()
     .valueParameters
-    .map { ParameterDescriptor(it) }
+    .map { ParameterDescriptor(it, this) }
 
   override val dependencyScope = InjectableScopeOrParent(
     name = "LAMBDA $type",
@@ -102,7 +102,8 @@ class LambdaInjectable(
 
   // required to distinct between individual lambdas in codegen
   class ParameterDescriptor(
-    private val delegate: ValueParameterDescriptor
+    private val delegate: ValueParameterDescriptor,
+    val lambdaInjectable: LambdaInjectable
   ) : ValueParameterDescriptor by delegate
 }
 

@@ -67,6 +67,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
           this[typeParameter] = typeParameter.defaultType
       },
       callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
+      safeAs<LambdaInjectable.ParameterDescriptor>()?.lambdaInjectable?.callableFqName ?:
       safeAs<ReceiverParameterDescriptor>()?.fqNameSafe?.parent() ?:
       fqNameSafe
     )
