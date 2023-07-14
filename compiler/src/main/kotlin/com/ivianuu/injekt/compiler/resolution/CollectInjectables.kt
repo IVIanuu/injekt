@@ -210,6 +210,7 @@ fun CallableRef.collectInjectables(
     )
     .forEach { innerCallable ->
       innerCallable
+        .copy(callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()))
         .collectInjectables(
           scope = scope,
           addInjectable = addInjectable,

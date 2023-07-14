@@ -14,7 +14,6 @@ import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -23,7 +22,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 sealed interface Injectable {
   val type: TypeRef
@@ -142,11 +140,10 @@ data class InjectableRequest(
   val isRequired: Boolean = true
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context) =
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
   InjectableRequest(
     type = callable.parameterTypes[injektIndex(ctx)]!!,
-    callableFqName = containingDeclaration.safeAs<ConstructorDescriptor>()
-      ?.constructedClass?.fqNameSafe ?: containingDeclaration.fqNameSafe,
+    callableFqName = callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),
     parameterIndex = injektIndex(ctx),

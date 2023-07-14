@@ -109,4 +109,19 @@ class ModuleTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testModuleChainErrorNames() = singleAndMultiCodegen(
+    """
+      class FooModule {
+        @Provide fun foo(unit: Unit): Foo = Foo()
+      }
+
+      @Provide val fooModuleProvider: @Provide () -> FooModule = { FooModule() }
+    """,
+    """
+      fun invoke() = inject<Foo>()
+    """
+  ) {
+    compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.fooModuleProvider.invoke.foo")
+  }
 }

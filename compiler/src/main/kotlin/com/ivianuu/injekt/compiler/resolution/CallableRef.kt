@@ -2,12 +2,19 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(UnsafeCastFunction::class)
+
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.callableInfo
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
   val callable: CallableDescriptor,
@@ -15,7 +22,8 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
-  val typeArguments: Map<ClassifierRef, TypeRef>
+  val typeArguments: Map<ClassifierRef, TypeRef>,
+  val callableFqName: FqName
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -56,6 +64,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType
-      }
+      },
+      callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?: fqNameSafe
     )
   }
