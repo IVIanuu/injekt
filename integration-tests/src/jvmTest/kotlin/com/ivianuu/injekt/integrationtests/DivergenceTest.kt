@@ -53,7 +53,7 @@ class DivergenceTest {
     compilationShouldHaveFailed("diverging")
   }
 
-  @Test fun testCanBreakCircularDependencyViaProvider() = singleAndMultiCodegen(
+  @Test fun testLambdaBreaksCircularDependency() = singleAndMultiCodegen(
     """
       @Provide class A(b: B)
       @Provide class B(a: (B) -> A) {

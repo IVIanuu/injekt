@@ -147,7 +147,7 @@ class InjectablesScope(
   }
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isFunctionType -> ProviderInjectable(
+    request.type.isFunctionType -> LambdaInjectable(
       type = request.type,
       ownerScope = this
     )

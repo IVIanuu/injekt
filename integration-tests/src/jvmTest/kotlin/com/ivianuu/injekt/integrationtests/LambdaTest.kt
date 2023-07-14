@@ -7,8 +7,8 @@ package com.ivianuu.injekt.integrationtests
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
-class ProviderTest {
-  @Test fun testProviderInjectable() = singleAndMultiCodegen(
+class LambdaTest {
+  @Test fun testLambdaInjectable() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
     """,
@@ -20,7 +20,7 @@ class ProviderTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testProviderWithInjectableArgs() = codegen(
+  @Test fun testLambdaWithParams() = codegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
@@ -32,7 +32,7 @@ class ProviderTest {
       .shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testCannotRequestProviderForNonExistingInjectable() = codegen(
+  @Test fun testCannotRequestLambdaForNonExistingInjectable() = codegen(
     """ 
       fun invoke(): Foo = inject<() -> Foo>()()
     """

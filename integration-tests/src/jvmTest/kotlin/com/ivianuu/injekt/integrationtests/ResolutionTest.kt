@@ -172,7 +172,7 @@ class ResolutionTest {
     invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
-  @Test fun testPrefersProviderArgument() = codegen(
+  @Test fun testPrefersLambdaArgument() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke(foo: Foo) = inject<(Foo) -> Foo>()(foo)
@@ -182,7 +182,7 @@ class ResolutionTest {
     invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
-  @Test fun testPrefersInnerProviderArgumentOverOuterProviderArgument() = codegen(
+  @Test fun testPrefersInnerLambdaParameterOverOuterLambdaParameter() = codegen(
     """
       @Provide val foo = Foo()
       fun invoke(foo: Foo) = inject<(Foo) -> (Foo) -> Foo>()(Foo())(foo)

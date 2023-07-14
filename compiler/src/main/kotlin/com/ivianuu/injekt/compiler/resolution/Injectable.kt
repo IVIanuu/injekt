@@ -65,11 +65,11 @@ class ListInjectable(
     }
 }
 
-class ProviderInjectable(
+class LambdaInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope
 ) : Injectable {
-  override val callableFqName = FqName("providerOf")
+  override val callableFqName = FqName("injectLambda")
   override val dependencies = listOf(
     InjectableRequest(
       type = type.arguments.last(),
@@ -87,10 +87,10 @@ class ProviderInjectable(
     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
     .first()
     .valueParameters
-    .map { ProviderValueParameterDescriptor(it) }
+    .map { ParameterDescriptor(it) }
 
   override val dependencyScope = InjectableScopeOrParent(
-    name = "PROVIDER $type",
+    name = "LAMBDA $type",
     parent = ownerScope,
     ctx = ownerScope.ctx,
     initialInjectables = parameterDescriptors
@@ -101,8 +101,8 @@ class ProviderInjectable(
       }
   )
 
-  // required to distinct between individual providers in codegen
-  class ProviderValueParameterDescriptor(
+  // required to distinct between individual lambdas in codegen
+  class ParameterDescriptor(
     private val delegate: ValueParameterDescriptor
   ) : ValueParameterDescriptor by delegate
 }

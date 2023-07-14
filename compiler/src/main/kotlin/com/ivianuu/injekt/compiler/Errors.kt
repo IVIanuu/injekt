@@ -7,7 +7,7 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.resolution.Injectable
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
+import com.ivianuu.injekt.compiler.resolution.LambdaInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.renderToString
 import com.ivianuu.injekt.compiler.resolution.unwrapDependencyFailure
@@ -123,7 +123,7 @@ fun InjectionResult.Error.render(): String = buildString {
       failure: ResolutionResult.Failure,
       candidate: Injectable?
     ) {
-      if (candidate !is ProviderInjectable) {
+      if (candidate !is LambdaInjectable) {
         append("${request.callableFqName}")
 
         if (request.callableTypeArguments.isNotEmpty()) {
@@ -133,7 +133,7 @@ fun InjectionResult.Error.render(): String = buildString {
         }
       }
       when (candidate) {
-        is ProviderInjectable -> {
+        is LambdaInjectable -> {
           append("{ ")
           if (candidate.parameterDescriptors.isNotEmpty()) {
             for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
@@ -153,7 +153,7 @@ fun InjectionResult.Error.render(): String = buildString {
       }
       withIndent {
         append(indent())
-        if (candidate !is ProviderInjectable) {
+        if (candidate !is LambdaInjectable) {
           append("${request.parameterName} = ")
         }
         if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure) {
@@ -185,7 +185,7 @@ fun InjectionResult.Error.render(): String = buildString {
         }
       }
       append(indent())
-      if (candidate is ProviderInjectable) appendLine("}")
+      if (candidate is LambdaInjectable) appendLine("}")
       else appendLine(")")
     }
 

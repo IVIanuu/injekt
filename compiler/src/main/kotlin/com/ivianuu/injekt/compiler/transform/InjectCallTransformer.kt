@@ -22,8 +22,8 @@ import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
+import com.ivianuu.injekt.compiler.resolution.LambdaInjectable
 import com.ivianuu.injekt.compiler.resolution.ListInjectable
-import com.ivianuu.injekt.compiler.resolution.ProviderInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
@@ -157,7 +157,7 @@ class InjectCallTransformer(
       wrapExpressionInFunctionIfNeeded(result) {
         when (val candidate = result.candidate) {
           is CallableInjectable -> callableExpression(result, candidate)
-          is ProviderInjectable -> providerExpression(result, candidate)
+          is LambdaInjectable -> lambdaExpression(result, candidate)
           is ListInjectable -> listExpression(result, candidate)
           is SourceKeyInjectable -> sourceKeyExpression()
           is TypeKeyInjectable -> typeKeyExpression(result, candidate)
@@ -223,15 +223,15 @@ class InjectCallTransformer(
     }
   }.invoke(this)
 
-  private fun ScopeContext.providerExpression(
+  private fun ScopeContext.lambdaExpression(
     result: ResolutionResult.Success.Value,
-    injectable: ProviderInjectable
+    injectable: LambdaInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
     .irLambda(injectable.type.toIrType(irCtx).typeOrNull!!) { function ->
       val dependencyResult = result.dependencyResults.values.single()
-      val dependencyScopeContext = if (injectable.dependencyScope == this@providerExpression.scope) null
+      val dependencyScopeContext = if (injectable.dependencyScope == this@lambdaExpression.scope) null
       else ScopeContext(
-        this@providerExpression, rootContext,
+        this@lambdaExpression, rootContext,
         injectable.dependencyScope, scope
       )
 
