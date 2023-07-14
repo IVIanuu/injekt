@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.psi.KtElement
 import java.util.UUID
 
@@ -26,23 +25,7 @@ class InjectablesScope(
 
   private val injectables = mutableListOf<CallableRef>()
 
-  data class InjectableKey(
-    val uniqueKey: String,
-    val originalType: TypeRef,
-    val typeArguments: Map<ClassifierRef, TypeRef>,
-    val parameterTypes: Map<Int, TypeRef>
-  ) {
-    constructor(callable: CallableRef, ctx: Context) : this(
-      callable.callable.uniqueKey(ctx),
-      callable.originalType,
-      callable.typeArguments,
-      callable.parameterTypes
-    )
-  }
-
   private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
-  private val spreadingInjectableKeys: MutableSet<InjectableKey> =
-    parent?.spreadingInjectableKeys?.toMutableSet() ?: mutableSetOf()
   private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
 
   data class SpreadingInjectable(
@@ -77,10 +60,7 @@ class InjectablesScope(
           if (unique)
             spreadingInjectableCandidateTypes += callable.type
         },
-        addSpreadingInjectable = { callable ->
-          if (spreadingInjectableKeys.add(InjectableKey(callable, ctx)))
-            spreadingInjectables += SpreadingInjectable(callable)
-        },
+        addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) },
         ctx = ctx
       )
 
@@ -148,8 +128,7 @@ class InjectablesScope(
 
       val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-      val elements = listElementsForType(singleElementType, collectionElementType, key)
-        .values.map { it.type }
+      val elements = listElementsTypesForType(singleElementType, collectionElementType, key)
 
       if (elements.isEmpty()) null
       else ListInjectable(
@@ -167,20 +146,17 @@ class InjectablesScope(
     else -> null
   }
 
-  private fun listElementsForType(
+  private fun listElementsTypesForType(
     singleElementType: TypeRef,
     collectionElementType: TypeRef,
     key: CallableRequestKey
-  ): Map<InjectableKey, CallableRef> {
+  ): List<TypeRef> {
     if (injectables.isEmpty())
-      return parent?.listElementsForType(singleElementType, collectionElementType, key) ?: emptyMap()
+      return parent?.listElementsTypesForType(singleElementType, collectionElementType, key) ?: emptyList()
 
-    return buildMap {
-      parent?.listElementsForType(singleElementType, collectionElementType, key)
-        ?.let { parentElements ->
-          for ((candidateKey, candidate) in parentElements)
-            put(candidateKey, candidate)
-        }
+    return buildList {
+      parent?.listElementsTypesForType(singleElementType, collectionElementType, key)
+        ?.let { addAll(it) }
 
       for (candidate in injectables.toList()) {
         if (candidate.type.frameworkKey.isNotEmpty()) continue
@@ -197,11 +173,9 @@ class InjectablesScope(
           frameworkKey = UUID.randomUUID().toString()
         )
 
-        val finalCandidate = substitutedCandidate.copy(type = typeWithFrameworkKey)
+        injectables += substitutedCandidate.copy(type = typeWithFrameworkKey)
 
-        injectables += finalCandidate
-
-        this[InjectableKey(finalCandidate, ctx)] = finalCandidate
+        add(typeWithFrameworkKey)
       }
     }
   }
@@ -253,12 +227,10 @@ class InjectablesScope(
       addSpreadingInjectable = { newInnerCallable ->
         val finalNewInnerInjectable = newInnerCallable
           .copy(originalType = newInnerCallable.type)
-        if (spreadingInjectableKeys.add(InjectableKey(finalNewInnerInjectable, ctx))) {
-          val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
-          spreadingInjectables += newSpreadingInjectable
-          for (candidate in spreadingInjectableCandidateTypes.toList())
-            spreadInjectables(newSpreadingInjectable, candidate)
-        }
+        val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
+        spreadingInjectables += newSpreadingInjectable
+        for (candidate in spreadingInjectableCandidateTypes.toList())
+          spreadInjectables(newSpreadingInjectable, candidate)
       },
       ctx = ctx
     )

@@ -181,11 +181,8 @@ fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addInjectable: (CallableRef, Boolean) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
-  seen: MutableSet<InjectablesScope.InjectableKey> = mutableSetOf(),
   ctx: Context
 ) {
-  if (!seen.add(InjectablesScope.InjectableKey(this, ctx))) return
-
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
   if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
@@ -218,7 +215,6 @@ fun CallableRef.collectInjectables(
           scope = scope,
           addInjectable = addInjectable,
           addSpreadingInjectable = addSpreadingInjectable,
-          seen = seen,
           ctx = ctx
         )
     }
