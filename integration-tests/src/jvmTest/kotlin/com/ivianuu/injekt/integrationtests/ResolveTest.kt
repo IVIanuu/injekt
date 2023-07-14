@@ -1095,5 +1095,7 @@ class ResolveTest {
     """
       fun invoke() = inject<Foo>()
     """
-  )
+  ) {
+    compilationShouldHaveFailed()
+  }
 }
