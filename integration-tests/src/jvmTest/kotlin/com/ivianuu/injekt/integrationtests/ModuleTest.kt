@@ -138,4 +138,23 @@ class ModuleTest {
   ) {
     compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.fooModuleProvider.invoke.foo")
   }
+
+  @Test fun testModuleWithSpreadingInjectable() = codegen(
+    """
+      class Token
+
+      class SpreadModule<T> {
+        @Provide fun <@Spread S : T> token() = Token()
+      }
+      @Provide val fooModule1 = SpreadModule<Foo>()
+      @Provide val fooModule2 = SpreadModule<Foo>()
+
+      @Provide val foo = Foo()
+
+      fun invoke() = inject<List<Token>>()
+    """
+  ) {
+    val values = invokeSingleFile<List<Any>>()
+    values shouldBe values.distinct()
+  }
 }
