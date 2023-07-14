@@ -16,6 +16,7 @@ import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -62,10 +63,7 @@ fun TypeRef.collectInjectables(
           }
         ).substitute(
           classifier.typeParameters
-            .zip(
-              arguments
-                .map { it.copy(isInject = true) }
-            )
+            .zip(arguments)
             .toMap()
         )
       }
@@ -112,14 +110,9 @@ fun ResolutionScope.collectMemberInjectables(
   for (declaration in getContributedDescriptors()) {
     onEach(declaration)
     when (declaration) {
-      is CallableMemberDescriptor -> {
+      is CallableMemberDescriptor, is VariableDescriptor ->
         if (declaration.isProvide())
-          consumer(declaration.toCallableRef(ctx))
-      }
-      is VariableDescriptor -> {
-        if (declaration.isProvide())
-          consumer(declaration.toCallableRef(ctx))
-      }
+          consumer(declaration.cast<CallableDescriptor>().toCallableRef(ctx))
     }
   }
 }
