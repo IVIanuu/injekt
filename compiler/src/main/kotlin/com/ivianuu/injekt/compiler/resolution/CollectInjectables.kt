@@ -109,11 +109,9 @@ fun ResolutionScope.collectMemberInjectables(
 ) {
   for (declaration in getContributedDescriptors()) {
     onEach(declaration)
-    when (declaration) {
-      is CallableMemberDescriptor, is VariableDescriptor ->
-        if (declaration.isProvide())
-          consumer(declaration.cast<CallableDescriptor>().toCallableRef(ctx))
-    }
+    if ((declaration is CallableMemberDescriptor || declaration is VariableDescriptor) &&
+      declaration.isProvide())
+      consumer(declaration.cast<CallableDescriptor>().toCallableRef(ctx))
   }
 }
 
