@@ -9,9 +9,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.diagnostics.Diagnostic
-import org.jetbrains.kotlin.diagnostics.DiagnosticWithParameters1
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -22,13 +20,6 @@ class InjektDiagnosticSuppressor : DiagnosticSuppressor {
     isSuppressed(diagnostic, null)
 
   override fun isSuppressed(diagnostic: Diagnostic, bindingContext: BindingContext?): Boolean {
-    if (diagnostic.factory == Errors.UNDERSCORE_IS_RESERVED)
-      return true
-
-    if (diagnostic.factory == Errors.REDECLARATION &&
-      diagnostic.cast<DiagnosticWithParameters1<KtNamedDeclaration, Any?>>().psiElement.name == "_")
-      return true
-
     if (diagnostic.factory == Errors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT)
       return true
 
