@@ -411,7 +411,7 @@ private fun FunctionParameterInjectablesScopes(
     .transform {
       if (it !== function.dispatchReceiverParameter &&
         (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
-        (it.isProvide(ctx) || function.isProvide(ctx)))
+        it.isProvide(ctx))
         add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->

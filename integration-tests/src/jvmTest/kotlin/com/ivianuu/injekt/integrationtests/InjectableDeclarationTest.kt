@@ -242,19 +242,36 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testMultipleInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
+  @Test fun testInjectFunInterfaceDeclarationSite() = singleAndMultiCodegen(
     """
-      inline fun <T, S, R> withProvidedInstances(@Provide t: T, @Provide s: S, block: (@Inject T, @Inject S) -> R) = block()
+      fun interface Lambda<T, R> {
+        operator fun invoke(@Inject x: T): R
+      }
+
+      inline fun <T, R> withProvidedInstance(value: T, block: Lambda<T, R>) = block(value)
     """,
     """
-      fun invoke(foo: Foo, bar: Bar) = withProvidedInstances(foo, bar) { _, _ -> inject<Foo>() to inject<Bar>() }
+      fun invoke(foo: Foo) = withProvidedInstance(foo, Lambda { inject<Foo>() })
     """
   ) {
     val foo = Foo()
-    val bar = Bar(foo)
-    val (a, b) = invokeSingleFile<Pair<Foo, Bar>>(foo, bar)
-    a shouldBeSameInstanceAs foo
-    b shouldBeSameInstanceAs bar
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
+  }
+
+  @Test fun testInjectFunInterfaceDeclarationSite2() = singleAndMultiCodegen(
+    """
+      fun interface Lambda<T, R> {
+        operator fun invoke(x: @Inject T): R
+      }
+
+      inline fun <T, R> withProvidedInstance(value: T, block: Lambda<T, R>) = block(value)
+    """,
+    """
+      fun invoke(foo: Foo) = withProvidedInstance(foo, Lambda { inject<Foo>() })
+    """
+  ) {
+    val foo = Foo()
+    invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
   @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(

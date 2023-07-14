@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, IDEAPluginsCompatibilityAPI::class)
 
 package com.ivianuu.injekt.compiler
 
@@ -40,11 +40,16 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getValueArgumentForExpression
+import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -52,6 +57,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviatedType
+import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -60,6 +66,14 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
+
+fun KtFunction.getArgumentDescriptor(ctx: Context): ValueParameterDescriptor? {
+  val call = KtPsiUtil.getParentCallIfPresent(this) ?: return null
+  val resolvedCall = call.getResolvedCall(ctx.trace!!.bindingContext) ?: return null
+  val valueArgument = resolvedCall.call.getValueArgumentForExpression(this) ?: return null
+  val mapping = resolvedCall.getArgumentMapping(valueArgument) as? ArgumentMatch ?: return null
+  return mapping.valueParameter
+}
 
 fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   ctx: Context

@@ -11,7 +11,9 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.cached
+import com.ivianuu.injekt.compiler.getArgumentDescriptor
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
 import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
@@ -24,6 +26,8 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
@@ -34,12 +38,14 @@ import org.jetbrains.kotlin.descriptors.impl.ReceiverParameterDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -118,14 +124,35 @@ fun ResolutionScope.collectMemberInjectables(
 }
 
 fun Annotated.isProvide(ctx: Context): Boolean =
-  (hasAnnotation(InjektFqNames.Provide) ||
-      ((this is ParameterDescriptor) && type.isProvide(ctx)) ||
-      (this is PropertyDescriptor && primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true)) ||
-      isInject(ctx)
+  hasAnnotationForInjection(InjektFqNames.Provide, ctx) || isInject(ctx)
 
-fun Annotated.isInject(ctx: Context): Boolean = hasAnnotation(InjektFqNames.Inject) ||
-    (this is ParameterDescriptor && type.isInject(ctx)) ||
-    (this is PropertyDescriptor && primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true)
+fun Annotated.isInject(ctx: Context): Boolean =
+  hasAnnotationForInjection(InjektFqNames.Inject, ctx)
+
+private fun Annotated.hasAnnotationForInjection(fqName: FqName, ctx: Context): Boolean =
+  ctx.cached(
+    "annotation_for_injection_$fqName",
+    if (this is KotlinType) System.identityHashCode(this) else this
+  ) {
+    hasAnnotation(fqName) ||
+        (this is ParameterDescriptor && type.hasAnnotation(fqName)) ||
+        (this is PropertyDescriptor &&
+            primaryConstructorPropertyValueParameter(ctx)?.hasAnnotationForInjection(fqName, ctx) == true) ||
+        (this is ParameterDescriptor &&
+            containingDeclaration.safeAs<FunctionDescriptor>()
+              ?.findPsi()
+              ?.safeAs<KtFunction>()
+              ?.getArgumentDescriptor(ctx)
+              ?.containingDeclaration
+              ?.returnType
+              ?.memberScope
+              ?.getContributedDescriptors()
+              ?.filterIsInstance<FunctionDescriptor>()
+              ?.singleOrNull { it.modality == Modality.ABSTRACT }
+              ?.valueParameters
+              ?.singleOrNull { it.injektIndex(ctx) == injektIndex(ctx) }
+              ?.hasAnnotationForInjection(fqName, ctx) == true)
+  }
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.cached("injectable_constructors", this) {
