@@ -120,17 +120,17 @@ All elements which match the T or Collection\<T\> will be included in the result
 The core of injekt doesn't know anything about scoping, but there is a api in the common module.
 You have to annotate your class or the return type of a function or a property with ```@Scoped``` tag.
 ```kotlin
-// classes
 @Provide @Scoped<UiScope> class Db
 ```
 Then you have to provide a ```Scope``` instance.
 ```kotlin
-// classes
+// use a object as name for the scopp
+object UiScope
+
 @Provide val uiScope = Scope<UiScope>()
 ```
 Then you can inject your class.
 ```kotlin
-// classes
 fun onCreate() {
    @Provide val uiScope = Scope<UiScope>()
    val db = inject<Db>()
@@ -167,7 +167,7 @@ typealias TrackId = @TrackIdTag String
 fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
 ```
 
-# Injectable chaining
+# Modules
 TODO
 
 # Type keys
@@ -175,9 +175,6 @@ TODO
 
 # Source keys
 TODO
-
-# Full kotlin support
-inline, reified, fun interface, lambdas, default parameter value, abstract, expect/actual
 
 # Setup
 ```kotlin
