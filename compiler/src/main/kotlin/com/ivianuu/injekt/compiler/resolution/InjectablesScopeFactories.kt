@@ -232,7 +232,7 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
       if (declaration.endOffset < position.startOffset &&
           declaration is KtNamedDeclaration) {
         declaration.descriptor<DeclarationDescriptor>(ctx)
-          ?.takeIf { it.isProvide() }
+          ?.takeIf { it.isProvide(ctx) }
           ?.let { add(it) }
       }
     }
@@ -297,7 +297,7 @@ private fun ClassInitInjectablesScope(
       if (declaration.endOffset < position.startOffset &&
         declaration is KtNamedDeclaration) {
         declaration.descriptor<DeclarationDescriptor>(ctx)
-          ?.takeIf { it.isProvide() }
+          ?.takeIf { it.isProvide(ctx) }
           ?.let { add(it) }
       }
     }
@@ -411,7 +411,7 @@ private fun FunctionParameterInjectablesScopes(
     .transform {
       if (it !== function.dispatchReceiverParameter &&
         (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
-        (it.isProvide() || function.isProvide()))
+        (it.isProvide(ctx) || function.isProvide(ctx)))
         add(it.toCallableRef(ctx))
     }
     .fold(parent) { acc, nextParameter ->
@@ -457,7 +457,7 @@ private fun PropertyInjectablesScope(
     owner = property.findPsi().cast(),
     initialInjectables = buildList {
       property.allParametersWithContext
-        .filter { it.isProvide() || property.isProvide() }
+        .filter { it.isProvide(ctx) || property.isProvide(ctx) }
         .forEach { add(it.toCallableRef(ctx)) }
     },
     typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
@@ -519,7 +519,7 @@ private fun BlockExpressionInjectablesScope(
       if (declaration.endOffset < position.startOffset &&
         declaration is KtNamedDeclaration) {
         declaration.descriptor<DeclarationDescriptor>(ctx)
-          ?.takeIf { it.isProvide() }
+          ?.takeIf { it.isProvide(ctx) }
           ?.let { add(it) }
       }
     }

@@ -14,6 +14,7 @@ import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
+import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -24,6 +25,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -110,16 +112,20 @@ fun ResolutionScope.collectMemberInjectables(
   for (declaration in getContributedDescriptors()) {
     onEach(declaration)
     if ((declaration is CallableMemberDescriptor || declaration is VariableDescriptor) &&
-      declaration.isProvide())
+      declaration.isProvide(ctx))
       consumer(declaration.cast<CallableDescriptor>().toCallableRef(ctx))
   }
 }
 
-fun Annotated.isProvide(): Boolean =
-  (hasAnnotation(InjektFqNames.Provide) || (this is ParameterDescriptor) && type.isProvide()) || isInject()
+fun Annotated.isProvide(ctx: Context): Boolean =
+  (hasAnnotation(InjektFqNames.Provide) ||
+      ((this is ParameterDescriptor) && type.isProvide(ctx)) ||
+      (this is PropertyDescriptor && primaryConstructorPropertyValueParameter(ctx)?.isProvide(ctx) == true)) ||
+      isInject(ctx)
 
-fun Annotated.isInject(): Boolean = hasAnnotation(InjektFqNames.Inject) ||
-    (this is ParameterDescriptor && type.isInject())
+fun Annotated.isInject(ctx: Context): Boolean = hasAnnotation(InjektFqNames.Inject) ||
+    (this is ParameterDescriptor && type.isInject(ctx)) ||
+    (this is PropertyDescriptor && primaryConstructorPropertyValueParameter(ctx)?.isInject(ctx) == true)
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.cached("injectable_constructors", this) {
@@ -207,7 +213,7 @@ fun collectPackageInjectables(
           if (declaration is ClassDescriptor) {
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
 
-            if (declaration.kind == ClassKind.OBJECT && declaration.isProvide())
+            if (declaration.kind == ClassKind.OBJECT && declaration.isProvide(ctx))
               injectables += declaration.injectableReceiver(true, ctx)
             else
               injectables += declaration.injectableConstructors(ctx)

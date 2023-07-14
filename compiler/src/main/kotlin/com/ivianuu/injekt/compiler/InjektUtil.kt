@@ -40,10 +40,13 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedTypeParameterDescriptor
@@ -57,6 +60,30 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
+
+fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
+  ctx: Context
+): ValueParameterDescriptor? = overriddenTreeUniqueAsSequence(false)
+  .map { it.containingDeclaration }
+  .filterIsInstance<ClassDescriptor>()
+  .mapNotNull { clazz ->
+    if (clazz.isDeserializedDeclaration()) {
+      clazz.unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.firstOrNull {
+          it.name == name &&
+              it.name.asString() in clazz.classifierInfo(ctx).primaryConstructorPropertyParameters
+        }
+    } else {
+      clazz.unsubstitutedPrimaryConstructor
+        ?.valueParameters
+        ?.firstOrNull {
+          it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true &&
+              it.name == name
+        }
+    }
+  }
+  .firstOrNull()
 
 val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 

@@ -28,7 +28,7 @@ class InjectValueParameterDescriptor(
   val ctx: Context
 ) : ValueParameterDescriptor by underlyingDescriptor {
   private val declaresDefaultValue =
-    underlyingDescriptor.isInject() || underlyingDescriptor.declaresDefaultValue()
+    underlyingDescriptor.isInject(ctx) || underlyingDescriptor.declaresDefaultValue()
   override fun declaresDefaultValue(): Boolean = declaresDefaultValue
 
   override fun getContainingDeclaration(): CallableDescriptor = parent
@@ -56,7 +56,7 @@ abstract class AbstractInjectFunctionDescriptor(
 fun FunctionDescriptor.toInjectFunctionDescriptor(ctx: Context): InjectFunctionDescriptor? {
   if (this is InjectFunctionDescriptor) return this
   if (this is JavaMethodDescriptor) return null
-  if (allParametersWithContext.none { it.isInject() }) return null
+  if (allParametersWithContext.none { it.isInject(ctx) }) return null
   return when (this) {
     is ClassConstructorDescriptor -> InjectConstructorDescriptorImpl(this, ctx)
     is SimpleFunctionDescriptor -> InjectSimpleFunctionDescriptorImpl(this, ctx)

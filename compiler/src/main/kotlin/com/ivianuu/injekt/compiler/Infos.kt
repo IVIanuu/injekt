@@ -37,7 +37,10 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
@@ -175,7 +178,11 @@ fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
  * Stores information about a classifier which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-class ClassifierInfo(val tags: List<TypeRef>, val lazySuperTypes: Lazy<List<TypeRef>>) {
+class ClassifierInfo(
+  val tags: List<TypeRef>,
+  val lazySuperTypes: Lazy<List<TypeRef>>,
+  val primaryConstructorPropertyParameters: List<String>
+) {
   val superTypes by lazySuperTypes
 }
 
@@ -221,12 +228,33 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       .map { it.type.toTypeRef(ctx) }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
-      ClassifierInfo(tags = tags, lazySuperTypes = lazySuperTypes)
+      ClassifierInfo(
+        tags = tags,
+        lazySuperTypes = lazySuperTypes,
+        primaryConstructorPropertyParameters = emptyList()
+      )
     } else {
       val info = if (this is TypeParameterDescriptor) {
-        ClassifierInfo(tags = emptyList(), lazySuperTypes = lazySuperTypes)
+        ClassifierInfo(
+          tags = emptyList(),
+          lazySuperTypes = lazySuperTypes,
+          primaryConstructorPropertyParameters = emptyList()
+        )
       } else {
-        ClassifierInfo(tags = tags, lazySuperTypes = lazySuperTypes)
+        val primaryConstructorPropertyParameters = safeAs<ClassDescriptor>()
+          ?.unsubstitutedPrimaryConstructor
+          ?.valueParameters
+          ?.transform {
+            if (it.findPsi()?.safeAs<KtParameter>()?.isPropertyParameter() == true)
+              add(it.name.asString())
+          }
+          ?: emptyList()
+
+        ClassifierInfo(
+          tags = tags,
+          lazySuperTypes = lazySuperTypes,
+          primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
+        )
       }
 
       // important to cache the info before persisting it
@@ -241,17 +269,20 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
 
 @Serializable data class PersistedClassifierInfo(
   val tags: List<PersistedTypeRef>,
-  val superTypes: List<PersistedTypeRef>
+  val superTypes: List<PersistedTypeRef>,
+  val primaryConstructorPropertyParameters: List<String>
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
   tags = tags.map { it.toTypeRef(ctx) },
-  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } }
+  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } },
+  primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifierInfo(
   tags = tags.map { it.toPersistedTypeRef(ctx) },
-  superTypes = superTypes.map { it.toPersistedTypeRef(ctx) }
+  superTypes = superTypes.map { it.toPersistedTypeRef(ctx) },
+  primaryConstructorPropertyParameters = primaryConstructorPropertyParameters
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: Context) {
@@ -298,7 +329,8 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: 
     if (!visibility.shouldPersistInfo()) return
 
     if (info.tags.none { it.shouldBePersisted() } &&
-      info.superTypes.none { it.shouldBePersisted() }) return
+      info.superTypes.none { it.shouldBePersisted() } &&
+      info.primaryConstructorPropertyParameters.isEmpty()) return
 
     if (hasAnnotation(InjektFqNames.DeclarationInfo)) return
 

@@ -47,9 +47,7 @@ inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
   // Lambda
   // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE,
-
-  AnnotationTarget.PROPERTY
+  AnnotationTarget.TYPE
 )
 annotation class Inject
 

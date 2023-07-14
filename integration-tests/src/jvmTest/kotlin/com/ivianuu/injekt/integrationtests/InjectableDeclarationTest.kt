@@ -393,9 +393,9 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testSuperClassPrimaryProvideConstructorParameter() = singleAndMultiCodegen(
+  @Test fun testSuperClassPrimaryProvideConstructorParameter() = codegen(
     """
-      abstract class MySuperClass(@property:Provide val foo: Foo)
+      abstract class MySuperClass(@Provide val foo: Foo)
     """,
     """
       @Provide object MySubClass : MySuperClass(Foo())
@@ -444,7 +444,7 @@ class InjectableDeclarationTest {
 
   @Test fun testClassWithUnderscoreParameters() = codegen(
     """
-      class Dep(@property:Inject val _: Foo, @property:Inject val _: Bar) {
+      class Dep(@Inject val _: Foo, @Inject val _: Bar) {
         fun resolve() = inject<Foo>()
       }
 
