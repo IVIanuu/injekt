@@ -9,14 +9,16 @@ import org.junit.Test
 class DivergenceTest {
   @Test fun testUnresolvableDivergence() = singleAndMultiCodegen(
     """
-      interface Wrapper<T> {
+      interface Base
+
+      interface Wrapper<T> : Base {
         val value: T
       }
   
-      @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
+      @Provide fun <T : Base> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = inject<Base>()
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -24,16 +26,18 @@ class DivergenceTest {
 
   @Test fun testResolvableDivergence() = singleAndMultiCodegen(
     """
-      interface Wrapper<T> {
+      interface Base
+
+      interface Wrapper<T> : Base {
         val value: T
       }
   
-      @Provide fun <T> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
+      @Provide fun <T : Base> unwrapped(wrapped: Wrapper<T>): T = wrapped.value
   
-      @Provide fun fooWrapper(): Wrapper<Wrapper<Foo>> = error("")
+      @Provide fun baseWrapper(): Wrapper<Wrapper<Base>> = error("")
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = inject<Base>()
     """
   )
 

@@ -425,6 +425,14 @@ val TypeRef.isProvideFunctionType: Boolean
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function")
 
+fun TypeRef.isUnconstrained(staticTypeParameters: List<ClassifierRef>): Boolean =
+  classifier.isTypeParameter &&
+      classifier !in staticTypeParameters &&
+      classifier.superTypes.all {
+        it.classifier.fqName == InjektFqNames.Any ||
+            it.isUnconstrained(staticTypeParameters)
+      }
+
 fun effectiveVariance(
   declared: TypeVariance,
   useSite: TypeVariance,

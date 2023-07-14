@@ -38,7 +38,7 @@ inline fun <F : Function<*>> provider(f: F): @Provide F = f
 
 inline fun <A, R> provide(a: A, block: (@Provide A) -> R): R = block(a)
 
-data class Providers2<A, B>(
+@Provide data class Providers2<A, B>(
   @property:Provide val _a: A,
   @property:Provide val _b: B
 )
@@ -46,7 +46,7 @@ data class Providers2<A, B>(
 inline fun <A, B, R> provide(a: A, b: B, block: (@Provide Providers2<A, B>) -> R): R =
   block(Providers2(a, b))
 
-data class Providers3<A, B, C>(
+@Provide data class Providers3<A, B, C>(
   @property:Provide val _a: A,
   @property:Provide val _b: B,
   @property:Provide val _c: C
@@ -59,7 +59,7 @@ inline fun <A, B, C, R> provide(
   block: (@Provide Providers3<A, B, C>) -> R
 ): R = block(Providers3(a, b, c))
 
-data class Providers4<A, B, C, D>(
+@Provide data class Providers4<A, B, C, D>(
   @property:Provide val _a: A,
   @property:Provide val _b: B,
   @property:Provide val _c: C,
@@ -74,7 +74,7 @@ inline fun <A, B, C, D, R> provide(
   block: (@Provide Providers4<A, B, C, D>) -> R
 ): R = block(Providers4(a, b, c, d))
 
-data class Providers5<A, B, C, D, E>(
+@Provide data class Providers5<A, B, C, D, E>(
   @property:Provide val _a: A,
   @property:Provide val _b: B,
   @property:Provide val _c: C,

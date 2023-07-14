@@ -160,6 +160,9 @@ fun CallableRef.collectInjectables(
     return
   }
 
+  if (type.isUnconstrained(scope.allStaticTypeParameters))
+    return
+
   val nextCallable = if (!type.isProvideFunctionType) this
   else copy(type = type.copy(frameworkKey = callable.uniqueKey(ctx)))
   addInjectable(nextCallable)

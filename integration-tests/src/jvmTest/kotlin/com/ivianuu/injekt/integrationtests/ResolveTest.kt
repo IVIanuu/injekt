@@ -1087,4 +1087,13 @@ class ResolveTest {
     result.first.shouldBeNull()
     result.second shouldBeSameInstanceAs foo
   }
+
+  @Test fun testCannotResolveUnconstrainedType() = codegen(
+    """
+      @Provide fun <T> everything(): T = error("")
+    """,
+    """
+      fun invoke() = inject<Foo>()
+    """
+  )
 }

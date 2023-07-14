@@ -118,22 +118,6 @@ class TagTest {
       .shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testUiState() = singleAndMultiCodegen(
-    """
-      @Tag annotation class UiState
-
-      @Provide fun <T> uiState(instance: @UiState T): T = instance
-
-      @Provide val foo: @UiState Foo = Foo()
-    """,
-    """
-      fun invoke() = inject<Foo>() 
-    """
-  ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
     """
       @Tag annotation class TaggedFooTag
