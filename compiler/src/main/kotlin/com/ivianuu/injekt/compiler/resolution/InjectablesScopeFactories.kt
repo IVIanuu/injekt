@@ -251,6 +251,7 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
     },
     ctx = ctx,
     initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
+      .filter { it.callable.findPsi()?.containingFile == file }
   )
 }
 
@@ -585,5 +586,8 @@ fun InjectableScopeOrParent(
   typeParameters: List<ClassifierRef> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
-): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
-else InjectablesScope(name, parent, owner, initialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
+): InjectablesScope {
+  val finalInitialInjectables = initialInjectables.filter(injectablesPredicate)
+  return if (typeParameters.isEmpty() && finalInitialInjectables.isEmpty()) parent
+  else InjectablesScope(name, parent, owner, finalInitialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
+}
