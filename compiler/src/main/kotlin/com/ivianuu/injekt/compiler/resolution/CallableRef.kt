@@ -11,6 +11,7 @@ import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.callableInfo
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -67,6 +68,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       },
       callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
       safeAs<LambdaInjectable.ParameterDescriptor>()?.lambdaInjectable?.callableFqName ?:
+      safeAs<ReceiverParameterDescriptor>()?.fqNameSafe?.parent() ?:
       fqNameSafe
     )
   }
