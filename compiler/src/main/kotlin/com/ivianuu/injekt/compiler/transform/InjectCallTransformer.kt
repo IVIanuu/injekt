@@ -60,6 +60,7 @@ import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
@@ -544,5 +545,20 @@ class InjectCallTransformer(
         rootContext.statements.forEach { +it }
         +result
       }
+  }
+
+  private var underscoreNames = 0
+
+  override fun visitPropertyNew(declaration: IrProperty): IrStatement {
+    if (declaration.name.asString() == "_")
+      declaration.name = "anonymous_${underscoreNames++}".asNameId()
+    return super.visitPropertyNew(declaration)
+  }
+
+  override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
+    if (declaration.name.asString().contains("anonymous parameter") ||
+      declaration.name.asString() == "_")
+      declaration.name = "anonymous_${underscoreNames++}".asNameId()
+    return super.visitValueParameterNew(declaration)
   }
 }

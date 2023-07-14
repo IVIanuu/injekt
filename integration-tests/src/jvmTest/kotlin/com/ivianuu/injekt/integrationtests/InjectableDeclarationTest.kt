@@ -432,4 +432,26 @@ class InjectableDeclarationTest {
       }
     """
   )
+
+  @Test fun testFunctionWithUnderscoreParameters() = codegen(
+    """
+      fun invoke(@Inject _: Foo, @Inject _: Bar) = inject<Foo>()
+    """
+  ) {
+    val expected = Foo()
+    invokeSingleFile(expected, Bar(expected)) shouldBe expected
+  }
+
+  @Test fun testClassWithUnderscoreParameters() = codegen(
+    """
+      class Dep(@property:Inject val _: Foo, @property:Inject val _: Bar) {
+        fun resolve() = inject<Foo>()
+      }
+
+      fun invoke(foo: Foo, bar: Bar) = Dep(foo, bar).resolve()
+    """
+  ) {
+    val expected = Foo()
+    invokeSingleFile(expected, Bar(expected)) shouldBe expected
+  }
 }
