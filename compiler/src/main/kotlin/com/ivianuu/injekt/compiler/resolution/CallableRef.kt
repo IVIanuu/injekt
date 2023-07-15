@@ -23,6 +23,7 @@ data class CallableRef(
   val originalType: TypeRef,
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
+  val constraintType: TypeRef?,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val callableFqName: FqName
 )
@@ -62,6 +63,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       originalType = info.type,
       typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
+      constraintType = typeParameters.singleOrNull { it.isSpread }?.defaultType,
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType

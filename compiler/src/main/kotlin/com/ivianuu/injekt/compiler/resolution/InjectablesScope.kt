@@ -25,25 +25,6 @@ class InjectablesScope(
 
   private val injectables = mutableListOf<CallableRef>()
 
-  private val spreadingInjectables = mutableListOf<SpreadingInjectable>()
-  private val spreadingInjectableCandidateTypes = mutableListOf<TypeRef>()
-
-  data class SpreadingInjectable(
-    val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeParameters.single {
-      it.isSpread
-    }.defaultType.substitute(callable.typeArguments),
-    val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf(),
-    val resultingFrameworkKeys: MutableSet<String> = mutableSetOf()
-  ) {
-    fun copy() = SpreadingInjectable(
-      callable,
-      constraintType,
-      processedCandidateTypes.toMutableSet(),
-      resultingFrameworkKeys.toMutableSet()
-    )
-  }
-
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
@@ -55,35 +36,9 @@ class InjectablesScope(
     for (injectable in initialInjectables)
       injectable.collectInjectables(
         scope = this,
-        addInjectable = { next, unique ->
-          injectables += next
-          if (unique)
-            spreadingInjectableCandidateTypes += next.type
-        },
-        addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) },
+        addInjectable = { injectables += it },
         ctx = ctx
       )
-
-    val hasSpreadingInjectables = spreadingInjectables.isNotEmpty()
-    val hasSpreadingInjectableCandidates = spreadingInjectableCandidateTypes.isNotEmpty()
-    if (parent != null) {
-      spreadingInjectables.addAll(
-        0,
-        // we only need to copy the parent injectables if we have any candidates to process
-        if (hasSpreadingInjectableCandidates) parent.spreadingInjectables.map { it.copy() }
-        else parent.spreadingInjectables
-      )
-      spreadingInjectableCandidateTypes.addAll(0, parent.spreadingInjectableCandidateTypes)
-    }
-
-    // only run if there is something meaningful to process
-    if ((hasSpreadingInjectables && spreadingInjectableCandidateTypes.isNotEmpty()) ||
-      (hasSpreadingInjectableCandidates && spreadingInjectables.isNotEmpty())
-    ) {
-      spreadingInjectableCandidateTypes
-        .toList()
-        .forEach { spreadInjectables(it) }
-    }
   }
 
   fun injectablesForRequest(
@@ -108,12 +63,11 @@ class InjectablesScope(
 
         for (candidate in injectables) {
           if (candidate.type.frameworkKey != key.type.frameworkKey) continue
-          val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
-          if (!context.isOk) continue
-          this += CallableInjectable(
-            this@InjectablesScope,
-            candidate.substitute(context.fixedTypeVariables)
-          )
+          for (result in buildContextForCandidate(candidate, key.type, key.staticTypeParameters))
+            this += CallableInjectable(
+              this@InjectablesScope,
+              candidate.substitute(result)
+            )
         }
       }
     }
@@ -160,71 +114,48 @@ class InjectablesScope(
 
       for (candidate in injectables.toList()) {
         if (candidate.type.frameworkKey.isNotEmpty()) continue
-
-        var context =
-          candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
-        if (!context.isOk)
-          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
-        if (!context.isOk) continue
-
-        val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
-
-        val typeWithFrameworkKey = substitutedCandidate.type.copy(
-          frameworkKey = UUID.randomUUID().toString()
-        )
-
-        injectables += substitutedCandidate.copy(type = typeWithFrameworkKey)
-
-        add(typeWithFrameworkKey)
+        for (result in buildContextForCandidate(candidate, singleElementType, key.staticTypeParameters) +
+            buildContextForCandidate(candidate, collectionElementType, key.staticTypeParameters)) {
+          val substitutedCandidate = candidate.substitute(result)
+          val uniqueType = substitutedCandidate.type.copy(frameworkKey = UUID.randomUUID().toString())
+          injectables += substitutedCandidate.copy(type = uniqueType)
+          add(uniqueType)
+        }
       }
     }
   }
 
-  private fun spreadInjectables(candidateType: TypeRef) {
-    for (spreadingInjectable in spreadingInjectables.toList())
-      spreadInjectables(spreadingInjectable, candidateType)
-  }
-
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
-    if (candidateType.frameworkKey in spreadingInjectable.resultingFrameworkKeys) return
-    if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
-
-    val context = buildContextForSpreadingInjectable(
-      spreadingInjectable.constraintType,
-      candidateType,
-      allStaticTypeParameters,
-      ctx
+  private fun buildContextForCandidate(
+    candidate: CallableRef,
+    type: TypeRef,
+    staticTypeParameters: List<ClassifierRef>
+  ): List<Map<ClassifierRef, TypeRef>> = if (candidate.constraintType == null) {
+    listOfNotNull(
+      candidate.type.buildContext(type, staticTypeParameters, ctx = ctx)
+        .takeIf { it.isOk }
+        ?.fixedTypeVariables
     )
-    if (!context.isOk) return
+  } else {
+    allScopes
+      .flatMap { it.injectables }
+      .mapNotNull { constraintCandidate ->
+        val constraintResult = buildContextForSpreadingInjectable(
+          candidate.constraintType,
+          constraintCandidate.type,
+          staticTypeParameters,
+          ctx
+        ).takeIf { it.isOk }
+          ?.fixedTypeVariables
+          ?: return@mapNotNull null
 
-    val substitutedInjectable = spreadingInjectable.callable
-      .copy(
-        type = spreadingInjectable.callable.type
-          .substitute(context.fixedTypeVariables),
-        parameterTypes = spreadingInjectable.callable.parameterTypes
-          .mapValues { it.value.substitute(context.fixedTypeVariables) },
-        typeArguments = spreadingInjectable.callable
-          .typeArguments
-          .mapValues { it.value.substitute(context.fixedTypeVariables) }
-      )
+        val result = candidate.type.substitute(constraintResult)
+          .buildContext(type, staticTypeParameters, ctx = ctx)
+          .takeIf { it.isOk }
+          ?.fixedTypeVariables
+          ?: return@mapNotNull null
 
-    substitutedInjectable.collectInjectables(
-      scope = this,
-      addInjectable = { next, unique ->
-        injectables += next
-        if (unique) {
-          spreadingInjectableCandidateTypes += next.type
-          spreadInjectables(next.type)
-        }
-      },
-      addSpreadingInjectable = { next ->
-        val newSpreadingInjectable = SpreadingInjectable(next)
-        spreadingInjectables += newSpreadingInjectable
-        for (candidate in spreadingInjectableCandidateTypes.toList())
-          spreadInjectables(newSpreadingInjectable, candidate)
-      },
-      ctx = ctx
-    )
+        constraintResult + result
+      }
   }
 
   override fun toString(): String = "InjectablesScope($name)"

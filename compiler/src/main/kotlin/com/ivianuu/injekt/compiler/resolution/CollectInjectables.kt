@@ -179,42 +179,35 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
-  addInjectable: (CallableRef, Boolean) -> Unit,
-  addSpreadingInjectable: (CallableRef) -> Unit,
+  addInjectable: (CallableRef) -> Unit,
   ctx: Context
 ) {
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
-    addSpreadingInjectable(this)
-    return
-  }
-
-  if (type.isUnconstrained(scope.allStaticTypeParameters)) return
+  if (type.isUnconstrained(scope.allStaticTypeParameters) && constraintType == null) return
 
   // add the "real" injectable without framework keys to allow user code to inject this injectable
-  addInjectable(this, false)
+  addInjectable(this)
 
   // also add a internal injectable to make sure that child injectables
   // are guaranteed to use the correct dispatch receiver
-  val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
-  addInjectable(nextCallable, true)
+  val current = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
+  addInjectable(current)
 
-  nextCallable
+  current
     .type
     .collectInjectables(
-      nextCallable.type.classifier.descriptor?.parentsWithSelf
+      current.type.classifier.descriptor?.parentsWithSelf
         ?.mapNotNull { it.findPsi() }
         ?.any { callableParent -> scope.allScopes.any { it.owner == callableParent } } == true,
       ctx
     )
-    .forEach { innerCallable ->
-      innerCallable
-        .copy(callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()))
+    .forEach { next ->
+      next
+        .copy(callableFqName = current.callableFqName.child(next.callableFqName.shortName()))
         .collectInjectables(
           scope = scope,
           addInjectable = addInjectable,
-          addSpreadingInjectable = addSpreadingInjectable,
           ctx = ctx
         )
     }
