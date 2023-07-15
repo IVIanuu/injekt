@@ -215,9 +215,7 @@ class InjectablesScope(
       scope = this,
       addInjectable = { innerCallable, unique ->
         if (!unique) {
-          val finalInnerCallable = innerCallable
-            .copy(originalType = innerCallable.type)
-          injectables += finalInnerCallable
+          injectables += innerCallable.copy(originalType = innerCallable.type)
         } else {
           injectables += innerCallable
           spreadingInjectableCandidateTypes += innerCallable.type

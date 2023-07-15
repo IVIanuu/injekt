@@ -196,7 +196,7 @@ fun CallableRef.collectInjectables(
   addInjectable(this, false)
 
   // also add a internal injectable to make sure that child injectables
-  // a guaranteed to use the correct dispatch receiver
+  // are guaranteed to use the correct dispatch receiver
   val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
   addInjectable(nextCallable, true)
 
