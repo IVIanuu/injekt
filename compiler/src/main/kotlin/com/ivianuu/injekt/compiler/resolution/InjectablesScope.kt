@@ -55,10 +55,10 @@ class InjectablesScope(
     for (injectable in initialInjectables)
       injectable.collectInjectables(
         scope = this,
-        addInjectable = { callable, unique ->
-          injectables += callable
+        addInjectable = { next, unique ->
+          injectables += next
           if (unique)
-            spreadingInjectableCandidateTypes += callable.type
+            spreadingInjectableCandidateTypes += next.type
         },
         addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) },
         ctx = ctx
@@ -197,13 +197,10 @@ class InjectablesScope(
     )
     if (!context.isOk) return
 
-    val newInjectableType = spreadingInjectable.callable.type
-      .substitute(context.fixedTypeVariables)
-      .copy(frameworkKey = "")
-    val newInjectable = spreadingInjectable.callable
+    val substitutedInjectable = spreadingInjectable.callable
       .copy(
-        type = newInjectableType,
-        originalType = newInjectableType,
+        type = spreadingInjectable.callable.type
+          .substitute(context.fixedTypeVariables),
         parameterTypes = spreadingInjectable.callable.parameterTypes
           .mapValues { it.value.substitute(context.fixedTypeVariables) },
         typeArguments = spreadingInjectable.callable
@@ -211,21 +208,17 @@ class InjectablesScope(
           .mapValues { it.value.substitute(context.fixedTypeVariables) }
       )
 
-    newInjectable.collectInjectables(
+    substitutedInjectable.collectInjectables(
       scope = this,
-      addInjectable = { innerCallable, unique ->
-        if (!unique) {
-          injectables += innerCallable.copy(originalType = innerCallable.type)
-        } else {
-          injectables += innerCallable
-          spreadingInjectableCandidateTypes += innerCallable.type
-          spreadInjectables(innerCallable.type)
+      addInjectable = { next, unique ->
+        injectables += next
+        if (unique) {
+          spreadingInjectableCandidateTypes += next.type
+          spreadInjectables(next.type)
         }
       },
-      addSpreadingInjectable = { newInnerCallable ->
-        val finalNewInnerInjectable = newInnerCallable
-          .copy(originalType = newInnerCallable.type)
-        val newSpreadingInjectable = SpreadingInjectable(finalNewInnerInjectable)
+      addSpreadingInjectable = { next ->
+        val newSpreadingInjectable = SpreadingInjectable(next)
         spreadingInjectables += newSpreadingInjectable
         for (candidate in spreadingInjectableCandidateTypes.toList())
           spreadInjectables(newSpreadingInjectable, candidate)
