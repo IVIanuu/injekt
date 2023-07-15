@@ -89,15 +89,14 @@ class InjectCallTransformer(
   private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
-    val usages = buildMap<Any, Int> {
-      fun ResolutionResult.Success.collectUsagesRecursive() {
+    val usages = buildMap<Any, MutableSet<InjectableRequest>> {
+      fun ResolutionResult.Success.collectUsagesRecursive(request: InjectableRequest) {
         if (this !is ResolutionResult.Success.Value) return
-        val key = usageKey()
-        put(key, getOrPut(key) { 0 }.inc())
-        dependencyResults.forEach { it.value.collectUsagesRecursive() }
+        getOrPut(usageKey()) { mutableSetOf() } += request
+        dependencyResults.forEach { it.value.collectUsagesRecursive(it.key) }
       }
 
-      result.results.forEach { it.value.collectUsagesRecursive() }
+      result.results.forEach { it.value.collectUsagesRecursive(it.key) }
     }
 
     fun mapScopeIfNeeded(scope: InjectablesScope) =
@@ -187,7 +186,7 @@ class InjectCallTransformer(
   }
 
   private fun ResolutionResult.Success.Value.shouldWrap(ctx: RootContext): Boolean =
-    dependencyResults.isNotEmpty() && ctx.usages[usageKey()]!! > 1
+    dependencyResults.isNotEmpty() && ctx.usages[usageKey()]!!.size > 1
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
