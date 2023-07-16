@@ -314,6 +314,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context,
   ) {
     if (descriptor.getTags().isNotEmpty())
-      ctx.reportError(declaration, "tags are only supported on classes, constructors or return types")
+      ctx.reportError(declaration, "tags are only supported on classes, constructors and return types")
   }
 }
