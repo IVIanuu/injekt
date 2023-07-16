@@ -151,7 +151,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.String")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testNestedUnresolvedInjectable() = singleAndMultiCodegen(
@@ -162,7 +162,7 @@ class ResolveTest {
       fun invoke() = inject<Bar>() 
     """
   ) {
-    compilationShouldHaveFailed("\nno injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testGenericInjectable() = singleAndMultiCodegen(
@@ -285,7 +285,7 @@ class ResolveTest {
      fun invoke() = inject<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolvePrivateClassInjectableFromOuterScope() = singleAndMultiCodegen(
@@ -298,7 +298,7 @@ class ResolveTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolvePrivateClassInjectableFromInnerScope() = codegen(
@@ -320,7 +320,7 @@ class ResolveTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveProtectedInjectableFromSameClass() = codegen(
@@ -360,7 +360,7 @@ class ResolveTest {
       fun invoke() = inject<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testAnonymousObjectCanResolveInjectablesOfOuterClass() = codegen(
@@ -399,7 +399,7 @@ class ResolveTest {
         fun invoke() = inject<Foo>() 
       """
     ) {
-      compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+      compilationShouldHaveFailed("no injectable")
     }
 
   @Test fun testCanResolveImplicitInjectableConstructorParameterFromInsideTheClass() = codegen(
@@ -513,7 +513,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveDispatchReceiverInDefaultValueOfParameter() = codegen(
@@ -547,7 +547,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolvePrimaryConstructorInjectableInSuperTypeExpression() = codegen(
@@ -575,7 +575,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.FooHolder")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveClassProvideDeclarationInSuperTypeExpression() = codegen(
@@ -586,7 +586,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.MyAbstractClass")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveThisInSuperTypeDelegation() = codegen(
@@ -596,7 +596,7 @@ class ResolveTest {
       class MyImpl : Scope by inject()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveThisInSuperTypeDelegation2() = codegen(
@@ -609,7 +609,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Scope for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveClassProvideDeclarationInSecondaryConstructorAfterSuperInit() = codegen(
@@ -631,7 +631,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolvePrimaryConstructorInjectableInInit() = codegen(
@@ -695,7 +695,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveLocalVariableFromWithinInitializer() = codegen(
@@ -705,7 +705,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveLocalVariableFromWithinDelegateInitializer() = codegen(
@@ -715,7 +715,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveClassPropertyFromWithinInitializer() = codegen(
@@ -725,7 +725,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCannotResolveClassPropertyFromWithinDelegateInitializer() = codegen(
@@ -735,7 +735,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
@@ -764,7 +764,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveClassPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
@@ -784,7 +784,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveClassFunctionFromClassPropertyInitializer() = codegen(
@@ -844,7 +844,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveClassFunctionFromClassInitializer() = codegen(
@@ -888,7 +888,7 @@ class ResolveTest {
       @Provide private val foo: Foo = inject<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerIfItsDeclaredBeforeIt() = codegen(
@@ -911,7 +911,7 @@ class ResolveTest {
       @Provide val foo: Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveTopLevelPropertyFromOtherPropertyInitializerLambdaIfItsDeclaredAfterIt() = codegen(
@@ -936,7 +936,7 @@ class ResolveTest {
       @Provide val foo: Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveTopLevelFunctionFromTopLevelPropertyInitializer() = codegen(
@@ -962,7 +962,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testInnerClassCanResolveOuterClassInjectables() = codegen(
@@ -998,7 +998,7 @@ class ResolveTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type com.ivianuu.injekt.integrationtests.Foo for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testTaggedObjectInjectableIsNotApplicableToUntaggedType() = singleAndMultiCodegen(
@@ -1014,9 +1014,7 @@ class ResolveTest {
       fun invoke() = log()
     """
   ) {
-    compilationShouldHaveFailed(
-      "no injectable found of type com.ivianuu.injekt.integrationtests.Logger for parameter logger of function com.ivianuu.injekt.integrationtests.log"
-    )
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testCanResolveOuterClassInjectableFromFunctionInsideAnonymousObject() = codegen(

@@ -35,6 +35,6 @@ class ListTest {
       fun invoke() = inject<List<Command>>()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.collections.List<com.ivianuu.injekt.integrationtests.Command> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 }

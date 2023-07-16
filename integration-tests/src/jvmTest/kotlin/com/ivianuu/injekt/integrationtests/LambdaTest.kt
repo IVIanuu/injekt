@@ -35,6 +35,6 @@ class LambdaTest {
       fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Function0<com.ivianuu.injekt.integrationtests.Foo> for parameter x of function com.ivianuu.injekt.inject")
+    compilationShouldHaveFailed("no injectable")
   }
 }

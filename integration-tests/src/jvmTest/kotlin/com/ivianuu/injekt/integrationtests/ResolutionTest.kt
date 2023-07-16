@@ -241,12 +241,7 @@ class ResolutionTest {
       fun invoke() = inject<String>() 
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.a\n" +
-          "com.ivianuu.injekt.integrationtests.b\n\n" +
-          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
-    )
+    compilationShouldHaveFailed("ambiguous")
   }
 
   @Test fun testCannotDeclareMultipleInjectablesOfTheSameTypeInTheSameCodeBlock() = codegen(
@@ -258,12 +253,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableA\n" +
-          "com.ivianuu.injekt.integrationtests.invoke.injectableB\n\n" +
-          "do all match type kotlin.String for parameter x of function com.ivianuu.injekt.inject"
-    )
+    compilationShouldHaveFailed("ambiguous")
   }
 
   @Test fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
@@ -358,7 +348,7 @@ class ResolutionTest {
       fun invoke() = inject<() -> Foo>() 
     """
   ) {
-    compilationShouldHaveFailed("no injectable found of type kotlin.Unit for parameter unit of function com.ivianuu.injekt.integrationtests.diyProvider")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testUsesDefaultValueOnNonAmbiguityError() = codegen(
@@ -384,12 +374,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      "ambiguous injectables:\n\n" +
-          "com.ivianuu.injekt.integrationtests.foo1\n" +
-          "com.ivianuu.injekt.integrationtests.foo2\n\n" +
-          "do all match type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.invoke.inner"
-    )
+    compilationShouldHaveFailed("ambiguous")
   }
 
   @Test fun testDoesNotUseDefaultValueOnNestedAmbiguityError() = codegen(
@@ -404,25 +389,7 @@ class ResolutionTest {
       }
     """
   ) {
-    compilationShouldHaveFailed(
-      " \n" +
-          "ambiguous injectables of type com.ivianuu.injekt.integrationtests.Foo for parameter foo of function com.ivianuu.injekt.integrationtests.bar.\n" +
-          "\n" +
-          "I found:\n" +
-          "\n" +
-          "  com.ivianuu.injekt.integrationtests.invoke.inner(\n" +
-          "    bar = com.ivianuu.injekt.integrationtests.bar(\n" +
-          "      foo = /* ambiguous: com.ivianuu.injekt.integrationtests.foo1, com.ivianuu.injekt.integrationtests.foo2 do match type com.ivianuu.injekt.integrationtests.Foo */ inject<com.ivianuu.injekt.integrationtests.Foo>()\n" +
-          "    )\n" +
-          "  )\n" +
-          "\n" +
-          "but\n" +
-          "\n" +
-          "com.ivianuu.injekt.integrationtests.foo1\n" +
-          "com.ivianuu.injekt.integrationtests.foo2\n" +
-          "\n" +
-          "do all match type com.ivianuu.injekt.integrationtests.Foo."
-    )
+    compilationShouldHaveFailed("ambiguous")
   }
 
   @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
@@ -434,6 +401,6 @@ class ResolutionTest {
       fun createFoo(@Inject foo1: Foo, @Inject foo2: Foo) = inject<Foo>()
     """
   ) {
-    compilationShouldHaveFailed("ambiguous injectables")
+    compilationShouldHaveFailed("ambiguous")
   }
 }

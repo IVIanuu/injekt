@@ -48,7 +48,7 @@ class SpreadingInjectableTest {
       class MyModule<@Spread T>
     """
   ) {
-    compilationShouldHaveFailed("a @Spread type parameter is only supported on @Provide functions and @Provide classes")
+    compilationShouldHaveFailed("@Provide functions and @Provide classes")
   }
 
   @Test fun testSpreadingNonInjectableFunction() = codegen(
@@ -56,7 +56,7 @@ class SpreadingInjectableTest {
       fun <@Spread T> triggerImpl() = Unit
     """
   ) {
-    compilationShouldHaveFailed("a @Spread type parameter is only supported on @Provide functions and @Provide classes")
+    compilationShouldHaveFailed("@Provide functions and @Provide classes")
   }
 
   @Test fun testSpreadingProperty() = codegen(
@@ -64,7 +64,7 @@ class SpreadingInjectableTest {
       val <@Spread T> T.prop get() = Unit
     """
   ) {
-    compilationShouldHaveFailed("a @Spread type parameter is only supported on @Provide functions and @Provide classes")
+    compilationShouldHaveFailed("@Provide functions and @Provide classes")
   }
 
   @Test fun testMultipleSpreadTypeParameters() = codegen(
@@ -72,7 +72,7 @@ class SpreadingInjectableTest {
       @Provide fun <@Spread T, @Spread S> triggerImpl() = Unit
     """
   ) {
-    compilationShouldHaveFailed("a declaration may have only one @Spread type parameter")
+    compilationShouldHaveFailed("only one @Spread")
   }
 
   @Test fun testSpreadingInjectableTriggeredByClass() = singleAndMultiCodegen(

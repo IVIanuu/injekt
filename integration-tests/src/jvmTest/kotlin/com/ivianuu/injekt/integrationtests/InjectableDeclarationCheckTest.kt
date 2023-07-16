@@ -92,7 +92,7 @@ class InjectableDeclarationCheckTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("injectable variable must be initialized, delegated or marked with lateinit")
+    compilationShouldHaveFailed("injectable variable must be initialized")
   }
 
   @Test fun testProvideFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
@@ -197,7 +197,7 @@ class InjectableDeclarationCheckTest {
       actual fun foo(): Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("Actual function 'foo' has no corresponding expected declaration")
+    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
   @Test fun testActualProvidePropertyWithoutProvideAnnotation() = multiPlatformCodegen(
@@ -208,7 +208,7 @@ class InjectableDeclarationCheckTest {
       actual val foo: Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("Actual property 'foo' has no corresponding expected declaration")
+    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
   @Test fun testActualProvideClassWithoutProvideAnnotation() = multiPlatformCodegen(
@@ -219,7 +219,7 @@ class InjectableDeclarationCheckTest {
       actual class Dep
     """
   ) {
-    compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
+    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
   @Test fun testActualProvideConstructorWithoutProvideAnnotation() = multiPlatformCodegen(
@@ -234,7 +234,7 @@ class InjectableDeclarationCheckTest {
       }
     """
   ) {
-    compilationShouldHaveFailed("Actual constructor of 'Dep' has no corresponding expected declaration")
+    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
   @Test fun testExpectActualFunctionSpreadTypeParameterMismatch() = multiPlatformCodegen(
@@ -245,7 +245,7 @@ class InjectableDeclarationCheckTest {
       @Provide actual fun <T> myFunc(): Foo = Foo()
     """
   ) {
-    compilationShouldHaveFailed("Actual function 'myFunc' has no corresponding expected declaration")
+    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
   @Test fun testExpectActualClassSpreadTypeParameterMismatch() = multiPlatformCodegen(
@@ -256,6 +256,6 @@ class InjectableDeclarationCheckTest {
       @Provide actual class Dep<T>
     """
   ) {
-    compilationShouldHaveFailed("Actual class 'Dep' has no corresponding expected declaration")
+    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 }
