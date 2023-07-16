@@ -179,7 +179,7 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
 
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
-  addInjectable: (CallableRef, Boolean) -> Unit,
+  addInjectable: (CallableRef) -> Unit,
   addSpreadingInjectable: (CallableRef) -> Unit,
   ctx: Context
 ) {
@@ -192,13 +192,10 @@ fun CallableRef.collectInjectables(
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  // add the "real" injectable without framework keys to allow user code to inject this injectable
-  addInjectable(this, false)
-
   // also add a internal injectable to make sure that child injectables
   // are guaranteed to use the correct dispatch receiver
   val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
-  addInjectable(nextCallable, true)
+  addInjectable(nextCallable)
 
   nextCallable
     .type
