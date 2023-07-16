@@ -71,7 +71,7 @@ class InjectablesScope(
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
-    ).filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
+    ).filter { injectable -> injectablesPredicate(injectable.callable) }
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {

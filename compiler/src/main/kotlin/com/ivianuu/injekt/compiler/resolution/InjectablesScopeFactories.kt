@@ -582,12 +582,19 @@ fun InjectableScopeOrParent(
   parent: InjectablesScope,
   owner: KtElement? = null,
   initialInjectables: List<CallableRef> = emptyList(),
-  injectablesPredicate: (CallableRef) -> Boolean = { true },
+  injectablesPredicate: ((CallableRef) -> Boolean)? = null,
   typeParameters: List<ClassifierRef> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
 ): InjectablesScope {
   val finalInitialInjectables = initialInjectables.filter(injectablesPredicate)
   return if (typeParameters.isEmpty() && finalInitialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, finalInitialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
+  else {
+    val combinedPredicate: (CallableRef) -> Boolean = if (injectablesPredicate != null) {
+      { injectable ->
+        injectablesPredicate(injectable) && parent.injectablesPredicate(injectable)
+      }
+    } else parent.injectablesPredicate
+    InjectablesScope(name, parent, owner, finalInitialInjectables, combinedPredicate, typeParameters, nesting, ctx)
+  }
 }
