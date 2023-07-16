@@ -131,18 +131,20 @@ fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId)
 There is no ```@Module``` annotation in Injekt instead a module is just a provided class with
 @Provide declarations
 ```kotlin
-// object module which is marked with provide
+// object module which is marked with @Provide
+// can be used to organize providers
 @Provide object DatabaseModule {
   @Provide fun databaseFile(): File = ...
 }
 
 // module with parameters which can be provided later
 class NetworkModule(val apiKey: String) {
-  @Provide fun api(): Api
+  @Provide fun api(): Api = ...
 }
 
 fun main() {
   @Provide val networkModule = NetworkModule(if (isDebug) ... else ...)
+  inject<Api>()
 }
 ```
 
