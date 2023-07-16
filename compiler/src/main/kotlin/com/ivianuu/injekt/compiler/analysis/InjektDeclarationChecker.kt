@@ -63,11 +63,10 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: FunctionDescriptor,
     ctx: Context
   ) {
-    if (descriptor.hasAnnotation(InjektFqNames.Provide)) {
+    if (descriptor.hasAnnotation(InjektFqNames.Provide))
       checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
-    } else {
+    else
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
-    }
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
     checkReceiver(descriptor, declaration, ctx)
@@ -83,63 +82,56 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     val isProvider = provideConstructors.isNotEmpty() ||
         descriptor.hasAnnotation(InjektFqNames.Provide)
 
-    if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS) {
+    if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS)
       ctx.reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Provide)
           ?.source?.getPsi() ?: declaration,
         "annotation class cannot be injectable"
       )
-    }
 
-    if (isProvider && descriptor.kind == ClassKind.ENUM_CLASS) {
+    if (isProvider && descriptor.kind == ClassKind.ENUM_CLASS)
       ctx.reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Provide)
           ?.source?.getPsi() ?: declaration,
         "enum class cannot be injectable"
       )
-    }
 
-    if (isProvider && descriptor.isInner) {
+    if (isProvider && descriptor.isInner)
       ctx.reportError(
         declaration.modifierList
           ?.getModifier(KtTokens.INNER_KEYWORD)
           ?: declaration,
         "inner class cannot be injectable"
       )
-    }
 
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(InjektFqNames.Provide)) {
+      descriptor.hasAnnotation(InjektFqNames.Provide))
       ctx.reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Provide)
           ?.source?.getPsi() ?: declaration,
         "interface cannot be injectable"
       )
-    }
 
-    if (isProvider && descriptor.modality == Modality.ABSTRACT) {
+    if (isProvider && descriptor.modality == Modality.ABSTRACT)
       ctx.reportError(
         declaration.modalityModifier()
           ?: declaration,
         "abstract class cannot be injectable"
       )
-    }
 
     if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
       descriptor.unsubstitutedPrimaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true
-    ) {
+    )
       ctx.reportError(
         descriptor.annotations.findAnnotation(InjektFqNames.Provide)
           ?.source?.getPsi() ?: declaration,
         "class cannot be marked with @Provide if it has a @Provide primary constructor"
       )
-    }
 
-    if (isProvider) {
+    if (isProvider)
       checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, ctx)
-    } else {
+    else
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, ctx)
-    }
 
     checkExceptActual(declaration, descriptor, ctx)
 
@@ -180,9 +172,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
       !descriptor.isDelegated &&
       !descriptor.isLateInit &&
-      descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
+      descriptor.findPsi().safeAs<KtProperty>()?.initializer == null)
       ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
-    }
 
     checkTagUsage(descriptor, declaration, ctx)
   }
@@ -208,7 +199,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context
   ) {
     val spreadParameters = typeParameters.filter { it.hasAnnotation(InjektFqNames.Spread) }
-    if (spreadParameters.size > 1) {
+    if (spreadParameters.size > 1)
       spreadParameters
         .drop(1)
         .forEach {
@@ -218,7 +209,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
             "a declaration may have only one @Spread type parameter"
           )
         }
-    }
   }
 
   private fun checkOverrides(
