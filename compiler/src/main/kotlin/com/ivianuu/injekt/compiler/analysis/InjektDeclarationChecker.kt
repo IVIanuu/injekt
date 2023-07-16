@@ -303,7 +303,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     declaration: KtDeclaration,
     ctx: Context,
   ) {
-    if (descriptor.getTags().isNotEmpty())
+    if (descriptor.getTags().filter { it.fqName != InjektFqNames.Composable }.isNotEmpty())
       ctx.reportError(declaration, "tags are only supported on classes, constructors and return types")
   }
 }
