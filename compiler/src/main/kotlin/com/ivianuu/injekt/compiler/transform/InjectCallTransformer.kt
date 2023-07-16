@@ -35,8 +35,6 @@ import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.pop
-import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.builtins.isFunctionOrSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -61,7 +59,9 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
@@ -74,6 +74,7 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -382,11 +383,11 @@ class InjectCallTransformer(
         if (!typeToRender.classifier.isTypeParameter) true else {
           appendTypeParameterExpression(
             irCall(typeKeyValue!!.getter!!).apply {
-              val (request, result) = result.dependencyResults.toList().single {
+              val (request, dependencyResult) = result.dependencyResults.toList().single {
                  it.second.cast<ResolutionResult.Success.Value>()
                    .candidate.type.arguments.single().classifier == typeToRender.classifier
               }
-              dispatchReceiver = expressionFor(request, result.cast())
+              dispatchReceiver = expressionFor(request, dependencyResult.cast())
             }
           )
           false
@@ -438,11 +439,27 @@ class InjectCallTransformer(
       inject(this@functionExpression, result.dependencyResults)
     }
 
-  private fun receiverExpression(
+  private fun ScopeContext.receiverExpression(
     descriptor: ParameterDescriptor
-  ): IrExpression = receiverAccessors.lastOrNull {
-    descriptor.type.constructor.declarationDescriptor == it.first.descriptor
-  }?.second?.invoke() ?: throw AssertionError("unexpected receiver $descriptor")
+  ): IrExpression = DeclarationIrBuilder(irCtx, symbol).run {
+    scopeStack.reversed().firstNotNullOfOrNull { scope ->
+      val element = scope.irElement
+      when {
+        element is IrClass &&
+            element.descriptor == descriptor.type.constructor.declarationDescriptor ->
+          irGet(element.thisReceiver!!)
+        element is IrFunction &&
+            element.dispatchReceiverParameter?.descriptor?.type?.constructor?.declarationDescriptor ==
+            descriptor.type.constructor.declarationDescriptor ->
+          irGet(element.dispatchReceiverParameter!!)
+        element is IrProperty &&
+            scopeStack.getOrNull(scopeStack.indexOf(scope) + 1)?.irElement !is IrField &&
+            element.parentClassOrNull?.descriptor == descriptor.type.constructor.declarationDescriptor ->
+          irGet(element.getter!!.dispatchReceiverParameter!!)
+        else -> null
+      }
+    } ?: error("unexpected $descriptor")
+  }
 
   private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
@@ -487,45 +504,7 @@ class InjectCallTransformer(
       )
   }
 
-  private val receiverAccessors = mutableListOf<Pair<IrClass, () -> IrExpression>>()
   private val localVariables = mutableListOf<IrVariable>()
-
-  override fun visitClassNew(declaration: IrClass): IrStatement {
-    receiverAccessors.push(
-      declaration to {
-        DeclarationIrBuilder(irCtx, declaration.symbol)
-          .irGet(declaration.thisReceiver!!)
-      }
-    )
-    val result = super.visitClassNew(declaration)
-    receiverAccessors.pop()
-    return result
-  }
-
-  override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-    val dispatchReceiver = declaration.dispatchReceiverParameter?.type?.classOrNull?.owner
-    if (dispatchReceiver != null) {
-      receiverAccessors.push(
-        dispatchReceiver to {
-          DeclarationIrBuilder(irCtx, declaration.symbol)
-            .irGet(declaration.dispatchReceiverParameter!!)
-        }
-      )
-    }
-    val extensionReceiver = declaration.extensionReceiverParameter?.type?.classOrNull?.owner
-    if (extensionReceiver != null) {
-      receiverAccessors.push(
-        extensionReceiver to {
-          DeclarationIrBuilder(irCtx, declaration.symbol)
-            .irGet(declaration.extensionReceiverParameter!!)
-        }
-      )
-    }
-    val result = super.visitFunctionNew(declaration)
-    if (dispatchReceiver != null) receiverAccessors.pop()
-    if (extensionReceiver != null) receiverAccessors.pop()
-    return result
-  }
 
   override fun visitVariable(declaration: IrVariable): IrStatement {
     localVariables += declaration
