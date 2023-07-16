@@ -150,8 +150,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
           ?.source?.getPsi() ?: declaration,
         "tag cannot have value parameters"
       )
-
-    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkConstructor(
@@ -316,6 +314,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context,
   ) {
     if (descriptor.getTags().isNotEmpty())
-      ctx.reportError(declaration, "tags are only supported on classes or return types")
+      ctx.reportError(declaration, "tags are only supported on classes, constructors or return types")
   }
 }
