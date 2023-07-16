@@ -75,14 +75,13 @@ fun ElementInjectablesScope(
         parentScope!!,
         ctx
       )
-      is KtConstructor<*> -> {
+      is KtConstructor<*> ->
         if (scopeOwner.bodyExpression.let { it == null || it !in position.parents })
-          ConstructorPreInitInjectablesScope(
-            scopeOwner.descriptor(ctx)!!,
-            parentScope!!,
-            ctx
-          ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)
-      }
+        ConstructorPreInitInjectablesScope(
+          scopeOwner.descriptor(ctx)!!,
+          parentScope!!,
+          ctx
+        ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)
       is KtFunction -> FunctionInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
@@ -93,18 +92,16 @@ fun ElementInjectablesScope(
         parentScope!!,
         ctx
       )
-      is KtProperty -> {
-        when (val descriptor = scopeOwner.descriptor<VariableDescriptor>(ctx)!!) {
-          is PropertyDescriptor -> {
-            if (scopeOwner.delegateExpressionOrInitializer != null &&
-              scopeOwner.delegateExpressionOrInitializer!! in element.parentsWithSelf)
-              PropertyInitInjectablesScope(descriptor, parentScope!!, position, ctx)
-            else
-              PropertyInjectablesScope(descriptor, parentScope!!, ctx)
-          }
-          is LocalVariableDescriptor -> LocalVariableInjectablesScope(descriptor, parentScope!!, ctx)
-          else -> throw AssertionError("Unexpected variable descriptor $descriptor")
+      is KtProperty -> when (val descriptor = scopeOwner.descriptor<VariableDescriptor>(ctx)!!) {
+        is PropertyDescriptor -> {
+          if (scopeOwner.delegateExpressionOrInitializer != null &&
+            scopeOwner.delegateExpressionOrInitializer!! in element.parentsWithSelf)
+            PropertyInitInjectablesScope(descriptor, parentScope!!, position, ctx)
+          else
+            PropertyInjectablesScope(descriptor, parentScope!!, ctx)
         }
+        is LocalVariableDescriptor -> LocalVariableInjectablesScope(descriptor, parentScope!!, ctx)
+        else -> throw AssertionError("Unexpected variable descriptor $descriptor")
       }
       is KtSuperTypeList -> scopeOwner.getParentOfType<KtClassOrObject>(false)
         ?.descriptor<ClassDescriptor>(ctx)
