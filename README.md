@@ -99,7 +99,7 @@ fun onCreate() {
 
 # Distinguish between types
 Sometimes you have multiple injectables of the same type
-Injekt will need help to keep them apart here a are a two strategies:
+Injekt will need help to keep them apart here are two strategies:
 
 Value classes:
 ```kotlin
