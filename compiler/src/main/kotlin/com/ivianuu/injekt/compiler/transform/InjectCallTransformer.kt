@@ -150,16 +150,12 @@ class InjectCallTransformer(
       return parent!!.findScopeContext(finalScope)
     }
 
-    fun expressionFor(
-      request: InjectableRequest,
-      result: ResolutionResult.Success.Value
-    ): IrExpression {
+    fun expressionFor(result: ResolutionResult.Success.Value): IrExpression {
       val scopeContext = findScopeContext(result.scope)
-      return scopeContext.expressionForImpl(request, result)
+      return scopeContext.expressionForImpl(result)
     }
 
     private fun expressionForImpl(
-      request: InjectableRequest,
       result: ResolutionResult.Success.Value
     ): IrExpression = wrapExpressionInFunctionIfNeeded(result) {
       val expression = when (val candidate = result.candidate) {
@@ -195,7 +191,7 @@ class InjectCallTransformer(
   ) {
     for ((request, result) in results) {
       if (result !is ResolutionResult.Success.Value) continue
-      val expression = ctx.expressionFor(request, result)
+      val expression = ctx.expressionFor(result)
       when (request.parameterIndex) {
         DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
         EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
@@ -262,7 +258,7 @@ class InjectCallTransformer(
       fun ScopeContext.createExpression(): IrExpression {
         for ((index, parameter) in injectable.parameterDescriptors.withIndex())
           parameterMap[parameter] = function.valueParameters[index]
-        return expressionFor(dependencyRequest, dependencyResult.cast())
+        return expressionFor(dependencyResult.cast())
           .also {
             injectable.parameterDescriptors.forEach {
               parameterMap -= it
@@ -313,12 +309,12 @@ class InjectCallTransformer(
         if (dependencyResult.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx)) {
           +irCall(listAddAll).apply {
             dispatchReceiver = irGet(tmpList)
-            putValueArgument(0, expressionFor(dependencyRequest, dependencyResult))
+            putValueArgument(0, expressionFor(dependencyResult))
           }
         } else {
           +irCall(listAdd).apply {
             dispatchReceiver = irGet(tmpList)
-            putValueArgument(0, expressionFor(dependencyRequest, dependencyResult))
+            putValueArgument(0, expressionFor(dependencyResult))
           }
         }
       }
@@ -387,7 +383,7 @@ class InjectCallTransformer(
                  it.second.cast<ResolutionResult.Success.Value>()
                    .candidate.type.arguments.single().classifier == typeToRender.classifier
               }
-              dispatchReceiver = expressionFor(request, dependencyResult.cast())
+              dispatchReceiver = expressionFor(dependencyResult.cast())
             }
           )
           false
