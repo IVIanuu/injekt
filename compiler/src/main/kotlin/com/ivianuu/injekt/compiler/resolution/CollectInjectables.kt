@@ -210,7 +210,21 @@ fun CallableRef.collectInjectables(
     )
     .forEach { innerCallable ->
       innerCallable
-        .copy(callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()))
+        .copy(
+          callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()),
+          type = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          else innerCallable.type,
+          originalType = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          else innerCallable.type,
+          parameterTypes = if (nextCallable.type.isNullableType &&
+            DISPATCH_RECEIVER_INDEX in innerCallable.parameterTypes) innerCallable.parameterTypes
+            .toMutableMap().apply {
+              put(
+                DISPATCH_RECEIVER_INDEX,
+                innerCallable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.withNullability(true)
+              )
+            } else innerCallable.parameterTypes
+        )
         .collectInjectables(
           scope = scope,
           addInjectable = addInjectable,

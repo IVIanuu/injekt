@@ -54,6 +54,8 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irIfNull
+import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
@@ -147,21 +149,46 @@ class InjectCallTransformer(
       return parent!!.findScopeContext(finalScope)
     }
 
-    fun expressionFor(result: ResolutionResult.Success.Value): IrExpression {
+    fun expressionFor(
+      request: InjectableRequest,
+      result: ResolutionResult.Success.Value
+    ): IrExpression {
       val scopeContext = findScopeContext(result.scope)
-      return scopeContext.expressionForImpl(result)
+      return scopeContext.expressionForImpl(request, result)
     }
 
-    private fun expressionForImpl(result: ResolutionResult.Success.Value): IrExpression =
-      wrapExpressionInFunctionIfNeeded(result) {
-        when (val candidate = result.candidate) {
-          is CallableInjectable -> callableExpression(result, candidate)
-          is LambdaInjectable -> lambdaExpression(result, candidate)
-          is ListInjectable -> listExpression(result, candidate)
-          is SourceKeyInjectable -> sourceKeyExpression()
-          is TypeKeyInjectable -> typeKeyExpression(result, candidate)
+    private fun expressionForImpl(
+      request: InjectableRequest,
+      result: ResolutionResult.Success.Value
+    ): IrExpression = wrapExpressionInFunctionIfNeeded(result) {
+      val expression = when (val candidate = result.candidate) {
+        is CallableInjectable -> callableExpression(result, candidate)
+        is LambdaInjectable -> lambdaExpression(result, candidate)
+        is ListInjectable -> listExpression(result, candidate)
+        is SourceKeyInjectable -> sourceKeyExpression()
+        is TypeKeyInjectable -> typeKeyExpression(result, candidate)
+      }
+
+      if (!result.candidate.type.isNullableType ||
+          result.dependencyResults.keys.firstOrNull()?.parameterIndex != DISPATCH_RECEIVER_INDEX) expression
+      else DeclarationIrBuilder(irCtx, symbol).run {
+        irBlock {
+          expression as IrFunctionAccessExpression
+          val tmpDispatchReceiver = irTemporary(
+            expression.dispatchReceiver!!,
+            nameHint = "nullable${result.candidate.type.classifier.fqName.shortName()}"
+          )
+          expression.dispatchReceiver = irGet(tmpDispatchReceiver)
+
+          +irIfNull(
+            expression.type,
+            irGet(tmpDispatchReceiver),
+            irNull(),
+            expression
+          )
         }
       }
+    }
   }
 
   private fun IrFunctionAccessExpression.inject(
@@ -170,7 +197,7 @@ class InjectCallTransformer(
   ) {
     for ((request, result) in results) {
       if (result !is ResolutionResult.Success.Value) continue
-      val expression = ctx.expressionFor(result)
+      val expression = ctx.expressionFor(request, result)
       when (request.parameterIndex) {
         DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
         EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
@@ -227,7 +254,7 @@ class InjectCallTransformer(
     injectable: LambdaInjectable
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol)
     .irLambda(injectable.type.toIrType(irCtx).typeOrNull!!) { function ->
-      val dependencyResult = result.dependencyResults.values.single()
+      val (dependencyRequest, dependencyResult) = result.dependencyResults.toList().single()
       val dependencyScopeContext = if (injectable.dependencyScope == this@lambdaExpression.scope) null
       else ScopeContext(
         this@lambdaExpression, rootContext,
@@ -237,7 +264,7 @@ class InjectCallTransformer(
       fun ScopeContext.createExpression(): IrExpression {
         for ((index, parameter) in injectable.parameterDescriptors.withIndex())
           parameterMap[parameter] = function.valueParameters[index]
-        return expressionFor(dependencyResult.cast())
+        return expressionFor(dependencyRequest, dependencyResult.cast())
           .also {
             injectable.parameterDescriptors.forEach {
               parameterMap -= it
@@ -282,18 +309,18 @@ class InjectCallTransformer(
     )
 
     result.dependencyResults
-      .forEach { (_, dependency) ->
-        if (dependency !is ResolutionResult.Success.Value)
+      .forEach { (dependencyRequest, dependencyResult) ->
+        if (dependencyResult !is ResolutionResult.Success.Value)
           return@forEach
-        if (dependency.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx)) {
+        if (dependencyResult.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx)) {
           +irCall(listAddAll).apply {
             dispatchReceiver = irGet(tmpList)
-            putValueArgument(0, expressionFor(dependency))
+            putValueArgument(0, expressionFor(dependencyRequest, dependencyResult))
           }
         } else {
           +irCall(listAdd).apply {
             dispatchReceiver = irGet(tmpList)
-            putValueArgument(0, expressionFor(dependency))
+            putValueArgument(0, expressionFor(dependencyRequest, dependencyResult))
           }
         }
       }
@@ -358,12 +385,11 @@ class InjectCallTransformer(
         if (!typeToRender.classifier.isTypeParameter) true else {
           appendTypeParameterExpression(
             irCall(typeKeyValue!!.getter!!).apply {
-              dispatchReceiver = expressionFor(
-                result.dependencyResults.values.single {
-                  it is ResolutionResult.Success.Value &&
-                      it.candidate.type.arguments.single().classifier == typeToRender.classifier
-                }.cast()
-              )
+              val (request, result) = result.dependencyResults.toList().single {
+                 it.second.cast<ResolutionResult.Success.Value>()
+                   .candidate.type.arguments.single().classifier == typeToRender.classifier
+              }
+              dispatchReceiver = expressionFor(request, result.cast())
             }
           )
           false

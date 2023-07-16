@@ -22,6 +22,21 @@ class ModuleTest {
     """
   )
 
+  @Test fun testNullableModule() = singleAndMultiCodegen(
+    """
+      class FooModule {
+        @Provide val foo = Foo()
+      }
+
+      @Provide val nullableModule: FooModule? = FooModule()
+    """,
+    """
+      fun invoke() = inject<Foo?>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
   @Test fun testGenericModule() = singleAndMultiCodegen(
     """
       class MyModule<T>(private val instance: T) {
