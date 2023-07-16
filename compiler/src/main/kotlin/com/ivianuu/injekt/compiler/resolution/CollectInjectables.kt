@@ -220,10 +220,8 @@ fun CallableRef.collectInjectables(
     }
 }
 
-fun collectGlobalInjectables(ctx: Context): List<CallableRef> = buildList {
-  packagesWithInjectables(ctx)
-    .forEach { collectPackageInjectables(it, ctx).forEach { add(it) } }
-}
+fun collectGlobalInjectables(ctx: Context): List<CallableRef> = packagesWithInjectables(ctx)
+  .flatMap { collectPackageInjectables(it, ctx) }
 
 fun collectPackageInjectables(
   packageFqName: FqName,
