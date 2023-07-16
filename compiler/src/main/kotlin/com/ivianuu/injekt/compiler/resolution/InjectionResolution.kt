@@ -6,6 +6,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
@@ -136,11 +137,9 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
 
 private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
   request: InjectableRequest
-): ResolutionResult? =
-  frameworkInjectableForRequest(request)?.let { resolveCandidate(request, it) }
+): ResolutionResult? = frameworkInjectableForRequest(request)?.let { resolveCandidate(it) }
 
 private fun InjectablesScope.computeForCandidate(
-  request: InjectableRequest,
   candidate: Injectable,
   compute: () -> ResolutionResult,
 ): ResolutionResult {
@@ -149,18 +148,19 @@ private fun InjectablesScope.computeForCandidate(
   if (candidate.dependencies.isEmpty())
     return compute().also { resultsByCandidate[candidate] = it }
 
-  if (chain.isNotEmpty()) {
-    for (i in chain.lastIndex downTo 0) {
-      val (_, previousCandidate) = chain[i]
+  if (resolutionChain.isNotEmpty()) {
+    for (i in resolutionChain.lastIndex downTo 0) {
+      val previousCandidate = resolutionChain[i]
 
       val isSameCallable = if (candidate is CallableInjectable &&
         candidate.callable.callable.containingDeclaration.fqNameSafe
-          .asString().startsWith("kotlin.Function") &&
+          .asString().startsWith(InjektFqNames.Function.asString()) &&
           previousCandidate is CallableInjectable &&
           previousCandidate.callable.callable.containingDeclaration.fqNameSafe
-            .asString().startsWith("kotlin.Function"))
+            .asString().startsWith(InjektFqNames.Function.asString()))
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
         else previousCandidate.callableFqName == candidate.callableFqName
+
       if (isSameCallable &&
         previousCandidate.type.coveringSet == candidate.type.coveringSet &&
         (previousCandidate.type.typeSize < candidate.type.typeSize ||
@@ -172,11 +172,10 @@ private fun InjectablesScope.computeForCandidate(
     }
   }
 
-  val pair = request to candidate
-  chain += pair
+  resolutionChain += candidate
   val result = compute()
   resultsByCandidate[candidate] = result
-  chain -= pair
+  resolutionChain -= candidate
   return result
 }
 
@@ -186,7 +185,7 @@ private fun InjectablesScope.resolveCandidates(
 ): ResolutionResult {
   if (candidates.size == 1) {
     val candidate = candidates.single()
-    return resolveCandidate(request, candidate)
+    return resolveCandidate(candidate)
   }
 
   val successes = mutableListOf<ResolutionResult.Success>()
@@ -205,7 +204,7 @@ private fun InjectablesScope.resolveCandidates(
       break
     }
 
-    when (val candidateResult = resolveCandidate(request, candidate)) {
+    when (val candidateResult = resolveCandidate(candidate)) {
       is ResolutionResult.Success -> {
         val firstSuccessResult = successes.firstOrNull()
         when (compareResult(candidateResult, firstSuccessResult)) {
@@ -231,9 +230,8 @@ private fun InjectablesScope.resolveCandidates(
 }
 
 private fun InjectablesScope.resolveCandidate(
-  request: InjectableRequest,
   candidate: Injectable
-): ResolutionResult = computeForCandidate(request, candidate) {
+): ResolutionResult = computeForCandidate(candidate) {
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor

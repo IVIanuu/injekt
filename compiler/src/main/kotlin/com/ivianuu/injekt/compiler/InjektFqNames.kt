@@ -29,4 +29,5 @@ object InjektFqNames {
 
   val Any = StandardNames.FqNames.any.toSafe()
   val Nothing = StandardNames.FqNames.nothing.toSafe()
+  val Function = StandardNames.FqNames.functionSupertype.toSafe()
 }

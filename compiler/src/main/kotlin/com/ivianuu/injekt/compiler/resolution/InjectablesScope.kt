@@ -19,7 +19,7 @@ class InjectablesScope(
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
-  val chain: MutableList<Pair<InjectableRequest, Injectable>> = parent?.chain ?: mutableListOf()
+  val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
   val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
 

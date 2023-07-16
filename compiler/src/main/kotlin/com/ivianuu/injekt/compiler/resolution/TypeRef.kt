@@ -154,7 +154,7 @@ fun KotlinType.toTypeRef(
     )
 
     val tagAnnotations = unwrapped.getTags()
-    var r = if (tagAnnotations.isNotEmpty()) {
+    var result = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
         .map { it.type.toTypeRef(ctx) }
         .map {
@@ -169,12 +169,12 @@ fun KotlinType.toTypeRef(
     } else rawType
 
     // expand the type
-    while (r.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
-      val expanded = r.unwrapTags().superTypes.single()
-      r = if (r.classifier.isTag) r.wrap(expanded) else expanded
+    while (result.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
+      val expanded = result.unwrapTags().superTypes.single()
+      result = if (result.classifier.isTag) result.wrap(expanded) else expanded
     }
 
-    r
+    result
   }
 }
 
@@ -310,6 +310,7 @@ fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
   takeIf(action) ?: superTypes.firstNotNullOfOrNull { it.firstSuperTypeOrNull(action) }
 
 fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<ClassifierRef> {
+  if (map.isEmpty()) return this
   val allNewSuperTypes = map { mutableListOf<TypeRef>() }
   val newClassifiers = mapIndexed { index, classifier ->
     classifier.copy(lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { allNewSuperTypes[index] })
@@ -340,10 +341,7 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
       newVariance != substitution.variance
     ) {
       substitution.copy(
-        // we copy nullability to support T : Any? -> String
         isMarkedNullable = newNullability,
-        // we copy injectable kind to support @Provide C -> @Provide String
-        // fallback to substitution injectable
         isProvide = newIsProvide,
         isInject = newIsInject,
         variance = newVariance
@@ -418,9 +416,8 @@ val TypeRef.coveringSet: Set<ClassifierRef>
 
 val TypeRef.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
-val TypeRef.isProvideFunctionType: Boolean
-  get() = isProvide &&
-      (isFunctionType || classifier.fqName.asString().startsWith("kotlin.reflect.KFunction"))
+fun TypeRef.isProvideFunctionType(ctx: Context): Boolean =
+  isProvide && isSubTypeOf(ctx.functionType, ctx)
 
 val TypeRef.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function")

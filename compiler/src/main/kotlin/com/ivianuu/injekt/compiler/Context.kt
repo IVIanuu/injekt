@@ -4,6 +4,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
 import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
 import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.toClassifierRef
@@ -30,6 +31,10 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeChec
   val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
+  }
+  val functionType by lazy(LazyThreadSafetyMode.NONE) {
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
+      .toClassifierRef(ctx).defaultType.copy(arguments = listOf(STAR_PROJECTION_TYPE))
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))

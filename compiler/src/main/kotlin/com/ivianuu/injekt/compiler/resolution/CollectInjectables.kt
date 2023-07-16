@@ -55,7 +55,7 @@ fun TypeRef.collectInjectables(
   ctx: Context
 ): List<CallableRef> = ctx.cached("type_injectables", this to classBodyView) {
   // special case to support @Provide () -> Foo
-  if (isProvideFunctionType) {
+  if (isProvideFunctionType(ctx)) {
     val callable = classifier
       .descriptor!!
       .defaultType
