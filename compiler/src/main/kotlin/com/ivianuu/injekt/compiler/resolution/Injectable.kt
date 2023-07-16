@@ -33,9 +33,9 @@ sealed interface Injectable {
 
 class CallableInjectable(
   override val ownerScope: InjectablesScope,
-  val callable: CallableRef
+  val callable: CallableRef,
+  override val type: TypeRef
 ) : Injectable {
-  override val type: TypeRef get() = callable.type
   override val dependencies = callable.callable.allParametersWithContext
     .map { it.toInjectableRequest(callable, ownerScope.ctx) }
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)

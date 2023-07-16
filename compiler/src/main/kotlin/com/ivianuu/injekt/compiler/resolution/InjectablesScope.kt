@@ -88,7 +88,8 @@ class InjectablesScope(
           if (!context.isOk) continue
           this += CallableInjectable(
             this@InjectablesScope,
-            candidate.substitute(context.fixedTypeVariables)
+            candidate.substitute(context.fixedTypeVariables),
+            key.type
           )
         }
       }
