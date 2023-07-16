@@ -174,10 +174,7 @@ class InjectCallTransformer(
       else DeclarationIrBuilder(irCtx, symbol).run {
         irBlock {
           expression as IrFunctionAccessExpression
-          val tmpDispatchReceiver = irTemporary(
-            expression.dispatchReceiver!!,
-            nameHint = "nullable${result.candidate.type.classifier.fqName.shortName()}"
-          )
+          val tmpDispatchReceiver = irTemporary(expression.dispatchReceiver!!)
           expression.dispatchReceiver = irGet(tmpDispatchReceiver)
 
           +irIfNull(
