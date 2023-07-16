@@ -6,8 +6,6 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.Provide
 import com.ivianuu.injekt.inject
-import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.atomicfu.atomic
@@ -22,8 +20,8 @@ import org.junit.Test
 class ScopeTest {
   @Test fun testScope() {
     val scope = Scope<TestScope>()
-    scope.invoke { "a" } shouldBe "a"
-    scope.invoke { "b" } shouldBe "a"
+    scope { "a" } shouldBe "a"
+    scope { "b" } shouldBe "a"
   }
 
   @Test fun scopeConcurrencyStressTest() = runBlocking(
