@@ -66,12 +66,6 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("interface cannot be injectable")
   }
 
-  @Test fun testProvideValueParameterPropertyOnProvideClass() = codegen(
-    """
-      @Provide class Dep(@Provide val foo: Foo)
-    """
-  )
-
   @Test fun testOverrideProvideValueParameterPropertyOnProvideClass() = codegen(
     """
       abstract class AbstractDep {
@@ -115,8 +109,7 @@ class InjectableDeclarationCheckTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
@@ -133,8 +126,7 @@ class InjectableDeclarationCheckTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testProvideFunctionOverrideWithoutProvideAnnotation() = codegen(

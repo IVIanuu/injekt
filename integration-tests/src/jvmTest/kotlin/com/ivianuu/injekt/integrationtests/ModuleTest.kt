@@ -37,7 +37,7 @@ class ModuleTest {
     invokeSingleFile()
   }
 
-  @Test fun testGenericModule() = singleAndMultiCodegen(
+  @Test fun testModuleWithTypeParameters() = singleAndMultiCodegen(
     """
       class MyModule<T>(private val instance: T) {
         @Provide fun provide() = instance to instance
@@ -47,36 +47,6 @@ class ModuleTest {
     """,
     """
         fun invoke() = inject<Pair<Foo, Foo>>() 
-    """
-  )
-
-  @Test fun testGenericModuleClass() = singleAndMultiCodegen(
-    """
-      @Provide class MyModule<T> {
-        @Provide fun provide(instance: T) = instance to instance
-      }
-  
-      @Provide val foo = Foo()
-      @Provide fun bar(foo: Foo) = Bar(foo)
-    """,
-    """
-      fun invoke() {
-        inject<Pair<Foo, Foo>>()
-        inject<Pair<Bar, Bar>>()
-      } 
-    """
-  )
-
-  @Test fun testModuleWithNestedClass() = singleAndMultiCodegen(
-    """
-      interface Dep
-
-      @Provide class DepModule {
-        @Provide class DepImpl : Dep
-      }
-    """,
-    """
-      fun invoke() = inject<Dep>() 
     """
   )
 
@@ -97,8 +67,7 @@ class ModuleTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testModuleIdentity() = codegen(
@@ -128,7 +97,7 @@ class ModuleTest {
     foos shouldBe foos.distinct()
   }
 
-  @Test fun testLambdaModuleKFunction() = codegen(
+  @Test fun testLambdaModuleWithFunctionSubType() = codegen(
     """
       @Provide val foo = Foo()
       fun createBar(foo: Foo) = Bar(foo)

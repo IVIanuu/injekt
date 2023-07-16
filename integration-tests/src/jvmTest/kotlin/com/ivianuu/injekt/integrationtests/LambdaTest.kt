@@ -16,8 +16,7 @@ class LambdaTest {
       fun invoke(): Foo = inject<() -> Foo>()()
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testLambdaWithParams() = codegen(
@@ -28,8 +27,7 @@ class LambdaTest {
       fun invoke() = inject<(Foo) -> Bar>()(Foo()) 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Bar>()
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
   @Test fun testCannotRequestLambdaForNonExistingInjectable() = codegen(

@@ -18,8 +18,7 @@ class InjectableDeclarationTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testProvideProperty() = singleAndMultiCodegen(
@@ -30,8 +29,7 @@ class InjectableDeclarationTest {
       fun invoke() = inject<Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testProvideClass() = singleAndMultiCodegen(

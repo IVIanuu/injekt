@@ -129,8 +129,7 @@ class ResolveTest {
       fun invoke() = inject<Bar>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Bar>()
+    invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
   @Test fun testCanResolveSubTypeOfInjectable() = singleAndMultiCodegen(

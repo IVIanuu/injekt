@@ -101,8 +101,7 @@ class TagTest {
       fun invoke() = inject<@MyTag<String> Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testTagWithGenericTypeArguments() = singleAndMultiCodegen(
@@ -114,8 +113,7 @@ class TagTest {
       fun invoke() = inject<@MyTag<String> Foo>() 
     """
   ) {
-    invokeSingleFile()
-      .shouldBeTypeOf<Foo>()
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
   @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
