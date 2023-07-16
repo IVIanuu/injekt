@@ -79,7 +79,7 @@ fun main() {
 All elements which match the E or Collection\<E\> will be included in the resulting list.
 
 # Scoping
-The core of injekt doesn't know anything about scoping, but there is a api in the common module.
+The core of Injekt doesn't know anything about scoping, but there is a api in the common module.
 You have to annotate your class or the return type of a function or a property with ```@Scoped``` tag.
 ```kotlin
 @Provide @Scoped<UiScope> class Db
@@ -128,7 +128,33 @@ fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId)
 ```
 
 # Modules
-TODO
+There is no ```@Module``` annotation in Injekt instead a module is just a provided class with
+@Provide declarations
+```kotlin
+// object module which is marked with provide
+@Provide object DatabaseModule {
+  @Provide fun databaseFile(): File = ...
+}
+
+// module with parameters which can be provided later
+class NetworkModule(val apiKey: String) {
+  @Provide fun api(): Api
+}
+
+fun main() {
+  @Provide val networkModule = NetworkModule(if (isDebug) ... else ...)
+}
+```
+
+# Components
+There is also no ```@Component``` annotation in Injekt instead a component can be declared
+like this without a lot boilerplate
+```kotlin
+@Provide class ActivityComponent(
+  val api: Api,
+  val fragmentComponent: (Fragment) -> FragmentComponent
+)
+```
 
 # Type keys
 TODO
