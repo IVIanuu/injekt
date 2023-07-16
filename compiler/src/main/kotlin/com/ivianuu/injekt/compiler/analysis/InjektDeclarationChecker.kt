@@ -8,6 +8,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
@@ -70,6 +71,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
     checkReceiver(descriptor, declaration, ctx)
+    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkClass(
@@ -148,6 +150,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
           ?.source?.getPsi() ?: declaration,
         "tag cannot have value parameters"
       )
+
+    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkConstructor(
@@ -167,6 +171,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
+    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkLocalVariable(
@@ -180,6 +185,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null) {
       ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
     }
+
+    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkReceiver(
@@ -301,5 +308,14 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
             ?.source?.getPsi() ?: typeParameter.findPsi()!!,
           "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
         )
+  }
+
+  private fun checkTagUsage(
+    descriptor: DeclarationDescriptor,
+    declaration: KtDeclaration,
+    ctx: Context,
+  ) {
+    if (descriptor.getTags().isNotEmpty())
+      ctx.reportError(declaration, "tags are only supported on classes or return types")
   }
 }

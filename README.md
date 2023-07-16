@@ -3,8 +3,6 @@
 Next gen dependency injection library for Kotlin.
 # Example:
 ```kotlin
-data class User(val id: Long)
-
 interface Api
 
 @Provide object ApiImpl : Api
@@ -13,46 +11,10 @@ interface Repository
 
 @Provide class RepositoryImpl(private val api: Api) : Repository
 
-suspend fun loadUserById(id: Long, @Inject repository: Repository): User? = ...
-
 suspend fun main() {
-  val user = User(1)
-  loadUsersById(1) // expands to loadUsersById(1, RepositoryImpl(ApiImpl))
+  val repo = inject<Repository>()
+  // do cool things
 }
-```
-
-# Inject injectables
-You can automatically inject dependencies into functions and classes 
-by marking parameters with @Inject:
-```kotlin
-// functions
-fun <T> T.compareTo(other: T, @Inject comparator: Comparator<T>) = ...
-
-// classes
-class MyService(@Inject private val logger: Logger)
-
-fun main() {
-  // automatically injects provided comparator
-  "a".compareTo("b")
-  
-  // uses explicit arg
-  MyService(NoOpLogger).run()
-}
-```
-
-Injekt will then try to resolve the dependencies on each call site if no explicit argument was provided.
-
-You can also inject a injectable at any point with the inject<T>() function:
-```kotlin
-fun main() {
-  val logger = inject<Logger>()
-  logger.log(message)
-}
-```
-
-The inject<T>() function is declared in the core module and simply defined as follows:
-```kotlin
-inline fun <T> inject(@Inject value: T) = value
 ```
 
 # Provide injectables
@@ -78,7 +40,7 @@ fun run(@Provide config: Config) {
 ```
 
 # Function injection
-Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters dynamically,
+Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters,
 or to break circular dependencies.
 You can do this by injecting a function.
 ```kotlin
@@ -114,7 +76,7 @@ fun main() {
   inject<List<String>>() == listOf("a", "b", "c")
 }
 ```
-All elements which match the T or Collection\<T\> will be included in the resulting list.
+All elements which match the E or Collection\<E\> will be included in the resulting list.
 
 # Scoping
 The core of injekt doesn't know anything about scoping, but there is a api in the common module.
@@ -124,10 +86,8 @@ You have to annotate your class or the return type of a function or a property w
 ```
 Then you have to provide a ```Scope``` instance.
 ```kotlin
-// use a object as name for the scopp
+// use a object as name for the scope
 object UiScope
-
-@Provide val uiScope = Scope<UiScope>()
 ```
 Then you can inject your class.
 ```kotlin
