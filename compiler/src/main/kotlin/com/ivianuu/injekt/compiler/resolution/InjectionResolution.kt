@@ -101,11 +101,9 @@ fun InjectablesScope.resolveRequests(
       is ResolutionResult.Failure ->
         if (!request.isRequired && result is ResolutionResult.Failure.NoCandidates) {
           successes[request] = ResolutionResult.Success.DefaultValue
-        } else {
-          if (compareResult(result, failure) < 0) {
-            failureRequest = request
-            failure = result
-          }
+        } else if (compareResult(result, failure) < 0) {
+          failureRequest = request
+          failure = result
         }
     }
   }
@@ -328,8 +326,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (bScopeNesting > aScopeNesting) return 1
 
   return compareType(
-    a.safeAs<CallableInjectable>()?.callable?.type,
-    b.safeAs<CallableInjectable>()?.callable?.type
+    a.safeAs<CallableInjectable>()?.callable?.originalType,
+    b.safeAs<CallableInjectable>()?.callable?.originalType
   )
 }
 
