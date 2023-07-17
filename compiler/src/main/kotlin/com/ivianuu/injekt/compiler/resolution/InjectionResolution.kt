@@ -328,25 +328,10 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (aScopeNesting > bScopeNesting) return -1
   if (bScopeNesting > aScopeNesting) return 1
 
-  return compareCallable(
-    a.safeAs<CallableInjectable>()?.callable,
-    b.safeAs<CallableInjectable>()?.callable
+  return compareType(
+    a.safeAs<CallableInjectable>()?.callable?.type,
+    b.safeAs<CallableInjectable>()?.callable?.type
   )
-}
-
-private fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): Int {
-  if (a == b) return 0
-
-  if (a != null && b == null) return -1
-  if (b != null && a == null) return 1
-  a!!
-  b!!
-
-  val diff = compareType(a.originalType, b.originalType)
-  if (diff < 0) return -1
-  if (diff > 0) return 1
-
-  return 0
 }
 
 private fun InjectablesScope.compareType(
