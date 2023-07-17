@@ -99,14 +99,11 @@ fun InjectablesScope.resolveRequests(
     when (val result = resolveRequest(request)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
-        if (request.isRequired ||
-          result.unwrapDependencyFailure(request).second is ResolutionResult.Failure.CandidateAmbiguity) {
-          if (compareResult(result, failure) < 0) {
-            failureRequest = request
-            failure = result
-          }
-        } else {
+        if (!request.isRequired && result is ResolutionResult.Failure.NoCandidates) {
           successes[request] = ResolutionResult.Success.DefaultValue
+        } else if (compareResult(result, failure) < 0) {
+          failureRequest = request
+          failure = result
         }
     }
   }
@@ -186,7 +183,9 @@ private fun InjectablesScope.resolveCandidates(
 
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
+  val maxNesting = candidates.maxOf { it.ownerScope.nesting }
   val remaining = candidates
+    .filter { it.ownerScope.nesting == maxNesting }
     .let {
       try {
         it.sortedWith { a, b -> compareCandidate(a, b) }
@@ -265,14 +264,14 @@ private fun InjectablesScope.resolveCandidate(
           dependency.isRequired && candidate is LambdaInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
-          dependency.isRequired ||
-              dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.CandidateAmbiguity ->
+          !dependency.isRequired && dependencyResult is ResolutionResult.Failure.NoCandidates ->
+            successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+          else ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
               candidate,
               dependency,
               dependencyResult
             )
-          else -> successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
         }
       }
     }
@@ -329,8 +328,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (bScopeNesting > aScopeNesting) return 1
 
   return compareType(
-    a.safeAs<CallableInjectable>()?.callable?.type,
-    b.safeAs<CallableInjectable>()?.callable?.type
+    a.safeAs<CallableInjectable>()?.callable?.originalType,
+    b.safeAs<CallableInjectable>()?.callable?.originalType
   )
 }
 
