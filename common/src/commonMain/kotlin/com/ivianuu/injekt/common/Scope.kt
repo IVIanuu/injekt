@@ -30,9 +30,9 @@ class Scope<N> : SynchronizedObject() {
 @Tag annotation class Scoped<N> {
   @Provide companion object {
     @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
-      crossinline init: () -> T,
       scope: Scope<N>,
-      key: TypeKey<S>
+      key: TypeKey<S>,
+      crossinline init: () -> T,
     ): S = scope(key) { init() }
   }
 }
