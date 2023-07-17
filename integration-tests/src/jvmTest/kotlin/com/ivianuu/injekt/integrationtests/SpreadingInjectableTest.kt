@@ -133,4 +133,25 @@ class SpreadingInjectableTest {
     invokeSingleFile<Set<String>>()
       .shouldContainExactly("a", "b")
   }
+
+  @Test fun testRecursiveSpreadingInjectables() = singleAndMultiCodegen(
+    """
+      object Result
+
+      @Provide fun <@Spread T : Foo> a(): Result = Result
+      @Provide fun <@Spread T : Foo> b(): Result = Result
+
+      @Provide fun foo() = Foo()
+    """,
+    """
+      fun invoke() = inject<Result>() 
+    """
+  ) {
+    compilationShouldHaveFailed(":\n" +
+        "\n" +
+        "com.ivianuu.injekt.integrationtests.a\n" +
+        "com.ivianuu.injekt.integrationtests.b\n" +
+        "\n" +
+        "do")
+  }
 }

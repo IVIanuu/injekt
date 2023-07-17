@@ -192,8 +192,6 @@ fun CallableRef.collectInjectables(
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  // also add a internal injectable to make sure that child injectables
-  // are guaranteed to use the correct dispatch receiver
   val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 

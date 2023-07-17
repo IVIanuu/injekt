@@ -28,6 +28,9 @@ class InjectablesScope(
   private val spreadingInjectables: MutableList<SpreadingInjectable> =
     parent?.spreadingInjectables?.mapTo(mutableListOf()) { it.copy() } ?: mutableListOf()
 
+  private val spreadingInjectableChain: MutableList<SpreadingInjectable> =
+    parent?.spreadingInjectables ?: mutableListOf()
+
   data class SpreadingInjectable(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
@@ -155,7 +158,8 @@ class InjectablesScope(
   }
 
   private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
-    if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
+    if (!spreadingInjectable.processedCandidateTypes.add(candidateType) ||
+      spreadingInjectable in spreadingInjectableChain) return
 
     val context = buildContextForSpreadingInjectable(
       spreadingInjectable.constraintType,
@@ -176,6 +180,8 @@ class InjectablesScope(
           .mapValues { it.value.substitute(context.fixedTypeVariables) }
       )
 
+    spreadingInjectableChain += spreadingInjectable
+
     substitutedInjectable.collectInjectables(
       scope = this,
       addInjectable = { next ->
@@ -186,10 +192,12 @@ class InjectablesScope(
       addSpreadingInjectable = { next ->
         val newSpreadingInjectable = SpreadingInjectable(next)
         spreadingInjectables += newSpreadingInjectable
-        spreadInjectables(spreadingInjectable)
+        spreadInjectables(newSpreadingInjectable)
       },
       ctx = ctx
     )
+
+    spreadingInjectableChain -= spreadingInjectable
   }
 
   override fun toString(): String = "InjectablesScope($name)"
