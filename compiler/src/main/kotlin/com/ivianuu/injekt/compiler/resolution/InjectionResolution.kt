@@ -9,7 +9,6 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -339,18 +338,6 @@ private fun InjectablesScope.compareCallable(a: CallableRef?, b: CallableRef?): 
   if (b != null && a == null) return 1
   a!!
   b!!
-
-  val ownerA = a.callable.containingDeclaration
-  val ownerB = b.callable.containingDeclaration
-  if (ownerA == ownerB) {
-    val aSubClassNesting = a.callable
-      .overriddenTreeUniqueAsSequence(false).count().dec()
-    val bSubClassNesting = b.callable
-      .overriddenTreeUniqueAsSequence(false).count().dec()
-
-    if (aSubClassNesting < bSubClassNesting) return -1
-    if (bSubClassNesting < aSubClassNesting) return 1
-  }
 
   val diff = compareType(a.originalType, b.originalType)
   if (diff < 0) return -1

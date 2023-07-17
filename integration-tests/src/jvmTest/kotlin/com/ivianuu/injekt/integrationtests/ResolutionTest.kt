@@ -107,21 +107,6 @@ class ResolutionTest {
     invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
-  @Test fun testPrefersSubClassInjectableOverSuperClassInjectable() = singleAndMultiCodegen(
-    """
-      abstract class MySuperClass(@property:Provide val superClassFoo: Foo = Foo())
-      class MySubClass(@property:Provide val subClassFoo: Foo) : MySuperClass() {
-        fun finalFoo(): Foo = inject()
-      }
-    """,
-    """
-      fun invoke(subClassFoo: Foo) = MySubClass(subClassFoo).finalFoo()
-    """
-  ) {
-    val expected = Foo()
-    invokeSingleFile(expected) shouldBeSameInstanceAs expected
-  }
-
   @Test fun testPrefersFunctionParameterInjectableOverInternalInjectable() = codegen(
     """
       @Provide val internalFoo = Foo()
