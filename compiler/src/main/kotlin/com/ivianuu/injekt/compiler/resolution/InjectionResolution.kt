@@ -115,9 +115,6 @@ fun InjectablesScope.resolveRequests(
 }
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
-  if (request.type.hasErrors)
-    return ResolutionResult.Failure.NoCandidates(request)
-
   resultsByType[request.type]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
@@ -190,7 +187,13 @@ private fun InjectablesScope.resolveCandidates(
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
   val remaining = candidates
-    .sortedWith { a, b -> compareCandidate(a, b) }
+    .let {
+      try {
+        it.sortedWith { a, b -> compareCandidate(a, b) }
+      } catch (e: Throwable) {
+        it
+      }
+    }
     .toCollection(LinkedList())
   while (remaining.isNotEmpty()) {
     val candidate = remaining.removeFirst()
