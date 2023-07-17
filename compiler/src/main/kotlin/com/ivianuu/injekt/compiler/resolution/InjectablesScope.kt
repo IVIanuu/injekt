@@ -25,22 +25,8 @@ class InjectablesScope(
   private val injectables = mutableListOf<CallableRef>()
   private val allInjectables get() = allScopes.flatMap { injectables }
 
-  private val spreadingInjectables: MutableList<SpreadingInjectable> =
-    parent?.spreadingInjectables?.mapTo(mutableListOf()) { it.copy() } ?: mutableListOf()
-
-  data class SpreadingInjectable(
-    val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeParameters.single {
-      it.isSpread
-    }.defaultType.substitute(callable.typeArguments),
-    val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf()
-  ) {
-    fun copy() = SpreadingInjectable(
-      callable,
-      constraintType,
-      processedCandidateTypes.toMutableSet()
-    )
-  }
+  private val spreadingInjectables: MutableList<CallableRef> =
+    parent?.spreadingInjectables?.toMutableList() ?: mutableListOf()
 
   val allScopes: List<InjectablesScope> = parent?.allScopes?.let { it + this } ?: listOf(this)
 
@@ -54,7 +40,7 @@ class InjectablesScope(
       injectable.collectInjectables(
         scope = this,
         addInjectable = { injectables += it },
-        addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) },
+        addSpreadingInjectable = { spreadingInjectables += it },
         ctx = ctx
       )
 
@@ -149,29 +135,28 @@ class InjectablesScope(
     }
   }
 
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable) {
+  private fun spreadInjectables(spreadingInjectable: CallableRef) {
     for (candidate in allInjectables.toList())
       spreadInjectables(spreadingInjectable, candidate.type)
   }
 
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
-    if (!spreadingInjectable.processedCandidateTypes.add(candidateType)) return
-
+  private fun spreadInjectables(spreadingInjectable: CallableRef, candidateType: TypeRef) {
     val context = buildContextForSpreadingInjectable(
-      spreadingInjectable.constraintType,
+      spreadingInjectable.typeParameters.single { it.isSpread }
+        .defaultType.substitute(spreadingInjectable.typeArguments),
       candidateType,
       allStaticTypeParameters,
       ctx
     )
     if (!context.isOk) return
 
-    val substitutedInjectable = spreadingInjectable.callable
+    val substitutedInjectable = spreadingInjectable
       .copy(
-        type = spreadingInjectable.callable.type
+        type = spreadingInjectable.type
           .substitute(context.fixedTypeVariables),
-        parameterTypes = spreadingInjectable.callable.parameterTypes
+        parameterTypes = spreadingInjectable.parameterTypes
           .mapValues { it.value.substitute(context.fixedTypeVariables) },
-        typeArguments = spreadingInjectable.callable
+        typeArguments = spreadingInjectable
           .typeArguments
           .mapValues { it.value.substitute(context.fixedTypeVariables) }
       )
@@ -183,11 +168,7 @@ class InjectablesScope(
         for (innerSpreadingInjectable in spreadingInjectables.toList())
           spreadInjectables(innerSpreadingInjectable, next.type)
       },
-      addSpreadingInjectable = { next ->
-        val newSpreadingInjectable = SpreadingInjectable(next)
-        spreadingInjectables += newSpreadingInjectable
-        spreadInjectables(spreadingInjectable)
-      },
+      addSpreadingInjectable = { spreadingInjectables += it },
       ctx = ctx
     )
   }
