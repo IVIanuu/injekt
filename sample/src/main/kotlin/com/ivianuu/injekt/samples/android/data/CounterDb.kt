@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.update
 interface CounterDb {
   val counter: Flow<Int>
 
-  suspend fun updateCounter(transform: Int.() -> Int)
+  suspend fun updateCounter(transform: (Int) -> Int)
 }
 
 @Provide @Scoped<AppScope> class CounterDbImpl : CounterDb {
   private val _counter = MutableStateFlow(0)
   override val counter: Flow<Int> by this::_counter
 
-  override suspend fun updateCounter(transform: Int.() -> Int) = _counter.update(transform)
+  override suspend fun updateCounter(transform: (Int) -> Int) = _counter.update(transform)
 }
