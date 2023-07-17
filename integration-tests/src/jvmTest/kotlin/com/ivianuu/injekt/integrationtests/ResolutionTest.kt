@@ -203,6 +203,19 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "a"
   }
 
+  @Test fun testPrefersNearerFailureOverResolvableInjectable() = codegen(
+    """
+      @Provide fun a() = "a"
+      
+      fun invoke() {
+        @Provide fun b(long: Long) = "b"
+        inject<String>()
+      } 
+    """
+  ) {
+    compilationShouldHaveFailed()
+  }
+
   @Test fun testPrefersNearerInjectableOverBetterType() = codegen(
     """
       fun invoke(): CharSequence {
