@@ -99,14 +99,13 @@ fun InjectablesScope.resolveRequests(
     when (val result = resolveRequest(request)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
-        if (request.isRequired ||
-          result.unwrapDependencyFailure(request).second is ResolutionResult.Failure.CandidateAmbiguity) {
+        if (!request.isRequired && result is ResolutionResult.Failure.NoCandidates) {
+          successes[request] = ResolutionResult.Success.DefaultValue
+        } else {
           if (compareResult(result, failure) < 0) {
             failureRequest = request
             failure = result
           }
-        } else {
-          successes[request] = ResolutionResult.Success.DefaultValue
         }
     }
   }
@@ -265,14 +264,14 @@ private fun InjectablesScope.resolveCandidate(
           dependency.isRequired && candidate is LambdaInjectable &&
               dependencyResult is ResolutionResult.Failure.NoCandidates ->
             return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
-          dependency.isRequired ||
-              dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.CandidateAmbiguity ->
+          !dependency.isRequired && dependencyResult is ResolutionResult.Failure.NoCandidates ->
+            successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+          else ->
             return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
               candidate,
               dependency,
               dependencyResult
             )
-          else -> successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
         }
       }
     }

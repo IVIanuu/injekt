@@ -336,10 +336,10 @@ class ResolutionTest {
     compilationShouldHaveFailed("no injectable")
   }
 
-  @Test fun testUsesDefaultValueOnNonAmbiguityError() = codegen(
+  @Test fun testUsesDefaultValueOnNoCandidatesError() = codegen(
     """
       fun invoke(_foo: Foo): Foo {
-        fun inner(foo: Foo = _foo) = foo
+        fun inner(@Inject foo: Foo = _foo) = foo
         return inner()
       }
     """
@@ -348,33 +348,17 @@ class ResolutionTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testDoesNotUseDefaultValueOnAmbiguityError() = codegen(
+  @Test fun testDoesNotUseDefaultValueIfThereAreCandidates() = codegen(
     """
-      @Provide fun foo1() = Foo()
-      @Provide fun foo2() = Foo()
-
-      fun invoke(): Foo {
-        fun inner(@Inject foo: Foo = Foo()) = foo
-        return inner()
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("ambiguous")
-  }
-
-  @Test fun testDoesNotUseDefaultValueOnNestedAmbiguityError() = codegen(
-    """
-      @Provide fun foo1() = Foo()
-      @Provide fun foo2() = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
 
-      fun invoke(foo: Foo): Bar {
-        fun inner(@Inject bar: Bar = Bar(foo)) = bar
+      fun invoke(): Bar {
+        fun inner(@Inject bar: Bar = Bar(Foo())) = bar
         return inner()
       }
     """
   ) {
-    compilationShouldHaveFailed("ambiguous")
+    compilationShouldHaveFailed("no injectable")
   }
 
   @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
