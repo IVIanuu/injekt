@@ -7,7 +7,7 @@ package com.ivianuu.injekt.common
 import com.ivianuu.injekt.Inject
 
 /**
- * A key for a injekt type of [T] which can be used as a [Map] key or similar
+ * A key for a Injekt type of [T] which can be used as a [Map] key or similar
  */
 @JvmInline value class TypeKey<out T>(val value: String)
 
