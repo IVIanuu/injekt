@@ -92,10 +92,11 @@ class InjectCallTransformer(
   private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
+    val highestScope = mutableMapOf<ResolutionResult.Success.Value, InjectablesScope>()
     val usages = buildMap<Any, MutableSet<InjectableRequest>> {
       fun ResolutionResult.Success.collectUsagesRecursive(request: InjectableRequest) {
         if (this !is ResolutionResult.Success.Value) return
-        getOrPut(usageKey()) { mutableSetOf() } += request
+        getOrPut(usageKey(this@RootContext)) { mutableSetOf() } += request
         dependencyResults.forEach { it.value.collectUsagesRecursive(it.key) }
       }
 
@@ -106,30 +107,32 @@ class InjectCallTransformer(
       if (scope in result.scope.allScopes) result.scope else scope
   }
 
-  private fun ResolutionResult.Success.Value.usageKey(): Any {
-    val anchorScopes = mutableSetOf<InjectablesScope>()
+  private fun ResolutionResult.Success.Value.usageKey(ctx: RootContext): Any =
+    listOf(candidate::class, candidate.type, highestScope(ctx))
+  
+  private fun ResolutionResult.Success.Value.highestScope(ctx: RootContext): InjectablesScope =
+    ctx.highestScope.getOrPut(this) {
+      val anchorScopes = mutableSetOf<InjectablesScope>()
 
-    fun collectScopesRecursive(result: ResolutionResult.Success.Value) {
-      if (result.candidate is CallableInjectable)
-        anchorScopes += result.candidate.ownerScope
-      for (dependency in result.dependencyResults.values)
-        if (dependency is ResolutionResult.Success.Value)
-          collectScopesRecursive(dependency)
+      fun collectScopesRecursive(result: ResolutionResult.Success.Value) {
+        if (result.candidate is CallableInjectable)
+          anchorScopes += result.candidate.ownerScope
+        for (dependency in result.dependencyResults.values)
+          if (dependency is ResolutionResult.Success.Value)
+            collectScopesRecursive(dependency)
+      }
+
+      collectScopesRecursive(this)
+
+      scope.allScopes
+        .sortedBy { it.nesting }
+        .firstOrNull { candidateScope ->
+          anchorScopes.all {
+            it in candidateScope.allScopes ||
+                scope in candidateScope.allScopes
+          }
+        } ?: scope
     }
-
-    collectScopesRecursive(this)
-
-    val highestScope = scope.allScopes
-      .sortedBy { it.nesting }
-      .firstOrNull { candidateScope ->
-        anchorScopes.all {
-          it in candidateScope.allScopes ||
-              scope in candidateScope.allScopes
-        }
-      } ?: scope
-
-    return listOf(candidate::class, candidate.type, highestScope)
-  }
 
   private inner class ScopeContext(
     val parent: ScopeContext?,
@@ -207,14 +210,14 @@ class InjectCallTransformer(
   }
 
   private fun ResolutionResult.Success.Value.shouldWrap(ctx: RootContext): Boolean =
-    dependencyResults.isNotEmpty() && ctx.usages[usageKey()]!!.size > 1
+    dependencyResults.isNotEmpty() && ctx.usages[usageKey(ctx)]!!.size > 1
 
   private fun ScopeContext.wrapExpressionInFunctionIfNeeded(
     result: ResolutionResult.Success.Value,
     unwrappedExpression: () -> IrExpression
   ): IrExpression = if (!result.shouldWrap(rootContext)) unwrappedExpression()
   else with(result.safeAs<ResolutionResult.Success.Value>()
-    ?.scope?.let { findScopeContext(it) } ?: this) {
+    ?.highestScope(rootContext)?.let { findScopeContext(it) } ?: this) {
     functionWrappedExpressions.getOrPut(result.candidate.type) expression@ {
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.DEFINED
