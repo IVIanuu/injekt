@@ -6,6 +6,7 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
@@ -31,3 +32,5 @@ object InjektFqNames {
   val Nothing = StandardNames.FqNames.nothing.toSafe()
   val Function = StandardNames.FqNames.functionSupertype.toSafe()
 }
+
+fun String.asNameId() = Name.identifier(this)

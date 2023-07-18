@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.frontend
 
-import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirSession
@@ -17,6 +16,7 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
+import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirValueParameterSymbol
@@ -39,35 +39,41 @@ class InjektFirDeclarationGenerationExtension(session: FirSession) :
   override fun generateFunctions(
     callableId: CallableId,
     context: MemberGenerationContext?
-  ): List<FirNamedFunctionSymbol> = functionWithInject
-    .filter { it.symbol.callableId == callableId }
-    .map { originalFunction ->
-      buildSimpleFunction {
-        origin = Key.origin
-        moduleData = originalFunction.moduleData
-        status = originalFunction.status
-        symbol = FirNamedFunctionSymbol(originalFunction.symbol.callableId)
-        name = originalFunction.symbol.name
-        returnTypeRef = originalFunction.returnTypeRef
-        typeParameters += originalFunction.typeParameters.map { it.symbol.fir }
-        valueParameters += originalFunction.valueParameters
-          .filterNot { it.hasAnnotation(ClassId.topLevel(InjektClassIds.Inject), session) }
-          .map { originalValueParameter ->
-            buildValueParameter {
-              containingFunctionSymbol = this@buildSimpleFunction.symbol
-              origin = Key.origin
-              moduleData = originalFunction.moduleData
-              symbol = FirValueParameterSymbol(originalValueParameter.name)
-              name = originalValueParameter.name
-              returnTypeRef = originalValueParameter.returnTypeRef
-              defaultValue = originalValueParameter.defaultValue
-              isCrossinline = originalValueParameter.isCrossinline
-              isNoinline = originalValueParameter.isNoinline
-              isVararg = originalValueParameter.isVararg
+  ): List<FirNamedFunctionSymbol> {
+    return functionWithInject
+      .filter { it.symbol.callableId == callableId }
+      .map { originalFunction ->
+        session.symbolProvider.getTopLevelPropertySymbols(
+          InjektFqNames.InjectablesLookup.parent(),
+          InjektFqNames.InjectablesLookup.shortName()
+        )
+        buildSimpleFunction {
+          origin = Key.origin
+          moduleData = originalFunction.moduleData
+          status = originalFunction.status
+          symbol = FirNamedFunctionSymbol(originalFunction.symbol.callableId)
+          name = originalFunction.symbol.name
+          returnTypeRef = originalFunction.returnTypeRef
+          typeParameters += originalFunction.typeParameters.map { it.symbol.fir }
+          valueParameters += originalFunction.valueParameters
+            .filterNot { it.hasAnnotation(ClassId.topLevel(InjektFqNames.Inject), session) }
+            .map { originalValueParameter ->
+              buildValueParameter {
+                containingFunctionSymbol = this@buildSimpleFunction.symbol
+                origin = Key.origin
+                moduleData = originalFunction.moduleData
+                symbol = FirValueParameterSymbol(originalValueParameter.name)
+                name = originalValueParameter.name
+                returnTypeRef = originalValueParameter.returnTypeRef
+                defaultValue = originalValueParameter.defaultValue
+                isCrossinline = originalValueParameter.isCrossinline
+                isNoinline = originalValueParameter.isNoinline
+                isVararg = originalValueParameter.isVararg
+              }
             }
-          }
-      }.symbol
-    }
+        }.symbol
+      }
+  }
 
   override fun hasPackage(packageFqName: FqName) = true
 

@@ -18,8 +18,10 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
-import com.ivianuu.injekt.compiler.InjektClassIds
-import com.ivianuu.injekt.compiler.uniqueTypeKey
+import com.ivianuu.injekt.compiler.InjektFqNames
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.Base64
@@ -27,7 +29,7 @@ import java.util.Base64
 @OptIn(UnsafeCastFunction::class)
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektClassIds.Provide.asString())
+    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asString())
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -60,14 +62,14 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
       appendLine()
 
-      appendLine("package ${InjektClassIds.InjectablesPackage}")
+      appendLine("package ${InjektFqNames.InjectablesPackage}")
       appendLine()
 
       for ((i, provider) in providers.withIndex()) {
         val key = provider.uniqueKey()
 
         appendLine("// $key")
-        appendLine("fun `${InjektClassIds.InjectablesLookup.shortName()}`(")
+        appendLine("fun `${InjektFqNames.InjectablesLookup.shortName()}`(")
         appendLine("  marker: ${file.packageName.asString()}.${markerName},")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
@@ -89,7 +91,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
 
     environment.codeGenerator.createNewFile(
       dependencies = Dependencies(false, file),
-      packageName = InjektClassIds.InjectablesPackage.asString(),
+      packageName = InjektFqNames.InjectablesPackage.asString(),
       fileName = "${file.fileName.removeSuffix(".kt")}Injectables_" +
           file.filePath.hashCode().toString().filter { it.isLetterOrDigit() },
     ).write(injectablesLookupCode.toByteArray())
@@ -105,7 +107,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         annotations
           .filter {
             it.annotationType.resolve().annotations.any {
-              it.annotationType.resolve().declaration.qualifiedName?.asString() == InjektClassIds.Tag.asString()
+              it.annotationType.resolve().declaration.qualifiedName?.asString() == InjektFqNames.Tag.asString()
             }
           }
           .forEach { append(it.annotationType.uniqueTypeKey()) }
@@ -134,3 +136,23 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       InjektSymbolProcessor(environment)
   }
 }
+
+fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
+  if (depth > 15) return ""
+  return buildString {
+    append(constructor.declarationDescriptor!!.fqNameSafe)
+    arguments.forEachIndexed { index, typeArgument ->
+      if (index == 0) append("<")
+      append(typeArgument.type.fullyAbbreviatedType.uniqueTypeKey(depth + 1))
+      if (index != arguments.lastIndex) append(", ")
+      else append(">")
+    }
+    if (isMarkedNullable) append("?")
+  }
+}
+
+val KotlinType.fullyAbbreviatedType: KotlinType
+  get() {
+    val abbreviatedType = getAbbreviatedType()
+    return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
+  }

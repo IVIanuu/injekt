@@ -5,10 +5,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.compiler.backend.InjektIrGenerationExtension
 import com.ivianuu.injekt.compiler.frontend.InjektFirCheckersExtensions
 import com.ivianuu.injekt.compiler.frontend.InjektFirDeclarationGenerationExtension
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -53,10 +51,6 @@ class InjektCompilerPluginRegistrar : CompilerPluginRegistrar() {
     get() = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    IrGenerationExtension.registerExtension(
-      InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
-    )
-
     FirExtensionRegistrarAdapter.registerExtension(InjektFirExtensionRegistrar())
   }
 }

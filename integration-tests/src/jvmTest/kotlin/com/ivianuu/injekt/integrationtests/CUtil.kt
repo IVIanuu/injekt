@@ -9,7 +9,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektCompilerPluginRegistrar
-import com.ivianuu.injekt.compiler.backend.dumpAllFiles
 import com.ivianuu.injekt.ksp.InjektSymbolProcessor
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -224,7 +223,6 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   verbose = false
   kotlincArguments += "-XXLanguage:+NewInference"
   kotlincArguments += "-Xcontext-receivers"
-  dumpAllFiles = true
   block()
   pluginOptions += PluginOption(
     "com.ivianuu.injekt",
