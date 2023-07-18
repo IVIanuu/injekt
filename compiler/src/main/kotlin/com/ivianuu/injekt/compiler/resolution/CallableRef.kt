@@ -12,50 +12,40 @@ import com.ivianuu.injekt.compiler.callableInfo
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeConstructor
+import org.jetbrains.kotlin.types.TypeProjection
+import org.jetbrains.kotlin.types.TypeProjectionImpl
+import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 data class CallableRef(
   val callable: CallableDescriptor,
-  val type: TypeRef,
-  val originalType: TypeRef,
-  val typeParameters: List<ClassifierRef>,
-  val parameterTypes: Map<Int, TypeRef>,
-  val typeArguments: Map<ClassifierRef, TypeRef>,
+  val type: KotlinType,
+  val originalType: KotlinType,
+  val typeParameters: List<TypeParameterDescriptor>,
+  val parameterTypes: Map<Int, KotlinType>,
+  val typeArguments: Map<TypeParameterDescriptor, KotlinType>,
   val callableFqName: FqName
 )
 
-fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
-  if (map == typeArguments) return this
-  val substitutedTypeParameters = typeParameters.substitute(map)
-  val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
-    it.defaultType
-  }
+fun CallableRef.substitute(substitutor: TypeSubstitutor): CallableRef {
+  if (substitutor.isEmpty) return this
   return copy(
-    type = type.substitute(map).substitute(typeParameterSubstitutionMap),
-    parameterTypes = parameterTypes
-      .mapValues {
-        it.value
-          .substitute(map)
-          .substitute(typeParameterSubstitutionMap)
-      },
-    typeParameters = substitutedTypeParameters,
-    typeArguments = typeArguments
-      .mapValues {
-        it.value
-          .substitute(map)
-          .substitute(typeParameterSubstitutionMap)
-      }
+    type = type.substitute(substitutor),
+    parameterTypes = parameterTypes.mapValues { it.value.substitute(substitutor) },
+    typeArguments = typeArguments.mapValues { it.value.substitute(substitutor) }
   )
 }
 
 fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
   ctx.cached("callable_ref", this) {
     val info = callableInfo(ctx)
-    val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
-
     CallableRef(
       callable = this,
       type = info.type,

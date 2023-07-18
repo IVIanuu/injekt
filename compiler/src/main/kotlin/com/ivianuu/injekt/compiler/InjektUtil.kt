@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -119,11 +118,13 @@ fun String.asNameId() = Name.identifier(this)
 fun Annotated.hasAnnotation(fqName: FqName): Boolean =
   annotations.hasAnnotation(fqName)
 
-fun Annotated.getTags(): List<AnnotationDescriptor> =
+fun Annotated.getTags(): List<KotlinType> =
   annotations.filter {
-    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
-  }
+    it.fqName == InjektFqNames.Composable
+        || it.type.constructor.declarationDescriptor.cast<ClassDescriptor>().let { inner ->
+      inner.hasAnnotation(InjektFqNames.Tag)
+    }
+  }.map { it.type }
 
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
   when (val original = this.original) {

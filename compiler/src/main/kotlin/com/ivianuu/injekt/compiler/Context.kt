@@ -4,11 +4,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.STAR_PROJECTION_TYPE
-import com.ivianuu.injekt.compiler.resolution.TypeCheckerContext
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
@@ -18,27 +13,19 @@ import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 @Suppress("NewApi")
-class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
+class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
 
-  override val ctx: Context get() = this
-
-  override fun isDenotable(type: TypeRef): Boolean = true
-
-  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef(ctx) }
-  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef(ctx) }
-  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef(ctx = ctx) }
-  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
-  val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
-    anyType.copy(isMarkedNullable = true)
-  }
+  val listClassifier get() = module.builtIns.list
+  val collectionClassifier get() = module.builtIns.collection
+  val anyType get() = module.builtIns.anyType
+  val nullableAnyType get() = module.builtIns.nullableAnyType
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
-      .toClassifierRef(ctx).defaultType.copy(arguments = listOf(STAR_PROJECTION_TYPE))
+      .defaultType
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
-      ?.toClassifierRef(ctx)
   }
 }
 

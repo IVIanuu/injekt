@@ -17,14 +17,11 @@ import com.ivianuu.injekt.compiler.render
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.TypeRef
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -42,6 +39,9 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
 @OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
@@ -92,24 +92,24 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val substitutionMap = buildMap {
       for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef(ctx)] = argument.toTypeRef(ctx)
+        this[parameter.typeConstructor] = argument.asTypeProjection()
 
-      fun TypeRef.putAll() {
-        for ((index, parameter) in classifier.typeParameters.withIndex()) {
+      fun KotlinType.putAll() {
+        for ((index, parameter) in constructor.parameters.withIndex()) {
           val argument = arguments[index]
-          if (argument.classifier != parameter)
-            this@buildMap[parameter] = arguments[index]
+          if (argument != parameter.defaultType.asTypeProjection())
+            this@buildMap[parameter.typeConstructor] = arguments[index]
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.contextReceivers.forEach { it.type.toTypeRef(ctx).putAll() }
+      resolvedCall.dispatchReceiver?.type?.putAll()
+      resolvedCall.extensionReceiver?.type?.putAll()
+      resolvedCall.contextReceivers.forEach { it.type.putAll() }
     }
 
     val callee = resultingDescriptor
       .toCallableRef(ctx)
-      .substitute(substitutionMap)
+      .substitute(TypeSubstitutor.create(substitutionMap))
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex(ctx) }

@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
@@ -276,7 +277,7 @@ private fun ClassInjectablesScope(
     parent = finalParent,
     owner = clazz.findPsi().cast(),
     initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters,
     ctx = ctx
   )
 }
@@ -317,7 +318,7 @@ private fun ClassInitInjectablesScope(
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters,
     ctx = ctx
   )
 
@@ -338,9 +339,7 @@ private fun ConstructorPreInitInjectablesScope(
     until = null,
     ctx = ctx
   )
-  val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
-    it.toClassifierRef(ctx)
-  }
+  val typeParameters = constructor.constructedClass.declaredTypeParameters
   return InjectableScopeOrParent(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
     parent = parameterScopes,
@@ -368,7 +367,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
     owner = function.findPsi().cast(),
-    typeParameters = function.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = function.typeParameters,
     ctx = ctx
   )
 }
@@ -386,7 +385,6 @@ private fun FunctionInjectablesScope(
   val typeParameters = (if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
   else function.typeParameters)
-    .map { it.toClassifierRef(ctx) }
   InjectableScopeOrParent(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
@@ -458,7 +456,7 @@ private fun PropertyInjectablesScope(
         .filter { it.isProvide(ctx) || property.isProvide(ctx) }
         .forEach { add(it.toCallableRef(ctx)) }
     },
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters,
     ctx = ctx
   )
 }
@@ -484,7 +482,7 @@ private fun PropertyInitInjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
     parent = finalParent,
     owner = property.findPsi().cast(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters,
     ctx = ctx
   )
 }
@@ -580,7 +578,7 @@ fun InjectableScopeOrParent(
   owner: KtElement? = null,
   initialInjectables: List<CallableRef> = emptyList(),
   injectablesPredicate: (CallableRef) -> Boolean = { true },
-  typeParameters: List<ClassifierRef> = emptyList(),
+  typeParameters: List<TypeParameterDescriptor> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
 ): InjectablesScope {

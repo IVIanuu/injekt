@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.modalityModifier
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
 import org.jetbrains.kotlin.resolve.multiplatform.findExpects
 import org.jetbrains.kotlin.resolve.source.getPsi
@@ -303,7 +304,9 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     declaration: KtDeclaration,
     ctx: Context,
   ) {
-    if (descriptor.getTags().any { it.fqName != InjektFqNames.Composable })
+    if (descriptor.getTags().any {
+        it.constructor.declarationDescriptor!!.fqNameSafe != InjektFqNames.Composable
+    })
       ctx.reportError(declaration, "tags are only supported on classes, constructors and return types")
   }
 }

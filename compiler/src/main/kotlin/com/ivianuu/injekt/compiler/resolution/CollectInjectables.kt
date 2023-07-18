@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.getArgumentDescriptor
+import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.memberScopeForFqName
@@ -40,24 +41,29 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
+import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.multiplatform.couldHaveASource
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isNullableType
+import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.UUID
 
-fun TypeRef.collectInjectables(
+fun KotlinType.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
 ): List<CallableRef> = ctx.cached("type_injectables", this to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType(ctx)) {
-    val callable = classifier
-      .descriptor!!
+    val callable = constructor
+      .declarationDescriptor!!
       .defaultType
       .memberScope
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -65,14 +71,17 @@ fun TypeRef.collectInjectables(
       .toCallableRef(ctx)
       .let { callable ->
         callable.copy(
-          type = arguments.last(),
+          type = arguments.last().type,
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           }
         ).substitute(
-          classifier.typeParameters
-            .zip(arguments)
-            .toMap()
+          TypeSubstitutor.create(
+            constructor.parameters
+              .map { it.typeConstructor }
+              .zip(arguments)
+              .toMap()
+          )
         )
       }
 
@@ -80,8 +89,8 @@ fun TypeRef.collectInjectables(
   }
 
   buildList {
-    classifier
-      .descriptor
+    constructor
+      .declarationDescriptor
       ?.defaultType
       ?.memberScope
       ?.collectMemberInjectables(ctx) { callable ->
@@ -92,11 +101,12 @@ fun TypeRef.collectInjectables(
             .last()
             .containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef(ctx)
-          classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
+          constructor.parameters.map { it.typeConstructor }.zip(arguments).toMap() + originalClassifier.declaredTypeParameters
+            .map { it.typeConstructor }
             .zip(subtypeView(originalClassifier)!!.arguments)
-        } else classifier.typeParameters.zip(arguments).toMap()
-        val substituted = callable.substitute(substitutionMap)
+        } else constructor.parameters.map { it.typeConstructor }.zip(arguments).toMap()
+
+        val substituted = callable.substitute(TypeSubstitutor.create(substitutionMap))
 
         add(
           substituted.copy(
@@ -170,9 +180,14 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
     ImplicitClassReceiver(this),
     Annotations.EMPTY
   ).toCallableRef(ctx)
-  return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
+  return if (!tagged || callable.type.getTags().isEmpty()) callable
   else {
-    val taggedType = callable.type.classifier.tags.wrap(callable.type)
+    val taggedType = callable.type.replaceAnnotations(
+      Annotations.create(
+        callable.type.constructor.declarationDescriptor!!.getTags()
+          .map { it.toAnnotation() }
+      )
+    )
     callable.copy(type = taggedType, originalType = taggedType)
   }
 }
@@ -185,20 +200,20 @@ fun CallableRef.collectInjectables(
 ) {
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
+  if (typeParameters.any { it.hasAnnotation(InjektFqNames.Spread) && typeArguments[it] == it.defaultType }) {
     addSpreadingInjectable(this)
     return
   }
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
+  val nextCallable = copy(type = type.withFrameworkKey(UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
   nextCallable
     .type
     .collectInjectables(
-      nextCallable.type.classifier.descriptor?.parentsWithSelf
+      nextCallable.type.constructor.declarationDescriptor?.parentsWithSelf
         ?.mapNotNull { it.findPsi() }
         ?.any { callableParent -> scope.allScopes.any { it.owner == callableParent } } == true,
       ctx
@@ -207,11 +222,11 @@ fun CallableRef.collectInjectables(
       innerCallable
         .copy(
           callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()),
-          type = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          type = if (nextCallable.type.isNullableType()) innerCallable.type.withNullability(true)
           else innerCallable.type,
-          originalType = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          originalType = if (nextCallable.type.isNullableType()) innerCallable.type.withNullability(true)
           else innerCallable.type,
-          parameterTypes = if (nextCallable.type.isNullableType &&
+          parameterTypes = if (nextCallable.type.isNullableType() &&
             DISPATCH_RECEIVER_INDEX in innerCallable.parameterTypes) innerCallable.parameterTypes
             .toMutableMap().apply {
               put(
@@ -269,7 +284,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
       (callable.callable is ClassConstructorDescriptor &&
-          callable.type.unwrapTags().classifier.isObject) ||
+          callable.type.constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT) ||
       callable.callable.parentsWithSelf.mapNotNull { it.findPsi() }.any { callableParent ->
         allScopes.any { it.owner == callableParent }
       } ||
