@@ -5,7 +5,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import org.jetbrains.kotlin.psi.KtElement
 
 class InjectablesScope(
@@ -119,9 +119,9 @@ class InjectablesScope(
         collectionElementType = collectionElementType
       )
     }
-    request.type.classifier.fqName == InjektFqNames.TypeKey ->
+    request.type.classifier.fqName == InjektClassIds.TypeKey ->
       TypeKeyInjectable(request.type, this)
-    request.type.classifier.fqName == InjektFqNames.SourceKey ->
+    request.type.classifier.fqName == InjektClassIds.SourceKey ->
       SourceKeyInjectable(request.type, this)
     else -> null
   }

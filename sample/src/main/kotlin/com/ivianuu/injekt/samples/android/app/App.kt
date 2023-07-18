@@ -19,3 +19,9 @@ class App : Application() {
 object AppScope
 
 @Provide data class AppComponent(val mainActivityComponent: (Scope<ActivityScope>) -> MainActivityComponent)
+
+inline fun something(lol: String) {
+}
+
+inline fun something() {
+}

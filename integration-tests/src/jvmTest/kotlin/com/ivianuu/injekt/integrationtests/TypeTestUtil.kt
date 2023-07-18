@@ -18,9 +18,8 @@ import com.ivianuu.injekt.compiler.resolution.withArguments
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.cli.jvm.compiler.CliBindingTrace
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -36,13 +35,12 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
     """
     """,
     config = {
-      componentRegistrars += object : ComponentRegistrar {
-        override fun registerProjectComponents(
-          project: MockProject,
-          configuration: CompilerConfiguration,
-        ) {
+      compilerPluginRegistrars += object : CompilerPluginRegistrar() {
+        override val supportsK2: Boolean
+          get() = true
+
+        override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
           AnalysisHandlerExtension.registerExtension(
-            project,
             object : AnalysisHandlerExtension {
               override fun analysisCompleted(
                 project: Project,

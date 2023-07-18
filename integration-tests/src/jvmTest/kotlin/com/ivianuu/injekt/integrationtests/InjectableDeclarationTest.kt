@@ -10,6 +10,16 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.Test
 
 class InjectableDeclarationTest {
+  @Test fun testSimple() = codegen(
+    """
+      inline fun <T> inject(@Inject x: T): @Tag1 T = x
+
+      fun invoke() {
+        inject<Foo>()
+      }
+    """
+  )
+
   @Test fun testProvideFunction() = singleAndMultiCodegen(
     """
       @Provide fun foo() = Foo()

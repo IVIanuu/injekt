@@ -11,15 +11,23 @@ import com.ivianuu.injekt.compiler.resolution.toClassifierRef
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
+
+
 @Suppress("NewApi")
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
+
+  init {
+    val ses: FirSession;
+    ses.kind
+  }
 
   override val ctx: Context get() = this
 
@@ -33,11 +41,11 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeChec
     anyType.copy(isMarkedNullable = true)
   }
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektClassIds.Function))!!
       .toClassifierRef(ctx).defaultType.copy(arguments = listOf(STAR_PROJECTION_TYPE))
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektClassIds.TypeKey))
       ?.toClassifierRef(ctx)
   }
 }

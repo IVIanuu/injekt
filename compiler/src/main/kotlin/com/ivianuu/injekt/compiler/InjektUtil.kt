@@ -6,13 +6,10 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import org.jetbrains.kotlin.builtins.functions.FunctionClassDescriptor
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
@@ -30,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -62,10 +58,7 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 import kotlin.experimental.ExperimentalTypeInference
-import kotlin.reflect.KClass
 
 fun KtFunction.getArgumentDescriptor(ctx: Context): ValueParameterDescriptor? {
   val call = KtPsiUtil.getParentCallIfPresent(this) ?: return null
@@ -99,8 +92,6 @@ fun PropertyDescriptor.primaryConstructorPropertyValueParameter(
   }
   .firstOrNull()
 
-val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
-
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
   ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
@@ -109,7 +100,6 @@ fun DeclarationDescriptor.isExternalDeclaration(ctx: Context): Boolean =
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor ||
     this is JavaClassDescriptor ||
     this is FunctionClassDescriptor
@@ -122,7 +112,7 @@ fun Annotated.hasAnnotation(fqName: FqName): Boolean =
 fun Annotated.getTags(): List<AnnotationDescriptor> =
   annotations.filter {
     val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
+    inner.hasAnnotation(InjektClassIds.Tag) || it.fqName == InjektClassIds.Composable
   }
 
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
@@ -305,45 +295,6 @@ fun ParameterDescriptor.injektIndex(ctx: Context): Int =
     }
   }
 
-fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField = try {
-    Field::class.java.getDeclaredField("modifiers")
-  } catch (e: Throwable) {
-    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
-    getDeclaredFields0.isAccessible = true
-    getDeclaredFields0.invoke(Field::class.java, false)
-      .cast<Array<Field>>()
-      .single { it.name == "modifiers" }
-  }
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  return field.get(this) as T
-}
-
-fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField = try {
-    Field::class.java.getDeclaredField("modifiers")
-  } catch (e: Throwable) {
-    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
-    getDeclaredFields0.isAccessible = true
-    getDeclaredFields0.invoke(Field::class.java, false)
-      .cast<Array<Field>>()
-      .single { it.name == "modifiers" }
-  }
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  val currentValue = field.get(this)
-  val newValue = transform(currentValue as T)
-  field.set(this, newValue)
-  return newValue
-}
-
 fun DeclarationDescriptor.moduleName(ctx: Context): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")
@@ -356,44 +307,6 @@ fun classifierDescriptorForFqName(
 ): ClassifierDescriptor? = if (fqName.isRoot) null
 else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
   ?.getContributedClassifier(fqName.shortName(), lookupLocation)
-
-fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
-  ctx.cached("classifier_for_key", key) {
-    val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-      ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.takeIf { it.uniqueKey(ctx) == key }
-      ?: functionDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull {
-          it.uniqueKey(ctx) == key
-        }
-      ?: propertyDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull { it.uniqueKey(ctx) == key }
-      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-        .safeAs<ClassifierDescriptorWithTypeParameters>()
-        ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(ctx) == key }
-      ?: error("Could not get for $fqName $key")
-    classifier
-  }
-
-private fun functionDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<FunctionDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?: emptyList()
-
-private fun propertyDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?: emptyList()
 
 fun memberScopeForFqName(
   fqName: FqName,

@@ -5,7 +5,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.types.model.TypeVariance
 
@@ -49,11 +49,11 @@ fun TypeRef.isSubTypeOf(superType: TypeRef, ctx: TypeCheckerContext): Boolean {
   ctx.addSubTypeConstraint(this, superType)
     ?.let { return it }
 
-  if (classifier.fqName == InjektFqNames.Nothing &&
+  if (classifier.fqName == InjektClassIds.Nothing &&
     (!isMarkedNullable || superType.isNullableType)
   ) return true
 
-  if (superType.classifier.fqName == InjektFqNames.Any &&
+  if (superType.classifier.fqName == InjektClassIds.Any &&
     (superType.isMarkedNullable || !isNullableType)
   ) return true
 
@@ -362,7 +362,7 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
     resultType: TypeRef,
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
-    if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
+    if (resultType.classifier.fqName == InjektClassIds.Nothing) return false
     val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))

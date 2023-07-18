@@ -6,7 +6,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -147,10 +147,10 @@ private fun InjectablesScope.computeForCandidate(
 
       val isSameCallable = if (candidate is CallableInjectable &&
         candidate.callable.callable.containingDeclaration.fqNameSafe
-          .asString().startsWith(InjektFqNames.Function.asString()) &&
+          .asString().startsWith(InjektClassIds.Function.asString()) &&
           previousCandidate is CallableInjectable &&
           previousCandidate.callable.callable.containingDeclaration.fqNameSafe
-            .asString().startsWith(InjektFqNames.Function.asString()))
+            .asString().startsWith(InjektClassIds.Function.asString()))
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
         else previousCandidate.callableFqName == candidate.callableFqName
 

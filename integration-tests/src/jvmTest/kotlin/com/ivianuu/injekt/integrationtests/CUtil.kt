@@ -8,8 +8,8 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
-import com.ivianuu.injekt.compiler.InjektComponentRegistrar
-import com.ivianuu.injekt.compiler.transform.dumpAllFiles
+import com.ivianuu.injekt.compiler.InjektCompilerPluginRegistrar
+import com.ivianuu.injekt.compiler.backend.dumpAllFiles
 import com.ivianuu.injekt.ksp.InjektSymbolProcessor
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -212,8 +212,11 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   kspIncremental = false
   kspWithCompilation = true
 
-  componentRegistrars += InjektComponentRegistrar()
+  compilerPluginRegistrars += InjektCompilerPluginRegistrar()
   commandLineProcessors += InjektCommandLineProcessor()
+
+  supportsK2 = true
+  languageVersion = "2.0"
 
   inheritClassPath = true
   useIR = true

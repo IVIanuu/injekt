@@ -5,13 +5,13 @@
 @file:OptIn(UnsafeCastFunction::class, ObsoleteDescriptorBasedAPI::class,
   FirIncompatiblePluginAPI::class)
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.SourcePosition
 import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.asNameId
@@ -315,7 +315,7 @@ class InjectCallTransformer(
   }
 
   private val sourceKeyConstructor =
-    irCtx.referenceClass(InjektFqNames.SourceKey)?.constructors?.single()
+    irCtx.referenceClass(InjektClassIds.SourceKey)?.constructors?.single()
 
   private fun ScopeContext.sourceKeyExpression(): IrExpression =
     DeclarationIrBuilder(irCtx, symbol).run {
@@ -335,7 +335,7 @@ class InjectCallTransformer(
       }
     }
 
-  private val typeKey = irCtx.referenceClass(InjektFqNames.TypeKey)
+  private val typeKey = irCtx.referenceClass(InjektClassIds.TypeKey)
   private val typeKeyValue = typeKey?.owner?.properties
     ?.single { it.name.asString() == "value" }
   private val typeKeyConstructor = typeKey?.constructors?.single()

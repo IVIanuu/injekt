@@ -7,7 +7,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.classifierInfo
@@ -82,7 +82,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       ?.toMutableList()
       ?: mutableListOf()
 
-    val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
+    val isTag = hasAnnotation(InjektClassIds.Tag) || fqNameSafe == InjektClassIds.Composable
 
     if (isTag) {
       typeParameters += ClassifierRef(
@@ -104,7 +104,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       isTag = isTag,
       descriptor = this,
       tags = info.tags,
-      isSpread = hasAnnotation(InjektFqNames.Spread),
+      isSpread = hasAnnotation(InjektClassIds.Spread),
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
@@ -144,8 +144,8 @@ fun KotlinType.toTypeRef(
             it + ctx.nullableAnyType
           else it
         },
-      isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
-      isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
+      isProvide = kotlinType.hasAnnotation(InjektClassIds.Provide),
+      isInject = kotlinType.hasAnnotation(InjektClassIds.Inject),
       isStarProjection = false,
       frameworkKey = "",
       variance = variance
@@ -419,7 +419,7 @@ fun TypeRef.isUnconstrained(staticTypeParameters: List<ClassifierRef>): Boolean 
   classifier.isTypeParameter &&
       classifier !in staticTypeParameters &&
       classifier.superTypes.all {
-        it.classifier.fqName == InjektFqNames.Any ||
+        it.classifier.fqName == InjektClassIds.Any ||
             it.isUnconstrained(staticTypeParameters)
       }
 

@@ -20,10 +20,8 @@ buildscript {
     classpath(Deps.dokkaGradlePlugin)
     classpath(Deps.Injekt.gradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
-    classpath(Deps.KotlinSerialization.gradlePlugin)
     classpath(Deps.Ksp.gradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)
-    classpath(Deps.shadowGradlePlugin)
   }
 }
 

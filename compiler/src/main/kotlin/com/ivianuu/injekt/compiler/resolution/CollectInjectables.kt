@@ -8,7 +8,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.getArgumentDescriptor
@@ -124,10 +124,10 @@ fun ResolutionScope.collectMemberInjectables(
 }
 
 fun Annotated.isProvide(ctx: Context): Boolean =
-  hasAnnotationForInjection(InjektFqNames.Provide, ctx) || isInject(ctx)
+  hasAnnotationForInjection(InjektClassIds.Provide, ctx) || isInject(ctx)
 
 fun Annotated.isInject(ctx: Context): Boolean =
-  hasAnnotationForInjection(InjektFqNames.Inject, ctx)
+  hasAnnotationForInjection(InjektClassIds.Inject, ctx)
 
 private fun Annotated.hasAnnotationForInjection(fqName: FqName, ctx: Context): Boolean =
   ctx.cached(
@@ -158,8 +158,8 @@ fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.cached("injectable_constructors", this) {
     constructors
       .transform { constructor ->
-        if (constructor.hasAnnotation(InjektFqNames.Provide) ||
-          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
+        if (constructor.hasAnnotation(InjektClassIds.Provide) ||
+          (constructor.isPrimary && hasAnnotation(InjektClassIds.Provide)))
             add(constructor.toCallableRef(ctx))
       }
   }
@@ -278,8 +278,8 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
 
 fun packagesWithInjectables(ctx: Context): Set<FqName> =
   ctx.cached("packages_with_injectables", Unit) {
-    memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
-      ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
+    memberScopeForFqName(InjektClassIds.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
+      ?.getContributedFunctions(InjektClassIds.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
       ?.mapTo(mutableSetOf()) {
         it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
       } ?: emptySet()

@@ -18,7 +18,7 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.uniqueTypeKey
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -27,7 +27,7 @@ import java.util.Base64
 @OptIn(UnsafeCastFunction::class)
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asString())
+    resolver.getSymbolsWithAnnotation(InjektClassIds.Provide.asString())
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -60,14 +60,14 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
       appendLine()
 
-      appendLine("package ${InjektFqNames.InjectablesPackage}")
+      appendLine("package ${InjektClassIds.InjectablesPackage}")
       appendLine()
 
       for ((i, provider) in providers.withIndex()) {
         val key = provider.uniqueKey()
 
         appendLine("// $key")
-        appendLine("fun `${InjektFqNames.InjectablesLookup.shortName()}`(")
+        appendLine("fun `${InjektClassIds.InjectablesLookup.shortName()}`(")
         appendLine("  marker: ${file.packageName.asString()}.${markerName},")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
@@ -89,7 +89,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
 
     environment.codeGenerator.createNewFile(
       dependencies = Dependencies(false, file),
-      packageName = InjektFqNames.InjectablesPackage.asString(),
+      packageName = InjektClassIds.InjectablesPackage.asString(),
       fileName = "${file.fileName.removeSuffix(".kt")}Injectables_" +
           file.filePath.hashCode().toString().filter { it.isLetterOrDigit() },
     ).write(injectablesLookupCode.toByteArray())
@@ -105,7 +105,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         annotations
           .filter {
             it.annotationType.resolve().annotations.any {
-              it.annotationType.resolve().declaration.qualifiedName?.asString() == InjektFqNames.Tag.asString()
+              it.annotationType.resolve().declaration.qualifiedName?.asString() == InjektClassIds.Tag.asString()
             }
           }
           .forEach { append(it.annotationType.uniqueTypeKey()) }

@@ -82,11 +82,6 @@ object Deps {
     const val ksp = "dev.zacsweers.kctfork:ksp:$version"
   }
 
-  object KotlinSerialization {
-    const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
-  }
-
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
   object Ksp {
@@ -101,6 +96,4 @@ object Deps {
   const val mockk = "io.mockk:mockk:1.11.0"
 
   const val roboelectric = "org.robolectric:robolectric:4.10.3"
-
-  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
 }

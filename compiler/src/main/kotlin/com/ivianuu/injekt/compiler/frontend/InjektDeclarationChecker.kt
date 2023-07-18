@@ -4,10 +4,10 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektClassIds
 import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.reportError
@@ -63,7 +63,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: FunctionDescriptor,
     ctx: Context
   ) {
-    if (descriptor.hasAnnotation(InjektFqNames.Provide))
+    if (descriptor.hasAnnotation(InjektClassIds.Provide))
       checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
     else
       checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
@@ -80,18 +80,18 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
   ) {
     val provideConstructors = descriptor.injectableConstructors(ctx)
     val isProvider = provideConstructors.isNotEmpty() ||
-        descriptor.hasAnnotation(InjektFqNames.Provide)
+        descriptor.hasAnnotation(InjektClassIds.Provide)
 
     if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS)
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektClassIds.Provide)
           ?.source?.getPsi() ?: declaration,
         "annotation class cannot be injectable"
       )
 
     if (isProvider && descriptor.kind == ClassKind.ENUM_CLASS)
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektClassIds.Provide)
           ?.source?.getPsi() ?: declaration,
         "enum class cannot be injectable"
       )
@@ -105,9 +105,9 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       )
 
     if (descriptor.kind == ClassKind.INTERFACE &&
-      descriptor.hasAnnotation(InjektFqNames.Provide))
+      descriptor.hasAnnotation(InjektClassIds.Provide))
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektClassIds.Provide)
           ?.source?.getPsi() ?: declaration,
         "interface cannot be injectable"
       )
@@ -119,11 +119,11 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
         "abstract class cannot be injectable"
       )
 
-    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
-      descriptor.unsubstitutedPrimaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true
+    if (descriptor.hasAnnotation(InjektClassIds.Provide) &&
+      descriptor.unsubstitutedPrimaryConstructor?.hasAnnotation(InjektClassIds.Provide) == true
     )
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektClassIds.Provide)
           ?.source?.getPsi() ?: declaration,
         "class cannot be marked with @Provide if it has a @Provide primary constructor"
       )
@@ -135,10 +135,10 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
 
     checkExceptActual(declaration, descriptor, ctx)
 
-    if (descriptor.hasAnnotation(InjektFqNames.Tag) &&
+    if (descriptor.hasAnnotation(InjektClassIds.Tag) &&
       descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+        descriptor.annotations.findAnnotation(InjektClassIds.Tag)
           ?.source?.getPsi() ?: declaration,
         "tag cannot have value parameters"
       )
@@ -169,7 +169,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: LocalVariableDescriptor,
     ctx: Context
   ) {
-    if (descriptor.hasAnnotation(InjektFqNames.Provide) &&
+    if (descriptor.hasAnnotation(InjektClassIds.Provide) &&
       !descriptor.isDelegated &&
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null)
@@ -183,8 +183,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     declaration: KtDeclaration,
     ctx: Context
   ) {
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true)
+    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektClassIds.Inject) == true ||
+      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektClassIds.Inject) == true)
       ctx.reportError(
         declaration.safeAs<KtFunction>()?.receiverTypeReference
           ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
@@ -198,13 +198,13 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     typeParameters: List<TypeParameterDescriptor>,
     ctx: Context
   ) {
-    val spreadParameters = typeParameters.filter { it.hasAnnotation(InjektFqNames.Spread) }
+    val spreadParameters = typeParameters.filter { it.hasAnnotation(InjektClassIds.Spread) }
     if (spreadParameters.size > 1)
       spreadParameters
         .drop(1)
         .forEach {
           ctx.reportError(
-            it.annotations.findAnnotation(InjektFqNames.Spread)
+            it.annotations.findAnnotation(InjektClassIds.Spread)
               ?.source?.getPsi() ?: declaration,
             "a declaration may have only one @Spread type parameter"
           )
@@ -251,16 +251,16 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: MemberDescriptor,
     overriddenDescriptor: MemberDescriptor
   ): Boolean {
-    if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
-      !descriptor.hasAnnotation(InjektFqNames.Provide))
+    if (overriddenDescriptor.hasAnnotation(InjektClassIds.Provide) &&
+      !descriptor.hasAnnotation(InjektClassIds.Provide))
       return false
 
     if (descriptor is CallableMemberDescriptor)
       for ((index, overriddenValueParameter) in
       overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
       val valueParameter = descriptor.valueParameters[index]
-      if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
-        valueParameter.hasAnnotation(InjektFqNames.Inject))
+      if (overriddenValueParameter.hasAnnotation(InjektClassIds.Inject) !=
+        valueParameter.hasAnnotation(InjektClassIds.Inject))
         return false
     }
 
@@ -276,8 +276,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
 
     for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
       val typeParameter = typeParameters[index]
-      if (typeParameter.hasAnnotation(InjektFqNames.Spread) !=
-        overriddenTypeParameter.hasAnnotation(InjektFqNames.Spread))
+      if (typeParameter.hasAnnotation(InjektClassIds.Spread) !=
+        overriddenTypeParameter.hasAnnotation(InjektClassIds.Spread))
         return false
     }
 
@@ -290,9 +290,9 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
   ) {
     if (typeParameters.isEmpty()) return
     for (typeParameter in typeParameters)
-      if (typeParameter.hasAnnotation(InjektFqNames.Spread))
+      if (typeParameter.hasAnnotation(InjektClassIds.Spread))
         ctx.reportError(
-          typeParameter.annotations.findAnnotation(InjektFqNames.Spread)
+          typeParameter.annotations.findAnnotation(InjektClassIds.Spread)
             ?.source?.getPsi() ?: typeParameter.findPsi()!!,
           "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
         )
@@ -303,7 +303,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     declaration: KtDeclaration,
     ctx: Context,
   ) {
-    if (descriptor.getTags().any { it.fqName != InjektFqNames.Composable })
+    if (descriptor.getTags().any { it.fqName != InjektClassIds.Composable })
       ctx.reportError(declaration, "tags are only supported on classes, constructors and return types")
   }
 }

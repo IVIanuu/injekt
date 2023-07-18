@@ -6,7 +6,7 @@
   FirIncompatiblePluginAPI::class
 )
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY

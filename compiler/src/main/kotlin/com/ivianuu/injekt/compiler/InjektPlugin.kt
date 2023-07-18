@@ -5,13 +5,21 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.backend.InjektIrGenerationExtension
+import com.ivianuu.injekt.compiler.frontend.InjektFirCheckersExtensions
+import com.ivianuu.injekt.compiler.frontend.InjektFirDeclarationGenerationExtension
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
+import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
+import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 import java.io.File
+import java.util.*
 
 @OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
@@ -37,3 +45,25 @@ val DumpDirOption = CliOption(
   required = true
 )
 val DumpDirKey = CompilerConfigurationKey<File>("dumpDir")
+
+@OptIn(ExperimentalCompilerApi::class)
+@AutoService(CompilerPluginRegistrar::class)
+class InjektCompilerPluginRegistrar : CompilerPluginRegistrar() {
+  override val supportsK2: Boolean
+    get() = true
+
+  override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+    IrGenerationExtension.registerExtension(
+      InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
+    )
+
+    FirExtensionRegistrarAdapter.registerExtension(InjektFirExtensionRegistrar())
+  }
+}
+
+class InjektFirExtensionRegistrar : FirExtensionRegistrar() {
+  override fun ExtensionRegistrarContext.configurePlugin() {
+    +::InjektFirCheckersExtensions
+    +::InjektFirDeclarationGenerationExtension
+  }
+}
