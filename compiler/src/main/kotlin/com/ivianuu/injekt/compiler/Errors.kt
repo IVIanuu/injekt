@@ -77,7 +77,7 @@ fun InjectionResult.Error.render(): String = buildString {
       if (failure == unwrappedFailure) {
         appendLine(
           "type parameter ${unwrappedFailure.parameter.name} " +
-              "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
+              "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.key.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is reified but type argument " +
               "${unwrappedFailure.argument.fqNameSafe} is not reified."
@@ -92,10 +92,10 @@ fun InjectionResult.Error.render(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
+          }\n\ndo all match type ${unwrappedFailureRequest.key.type.renderToString()} for parameter " +
               "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
         } else {
-          "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
+          "ambiguous injectables of type ${unwrappedFailureRequest.key.type.renderToString()} " +
               "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
         }
 
@@ -106,7 +106,7 @@ fun InjectionResult.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
       appendLine(
         "no injectable found of type " +
-          "${unwrappedFailureRequest.type.renderToString()} for parameter " +
+          "${unwrappedFailureRequest.key.type.renderToString()} for parameter " +
           "${unwrappedFailureRequest.parameterName} of function " +
           "${unwrappedFailureRequest.callableFqName}."
       )
@@ -173,7 +173,7 @@ fun InjectionResult.Error.render(): String = buildString {
                   failure.candidateResults.joinToString(", ") {
                     it.candidate.callableFqName.asString()
                   }
-                } do match type ${request.type.renderToString()}"
+                } do match type ${request.key.type.renderToString()}"
               )
             }
             is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
@@ -181,7 +181,7 @@ fun InjectionResult.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          appendLine("inject<${request.type.renderToString()}>()")
+          appendLine("inject<${request.key.type.renderToString()}>()")
         }
       }
       append(indent())
@@ -205,18 +205,18 @@ fun InjectionResult.Error.render(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.callableFqName.asString()
             }
-          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()}."
+          }\n\ndo all match type ${unwrappedFailureRequest.key.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
       is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
         appendLine(
           "but injectable ${unwrappedFailure.candidate.callableFqName} " +
-              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}."
+              "produces a diverging search when trying to match type ${unwrappedFailureRequest.key.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderToString()}.")
+        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.key.type.renderToString()}.")
       }
     }.let { }
   }

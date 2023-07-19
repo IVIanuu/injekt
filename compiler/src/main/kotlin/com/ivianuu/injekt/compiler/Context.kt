@@ -16,6 +16,10 @@ import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
 
+  val frameworkKeyType by lazy(LazyThreadSafetyMode.NONE) {
+    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.FrameworkKey))!!
+      .defaultType
+  }
   val listClassifier get() = module.builtIns.list
   val collectionClassifier get() = module.builtIns.collection
   val anyType get() = module.builtIns.anyType

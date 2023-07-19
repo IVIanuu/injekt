@@ -22,11 +22,13 @@ import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
+import com.ivianuu.injekt.compiler.resolution.KotlinTypeKey
 import com.ivianuu.injekt.compiler.resolution.LambdaInjectable
 import com.ivianuu.injekt.compiler.resolution.ListInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
+import com.ivianuu.injekt.compiler.resolution.isInjektSubtypeOf
 import com.ivianuu.injekt.compiler.resolution.render
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
@@ -78,7 +80,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isNullableType
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
-import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -109,7 +110,7 @@ class InjectCallTransformer(
   }
 
   private fun ResolutionResult.Success.Value.usageKey(ctx: RootContext): Any =
-    listOf(candidate::class, candidate.type, highestScope(ctx))
+    listOf(candidate::class, KotlinTypeKey(candidate.type, this@InjectCallTransformer.ctx), highestScope(ctx))
   
   private fun ResolutionResult.Success.Value.highestScope(ctx: RootContext): InjectablesScope =
     ctx.highestScope.getOrPut(this) {
@@ -304,7 +305,7 @@ class InjectCallTransformer(
     result.dependencyResults.values.forEach { dependencyResult ->
       dependencyResult as ResolutionResult.Success.Value
       +irCall(
-        if (dependencyResult.candidate.type.isSubtypeOf(injectable.collectionElementType))
+        if (dependencyResult.candidate.type.isInjektSubtypeOf(injectable.collectionElementType))
           listAddAll else listAdd
       ).apply {
         dispatchReceiver = irGet(tmpList)

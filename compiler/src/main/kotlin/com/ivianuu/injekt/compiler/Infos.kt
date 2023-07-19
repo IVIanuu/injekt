@@ -8,6 +8,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.anyType
+import com.ivianuu.injekt.compiler.resolution.buildSubstitutor
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toAnnotation
@@ -44,7 +45,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
@@ -81,15 +81,13 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
           val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
             it.constructor.declarationDescriptor == rootClassifier
           }!!
-          val substitutor = TypeSubstitutor.create(
-            buildMap {
-              for ((index, typeParameter) in rootClassifier.declaredTypeParameters.withIndex())
-                this[typeParameter.typeConstructor] = superType.arguments[index]
+          val substitutor = buildSubstitutor {
+            for ((index, typeParameter) in rootClassifier.declaredTypeParameters.withIndex())
+              this[typeParameter.typeConstructor] = superType.arguments[index].type.unwrap()
 
-              for ((index, typeParameter) in rootOverriddenCallable.typeParameters.withIndex())
-                this[typeParameter.typeConstructor] = typeParameters[index].defaultType.asTypeProjection()
-            }
-          )
+            for ((index, typeParameter) in rootOverriddenCallable.typeParameters.withIndex())
+              this[typeParameter.typeConstructor] = typeParameters[index].defaultType
+          }
           info.copy(
             type = info.type.substitute(substitutor),
             parameterTypes = info.parameterTypes.mapValues {
@@ -103,16 +101,19 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
     }
 
     val type = run {
-      val tags = if (this is ConstructorDescriptor)
+      val additionalTags = if (this is ConstructorDescriptor)
         buildList {
           addAll(constructedClass.classifierInfo(ctx).tags)
-          for (tagAnnotation in getTags())
-            add(tagAnnotation)
+          addAll(getTags())
         }
       else emptyList()
-      (returnType ?: ctx.nullableAnyType).replaceAnnotations(
-        Annotations.create(tags.map { it.toAnnotation() })
-      )
+
+      (returnType ?: ctx.nullableAnyType).run {
+        if (additionalTags.isEmpty()) this
+        else replaceAnnotations(
+          Annotations.create(additionalTags.map { it.toAnnotation() } + annotations)
+        )
+      }
     }
 
     val parameterTypes = buildMap {

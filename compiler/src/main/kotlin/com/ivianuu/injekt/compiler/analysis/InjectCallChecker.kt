@@ -17,6 +17,7 @@ import com.ivianuu.injekt.compiler.render
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
+import com.ivianuu.injekt.compiler.resolution.buildSubstitutor
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.resolveRequests
 import com.ivianuu.injekt.compiler.resolution.substitute
@@ -40,7 +41,6 @@ import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
@@ -90,26 +90,26 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = buildMap {
-      for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.typeConstructor] = argument.asTypeProjection()
-
-      fun KotlinType.putAll() {
-        for ((index, parameter) in constructor.parameters.withIndex()) {
-          val argument = arguments[index]
-          if (argument != parameter.defaultType.asTypeProjection())
-            this@buildMap[parameter.typeConstructor] = arguments[index]
-        }
-      }
-
-      resolvedCall.dispatchReceiver?.type?.putAll()
-      resolvedCall.extensionReceiver?.type?.putAll()
-      resolvedCall.contextReceivers.forEach { it.type.putAll() }
-    }
-
     val callee = resultingDescriptor
       .toCallableRef(ctx)
-      .substitute(TypeSubstitutor.create(substitutionMap))
+      .substitute(
+        buildSubstitutor {
+          for ((parameter, argument) in resolvedCall.typeArguments)
+            this[parameter.typeConstructor] = argument.unwrap()
+
+          fun KotlinType.putAll() {
+            for ((index, parameter) in constructor.parameters.withIndex()) {
+              val argument = arguments[index]
+              if (argument != parameter.defaultType.asTypeProjection())
+                this@buildSubstitutor[parameter.typeConstructor] = arguments[index].type.unwrap()
+            }
+          }
+
+          resolvedCall.dispatchReceiver?.type?.putAll()
+          resolvedCall.extensionReceiver?.type?.putAll()
+          resolvedCall.contextReceivers.forEach { it.type.putAll() }
+        }
+      )
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex(ctx) }

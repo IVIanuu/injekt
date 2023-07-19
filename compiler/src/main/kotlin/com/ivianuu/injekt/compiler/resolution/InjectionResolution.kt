@@ -7,12 +7,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getTags
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
-import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -116,13 +117,13 @@ fun InjectablesScope.resolveRequests(
 }
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
-  resultsByType[request.type]?.let { return it }
+  resultsByType[request.key]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
     ?: tryToResolveRequestWithFrameworkInjectable(request)
     ?: ResolutionResult.Failure.NoCandidates(request)
 
-  resultsByType[request.type] = result
+  resultsByType[request.key] = result
   return result
 }
 
@@ -155,12 +156,12 @@ private fun InjectablesScope.computeForCandidate(
           previousCandidate is CallableInjectable &&
           previousCandidate.callable.callable.containingDeclaration.fqNameSafe
             .asString().startsWith(InjektFqNames.Function.asString()))
-        candidate.dependencies.first().type == previousCandidate.dependencies.first().type
+        candidate.dependencies.first().key == previousCandidate.dependencies.first().key
         else previousCandidate.callableFqName == candidate.callableFqName
 
       if (isSameCallable &&
-        previousCandidate.type.coveringSet == candidate.type.coveringSet &&
-        (previousCandidate.type.typeSize < candidate.type.typeSize ||
+        previousCandidate.type.coveringSet(ctx) == candidate.type.coveringSet(ctx) &&
+        (previousCandidate.type.typeSize(ctx) < candidate.type.typeSize(ctx) ||
             previousCandidate.type == candidate.type)) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
@@ -339,9 +340,9 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
 private fun InjectablesScope.compareTypeProjection(
   a: TypeProjection?,
   b: TypeProjection?,
-  comparedTypes: MutableSet<Pair<KotlinType, KotlinType>>
+  comparedTypes: MutableSet<Pair<Int, Int>>
 ): Int {
-  if (a == b) return 0
+  if (a === b) return 0
 
   if (a != null && b == null) return -1
   if (b != null && a == null) return 1
@@ -357,9 +358,9 @@ private fun InjectablesScope.compareTypeProjection(
 private fun InjectablesScope.compareType(
   a: KotlinType?,
   b: KotlinType?,
-  comparedTypes: MutableSet<Pair<KotlinType, KotlinType>> = mutableSetOf()
+  comparedTypes: MutableSet<Pair<Int, Int>> = mutableSetOf()
 ): Int {
-  if (a == b) return 0
+  if (a === b) return 0
 
   if (a != null && b == null) return -1
   if (b != null && a == null) return 1
@@ -374,16 +375,16 @@ private fun InjectablesScope.compareType(
   if (a.constructor.isTypeParameterTypeConstructor() &&
     !b.constructor.isTypeParameterTypeConstructor()) return 1
 
-  val pair = a to b
+  val pair = a.injektHashCode(ctx) to b.injektHashCode(ctx)
   if (!comparedTypes.add(pair)) return 0
 
   fun compareSameClassifier(a: KotlinType?, b: KotlinType?): Int {
-    if (a == b) return 0
-
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
     a!!
     b!!
+
+    if (a.injektEquals(b, ctx)) return 0
 
     var diff = 0
     a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
@@ -391,19 +392,26 @@ private fun InjectablesScope.compareType(
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
+
+    a.getTags().zip(b.getTags()).forEach { (aTag, bTag) ->
+      diff += compareType(aTag, bTag, comparedTypes)
+    }
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+
     return 0
   }
 
   if (a.constructor.declarationDescriptor != b.constructor.declarationDescriptor) {
-    val aSubTypeOfB = a.isSubtypeOf(b)
-    val bSubTypeOfA = b.isSubtypeOf(a)
+    val aSubTypeOfB = a.isInjektSubtypeOf(b)
+    val bSubTypeOfA = b.isInjektSubtypeOf(a)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
-    /*val aCommonSuperType = commonSuperType(a.constructor.supertypes, ctx = ctx)
-    val bCommonSuperType = commonSuperType(b.constructor.supertypes, ctx = ctx)
+    val aCommonSuperType = CommonSupertypes.commonSupertype(a.constructor.supertypes)
+    val bCommonSuperType = CommonSupertypes.commonSupertype(b.constructor.supertypes)
     val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
     if (diff < 0) return -1
-    if (diff > 0) return 1*/
+    if (diff > 0) return 1
   } else {
     val diff = compareSameClassifier(a, b)
     if (diff < 0) return -1

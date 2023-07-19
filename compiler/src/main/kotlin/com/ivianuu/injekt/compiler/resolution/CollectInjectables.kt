@@ -41,14 +41,11 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeAsSequence
-import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
-import org.jetbrains.kotlin.resolve.multiplatform.couldHaveASource
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isNullableType
 import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
@@ -76,12 +73,14 @@ fun KotlinType.collectInjectables(
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           }
         ).substitute(
-          TypeSubstitutor.create(
-            constructor.parameters
-              .map { it.typeConstructor }
-              .zip(arguments)
-              .toMap()
-          )
+          buildSubstitutor {
+            putAll(
+              constructor.parameters
+                .map { it.typeConstructor }
+                .zip(arguments.map { it.type.unwrap() })
+                .toMap()
+            )
+          }
         )
       }
 
@@ -94,26 +93,32 @@ fun KotlinType.collectInjectables(
       ?.defaultType
       ?.memberScope
       ?.collectMemberInjectables(ctx) { callable ->
-        val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-          CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
-            .overriddenTreeAsSequence(false)
-            .last()
-            .containingDeclaration
-            .cast<ClassDescriptor>()
-          constructor.parameters.map { it.typeConstructor }.zip(arguments).toMap() + originalClassifier.declaredTypeParameters
-            .map { it.typeConstructor }
-            .zip(subtypeView(originalClassifier)!!.arguments)
-        } else constructor.parameters.map { it.typeConstructor }.zip(arguments).toMap()
-
-        val substituted = callable.substitute(TypeSubstitutor.create(substitutionMap))
+        val substituted = callable.substitute(
+          buildSubstitutor {
+            putAll(
+              if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+                CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+                val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
+                  .overriddenTreeAsSequence(false)
+                  .last()
+                  .containingDeclaration
+                  .cast<ClassDescriptor>()
+                constructor.parameters
+                  .map { it.typeConstructor }
+                  .zip(arguments.map { it.type.unwrap() })
+                  .toMap() +
+                    originalClassifier.declaredTypeParameters
+                      .map { it.typeConstructor }
+                      .zip(subtypeView(originalClassifier)!!.arguments.map { it.type.unwrap() })
+              } else constructor.parameters.map { it.typeConstructor }.zip(arguments.map { it.type.unwrap() }).toMap()
+            )
+          }
+        )
 
         add(
           substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-              substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-            } else substituted.parameterTypes
+            parameterTypes = substituted.parameterTypes.toMutableMap()
+              .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
           )
         )
       }
@@ -207,7 +212,7 @@ fun CallableRef.collectInjectables(
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = copy(type = type.withFrameworkKey(UUID.randomUUID().toString()))
+  val nextCallable = copy(type = type.withFrameworkKey(UUID.randomUUID().toString(), ctx))
   addInjectable(nextCallable)
 
   nextCallable

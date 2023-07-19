@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
+import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -58,7 +59,7 @@ class ListInjectable(
   override val dependencies = elements
     .mapIndexed { index, element ->
       InjectableRequest(
-        type = element,
+        key = KotlinTypeKey(element, ownerScope.ctx),
         callableFqName = callableFqName,
         callableTypeArguments = type.constructor.parameters.zip(type.arguments.map { it.type }).toMap(),
         parameterName = "element$index".asNameId(),
@@ -71,11 +72,11 @@ class LambdaInjectable(
   override val ownerScope: InjectablesScope,
   request: InjectableRequest
 ) : Injectable {
-  override val type = request.type
+  override val type = request.key.type
   override val callableFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
     InjectableRequest(
-      type = type.arguments.last().type,
+      key = KotlinTypeKey(type.arguments.last().type, ownerScope.ctx),
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0
@@ -123,12 +124,15 @@ class TypeKeyInjectable(
   override val ownerScope: InjectablesScope
 ) : Injectable {
   override val callableFqName = FqName("typeKeyOf<${type.renderToString()}>")
-  override val dependencies = type.allTypes
+  override val dependencies = type.allTypes(ownerScope.ctx)
     .filter { it.constructor.isTypeParameterTypeConstructor() }
     .mapIndexed { index, typeParameter ->
       InjectableRequest(
-        type = ownerScope.ctx.typeKeyClassifier!!.defaultType
-          .withArguments(listOf(typeParameter.asTypeProjection())),
+        key = KotlinTypeKey(
+          ownerScope.ctx.typeKeyClassifier!!.defaultType
+            .replace(listOf(typeParameter.asTypeProjection())),
+          ownerScope.ctx
+        ),
         callableFqName = callableFqName,
         callableTypeArguments = type.constructor.parameters.zip(type.arguments.map { it.type }).toMap(),
         parameterName = "${typeParameter.constructor.declarationDescriptor!!.name}Key".asNameId(),
@@ -138,7 +142,7 @@ class TypeKeyInjectable(
 }
 
 data class InjectableRequest(
-  val type: KotlinType,
+  val key: KotlinTypeKey,
   val callableFqName: FqName,
   val callableTypeArguments: Map<TypeParameterDescriptor, KotlinType> = emptyMap(),
   val parameterName: Name,
@@ -148,7 +152,7 @@ data class InjectableRequest(
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
   InjectableRequest(
-    type = callable.parameterTypes[injektIndex(ctx)]!!,
+    key = KotlinTypeKey(callable.parameterTypes[injektIndex(ctx)]!!, ctx),
     callableFqName = callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),

@@ -17,6 +17,7 @@ object InjektFqNames {
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val DeclarationInfo = InternalPackage.child("DeclarationInfo".asNameId())
   val TypeParameterInfo = InternalPackage.child("TypeParameterInfo".asNameId())
+  val FrameworkKey = InternalPackage.child("FrameworkKey".asNameId())
 
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
   val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())
@@ -28,6 +29,5 @@ object InjektFqNames {
   val Composable = FqName("androidx.compose.runtime.Composable")
 
   val Any = StandardNames.FqNames.any.toSafe()
-  val Nothing = StandardNames.FqNames.nothing.toSafe()
   val Function = StandardNames.FqNames.functionSupertype.toSafe()
 }
