@@ -27,8 +27,8 @@ import com.ivianuu.injekt.compiler.resolution.ListInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
 import com.ivianuu.injekt.compiler.resolution.SourceKeyInjectable
 import com.ivianuu.injekt.compiler.resolution.TypeKeyInjectable
-import com.ivianuu.injekt.compiler.resolution.isInjektSubtypeOf
 import com.ivianuu.injekt.compiler.resolution.render
+import com.ivianuu.injekt.compiler.resolution.unwrapTags
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -79,6 +79,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isNullableType
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -304,7 +305,7 @@ class InjectCallTransformer(
     result.dependencyResults.values.forEach { dependencyResult ->
       dependencyResult as ResolutionResult.Success.Value
       +irCall(
-        if (dependencyResult.candidate.type.isInjektSubtypeOf(injectable.collectionElementType))
+        if (dependencyResult.candidate.type.isSubtypeOf(injectable.collectionElementType))
           listAddAll else listAdd
       ).apply {
         dispatchReceiver = irGet(tmpList)
@@ -406,8 +407,8 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
   ): IrExpression = when (injectable.callable.callable) {
-    is ReceiverParameterDescriptor -> if (injectable.callable.type.constructor.declarationDescriptor
-        ?.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT)
+    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapTags()
+        .constructor.declarationDescriptor?.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT)
       objectExpression(injectable.callable.type)
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)

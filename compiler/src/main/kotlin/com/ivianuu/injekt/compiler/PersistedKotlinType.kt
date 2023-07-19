@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 @Serializable data class PersistedKotlinType(
   val classifierKey: String,
   val arguments: List<PersistedTypeProjection>,
-  val tags: List<PersistedKotlinType>,
   val isMarkedNullable: Boolean,
   val isProvide: Boolean,
   val isInject: Boolean
@@ -36,8 +35,7 @@ fun KotlinType.toPersistedKotlinType(ctx: Context): PersistedKotlinType = Persis
   arguments = arguments.map { it.toPersistedTypeProjection(ctx) },
   isMarkedNullable = isMarkedNullable,
   isProvide = isProvide,
-  isInject = isInject,
-  tags = getTags().map { it.toPersistedKotlinType(ctx) }
+  isInject = isInject
 )
 
 @Serializable data class PersistedTypeProjection(
@@ -60,7 +58,6 @@ fun PersistedKotlinType.toKotlinType(ctx: Context): KotlinType {
       newArguments = arguments,
       newAnnotations = Annotations.create(
         buildList {
-          tags.forEach { add(it.toKotlinType(ctx).toAnnotation()) }
           if (isProvide) add(
             classifierDescriptorForFqName(
               InjektFqNames.Provide,

@@ -14,8 +14,8 @@ import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutor
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutorByConstructorMap
@@ -24,60 +24,66 @@ import org.jetbrains.kotlin.resolve.calls.inference.components.TypeVariableDirec
 import org.jetbrains.kotlin.resolve.calls.inference.model.FixVariableConstraintPositionImpl
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.AbstractTypeChecker
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.KotlinTypeFactory
 import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.TypeCheckerState
 import org.jetbrains.kotlin.types.TypeConstructor
 import org.jetbrains.kotlin.types.TypeProjection
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.UnwrappedType
-import org.jetbrains.kotlin.types.asSimpleType
-import org.jetbrains.kotlin.types.checker.KotlinTypePreparator
 import org.jetbrains.kotlin.types.checker.KotlinTypeRefiner
-import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.safeSubstitute
-import org.jetbrains.kotlin.types.model.KotlinTypeMarker
 import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
+import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 fun KotlinType.prepare(): KotlinType {
-  return this
-  if (constructor is InjektTypeConstructor) return this
-  return withConstructor(
-    InjektTypeConstructor(
-      delegate = constructor,
-      frameworkKey = "",
-      tags = (this as Annotated).getTags()
+  val unwrapped = unwrap()
+    .let { unwrapped ->
+      if (unwrapped.arguments.isEmpty()) unwrapped
+      else {
+        val newArguments = unwrapped.arguments.map {
+          TypeProjectionImpl(it.projectionKind, it.type.prepare())
+        }
+        when (unwrapped) {
+          is SimpleType -> replace(newArguments)
+          is FlexibleType -> KotlinTypeFactory.flexibleType(
+            unwrapped.lowerBound.replace(newArguments),
+            unwrapped.upperBound.replace(newArguments)
+          )
+        }
+      }
+    }
+  val tags = getTags().map { it.prepare() }
+  return tags.wrap(unwrapped.replaceAnnotations(
+    Annotations.create(
+      unwrapped.annotations.filterNot { it.type.constructor.declarationDescriptor.isTag }
     )
-  ).replace(
-    newArguments = arguments.map { TypeProjectionImpl(it.projectionKind, it.type.prepare()) }
-  )
+  ))
 }
 
-fun KotlinType.withConstructor(constructor: TypeConstructor): KotlinType {
-  return this
-  if (this.constructor == constructor) return this
-  return when (val unwrapped = unwrap()) {
-    is FlexibleType -> KotlinTypeFactory.flexibleType(
-      unwrapped.lowerBound.prepare().cast(),
-      unwrapped.upperBound.prepare().cast()
-    ).asSimpleType()
-    is SimpleType -> KotlinTypeFactory.simpleTypeWithNonTrivialMemberScope(
-      attributes = attributes,
-      constructor = constructor,
-      arguments = arguments,
-      nullable = isMarkedNullable,
-      memberScope = memberScope
-    )
-  }
+fun List<KotlinType>.wrap(type: KotlinType): KotlinType = foldRight(type) { nextTag, acc ->
+  nextTag.wrap(acc)
+}
+
+val ClassifierDescriptor?.isTag: Boolean
+  get() = this?.hasAnnotation(InjektFqNames.Tag) == true
+
+fun KotlinType.unwrapTags(): KotlinType = if (constructor.declarationDescriptor.isTag) this
+else arguments.last().type.unwrapTags()
+
+fun KotlinType.wrap(type: KotlinType): KotlinType {
+  val newArguments = if (arguments.size < constructor.parameters.size)
+    arguments + type.asTypeProjection()
+  else arguments.dropLast(1) + type.asTypeProjection()
+  return replace(newArguments)
 }
 
 inline fun buildSubstitutor(block: MutableMap<TypeConstructor, UnwrappedType>.() -> Unit) =
@@ -133,13 +139,6 @@ fun KotlinType.render(
   fun KotlinType.inner() {
     if (!renderType(this)) return
 
-    getTags().forEach {
-      if (!renderType(it)) return@forEach
-      append("@")
-      it.render(depth, renderType, append)
-      append(" ")
-    }
-
     append(constructor.declarationDescriptor!!.fqNameSafe.asString())
 
     if (arguments.isNotEmpty()) {
@@ -183,7 +182,7 @@ val KotlinType.coveringSet: Set<ClassifierDescriptor>
   }
 
 fun KotlinType.isProvideFunctionType(ctx: Context): Boolean =
-  isProvide && isInjektSubtypeOf(ctx.functionType)
+  isProvide && isSubtypeOf(ctx.functionType)
 
 val KotlinType.isFunctionType: Boolean
   get() = constructor.declarationDescriptor!!.fqNameSafe.asString().startsWith("kotlin.Function")
@@ -195,36 +194,6 @@ fun KotlinType.isUnconstrained(staticTypeParameters: List<TypeParameterDescripto
         it.constructor.declarationDescriptor?.fqNameSafe == InjektFqNames.Any ||
             it.isUnconstrained(staticTypeParameters)
       }
-
-fun KotlinType.isInjektSubtypeOf(superType: KotlinType): Boolean = AbstractTypeChecker.isSubtypeOf(
-  object : TypeCheckerState(
-    false,
-    false,
-    true,
-    SimpleClassicTypeSystemContext,
-    KotlinTypePreparator.Default,
-    KotlinTypeRefiner.Default
-  ) {
-    override fun customIsSubtypeOf(subType: KotlinTypeMarker, superType: KotlinTypeMarker): Boolean {
-      val subTypeTags = subType.cast<KotlinType>().tags
-      val superTypeTags = superType.cast<KotlinType>().tags
-
-      if (subTypeTags.size != superTypeTags.size)
-        return false
-
-      for (index in subTypeTags.indices) {
-        val subTypeTag = subTypeTags[index]
-        val superTypeTag = superTypeTags[index]
-        if (!AbstractTypeChecker.isSubtypeOf(this, subTypeTag, superTypeTag))
-          return false
-      }
-
-      return true
-    }
-  },
-  this,
-  superType
-)
 
 fun runSpreadingInjectableInference(
   constraintType: KotlinType,
@@ -288,6 +257,8 @@ fun KotlinType.runCandidateInference(
     }
   }
 
+  val isOk = !constraintSystem.hasContradiction()
+
   return if (constraintSystem.hasContradiction()) null else NewTypeSubstitutorByConstructorMap(
     constraintSystem.system
       .fixedTypeVariables
@@ -296,21 +267,9 @@ fun KotlinType.runCandidateInference(
   )
 }
 
-val KotlinType.frameworkKey: String
-  get() = constructor.safeAs<InjektTypeConstructor>()?.frameworkKey ?: ""
+val KotlinType.frameworkKey: String get() = ""
 
-fun KotlinType.withFrameworkKey(value: String): KotlinType =
-  if (frameworkKey == value) this
-  else withConstructor(
-    InjektTypeConstructor(
-      delegate = constructor.safeAs<InjektTypeConstructor>()?.delegate ?: constructor,
-      frameworkKey = value,
-      tags = tags
-    )
-  )
-
-val KotlinType.tags: List<KotlinType>
-  get() = constructor.safeAs<InjektTypeConstructor>()?.tags ?: emptyList()
+fun KotlinType.withFrameworkKey(value: String) = this
 
 val KotlinType.isInject: Boolean
   get() = hasAnnotation(InjektFqNames.Inject)
@@ -325,9 +284,3 @@ fun KotlinType.toAnnotation(
   valueArguments,
   SourceElement.NO_SOURCE
 )
-
-data class InjektTypeConstructor(
-  val delegate: TypeConstructor,
-  val frameworkKey: String,
-  val tags: List<KotlinType>
-) : TypeConstructor by delegate

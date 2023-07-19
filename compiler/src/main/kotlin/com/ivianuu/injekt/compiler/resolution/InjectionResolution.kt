@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeProjection
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
+import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -392,20 +393,12 @@ private fun InjectablesScope.compareType(
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    if (a.tags.size == b.tags.size) {
-      a.tags.zip(b.tags).forEach { (aTag, bTag) ->
-        diff += compareType(aTag, bTag, comparedTypes)
-      }
-      if (diff < 0) return -1
-      if (diff > 0) return 1
-    }
-
     return 0
   }
 
   if (a.constructor.declarationDescriptor != b.constructor.declarationDescriptor) {
-    val aSubTypeOfB = a.isInjektSubtypeOf(b)
-    val bSubTypeOfA = b.isInjektSubtypeOf(a)
+    val aSubTypeOfB = a.isSubtypeOf(b)
+    val bSubTypeOfA = b.isSubtypeOf(a)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
     val aCommonSuperType = CommonSupertypes.commonSupertype(a.constructor.supertypes)

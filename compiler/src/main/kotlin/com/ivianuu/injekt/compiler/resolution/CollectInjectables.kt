@@ -11,8 +11,8 @@ import com.ivianuu.injekt.compiler.DISPATCH_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.cached
+import com.ivianuu.injekt.compiler.classifierInfo
 import com.ivianuu.injekt.compiler.getArgumentDescriptor
-import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.memberScopeForFqName
@@ -47,7 +47,6 @@ import org.jetbrains.kotlin.resolve.scopes.ResolutionScope
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isNullableType
-import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -185,14 +184,10 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
     ImplicitClassReceiver(this),
     Annotations.EMPTY
   ).toCallableRef(ctx)
-  return if (!tagged || callable.type.tags.isEmpty()) callable
+  val classifierInfo = classifierInfo(ctx)
+  return if (!tagged || classifierInfo.tags.isEmpty()) callable
   else {
-    val taggedType = callable.type.replaceAnnotations(
-      Annotations.create(
-        callable.type.constructor.declarationDescriptor!!.getTags()
-          .map { it.toAnnotation() }
-      )
-    )
+    val taggedType = classifierInfo.tags.wrap(callable.type)
     callable.copy(type = taggedType, originalType = taggedType)
   }
 }
@@ -289,7 +284,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
       (callable.callable is ClassConstructorDescriptor &&
-          callable.type.constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT) ||
+          callable.type.unwrapTags().constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT) ||
       callable.callable.parentsWithSelf.mapNotNull { it.findPsi() }.any { callableParent ->
         allScopes.any { it.owner == callableParent }
       } ||
