@@ -95,7 +95,7 @@ fun InjectablesScope.resolveRequests(
   val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   var failureRequest: InjectableRequest? = null
   var failure: ResolutionResult.Failure? = null
-  for (request in requests) {
+  for (request in requests)
     when (val result = resolveRequest(request)) {
       is ResolutionResult.Success -> successes[request] = result
       is ResolutionResult.Failure ->
@@ -106,7 +106,6 @@ fun InjectablesScope.resolveRequests(
           failure = result
         }
     }
-  }
   return if (failure == null) InjectionResult.Success(this, callee, successes)
   else InjectionResult.Error(this, callee, failureRequest!!, failure)
 }
@@ -141,18 +140,18 @@ private fun InjectablesScope.computeForCandidate(
   if (candidate.dependencies.isEmpty())
     return compute().also { resultsByCandidate[candidate] = it }
 
-  if (resolutionChain.isNotEmpty()) {
+  if (resolutionChain.isNotEmpty())
     for (i in resolutionChain.lastIndex downTo 0) {
       val previousCandidate = resolutionChain[i]
 
       val isSameCallable = if (candidate is CallableInjectable &&
         candidate.callable.callable.containingDeclaration.fqNameSafe
           .asString().startsWith(InjektFqNames.Function.asString()) &&
-          previousCandidate is CallableInjectable &&
-          previousCandidate.callable.callable.containingDeclaration.fqNameSafe
-            .asString().startsWith(InjektFqNames.Function.asString()))
+        previousCandidate is CallableInjectable &&
+        previousCandidate.callable.callable.containingDeclaration.fqNameSafe
+          .asString().startsWith(InjektFqNames.Function.asString()))
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
-        else previousCandidate.callableFqName == candidate.callableFqName
+      else previousCandidate.callableFqName == candidate.callableFqName
 
       if (isSameCallable &&
         previousCandidate.type.coveringSet == candidate.type.coveringSet &&
@@ -163,7 +162,6 @@ private fun InjectablesScope.computeForCandidate(
         return result
       }
     }
-  }
 
   resolutionChain += candidate
   val result = compute()
@@ -216,10 +214,9 @@ private fun InjectablesScope.resolveCandidates(
           0 -> successes += candidateResult
         }
       }
-      is ResolutionResult.Failure -> {
+      is ResolutionResult.Failure ->
         if (compareResult(candidateResult, failure) < 0)
           failure = candidateResult
-      }
     }
   }
 
@@ -255,20 +252,17 @@ private fun InjectablesScope.resolveCandidate(
   for (dependency in candidate.dependencies) {
     when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
-      is ResolutionResult.Failure -> {
-        when {
-          dependency.isRequired && candidate is LambdaInjectable &&
-              dependencyResult is ResolutionResult.Failure.NoCandidates ->
-            return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
-          !dependency.isRequired && dependencyResult is ResolutionResult.Failure.NoCandidates ->
-            successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
-          else ->
-            return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
-              candidate,
-              dependency,
-              dependencyResult
-            )
-        }
+      is ResolutionResult.Failure -> when {
+        dependency.isRequired && candidate is LambdaInjectable &&
+            dependencyResult is ResolutionResult.Failure.NoCandidates ->
+          return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
+        !dependency.isRequired && dependencyResult is ResolutionResult.Failure.NoCandidates ->
+          successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+        else -> return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
+          candidate,
+          dependency,
+          dependencyResult
+        )
       }
     }
   }
