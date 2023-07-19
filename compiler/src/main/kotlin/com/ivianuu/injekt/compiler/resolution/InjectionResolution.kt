@@ -249,11 +249,7 @@ private fun InjectablesScope.resolveCandidate(
   }
 
   if (candidate.dependencies.isEmpty())
-    return@computeForCandidate ResolutionResult.Success.Value(
-      candidate,
-      this,
-      emptyMap()
-    )
+    return@computeForCandidate ResolutionResult.Success.Value(candidate, this, emptyMap())
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
   for (dependency in candidate.dependencies) {
@@ -276,6 +272,7 @@ private fun InjectablesScope.resolveCandidate(
       }
     }
   }
+
   return@computeForCandidate ResolutionResult.Success.Value(
     candidate,
     this,
