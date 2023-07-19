@@ -7,7 +7,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getTags
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.CommonSupertypes
@@ -117,13 +116,13 @@ fun InjectablesScope.resolveRequests(
 }
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
-  resultsByType[request.key]?.let { return it }
+  resultsByType[request.type]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
     ?: tryToResolveRequestWithFrameworkInjectable(request)
     ?: ResolutionResult.Failure.NoCandidates(request)
 
-  resultsByType[request.key] = result
+  resultsByType[request.type] = result
   return result
 }
 
@@ -156,12 +155,12 @@ private fun InjectablesScope.computeForCandidate(
           previousCandidate is CallableInjectable &&
           previousCandidate.callable.callable.containingDeclaration.fqNameSafe
             .asString().startsWith(InjektFqNames.Function.asString()))
-        candidate.dependencies.first().key == previousCandidate.dependencies.first().key
+        candidate.dependencies.first().type == previousCandidate.dependencies.first().type
         else previousCandidate.callableFqName == candidate.callableFqName
 
       if (isSameCallable &&
-        previousCandidate.type.coveringSet(ctx) == candidate.type.coveringSet(ctx) &&
-        (previousCandidate.type.typeSize(ctx) < candidate.type.typeSize(ctx) ||
+        previousCandidate.type.coveringSet == candidate.type.coveringSet &&
+        (previousCandidate.type.typeSize < candidate.type.typeSize ||
             previousCandidate.type == candidate.type)) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
@@ -340,7 +339,7 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
 private fun InjectablesScope.compareTypeProjection(
   a: TypeProjection?,
   b: TypeProjection?,
-  comparedTypes: MutableSet<Pair<Int, Int>>
+  comparedTypes: MutableSet<Pair<KotlinType, KotlinType>>
 ): Int {
   if (a === b) return 0
 
@@ -358,7 +357,7 @@ private fun InjectablesScope.compareTypeProjection(
 private fun InjectablesScope.compareType(
   a: KotlinType?,
   b: KotlinType?,
-  comparedTypes: MutableSet<Pair<Int, Int>> = mutableSetOf()
+  comparedTypes: MutableSet<Pair<KotlinType, KotlinType>> = mutableSetOf()
 ): Int {
   if (a === b) return 0
 
@@ -375,16 +374,16 @@ private fun InjectablesScope.compareType(
   if (a.constructor.isTypeParameterTypeConstructor() &&
     !b.constructor.isTypeParameterTypeConstructor()) return 1
 
-  val pair = a.injektHashCode(ctx) to b.injektHashCode(ctx)
+  val pair = a to b
   if (!comparedTypes.add(pair)) return 0
 
   fun compareSameClassifier(a: KotlinType?, b: KotlinType?): Int {
+    if (a === b) return 0
+
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
     a!!
     b!!
-
-    if (a.injektEquals(b, ctx)) return 0
 
     var diff = 0
     a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
@@ -393,11 +392,13 @@ private fun InjectablesScope.compareType(
     if (diff < 0) return -1
     if (diff > 0) return 1
 
-    a.getTags().zip(b.getTags()).forEach { (aTag, bTag) ->
-      diff += compareType(aTag, bTag, comparedTypes)
+    if (a.tags.size == b.tags.size) {
+      a.tags.zip(b.tags).forEach { (aTag, bTag) ->
+        diff += compareType(aTag, bTag, comparedTypes)
+      }
+      if (diff < 0) return -1
+      if (diff > 0) return 1
     }
-    if (diff < 0) return -1
-    if (diff > 0) return 1
 
     return 0
   }

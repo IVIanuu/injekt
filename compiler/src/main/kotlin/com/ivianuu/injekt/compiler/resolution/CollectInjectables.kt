@@ -185,7 +185,7 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
     ImplicitClassReceiver(this),
     Annotations.EMPTY
   ).toCallableRef(ctx)
-  return if (!tagged || callable.type.getTags().isEmpty()) callable
+  return if (!tagged || callable.type.tags.isEmpty()) callable
   else {
     val taggedType = callable.type.replaceAnnotations(
       Annotations.create(
@@ -212,7 +212,7 @@ fun CallableRef.collectInjectables(
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = copy(type = type.withFrameworkKey(UUID.randomUUID().toString(), ctx))
+  val nextCallable = copy(type = type.withFrameworkKey(UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
   nextCallable

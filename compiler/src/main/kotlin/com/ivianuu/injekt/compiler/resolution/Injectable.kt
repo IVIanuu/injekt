@@ -59,7 +59,7 @@ class ListInjectable(
   override val dependencies = elements
     .mapIndexed { index, element ->
       InjectableRequest(
-        key = KotlinTypeKey(element, ownerScope.ctx),
+        type = element,
         callableFqName = callableFqName,
         callableTypeArguments = type.constructor.parameters.zip(type.arguments.map { it.type }).toMap(),
         parameterName = "element$index".asNameId(),
@@ -72,11 +72,11 @@ class LambdaInjectable(
   override val ownerScope: InjectablesScope,
   request: InjectableRequest
 ) : Injectable {
-  override val type = request.key.type
+  override val type = request.type
   override val callableFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
     InjectableRequest(
-      key = KotlinTypeKey(type.arguments.last().type, ownerScope.ctx),
+      type = type.arguments.last().type,
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0
@@ -124,15 +124,12 @@ class TypeKeyInjectable(
   override val ownerScope: InjectablesScope
 ) : Injectable {
   override val callableFqName = FqName("typeKeyOf<${type.renderToString()}>")
-  override val dependencies = type.allTypes(ownerScope.ctx)
+  override val dependencies = type.allTypes
     .filter { it.constructor.isTypeParameterTypeConstructor() }
     .mapIndexed { index, typeParameter ->
       InjectableRequest(
-        key = KotlinTypeKey(
-          ownerScope.ctx.typeKeyClassifier!!.defaultType
-            .replace(listOf(typeParameter.asTypeProjection())),
-          ownerScope.ctx
-        ),
+        type = ownerScope.ctx.typeKeyClassifier!!.defaultType
+          .replace(listOf(typeParameter.asTypeProjection())),
         callableFqName = callableFqName,
         callableTypeArguments = type.constructor.parameters.zip(type.arguments.map { it.type }).toMap(),
         parameterName = "${typeParameter.constructor.declarationDescriptor!!.name}Key".asNameId(),
@@ -142,7 +139,7 @@ class TypeKeyInjectable(
 }
 
 data class InjectableRequest(
-  val key: KotlinTypeKey,
+  val type: KotlinType,
   val callableFqName: FqName,
   val callableTypeArguments: Map<TypeParameterDescriptor, KotlinType> = emptyMap(),
   val parameterName: Name,
@@ -152,7 +149,7 @@ data class InjectableRequest(
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
   InjectableRequest(
-    key = KotlinTypeKey(callable.parameterTypes[injektIndex(ctx)]!!, ctx),
+    type = callable.parameterTypes[injektIndex(ctx)]!!,
     callableFqName = callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(ctx),

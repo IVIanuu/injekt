@@ -8,6 +8,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.isInject
 import com.ivianuu.injekt.compiler.resolution.isProvide
+import com.ivianuu.injekt.compiler.resolution.prepare
 import com.ivianuu.injekt.compiler.resolution.toAnnotation
 import kotlinx.serialization.Serializable
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -77,6 +78,7 @@ fun PersistedKotlinType.toKotlinType(ctx: Context): KotlinType {
         }
       )
     )
+    .prepare()
 }
 
 fun PersistedTypeProjection.toTypeProjection(ctx: Context): TypeProjection {

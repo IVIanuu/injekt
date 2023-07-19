@@ -4,15 +4,26 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.components.ClassicTypeSystemContextForCS
+import org.jetbrains.kotlin.resolve.calls.inference.components.ClassicConstraintSystemUtilContext
+import org.jetbrains.kotlin.resolve.calls.inference.components.ConstraintIncorporator
+import org.jetbrains.kotlin.resolve.calls.inference.components.ConstraintInjector
+import org.jetbrains.kotlin.resolve.calls.inference.components.ResultTypeResolver
+import org.jetbrains.kotlin.resolve.calls.inference.components.TrivialConstraintTypeInferenceOracle
+import org.jetbrains.kotlin.resolve.descriptorUtil.getKotlinTypeRefiner
+import org.jetbrains.kotlin.types.TypeApproximator
+import org.jetbrains.kotlin.types.TypeRefinement
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 @Suppress("NewApi")
+@OptIn(TypeRefinement::class)
 class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
 
@@ -30,6 +41,36 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
+  }
+
+  val constraintInjector by lazy(LazyThreadSafetyMode.NONE) {
+    ConstraintInjector(
+      ConstraintIncorporator(typeApproximator, oracle, utilContext),
+      typeApproximator,
+      LanguageVersionSettingsImpl.DEFAULT
+    )
+  }
+
+  val typeApproximator by lazy(LazyThreadSafetyMode.NONE) {
+    TypeApproximator(module.builtIns, LanguageVersionSettingsImpl.DEFAULT)
+  }
+  val oracle by lazy(LazyThreadSafetyMode.NONE) {
+    TrivialConstraintTypeInferenceOracle(
+      ClassicTypeSystemContextForCS(
+        module.builtIns, module.getKotlinTypeRefiner()
+      )
+    )
+  }
+  val utilContext by lazy(LazyThreadSafetyMode.NONE) {
+    ClassicConstraintSystemUtilContext(module.getKotlinTypeRefiner(), module.builtIns)
+  }
+
+  val resultTypeResolver by lazy(LazyThreadSafetyMode.NONE) {
+    ResultTypeResolver(
+      typeApproximator,
+      oracle,
+      LanguageVersionSettingsImpl.DEFAULT
+    )
   }
 }
 

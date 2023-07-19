@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.resolution.CallableRef
 import com.ivianuu.injekt.compiler.resolution.InjectableRequest
 import com.ivianuu.injekt.compiler.resolution.InjectablesScope
 import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.KotlinTypeKey
 import com.ivianuu.injekt.compiler.resolution.LambdaInjectable
 import com.ivianuu.injekt.compiler.resolution.ListInjectable
 import com.ivianuu.injekt.compiler.resolution.ResolutionResult
@@ -110,7 +109,7 @@ class InjectCallTransformer(
   }
 
   private fun ResolutionResult.Success.Value.usageKey(ctx: RootContext): Any =
-    listOf(candidate::class, KotlinTypeKey(candidate.type, this@InjectCallTransformer.ctx), highestScope(ctx))
+    listOf(candidate::class, candidate.type, highestScope(ctx))
   
   private fun ResolutionResult.Success.Value.highestScope(ctx: RootContext): InjectablesScope =
     ctx.highestScope.getOrPut(this) {

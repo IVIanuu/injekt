@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
 import com.ivianuu.injekt.compiler.resolution.anyType
 import com.ivianuu.injekt.compiler.resolution.buildSubstitutor
 import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
+import com.ivianuu.injekt.compiler.resolution.prepare
 import com.ivianuu.injekt.compiler.resolution.substitute
 import com.ivianuu.injekt.compiler.resolution.toAnnotation
 import kotlinx.serialization.Serializable
@@ -113,12 +114,12 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
         else replaceAnnotations(
           Annotations.create(additionalTags.map { it.toAnnotation() } + annotations)
         )
-      }
+      }.prepare()
     }
 
     val parameterTypes = buildMap {
       for (parameter in allParametersWithContext)
-        this[parameter.injektIndex(ctx)] = parameter.type
+        this[parameter.injektIndex(ctx)] = parameter.type.prepare()
     }
 
     val info = CallableInfo(type, parameterTypes)
@@ -213,19 +214,11 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       }
     }
 
-    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
-
-    val isTag = hasAnnotation(InjektFqNames.Tag)
-
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
-      when {
-        expandedType != null -> listOf(expandedType)
-        isTag -> listOf(ctx.anyType)
-        else -> typeConstructor.supertypes.toList()
-      }
+      typeConstructor.supertypes.map { it.prepare() }
     }
 
-    val tags = getTags()
+    val tags = getTags().map { it.prepare() }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
       ClassifierInfo(

@@ -24,7 +24,7 @@ class InjectablesScope(
   val ctx: Context
 ) {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
-  val resultsByType = mutableMapOf<KotlinTypeKey, ResolutionResult>()
+  val resultsByType = mutableMapOf<KotlinType, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
 
   private val injectables = mutableListOf<CallableRef>()
@@ -50,7 +50,7 @@ class InjectablesScope(
           )
         }
       ),
-    val processedCandidateTypes: MutableSet<KotlinTypeKey> = mutableSetOf()
+    val processedCandidateTypes: MutableSet<KotlinType> = mutableSetOf()
   ) {
     fun copy() = SpreadingInjectable(
       callable,
@@ -63,8 +63,8 @@ class InjectablesScope(
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val typeKey: KotlinTypeKey, val staticTypeParameters: List<TypeParameterDescriptor>)
-  private val injectablesByRequest = mutableMapOf<KotlinTypeKey, List<CallableInjectable>>()
+  data class CallableRequestKey(val type: KotlinType, val staticTypeParameters: List<TypeParameterDescriptor>)
+  private val injectablesByRequest = mutableMapOf<KotlinType, List<CallableInjectable>>()
 
   init {
     for (injectable in initialInjectables)
@@ -83,30 +83,30 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.key.type.frameworkKey == null &&
-      request.key.type.constructor.declarationDescriptor == ctx.listClassifier) return emptyList()
+    if (request.type.frameworkKey.isEmpty() &&
+      request.type.constructor.declarationDescriptor == ctx.listClassifier) return emptyList()
 
     return injectablesForType(
-      CallableRequestKey(request.key, requestingScope.allStaticTypeParameters)
+      CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
     ).filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
     if (injectables.isEmpty())
       return parent?.injectablesForType(key) ?: emptyList()
-    return injectablesByRequest.getOrPut(key.typeKey) {
+    return injectablesByRequest.getOrPut(key.type) {
       buildList {
         parent?.injectablesForType(key)?.let { addAll(it) }
 
         for (candidate in injectables) {
-          if (key.typeKey.type.frameworkKey != null &&
-            candidate.type.frameworkKey != key.typeKey.type.frameworkKey) continue
-          val substitutor = candidate.type.runCandidateInference(key.typeKey.type, key.staticTypeParameters, ctx = ctx)
+          if (key.type.frameworkKey.isNotEmpty() &&
+            candidate.type.frameworkKey != key.type.frameworkKey) continue
+          val substitutor = candidate.type.runCandidateInference(key.type, key.staticTypeParameters, ctx)
             ?: continue
           this += CallableInjectable(
             this@InjectablesScope,
             candidate.substitute(substitutor),
-            key.typeKey.type
+            key.type
           )
         }
       }
@@ -114,29 +114,29 @@ class InjectablesScope(
   }
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.key.type.isFunctionType && !request.key.type.isProvide -> LambdaInjectable(this, request)
-    request.key.type.constructor.declarationDescriptor == ctx.listClassifier -> {
-      val singleElementType = request.key.type.arguments[0].type
+    request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
+    request.type.constructor.declarationDescriptor == ctx.listClassifier -> {
+      val singleElementType = request.type.arguments[0].type
       val collectionElementType = ctx.collectionClassifier.defaultType
-        .replace(request.key.type.arguments)
+        .replace(request.type.arguments)
 
-      val key = CallableRequestKey(request.key, allStaticTypeParameters)
+      val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
       val elements = listElementsTypesForType(singleElementType, collectionElementType, key)
 
       if (elements.isEmpty()) null
       else ListInjectable(
-        type = request.key.type,
+        type = request.type,
         ownerScope = this,
         elements = elements,
         singleElementType = singleElementType,
         collectionElementType = collectionElementType
       )
     }
-    request.key.type.constructor.declarationDescriptor!!.fqNameSafe == InjektFqNames.TypeKey ->
-      TypeKeyInjectable(request.key.type, this)
-    request.key.type.constructor.declarationDescriptor!!.fqNameSafe == InjektFqNames.SourceKey ->
-      SourceKeyInjectable(request.key.type, this)
+    request.type.constructor.declarationDescriptor!!.fqNameSafe == InjektFqNames.TypeKey ->
+      TypeKeyInjectable(request.type, this)
+    request.type.constructor.declarationDescriptor!!.fqNameSafe == InjektFqNames.SourceKey ->
+      SourceKeyInjectable(request.type, this)
     else -> null
   }
 
@@ -154,8 +154,8 @@ class InjectablesScope(
 
       for (candidate in injectables.toList()) {
         val substitutor =
-          candidate.type.runCandidateInference(singleElementType, key.staticTypeParameters, ctx = ctx)
-            ?: candidate.type.runCandidateInference(collectionElementType, key.staticTypeParameters, ctx = ctx)
+          candidate.type.runCandidateInference(singleElementType, key.staticTypeParameters, ctx)
+            ?: candidate.type.runCandidateInference(collectionElementType, key.staticTypeParameters, ctx)
             ?: continue
 
         val substitutedCandidate = candidate.substitute(substitutor)
@@ -171,10 +171,10 @@ class InjectablesScope(
   }
 
   private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: KotlinType) {
-    if (!spreadingInjectable.processedCandidateTypes.add(KotlinTypeKey(candidateType, ctx)) ||
+    if (!spreadingInjectable.processedCandidateTypes.add(candidateType) ||
       spreadingInjectable in spreadingInjectableChain) return
 
-    val substitutor = buildContextForSpreadingInjectable(
+    val substitutor = runSpreadingInjectableInference(
       spreadingInjectable.constraintType,
       candidateType,
       allStaticTypeParameters,
