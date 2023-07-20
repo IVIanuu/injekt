@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
@@ -31,7 +32,7 @@ fun interface AppUi {
   @Composable operator fun invoke()
 }
 
-@Provide fun appUi(models: @Composable () -> CounterModel) = AppUi {
+@Provide fun appUi(modelProvider: CounterModelProvider) = AppUi {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -40,9 +41,11 @@ fun interface AppUi {
       )
     }
   ) {
-    val model = models()
+    val model = modelProvider()
     Column(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .padding(it)
+        .fillMaxSize(),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -65,11 +68,15 @@ data class CounterModel(
   val decCounter: () -> Unit
 )
 
-@Provide fun counterModel(
+fun interface CounterModelProvider {
+  @Composable operator fun invoke(): CounterModel
+}
+
+@Provide fun counterModelProvider(
   counter: Flow<Counter>,
   incCounter: IncCounter,
   decCounter: DecCounter
-): @Composable () -> CounterModel = {
+) = CounterModelProvider {
   val scope = rememberCoroutineScope()
   CounterModel(
     state = counter.collectAsState(Counter(0)).value,
