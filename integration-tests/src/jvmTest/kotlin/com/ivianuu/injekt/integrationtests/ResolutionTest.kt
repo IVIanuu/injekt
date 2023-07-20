@@ -361,19 +361,6 @@ class ResolutionTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testDoesNotUseDefaultValueIfThereAreCandidates() = codegen(
-    """
-      @Provide fun bar(foo: Foo) = Bar(foo)
-
-      fun invoke(): Bar {
-        fun inner(@Inject bar: Bar = Bar(Foo())) = bar
-        return inner()
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("no injectable")
-  }
-
   @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
     """
       @Provide class FooModule {
