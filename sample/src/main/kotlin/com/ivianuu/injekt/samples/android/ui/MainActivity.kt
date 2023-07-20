@@ -12,10 +12,10 @@ import com.ivianuu.injekt.common.Scope
 import com.ivianuu.injekt.samples.android.app.App
 
 class MainActivity : ComponentActivity() {
+  private val scope = Scope<ActivityScope>()
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-
-    val scope = Scope<ActivityScope>()
 
     val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
