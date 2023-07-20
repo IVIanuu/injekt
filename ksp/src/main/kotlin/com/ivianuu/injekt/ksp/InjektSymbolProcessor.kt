@@ -101,13 +101,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     when (this@uniqueKey) {
       is KSClassDeclaration -> {
         superTypes.forEach { append(it.uniqueTypeKey()) }
-
         annotations
-          .filter {
-            it.annotationType.resolve().annotations.any {
-              it.annotationType.resolve().declaration.qualifiedName?.asString() == InjektFqNames.Tag.asString()
-            }
-          }
           .forEach { append(it.annotationType.uniqueTypeKey()) }
       }
       is KSFunctionDeclaration -> {
