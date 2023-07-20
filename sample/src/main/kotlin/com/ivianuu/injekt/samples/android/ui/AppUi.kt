@@ -32,7 +32,7 @@ fun interface AppUi {
   @Composable operator fun invoke()
 }
 
-@Provide fun appUi(modelProvider: CounterModelProvider) = AppUi {
+@Provide fun appUi(presenter: CounterPresenter) = AppUi {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -41,7 +41,7 @@ fun interface AppUi {
       )
     }
   ) {
-    val model = modelProvider()
+    val state = presenter()
     Column(
       modifier = Modifier
         .padding(it)
@@ -49,36 +49,36 @@ fun interface AppUi {
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Text("Count ${model.state}", style = MaterialTheme.typography.subtitle1)
+      Text("Count ${state.state}", style = MaterialTheme.typography.subtitle1)
       Spacer(Modifier.height(8.dp))
-      Button(onClick = model.incCounter) {
+      Button(onClick = state.incCounter) {
         Text("Inc")
       }
       Spacer(Modifier.height(8.dp))
-      Button(onClick = model.decCounter) {
+      Button(onClick = state.decCounter) {
         Text("Dec")
       }
     }
   }
 }
 
-data class CounterModel(
+data class CounterState(
   val state: Counter,
   val incCounter: () -> Unit,
   val decCounter: () -> Unit
 )
 
-fun interface CounterModelProvider {
-  @Composable operator fun invoke(): CounterModel
+fun interface CounterPresenter {
+  @Composable operator fun invoke(): CounterState
 }
 
-@Provide fun counterModelProvider(
+@Provide fun counterPresenter(
   counter: Flow<Counter>,
   incCounter: IncCounter,
   decCounter: DecCounter
-) = CounterModelProvider {
+) = CounterPresenter {
   val scope = rememberCoroutineScope()
-  CounterModel(
+  CounterState(
     state = counter.collectAsState(Counter(0)).value,
     incCounter = {
       scope.launch {
