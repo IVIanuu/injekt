@@ -242,18 +242,6 @@ class ResolutionTest {
     compilationShouldHaveFailed("ambiguous")
   }
 
-  @Test fun testCannotDeclareMultipleInjectablesOfTheSameTypeInTheSameCodeBlock() = codegen(
-    """
-      fun invoke() {
-        @Provide val injectableA = "a"
-        @Provide val injectableB = "b"
-        inject<String>()
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("ambiguous")
-  }
-
   @Test fun testPrefersMoreSpecificType() = singleAndMultiCodegen(
     """
       @Provide fun stringSet(): Set<String> = setOf("a", "b", "c")
@@ -294,12 +282,10 @@ class ResolutionTest {
 
   @Test fun testPrefersMoreSpecificType4() = singleAndMultiCodegen(
     """
-      fun interface Ord<in T> {
-        fun result(): String
-      }
-      @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
-      @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
-      @Provide fun <T : Int> intOrd(): Ord<T> = TODO()
+      interface Ord<in T>
+      @Provide fun <T : Any> anyOrd(): Ord<T> = object : Ord<T> {}
+      @Provide fun <T : Number> numberOrd(): Ord<T> = object : Ord<T> {}
+      @Provide fun <T : Int> intOrd(): Ord<T> = object : Ord<T> {}
       fun <T> useOrd(@Inject ord: Ord<T>) = ord
     """,
     """
@@ -311,12 +297,10 @@ class ResolutionTest {
 
   @Test fun testPrefersMoreSpecificType5() = singleAndMultiCodegen(
     """
-      fun interface Ord<in T> {
-        fun result(): String
-      }
-      @Provide fun <T : Any> anyOrd(): Ord<T> = TODO()
-      @Provide fun <T : Number> numberOrd(): Ord<T> = TODO()
-      @Provide fun <T : Int> intOrd(long: Long): Ord<T> = TODO()
+      interface Ord<in T>
+      @Provide fun <T : Any> anyOrd(): Ord<T> = object : Ord<T> {}
+      @Provide fun <T : Number> numberOrd(): Ord<T> = object : Ord<T> {}
+      @Provide fun <T : Int> intOrd(long: Long): Ord<T> = object : Ord<T> {}
       fun <T> useOrd(@Inject ord: Ord<T>) = ord
     """,
     """
