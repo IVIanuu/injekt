@@ -103,6 +103,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         superTypes.forEach { append(it.uniqueTypeKey()) }
         annotations
           .forEach { append(it.annotationType.uniqueTypeKey()) }
+        primaryConstructor?.let { append(it) }
       }
       is KSFunctionDeclaration -> {
         append(extensionReceiver?.uniqueTypeKey())
