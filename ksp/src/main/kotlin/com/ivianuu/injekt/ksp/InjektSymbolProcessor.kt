@@ -95,7 +95,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     ).write(injectablesLookupCode.toByteArray())
   }
 
-  private fun KSDeclaration.uniqueKey() = buildString {
+  private fun KSDeclaration.uniqueKey(): String = buildString {
     modifiers.forEach { append(it) }
 
     when (this@uniqueKey) {
@@ -103,7 +103,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         superTypes.forEach { append(it.uniqueTypeKey()) }
         annotations
           .forEach { append(it.annotationType.uniqueTypeKey()) }
-        primaryConstructor?.let { append(it) }
+        primaryConstructor?.uniqueKey()?.let { append(it) }
       }
       is KSFunctionDeclaration -> {
         append(extensionReceiver?.uniqueTypeKey())
