@@ -9,11 +9,9 @@ plugins {
 }
 
 kotlin {
-  jvm()
-
-  iosArm64()
+  /*iosArm64()
   iosSimulatorArm64()
-  iosX64()
+  iosX64()*/
 
   js {
     browser()
@@ -21,7 +19,7 @@ kotlin {
 
   jvm()
 
-  linuxX64()
+  /*linuxX64()
 
   macosArm64()
   macosX64()
@@ -35,7 +33,7 @@ kotlin {
   watchosArm32()
   watchosArm64()
   watchosSimulatorArm64()
-  watchosX64()
+  watchosX64()*/
 
   sourceSets {
     val commonMain by getting {
