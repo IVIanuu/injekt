@@ -12,9 +12,9 @@ kotlin {
   iosSimulatorArm64()
   iosX64()*/
 
-  js {
+  /*js {
     browser()
-  }
+  }*/
 
   jvm()
 
