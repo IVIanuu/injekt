@@ -6,9 +6,9 @@
 
 object Build {
   const val applicationId = "com.ivianuu.injekt.samples.android"
-  const val compileSdk = 33
+  const val compileSdk = 34
   const val minSdk = 27
-  const val targetSdk = 30
+  const val targetSdk = 33
   const val versionCode = 1
   const val versionName = "0.0.1"
 }
@@ -34,7 +34,7 @@ object Deps {
     }
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.21.0"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.22.0"
 
   object AutoService {
     private const val version = "1.1.0"
@@ -45,14 +45,14 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.4.0"
-    const val compiler = "androidx.compose.compiler:compiler:1.5.0-dev-k1.9.0-6a60475e07f"
+    const val version = "1.5.1"
+    const val compiler = "org.jetbrains.compose.compiler:compiler:1.5.2"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
 
   object Coroutines {
-    private const val version = "1.7.2"
+    private const val version = "1.7.3"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
     const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
@@ -70,27 +70,27 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.9.0"
+    const val version = "1.9.10"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
   }
 
   object KotlinCompileTesting {
-    private const val version = "0.3.0"
+    private const val version = "0.3.2"
     const val kotlinCompileTesting = "dev.zacsweers.kctfork:core:$version"
     const val ksp = "dev.zacsweers.kctfork:ksp:$version"
   }
 
   object KotlinSerialization {
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
   }
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
   object Ksp {
-    const val version = "1.9.0-1.0.11"
+    const val version = "1.9.10-1.0.13"
     const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
     const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
