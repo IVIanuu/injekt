@@ -146,9 +146,7 @@ data class Constraint(
   val derivedFrom: Set<ClassifierRef>
 )
 
-enum class ConstraintKind {
-  LOWER, UPPER, EQUAL
-}
+enum class ConstraintKind { LOWER, UPPER, EQUAL }
 
 sealed interface ConstraintPosition {
   data object FixVariable : ConstraintPosition
