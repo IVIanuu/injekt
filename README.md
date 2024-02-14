@@ -195,3 +195,6 @@ dependencies {
   classpath("com.ivianuu.injekt:common:${latest_version}")
 }
 ```
+
+# More complex uses can be found in my essentials project(base project for my apps)
+# https://github.com/IVIanuu/essentials
