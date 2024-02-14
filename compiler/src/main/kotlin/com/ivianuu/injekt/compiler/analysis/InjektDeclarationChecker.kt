@@ -8,7 +8,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.Context
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getTags
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.reportError
 import com.ivianuu.injekt.compiler.resolution.injectableConstructors
@@ -65,12 +64,9 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
   ) {
     if (descriptor.hasAnnotation(InjektFqNames.Provide))
       checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
-    else
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
     checkReceiver(descriptor, declaration, ctx)
-    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkClass(
@@ -130,8 +126,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
 
     if (isProvider)
       checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, ctx)
-    else
-      checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.declaredTypeParameters, ctx)
 
     checkExceptActual(declaration, descriptor, ctx)
 
@@ -157,11 +151,9 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: PropertyDescriptor,
     ctx: Context
   ) {
-    checkSpreadingTypeParametersOnNonProvideDeclaration(descriptor.typeParameters, ctx)
     checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
-    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkLocalVariable(
@@ -174,8 +166,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null)
       ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
-
-    checkTagUsage(descriptor, declaration, ctx)
   }
 
   private fun checkReceiver(
@@ -282,28 +272,5 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     }
 
     return true
-  }
-
-  private fun checkSpreadingTypeParametersOnNonProvideDeclaration(
-    typeParameters: List<TypeParameterDescriptor>,
-    ctx: Context
-  ) {
-    if (typeParameters.isEmpty()) return
-    for (typeParameter in typeParameters)
-      if (typeParameter.hasAnnotation(InjektFqNames.Spread))
-        ctx.reportError(
-          typeParameter.annotations.findAnnotation(InjektFqNames.Spread)
-            ?.source?.getPsi() ?: typeParameter.findPsi()!!,
-          "a @Spread type parameter is only supported on @Provide functions and @Provide classes"
-        )
-  }
-
-  private fun checkTagUsage(
-    descriptor: DeclarationDescriptor,
-    declaration: KtDeclaration,
-    ctx: Context,
-  ) {
-    if (descriptor.getTags().any { it.fqName != InjektFqNames.Composable })
-      ctx.reportError(declaration, "tags are only supported on classes, constructors and return types")
   }
 }
