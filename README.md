@@ -73,10 +73,10 @@ You can inject all injectables of a given type by injecting a ```List<T>```
 @Provide fun multipleElements(): Collection<String> = listOf("b", "c")
 
 fun main() {
-  inject<List<String>>() == listOf("a", "b", "c")
+  inject<List<String>>() == listOf("a", "b", "c") // true
 }
 ```
-All elements which match the E or Collection\<E\> will be included in the resulting list.
+All elements which match E or Collection\<E\> will be included in the resulting list.
 
 # Scoping
 The core of Injekt doesn't know anything about scoping, but there is a api in the common module.
@@ -135,8 +135,8 @@ fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId)
 ```
 
 # Modules
-There is no ```@Module``` annotation in Injekt instead a module is just a provided class with
-@Provide declarations
+There is no ```@Module``` annotation in Injekt instead a module is just a provided class which contains
+more @Provide declarations
 ```kotlin
 // object module which is marked with @Provide
 // can be used to organize providers
@@ -161,7 +161,7 @@ like this without a lot boilerplate
 ```kotlin
 @Provide class ActivityComponent(
   val api: Api,
-  val fragmentComponent: (Fragment) -> FragmentComponent
+  val fragmentComponent: (Fragment, Scope<FragmentScope>) -> FragmentComponent
 )
 ```
 
@@ -195,4 +195,3 @@ dependencies {
   classpath("com.ivianuu.injekt:common:${latest_version}")
 }
 ```
-It's also required to install the Injekt IDE plugin
