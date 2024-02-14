@@ -185,9 +185,9 @@ plugins {
 
 dependencies {
   // core runtime
-  classpath("com.ivianuu.injekt:core:${latest_version}")
+  implementation("com.ivianuu.injekt:core:${latest_version}")
   // optional - common utilities
-  classpath("com.ivianuu.injekt:common:${latest_version}")
+  implementation("com.ivianuu.injekt:common:${latest_version}")
 }
 ```
 
