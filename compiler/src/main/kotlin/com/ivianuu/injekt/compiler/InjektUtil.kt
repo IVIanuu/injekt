@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -36,13 +35,10 @@ import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescripto
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtPsiUtil
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getValueArgumentForExpression
@@ -133,9 +129,6 @@ fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_k
             }
         }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
     is ClassDescriptor -> "class:$fqNameSafe"
-    is AnonymousFunctionDescriptor -> "anonymous_function:${findPsi()!!.let {
-      "${it.containingFile.cast<KtFile>().virtualFilePath}_${it.startOffset}_${it.endOffset}"
-    }}:${original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()}"
     is FunctionDescriptor -> "function:$fqNameSafe:" +
         "${original.visibility.name}:" +
         original.typeParameters.joinToString {
