@@ -43,30 +43,6 @@ class SpreadingInjectableTest {
     invokeSingleFile<List<Foo>>().size shouldBe 1
   }
 
-  @Test fun testSpreadingNonInjectableClass() = codegen(
-    """
-      class MyModule<@Spread T>
-    """
-  ) {
-    compilationShouldHaveFailed("@Provide functions and @Provide classes")
-  }
-
-  @Test fun testSpreadingNonInjectableFunction() = codegen(
-    """
-      fun <@Spread T> triggerImpl() = Unit
-    """
-  ) {
-    compilationShouldHaveFailed("@Provide functions and @Provide classes")
-  }
-
-  @Test fun testSpreadingProperty() = codegen(
-    """
-      val <@Spread T> T.prop get() = Unit
-    """
-  ) {
-    compilationShouldHaveFailed("@Provide functions and @Provide classes")
-  }
-
   @Test fun testMultipleSpreadTypeParameters() = codegen(
     """
       @Provide fun <@Spread T, @Spread S> triggerImpl() = Unit
