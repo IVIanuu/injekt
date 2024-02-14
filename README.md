@@ -39,33 +39,6 @@ fun run(@Provide config: Config) {
 }
 ```
 
-# Function injection
-Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters,
-or to break circular dependencies.
-You can do this by injecting a function.
-```kotlin
-// inject a function to create multiple Tokens
-fun run(@Inject tokenFactory: () -> Token) {
-  val tokenA = tokenFactory()
-  val tokenB = tokenFactory()
-}
-
-// inject a function to create a MyViewModel with the additional String parameter
-@Composable fun MyScreen(@Inject viewModelFactory: (String) -> MyViewModel) {
-  val viewModel = remember { viewModelFactory("user_id") }
-}
-
-// break circular dependency
-@Provide class Foo(val bar: Bar)
-@Provide class Bar(foo: (Bar) -> Foo) {
-   val foo = foo(this)
-}
-
-// inject functions in a inline function to create a conditional Logger with zero overhead
-@Provide inline fun logger(isDebug: IsDebug, loggerImpl: () -> LoggerImpl, noOpLogger: () -> NoOpLogger): Logger =
-  if (isDebug) loggerImpl() else noOpLogger()
-```
-
 # Multi injection
 You can inject all injectables of a given type by injecting a ```List<T>```
 ```kotlin
@@ -104,36 +77,6 @@ fun onDestroy() {
 }
 ```
 
-# Distinguish between types
-Sometimes you have multiple injectables of the same type
-Injekt will need help to keep them apart here are two strategies:
-
-Value classes:
-```kotlin
-@JvmInline value class PlaylistId(val value: String)
-@JvmInline value class TrackId(val value: String)
-
-fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
-```
-
-Tags:
-```kotlin
-@Tag annotation class PlaylistId
-@Tag annotation class TrackId
-
-fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: @TrackId String): List<Track> = ...
-```
-
-Optionally you can add a typealias for your tag to make it easier to use
-```kotlin
-@Tag annotation class PlaylistIdTag
-typealias PlaylistId = @PlaylistIdTag String
-@Tag annotation class TrackIdTag
-typealias TrackId = @TrackIdTag String
-
-fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
-```
-
 # Modules
 There is no ```@Module``` annotation in Injekt instead a module is just a provided class which contains
 more @Provide declarations
@@ -163,6 +106,63 @@ like this without a lot boilerplate
   val api: Api,
   val fragmentComponent: (Fragment, Scope<FragmentScope>) -> FragmentComponent
 )
+```
+
+# Function injection
+Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters,
+or to break circular dependencies.
+You can do this by injecting a function.
+```kotlin
+// inject a function to create multiple Tokens
+fun run(@Inject tokenFactory: () -> Token) {
+  val tokenA = tokenFactory()
+  val tokenB = tokenFactory()
+}
+
+// inject a function to create a MyViewModel with the additional String parameter
+@Composable fun MyScreen(@Inject viewModelFactory: (String) -> MyViewModel) {
+  val viewModel = remember { viewModelFactory("user_id") }
+}
+
+// break circular dependency
+@Provide class Foo(val bar: Bar)
+@Provide class Bar(foo: (Bar) -> Foo) {
+   val foo = foo(this)
+}
+
+// inject functions in a inline function to create a conditional Logger with zero overhead
+@Provide inline fun logger(isDebug: IsDebug, loggerImpl: () -> LoggerImpl, noOpLogger: () -> NoOpLogger): Logger =
+  if (isDebug) loggerImpl() else noOpLogger()
+```
+
+# Distinguish between types
+Sometimes you have multiple injectables of the same type
+Injekt will need help to keep them apart here are two strategies:
+
+Value classes:
+```kotlin
+@JvmInline value class PlaylistId(val value: String)
+@JvmInline value class TrackId(val value: String)
+
+fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
+```
+
+Tags:
+```kotlin
+@Tag annotation class PlaylistId
+@Tag annotation class TrackId
+
+fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: @TrackId String): List<Track> = ...
+```
+
+Optionally you can add a typealias for your tag to make it easier to use
+```kotlin
+@Tag annotation class PlaylistIdTag
+typealias PlaylistId = @PlaylistIdTag String
+@Tag annotation class TrackIdTag
+typealias TrackId = @TrackIdTag String
+
+fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
 ```
 
 # Type keys
@@ -195,6 +195,8 @@ dependencies {
   classpath("com.ivianuu.injekt:common:${latest_version}")
 }
 ```
+
+# Ide plugin is required to remove errors in the IDE (code should still compile)
 
 # More complex uses can be found in my essentials project(base project for my apps)
 # https://github.com/IVIanuu/essentials
