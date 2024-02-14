@@ -70,11 +70,6 @@ fun onCreate() {
   // use ui scoped dependency
   val db = inject<Db>()
 }
-
-// dispose scope instance
-fun onDestroy() {
-  uiScope.dispose()
-}
 ```
 
 # Modules
