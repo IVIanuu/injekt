@@ -22,73 +22,70 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.samples.android.domain.Counter
-import com.ivianuu.injekt.samples.android.domain.DecCounter
-import com.ivianuu.injekt.samples.android.domain.IncCounter
-import kotlinx.coroutines.flow.Flow
+import com.ivianuu.injekt.samples.android.data.CounterDb
 import kotlinx.coroutines.launch
 
 fun interface AppUi {
   @Composable operator fun invoke()
-}
 
-@Provide fun appUi(presenter: CounterPresenter) = AppUi {
-  Scaffold(
-    topBar = {
-      TopAppBar(
-        title = { Text("Injekt sample") },
-        backgroundColor = MaterialTheme.colors.primary
-      )
-    }
-  ) {
-    val state = presenter()
-    Column(
-      modifier = Modifier
-        .padding(it)
-        .fillMaxSize(),
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Text("Count ${state.state}", style = MaterialTheme.typography.subtitle1)
-      Spacer(Modifier.height(8.dp))
-      Button(onClick = state.incCounter) {
-        Text("Inc")
-      }
-      Spacer(Modifier.height(8.dp))
-      Button(onClick = state.decCounter) {
-        Text("Dec")
+  @Provide companion object {
+    @Provide fun impl(presenter: CounterPresenter) = AppUi {
+      Scaffold(
+        topBar = {
+          TopAppBar(
+            title = { Text("Injekt sample") },
+            backgroundColor = MaterialTheme.colors.primary
+          )
+        }
+      ) {
+        val state = presenter()
+        Column(
+          modifier = Modifier
+            .padding(it)
+            .fillMaxSize(),
+          verticalArrangement = Arrangement.Center,
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          Text("Count ${state.state}", style = MaterialTheme.typography.subtitle1)
+          Spacer(Modifier.height(8.dp))
+          Button(onClick = state.incCounter) {
+            Text("Inc")
+          }
+          Spacer(Modifier.height(8.dp))
+          Button(onClick = state.decCounter) {
+            Text("Dec")
+          }
+        }
       }
     }
   }
 }
 
 data class CounterState(
-  val state: Counter,
+  val state: Int,
   val incCounter: () -> Unit,
   val decCounter: () -> Unit
 )
 
 fun interface CounterPresenter {
   @Composable operator fun invoke(): CounterState
-}
 
-@Provide fun counterPresenter(
-  counter: Flow<Counter>,
-  incCounter: IncCounter,
-  decCounter: DecCounter
-) = CounterPresenter {
-  val scope = rememberCoroutineScope()
-  CounterState(
-    state = counter.collectAsState(Counter(0)).value,
-    incCounter = {
-      scope.launch {
-        incCounter()
-      }
-    },
-    decCounter = {
-      scope.launch {
-        decCounter()
-      }
+  @Provide companion object {
+    @Provide fun impl(db: CounterDb) = CounterPresenter {
+      val scope = rememberCoroutineScope()
+      CounterState(
+        state = db.counter.collectAsState(0).value,
+        incCounter = {
+          scope.launch {
+            db.updateCounter { it.inc() }
+          }
+        },
+        decCounter = {
+          scope.launch {
+            db.updateCounter { it.dec() }
+          }
+        }
+      )
     }
-  )
+  }
 }

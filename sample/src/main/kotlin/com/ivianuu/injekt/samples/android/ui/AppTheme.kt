@@ -12,10 +12,13 @@ import com.ivianuu.injekt.Provide
 
 fun interface AppTheme {
   @Composable operator fun invoke(content: @Composable () -> Unit)
-}
 
-@Provide val appTheme = AppTheme { content ->
-  MaterialTheme(colors = darkColors()) {
-    Surface(content = content)
+  @Provide companion object {
+    @Provide val impl = AppTheme { content ->
+      MaterialTheme(colors = darkColors()) {
+        Surface(content = content)
+      }
+    }
   }
 }
+
