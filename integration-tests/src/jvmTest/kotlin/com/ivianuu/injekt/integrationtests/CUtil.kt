@@ -20,7 +20,6 @@ import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldNotContain
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.name.FqName
@@ -265,10 +264,6 @@ fun KotlinCompilationAssertionScope.shouldContainMessage(message: String) {
   result.messages shouldContain message
 }
 
-fun KotlinCompilationAssertionScope.shouldNotContainMessage(message: String) {
-  result.messages shouldNotContain message
-}
-
 @Suppress("Assert")
 inline fun KotlinCompilationAssertionScope.irAssertions(block: (String) -> Unit) {
   compilationShouldBeOk()
@@ -299,12 +294,3 @@ fun KotlinCompilationAssertionScope.irShouldContain(times: Int, text: String) {
 
 private fun String.countMatches(other: String): Int = split(other)
   .dropLastWhile { it.isEmpty() }.size - 1
-
-@Suppress("Assert")
-fun KotlinCompilationAssertionScope.irShouldNotContain(text: String) {
-  irAssertions {
-    assert(text !in it) {
-      "'$text' in source '$it'"
-    }
-  }
-}
