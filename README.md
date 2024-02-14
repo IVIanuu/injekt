@@ -91,9 +91,16 @@ object UiScope
 ```
 Then you can inject your class.
 ```kotlin
+@Provide val uiScope = Scope<UiScope>()
+
 fun onCreate() {
-   @Provide val uiScope = Scope<UiScope>()
-   val db = inject<Db>()
+  // use ui scoped dependency
+  val db = inject<Db>()
+}
+
+// dispose scope instance
+fun onDestroy() {
+  uiScope.dispose()
 }
 ```
 
