@@ -16,7 +16,6 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.memberScopeForFqName
 import com.ivianuu.injekt.compiler.moduleName
-import com.ivianuu.injekt.compiler.primaryConstructorPropertyValueParameter
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
@@ -28,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -136,8 +134,6 @@ private fun Annotated.hasAnnotationForInjection(fqName: FqName, ctx: Context): B
   ) {
     hasAnnotation(fqName) ||
         (this is ParameterDescriptor && type.hasAnnotation(fqName)) ||
-        (this is PropertyDescriptor &&
-            primaryConstructorPropertyValueParameter(ctx)?.hasAnnotationForInjection(fqName, ctx) == true) ||
         (this is ParameterDescriptor &&
             containingDeclaration.safeAs<FunctionDescriptor>()
               ?.findPsi()
