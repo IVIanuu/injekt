@@ -45,8 +45,6 @@ import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
 @OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
-  private val checkedCalls = mutableSetOf<ResolvedCall<*>>()
-
   override fun analysisCompleted(
     project: Project,
     module: ModuleDescriptor,
@@ -81,8 +79,6 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
   }
 
   private fun checkCall(resolvedCall: ResolvedCall<*>, ctx: Context) {
-    if (!checkedCalls.add(resolvedCall)) return
-
     val resultingDescriptor = resolvedCall.resultingDescriptor
     if (resultingDescriptor !is InjectFunctionDescriptor) return
 
@@ -104,7 +100,6 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
 
       resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
       resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.contextReceivers.forEach { it.type.toTypeRef(ctx).putAll() }
     }
 
     val callee = resultingDescriptor
