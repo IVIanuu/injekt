@@ -141,31 +141,9 @@ class InjectableDeclarationTest {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideFunctionContextReceiver() = singleAndMultiCodegen(
-    """
-      context((@Provide Foo)) fun bar() = Bar(inject())
-    """,
-    """
-      fun invoke() = with(Foo()) { bar() }
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Bar>()
-  }
-
   @Test fun testProvidePropertyExtensionReceiver() = singleAndMultiCodegen(
     """
       val @receiver:Provide Foo.bar get() = Bar(inject())
-    """,
-    """
-      fun invoke() = with(Foo()) { bar }
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Bar>()
-  }
-
-  @Test fun testProvidePropertyContextReceiver() = singleAndMultiCodegen(
-    """
-      context((@Provide Foo)) val bar get() = Bar(inject())
     """,
     """
       fun invoke() = with(Foo()) { bar }

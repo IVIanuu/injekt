@@ -13,7 +13,6 @@ import com.ivianuu.injekt.compiler.EXTENSION_RECEIVER_INDEX
 import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.cachedOrNull
 import com.ivianuu.injekt.compiler.injektIndex
@@ -71,6 +70,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.allParameters
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
@@ -201,7 +201,7 @@ class InjectCallTransformer(
         else -> putValueArgument(
           symbol.owner
             .valueParameters
-            .first { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == request.parameterIndex }
+            .first { it.descriptor.injektIndex() == request.parameterIndex }
             .index,
           expression
         )
@@ -459,8 +459,8 @@ class InjectCallTransformer(
         .irGet(
           injectable.type.toIrType(irCtx).typeOrNull!!,
           (parameterMap[descriptor] ?: containingDeclaration.irCallable(irCtx)
-            .allParametersWithContext
-            .single { it.descriptor.injektIndex(this@InjectCallTransformer.ctx) == descriptor.injektIndex(this@InjectCallTransformer.ctx) })
+            .allParameters
+            .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
             .symbol
         )
       else -> error("Unexpected parent $descriptor $containingDeclaration")

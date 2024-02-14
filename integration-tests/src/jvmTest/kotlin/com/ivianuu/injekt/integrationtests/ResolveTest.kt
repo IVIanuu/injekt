@@ -532,13 +532,6 @@ class ResolveTest {
     """
   )
 
-  @Test fun testCanResolveContextReceiverInDefaultValueOfParameter() = codegen(
-    """
-      context((@Provide Foo)) fun invoke(bar: Bar = Bar(inject())) {
-      }
-    """
-  )
-
   @Test fun testCannotResolveClassProvideDeclarationInClassConstructorParameterDefaultValue() = codegen(
     """
       class MyClass {
@@ -1053,18 +1046,6 @@ class ResolveTest {
   @Test fun testCanResolveExtensionReceiverOfProperty() = codegen(
     """
       val @receiver:Provide Foo.foo get() = inject<Foo>()
-    """
-  )
-
-  @Test fun testCanResolveContextReceiverOfFunction() = codegen(
-    """
-      context((@Provide Foo)) fun foo() = inject<Foo>()
-    """
-  )
-
-  @Test fun testCanResolveContextReceiverOfProperty() = codegen(
-    """
-      context((@Provide Foo)) val foo get() = inject<Foo>()
     """
   )
 

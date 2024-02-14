@@ -9,7 +9,6 @@ import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
 import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.memberScopeForFqName
@@ -27,6 +26,7 @@ import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
 import com.ivianuu.injekt.compiler.resolution.toTypeRef
 import com.ivianuu.injekt.compiler.transform
 import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -112,11 +112,11 @@ import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex(ctx) }
+      .mapKeys { it.key.injektIndex() }
 
-    val requests = callee.callable.allParametersWithContext
+    val requests = callee.callable.allParameters
       .transform {
-        val index = it.injektIndex(ctx)
+        val index = it.injektIndex()
         if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx))
           add(it.toInjectableRequest(callee, ctx))
       }

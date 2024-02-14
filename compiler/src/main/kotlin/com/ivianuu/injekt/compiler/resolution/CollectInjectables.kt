@@ -150,7 +150,7 @@ private fun Annotated.hasAnnotationForInjection(fqName: FqName, ctx: Context): B
               ?.filterIsInstance<FunctionDescriptor>()
               ?.singleOrNull { it.modality == Modality.ABSTRACT }
               ?.valueParameters
-              ?.singleOrNull { it.injektIndex(ctx) == injektIndex(ctx) }
+              ?.singleOrNull { it.injektIndex() == injektIndex() }
               ?.hasAnnotationForInjection(fqName, ctx) == true)
   }
 

@@ -7,13 +7,14 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -36,7 +37,8 @@ class CallableInjectable(
   val callable: CallableRef,
   override val type: TypeRef
 ) : Injectable {
-  override val dependencies = callable.callable.allParametersWithContext
+  override val dependencies = (if (callable.callable is ConstructorDescriptor) callable.callable.valueParameters
+      else callable.callable.allParameters)
     .map { it.toInjectableRequest(callable, ownerScope.ctx) }
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
@@ -144,10 +146,10 @@ data class InjectableRequest(
 
 fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
   InjectableRequest(
-    type = callable.parameterTypes[injektIndex(ctx)]!!,
+    type = callable.parameterTypes[injektIndex()]!!,
     callableFqName = callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(ctx),
-    parameterIndex = injektIndex(ctx),
+    parameterName = injektName(),
+    parameterIndex = injektIndex(),
     isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject
   )

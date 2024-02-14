@@ -7,13 +7,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.allParametersWithContext
 import com.ivianuu.injekt.compiler.cached
 import com.ivianuu.injekt.compiler.descriptor
 import com.ivianuu.injekt.compiler.injektIndex
 import com.ivianuu.injekt.compiler.injektName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -403,12 +403,12 @@ private fun FunctionParameterInjectablesScopes(
   until: ValueParameterDescriptor? = null,
   ctx: Context
 ): InjectablesScope {
-  val maxIndex = until?.injektIndex(ctx)
+  val maxIndex = until?.injektIndex()
 
-  return function.allParametersWithContext
+  return function.allParameters
     .transform {
       if (it !== function.dispatchReceiverParameter &&
-        (maxIndex == null || it.injektIndex(ctx) < maxIndex) &&
+        (maxIndex == null || it.injektIndex() < maxIndex) &&
         it.isProvide(ctx))
         add(it.toCallableRef(ctx))
     }
@@ -430,7 +430,7 @@ private fun FunctionParameterInjectablesScope(
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
   return InjectableScopeOrParent(
-    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName(ctx)}",
+    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
     parent = parent,
     owner = (parameter.callable.findPsi() ?: function.findPsi()).cast(),
     initialInjectables = listOf(parameter),
@@ -454,7 +454,7 @@ private fun PropertyInjectablesScope(
     parent = parent,
     owner = property.findPsi().cast(),
     initialInjectables = buildList {
-      property.allParametersWithContext
+      property.allParameters
         .filter { it.isProvide(ctx) || property.isProvide(ctx) }
         .forEach { add(it.toCallableRef(ctx)) }
     },
