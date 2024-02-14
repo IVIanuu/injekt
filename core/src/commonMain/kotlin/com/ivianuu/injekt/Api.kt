@@ -35,7 +35,7 @@ package com.ivianuu.injekt
 annotation class Provide
 
 /**
- * Automatically fills in a argument if no explicit argument was provided
+ * Automatically injects a argument if no explicit argument was provided
  */
 @Target(
   // fun func(@Inject foo: Foo)
@@ -77,9 +77,5 @@ inline fun <T> inject(@Inject x: T): T = x
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Tag
 
-/**
- * Creates a version of the annotated injectable for each other injectable whose type matches the constraints
- * of the the annotated type parameter
- */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class Spread
