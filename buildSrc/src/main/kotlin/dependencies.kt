@@ -90,7 +90,7 @@ object Deps {
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
   object Ksp {
-    const val version = "1.9.10-1.0.13"
+    const val version = "1.9.22-1.0.17"
     const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
     const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
