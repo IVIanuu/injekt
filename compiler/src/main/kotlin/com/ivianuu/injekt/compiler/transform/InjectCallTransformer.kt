@@ -430,7 +430,7 @@ class InjectCallTransformer(
   private fun ScopeContext.receiverExpression(
     descriptor: ParameterDescriptor
   ): IrExpression = DeclarationIrBuilder(irCtx, symbol).run {
-    scopeStack.reversed().firstNotNullOfOrNull { scope ->
+    allScopes.reversed().firstNotNullOfOrNull { scope ->
       val element = scope.irElement
       when {
         element is IrClass &&
@@ -441,7 +441,7 @@ class InjectCallTransformer(
             descriptor.type.constructor.declarationDescriptor ->
           irGet(element.dispatchReceiverParameter!!)
         element is IrProperty &&
-            scopeStack.getOrNull(scopeStack.indexOf(scope) + 1)?.irElement !is IrField &&
+            allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
             element.parentClassOrNull?.descriptor == descriptor.type.constructor.declarationDescriptor ->
           irGet(element.getter!!.dispatchReceiverParameter!!)
         else -> null
@@ -481,7 +481,7 @@ class InjectCallTransformer(
   ): IrExpression = if (descriptor.getter != null)
     DeclarationIrBuilder(irCtx, symbol)
       .irCall(
-        irCtx.symbolTable.referenceSimpleFunction(descriptor.getter!!),
+        irCtx.symbolTable.descriptorExtension.referenceSimpleFunction(descriptor.getter!!),
         injectable.type.toIrType(irCtx).typeOrNull!!
       )
   else

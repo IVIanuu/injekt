@@ -14,7 +14,7 @@ object Build {
 }
 
 object Deps {
-  const val androidGradlePlugin = "com.android.tools.build:gradle:7.4.0"
+  const val androidGradlePlugin = "com.android.tools.build:gradle:8.2.2"
 
   object AndroidX {
     object Activity {
@@ -45,14 +45,14 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.5.3"
-    const val compiler = "org.jetbrains.compose.compiler:compiler:1.5.2"
+    const val version = "1.6.0-rc01"
+    const val compiler = "org.jetbrains.compose.compiler:compiler:1.5.8"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
 
   object Coroutines {
-    private const val version = "1.7.3"
+    private const val version = "1.8.0"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
     const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
@@ -70,14 +70,14 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "1.9.10"
+    const val version = "1.9.22"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
   }
 
   object KotlinCompileTesting {
-    private const val version = "0.3.2"
+    private const val version = "0.4.0"
     const val kotlinCompileTesting = "dev.zacsweers.kctfork:core:$version"
     const val ksp = "dev.zacsweers.kctfork:ksp:$version"
   }

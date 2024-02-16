@@ -8,9 +8,17 @@ plugins {
   id("com.ivianuu.injekt")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-app.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
+android {
+  defaultConfig {
+    namespace = "com.ivianuu.injekt.samples.android"
+    applicationId = Build.applicationId
+    compileSdk = Build.compileSdk
+    minSdk = Build.minSdk
+    targetSdk = Build.targetSdk
+    versionCode = Build.versionCode
+    versionName = Build.versionName
+  }
+}
 
 dependencies {
   implementation(Deps.AndroidX.Activity.activity)

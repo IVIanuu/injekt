@@ -59,11 +59,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 
 fun ClassDescriptor.irClass(irCtx: IrPluginContext): IrClass =
-  irCtx.symbolTable.referenceClass(this).ensureBound(irCtx).owner
+  irCtx.symbolTable.descriptorExtension.referenceClass(this).ensureBound(irCtx).owner
 
 fun CallableDescriptor.irCallable(irCtx: IrPluginContext): IrFunction =
   if (this is PropertyDescriptor)
-    irCtx.symbolTable.referenceProperty(this).ensureBound(irCtx).owner.getter!!
+    irCtx.symbolTable.descriptorExtension.referenceProperty(this).ensureBound(irCtx).owner.getter!!
   else irCtx.symbolTable.referenceFunction(this).ensureBound(irCtx).owner
 
 fun TypeRef.toIrType(irCtx: IrPluginContext): IrTypeArgument {
@@ -188,7 +188,7 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, ctx: Context) {
         e.stackTraceToString()
       }
       val newFile = dumpDir
-        .resolve(irFile.fqName.asString().replace(".", "/"))
+        .resolve(irFile.packageFqName.asString().replace(".", "/"))
         .also { it.mkdirs() }
         .resolve(file.name.removeSuffix(".kt"))
       try {
