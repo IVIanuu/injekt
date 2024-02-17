@@ -4,17 +4,10 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.callableInfo
-import com.ivianuu.injekt.compiler.classifierInfo
-import com.ivianuu.injekt.compiler.shouldPersistInfo
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
-import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.checkers.*
 
 class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
   override fun check(

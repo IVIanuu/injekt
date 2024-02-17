@@ -4,9 +4,8 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.InjektFqNames
-import org.jetbrains.kotlin.psi.KtElement
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.psi.*
 
 class InjectablesScope(
   val name: String,

@@ -4,45 +4,20 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.INJECTIONS_OCCURRED_IN_FILE_KEY
-import com.ivianuu.injekt.compiler.INJECTION_RESULT_KEY
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.SourcePosition
-import com.ivianuu.injekt.compiler.cached
-import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt.compiler.render
-import com.ivianuu.injekt.compiler.reportError
-import com.ivianuu.injekt.compiler.resolution.ElementInjectablesScope
-import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.isInject
-import com.ivianuu.injekt.compiler.resolution.resolveRequests
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toCallableRef
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toInjectableRequest
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.transform
-import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtSimpleNameExpression
-import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.utils.IDEAPluginsCompatibilityAPI
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.callUtil.*
+import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.resolve.extensions.*
+import org.jetbrains.kotlin.utils.*
 
 @OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
   override fun analysisCompleted(

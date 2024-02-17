@@ -4,21 +4,13 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.memberScopeForFqName
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.buildContext
-import com.ivianuu.injekt.compiler.resolution.buildContextForSpreadingInjectable
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.withArguments
-import com.ivianuu.injekt.compiler.resolution.wrap
-import io.kotest.matchers.maps.shouldContain
-import io.kotest.matchers.maps.shouldHaveSize
-import io.kotest.matchers.shouldBe
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import io.kotest.matchers.*
+import io.kotest.matchers.maps.*
+import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.name.*
+import org.junit.*
 
 class TypeSubstitutionTest {
   @Test fun testGetSubstitutionMap() = withTypeCheckerContext {

@@ -4,22 +4,10 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.Injectable
-import com.ivianuu.injekt.compiler.resolution.InjectableRequest
-import com.ivianuu.injekt.compiler.resolution.InjectionResult
-import com.ivianuu.injekt.compiler.resolution.LambdaInjectable
-import com.ivianuu.injekt.compiler.resolution.ResolutionResult
-import com.ivianuu.injekt.compiler.resolution.renderToString
-import com.ivianuu.injekt.compiler.resolution.unwrapDependencyFailure
-import com.ivianuu.injekt.compiler.resolution.unwrapTags
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
-import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.diagnostics.Severity
-import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
-import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
-import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticParameterRenderer
-import org.jetbrains.kotlin.diagnostics.rendering.RenderingContext
+import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.com.intellij.psi.*
+import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.diagnostics.rendering.*
 
 interface InjektErrors {
   companion object {

@@ -4,8 +4,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import io.kotest.matchers.types.shouldBeTypeOf
-import org.junit.Test
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class InjectableDeclarationCheckTest {
   @Test fun testProvideAnnotationClass() = codegen(

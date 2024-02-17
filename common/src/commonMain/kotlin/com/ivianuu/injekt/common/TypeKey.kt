@@ -4,8 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-import kotlin.jvm.JvmInline
+import com.ivianuu.injekt.*
 
 /**
  * A key for a Injekt type of [T] which can be used as a [Map] key or similar

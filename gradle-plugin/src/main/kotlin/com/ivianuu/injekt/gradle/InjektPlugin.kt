@@ -4,13 +4,9 @@
 
 package com.ivianuu.injekt.gradle
 
-import org.gradle.api.Project
-import org.gradle.api.UnknownProjectException
-import org.gradle.api.provider.Provider
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.gradle.api.*
+import org.gradle.api.provider.*
+import org.jetbrains.kotlin.gradle.plugin.*
 
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =

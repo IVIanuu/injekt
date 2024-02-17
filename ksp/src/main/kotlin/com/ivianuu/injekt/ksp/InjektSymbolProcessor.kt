@@ -4,25 +4,13 @@
 
 package com.ivianuu.injekt.ksp
 
-import com.google.auto.service.AutoService
-import com.google.devtools.ksp.processing.Dependencies
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSDeclaration
-import com.google.devtools.ksp.symbol.KSFile
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSTypeReference
-import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.uniqueTypeKey
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.util.Base64
+import com.google.auto.service.*
+import com.google.devtools.ksp.processing.*
+import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.impl.kotlin.*
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.*
 
 @OptIn(UnsafeCastFunction::class)
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {

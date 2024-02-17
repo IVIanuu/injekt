@@ -1,11 +1,9 @@
 package com.ivianuu.injekt.samples.android.ui
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.samples.android.data.CounterDb
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.samples.android.data.*
+import kotlinx.coroutines.*
 
 data class CounterState(
   val state: Int,

@@ -7,25 +7,18 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
-import com.ivianuu.injekt.compiler.InjektComponentRegistrar
-import com.ivianuu.injekt.compiler.transform.dumpAllFiles
-import com.ivianuu.injekt.ksp.InjektSymbolProcessor
-import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.PluginOption
-import com.tschuchort.compiletesting.SourceFile
-import com.tschuchort.compiletesting.kspIncremental
-import com.tschuchort.compiletesting.kspWithCompilation
-import com.tschuchort.compiletesting.symbolProcessorProviders
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
-import org.intellij.lang.annotations.Language
-import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
-import org.jetbrains.kotlin.name.FqName
-import java.net.URLClassLoader
-import java.nio.file.Files
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.transform.*
+import com.ivianuu.injekt.ksp.*
+import com.tschuchort.compiletesting.*
+import io.kotest.matchers.*
+import io.kotest.matchers.string.*
+import org.intellij.lang.annotations.*
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.name.*
+import java.net.*
+import java.nio.file.*
+import kotlin.reflect.*
 
 var fileIndex = 0
 

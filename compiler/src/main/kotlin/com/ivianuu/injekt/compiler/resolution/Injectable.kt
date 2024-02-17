@@ -6,23 +6,14 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.analysis.hasDefaultValueIgnoringInject
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.injektIndex
-import com.ivianuu.injekt.compiler.injektName
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.analysis.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
   val type: TypeRef

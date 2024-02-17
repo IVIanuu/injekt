@@ -4,10 +4,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import io.kotest.matchers.types.shouldBeTypeOf
-import org.junit.Test
+import io.kotest.matchers.nulls.*
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class ResolveTest {
   @Test fun testResolvesExternalInjectableInSamePackage() = singleAndMultiCodegen(

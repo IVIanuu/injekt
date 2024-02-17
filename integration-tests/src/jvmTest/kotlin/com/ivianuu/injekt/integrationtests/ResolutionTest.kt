@@ -4,9 +4,9 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import org.junit.Test
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class ResolutionTest {
   @Test fun testPrefersFileInjectableOverInternalPackageInjectable() = codegen(

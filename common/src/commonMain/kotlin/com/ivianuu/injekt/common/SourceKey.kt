@@ -4,8 +4,7 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-import kotlin.jvm.JvmInline
+import com.ivianuu.injekt.*
 
 /**
  * A key which is unique for each root call site

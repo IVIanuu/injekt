@@ -5,9 +5,8 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import io.kotest.matchers.types.shouldBeTypeOf
-import io.kotest.matchers.types.shouldNotBeSameInstanceAs
-import org.junit.Test
+import io.kotest.matchers.types.*
+import org.junit.*
 
 class TagTest {
   @Test fun testDistinctTag() = singleAndMultiCodegen(

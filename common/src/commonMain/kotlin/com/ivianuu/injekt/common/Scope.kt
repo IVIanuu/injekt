@@ -4,12 +4,8 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Inject
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.Spread
-import com.ivianuu.injekt.Tag
-import kotlinx.atomicfu.locks.SynchronizedObject
-import kotlinx.atomicfu.locks.synchronized
+import com.ivianuu.injekt.*
+import kotlinx.atomicfu.locks.*
 
 class Scope<N> : SynchronizedObject() {
   @PublishedApi internal val values = hashMapOf<Any, Any?>()

@@ -4,11 +4,9 @@
 
 package com.ivianuu.injekt.samples.android.ui
 
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.darkColors
-import androidx.compose.runtime.Composable
-import com.ivianuu.injekt.Provide
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import com.ivianuu.injekt.*
 
 fun interface AppTheme {
   @Composable operator fun invoke(content: @Composable () -> Unit)

@@ -4,24 +4,19 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.google.auto.service.AutoService
-import com.ivianuu.injekt.compiler.analysis.InjectCallChecker
-import com.ivianuu.injekt.compiler.analysis.InjectSyntheticScopeProviderExtension
-import com.ivianuu.injekt.compiler.analysis.InjektDiagnosticSuppressor
-import com.ivianuu.injekt.compiler.analysis.InjektStorageComponentContainerContributor
-import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
-import org.jetbrains.kotlin.resolve.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.synthetic.SyntheticScopeProviderExtension
+import com.google.auto.service.*
+import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.transform.*
+import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.cli.common.*
+import org.jetbrains.kotlin.com.intellij.mock.*
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.resolve.diagnostics.*
+import org.jetbrains.kotlin.resolve.extensions.*
+import org.jetbrains.kotlin.synthetic.*
 import java.util.*
 
 @OptIn(ExperimentalCompilerApi::class)

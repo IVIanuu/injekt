@@ -6,50 +6,21 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.InjectFunctionDescriptor
-import com.ivianuu.injekt.compiler.resolution.ClassifierRef
-import com.ivianuu.injekt.compiler.resolution.TypeRef
-import com.ivianuu.injekt.compiler.resolution.anyType
-import com.ivianuu.injekt.compiler.resolution.firstSuperTypeOrNull
-import com.ivianuu.injekt.compiler.resolution.substitute
-import com.ivianuu.injekt.compiler.resolution.toClassifierRef
-import com.ivianuu.injekt.compiler.resolution.toTypeRef
-import com.ivianuu.injekt.compiler.resolution.wrap
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.Annotated
-import org.jetbrains.kotlin.descriptors.annotations.AnnotatedImpl
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
-import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.overriddenTreeUniqueAsSequence
-import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyClassDescriptor
-import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.resolution.*
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.constants.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.resolve.lazy.descriptors.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 /**
  * Stores information about a callable which is NOT stored by the kotlin compiler

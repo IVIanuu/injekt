@@ -4,12 +4,12 @@
 
 package com.ivianuu.injekt.samples.android.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.common.Scope
-import com.ivianuu.injekt.samples.android.app.App
+import android.os.*
+import androidx.activity.*
+import androidx.activity.compose.*
+import com.ivianuu.injekt.*
+import com.ivianuu.injekt.common.*
+import com.ivianuu.injekt.samples.android.app.*
 
 class MainActivity : ComponentActivity() {
   private val scope = Scope<ActivityScope>()

@@ -4,19 +4,14 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.resolution.isInject
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
-import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
-import org.jetbrains.kotlin.types.TypeSubstitutor
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
+import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.load.java.descriptors.*
+import org.jetbrains.kotlin.resolve.calls.components.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 interface InjectFunctionDescriptor : FunctionDescriptor {
   val underlyingDescriptor: FunctionDescriptor

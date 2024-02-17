@@ -6,13 +6,11 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.util.LinkedList
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
+import java.util.*
 
 sealed interface InjectionResult {
   val scope: InjectablesScope

@@ -4,18 +4,12 @@
 
 package com.ivianuu.injekt.common
 
-import com.ivianuu.injekt.Provide
-import com.ivianuu.injekt.inject
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeSameInstanceAs
-import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.update
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.runBlocking
-import org.junit.Test
+import com.ivianuu.injekt.*
+import io.kotest.matchers.*
+import io.kotest.matchers.types.*
+import kotlinx.atomicfu.*
+import kotlinx.coroutines.*
+import org.junit.*
 
 class ScopeTest {
   @Test fun testScope() {

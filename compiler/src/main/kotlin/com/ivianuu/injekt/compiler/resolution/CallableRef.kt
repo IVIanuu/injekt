@@ -6,16 +6,11 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.Context
-import com.ivianuu.injekt.compiler.cached
-import com.ivianuu.injekt.compiler.callableInfo
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class CallableRef(
   val callable: CallableDescriptor,
