@@ -4,7 +4,7 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.resolution
+package com.ivianuu.injekt.compiler.di.old
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
@@ -40,11 +40,11 @@ fun ElementInjectablesScope(
       )
       is KtConstructor<*> ->
         if (scopeOwner.bodyExpression.let { it == null || it !in position.parents })
-        ConstructorPreInitInjectablesScope(
-          scopeOwner.descriptor(ctx)!!,
-          parentScope!!,
-          ctx
-        ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)
+          ConstructorPreInitInjectablesScope(
+            scopeOwner.descriptor(ctx)!!,
+            parentScope!!,
+            ctx
+          ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)
       is KtFunction -> FunctionInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
@@ -88,7 +88,7 @@ fun ElementInjectablesScope(
   }
 
   return if (scopeOwner !is KtBlockExpression)
-    ctx.cached("element_scope", scopeOwner) { createScope() }
+    ctx.cache.cached("element_scope", scopeOwner) { createScope() }
   else
     createScope()
 }
@@ -115,7 +115,7 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
         .takeWhile { it != propertyInitializerOrDelegateExpression }
         .toList()
       if (parentsBetweenInitializerAndPosition.none { it is KtNamedDeclaration       })
-          return false
+        return false
     }
 
     val classInitializer = position.getParentOfType<KtClassInitializer>(false)
@@ -166,13 +166,13 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
             (parent is KtNamedFunction && parent.parent == this) ||
             (parent is KtPropertyAccessor && parent.property.parent == this)
       })
-        return true
+    return true
 
   return false
 }
 
 private fun FileInjectablesScope(file: KtFile, ctx: Context): InjectablesScope =
-  ctx.cached("file_scope", file) {
+  ctx.cache.cached("file_scope", file) {
     InjectableScopeOrParent(
       name = "FILE ${file.name}",
       parent = InternalGlobalInjectablesScope(ctx, file),
@@ -190,7 +190,7 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: Context): Injecta
     .declarations
     .transform { declaration ->
       if (declaration.endOffset < position.startOffset &&
-          declaration is KtNamedDeclaration) {
+        declaration is KtNamedDeclaration) {
         declaration.descriptor<DeclarationDescriptor>(ctx)
           ?.takeIf { it.isProvide(ctx) }
           ?.let { add(it) }
@@ -226,7 +226,7 @@ private fun ClassInjectablesScope(
   clazz: ClassDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.cached(
+): InjectablesScope = ctx.cache.cached(
   "class_scope",
   DescriptorWithParentScope(clazz, parent.name)
 ) {
@@ -239,7 +239,7 @@ private fun ClassInjectablesScope(
     parent = finalParent,
     owner = clazz.findPsi().cast(),
     initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -280,7 +280,7 @@ private fun ClassInitInjectablesScope(
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 
@@ -302,7 +302,7 @@ private fun ConstructorPreInitInjectablesScope(
     ctx = ctx
   )
   val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
-    it.toClassifierRef(ctx)
+    it.toInjektClassifier(ctx)
   }
   return InjectableScopeOrParent(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
@@ -331,7 +331,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
     owner = function.findPsi().cast(),
-    typeParameters = function.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = function.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -340,7 +340,7 @@ private fun FunctionInjectablesScope(
   function: FunctionDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.cached(
+): InjectablesScope = ctx.cache.cached(
   "function_scope",
   DescriptorWithParentScope(function, parent.name)
 ) {
@@ -349,7 +349,7 @@ private fun FunctionInjectablesScope(
   val typeParameters = (if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
   else function.typeParameters)
-    .map { it.toClassifierRef(ctx) }
+    .map { it.toInjektClassifier(ctx) }
   InjectableScopeOrParent(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
@@ -373,7 +373,7 @@ private fun FunctionParameterInjectablesScopes(
       if (it !== function.dispatchReceiverParameter &&
         (maxIndex == null || it.injektIndex() < maxIndex) &&
         it.isProvide(ctx))
-        add(it.toCallableRef(ctx))
+        add(it.toInjektCallable(ctx))
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -388,7 +388,7 @@ private fun FunctionParameterInjectablesScopes(
 private fun FunctionParameterInjectablesScope(
   parent: InjectablesScope,
   function: FunctionDescriptor,
-  parameter: CallableRef,
+  parameter: InjektCallable,
   ctx: Context
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
@@ -397,7 +397,7 @@ private fun FunctionParameterInjectablesScope(
     parent = parent,
     owner = (parameter.callable.findPsi() ?: function.findPsi()).cast(),
     initialInjectables = listOf(parameter),
-    typeParameters = function.toCallableRef(ctx).typeParameters,
+    typeParameters = function.toInjektCallable(ctx).typeParameters,
     nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
     else parent.nesting + 1,
     ctx = ctx
@@ -408,7 +408,7 @@ private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.cached(
+): InjectablesScope = ctx.cache.cached(
   "property_scope",
   DescriptorWithParentScope(property, parent.name)
 ) {
@@ -419,9 +419,9 @@ private fun PropertyInjectablesScope(
     initialInjectables = buildList {
       property.allParameters
         .filter { it.isProvide(ctx) || property.isProvide(ctx) }
-        .forEach { add(it.toCallableRef(ctx)) }
+        .forEach { add(it.toInjektCallable(ctx)) }
     },
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -447,7 +447,7 @@ private fun PropertyInitInjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
     parent = finalParent,
     owner = property.findPsi().cast(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -456,7 +456,7 @@ private fun LocalVariableInjectablesScope(
   variable: LocalVariableDescriptor,
   parent: InjectablesScope,
   ctx: Context
-): InjectablesScope = ctx.cached(
+): InjectablesScope = ctx.cache.cached(
   "local_variable_scope",
   DescriptorWithParentScope(variable, parent.name)
 ) {
@@ -487,7 +487,7 @@ private fun BlockExpressionInjectablesScope(
   if (visibleInjectableDeclarations.isEmpty()) return parent
   val injectableDeclaration = visibleInjectableDeclarations.last()
   val key = block to injectableDeclaration
-  return ctx.cached("block_scope", key) {
+  return ctx.cache.cached("block_scope", key) {
     val finalParent = if (visibleInjectableDeclarations.size > 1)
       BlockExpressionInjectablesScope(block, injectableDeclaration.findPsi().cast(), parent, ctx)
     else parent
@@ -497,7 +497,7 @@ private fun BlockExpressionInjectablesScope(
       parent = finalParent,
       initialInjectables = when (injectableDeclaration) {
         is ClassDescriptor -> injectableDeclaration.injectableConstructors(ctx)
-        is CallableDescriptor -> listOf(injectableDeclaration.toCallableRef(ctx))
+        is CallableDescriptor -> listOf(injectableDeclaration.toInjektCallable(ctx))
         else -> throw AssertionError("Unexpected injectable $injectableDeclaration")
       },
       nesting = if (visibleInjectableDeclarations.size > 1) finalParent.nesting
@@ -508,7 +508,7 @@ private fun BlockExpressionInjectablesScope(
 }
 
 fun InternalGlobalInjectablesScope(ctx: Context, file: KtFile): InjectablesScope =
-  ctx.cached("internal_global_scope", file.virtualFilePath) {
+  ctx.cache.cached("internal_global_scope", file.virtualFilePath) {
     InjectableScopeOrParent(
       name = "INTERNAL GLOBAL EXCEPT $file",
       parent = ExternalGlobalInjectablesScope(ctx),
@@ -522,7 +522,7 @@ fun InternalGlobalInjectablesScope(ctx: Context, file: KtFile): InjectablesScope
   }
 
 fun ExternalGlobalInjectablesScope(ctx: Context): InjectablesScope =
-  ctx.cached("external_global_scope", Unit) {
+  ctx.cache.cached("external_global_scope", Unit) {
     InjectablesScope(
       name = "EXTERNAL GLOBAL",
       parent = null,
@@ -531,6 +531,9 @@ fun ExternalGlobalInjectablesScope(ctx: Context): InjectablesScope =
       ctx = ctx
     )
   }
+
+private fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context): D? =
+  TODO()
 
 data class DescriptorWithParentScope(
   val declaration: DeclarationDescriptor,
@@ -541,9 +544,9 @@ fun InjectableScopeOrParent(
   name: String,
   parent: InjectablesScope,
   owner: KtElement? = null,
-  initialInjectables: List<CallableRef> = emptyList(),
-  injectablesPredicate: (CallableRef) -> Boolean = { true },
-  typeParameters: List<ClassifierRef> = emptyList(),
+  initialInjectables: List<InjektCallable> = emptyList(),
+  injectablesPredicate: (InjektCallable) -> Boolean = { true },
+  typeParameters: List<InjektClassifier> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
 ): InjectablesScope {

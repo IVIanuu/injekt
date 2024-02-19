@@ -2,49 +2,44 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.fir
 
-import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.di.old.*
+import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
+import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 
-interface InjektErrors {
-  companion object {
-    @JvmField val MAP = DiagnosticFactoryToRendererMap("Injekt")
-
-    @JvmField val INJEKT_ERROR = DiagnosticFactory1.create<PsiElement, String>(Severity.ERROR)
-      .also {
-        MAP.put(
-          it,
-          "{0}",
-          object : DiagnosticParameterRenderer<String> {
-            override fun render(
-              obj: String,
-              renderingContext: RenderingContext,
-            ): String = obj
-          }
-        )
-      }
-
-    init {
-      Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
-        InjektErrors::class.java,
-        InjektDefaultErrorMessages
-      )
-    }
-
-    object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
-      override fun getMap() = MAP
-    }
+object InjektErrors {
+  val INJEKT_ERROR by error1<PsiElement, String>()
+  init {
+    RootDiagnosticRendererFactory.registerFactory(InjektErrorMessages)
   }
 }
 
-fun Context.reportError(element: PsiElement, message: String) {
-  trace!!.report(InjektErrors.INJEKT_ERROR.on(element, message))
+@OptIn(InternalDiagnosticFactoryMethod::class) fun DiagnosticReporter.report(
+  element: AbstractKtSourceElement,
+  message: String,
+  context: CheckerContext
+) = report(InjektErrors.INJEKT_ERROR.on(element, message, null), context)
+
+object InjektErrorMessages : BaseDiagnosticRendererFactory() {
+  override val MAP = KtDiagnosticFactoryToRendererMap("Injekt").also { map ->
+    map.put(
+      InjektErrors.INJEKT_ERROR,
+      "{0}",
+      object : DiagnosticParameterRenderer<String> {
+        override fun render(
+          obj: String,
+          renderingContext: RenderingContext,
+        ): String = obj
+      }
+    )
+  }
 }
 
-fun InjectionResult.Error.render(): String = buildString {
+fun InjectionResult.Error.toErrorString(): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++

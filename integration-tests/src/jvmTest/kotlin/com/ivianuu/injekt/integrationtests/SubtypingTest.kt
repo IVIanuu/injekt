@@ -4,7 +4,7 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.di.old.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.types.model.*
 import org.junit.*

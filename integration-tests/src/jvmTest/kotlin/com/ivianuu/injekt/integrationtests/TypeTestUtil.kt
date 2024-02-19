@@ -8,10 +8,9 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.resolution.*
+import com.ivianuu.injekt.compiler.di.old.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.com.intellij.mock.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.compiler.plugin.*
@@ -55,7 +54,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
-  @Provide val ctx = Context(module, CliBindingTrace())
+  @Provide val ctx = Context(module, InjektCache())
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
@@ -81,10 +80,9 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   private var id = 0
 
   fun subType(
-    vararg superTypes: TypeRef,
+    vararg superTypes: InjektType,
     fqName: FqName = FqName("SubType${id}"),
-  ) = ClassifierRef(
-    key = fqName.asString(),
+  ) = InjektClassifier(
     fqName = fqName,
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
@@ -92,11 +90,10 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ).defaultType
 
   fun classType(
-    vararg superTypes: TypeRef,
-    typeParameters: List<ClassifierRef> = emptyList(),
+    vararg superTypes: InjektType,
+    typeParameters: List<InjektClassifier> = emptyList(),
     fqName: FqName = FqName("ClassType${id++}"),
-  ) = ClassifierRef(
-    key = fqName.asString(),
+  ) = InjektClassifier(
     fqName = fqName,
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
@@ -108,7 +105,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     fqName: FqName = FqName("TypeParameter${id++}"),
     nullable: Boolean = true,
     variance: TypeVariance = TypeVariance.INV
-  ): TypeRef =
+  ): InjektType =
     typeParameter(
       upperBounds = *emptyArray(),
       nullable = nullable,
@@ -117,12 +114,11 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     )
 
   fun typeParameter(
-    vararg upperBounds: TypeRef,
+    vararg upperBounds: InjektType,
     nullable: Boolean = true,
     variance: TypeVariance = TypeVariance.INV,
     fqName: FqName = FqName("TypeParameter${id++}"),
-  ) = ClassifierRef(
-    key = fqName.asString(),
+  ) = InjektClassifier(
     fqName = fqName,
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (upperBounds.isNotEmpty()) upperBounds.toList() else
@@ -136,13 +132,13 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     fqName, NoLookupLocation.FROM_BACKEND, ctx)
     ?.defaultType?.toTypeRef(ctx = ctx) ?: error("Wtf $fqName")
 
-  infix fun TypeRef.shouldBeAssignableTo(other: TypeRef) {
+  infix fun InjektType.shouldBeAssignableTo(other: InjektType) {
     shouldBeAssignableTo(other, emptyList())
   }
 
-  fun TypeRef.shouldBeAssignableTo(
-    other: TypeRef,
-    staticTypeParameters: List<ClassifierRef> = emptyList()
+  fun InjektType.shouldBeAssignableTo(
+    other: InjektType,
+    staticTypeParameters: List<InjektClassifier> = emptyList()
   ) {
     val context = buildContext(
       other,
@@ -155,13 +151,13 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     }
   }
 
-  infix fun TypeRef.shouldNotBeAssignableTo(other: TypeRef) {
+  infix fun InjektType.shouldNotBeAssignableTo(other: InjektType) {
     shouldNotBeAssignableTo(other, emptyList())
   }
 
-  fun TypeRef.shouldNotBeAssignableTo(
-    other: TypeRef,
-    staticTypeParameters: List<ClassifierRef> = emptyList()
+  fun InjektType.shouldNotBeAssignableTo(
+    other: InjektType,
+    staticTypeParameters: List<InjektClassifier> = emptyList()
   ) {
     val context = buildContext(
       other,
@@ -174,22 +170,22 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     }
   }
 
-  infix fun TypeRef.shouldBeSubTypeOf(other: TypeRef) {
+  infix fun InjektType.shouldBeSubTypeOf(other: InjektType) {
     if (!isSubTypeOf(other, ctx)) {
       throw AssertionError("'$this' is not sub type of '$other'")
     }
   }
 
-  infix fun TypeRef.shouldNotBeSubTypeOf(other: TypeRef) {
+  infix fun InjektType.shouldNotBeSubTypeOf(other: InjektType) {
     if (isSubTypeOf(other, ctx)) {
       throw AssertionError("'$this' is sub type of '$other'")
     }
   }
 }
 
-fun TypeRef.nullable() = copy(isMarkedNullable = true)
+fun InjektType.nullable() = copy(isMarkedNullable = true)
 
-fun TypeRef.nonNull() = copy(isMarkedNullable = false)
+fun InjektType.nonNull() = copy(isMarkedNullable = false)
 
-fun TypeRef.withArguments(vararg arguments: TypeRef) =
+fun InjektType.withArguments(vararg arguments: InjektType) =
   withArguments(arguments.toList())

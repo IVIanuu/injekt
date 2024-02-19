@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package com.ivianuu.injekt.compiler.resolution
+package com.ivianuu.injekt.compiler.di.old
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.psi.*
@@ -11,17 +11,17 @@ class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   val owner: KtElement? = null,
-  val initialInjectables: List<CallableRef> = emptyList(),
-  val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  val typeParameters: List<ClassifierRef> = emptyList(),
+  val initialInjectables: List<InjektCallable> = emptyList(),
+  val injectablesPredicate: (InjektCallable) -> Boolean = { true },
+  val typeParameters: List<InjektClassifier> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
-  val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
+  val resultsByType = mutableMapOf<InjektType, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
 
-  private val injectables = mutableListOf<CallableRef>()
+  private val injectables = mutableListOf<InjektCallable>()
   private val allInjectables get() = allScopes.flatMap { injectables }
 
   private val spreadingInjectables: MutableList<SpreadingInjectable> =
@@ -31,11 +31,11 @@ class InjectablesScope(
     parent?.spreadingInjectables ?: mutableListOf()
 
   data class SpreadingInjectable(
-    val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeParameters.single {
+    val callable: InjektCallable,
+    val constraintType: InjektType = callable.typeParameters.single {
       it.isSpread
     }.defaultType.substitute(callable.typeArguments),
-    val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf()
+    val processedCandidateTypes: MutableSet<InjektType> = mutableSetOf()
   ) {
     fun copy() = SpreadingInjectable(
       callable,
@@ -48,7 +48,7 @@ class InjectablesScope(
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
+  data class CallableRequestKey(val type: InjektType, val staticTypeParameters: List<InjektClassifier>)
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   init {
@@ -118,16 +118,16 @@ class InjectablesScope(
         collectionElementType = collectionElementType
       )
     }
-    request.type.classifier.fqName == InjektFqNames.TypeKey ->
+    request.type.classifier.fqName == InjektFqNames.TypeKey.asSingleFqName() ->
       TypeKeyInjectable(request.type, this)
     else -> null
   }
 
   private fun listElementsTypesForType(
-    singleElementType: TypeRef,
-    collectionElementType: TypeRef,
+    singleElementType: InjektType,
+    collectionElementType: InjektType,
     key: CallableRequestKey
-  ): List<TypeRef> {
+  ): List<InjektType> {
     if (injectables.isEmpty())
       return parent?.listElementsTypesForType(singleElementType, collectionElementType, key) ?: emptyList()
 
@@ -154,7 +154,7 @@ class InjectablesScope(
       spreadInjectables(spreadingInjectable, candidate.type)
   }
 
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
+  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: InjektType) {
     if (!spreadingInjectable.processedCandidateTypes.add(candidateType) ||
       spreadingInjectable in spreadingInjectableChain) return
 

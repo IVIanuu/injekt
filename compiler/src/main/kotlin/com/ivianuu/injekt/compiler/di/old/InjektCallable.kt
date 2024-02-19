@@ -4,7 +4,7 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.resolution
+package com.ivianuu.injekt.compiler.di.old
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
@@ -13,17 +13,17 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-data class CallableRef(
+data class InjektCallable(
   val callable: CallableDescriptor,
-  val type: TypeRef,
-  val originalType: TypeRef,
-  val typeParameters: List<ClassifierRef>,
-  val parameterTypes: Map<Int, TypeRef>,
-  val typeArguments: Map<ClassifierRef, TypeRef>,
+  val type: InjektType,
+  val originalType: InjektType,
+  val typeParameters: List<InjektClassifier>,
+  val parameterTypes: Map<Int, InjektType>,
+  val typeArguments: Map<InjektClassifier, InjektType>,
   val callableFqName: FqName
 )
 
-fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
+fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCallable {
   if (map == typeArguments) return this
   val substitutedTypeParameters = typeParameters.substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
@@ -47,12 +47,12 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   )
 }
 
-fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
-  ctx.cached("callable_ref", this) {
+fun CallableDescriptor.toInjektCallable(ctx: Context): InjektCallable =
+  ctx.cache.cached("callable_ref", this) {
     val type = run {
       val tags = if (this is ConstructorDescriptor)
         buildList {
-          addAll(constructedClass.toClassifierRef(ctx).tags)
+          addAll(constructedClass.toInjektClassifier(ctx).tags)
           for (tagAnnotation in getTags())
             add(tagAnnotation.type.toTypeRef(ctx))
         }
@@ -64,9 +64,9 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       for (parameter in allParameters)
         this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
     }
-    val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
+    val typeParameters = typeParameters.map { it.toInjektClassifier(ctx) }
 
-    CallableRef(
+    InjektCallable(
       callable = this,
       type = type,
       originalType = type,

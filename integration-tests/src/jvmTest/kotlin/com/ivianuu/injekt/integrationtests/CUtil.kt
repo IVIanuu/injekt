@@ -8,7 +8,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.transform.*
+import com.ivianuu.injekt.compiler.ir.*
 import com.ivianuu.injekt.ksp.*
 import com.tschuchort.compiletesting.*
 import io.kotest.matchers.*
@@ -204,8 +204,11 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   kspIncremental = false
   kspWithCompilation = true
 
-  componentRegistrars += InjektComponentRegistrar()
+  compilerPluginRegistrars += InjektCompilerPluginRegistrar()
   commandLineProcessors += InjektCommandLineProcessor()
+
+  supportsK2 = true
+  languageVersion = "2.0"
 
   inheritClassPath = true
   jvmTarget = "1.8"

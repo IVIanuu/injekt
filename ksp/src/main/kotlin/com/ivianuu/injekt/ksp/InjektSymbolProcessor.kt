@@ -9,13 +9,15 @@ import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.google.devtools.ksp.symbol.impl.kotlin.*
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
 @OptIn(UnsafeCastFunction::class)
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asString())
+    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asSingleFqName().asString())
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -108,8 +110,28 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     }
   }
 
-  private fun KSTypeReference.uniqueTypeKey() = resolve().safeAs<KSTypeImpl>()
+  private fun KSTypeReference.uniqueTypeKey(): String = resolve().safeAs<KSTypeImpl>()
     ?.kotlinType?.uniqueTypeKey() ?: "error"
+
+  private fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
+    if (depth > 15) return ""
+    return buildString {
+      append(constructor.declarationDescriptor!!.fqNameSafe)
+      arguments.forEachIndexed { index, typeArgument ->
+        if (index == 0) append("<")
+        append(typeArgument.type.fullyAbbreviatedType.uniqueTypeKey(depth + 1))
+        if (index != arguments.lastIndex) append(", ")
+        else append(">")
+      }
+      if (isMarkedNullable) append("?")
+    }
+  }
+
+  private val KotlinType.fullyAbbreviatedType: KotlinType
+    get() {
+      val abbreviatedType = getAbbreviatedType()
+      return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
+    }
 
   @AutoService(SymbolProcessorProvider::class)
   class Provider : SymbolProcessorProvider {

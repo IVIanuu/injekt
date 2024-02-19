@@ -2,13 +2,13 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(ExperimentalCompilerApi::class)
+@file:OptIn(ExperimentalCompilerApi::class, UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.*
-import com.ivianuu.injekt.compiler.analysis.*
-import com.ivianuu.injekt.compiler.transform.*
+import com.ivianuu.injekt.compiler.fir.*
+import com.ivianuu.injekt.compiler.ir.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.com.intellij.mock.*
@@ -24,35 +24,22 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 import java.util.*
 
-class InjektFirExtensionRegistrar : FirExtensionRegistrar() {
-  override fun ExtensionRegistrarContext.configurePlugin() {
-
-  }
-}
-
 @AutoService(CompilerPluginRegistrar::class)
-class InjektCompilerPlugin : CompilerPluginRegistrar() {
+class InjektCompilerPluginRegistrar : CompilerPluginRegistrar() {
   override val supportsK2: Boolean
     get() = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    StorageComponentContainerContributor.registerExtension(
-      InjektStorageComponentContainerContributor()
-    )
-
-    // register at first position
+    val cache = InjektCache()
+    FirExtensionRegistrarAdapter.registerExtension(InjektFirExtensionRegistrar(cache))
     registeredExtensions.cast<MutableMap<ProjectExtensionDescriptor<*>, MutableList<Any>>>()
       .getOrPut(IrGenerationExtension) { mutableListOf() }.add(
         0,
-        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
+        InjektIrGenerationExtension(cache, configuration.getNotNull(DumpDirKey))
       )
-
-    if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
-      AnalysisHandlerExtension.registerExtension(InjectCallChecker())
   }
 }
 
-@OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
   override val pluginId = "com.ivianuu.injekt"
@@ -76,4 +63,3 @@ val DumpDirOption = CliOption(
   required = true
 )
 val DumpDirKey = CompilerConfigurationKey<File>("dumpDir")
-

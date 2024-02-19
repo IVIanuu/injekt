@@ -9,22 +9,23 @@ import org.jetbrains.kotlin.name.*
 
 object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
-  val inject = InjektPackage.child("inject".asNameId())
-  val Provide = InjektPackage.child("Provide".asNameId())
-  val Tag = InjektPackage.child("Tag".asNameId())
-  val Spread = InjektPackage.child("Spread".asNameId())
+  val inject = CallableId(InjektPackage, "inject".asNameId())
+  val Provide = ClassId(InjektPackage, "Provide".asNameId())
+  val Tag = ClassId(InjektPackage, "Tag".asNameId())
+  val Spread = ClassId(InjektPackage, "Spread".asNameId())
 
-  val InternalPackage = InjektPackage.child("internal".asNameId())
-
+  private val InternalPackage = InjektPackage.child("internal".asNameId())
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
   val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())
 
   val CommonPackage = InjektPackage.child("common".asNameId())
-  val TypeKey = CommonPackage.child("TypeKey".asNameId())
+  val TypeKey = ClassId(CommonPackage, "TypeKey".asNameId())
 
-  val Composable = FqName("androidx.compose.runtime.Composable")
+  val Composable = ClassId(FqName("androidx.compose.runtime"), "Composable".asNameId())
 
   val Any = StandardNames.FqNames.any.toSafe()
   val Nothing = StandardNames.FqNames.nothing.toSafe()
   val Function = StandardNames.FqNames.functionSupertype.toSafe()
 }
+
+fun String.asNameId() = Name.identifier(this)

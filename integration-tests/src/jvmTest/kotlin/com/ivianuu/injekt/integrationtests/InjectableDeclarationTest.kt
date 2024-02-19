@@ -97,12 +97,7 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideObject() = singleAndMultiCodegen(
     """
-      @Provide val foo = Foo()
-      @Provide object Dep {
-        init {
-          inject<Foo>()
-        }
-      }
+      @Provide object Dep
     """,
     """
       fun invoke() = inject<Dep>() 
@@ -113,13 +108,8 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideCompanionObject() = singleAndMultiCodegen(
     """
-      @Provide val foo = Foo()
       class Dep {
-        @Provide companion object {
-          init {
-            inject<Foo>()
-          }
-        }
+        @Provide companion object
       }
     """,
     """
