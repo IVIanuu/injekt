@@ -100,13 +100,6 @@ class LambdaInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-class SourceKeyInjectable(
-  override val type: TypeRef,
-  override val ownerScope: InjectablesScope
-) : Injectable {
-  override val callableFqName = FqName("sourceKey")
-}
-
 class TypeKeyInjectable(
   override val type: TypeRef,
   override val ownerScope: InjectablesScope

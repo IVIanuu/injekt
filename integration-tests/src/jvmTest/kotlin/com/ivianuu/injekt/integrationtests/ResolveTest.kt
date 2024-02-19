@@ -1022,20 +1022,6 @@ class ResolveTest {
     """
   )
 
-  @Test fun testPropertyDelegateExpressionWithVarParameterFollowedByMultipleInjectParameter() = codegen(
-    """
-      fun <T> produceState(
-        vararg keys: Any?,
-        @Inject scope: String,
-        @Inject Nkey: SourceKey
-      ): State<T> = TODO()
-
-      fun invoke(@Inject scope: String) {
-        val scope by produceState<Int>()
-      }
-    """
-  )
-
   @Test fun testCanResolveExtensionReceiverOfFunction() = codegen(
     """
       fun @receiver:Provide Foo.foo() = inject<Foo>()

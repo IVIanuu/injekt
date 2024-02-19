@@ -120,8 +120,6 @@ class InjectablesScope(
     }
     request.type.classifier.fqName == InjektFqNames.TypeKey ->
       TypeKeyInjectable(request.type, this)
-    request.type.classifier.fqName == InjektFqNames.SourceKey ->
-      SourceKeyInjectable(request.type, this)
     else -> null
   }
 

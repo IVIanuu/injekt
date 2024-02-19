@@ -108,7 +108,6 @@ class InjectCallTransformer(
         is CallableInjectable -> callableExpression(result, candidate)
         is LambdaInjectable -> lambdaExpression(result, candidate)
         is ListInjectable -> listExpression(result, candidate)
-        is SourceKeyInjectable -> sourceKeyExpression()
         is TypeKeyInjectable -> typeKeyExpression(result, candidate)
       }
 
@@ -256,27 +255,6 @@ class InjectCallTransformer(
 
     +irGet(tmpList)
   }
-
-  private val sourceKeyConstructor =
-    irCtx.referenceClass(InjektFqNames.SourceKey)?.constructors?.single()
-
-  private fun ScopeContext.sourceKeyExpression(): IrExpression =
-    DeclarationIrBuilder(irCtx, symbol).run {
-      irCall(sourceKeyConstructor!!).apply {
-        putValueArgument(
-          0,
-          irString(
-            buildString {
-              append(currentFile.name)
-              append(":")
-              append(currentFile.fileEntry.getLineNumber(rootContext.startOffset) + 1)
-              append(":")
-              append(currentFile.fileEntry.getColumnNumber(rootContext.startOffset))
-            }
-          )
-        )
-      }
-    }
 
   private val typeKey = irCtx.referenceClass(InjektFqNames.TypeKey)
   private val typeKeyValue = typeKey?.owner?.properties

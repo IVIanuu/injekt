@@ -163,9 +163,6 @@ fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId)
 # Type keys
 TODO
 
-# Source keys
-TODO
-
 # Setup
 ```kotlin
 // in your buildscript
