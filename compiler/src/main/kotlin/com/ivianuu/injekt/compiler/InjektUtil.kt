@@ -193,24 +193,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
   }
 }
 
-fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField = try {
-    Field::class.java.getDeclaredField("modifiers")
-  } catch (e: Throwable) {
-    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
-    getDeclaredFields0.isAccessible = true
-    getDeclaredFields0.invoke(Field::class.java, false)
-      .cast<Array<Field>>()
-      .single { it.name == "modifiers" }
-  }
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  return field.get(this) as T
-}
-
 fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
   val field = clazz.java.declaredFields
     .single { it.name == fieldName }

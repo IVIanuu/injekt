@@ -889,12 +889,9 @@ class ResolveTest {
       interface Logger
 
       @Provide @Tag1 object NoopLogger : Logger
-      
-      fun log(logger: Logger) {
-      }
     """,
     """
-      fun invoke() = log()
+      fun invoke() = inject<Logger>()
     """
   ) {
     compilationShouldHaveFailed("no injectable")

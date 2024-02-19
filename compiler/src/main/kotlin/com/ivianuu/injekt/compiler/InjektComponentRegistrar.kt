@@ -30,11 +30,14 @@ class InjektComponentRegistrar : ComponentRegistrar {
       project,
       InjektStorageComponentContainerContributor()
     )
-    IrGenerationExtension.registerExtensionWithLoadingOrder(
-      project,
-      LoadingOrder.FIRST,
-      InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
-    )
+
+    project.extensionArea
+      .getExtensionPoint(IrGenerationExtension.extensionPointName)
+      .registerExtension(
+        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey)),
+        LoadingOrder.FIRST,
+        project
+      )
 
     if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
       AnalysisHandlerExtension.registerExtension(
@@ -46,14 +49,4 @@ class InjektComponentRegistrar : ComponentRegistrar {
     Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
       .registerExtension(InjektDiagnosticSuppressor(), project)
   }
-}
-
-fun IrGenerationExtension.Companion.registerExtensionWithLoadingOrder(
-  project: MockProject,
-  loadingOrder: LoadingOrder,
-  extension: IrGenerationExtension,
-) {
-  project.extensionArea
-    .getExtensionPoint(IrGenerationExtension.extensionPointName)
-    .registerExtension(extension, loadingOrder, project)
 }

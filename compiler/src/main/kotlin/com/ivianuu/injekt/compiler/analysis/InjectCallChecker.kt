@@ -7,7 +7,6 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.analyzer.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.*
@@ -34,18 +33,6 @@ import org.jetbrains.kotlin.utils.*
           override fun visitCallExpression(expression: KtCallExpression) {
             super.visitCallExpression(expression)
             expression.getResolvedCall(ctx.trace!!.bindingContext)
-              ?.let { checkCall(it, ctx) }
-          }
-
-          override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
-            super.visitSimpleNameExpression(expression)
-            expression.getResolvedCall(ctx.trace!!.bindingContext)
-              ?.let { checkCall(it, ctx) }
-          }
-
-          override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
-            super.visitConstructorDelegationCall(call)
-            call.getResolvedCall(ctx.trace!!.bindingContext)
               ?.let { checkCall(it, ctx) }
           }
         }

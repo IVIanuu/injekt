@@ -60,8 +60,6 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
 
-  const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
-
   object Injekt {
     const val version = "0.0.1-dev717"
     const val gradlePlugin = "com.ivianuu.injekt:gradle-plugin:$version"
@@ -97,10 +95,4 @@ object Deps {
   }
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.24.0"
-
-  const val mockk = "io.mockk:mockk:1.11.0"
-
-  const val roboelectric = "org.robolectric:robolectric:4.10.3"
-
-  const val shadowGradlePlugin = "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
 }

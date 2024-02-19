@@ -440,18 +440,20 @@ class InjectCallTransformer(
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
         val rootContext = RootContext(injectionResult, result.startOffset)
-        val result = try {
+        try {
           ScopeContext(
             parent = null,
             rootContext = rootContext,
             scope = injectionResult.scope,
             irScope = scope
-          ).run { expressionFor(injectionResult.results.values.single().cast()) }
+          ).run {
+            val replacement = expressionFor(injectionResult.results.values.single().cast())
+            rootContext.statements.forEach { +it }
+            +replacement
+          }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)
         }
-        rootContext.statements.forEach { +it }
-        +result
       }
   }
 }
