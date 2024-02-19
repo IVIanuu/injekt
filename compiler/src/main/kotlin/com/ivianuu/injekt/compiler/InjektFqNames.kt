@@ -15,8 +15,6 @@ object InjektFqNames {
   val Spread = InjektPackage.child("Spread".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
-  val DeclarationInfo = InternalPackage.child("DeclarationInfo".asNameId())
-  val TypeParameterInfo = InternalPackage.child("TypeParameterInfo".asNameId())
 
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
   val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())

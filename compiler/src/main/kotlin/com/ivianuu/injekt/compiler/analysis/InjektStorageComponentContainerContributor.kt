@@ -18,6 +18,5 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
   ) {
     val ctx = Context(moduleDescriptor, null)
     container.useInstance(InjektDeclarationChecker(ctx))
-    container.useInstance(InfoPatcher(ctx))
   }
 }

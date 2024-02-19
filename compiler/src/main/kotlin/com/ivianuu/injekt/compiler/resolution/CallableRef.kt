@@ -7,6 +7,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
@@ -48,15 +49,29 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
 
 fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
   ctx.cached("callable_ref", this) {
-    val info = callableInfo(ctx)
+    val type = run {
+      val tags = if (this is ConstructorDescriptor)
+        buildList {
+          addAll(constructedClass.toClassifierRef(ctx).tags)
+          for (tagAnnotation in getTags())
+            add(tagAnnotation.type.toTypeRef(ctx))
+        }
+      else emptyList()
+      tags.wrap(returnType?.toTypeRef(ctx) ?: ctx.nullableAnyType)
+    }
+
+    val parameterTypes = buildMap {
+      for (parameter in allParameters)
+        this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
+    }
     val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
 
     CallableRef(
       callable = this,
-      type = info.type,
-      originalType = info.type,
+      type = type,
+      originalType = type,
       typeParameters = typeParameters,
-      parameterTypes = info.parameterTypes,
+      parameterTypes = parameterTypes,
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
           this[typeParameter] = typeParameter.defaultType

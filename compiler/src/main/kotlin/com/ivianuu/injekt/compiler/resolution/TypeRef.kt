@@ -58,15 +58,27 @@ fun TypeRef.wrap(type: TypeRef): TypeRef {
 
 fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
   ctx.cached("classifier_ref", this) {
-    val info = classifierInfo(ctx)
+    val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
+      ?.toTypeRef(ctx)
+
+    val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
+
+    val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
+      when {
+        expandedType != null -> listOf(expandedType)
+        isTag -> listOf(ctx.anyType)
+        else -> typeConstructor.supertypes.map { it.toTypeRef(ctx) }
+      }
+    }
+
+    val tags = getTags()
+      .map { it.type.toTypeRef(ctx) }
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
       ?.declaredTypeParameters
       ?.map { it.toClassifierRef(ctx) }
       ?.toMutableList()
       ?: mutableListOf()
-
-    val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
 
     if (isTag) {
       typeParameters += ClassifierRef(
@@ -82,12 +94,12 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       key = original.uniqueKey(ctx),
       fqName = original.fqNameSafe,
       typeParameters = typeParameters,
-      lazySuperTypes = info.lazySuperTypes,
+      lazySuperTypes = lazySuperTypes,
       isTypeParameter = this is TypeParameterDescriptor,
       isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
       isTag = isTag,
       descriptor = this,
-      tags = info.tags,
+      tags = tags,
       isSpread = hasAnnotation(InjektFqNames.Spread),
       variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
