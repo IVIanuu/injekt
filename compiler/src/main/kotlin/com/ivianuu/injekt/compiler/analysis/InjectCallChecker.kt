@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.utils.*
 
@@ -55,7 +56,9 @@ import org.jetbrains.kotlin.utils.*
 
   private fun checkCall(resolvedCall: ResolvedCall<*>, ctx: Context) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+
+    if (resultingDescriptor.fqNameSafe != InjektFqNames.inject ||
+      resultingDescriptor.valueParameters.isNotEmpty()) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -81,16 +84,15 @@ import org.jetbrains.kotlin.utils.*
       .toCallableRef(ctx)
       .substitute(substitutionMap)
 
-    val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
-
-    val requests = callee.callable.allParameters
-      .transform {
-        val index = it.injektIndex()
-        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx))
-          add(it.toInjectableRequest(callee, ctx))
-      }
-
+    val requests = listOf(
+      InjectableRequest(
+        callee.type,
+        callee.callableFqName,
+        callee.typeArguments,
+        "x".asNameId(),
+        0
+      )
+    )
     if (requests.isEmpty()) return
 
     val scope = ElementInjectablesScope(ctx, callExpression)

@@ -177,60 +177,6 @@ class ResolveTest {
     foo.shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testFunctionInvocationWithInjectables() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      fun usesFoo(@Inject foo: Foo) {
-      }
-    """,
-    """
-      fun invoke() {
-        usesFoo()
-      } 
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testLocalFunctionInvocationWithInjectables() = codegen(
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        fun usesFoo(@Inject foo: Foo) {
-        }                    
-        usesFoo()
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testConstructorInvocationWithInjectables() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      class UsesFoo(@Inject foo: Foo)
-    """,
-    """
-      fun invoke() {
-        UsesFoo()
-      } 
-    """
-  ) {
-    invokeSingleFile()
-  }
-
-  @Test fun testLocalConstructorInvocationWithInjectables() = codegen(
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        class UsesFoo(@Inject foo: Foo)
-        UsesFoo()
-      }
-    """
-  ) {
-    invokeSingleFile()
-  }
-
   @Test fun testCanResolveStarProjectedType() = singleAndMultiCodegen(
     """
       @Provide fun foos() = Foo() to Foo()
@@ -443,61 +389,6 @@ class ResolveTest {
       "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.T> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
     )
   }
-
-  @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
-      """
-        @Provide val foo = Foo()
-
-        fun String.myFunc(@Inject foo: Foo) {
-        }
-      """,
-      """
-        fun invoke() = (null as? String)?.myFunc()
-      """
-    )
-
-  // todo @Test
-  fun testSmartcastWithInject() = codegen(
-    """
-      class MyType {
-        fun <T> doSomething(@Inject key: TypeKey<T>) {
-        }
-      }
-      fun invoke(myType: MyType?) {
-        if (myType != null) {
-          myType.doSomething<String>()
-        }
-      }
-    """
-  )
-
-  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithInjectParameters() = singleAndMultiCodegen(
-    """
-      open class MySuperClass {
-        fun func(@Inject foo: Foo) {
-        }
-      }
-
-      class MySubClass : MySuperClass()
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MySubClass().func()
-    """
-  )
-
-  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = singleAndMultiCodegen(
-    """
-      open class MySuperClass<T> {
-        fun <S : T> func(@Inject s: S) {
-        }
-      }
-
-      class MySubClass<T> : MySuperClass<T>()
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = MySubClass<Any>().func<Foo>()
-    """
-  )
 
   @Test fun testCanResolveProvideParameterInDefaultValueOfFollowingParameter() = codegen(
     """
@@ -999,7 +890,7 @@ class ResolveTest {
 
       @Provide @Tag1 object NoopLogger : Logger
       
-      fun log(@Inject logger: Logger) {
+      fun log(logger: Logger) {
       }
     """,
     """

@@ -6,7 +6,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
@@ -319,7 +318,6 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
       LazyClassDescriptor::class,
       "annotations"
     ) { newAnnotations }
-    is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
     else -> throw AssertionError("Cannot add annotation to $this $javaClass")
   }

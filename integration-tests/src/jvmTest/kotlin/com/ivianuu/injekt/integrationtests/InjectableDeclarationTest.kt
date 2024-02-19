@@ -160,27 +160,6 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testInjectValueParameter() = codegen(
-    """
-      fun invoke(@Inject foo: Foo) = inject<Foo>()
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testMultipleInjectValueParameter() = codegen(
-    """
-      fun invoke(@Inject foo: Foo, @Inject bar: Bar) = inject<Foo>() to inject<Bar>()
-    """
-  ) {
-    val foo = Foo()
-    val bar = Bar(foo)
-    val (a, b) = invokeSingleFile<Pair<Foo, Bar>>(foo, bar)
-    foo shouldBeSameInstanceAs a
-    bar shouldBeSameInstanceAs b
-  }
-
   @Test fun testProvideLocalVariable() = codegen(
     """
       fun invoke(foo: Foo): Foo {
@@ -199,109 +178,6 @@ class InjectableDeclarationTest {
         @Provide val providedFoo by lazy { foo }
         return inject()
       }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testInjectLambdaParameterDeclarationSite() = singleAndMultiCodegen(
-    """
-      inline fun <T, R> withProvidedInstance(value: T, block: (@Inject T) -> R) = block(value)
-    """,
-    """
-      fun invoke(foo: Foo) = withProvidedInstance(foo) { inject<Foo>() }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testInjectFunInterfaceDeclarationSite() = singleAndMultiCodegen(
-    """
-      fun interface Lambda<T, R> {
-        operator fun invoke(@Inject x: T): R
-      }
-
-      inline fun <T, R> withProvidedInstance(value: T, block: Lambda<T, R>) = block(value)
-    """,
-    """
-      fun invoke(foo: Foo) = withProvidedInstance(foo, Lambda { inject<Foo>() })
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testInjectFunInterfaceDeclarationSite2() = singleAndMultiCodegen(
-    """
-      fun interface Lambda<T, R> {
-        operator fun invoke(x: @Inject T): R
-      }
-
-      inline fun <T, R> withProvidedInstance(value: T, block: Lambda<T, R>) = block(value)
-    """,
-    """
-      fun invoke(foo: Foo) = withProvidedInstance(foo, Lambda { inject<Foo>() })
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testCanLeaveOutFunctionInjectParameters() = singleAndMultiCodegen(
-    """
-      fun usesFoo(@Inject foo: Foo) {
-      }
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        usesFoo()
-      }
-    """
-  )
-
-  @Test fun testCanLeaveOutConstructorInjectParameters() = singleAndMultiCodegen(
-    """
-      class FooHolder(@Inject foo: Foo)
-    """,
-    """
-      @Provide val foo = Foo()
-      fun invoke() {
-        FooHolder()
-      }
-    """
-  )
-
-  @Test fun testCanLeaveOutSuperConstructorInjectParameters() = singleAndMultiCodegen(
-    """
-      abstract class AbstractFooHolder(@Inject foo: Foo)
-    """,
-    """
-      @Provide val foo = Foo()
-      class FooHolderImpl : AbstractFooHolder()
-    """
-  )
-
-  @Test fun testCanLeaveOutInjectLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: (@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = lambda()
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testCanLeaveOutInjectExtensionLambdaParameters() = singleAndMultiCodegen(
-    """
-      val lambda: Unit.(@Inject Foo) -> Foo = { inject<Foo>() }
-    """,
-    """
-      fun invoke(@Inject foo: Foo) = lambda(Unit)
     """
   ) {
     val foo = Foo()
@@ -358,32 +234,6 @@ class InjectableDeclarationTest {
       }
     """
   )
-
-  @Test fun testProvideInnerClass() = codegen(
-    """
-      class Outer(@Provide val _foo: Foo) {
-        val foo = Inner().foo
-        inner class Inner(@Inject val foo: Foo)
-      }
-      fun invoke(foo: Foo): Foo = Outer(foo).foo
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testProvideNestedClass() = codegen(
-    """
-      class Outer(@Provide val _foo: Foo) {
-        val foo = Inner().foo
-        class Inner(@Inject val foo: Foo)
-      }
-      fun invoke(foo: Foo): Foo = Outer(foo).foo
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
 
   @Test fun testSuperClassPrimaryProvideConstructorParameter() = codegen(
     """

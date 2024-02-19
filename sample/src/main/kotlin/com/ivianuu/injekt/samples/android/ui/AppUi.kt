@@ -46,4 +46,3 @@ fun interface AppUi {
     }
   }
 }
-

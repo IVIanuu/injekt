@@ -86,7 +86,7 @@ class TagTest {
       @Tag annotation class MyTag 
     """,
     """
-      fun invoke(@Inject value: @MyTag String) {
+      fun invoke(value: @MyTag String) {
       }
     """
   )

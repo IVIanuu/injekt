@@ -15,22 +15,19 @@ class App : Application() {
 
   /* generated
   val appComponent by lazy {
-    inject(
-      x = AppComponent(mainActivityComponent = { activityScope ->
-        MainActivityComponent(
-          appTheme = AppTheme.impl,
-          appUi = AppUi.impl(
-            presenter = CounterPresenter.impl(
-              db = Scoped.scoped(
-                scope = appScope,
+    AppComponent(mainActivityComponent = { activityScope ->
+      MainActivityComponent(
+        appTheme = AppTheme.impl,
+        appUi = AppUi.impl(
+          presenter = CounterPresenter.impl(
+            db = Scoped.scoped(
+              scope = appScope,
                 key = TypeKey(value = "com.ivianuu.injekt.samples.android.data.CounterDbImpl"),
                 init = { CounterDbImpl() }
-              )
             )
           )
         )
-      }
-    ))
+      )
   }*/
 }
 

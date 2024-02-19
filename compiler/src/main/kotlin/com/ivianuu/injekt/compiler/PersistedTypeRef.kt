@@ -14,20 +14,17 @@ import org.jetbrains.kotlin.types.model.*
   val isStarProjection: Boolean,
   val variance: TypeVariance,
   val isMarkedNullable: Boolean,
-  val isProvide: Boolean,
-  val isInject: Boolean
+  val isProvide: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef =
-  PersistedTypeRef(
-    classifierKey = classifier.descriptor?.uniqueKey(ctx) ?: "",
-    arguments = arguments.map { it.toPersistedTypeRef(ctx) },
-    isStarProjection = isStarProjection,
-    variance = variance,
-    isMarkedNullable = isMarkedNullable,
-    isProvide = isProvide,
-    isInject = isInject
-  )
+fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef = PersistedTypeRef(
+  classifierKey = classifier.descriptor?.uniqueKey(ctx) ?: "",
+  arguments = arguments.map { it.toPersistedTypeRef(ctx) },
+  isStarProjection = isStarProjection,
+  variance = variance,
+  isMarkedNullable = isMarkedNullable,
+  isProvide = isProvide
+)
 
 fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
   if (isStarProjection) return STAR_PROJECTION_TYPE
@@ -46,7 +43,6 @@ fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
     arguments = arguments,
     variance = variance,
     isMarkedNullable = isMarkedNullable,
-    isProvide = isProvide,
-    isInject = isInject
+    isProvide = isProvide
   )
 }

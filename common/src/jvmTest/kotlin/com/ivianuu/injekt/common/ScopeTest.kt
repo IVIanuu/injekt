@@ -14,8 +14,8 @@ import org.junit.*
 class ScopeTest {
   @Test fun testScope() {
     val scope = Scope<TestScope>()
-    scope { "a" } shouldBe "a"
-    scope { "b" } shouldBe "a"
+    scope("key") { "a" } shouldBe "a"
+    scope("key") { "b" } shouldBe "a"
   }
 
   @Test fun scopeConcurrencyStressTest() = runBlocking(
@@ -33,7 +33,7 @@ class ScopeTest {
 
     val jobs = (1..64).map {
       launch(start = CoroutineStart.LAZY) {
-        scope.invoke {
+        scope.invoke("key") {
           holder.inc()
         }
       }

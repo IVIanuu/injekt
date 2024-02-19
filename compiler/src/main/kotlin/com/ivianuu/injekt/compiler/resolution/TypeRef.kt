@@ -129,7 +129,6 @@ fun KotlinType.toTypeRef(
           else it
         },
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
-      isInject = kotlinType.hasAnnotation(InjektFqNames.Inject),
       isStarProjection = false,
       frameworkKey = "",
       variance = variance
@@ -165,7 +164,6 @@ data class TypeRef(
   val isMarkedNullable: Boolean = false,
   val arguments: List<TypeRef> = emptyList(),
   val isProvide: Boolean = false,
-  val isInject: Boolean = false,
   val isStarProjection: Boolean = false,
   val frameworkKey: String = "",
   val variance: TypeVariance = TypeVariance.INV,
@@ -249,7 +247,6 @@ data class TypeRef(
       result = 31 * result + isMarkedNullable.hashCode()
       result = 31 * result + arguments.hashCode()
       result = 31 * result + isProvide.hashCode()
-      result = 31 * result + isInject.hashCode()
       result = 31 * result + isStarProjection.hashCode()
       result = 31 * result + frameworkKey.hashCode()
       result = 31 * result + variance.hashCode()
@@ -309,18 +306,15 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
     val newNullability = if (isStarProjection) substitution.isMarkedNullable
     else isMarkedNullable || substitution.isMarkedNullable
     val newIsProvide = isProvide || substitution.isProvide
-    val newIsInject = isInject || substitution.isInject
     val newVariance = if (substitution.variance != TypeVariance.INV) substitution.variance
     else variance
     return if (newNullability != substitution.isMarkedNullable ||
       newIsProvide != substitution.isProvide ||
-      newIsInject != substitution.isInject ||
       newVariance != substitution.variance
     ) {
       substitution.copy(
         isMarkedNullable = newNullability,
         isProvide = newIsProvide,
-        isInject = newIsInject,
         variance = newVariance
       )
     } else substitution

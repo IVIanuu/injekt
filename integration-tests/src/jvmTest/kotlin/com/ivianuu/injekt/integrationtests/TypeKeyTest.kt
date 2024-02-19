@@ -24,17 +24,6 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "kotlin.String?"
   }
 
-  @Test fun testTypeKeyWithTypeParameters() = singleAndMultiCodegen(
-    """
-      inline fun <T> listTypeKeyOf(@Inject single: TypeKey<T>) = inject<TypeKey<List<T>>>()
-    """,
-    """
-      fun invoke() = listTypeKeyOf<String>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
-  }
-
   @Test fun testTypeKeyWithTags() = codegen(
     """
       fun invoke() = inject<TypeKey<@Tag2 String>>()

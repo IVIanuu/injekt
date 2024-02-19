@@ -15,9 +15,6 @@ class Scope<N> : SynchronizedObject() {
     (if (value !== NULL) value else null) as T
   }
 
-  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
-    invoke(key.value, init)
-
   companion object {
     @PublishedApi internal val NULL = Any()
   }
@@ -29,6 +26,6 @@ class Scope<N> : SynchronizedObject() {
       scope: Scope<N>,
       key: TypeKey<S>,
       crossinline init: () -> T,
-    ): S = scope(key) { init() }
+    ): S = scope(key.value) { init() }
   }
 }

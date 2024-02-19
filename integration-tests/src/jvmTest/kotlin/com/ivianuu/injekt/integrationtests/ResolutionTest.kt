@@ -271,13 +271,12 @@ class ResolutionTest {
       interface Ord<in T>
       @Provide object IntOrd : Ord<Int>
       @Provide object NumberOrd : Ord<Number>
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
     """,
     """
-      fun invoke() = useOrd<Int>()
+      fun invoke() = inject<Ord<Int>>()
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = IntOrd)")
+    irShouldContain(1, "IntOrd")
   }
 
   @Test fun testPrefersMoreSpecificType4() = singleAndMultiCodegen(
@@ -286,13 +285,12 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Number> numberOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Int> intOrd(): Ord<T> = object : Ord<T> {}
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
     """,
     """
-      fun invoke() = useOrd<Int>()
+      fun invoke() = inject<Ord<Int>>()
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = intOrd<Int>())")
+    irShouldContain(1, "intOrd<Int>()")
   }
 
   @Test fun testPrefersMoreSpecificType5() = singleAndMultiCodegen(
@@ -301,13 +299,12 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Number> numberOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Int> intOrd(long: Long): Ord<T> = object : Ord<T> {}
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
     """,
     """
-      fun invoke() = useOrd<Int>()
+      fun invoke() = inject<Ord<Int>>()
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = numberOrd<Int>())")
+    irShouldContain(1, "numberOrd<Int>()")
   }
 
   @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
@@ -336,8 +333,8 @@ class ResolutionTest {
   @Test fun testUsesDefaultValueOnNoCandidatesError() = codegen(
     """
       fun invoke(_foo: Foo): Foo {
-        fun inner(@Inject foo: Foo = _foo) = foo
-        return inner()
+        @Provide class MyClass(val foo: Foo = _foo)
+        return inject<MyClass>().foo
       }
     """
   ) {
@@ -351,7 +348,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject foo1: Foo, @Inject foo2: Foo) = inject<Foo>()
+      fun createFoo(@Provide foo1: Foo, @Provide foo2: Foo) = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("ambiguous")

@@ -6,9 +6,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.builtins.functions.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -37,8 +35,6 @@ fun KtFunction.getArgumentDescriptor(ctx: Context): ValueParameterDescriptor? {
   return mapping.valueParameter
 }
 
-val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
-
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
   ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
 
@@ -47,7 +43,6 @@ fun DeclarationDescriptor.isExternalDeclaration(ctx: Context): Boolean =
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor ||
     this is JavaClassDescriptor ||
     this is FunctionClassDescriptor

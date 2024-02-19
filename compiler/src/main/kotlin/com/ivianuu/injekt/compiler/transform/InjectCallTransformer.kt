@@ -440,13 +440,13 @@ class InjectCallTransformer(
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
         val rootContext = RootContext(injectionResult, result.startOffset)
-        try {
+        val result = try {
           ScopeContext(
             parent = null,
             rootContext = rootContext,
             scope = injectionResult.scope,
             irScope = scope
-          ).run { result.inject(this, injectionResult.results) }
+          ).run { expressionFor(injectionResult.results.values.single().cast()) }
         } catch (e: Throwable) {
           throw RuntimeException("Wtf ${expression.dump()}", e)
         }
