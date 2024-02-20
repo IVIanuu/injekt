@@ -28,7 +28,7 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
         if (it is FirRegularClassSymbol) it.collectInjectableConstructors(session)
         else listOf(it)
       }
-      .filterIsInstance<FirFunctionSymbol<*>>()
+      .filterIsInstance<FirCallableSymbol<*>>()
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(PROVIDE_PREDICATE)
@@ -131,7 +131,7 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     return ClassId.topLevel(packageFqName.child(markerName))
   }
 
-  private fun FirFunctionSymbol<*>.uniqueKey() = buildString {
+  private fun FirCallableSymbol<*>.uniqueKey() = buildString {
     if (this@uniqueKey is FirConstructorSymbol) {
       this@uniqueKey.getConstructedClass(session)!!.run {
         annotations.forEach {
@@ -150,10 +150,12 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
       append(it.typeRef.coneType.renderReadableWithFqNames())
     }
 
-    valueParameterSymbols.forEach {
-      append(it.name)
-      append(it.resolvedReturnType.renderReadableWithFqNames())
-      append(it.hasDefaultValue)
+    if (this@uniqueKey is FirFunctionSymbol<*>) {
+      valueParameterSymbols.forEach {
+        append(it.name)
+        append(it.resolvedReturnType.renderReadableWithFqNames())
+        append(it.hasDefaultValue)
+      }
     }
 
     append(resolvedReturnType.renderReadableWithFqNames())

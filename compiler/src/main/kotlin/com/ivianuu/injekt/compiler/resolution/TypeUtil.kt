@@ -6,7 +6,6 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.resolve.*
@@ -20,7 +19,6 @@ import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.model.*
-import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.hasAnnotation
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun ConeTypeProjection.render() = if (isStarProjection) "*"
@@ -154,11 +152,6 @@ val ConeKotlinType.coveringSet: Set<ConeClassifierLookupTag>
     visit(this)
     return tags
   }
-
-val ConeKotlinType.typeDepth: Int get() = (typeArguments.maxOfOrNull { it.type?.typeDepth ?: 0 } ?: 0) + 1
-
-fun ConeKotlinType.isProvideFunctionType(session: FirSession): Boolean =
-  isBasicFunctionType(session) && hasAnnotation(InjektFqNames.Provide.asSingleFqName())
 
 class FrameworkKeyConeAttribute(val value: String) : ConeAttribute<FrameworkKeyConeAttribute>() {
   override fun union(other: FrameworkKeyConeAttribute?) = other

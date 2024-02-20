@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.fir.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
+import org.jetbrains.kotlin.fir.backend.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
@@ -27,6 +28,8 @@ class InjektIrGenerationExtension(
   private val dumpDir: File
 ) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+    pluginContext as Fir2IrPluginContext
+    pluginContext.symbolTable
     moduleFragment.transform(InjectCallTransformer(pluginContext, cache), null)
     moduleFragment.fixLookupDeclarations(pluginContext)
     moduleFragment.dumpToFiles(dumpDir, cache)

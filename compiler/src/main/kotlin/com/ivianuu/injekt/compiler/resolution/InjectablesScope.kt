@@ -103,8 +103,10 @@ class InjectablesScope(
   }
 
   fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    /*request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
-    request.type.classifier == ctx.listClassifier -> {
+    request.type.isBasicFunctionType(session) &&
+        !request.type.customAnnotations.hasAnnotation(InjektFqNames.Provide, session) ->
+      LambdaInjectable(this, request)
+    /*request.type.classifier == ctx.listClassifier -> {
       val singleElementType = request.type.arguments[0]
       val collectionElementType = ctx.collectionClassifier.defaultType
         .withArguments(listOf(singleElementType))

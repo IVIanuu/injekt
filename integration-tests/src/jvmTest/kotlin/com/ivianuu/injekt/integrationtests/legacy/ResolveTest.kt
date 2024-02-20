@@ -2,33 +2,14 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package com.ivianuu.injekt.integrationtests
+package com.ivianuu.injekt.integrationtests.legacy
 
+import com.ivianuu.injekt.integrationtests.*
 import io.kotest.matchers.nulls.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
 class ResolveTest {
-  @Test fun testResolvesExternalInjectableInSamePackage() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-    """,
-    """
-      fun invoke() = inject<Foo>()
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testResolvesInjectableInSamePackageAndSameFile() = codegen(
-    """
-      @Provide val foo = Foo()
-      fun invoke() = inject<Foo>()
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testResolvesClassCompanionInjectableFromWithinTheClass() = singleAndMultiCodegen(
     """
       class MyClass {

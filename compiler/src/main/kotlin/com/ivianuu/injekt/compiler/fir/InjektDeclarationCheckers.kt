@@ -131,6 +131,7 @@ object InjektPropertyChecker : FirPropertyChecker() {
     checkExceptActual(declaration, context, reporter)
 
     if (declaration.hasAnnotation(InjektFqNames.Provide, context.session) &&
+      declaration.getter == null &&
       declaration.delegate == null &&
       !declaration.status.isLateInit &&
       declaration.initializer == null)

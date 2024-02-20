@@ -2,12 +2,12 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
+@file:OptIn(UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
@@ -66,7 +66,7 @@ class ListInjectable(
     }
 }
 
-class LambdaInjectable(
+@OptIn(SymbolInternals::class) class LambdaInjectable(
   override val ownerScope: InjectablesScope,
   request: InjectableRequest
 ) : Injectable {
@@ -81,33 +81,29 @@ class LambdaInjectable(
     )
   )
 
-  /*val parameterDescriptors = type
-    .classifier
-    .descriptor!!
-    .cast<ClassDescriptor>()
-    .unsubstitutedMemberScope
-    .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-    .first()
-    .valueParameters
-    .map { ParameterDescriptor(it, this) }*/
+  val valueParameterSymbols = type
+    .toRegularClassSymbol(ownerScope.session)!!
+    .declarationSymbols
+    .filterIsInstance<FirFunctionSymbol<*>>()
+    .single { it.name.asString() == "invoke" }
+    .valueParameterSymbols
+    .map { original ->
+      buildValueParameterCopy(original.fir) {
+        symbol = FirValueParameterSymbol(original.name)
+      }.symbol
+    }
 
-  override val dependencyScope = /*InjectableScopeOrParent(
+  override val dependencyScope = InjectableScopeOrParent(
     name = "LAMBDA $type",
     parent = ownerScope,
-    ctx = ownerScope.ctx,
-    initialInjectables = parameterDescriptors
+    initialInjectables = valueParameterSymbols
       .mapIndexed { index, parameter ->
         parameter
-          .toInjektCallable(ownerScope.ctx)
-          .copy(type = type.arguments[index])
-      }
-  )*/ null
-
-  // required to distinct between individual lambdas in codegen
-  class ParameterDescriptor(
-    private val delegate: ValueParameterDescriptor,
-    val lambdaInjectable: LambdaInjectable
-  ) : ValueParameterDescriptor by delegate
+          .toInjektCallable()
+          .copy(type = type.typeArguments[index].type!!)
+      },
+    session = ownerScope.session
+  )
 }
 
 class TypeKeyInjectable(

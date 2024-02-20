@@ -45,8 +45,7 @@ class InjectFunctionCallChecker(private val cache: InjektCache) : FirFunctionCal
 
     val scope = ElementInjectablesScope(expression, context.containingElements, context.session)
 
-    val result = scope.resolveRequests(callee.toInjektCallable(), requests)
-    when (result) {
+    when (val result = scope.resolveRequests(callee.toInjektCallable(), requests)) {
       is InjectionResult.Success -> {
         cache.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
         cache.cached(
