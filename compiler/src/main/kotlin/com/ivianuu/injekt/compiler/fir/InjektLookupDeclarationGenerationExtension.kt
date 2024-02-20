@@ -6,14 +6,12 @@ import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.declarations.builder.*
-import org.jetbrains.kotlin.fir.declarations.impl.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.fir.extensions.predicate.*
+import org.jetbrains.kotlin.fir.plugin.*
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
-import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
@@ -39,41 +37,17 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     context: MemberGenerationContext?
   ): List<FirNamedFunctionSymbol> = injectables()
     .mapIndexed { providerIndex, provider ->
-      buildSimpleFunction {
-        moduleData = session.moduleData
-        origin = FirDeclarationOrigin.Plugin(Key)
-
-        symbol = FirNamedFunctionSymbol(InjektFqNames.InjectablesLookup)
-        name = InjektFqNames.InjectablesLookup.callableName
-        status = FirResolvedDeclarationStatusImpl(Visibilities.Public, Modality.FINAL, EffectiveVisibility.Public)
-        returnTypeRef = session.builtinTypes.unitType
-
-        fun addValueParameter(name: Name, typeRef: FirTypeRef) {
-          valueParameters += buildValueParameter {
-            moduleData = session.moduleData
-            origin = FirDeclarationOrigin.Plugin(Key)
-
-            containingFunctionSymbol = this@buildSimpleFunction.symbol
-
-            this.name = name
-            symbol = FirValueParameterSymbol(name)
-            returnTypeRef = typeRef
-
-            isCrossinline = false
-            isNoinline = false
-            isVararg = false
-          }
-        }
-
-        addValueParameter(
+      createTopLevelFunction(Key, InjektFqNames.InjectablesLookup, session.builtinTypes.unitType.type) {
+        valueParameter(
           "marker".asNameId(),
           session.symbolProvider.getRegularClassSymbolByClassId(provider.markerClassId())!!
             .defaultType()
             .toFirResolvedTypeRef()
+            .type
         )
 
         repeat(providerIndex + 1) {
-          addValueParameter("index$providerIndex".asNameId(), session.builtinTypes.byteType)
+          valueParameter("index$providerIndex".asNameId(), session.builtinTypes.byteType.type)
         }
 
         val key = provider.uniqueKey()
@@ -83,21 +57,14 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
         finalKey
           .chunked(256)
           .forEachIndexed { index, value ->
-            addValueParameter("hash_${index}_$value".asNameId(), session.builtinTypes.intType)
+            valueParameter("hash_${index}_$value".asNameId(), session.builtinTypes.intType.type)
           }
       }.symbol
     }
 
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> =
-    buildRegularClass {
-      moduleData = session.moduleData
-      origin = FirDeclarationOrigin.Plugin(Key)
-      scopeProvider = session.kotlinScopeProvider
-
-      symbol = FirRegularClassSymbol(classId)
-      name = classId.shortClassName
-      classKind = ClassKind.INTERFACE
-      status = FirResolvedDeclarationStatusImpl(Visibilities.Public, Modality.SEALED, EffectiveVisibility.Public)
+    createTopLevelClass(classId, Key, ClassKind.INTERFACE) {
+      modality = Modality.SEALED
     }.symbol
 
   override fun getTopLevelCallableIds(): Set<CallableId> = setOf(InjektFqNames.InjectablesLookup)
