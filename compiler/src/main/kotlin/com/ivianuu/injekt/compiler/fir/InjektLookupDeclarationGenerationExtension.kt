@@ -96,23 +96,9 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
 
       symbol = FirRegularClassSymbol(classId)
       name = classId.shortClassName
-      classKind = ClassKind.OBJECT
-      superTypeRefs += session.builtinTypes.anyType
-      status = FirResolvedDeclarationStatusImpl(Visibilities.Public, Modality.FINAL, EffectiveVisibility.Public)
+      classKind = ClassKind.INTERFACE
+      status = FirResolvedDeclarationStatusImpl(Visibilities.Public, Modality.SEALED, EffectiveVisibility.Public)
     }.symbol
-
-  override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> =
-    listOf(
-      buildPrimaryConstructor {
-        moduleData = session.moduleData
-        origin = FirDeclarationOrigin.Plugin(Key)
-
-        symbol = FirConstructorSymbol(context.owner.classId)
-
-        status = FirResolvedDeclarationStatusImpl(Visibilities.Private, Modality.FINAL, EffectiveVisibility.Public)
-        returnTypeRef = context.owner.defaultType().toFirResolvedTypeRef()
-      }.symbol
-    )
 
   override fun getTopLevelCallableIds(): Set<CallableId> = setOf(InjektFqNames.InjectablesLookup)
 
@@ -160,10 +146,6 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
 
     append(resolvedReturnType.renderReadableWithFqNames())
   }
-
-  override fun getCallableNamesForClass(classSymbol: FirClassSymbol<*>, context: MemberGenerationContext): Set<Name> =
-    if (classSymbol.classId.shortClassName.asString().endsWith("_ProvidersMarker"))
-      setOf(SpecialNames.INIT) else emptySet()
 
   override fun hasPackage(packageFqName: FqName) = true
 
