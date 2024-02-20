@@ -4,19 +4,11 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.di.old
+package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.lexer.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
+/**
 fun ElementInjectablesScope(
   ctx: Context,
   element: KtElement,
@@ -507,50 +499,11 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun InternalGlobalInjectablesScope(ctx: Context, file: KtFile): InjectablesScope =
-  ctx.cache.cached("internal_global_scope", file.virtualFilePath) {
-    InjectableScopeOrParent(
-      name = "INTERNAL GLOBAL EXCEPT $file",
-      parent = ExternalGlobalInjectablesScope(ctx),
-      initialInjectables = collectGlobalInjectables(ctx)
-        .filter {
-          !it.callable.isExternalDeclaration(ctx) &&
-              it.callable.findPsi()?.containingFile != file
-        },
-      ctx = ctx
-    )
-  }
-
-fun ExternalGlobalInjectablesScope(ctx: Context): InjectablesScope =
-  ctx.cache.cached("external_global_scope", Unit) {
-    InjectablesScope(
-      name = "EXTERNAL GLOBAL",
-      parent = null,
-      initialInjectables = collectGlobalInjectables(ctx)
-        .filter { it.callable.isExternalDeclaration(ctx) },
-      ctx = ctx
-    )
-  }
-
 private fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context): D? =
   TODO()
 
 data class DescriptorWithParentScope(
   val declaration: DeclarationDescriptor,
   val parentName: String?,
-)
+)*/
 
-fun InjectableScopeOrParent(
-  name: String,
-  parent: InjectablesScope,
-  owner: KtElement? = null,
-  initialInjectables: List<InjektCallable> = emptyList(),
-  injectablesPredicate: (InjektCallable) -> Boolean = { true },
-  typeParameters: List<InjektClassifier> = emptyList(),
-  nesting: Int = parent.nesting.inc(),
-  ctx: Context
-): InjectablesScope {
-  val finalInitialInjectables = initialInjectables.filter(injectablesPredicate)
-  return if (typeParameters.isEmpty() && finalInitialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, finalInitialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
-}

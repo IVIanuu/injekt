@@ -7,9 +7,10 @@ import org.jetbrains.kotlin.fir.analysis.checkers.expression.*
 import org.jetbrains.kotlin.fir.analysis.extensions.*
 import org.jetbrains.kotlin.fir.extensions.*
 
-class InjektFirExtensionRegistrar(val cache: InjektCache) : FirExtensionRegistrar() {
+class InjektFirExtensionRegistrar(private val cache: InjektCache) : FirExtensionRegistrar() {
   override fun ExtensionRegistrarContext.configurePlugin() {
     +FirAdditionalCheckersExtension.Factory { InjektFirCheckersExtension(it, cache) }
+    +FirDeclarationGenerationExtension.Factory { InjektLookupDeclarationGenerationExtension(it) }
   }
 }
 
@@ -17,6 +18,8 @@ class InjektFirCheckersExtension(
   session: FirSession,
   val cache: InjektCache,
 ) : FirAdditionalCheckersExtension(session) {
+  init { cache.session = session }
+
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
     override val functionCheckers = setOf(InjektFunctionChecker)
     override val constructorCheckers = setOf(InjektConstructorChecker)

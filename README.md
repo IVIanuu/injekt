@@ -188,7 +188,5 @@ dependencies {
 }
 ```
 
-# Ide plugin is required to remove errors in the IDE (code should still compile)
-
 # More complex uses can be found in my essentials project(base project for my apps)
 # https://github.com/IVIanuu/essentials

@@ -61,7 +61,7 @@ object Deps {
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
 
   object Injekt {
-    const val version = "0.0.1-dev727"
+    const val version = "0.0.1-dev730"
     const val gradlePlugin = "com.ivianuu.injekt:gradle-plugin:$version"
   }
 
@@ -87,12 +87,7 @@ object Deps {
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
-  object Ksp {
-    const val version = "1.9.22-1.0.17"
-    const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
-    const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
-    const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
-  }
+  const val kspGradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:1.9.22-1.0.17"
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.24.0"
 }

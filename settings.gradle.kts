@@ -7,7 +7,6 @@ include(
   ":compiler",
   ":core",
   ":gradle-plugin",
-  ":ksp",
   ":integration-tests",
   ":sample"
 )

@@ -1,5 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
-
 /*
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
@@ -35,22 +33,9 @@ package com.ivianuu.injekt
 annotation class Provide
 
 /**
- * Automatically injects a argument if no explicit argument was provided
- */
-@Target(
-  // fun func(@Inject foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
-
-  // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
-)
-annotation class Inject
-
-/**
  * Returns a provided instance of [T]
  */
-inline fun <T> inject(@Inject x: T): T = x
+fun <T> inject(): T = throw AssertionError()
 
 /**
  * Marks an annotation as an tag which can then be used

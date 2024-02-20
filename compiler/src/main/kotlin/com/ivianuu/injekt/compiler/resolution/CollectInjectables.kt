@@ -4,29 +4,28 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.di.old
+package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.incremental.components.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
+import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
+import org.jetbrains.kotlin.fir.scopes.impl.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
-fun InjektType.collectInjectables(
+fun ConeKotlinType.collectInjectables(
   classBodyView: Boolean,
-  ctx: Context
-): List<InjektCallable> = ctx.cache.cached("type_injectables", this to classBodyView) {
+  session: FirSession
+): List<InjektCallable> {
+  return emptyList()
   // special case to support @Provide () -> Foo
-  if (isProvideFunctionType(ctx)) {
-    val callable = classifier
+  if (isProvideFunctionType(session)) {
+    TODO()
+    /*val callable = classifier
       .descriptor!!
       .defaultType
       .memberScope
@@ -46,10 +45,16 @@ fun InjektType.collectInjectables(
         )
       }
 
-    return@cached listOf(callable)
+    return@cached listOf(callable)*/
   }
 
+  /*val classSymbol = toRegularClassSymbol(session)
+    ?: return emptyList()
+
   buildList {
+    classSymbol
+      .declarationSymbols
+
     classifier
       .descriptor
       ?.defaultType
@@ -77,10 +82,10 @@ fun InjektType.collectInjectables(
           )
         )
       }
-  }
+  }*/
 }
 
-fun ResolutionScope.collectMemberInjectables(
+/**fun ResolutionScope.collectMemberInjectables(
   ctx: Context,
   onEach: (DeclarationDescriptor) -> Unit = {},
   consumer: (InjektCallable) -> Unit
@@ -118,43 +123,47 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): InjektCal
     val taggedType = callable.type.classifier.tags.wrap(callable.type)
     callable.copy(type = taggedType, originalType = taggedType)
   }
-}
+}*/
 
 fun InjektCallable.collectInjectables(
   scope: InjectablesScope,
   addInjectable: (InjektCallable) -> Unit,
   addSpreadingInjectable: (InjektCallable) -> Unit,
-  ctx: Context
+  session: FirSession
 ) {
-  if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
+  if (!scope.canSee(this, session) ||
+    !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
+  if (callable.typeParameterSymbols.any {
+    it.hasAnnotation(InjektFqNames.Spread, session) &&
+        typeArguments[it] == it.toConeType()
+  }) {
     addSpreadingInjectable(this)
     return
   }
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
+  val nextCallable = copy(type = type.withFrameworkKey(UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
-  nextCallable
+  /*nextCallable
     .type
     .collectInjectables(
       nextCallable.type.classifier.descriptor?.parentsWithSelf
         ?.mapNotNull { it.findPsi() }
         ?.any { callableParent -> scope.allScopes.any { it.owner == callableParent } } == true,
-      ctx
+      session
     )
     .forEach { innerCallable ->
       innerCallable
         .copy(
-          callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()),
-          type = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          chainFqName = nextCallable.chainFqName.child(innerCallable.chainFqName.shortName()),
+          type = if (nextCallable.type.isNullableType()) innerCallable.type.withNullability(true)
           else innerCallable.type,
-          originalType = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          originalType = if (nextCallable.type.isNullableType()) innerCallable.type.withNullability(true)
           else innerCallable.type,
-          parameterTypes = if (nextCallable.type.isNullableType &&
+          parameterTypes = if (nextCallable.type.isNullableType() &&
             DISPATCH_RECEIVER_INDEX in innerCallable.parameterTypes) innerCallable.parameterTypes
             .toMutableMap().apply {
               put(
@@ -167,47 +176,14 @@ fun InjektCallable.collectInjectables(
           scope = scope,
           addInjectable = addInjectable,
           addSpreadingInjectable = addSpreadingInjectable,
-          ctx = ctx
+          session = session
         )
-    }
+    }*/
 }
 
-fun collectGlobalInjectables(ctx: Context): List<InjektCallable> = packagesWithInjectables(ctx)
-  .flatMap { collectPackageInjectables(it, ctx) }
-
-fun collectPackageInjectables(
-  packageFqName: FqName,
-  ctx: Context
-): List<InjektCallable> = ctx.cache.cached("package_injectables", packageFqName) {
-    if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
-
-    val injectables = mutableListOf<InjektCallable>()
-
-    fun collectInjectables(scope: MemberScope) {
-      scope.collectMemberInjectables(
-        ctx = ctx,
-        onEach = { declaration ->
-          if (declaration is ClassDescriptor) {
-            collectInjectables(declaration.unsubstitutedInnerClassesScope)
-
-            if (declaration.kind == ClassKind.OBJECT && declaration.isProvide(ctx))
-              injectables += declaration.injectableReceiver(true, ctx)
-            else
-              injectables += declaration.injectableConstructors(ctx)
-          }
-        }
-      ) {
-        injectables += it
-      }
-    }
-
-    collectInjectables(memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND, ctx)!!)
-
-    injectables
-  }
-
-private fun InjectablesScope.canSee(callable: InjektCallable, ctx: Context): Boolean =
-  callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
+private fun InjectablesScope.canSee(callable: InjektCallable, session: FirSession): Boolean =
+  true
+  /*callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
@@ -217,13 +193,53 @@ private fun InjectablesScope.canSee(callable: InjektCallable, ctx: Context): Boo
         allScopes.any { it.owner == callableParent }
       } ||
       (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
-          callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })
+          callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })*/
 
-fun packagesWithInjectables(ctx: Context): Set<FqName> =
-  ctx.cache.cached("packages_with_injectables", Unit) {
-    memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
-      ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.mapTo(mutableSetOf()) {
-        it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
-      } ?: emptySet()
+fun FirRegularClassSymbol.collectInjectableConstructors(session: FirSession) = declarationSymbols
+  .filter { declarationSymbol ->
+    declarationSymbol is FirConstructorSymbol &&
+        ((declarationSymbol.isPrimary &&
+            hasAnnotation(InjektFqNames.Provide, session)) ||
+            declarationSymbol.hasAnnotation(InjektFqNames.Provide, session))
+  }
+
+fun collectGlobalInjectables(session: FirSession): List<InjektCallable> = collectPackagesWithInjectables(session)
+  .flatMap { collectPackageInjectables(it, session) }
+
+fun collectPackagesWithInjectables(session: FirSession): Set<FqName> =
+  session.symbolProvider.getTopLevelFunctionSymbols(
+    InjektFqNames.InjectablesLookup.packageName,
+    InjektFqNames.InjectablesLookup.callableName
+  ).mapTo(mutableSetOf()) {
+    it.valueParameterSymbols.first().resolvedReturnType.classId!!.packageFqName
+  }
+
+fun collectPackageInjectables(packageFqName: FqName, session: FirSession): List<InjektCallable> =
+  if (packageFqName !in collectPackagesWithInjectables(session)) emptyList()
+  else buildList {
+    fun collectClassInjectables(classSymbol: FirClassSymbol<*>) {
+      for (declarationSymbol in classSymbol.declarationSymbols) {
+        if (declarationSymbol is FirConstructorSymbol &&
+          ((declarationSymbol.isPrimary &&
+              classSymbol.hasAnnotation(InjektFqNames.Provide, session)) ||
+              declarationSymbol.hasAnnotation(InjektFqNames.Provide, session)))
+          add(declarationSymbol.toInjektCallable())
+
+        if (declarationSymbol is FirClassSymbol<*>)
+          collectClassInjectables(declarationSymbol)
+      }
+    }
+
+    session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(packageFqName)
+      ?.mapNotNull {
+        session.symbolProvider.getRegularClassSymbolByClassId(ClassId(packageFqName, it.asNameId()))
+      }
+      ?.forEach { collectClassInjectables(it) }
+
+    session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(packageFqName)
+      ?.flatMap { name ->
+        session.symbolProvider.getTopLevelCallableSymbols(packageFqName, name)
+      }
+      ?.filter { it.hasAnnotation(InjektFqNames.Provide, session) }
+      ?.forEach { add(it.toInjektCallable()) }
   }

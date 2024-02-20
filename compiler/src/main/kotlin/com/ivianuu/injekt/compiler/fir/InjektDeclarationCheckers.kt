@@ -171,8 +171,8 @@ private fun checkOverrides(
 
   parentClass.unsubstitutedScope(context)
     .getDirectOverriddenMembers(declaration.symbol)
-    .first()
-    .takeUnless { isValidOverride(declaration, it.fir.cast(), context.session) }
+    .firstOrNull()
+    ?.takeUnless { isValidOverride(declaration, it.fir.cast(), context.session) }
     ?.let {
       reporter.report(
         FirErrors.NOTHING_TO_OVERRIDE

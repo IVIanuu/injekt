@@ -20,7 +20,7 @@ buildscript {
     classpath(Deps.Injekt.gradlePlugin)
     classpath(Deps.Kotlin.gradlePlugin)
     classpath(Deps.KotlinSerialization.gradlePlugin)
-    classpath(Deps.Ksp.gradlePlugin)
+    classpath(Deps.kspGradlePlugin)
     classpath(Deps.mavenPublishGradlePlugin)
   }
 }
@@ -44,7 +44,6 @@ allprojects {
 
   configurations.configureEach {
     resolutionStrategy.dependencySubstitution {
-      substitute(module("com.ivianuu.injekt:ksp:${Deps.Injekt.version}")).using(project(":ksp"))
       substitute(module("com.ivianuu.injekt:compiler:${Deps.Injekt.version}")).using(project(":compiler"))
     }
   }

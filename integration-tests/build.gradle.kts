@@ -21,12 +21,8 @@ kotlin {
       dependencies {
         implementation(project(":common"))
         implementation(project(":compiler"))
-        implementation(project(":ksp"))
 
         implementation(Deps.Compose.runtime)
-
-        implementation(Deps.Ksp.api)
-        implementation(Deps.Ksp.symbolProcessing)
 
         implementation(Deps.classGraph)
 

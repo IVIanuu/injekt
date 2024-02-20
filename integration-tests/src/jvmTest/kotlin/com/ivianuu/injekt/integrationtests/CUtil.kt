@@ -9,7 +9,6 @@ package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.ir.*
-import com.ivianuu.injekt.ksp.*
 import com.tschuchort.compiletesting.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
@@ -200,10 +199,6 @@ fun multiPlatformCodegen(
 }
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-  symbolProcessorProviders += InjektSymbolProcessor.Provider()
-  kspIncremental = false
-  kspWithCompilation = true
-
   compilerPluginRegistrars += InjektCompilerPluginRegistrar()
   commandLineProcessors += InjektCommandLineProcessor()
 

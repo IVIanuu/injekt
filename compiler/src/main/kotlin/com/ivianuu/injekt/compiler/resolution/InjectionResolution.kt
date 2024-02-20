@@ -4,11 +4,11 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.di.old
+package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.resolve.calls.NewCommonSuperTypeCalculator.commonSuperType
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -53,8 +53,8 @@ sealed interface ResolutionResult {
       }
 
       data class ReifiedTypeArgumentMismatch(
-        val parameter: InjektClassifier,
-        val argument: InjektClassifier,
+        val typeParameter: FirTypeParameterSymbol,
+        val typeArgument: FirTypeParameterSymbol,
         override val candidate: Injectable
       ) : WithCandidate {
         override val failureOrdering: Int
@@ -144,14 +144,7 @@ private fun InjectablesScope.computeForCandidate(
     for (i in resolutionChain.lastIndex downTo 0) {
       val previousCandidate = resolutionChain[i]
 
-      val isSameCallable = if (candidate is CallableInjectable &&
-        candidate.callable.callable.containingDeclaration.fqNameSafe
-          .asString().startsWith(InjektFqNames.Function.asString()) &&
-        previousCandidate is CallableInjectable &&
-        previousCandidate.callable.callable.containingDeclaration.fqNameSafe
-          .asString().startsWith(InjektFqNames.Function.asString()))
-        candidate.dependencies.first().type == previousCandidate.dependencies.first().type
-      else previousCandidate.callableFqName == candidate.callableFqName
+      val isSameCallable = previousCandidate.chainFqName == candidate.chainFqName
 
       if (isSameCallable &&
         previousCandidate.type.coveringSet == candidate.type.coveringSet &&
@@ -232,13 +225,12 @@ private fun InjectablesScope.resolveCandidate(
 ): ResolutionResult = computeForCandidate(candidate) {
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
-      val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
+      val argumentTypeParameter = typeArgument.safeAs<ConeTypeParameterType>()?.lookupTag?.typeParameterSymbol
         ?: continue
-      val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
-      if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
+      if (typeParameter.isReified && !argumentTypeParameter.isReified) {
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
           typeParameter,
-          typeArgument.classifier,
+          argumentTypeParameter,
           candidate
         )
       }
@@ -326,9 +318,9 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
 }
 
 private fun InjectablesScope.compareType(
-  a: InjektType?,
-  b: InjektType?,
-  comparedTypes: MutableSet<Pair<InjektType, InjektType>> = mutableSetOf()
+  a: ConeKotlinType?,
+  b: ConeKotlinType?,
+  comparedTypes: MutableSet<Pair<ConeKotlinType, ConeKotlinType>> = mutableSetOf()
 ): Int {
   if (a == b) return 0
 
@@ -343,13 +335,13 @@ private fun InjectablesScope.compareType(
   if (!a.isMarkedNullable && b.isMarkedNullable) return -1
   if (!b.isMarkedNullable && a.isMarkedNullable) return 1
 
-  if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
-  if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
+  if (a !is ConeTypeParameterType && b is ConeTypeParameterType) return -1
+  if (a is ConeTypeParameterType && b !is ConeTypeParameterType) return 1
 
   val pair = a to b
   if (!comparedTypes.add(pair)) return 0
 
-  fun compareSameClassifier(a: InjektType?, b: InjektType?): Int {
+  fun compareSameClassifier(a: ConeKotlinType?, b: ConeKotlinType?): Int {
     if (a == b) return 0
 
     if (a != null && b == null) return -1
@@ -358,28 +350,30 @@ private fun InjectablesScope.compareType(
     b!!
 
     var diff = 0
-    a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
-      diff += compareType(aTypeArgument, bTypeArgument, comparedTypes)
+    a.typeArguments.zip(b.typeArguments).forEach { (aTypeArgument, bTypeArgument) ->
+      diff += compareType(aTypeArgument.type, bTypeArgument.type, comparedTypes)
     }
     if (diff < 0) return -1
     if (diff > 0) return 1
     return 0
   }
 
-  if (a.classifier != b.classifier) {
-    val aSubTypeOfB = a.isSubTypeOf(b, ctx)
-    val bSubTypeOfA = b.isSubTypeOf(a, ctx)
-    if (aSubTypeOfB && !bSubTypeOfA) return -1
-    if (bSubTypeOfA && !aSubTypeOfB) return 1
-    val aCommonSuperType = commonSuperType(a.superTypes, ctx = ctx)
-    val bCommonSuperType = commonSuperType(b.superTypes, ctx = ctx)
-    val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
-  } else {
-    val diff = compareSameClassifier(a, b)
-    if (diff < 0) return -1
-    if (diff > 0) return 1
+  if (a is ConeLookupTagBasedType && b is ConeLookupTagBasedType) {
+    if (a.lookupTag != b.lookupTag) {
+      val aSubTypeOfB = a.isSubtypeOf(b, session)
+      val bSubTypeOfA = b.isSubtypeOf(a, session)
+      if (aSubTypeOfB && !bSubTypeOfA) return -1
+      if (bSubTypeOfA && !aSubTypeOfB) return 1
+      val aCommonSuperType = session.typeContext.commonSuperType(listOf(a)).cast<ConeKotlinType>()
+      val bCommonSuperType = session.typeContext.commonSuperType(listOf(b)).cast<ConeKotlinType>()
+      val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
+      if (diff < 0) return -1
+      if (diff > 0) return 1
+    } else {
+      val diff = compareSameClassifier(a, b)
+      if (diff < 0) return -1
+      if (diff > 0) return 1
+    }
   }
 
   return 0
