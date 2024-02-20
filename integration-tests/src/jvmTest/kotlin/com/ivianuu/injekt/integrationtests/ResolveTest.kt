@@ -355,12 +355,6 @@ class ResolveTest {
     """
   )
 
-  fun main() {
-    fun <T> lol() {
-
-    }
-  }
-
   @Test fun testResolvesInjectableWithTypeParameterInScope() = singleAndMultiCodegen(
     """
       @Provide fun <T> list(): List<T> = emptyList()
