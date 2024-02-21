@@ -166,9 +166,6 @@ typealias TrackId = @TrackIdTag String
 fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
 ```
 
-# Type keys
-TODO
-
 # Setup
 ```kotlin
 // in your buildscript
