@@ -32,7 +32,7 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
-  private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
+  private inner class RootContext(val result: InjectionResult.Success) {
     val statements = mutableListOf<IrStatement>()
 
     val highestScope = mutableMapOf<ResolutionResult.Success.Value, InjectablesScope>()
@@ -433,7 +433,7 @@ class InjectCallTransformer(
 
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
-        val rootContext = RootContext(injectionResult, result.startOffset)
+        val rootContext = RootContext(injectionResult)
         try {
           ScopeContext(
             parent = null,
