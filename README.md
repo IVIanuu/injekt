@@ -17,6 +17,31 @@ suspend fun main() {
 }
 ```
 
+# Setup
+```kotlin
+// in your buildscript
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath("com.ivianuu.injekt:injekt-gradle-plugin:${latest_version}")
+  }
+}
+
+// in your app module
+plugins {
+  apply("com.ivianuu.injekt")
+}
+
+dependencies {
+  // core runtime
+  implementation("com.ivianuu.injekt:core:${latest_version}")
+  // optional - common utilities
+  implementation("com.ivianuu.injekt:common:${latest_version}")
+}
+```
+
 # Provide injectables
 You can provide dependencies by annotating them with @Provide:
 ```kotlin
@@ -164,31 +189,6 @@ annotation class TrackIdTag
 typealias TrackId = @TrackIdTag String
 
 fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
-```
-
-# Setup
-```kotlin
-// in your buildscript
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-  dependencies {
-    classpath("com.ivianuu.injekt:injekt-gradle-plugin:${latest_version}")
-  }
-}
-
-// in your app module
-plugins {
-  apply("com.ivianuu.injekt")
-}
-
-dependencies {
-  // core runtime
-  implementation("com.ivianuu.injekt:core:${latest_version}")
-  // optional - common utilities
-  implementation("com.ivianuu.injekt:common:${latest_version}")
-}
 ```
 
 # More complex uses can be found in my essentials project(base project for my apps)
