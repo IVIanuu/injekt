@@ -4,6 +4,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.name.*
 
 object InjektFqNames {
@@ -14,13 +15,17 @@ object InjektFqNames {
   val Spread = ClassId(InjektPackage, "Spread".asNameId())
 
   private val InternalPackage = InjektPackage.child("internal".asNameId())
-  val InjectablesPackage = InternalPackage.child("injectables".asNameId())
-  val InjectablesLookup = CallableId(InjectablesPackage, "\$\$\$\$\$".asNameId())
+  val InjectablesLookupPackage = InternalPackage.child("injectables".asNameId())
+  val InjectablesLookup = CallableId(InjectablesLookupPackage, "\$\$\$\$\$".asNameId())
+
+  val TagWrapper = "Wrapper".asNameId()
 
   val CommonPackage = InjektPackage.child("common".asNameId())
   val TypeKey = ClassId(CommonPackage, "TypeKey".asNameId())
 
   val Composable = ClassId(FqName("androidx.compose.runtime"), "Composable".asNameId())
+  val Collection = ClassId.topLevel(StandardNames.FqNames.collection)
+  val List = ClassId.topLevel(StandardNames.FqNames.list)
 }
 
 fun String.asNameId() = Name.identifier(this)

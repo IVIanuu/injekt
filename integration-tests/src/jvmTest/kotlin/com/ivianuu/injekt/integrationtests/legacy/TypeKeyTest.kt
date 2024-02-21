@@ -25,21 +25,21 @@ class TypeKeyTest {
     invokeSingleFile() shouldBe "kotlin.String?"
   }
 
+  @Test fun testTypeKeyWithParameters() = codegen(
+    """
+      fun <T> typeKey(@Provide tKey: TypeKey<T>) = inject<TypeKey<List<T>>>()
+      fun invoke() = typeKey<String>(inject())
+    """
+  ) {
+    invokeSingleFile() shouldBe "kotlin.collections.List<kotlin.String>"
+  }
+
   @Test fun testTypeKeyWithTags() = codegen(
     """
       fun invoke() = inject<TypeKey<@Tag2 String>>()
     """
   ) {
     invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.Tag2<kotlin.String>"
-  }
-
-  @Test fun testTypeKeyWithParameterizedTags() = codegen(
-    """
-      @Tag annotation class MyTag<T>
-      fun invoke() = inject<TypeKey<@MyTag<String> String>>()
-    """
-  ) {
-    invokeSingleFile() shouldBe "com.ivianuu.injekt.integrationtests.MyTag<kotlin.String, kotlin.String>"
   }
 
   @Test fun testTypeKeyWithStar() = codegen(

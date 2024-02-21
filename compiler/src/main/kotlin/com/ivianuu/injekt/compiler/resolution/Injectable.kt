@@ -59,7 +59,6 @@ class ListInjectable(
       InjectableRequest(
         type = element,
         chainFqName = chainFqName,
-        //callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
         parameterName = "element$index".asNameId(),
         parameterIndex = index
       )
@@ -99,7 +98,7 @@ class ListInjectable(
     initialInjectables = valueParameterSymbols
       .mapIndexed { index, parameter ->
         parameter
-          .toInjektCallable()
+          .toInjektCallable(ownerScope.session)
           .copy(type = type.typeArguments[index].type!!)
       },
     session = ownerScope.session
@@ -110,7 +109,7 @@ class TypeKeyInjectable(
   override val type: ConeKotlinType,
   override val ownerScope: InjectablesScope
 ) : Injectable {
-  override val chainFqName = FqName("typeKeyOf<${type.renderReadableWithFqNames()}>")
+  override val chainFqName = FqName("typeKeyOf<${type.renderToString()}>")
   override val dependencies = buildList {
     var index = 0
     type.forEachType {

@@ -61,7 +61,7 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
       if (failure == unwrappedFailure) {
         appendLine(
           "type parameter ${unwrappedFailure.typeParameter.name} " +
-              "of injectable ${unwrappedFailure.candidate.chainFqName}() of type ${failureRequest.type.renderReadableWithFqNames()} " +
+              "of injectable ${unwrappedFailure.candidate.chainFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.chainFqName} " +
               "is reified but type argument " +
               "${unwrappedFailure.typeArgument.name} is not reified."
@@ -76,10 +76,10 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.chainFqName.asString()
             }
-          }\n\ndo all match type ${unwrappedFailureRequest.type.renderReadableWithFqNames()} for parameter " +
+          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
               "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.chainFqName}."
         } else {
-          "ambiguous injectables of type ${unwrappedFailureRequest.type.renderReadableWithFqNames()} " +
+          "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
               "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.chainFqName}."
         }
 
@@ -90,7 +90,7 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
       appendLine(
         "no injectable found of type " +
-          "${unwrappedFailureRequest.type.renderReadableWithFqNames()} for parameter " +
+          "${unwrappedFailureRequest.type.renderToString()} for parameter " +
           "${unwrappedFailureRequest.parameterName} of function " +
           "${unwrappedFailureRequest.chainFqName}."
       )
@@ -116,7 +116,7 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
           if (candidate.valueParameterSymbols.isNotEmpty()) {
             for ((index, parameter) in candidate.valueParameterSymbols.withIndex()) {
               val argument = candidate.type.typeArguments[index].type!!
-              append("${parameter.name}: ${argument.renderReadableWithFqNames()}")
+              append("${parameter.name}: ${argument.renderToString()}")
               if (index != candidate.valueParameterSymbols.lastIndex)
                 append(",")
             }
@@ -151,7 +151,7 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
                   failure.candidateResults.joinToString(", ") {
                     it.candidate.chainFqName.asString()
                   }
-                } do match type ${request.type.renderReadableWithFqNames()}"
+                } do match type ${request.type.renderToString()}"
               )
             }
             is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
@@ -159,7 +159,7 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          appendLine("inject<${request.type.renderReadableWithFqNames()}>()")
+          appendLine("inject<${request.type.renderToString()}>()")
         }
       }
       append(indent())
@@ -183,18 +183,18 @@ fun InjectionResult.Error.toErrorString(): String = buildString {
             unwrappedFailure.candidateResults.joinToString("\n") {
               it.candidate.chainFqName.asString()
             }
-          }\n\ndo all match type ${unwrappedFailureRequest.type.renderReadableWithFqNames()}."
+          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.WithCandidate.DependencyFailure -> throw AssertionError()
       is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
         appendLine(
           "but injectable ${unwrappedFailure.candidate.chainFqName} " +
-              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderReadableWithFqNames()}."
+              "produces a diverging search when trying to match type ${unwrappedFailureRequest.type.renderToString()}."
         )
       }
       is ResolutionResult.Failure.NoCandidates -> {
-        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderReadableWithFqNames()}.")
+        appendLine("but no injectables were found that match type ${unwrappedFailureRequest.type.renderToString()}.")
       }
     }.let { }
   }

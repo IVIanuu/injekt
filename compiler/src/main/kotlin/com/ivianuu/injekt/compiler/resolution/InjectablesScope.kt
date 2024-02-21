@@ -10,13 +10,13 @@ import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.scopes.impl.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.types.*
 
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   val owner: FirElement? = null,
   val initialInjectables: List<InjektCallable> = emptyList(),
-  val injectablesPredicate: (InjektCallable) -> Boolean = { true },
   val typeParameters: List<FirTypeParameterSymbol> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val session: FirSession
@@ -73,11 +73,11 @@ class InjectablesScope(
   ): List<Injectable> {
     // we return merged collections
     if (request.type.frameworkKey == null &&
-      request.type.isSubtypeOf(session.listType, session)) return emptyList()
+      request.type.classId == InjektFqNames.List) return emptyList()
 
     return injectablesForType(
       CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
-    ).filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
+    )
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
@@ -106,10 +106,11 @@ class InjectablesScope(
     request.type.isBasicFunctionType(session) &&
         !request.type.customAnnotations.hasAnnotation(InjektFqNames.Provide, session) ->
       LambdaInjectable(this, request)
-    /*request.type.classifier == ctx.listClassifier -> {
-      val singleElementType = request.type.arguments[0]
-      val collectionElementType = ctx.collectionClassifier.defaultType
-        .withArguments(listOf(singleElementType))
+    request.type.classId == InjektFqNames.List -> {
+      val singleElementType = request.type.typeArguments[0].type
+        ?: session.builtinTypes.nullableAnyType.type
+      val collectionElementType = session.collectionType
+        .withArguments(arrayOf(singleElementType.toTypeProjection(Variance.INVARIANT)))
 
       val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
@@ -124,8 +125,7 @@ class InjectablesScope(
         collectionElementType = collectionElementType
       )
     }
-    request.type.classifier.fqName == InjektFqNames.TypeKey.asSingleFqName() ->
-      TypeKeyInjectable(request.type, this)*/
+    request.type.classId == InjektFqNames.TypeKey -> TypeKeyInjectable(request.type, this)
     else -> null
   }
 

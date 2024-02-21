@@ -4,6 +4,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.resolve.substitution.*
 import org.jetbrains.kotlin.fir.scopes.impl.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
@@ -30,20 +31,22 @@ fun InjektCallable.substitute(substitutor: ConeSubstitutor): InjektCallable {
   )
 }
 
-fun FirCallableSymbol<*>.toInjektCallable(): InjektCallable {
+fun FirCallableSymbol<*>.toInjektCallable(session: FirSession): InjektCallable {
   val parameterTypes = buildMap {
-    dispatchReceiverType?.let { this[DISPATCH_RECEIVER_INDEX] = it }
-    receiverParameter?.let { this[EXTENSION_RECEIVER_INDEX] = it.typeRef.coneType }
+    dispatchReceiverType?.let { this[DISPATCH_RECEIVER_INDEX] = it.prepare(session) }
+    receiverParameter?.let { this[EXTENSION_RECEIVER_INDEX] = it.typeRef.coneType.prepare(session) }
     if (this@toInjektCallable is FirFunctionSymbol<*>)
       valueParameterSymbols.forEachIndexed { index, parameterSymbol ->
-        this[index] = parameterSymbol.resolvedReturnType
+        this[index] = parameterSymbol.resolvedReturnType.prepare(session)
       }
   }
 
+  val type = resolvedReturnType.prepare(session)
+
   return InjektCallable(
     callable = this,
-    type = resolvedReturnType,
-    originalType = resolvedReturnType,
+    type = type,
+    originalType = type,
     parameterTypes = parameterTypes,
     typeArguments = buildMap {
       for (typeParameter in typeParameterSymbols)
@@ -52,3 +55,9 @@ fun FirCallableSymbol<*>.toInjektCallable(): InjektCallable {
     chainFqName = callableId.asSingleFqName()
   )
 }
+
+val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
+val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
+
+const val DISPATCH_RECEIVER_INDEX = -2
+const val EXTENSION_RECEIVER_INDEX = -1

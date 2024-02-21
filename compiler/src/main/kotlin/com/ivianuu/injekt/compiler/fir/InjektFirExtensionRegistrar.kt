@@ -11,6 +11,7 @@ class InjektFirExtensionRegistrar(private val cache: InjektCache) : FirExtension
   override fun ExtensionRegistrarContext.configurePlugin() {
     +FirAdditionalCheckersExtension.Factory { InjektFirCheckersExtension(it, cache) }
     +FirDeclarationGenerationExtension.Factory { InjektLookupDeclarationGenerationExtension(it) }
+    +FirDeclarationGenerationExtension.Factory { InjektTagDeclarationExtension(it) }
   }
 }
 

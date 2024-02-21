@@ -21,7 +21,7 @@ fun ConeKotlinType.collectModuleInjectables(session: FirSession): List<InjektCal
       if (declaration !is FirConstructorSymbol &&
         declaration is FirCallableSymbol<*> &&
         declaration.hasAnnotation(InjektFqNames.Provide, session))
-        this += declaration.toInjektCallable()
+        this += declaration.toInjektCallable(session)
     }
   }
 
@@ -31,8 +31,7 @@ fun InjektCallable.collectInjectables(
   addSpreadingInjectable: (InjektCallable) -> Unit,
   session: FirSession
 ) {
-  if (!scope.canSee(this, session) ||
-    !scope.allScopes.all { it.injectablesPredicate(this) }) return
+  if (!scope.canSee(this, session)) return
 
   if (callable.typeParameterSymbols.any {
     it.hasAnnotation(InjektFqNames.Spread, session) &&
@@ -94,11 +93,13 @@ private fun InjectablesScope.canSee(callable: InjektCallable, session: FirSessio
           callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })*/
 
 fun FirRegularClassSymbol.collectInjectableConstructors(session: FirSession) = declarationSymbols
-  .filter { declarationSymbol ->
-    declarationSymbol is FirConstructorSymbol &&
-        ((declarationSymbol.isPrimary &&
-            hasAnnotation(InjektFqNames.Provide, session)) ||
-            declarationSymbol.hasAnnotation(InjektFqNames.Provide, session))
+  .mapNotNull { declarationSymbol ->
+    if (declarationSymbol is FirConstructorSymbol &&
+      ((declarationSymbol.isPrimary &&
+          hasAnnotation(InjektFqNames.Provide, session)) ||
+          declarationSymbol.hasAnnotation(InjektFqNames.Provide, session)))
+      declarationSymbol.toInjektCallable(session)
+    else null
   }
 
 fun collectGlobalInjectables(session: FirSession): List<InjektCallable> = collectPackagesWithInjectables(session)
@@ -113,7 +114,7 @@ fun collectPackageInjectables(packageFqName: FqName, session: FirSession): List<
           ((declarationSymbol.isPrimary &&
               classSymbol.hasAnnotation(InjektFqNames.Provide, session)) ||
               declarationSymbol.hasAnnotation(InjektFqNames.Provide, session)))
-          add(declarationSymbol.toInjektCallable())
+          add(declarationSymbol.toInjektCallable(session))
 
         if (declarationSymbol is FirClassSymbol<*>)
           collectClassInjectables(declarationSymbol)
@@ -122,7 +123,7 @@ fun collectPackageInjectables(packageFqName: FqName, session: FirSession): List<
 
     session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(packageFqName)
       ?.mapNotNull {
-        session.symbolProvider.getRegularClassSymbolByClassId(ClassId(packageFqName, it.asNameId()))
+        session.symbolProvider.getRegularClassSymbolByClassId(ClassId(packageFqName, it))
       }
       ?.forEach { collectClassInjectables(it) }
 
@@ -131,7 +132,7 @@ fun collectPackageInjectables(packageFqName: FqName, session: FirSession): List<
         session.symbolProvider.getTopLevelCallableSymbols(packageFqName, name)
       }
       ?.filter { it.hasAnnotation(InjektFqNames.Provide, session) }
-      ?.forEach { add(it.toInjektCallable()) }
+      ?.forEach { add(it.toInjektCallable(session)) }
   }
 
 fun collectPackagesWithInjectables(session: FirSession): Set<FqName> =

@@ -16,11 +16,17 @@ class CommandA : Command
 
 class CommandB : Command
 
-@Tag annotation class Tag1
+@Tag
+@Target(AnnotationTarget.TYPE, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.CLASS)
+annotation class Tag1
 
-@Tag annotation class Tag2
+@Tag
+@Target(AnnotationTarget.TYPE, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.CLASS)
+annotation class Tag2
 
-@Tag annotation class TypedTag<T>
+@Tag
+@Target(AnnotationTarget.TYPE, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.CLASS)
+annotation class TypedTag<T>
 
 object TestScope1
 

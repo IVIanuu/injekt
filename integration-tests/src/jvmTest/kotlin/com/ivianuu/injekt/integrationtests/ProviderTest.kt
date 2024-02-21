@@ -4,8 +4,8 @@ import io.kotest.matchers.nulls.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class ProvideTest {
-  @Test fun testTopLevelInjectableProperty() = singleAndMultiCodegen(
+class ProviderTest {
+  @Test fun testTopLevelPropertyProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
     """,
@@ -16,7 +16,7 @@ class ProvideTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testTopLevelInjectableFunction() = singleAndMultiCodegen(
+  @Test fun testTopLevelFunctionProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
@@ -28,7 +28,7 @@ class ProvideTest {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testTopLevelInjectableClass() = singleAndMultiCodegen(
+  @Test fun testTopLevelClassProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide class Baz(val foo: Foo)
@@ -40,7 +40,7 @@ class ProvideTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testTopLevelInjectableObject() = singleAndMultiCodegen(
+  @Test fun testTopLevelObjectProvider() = singleAndMultiCodegen(
     """
       @Provide object Baz
     """,
@@ -51,7 +51,7 @@ class ProvideTest {
     invokeSingleFile().shouldNotBeNull()
   }
 
-  @Test fun testNestedInjectableClass() = singleAndMultiCodegen(
+  @Test fun testNestedClassProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       object Container {
@@ -65,7 +65,7 @@ class ProvideTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testInjectablePrimaryConstructor() = singleAndMultiCodegen(
+  @Test fun testPrimaryConstructorProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       class Baz @Provide constructor(val foo: Foo)
@@ -77,7 +77,7 @@ class ProvideTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testInjectableSecondaryConstructor() = singleAndMultiCodegen(
+  @Test fun testSecondaryConstructorProvider() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       class Baz(val any: Any) {
@@ -86,6 +86,25 @@ class ProvideTest {
     """,
     """
       fun invoke() = inject<Baz>().any
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testValueParameterProvider() = codegen(
+    """
+      @JvmOverloads fun invoke(@Provide foo: Foo = Foo()) = inject<Foo>()
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testLocalVariableProvider() = codegen(
+    """
+      fun invoke(): Foo {
+        @Provide val foo = Foo()
+        return inject()
+      }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

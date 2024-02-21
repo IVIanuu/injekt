@@ -4,13 +4,14 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.references.*
 import org.jetbrains.kotlin.fir.types.*
 
-class InjectFunctionCallChecker(private val cache: InjektCache) : FirFunctionCallChecker() {
+class InjectFunctionCallChecker(private val cache: InjektCache) : FirFunctionCallChecker(MppCheckerKind.Common) {
   override fun check(
     expression: FirFunctionCall,
     context: CheckerContext,
@@ -19,10 +20,10 @@ class InjectFunctionCallChecker(private val cache: InjektCache) : FirFunctionCal
     val callee = expression.calleeReference.toResolvedCallableSymbol()
       ?: return
 
-    val file = context.containingFile ?: return
-
     if (callee.callableId != InjektFqNames.inject)
       return
+
+    val file = context.containingFile ?: return
 
     // look up declarations to support incremental compilation
     context.session.lookupTracker?.recordLookup(
@@ -32,7 +33,7 @@ class InjectFunctionCallChecker(private val cache: InjektCache) : FirFunctionCal
       file.source
     )
 
-    val injectedType = expression.typeRef.coneType
+    val injectedType = expression.resolvedType.prepare(context.session)
 
     val requests = listOf(
       InjectableRequest(
@@ -45,7 +46,7 @@ class InjectFunctionCallChecker(private val cache: InjektCache) : FirFunctionCal
 
     val scope = ElementInjectablesScope(expression, context.containingElements, context.session)
 
-    when (val result = scope.resolveRequests(callee.toInjektCallable(), requests)) {
+    when (val result = scope.resolveRequests(callee.toInjektCallable(context.session), requests)) {
       is InjectionResult.Success -> {
         cache.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
         cache.cached(

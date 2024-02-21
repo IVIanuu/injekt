@@ -94,7 +94,9 @@ class TagTest {
 
   @Test fun testTagWithTypeParameters() = singleAndMultiCodegen(
     """
-      @Tag annotation class MyTag<T>
+      @Tag 
+      @Target(AnnotationTarget.TYPE, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.CLASS)
+      annotation class MyTag<T>
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
     """,
     """

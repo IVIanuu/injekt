@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-object InjektFunctionChecker : FirFunctionChecker() {
+object InjektFunctionChecker : FirFunctionChecker(MppCheckerKind.Common) {
   override fun check(
     declaration: FirFunction,
     context: CheckerContext,
@@ -41,7 +41,7 @@ object InjektFunctionChecker : FirFunctionChecker() {
   }
 }
 
-object InjektConstructorChecker : FirConstructorChecker() {
+object InjektConstructorChecker : FirConstructorChecker(MppCheckerKind.Common) {
   override fun check(
     declaration: FirConstructor,
     context: CheckerContext,
@@ -51,7 +51,7 @@ object InjektConstructorChecker : FirConstructorChecker() {
   }
 }
 
-object InjektClassChecker : FirClassChecker() {
+object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
   override fun check(declaration: FirClass, context: CheckerContext, reporter: DiagnosticReporter) {
     val provideConstructors = declaration.declarations
       .filterIsInstance<FirConstructorSymbol>()
@@ -121,7 +121,7 @@ object InjektClassChecker : FirClassChecker() {
   }
 }
 
-object InjektPropertyChecker : FirPropertyChecker() {
+object InjektPropertyChecker : FirPropertyChecker(MppCheckerKind.Common) {
   override fun check(
     declaration: FirProperty,
     context: CheckerContext,
@@ -191,7 +191,10 @@ private fun checkExceptActual(
   if (!declaration.status.isActual) return
 
   if (declaration is FirCallableDeclaration)
-    declaration.symbol.getSingleExpectForActualOrNull()
+    declaration.symbol.expectForActual
+      ?.values
+      ?.first()
+      ?.first()
       ?.takeUnless { isValidOverride(declaration, it.fir.cast(), context.session) }
       ?.let {
         reporter.report(

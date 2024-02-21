@@ -20,6 +20,8 @@ import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
+import java.lang.reflect.*
+import kotlin.reflect.*
 
 var dumpAllFiles = false
 
@@ -28,8 +30,8 @@ class InjektIrGenerationExtension(
   private val dumpDir: File
 ) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    pluginContext as Fir2IrPluginContext
-    pluginContext.symbolTable
+    println()
+    //val fir2IrComponents = pluginContext.readPrivateFinalField<Fir2IrComponents>(Fir2IrPluginContext::class, "components")
     moduleFragment.transform(InjectCallTransformer(pluginContext, cache), null)
     moduleFragment.fixLookupDeclarations(pluginContext)
     moduleFragment.dumpToFiles(dumpDir, cache)
@@ -41,9 +43,10 @@ private fun IrModuleFragment.fixLookupDeclarations(pluginContext: IrPluginContex
     object : IrElementTransformerVoid() {
       override fun visitFunction(declaration: IrFunction): IrStatement {
         if (declaration.origin.safeAs<IrDeclarationOrigin.GeneratedByPlugin>()
-            ?.pluginKey == InjektLookupDeclarationGenerationExtension.Key)
+            ?.pluginKey == InjektLookupDeclarationGenerationExtension.Key) {
           declaration.body = DeclarationIrBuilder(pluginContext, declaration.symbol)
             .irBlockBody {  }
+            }
         return super.visitFunction(declaration)
       }
     },
@@ -85,4 +88,22 @@ private fun IrModuleFragment.dumpToFiles(dumpDir: File, cache: InjektCache) {
         throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
       }
     }
+}
+
+private fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
+  val field = clazz.java.declaredFields
+    .single { it.name == fieldName }
+  field.isAccessible = true
+  val modifiersField = try {
+    Field::class.java.getDeclaredField("modifiers")
+  } catch (e: Throwable) {
+    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
+    getDeclaredFields0.isAccessible = true
+    getDeclaredFields0.invoke(Field::class.java, false)
+      .cast<Array<Field>>()
+      .single { it.name == "modifiers" }
+  }
+  modifiersField.isAccessible = true
+  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+  return field.get(this) as T
 }

@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
+import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
@@ -16,7 +17,7 @@ fun ElementInjectablesScope(
   session: FirSession,
 ): InjectablesScope {
   fun FirElement.isScopeOwner(): Boolean {
-    if (this is FirFile || this is FirFunction) return true
+    if (this is FirFile || this is FirFunction || this is FirBlock) return true
     return false
   }
 
@@ -33,27 +34,37 @@ fun ElementInjectablesScope(
   return when (scopeOwner) {
     is FirFile -> FileInjectablesScope(scopeOwner, session)
     is FirFunction -> FunctionInjectablesScope(scopeOwner, parentScope!!, session)
+    is FirBlock -> BlockInjectablesScope(scopeOwner, position, parentScope!!, session)
     else -> throw AssertionError("Unexpected scope owner $scopeOwner")
   }
 }
 
-private fun ValueParameterDefaultValueInjectablesScope(
-  valueParameter: FirValueParameterSymbol,
+private fun BlockInjectablesScope(
+  block: FirBlock,
+  position: FirElement,
   parent: InjectablesScope,
   session: FirSession
 ): InjectablesScope {
-  val function = valueParameter.containingFunctionSymbol
-  val parameterScopes = FunctionParameterInjectablesScopes(
-    parent,
-    function,
-    valueParameter,
-    session
-  )
+  val injectablesBeforePosition = block.statements
+    .filter { declaration ->
+      declaration.source!!.endOffset < position.source!!.startOffset &&
+          declaration.hasAnnotation(InjektFqNames.Provide, session)
+    }
+    .flatMap {
+      when (it) {
+        is FirRegularClass -> it.symbol.collectInjectableConstructors(session)
+        is FirCallableDeclaration -> listOf(it.symbol.toInjektCallable(session))
+        else -> throw AssertionError("Unexpected declaration $it")
+      }
+    }
+  if (injectablesBeforePosition.isEmpty()) return parent
+
   return InjectableScopeOrParent(
-    name = "DEFAULT VALUE ${valueParameter.name}",
-    parent = parameterScopes,
-    owner = function.fir,
-    typeParameters = function.typeParameterSymbols,
+    name = "BLOCK AT ${position.source!!.startOffset}",
+    parent = parent,
+    initialInjectables = injectablesBeforePosition,
+    nesting = if (injectablesBeforePosition.size > 1) parent.nesting
+    else parent.nesting + 1,
     session = session
   )
 }
@@ -110,7 +121,7 @@ private fun FunctionParameterInjectablesScope(
   name = "FUNCTION PARAMETER ${parameter.name}",
   parent = parent,
   owner = parameter.fir,
-  initialInjectables = listOf(parameter.toInjektCallable()),
+  initialInjectables = listOf(parameter.toInjektCallable(session)),
   typeParameters = function.typeParameterSymbols,
   nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
   else parent.nesting + 1,
@@ -153,12 +164,8 @@ fun InjectableScopeOrParent(
   parent: InjectablesScope,
   owner: FirElement? = null,
   initialInjectables: List<InjektCallable> = emptyList(),
-  injectablesPredicate: (InjektCallable) -> Boolean = { true },
   typeParameters: List<FirTypeParameterSymbol> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   session: FirSession
-): InjectablesScope {
-  val finalInitialInjectables = initialInjectables.filter(injectablesPredicate)
-  return if (typeParameters.isEmpty() && finalInitialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, finalInitialInjectables, injectablesPredicate, typeParameters, nesting, session)
-}
+): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
+else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, session)
