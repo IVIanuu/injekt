@@ -6,6 +6,7 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
 import kotlinx.atomicfu.locks.*
+import kotlin.reflect.*
 
 class Scope<N> : SynchronizedObject() {
   @PublishedApi internal val values = hashMapOf<Any, Any?>()
@@ -14,9 +15,6 @@ class Scope<N> : SynchronizedObject() {
     val value = values.getOrPut(key) { init() ?: NULL }
     (if (value !== NULL) value else null) as T
   }
-
-  inline operator fun <T> invoke(key: TypeKey<T> = inject, init: () -> T): T =
-    invoke(key.value, init)
 
   companion object {
     @PublishedApi internal val NULL = Any()
@@ -27,10 +25,9 @@ class Scope<N> : SynchronizedObject() {
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class Scoped<N> {
   @Provide companion object {
-    @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
+    @Provide inline fun <@Spread T : @Scoped<N> S, reified S : Any, N> scoped(
       scope: Scope<N>,
-      key: TypeKey<S>,
       crossinline init: () -> T,
-    ): S = scope(key) { init() }
+    ): S = scope(typeOf<S>()) { init() }
   }
 }

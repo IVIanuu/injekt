@@ -108,7 +108,6 @@ class InjectCallTransformer(
         is CallableInjectable -> callableExpression(result, candidate)
         is LambdaInjectable -> lambdaExpression(result, candidate)
         is ListInjectable -> listExpression(result, candidate)
-        is TypeKeyInjectable -> typeKeyExpression(result, candidate)
       }
 
       if (!result.candidate.type.isNullableType ||
@@ -252,71 +251,6 @@ class InjectCallTransformer(
     }
 
     +irGet(tmpList)
-  }
-
-  private val typeKey = irCtx.referenceClass(InjektFqNames.TypeKey)
-  private val typeKeyValue = typeKey?.owner?.properties
-    ?.single { it.name.asString() == "value" }
-  private val typeKeyConstructor = typeKey?.constructors?.single()
-  private val stringPlus = irCtx.irBuiltIns.stringClass
-    .functions
-    .map { it.owner }
-    .first { it.name.asString() == "plus" }
-
-  private fun ScopeContext.typeKeyExpression(
-    result: ResolutionResult.Success.Value,
-    injectable: TypeKeyInjectable
-  ): IrExpression = irBuilder.run {
-    val expressions = mutableListOf<IrExpression>()
-    var currentString = ""
-    fun commitCurrentString() {
-      if (currentString.isNotEmpty()) {
-        expressions += irString(currentString)
-        currentString = ""
-      }
-    }
-
-    fun appendToCurrentString(value: String) {
-      currentString += value
-    }
-
-    fun appendTypeParameterExpression(expression: IrExpression) {
-      commitCurrentString()
-      expressions += expression
-    }
-
-    injectable.type.arguments.single().render(
-      renderType = { typeToRender ->
-        if (!typeToRender.classifier.isTypeParameter) true else {
-          appendTypeParameterExpression(
-            irCall(typeKeyValue!!.getter!!).apply {
-              val dependencyResult = result.dependencyResults.values.single {
-                 it.cast<ResolutionResult.Success.Value>()
-                   .candidate.type.arguments.single().classifier == typeToRender.classifier
-              }
-              dispatchReceiver = expressionFor(dependencyResult.cast())
-            }
-          )
-          false
-        }
-      },
-      append = { appendToCurrentString(it) }
-    )
-
-    commitCurrentString()
-
-    val stringExpression = if (expressions.size == 1) expressions.single()
-    else expressions.reduce { acc, expression ->
-      irCall(stringPlus).apply {
-        dispatchReceiver = acc
-        putValueArgument(0, expression)
-      }
-    }
-
-    irCall(typeKeyConstructor!!).apply {
-      putTypeArgument(0, injectable.type.arguments.single().toIrType(irCtx).cast())
-      putValueArgument(0, stringExpression)
-    }
   }
 
   private fun ScopeContext.callableExpression(

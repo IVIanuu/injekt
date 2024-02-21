@@ -457,20 +457,6 @@ class ResolveTest {
       """
     )
 
-  @Test fun testSmartcastWithInject() = codegen(
-    """
-      class MyType {
-        fun <T> doSomething(key: TypeKey<T> = inject) {
-        }
-      }
-      fun invoke(myType: MyType?) {
-        if (myType != null) {
-          myType.doSomething<String>()
-        }
-      }
-    """
-  )
-
   @Test fun testInvocationOfFunctionDeclaredInSuperClassWithInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass {

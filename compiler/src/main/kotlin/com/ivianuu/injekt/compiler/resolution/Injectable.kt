@@ -100,25 +100,6 @@ class LambdaInjectable(
   ) : ValueParameterDescriptor by delegate
 }
 
-class TypeKeyInjectable(
-  override val type: TypeRef,
-  override val ownerScope: InjectablesScope
-) : Injectable {
-  override val callableFqName = FqName("typeKeyOf<${type.renderToString()}>")
-  override val dependencies = type.allTypes
-    .filter { it.classifier.isTypeParameter }
-    .mapIndexed { index, typeParameter ->
-      InjectableRequest(
-        type = ownerScope.ctx.typeKeyClassifier!!.defaultType
-          .withArguments(listOf(typeParameter.classifier.defaultType)),
-        callableFqName = callableFqName,
-        callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-        parameterName = "${typeParameter.classifier.fqName.shortName()}Key".asNameId(),
-        parameterIndex = index
-      )
-    }
-}
-
 data class InjectableRequest(
   val type: TypeRef,
   val callableFqName: FqName,

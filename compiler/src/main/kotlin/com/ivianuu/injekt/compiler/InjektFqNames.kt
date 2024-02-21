@@ -21,9 +21,6 @@ object InjektFqNames {
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
   val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())
 
-  val CommonPackage = InjektPackage.child("common".asNameId())
-  val TypeKey = CommonPackage.child("TypeKey".asNameId())
-
   val Composable = FqName("androidx.compose.runtime.Composable")
 
   val Any = StandardNames.FqNames.any.toSafe()

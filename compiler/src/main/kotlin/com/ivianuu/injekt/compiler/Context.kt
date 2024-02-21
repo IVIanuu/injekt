@@ -29,10 +29,6 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeChec
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
       .toClassifierRef(ctx).defaultType.copy(arguments = listOf(STAR_PROJECTION_TYPE))
   }
-  val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.TypeKey))
-      ?.toClassifierRef(ctx)
-  }
 }
 
 private val slices = mutableMapOf<String, BasicWritableSlice<*, *>>()

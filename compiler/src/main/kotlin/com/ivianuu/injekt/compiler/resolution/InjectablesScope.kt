@@ -118,8 +118,6 @@ class InjectablesScope(
         collectionElementType = collectionElementType
       )
     }
-    request.type.classifier.fqName == InjektFqNames.TypeKey ->
-      TypeKeyInjectable(request.type, this)
     else -> null
   }
 
