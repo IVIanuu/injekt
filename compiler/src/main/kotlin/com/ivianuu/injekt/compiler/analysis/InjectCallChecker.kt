@@ -90,7 +90,7 @@ import org.jetbrains.kotlin.utils.*
       .transform {
         val index = it.injektIndex()
         if (valueArgumentsByIndex[index] is DefaultValueArgument && index in info.injectParameters)
-          add(it.toInjectableRequest(callee, ctx))
+          add(it.toInjectableRequest(callee))
       }
 
     if (requests.isEmpty()) return
