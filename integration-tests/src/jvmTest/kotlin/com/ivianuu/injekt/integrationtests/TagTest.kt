@@ -83,17 +83,19 @@ class TagTest {
 
   @Test fun testTagDoesNotNeedToSpecifyTypeTarget() = singleAndMultiCodegen(
     """
-      @Tag annotation class MyTag 
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class MyTag 
     """,
     """
-      fun invoke(@Inject value: @MyTag String) {
+      fun invoke(value: @MyTag String = inject) {
       }
     """
   )
 
   @Test fun testTagWithTypeParameters() = singleAndMultiCodegen(
     """
-      @Tag annotation class MyTag<T>
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class MyTag<T>
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
     """,
     """
@@ -105,7 +107,8 @@ class TagTest {
 
   @Test fun testTagWithGenericTypeArguments() = singleAndMultiCodegen(
     """
-      @Tag annotation class MyTag<T>
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class MyTag<T>
       @Provide fun <T> taggedFoo(): @MyTag<T> Foo = Foo()
     """,
     """
@@ -117,7 +120,8 @@ class TagTest {
 
   @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
     """
-      @Tag annotation class TaggedFooTag
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class TaggedFooTag
       typealias TaggedFoo = @TaggedFooTag Foo
       @Provide val taggedFoo: TaggedFoo = Foo()
     """,
@@ -130,7 +134,8 @@ class TagTest {
     """
       typealias ComponentScope<N> = @ComponentScopeTag<N> String
 
-      @Tag annotation class ComponentScopeTag<N> {
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class ComponentScopeTag<N> {
         @Provide companion object {
           @Provide fun <N> scope(): ComponentScope<N> = ""
         }

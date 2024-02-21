@@ -34,23 +34,9 @@ package com.ivianuu.injekt
 )
 annotation class Provide
 
-/**
- * Automatically injects a argument if no explicit argument was provided
- */
-@Target(
-  // fun func(@Inject foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
+val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 
-  // Lambda
-  // val func: (@Inject Foo) -> Bar = { bar() }
-  AnnotationTarget.TYPE
-)
-annotation class Inject
-
-/**
- * Returns a provided instance of [T]
- */
-inline fun <T> inject(@Inject x: T): T = x
+inline fun <T> inject(x: T = inject) = x
 
 /**
  * Marks an annotation as an tag which can then be used

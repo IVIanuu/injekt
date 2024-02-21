@@ -271,7 +271,7 @@ class ResolutionTest {
       interface Ord<in T>
       @Provide object IntOrd : Ord<Int>
       @Provide object NumberOrd : Ord<Number>
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(ord: Ord<T> = inject) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -286,7 +286,7 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Number> numberOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Int> intOrd(): Ord<T> = object : Ord<T> {}
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(ord: Ord<T> = inject) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -301,7 +301,7 @@ class ResolutionTest {
       @Provide fun <T : Any> anyOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Number> numberOrd(): Ord<T> = object : Ord<T> {}
       @Provide fun <T : Int> intOrd(long: Long): Ord<T> = object : Ord<T> {}
-      fun <T> useOrd(@Inject ord: Ord<T>) = ord
+      fun <T> useOrd(ord: Ord<T> = inject) = ord
     """,
     """
       fun invoke() = useOrd<Int>()
@@ -333,25 +333,13 @@ class ResolutionTest {
     compilationShouldHaveFailed("no injectable")
   }
 
-  @Test fun testUsesDefaultValueOnNoCandidatesError() = codegen(
-    """
-      fun invoke(_foo: Foo): Foo {
-        fun inner(@Inject foo: Foo = _foo) = foo
-        return inner()
-      }
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
   @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
     """
       @Provide class FooModule {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Inject foo1: Foo, @Inject foo2: Foo) = inject<Foo>()
+      fun createFoo(foo1: Foo = inject, foo2: Foo = inject) = inject<Foo>()
     """
   ) {
     compilationShouldHaveFailed("ambiguous")

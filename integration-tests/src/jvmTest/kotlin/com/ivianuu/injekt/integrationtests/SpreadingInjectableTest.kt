@@ -12,7 +12,8 @@ import org.junit.*
 class SpreadingInjectableTest {
   @Test fun testSpreadingInjectableFunction() = singleAndMultiCodegen(
     """
-      @Tag annotation class Trigger
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
 
       @Provide fun foo(): @Trigger Foo = Foo()
@@ -29,9 +30,11 @@ class SpreadingInjectableTest {
       @Provide class MyModule<@Spread T : @Trigger S, S> {
         @Provide fun intoSet(instance: T): @Final S = instance
       }
-      @Tag annotation class Trigger
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class Trigger
 
-      @Tag annotation class Final
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class Final
 
       @Provide fun foo(): @Trigger Foo = Foo()
       @Provide fun string(): @Trigger String = ""
@@ -53,7 +56,8 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableTriggeredByClass() = singleAndMultiCodegen(
     """
-      @Tag annotation class Trigger
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class Trigger
       @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
       
       @Trigger @Provide class NotAny
@@ -67,7 +71,8 @@ class SpreadingInjectableTest {
 
   @Test fun testSpreadingInjectableChain() = singleAndMultiCodegen(
     """
-      @Tag annotation class A
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE) 
+      annotation class A
       
       @Provide fun <@Spread T : @A S, S> aImpl() = AModule_<S>()
       
@@ -75,14 +80,16 @@ class SpreadingInjectableTest {
         @Provide fun my(instance: T): @B T = instance
       }
       
-      @Tag annotation class B
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class B
       @Provide fun <@Spread T : @B S, S> bImpl() = BModule_<T>()
       
       class BModule_<T> {
         @Provide fun my(instance: T): @C Any? = instance
       }
       
-      @Tag annotation class C
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class C
       @Provide fun <@Spread T : @C Any?> cImpl() = Foo()
       
       @Provide fun dummy(): @A Long = 0L
@@ -96,7 +103,8 @@ class SpreadingInjectableTest {
 
   @Test fun testMultipleSpreadCandidatesWithSameType() = singleAndMultiCodegen(
     """
-      @Tag annotation class Trigger
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class Trigger
       @Provide fun <@Spread T : @Trigger String> triggerImpl(instance: T): String = instance
 
       @Provide fun a(): @Trigger String = "a"

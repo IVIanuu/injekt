@@ -19,7 +19,8 @@ data class CallableRef(
   val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
-  val callableFqName: FqName
+  val callableFqName: FqName,
+  val injectParameters: Set<Int>
 )
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
@@ -65,6 +66,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
         it.lambdaInjectable.callableFqName.child(it.name)
       } ?: safeAs<ReceiverParameterDescriptor>()?.fqNameSafe?.parent() ?:
-      fqNameSafe
+      fqNameSafe,
+      injectParameters = info.injectParameters
     )
   }

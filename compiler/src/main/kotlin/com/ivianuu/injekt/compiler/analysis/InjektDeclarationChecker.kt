@@ -46,7 +46,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
-    checkReceiver(descriptor, declaration, ctx)
   }
 
   private fun checkClass(
@@ -131,7 +130,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     descriptor: PropertyDescriptor,
     ctx: Context
   ) {
-    checkReceiver(descriptor, declaration, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
   }
@@ -146,21 +144,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       !descriptor.isLateInit &&
       descriptor.findPsi().safeAs<KtProperty>()?.initializer == null)
       ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
-  }
-
-  private fun checkReceiver(
-    descriptor: CallableDescriptor,
-    declaration: KtDeclaration,
-    ctx: Context
-  ) {
-    if (descriptor.extensionReceiverParameter?.hasAnnotation(InjektFqNames.Inject) == true ||
-      descriptor.extensionReceiverParameter?.type?.hasAnnotation(InjektFqNames.Inject) == true)
-      ctx.reportError(
-        declaration.safeAs<KtFunction>()?.receiverTypeReference
-          ?: declaration.safeAs<KtProperty>()?.receiverTypeReference
-          ?: declaration,
-        "receiver cannot be injected"
-      )
   }
 
   private fun checkSpreadingInjectable(
@@ -224,15 +207,6 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     if (overriddenDescriptor.hasAnnotation(InjektFqNames.Provide) &&
       !descriptor.hasAnnotation(InjektFqNames.Provide))
       return false
-
-    if (descriptor is CallableMemberDescriptor)
-      for ((index, overriddenValueParameter) in
-      overriddenDescriptor.cast<CallableMemberDescriptor>().valueParameters.withIndex()) {
-      val valueParameter = descriptor.valueParameters[index]
-      if (overriddenValueParameter.hasAnnotation(InjektFqNames.Inject) !=
-        valueParameter.hasAnnotation(InjektFqNames.Inject))
-        return false
-    }
 
     val (typeParameters, overriddenTypeParameters) = when (descriptor) {
       is CallableMemberDescriptor ->

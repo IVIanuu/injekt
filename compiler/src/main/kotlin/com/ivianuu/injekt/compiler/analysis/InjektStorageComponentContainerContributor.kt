@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.platform.*
-import org.jetbrains.kotlin.synthetic.*
 
 class InjektStorageComponentContainerContributor : StorageComponentContainerContributor {
   override fun registerModuleComponents(
@@ -18,29 +17,7 @@ class InjektStorageComponentContainerContributor : StorageComponentContainerCont
     moduleDescriptor: ModuleDescriptor,
   ) {
     val ctx = Context(moduleDescriptor, null)
-
-    val hasSyntheticScopesExtension = container.readPrivateFinalField<ComponentStorage>(
-      StorageComponentContainer::class,
-      "componentStorage"
-    )
-      .readPrivateFinalField<Set<Any>>(
-        ComponentStorage::class,
-        "descriptors"
-      )
-      .let { descriptors ->
-        descriptors.any {
-          it is SingletonTypeComponentDescriptor &&
-              it.klass == JavaSyntheticScopes::class.java
-        }
-      }
-
-    if (!hasSyntheticScopesExtension) {
-      container.useInstance(ctx)
-      container.useImpl<InjectSyntheticScopes>()
-    }
-
     container.useInstance(InjektDeclarationChecker(ctx))
-    if (!isIde)
-      container.useInstance(InfoPatcher(ctx))
+    container.useInstance(InfoPatcher(ctx))
   }
 }

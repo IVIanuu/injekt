@@ -109,13 +109,13 @@ or to break circular dependencies.
 You can do this by injecting a function.
 ```kotlin
 // inject a function to create multiple Tokens
-fun run(@Inject tokenFactory: () -> Token) {
+fun run(tokenFactory: () -> Token = inject) {
   val tokenA = tokenFactory()
   val tokenB = tokenFactory()
 }
 
 // inject a function to create a MyViewModel with the additional String parameter
-@Composable fun MyScreen(@Inject viewModelFactory: (String) -> MyViewModel) {
+@Composable fun MyScreen(viewModelFactory: (String) -> MyViewModel = inject) {
   val viewModel = remember { viewModelFactory("user_id") }
 }
 
@@ -139,25 +139,31 @@ Value classes:
 @JvmInline value class PlaylistId(val value: String)
 @JvmInline value class TrackId(val value: String)
 
-fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
+fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
 ```
 
 Tags:
 ```kotlin
-@Tag annotation class PlaylistId
-@Tag annotation class TrackId
+@Tag 
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class PlaylistId
+@Tag
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class TrackId
 
-fun loadPlaylistTracks(@Inject playlistId: @PlaylistId String, @Inject trackId: @TrackId String): List<Track> = ...
+fun loadPlaylistTracks(playlistId: @PlaylistId String = inject, trackId: @TrackId String = inject): List<Track> = ...
 ```
 
 Optionally you can add a typealias for your tag to make it easier to use
 ```kotlin
-@Tag annotation class PlaylistIdTag
+@Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class PlaylistIdTag
 typealias PlaylistId = @PlaylistIdTag String
-@Tag annotation class TrackIdTag
+@Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class TrackIdTag
 typealias TrackId = @TrackIdTag String
 
-fun loadPlaylistTracks(@Inject playlistId: PlaylistId, @Inject trackId: TrackId): List<Track> = ...
+fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
 ```
 
 # Type keys
@@ -187,8 +193,6 @@ dependencies {
   implementation("com.ivianuu.injekt:common:${latest_version}")
 }
 ```
-
-# Ide plugin is required to remove errors in the IDE (code should still compile)
 
 # More complex uses can be found in my essentials project(base project for my apps)
 # https://github.com/IVIanuu/essentials

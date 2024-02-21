@@ -15,7 +15,7 @@ class Scope<N> : SynchronizedObject() {
     (if (value !== NULL) value else null) as T
   }
 
-  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+  inline operator fun <T> invoke(key: TypeKey<T> = inject, init: () -> T): T =
     invoke(key.value, init)
 
   companion object {
@@ -23,7 +23,9 @@ class Scope<N> : SynchronizedObject() {
   }
 }
 
-@Tag annotation class Scoped<N> {
+@Tag
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class Scoped<N> {
   @Provide companion object {
     @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       scope: Scope<N>,

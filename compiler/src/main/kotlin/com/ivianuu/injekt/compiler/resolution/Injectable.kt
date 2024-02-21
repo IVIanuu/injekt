@@ -7,11 +7,11 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -30,7 +30,7 @@ class CallableInjectable(
 ) : Injectable {
   override val dependencies = (if (callable.callable is ConstructorDescriptor) callable.callable.valueParameters
       else callable.callable.allParameters)
-    .map { it.toInjectableRequest(callable, ownerScope.ctx) }
+    .map { it.toInjectableRequest(callable) }
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
@@ -128,12 +128,13 @@ data class InjectableRequest(
   val isRequired: Boolean = true
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest =
   InjectableRequest(
     type = callable.parameterTypes[injektIndex()]!!,
     callableFqName = callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(),
     parameterIndex = injektIndex(),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject
+    isRequired = this !is ValueParameterDescriptor ||
+        injektIndex() in callable.injectParameters || !hasDefaultValue()
   )

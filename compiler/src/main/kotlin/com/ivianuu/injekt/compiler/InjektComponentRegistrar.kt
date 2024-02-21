@@ -41,18 +41,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project,
         InjectCallChecker()
       )
-
-    // extension point does not exist CLI for some reason
-    // but it's still queried later
-    SyntheticScopeProviderExtension.registerExtensionPoint(project)
-    SyntheticScopeProviderExtension.registerExtension(
-      project,
-      InjectSyntheticScopeProviderExtension()
-    )
-
-    @Suppress("DEPRECATION")
-    Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-      .registerExtension(InjektDiagnosticSuppressor(), project)
   }
 }
 

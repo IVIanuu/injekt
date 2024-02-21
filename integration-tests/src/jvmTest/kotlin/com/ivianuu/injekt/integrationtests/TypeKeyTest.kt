@@ -26,7 +26,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTypeParameters() = singleAndMultiCodegen(
     """
-      inline fun <T> listTypeKeyOf(@Inject single: TypeKey<T>) = inject<TypeKey<List<T>>>()
+      inline fun <T> listTypeKeyOf(single: TypeKey<T> = inject) = inject<TypeKey<List<T>>>()
     """,
     """
       fun invoke() = listTypeKeyOf<String>()
