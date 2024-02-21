@@ -7,7 +7,6 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.builtins.functions.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.incremental.components.*
@@ -35,8 +34,6 @@ fun KtFunction.getArgumentDescriptor(ctx: Context): ValueParameterDescriptor? {
   val mapping = resolvedCall.getArgumentMapping(valueArgument) as? ArgumentMatch ?: return null
   return mapping.valueParameter
 }
-
-val isIde = Project::class.java.name == "com.intellij.openapi.project.Project"
 
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
   ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
@@ -194,24 +191,6 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
     else -> throw AssertionError("Unexpected descriptor $this")
   }
-}
-
-fun <T> Any.readPrivateFinalField(clazz: KClass<*>, fieldName: String): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField = try {
-    Field::class.java.getDeclaredField("modifiers")
-  } catch (e: Throwable) {
-    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
-    getDeclaredFields0.isAccessible = true
-    getDeclaredFields0.invoke(Field::class.java, false)
-      .cast<Array<Field>>()
-      .single { it.name == "modifiers" }
-  }
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  return field.get(this) as T
 }
 
 fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
