@@ -33,7 +33,7 @@ class ScopeTest {
 
     val jobs = (1..64).map {
       launch(start = CoroutineStart.LAZY) {
-        scope.invoke {
+        scope {
           holder.inc()
         }
       }
