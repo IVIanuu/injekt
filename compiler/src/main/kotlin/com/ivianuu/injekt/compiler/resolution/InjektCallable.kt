@@ -37,7 +37,12 @@ fun FirCallableSymbol<*>.toInjektCallable(session: FirSession): InjektCallable {
     receiverParameter?.let { this[EXTENSION_RECEIVER_INDEX] = it.typeRef.coneType.prepare(session) }
     if (this@toInjektCallable is FirFunctionSymbol<*>)
       valueParameterSymbols.forEachIndexed { index, parameterSymbol ->
-        this[index] = parameterSymbol.resolvedReturnType.prepare(session)
+        this[index] = try {
+          parameterSymbol.resolvedReturnType.prepare(session)
+        } catch (e: Throwable) {
+          e.printStackTrace()
+          throw e
+        }
       }
   }
 

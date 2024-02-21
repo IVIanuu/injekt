@@ -30,24 +30,41 @@ class InjektIrGenerationExtension(
   private val dumpDir: File
 ) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    println()
     //val fir2IrComponents = pluginContext.readPrivateFinalField<Fir2IrComponents>(Fir2IrPluginContext::class, "components")
     moduleFragment.transform(InjectCallTransformer(pluginContext, cache), null)
-    moduleFragment.fixLookupDeclarations(pluginContext)
+    moduleFragment.fixLookupDeclarations(pluginContext, dumpDir)
     moduleFragment.dumpToFiles(dumpDir, cache)
   }
 }
 
-private fun IrModuleFragment.fixLookupDeclarations(pluginContext: IrPluginContext) {
+private fun IrModuleFragment.fixLookupDeclarations(pluginContext: IrPluginContext, dumpDir: File) {
   transform(
     object : IrElementTransformerVoid() {
-      override fun visitFunction(declaration: IrFunction): IrStatement {
-        if (declaration.origin.safeAs<IrDeclarationOrigin.GeneratedByPlugin>()
-            ?.pluginKey == InjektLookupDeclarationGenerationExtension.Key) {
-          declaration.body = DeclarationIrBuilder(pluginContext, declaration.symbol)
-            .irBlockBody {  }
-            }
-        return super.visitFunction(declaration)
+      private val fileOrigins = mutableMapOf<IrFile, String>()
+      private val fileHashes = mutableMapOf<IrFile, MutableList<String>>()
+
+      override fun visitFile(declaration: IrFile): IrFile = super.visitFile(declaration)
+        .also {
+          if (declaration.name == "__GENERATED DECLARATIONS__.kt") {
+            val fileHash = fileHashes[declaration]?.hashCode()?.toString()?.filter { it.isLetterOrDigit() }
+            declaration.fileEntry = NaiveSourceBasedFileEntryImpl(
+              dumpDir.resolve("${fileOrigins[declaration]?.removeSuffix(".kt")}" +
+                  "_GENERATED_DECLARATIONS_$fileHash.kt").absolutePath
+            )
+          }
+        }
+
+      override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
+        val pluginKey = declaration.origin.safeAs<IrDeclarationOrigin.GeneratedByPlugin>()
+          ?.pluginKey
+        if (pluginKey is InjektLookupDeclarationGenerationExtension.Key) {
+          fileOrigins[declaration.file] = pluginKey.fileName
+          fileHashes.getOrPut(declaration.file) { mutableListOf() } += pluginKey.hash
+          if (declaration is IrFunction)
+            declaration.body = DeclarationIrBuilder(pluginContext, declaration.symbol)
+              .irBlockBody {  }
+        }
+        return super.visitDeclaration(declaration)
       }
     },
     null

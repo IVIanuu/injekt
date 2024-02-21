@@ -92,15 +92,15 @@ private fun InjectablesScope.canSee(callable: InjektCallable, session: FirSessio
       (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
           callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })*/
 
+// intentionally returns symbols to be callable in declaration generation extensions
 fun FirRegularClassSymbol.collectInjectableConstructors(session: FirSession) = declarationSymbols
-  .mapNotNull { declarationSymbol ->
-    if (declarationSymbol is FirConstructorSymbol &&
-      ((declarationSymbol.isPrimary &&
-          hasAnnotation(InjektFqNames.Provide, session)) ||
-          declarationSymbol.hasAnnotation(InjektFqNames.Provide, session)))
-      declarationSymbol.toInjektCallable(session)
-    else null
+  .filter { declarationSymbol ->
+    declarationSymbol is FirConstructorSymbol &&
+        (declarationSymbol.isPrimary &&
+        hasAnnotation(InjektFqNames.Provide, session)) ||
+        declarationSymbol.hasAnnotation(InjektFqNames.Provide, session)
   }
+  .filterIsInstance<FirConstructorSymbol>()
 
 fun collectGlobalInjectables(session: FirSession): List<InjektCallable> = collectPackagesWithInjectables(session)
   .flatMap { collectPackageInjectables(it, session) }

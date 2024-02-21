@@ -38,7 +38,18 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     context: MemberGenerationContext?
   ): List<FirNamedFunctionSymbol> = injectables()
     .mapIndexed { providerIndex, provider ->
-      createTopLevelFunction(Key, InjektFqNames.InjectablesLookup, session.builtinTypes.unitType.type) {
+      val hash = provider.uniqueHash()
+      val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
+        .filter { it.isLetterOrDigit() }
+
+      createTopLevelFunction(
+        Key(
+          session.firProvider.getContainingFile(provider)!!.name,
+          finalHash
+        ),
+        InjektFqNames.InjectablesLookup,
+        session.builtinTypes.unitType.type
+      ) {
         valueParameter(
           "marker".asNameId(),
           session.symbolProvider.getRegularClassSymbolByClassId(provider.markerClassId())!!
@@ -51,11 +62,7 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
           valueParameter("index$providerIndex".asNameId(), session.builtinTypes.byteType.type)
         }
 
-        val key = provider.uniqueKey()
-        val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
-          .filter { it.isLetterOrDigit() }
-
-        finalKey
+        finalHash
           .chunked(256)
           .forEachIndexed { index, value ->
             valueParameter("hash_${index}_$value".asNameId(), session.builtinTypes.intType.type)
@@ -64,7 +71,17 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     }
 
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> =
-    createTopLevelClass(classId, Key, ClassKind.INTERFACE) {
+    createTopLevelClass(
+      classId,
+      Key(
+        session.firProvider.getContainingFile(
+          injectables()
+            .first { it.markerClassId() == classId }
+        )!!.name,
+        classId.asSingleFqName().asString().filter { it.isLetterOrDigit() }
+      ),
+      ClassKind.INTERFACE
+    ) {
       modality = Modality.SEALED
     }.symbol
 
@@ -77,7 +94,7 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     session.firProvider.getContainingFile(this)!!.markerClassId()
 
   private fun FirFile.markerClassId(): ClassId {
-    val markerName = "_${
+    val markerName = "${
       name.removeSuffix(".kt")
         .substringAfterLast(".")
         .substringAfterLast("/")
@@ -85,9 +102,9 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     return ClassId.topLevel(packageFqName.child(markerName))
   }
 
-  private fun FirCallableSymbol<*>.uniqueKey() = buildString {
-    if (this@uniqueKey is FirConstructorSymbol) {
-      this@uniqueKey.getConstructedClass(session)!!.run {
+  private fun FirCallableSymbol<*>.uniqueHash() = buildString {
+    if (this@uniqueHash is FirConstructorSymbol) {
+      this@uniqueHash.getConstructedClass(session)!!.run {
         annotations.forEach {
           append(it.annotationTypeRef.coneType.renderToString())
         }
@@ -104,7 +121,7 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
       append(it.typeRef.coneType.renderToString())
     }
 
-    if (this@uniqueKey is FirFunctionSymbol<*>) {
+    if (this@uniqueHash is FirFunctionSymbol<*>) {
       valueParameterSymbols.forEach {
         append(it.name)
         append(it.resolvedReturnType.renderToString())
@@ -115,9 +132,10 @@ class InjektLookupDeclarationGenerationExtension(session: FirSession) :
     append(resolvedReturnType.renderToString())
   }
 
-  override fun hasPackage(packageFqName: FqName): Boolean = packageFqName == InjektFqNames.InjectablesLookupPackage
+  override fun hasPackage(packageFqName: FqName): Boolean =
+    packageFqName == InjektFqNames.InjectablesLookupPackage
 
-  object Key : GeneratedDeclarationKey()
+  data class Key(val fileName: String, val hash: String) : GeneratedDeclarationKey()
 
   companion object {
     private val PROVIDE_PREDICATE =

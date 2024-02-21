@@ -53,6 +53,7 @@ private fun BlockInjectablesScope(
     .flatMap {
       when (it) {
         is FirRegularClass -> it.symbol.collectInjectableConstructors(session)
+          .map { it.toInjektCallable(session) }
         is FirCallableDeclaration -> listOf(it.symbol.toInjektCallable(session))
         else -> throw AssertionError("Unexpected declaration $it")
       }
