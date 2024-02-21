@@ -14,4 +14,4 @@ import com.ivianuu.injekt.*
 /**
  * Returns the [TypeKey] of [T]
  */
-inline fun <T> typeKeyOf(@Inject x: TypeKey<T>): TypeKey<T> = x
+inline fun <T> typeKeyOf(x: TypeKey<T> = inject): TypeKey<T> = x

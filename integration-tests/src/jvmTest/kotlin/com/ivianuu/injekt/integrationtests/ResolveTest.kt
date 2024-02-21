@@ -4,7 +4,6 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import io.kotest.matchers.nulls.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
@@ -180,7 +179,7 @@ class ResolveTest {
   @Test fun testFunctionInvocationWithInjectables() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      fun usesFoo(@Inject foo: Foo) {
+      fun usesFoo(foo: Foo = inject) {
       }
     """,
     """
@@ -196,7 +195,7 @@ class ResolveTest {
     """
       @Provide val foo = Foo()
       fun invoke() {
-        fun usesFoo(@Inject foo: Foo) {
+        fun usesFoo(foo: Foo = inject) {
         }                    
         usesFoo()
       }
@@ -208,7 +207,7 @@ class ResolveTest {
   @Test fun testConstructorInvocationWithInjectables() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      class UsesFoo(@Inject foo: Foo)
+      class UsesFoo(foo: Foo = inject)
     """,
     """
       fun invoke() {
@@ -223,7 +222,7 @@ class ResolveTest {
     """
       @Provide val foo = Foo()
       fun invoke() {
-        class UsesFoo(@Inject foo: Foo)
+        class UsesFoo(foo: Foo = inject)
         UsesFoo()
       }
     """
@@ -448,7 +447,7 @@ class ResolveTest {
       """
         @Provide val foo = Foo()
 
-        fun String.myFunc(@Inject foo: Foo) {
+        fun String.myFunc(foo: Foo = inject) {
         }
       """,
       """
@@ -456,11 +455,10 @@ class ResolveTest {
       """
     )
 
-  // todo @Test
-  fun testSmartcastWithInject() = codegen(
+  @Test fun testSmartcastWithInject() = codegen(
     """
       class MyType {
-        fun <T> doSomething(@Inject key: TypeKey<T>) {
+        fun <T> doSomething(key: TypeKey<T> = inject) {
         }
       }
       fun invoke(myType: MyType?) {
@@ -474,28 +472,28 @@ class ResolveTest {
   @Test fun testInvocationOfFunctionDeclaredInSuperClassWithInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass {
-        fun func(@Inject foo: Foo) {
+        fun func(foo: Foo = inject) {
         }
       }
 
       class MySubClass : MySuperClass()
     """,
     """
-      fun invoke(@Inject foo: Foo) = MySubClass().func()
+      fun invoke(foo: Foo = inject) = MySubClass().func()
     """
   )
 
   @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass<T> {
-        fun <S : T> func(@Inject s: S) {
+        fun <S : T> func(s: S = inject) {
         }
       }
 
       class MySubClass<T> : MySuperClass<T>()
     """,
     """
-      fun invoke(@Inject foo: Foo) = MySubClass<Any>().func<Foo>()
+      fun invoke(foo: Foo = inject) = MySubClass<Any>().func<Foo>()
     """
   )
 
@@ -547,7 +545,7 @@ class ResolveTest {
       interface FooHolder {
         val foo: Foo
       }
-      fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+      fun FooHolder(foo: Foo = inject) = object : FooHolder {
         override val foo = foo
       }
       class MyClass(@Provide foo: Foo) : FooHolder by FooHolder()
@@ -559,7 +557,7 @@ class ResolveTest {
       interface FooHolder {
         val foo: Foo
       }
-      fun FooHolder(@Inject foo: Foo) = object : FooHolder {
+      fun FooHolder(foo: Foo = inject) = object : FooHolder {
         override val foo = foo
       }
       class MyClass() : FooHolder by FooHolder() {
@@ -572,7 +570,7 @@ class ResolveTest {
 
   @Test fun testCannotResolveClassProvideDeclarationInSuperTypeExpression() = codegen(
     """
-      abstract class MyAbstractClass(@Inject foo: Foo)
+      abstract class MyAbstractClass(foo: Foo = inject)
       class MyClass : MyAbstractClass() {
         @Provide val foo = Foo()
       }
@@ -999,7 +997,7 @@ class ResolveTest {
 
       @Provide @Tag1 object NoopLogger : Logger
       
-      fun log(@Inject logger: Logger) {
+      fun log(logger: Logger = inject) {
       }
     """,
     """
@@ -1033,23 +1031,6 @@ class ResolveTest {
       val @receiver:Provide Foo.foo get() = inject<Foo>()
     """
   )
-
-  @Test fun testCannotResolveAInjectableInBlockWhichIsDeclaredAfterIt() = codegen(
-    """
-      fun <T> injectOrNull(@Inject x: T? = null): T? = x
-      fun invoke(foo: Foo): Pair<Foo?, Foo?> {
-        val a = injectOrNull<Foo>()
-        @Provide val provided = foo
-        val b = injectOrNull<Foo>()
-        return a to b
-      }
-    """
-  ) {
-    val foo = Foo()
-    val result = invokeSingleFile<Pair<Foo?, Foo?>>(foo)
-    result.first.shouldBeNull()
-    result.second shouldBeSameInstanceAs foo
-  }
 
   @Test fun testCannotResolveUnconstrainedType() = codegen(
     """

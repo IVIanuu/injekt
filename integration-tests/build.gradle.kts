@@ -39,7 +39,6 @@ kotlin {
         implementation(Deps.junit)
         implementation(Deps.AndroidX.Test.core)
         implementation(Deps.AndroidX.Test.junit)
-        implementation(Deps.roboelectric)
         implementation(Deps.junit)
         implementation(Deps.kotestAssertions)
       }

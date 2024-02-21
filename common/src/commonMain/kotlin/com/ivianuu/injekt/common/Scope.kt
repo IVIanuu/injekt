@@ -15,7 +15,7 @@ class Scope<N> : SynchronizedObject() {
     (if (value !== NULL) value else null) as T
   }
 
-  inline operator fun <T> invoke(@Inject key: TypeKey<T>, init: () -> T): T =
+  inline operator fun <T> invoke(key: TypeKey<T> = inject, init: () -> T): T =
     invoke(key.value, init)
 
   companion object {

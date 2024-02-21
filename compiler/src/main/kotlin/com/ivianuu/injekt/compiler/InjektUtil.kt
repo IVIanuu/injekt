@@ -6,7 +6,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.builtins.functions.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.descriptors.*
@@ -47,7 +46,6 @@ fun DeclarationDescriptor.isExternalDeclaration(ctx: Context): Boolean =
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    (this is InjectFunctionDescriptor && underlyingDescriptor.isDeserializedDeclaration()) ||
     this is DeserializedTypeParameterDescriptor ||
     this is JavaClassDescriptor ||
     this is FunctionClassDescriptor

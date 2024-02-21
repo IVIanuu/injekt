@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -96,33 +95,24 @@ fun ResolutionScope.collectMemberInjectables(
 }
 
 fun Annotated.isProvide(ctx: Context): Boolean =
-  hasAnnotationForInjection(InjektFqNames.Provide, ctx) || isInject(ctx)
-
-fun Annotated.isInject(ctx: Context): Boolean =
-  hasAnnotationForInjection(InjektFqNames.Inject, ctx)
-
-private fun Annotated.hasAnnotationForInjection(fqName: FqName, ctx: Context): Boolean =
-  ctx.cached(
-    "annotation_for_injection_$fqName",
-    if (this is KotlinType) System.identityHashCode(this) else this
-  ) {
-    hasAnnotation(fqName) ||
-        (this is ParameterDescriptor && type.hasAnnotation(fqName)) ||
-        (this is ParameterDescriptor &&
-            containingDeclaration.safeAs<FunctionDescriptor>()
-              ?.findPsi()
-              ?.safeAs<KtFunction>()
-              ?.getArgumentDescriptor(ctx)
-              ?.containingDeclaration
-              ?.returnType
-              ?.memberScope
-              ?.getContributedDescriptors()
-              ?.filterIsInstance<FunctionDescriptor>()
-              ?.singleOrNull { it.modality == Modality.ABSTRACT }
-              ?.valueParameters
-              ?.singleOrNull { it.injektIndex() == injektIndex() }
-              ?.hasAnnotationForInjection(fqName, ctx) == true)
-  }
+  hasAnnotation(InjektFqNames.Provide) ||
+      (this is ParameterDescriptor && type.hasAnnotation(InjektFqNames.Provide)) ||
+      (this is ValueParameterDescriptor &&
+          index in containingDeclaration.cast<CallableDescriptor>().callableInfo(ctx).injectParameters) ||
+      (this is ParameterDescriptor &&
+          containingDeclaration.safeAs<FunctionDescriptor>()
+            ?.findPsi()
+            ?.safeAs<KtFunction>()
+            ?.getArgumentDescriptor(ctx)
+            ?.containingDeclaration
+            ?.returnType
+            ?.memberScope
+            ?.getContributedDescriptors()
+            ?.filterIsInstance<FunctionDescriptor>()
+            ?.singleOrNull { it.modality == Modality.ABSTRACT }
+            ?.valueParameters
+            ?.singleOrNull { it.injektIndex() == injektIndex() }
+            ?.isProvide(ctx) == true)
 
 fun ClassDescriptor.injectableConstructors(ctx: Context): List<CallableRef> =
   ctx.cached("injectable_constructors", this) {

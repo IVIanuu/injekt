@@ -7,11 +7,11 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -135,5 +135,6 @@ fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context)
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(),
     parameterIndex = injektIndex(),
-    isRequired = this !is ValueParameterDescriptor || !hasDefaultValueIgnoringInject
+    isRequired = this !is ValueParameterDescriptor ||
+        injektIndex() in callable.injectParameters || !hasDefaultValue()
   )

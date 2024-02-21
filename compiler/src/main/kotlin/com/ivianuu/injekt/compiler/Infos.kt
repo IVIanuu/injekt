@@ -6,14 +6,15 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.constants.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
@@ -26,7 +27,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
  * Stores information about a callable which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-data class CallableInfo(val type: TypeRef, val parameterTypes: Map<Int, TypeRef>)
+data class CallableInfo(
+  val type: TypeRef,
+  val parameterTypes: Map<Int, TypeRef>,
+  val injectParameters: Set<Int>
+)
 
 fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
   if (this is PropertyAccessorDescriptor) correspondingProperty.callableInfo(ctx)
@@ -88,7 +93,14 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
         this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
     }
 
-    val info = CallableInfo(type, parameterTypes)
+    val injectParameters = valueParameters
+      .filter {
+        it.findPsi().safeAs<KtParameter>()?.defaultValue?.text ==
+            InjektFqNames.inject.shortName().asString()
+      }
+      .mapTo(mutableSetOf()) { it.index }
+
+    val info = CallableInfo(type, parameterTypes, injectParameters)
 
     // important to cache the info before persisting it
     ctx.trace!!.record(sliceOf("callable_info"), this, info)
@@ -105,10 +117,10 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
       safeAs<ConstructorDescriptor>()?.visibility?.shouldPersistInfo() != true)
         return
 
-  if (hasAnnotation(InjektFqNames.DeclarationInfo))
-    return
+  if (hasAnnotation(InjektFqNames.DeclarationInfo)) return
 
-  val shouldPersistInfo = info.type.shouldBePersisted() ||
+  val shouldPersistInfo = info.injectParameters.isNotEmpty() ||
+      info.type.shouldBePersisted() ||
       info.parameterTypes.any { (_, parameterType) -> parameterType.shouldBePersisted() }
 
   if (!shouldPersistInfo) return
@@ -128,19 +140,22 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
 
 @Serializable data class PersistedCallableInfo(
   val type: PersistedTypeRef,
-  val parameterTypes: Map<Int, PersistedTypeRef>
+  val parameterTypes: Map<Int, PersistedTypeRef>,
+  val injectParameters: Set<Int>
 )
 
 fun CallableInfo.toPersistedCallableInfo(ctx: Context) = PersistedCallableInfo(
   type = type.toPersistedTypeRef(ctx),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toPersistedTypeRef(ctx) }
+    .mapValues { it.value.toPersistedTypeRef(ctx) },
+  injectParameters = injectParameters
 )
 
 fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
   type = type.toTypeRef(ctx),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toTypeRef(ctx) }
+    .mapValues { it.value.toTypeRef(ctx) },
+  injectParameters = injectParameters
 )
 
 /**
@@ -319,7 +334,6 @@ private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
       LazyClassDescriptor::class,
       "annotations"
     ) { newAnnotations }
-    is InjectFunctionDescriptor -> underlyingDescriptor.updateAnnotation(annotation)
     is FunctionImportedFromObject -> callableFromObject.updateAnnotation(annotation)
     else -> throw AssertionError("Cannot add annotation to $this $javaClass")
   }

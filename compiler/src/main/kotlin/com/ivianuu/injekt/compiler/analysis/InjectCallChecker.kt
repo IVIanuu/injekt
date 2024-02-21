@@ -55,7 +55,9 @@ import org.jetbrains.kotlin.utils.*
 
   private fun checkCall(resolvedCall: ResolvedCall<*>, ctx: Context) {
     val resultingDescriptor = resolvedCall.resultingDescriptor
-    if (resultingDescriptor !is InjectFunctionDescriptor) return
+
+    val info = resultingDescriptor.callableInfo(ctx)
+    if (info.injectParameters.isEmpty()) return
 
     val callExpression = resolvedCall.call.callElement
 
@@ -87,7 +89,7 @@ import org.jetbrains.kotlin.utils.*
     val requests = callee.callable.allParameters
       .transform {
         val index = it.injektIndex()
-        if (valueArgumentsByIndex[index] is DefaultValueArgument && it.isInject(ctx))
+        if (valueArgumentsByIndex[index] is DefaultValueArgument && index in info.injectParameters)
           add(it.toInjectableRequest(callee, ctx))
       }
 
