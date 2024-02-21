@@ -95,11 +95,11 @@ fun main() {
 
 # Components
 There is also no ```@Component``` annotation in Injekt instead a component can be declared
-like this without a lot boilerplate
+like this
 ```kotlin
 @Provide class ActivityComponent(
   val api: Api,
-  val fragmentComponent: (Fragment, Scope<FragmentScope>) -> FragmentComponent
+  val createFragmentComponent: (Fragment, Scope<FragmentScope>) -> FragmentComponent
 )
 ```
 
