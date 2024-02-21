@@ -95,7 +95,8 @@ class TypeSubstitutionTest {
     
           interface DialogKey<R> : Key<R>
     
-          @Tag annotation class KeyUiTag<K : Key<*>>
+          @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+          annotation class KeyUiTag<K : Key<*>>
           typealias KeyUi<K> = @KeyUiTag<K> @Composable () -> Unit
     
           typealias ModelKeyUi<K, S> = (ModelKeyUiScope<K, S>) -> Unit

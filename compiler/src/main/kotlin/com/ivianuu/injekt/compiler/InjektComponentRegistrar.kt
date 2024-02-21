@@ -41,10 +41,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project,
         InjectCallChecker()
       )
-
-    @Suppress("DEPRECATION")
-    Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-      .registerExtension(InjektDiagnosticSuppressor(), project)
   }
 }
 

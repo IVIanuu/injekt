@@ -234,7 +234,9 @@ class ResolveTest {
     """
       @Provide fun foos() = Foo() to Foo()
       
-      @Tag annotation class First
+      @Tag 
+      @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class First
       @Provide fun <A : @First B, B> first(pair: Pair<B, *>): A = pair.first as A
     """,
     """

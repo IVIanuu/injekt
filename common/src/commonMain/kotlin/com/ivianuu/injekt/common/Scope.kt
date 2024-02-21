@@ -23,7 +23,9 @@ class Scope<N> : SynchronizedObject() {
   }
 }
 
-@Tag annotation class Scoped<N> {
+@Tag
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class Scoped<N> {
   @Provide companion object {
     @Provide inline fun <@Spread T : @Scoped<N> S, S : Any, N> scoped(
       scope: Scope<N>,

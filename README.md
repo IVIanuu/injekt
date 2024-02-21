@@ -144,17 +144,23 @@ fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = injec
 
 Tags:
 ```kotlin
-@Tag annotation class PlaylistId
-@Tag annotation class TrackId
+@Tag 
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class PlaylistId
+@Tag
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class TrackId
 
 fun loadPlaylistTracks(playlistId: @PlaylistId String = inject, trackId: @TrackId String = inject): List<Track> = ...
 ```
 
 Optionally you can add a typealias for your tag to make it easier to use
 ```kotlin
-@Tag annotation class PlaylistIdTag
+@Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class PlaylistIdTag
 typealias PlaylistId = @PlaylistIdTag String
-@Tag annotation class TrackIdTag
+@Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+annotation class TrackIdTag
 typealias TrackId = @TrackIdTag String
 
 fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
