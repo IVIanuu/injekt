@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.plugin.*
 
 @AutoService(KotlinCompilerPluginSupportPlugin::class)
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
-  override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
+  override fun isApplicable(kotlinCompilation: KotlinCompilation<*>) =
     kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
 
   override fun apply(target: Project) {
@@ -22,14 +22,14 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     )
   }
 
-  override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
+  override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>) =
     kotlinCompilation.target.project.provider {
       listOf(SubpluginOption("dumpDir", "${kotlinCompilation.target.project.buildDir.resolve("injekt/dump/${kotlinCompilation.defaultSourceSet.name}")}"))
     }
 
-  override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
+  override fun getCompilerPluginId() = "com.ivianuu.injekt"
 
-  override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
+  override fun getPluginArtifact() = SubpluginArtifact(
     groupId = "com.ivianuu.injekt",
     artifactId = "compiler",
     version = BuildConfig.VERSION
