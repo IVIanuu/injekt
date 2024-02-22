@@ -16,9 +16,18 @@ class Scope<N> : SynchronizedObject() {
     (if (value !== NULL) value else null) as T
   }
 
+  fun dispose() {
+    values.values.toList().forEach { (it as? ScopeDisposable)?.dispose() }
+    values.clear()
+  }
+
   companion object {
     @PublishedApi internal val NULL = Any()
   }
+}
+
+fun interface ScopeDisposable {
+  fun dispose()
 }
 
 @Tag

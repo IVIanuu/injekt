@@ -3,6 +3,7 @@ package com.ivianuu.injekt.samples.android.ui
 import androidx.compose.runtime.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.samples.android.data.*
+import com.ivianuu.injekt.samples.android.util.*
 import kotlinx.coroutines.*
 
 data class CounterState(
@@ -15,8 +16,7 @@ fun interface CounterPresenter {
   @Composable operator fun invoke(): CounterState
 }
 
-@Provide fun CounterPresenter(db: CounterDb) = CounterPresenter {
-  val scope = rememberCoroutineScope()
+@Provide fun CounterPresenter(db: CounterDb, scope: ScopedCoroutineScope<ActivityScope>) = CounterPresenter {
   CounterState(
     state = db.counter.collectAsState(0).value,
     incCounter = {

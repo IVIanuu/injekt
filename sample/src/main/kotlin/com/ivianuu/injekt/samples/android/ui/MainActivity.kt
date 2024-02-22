@@ -24,6 +24,11 @@ class MainActivity : ComponentActivity() {
       }
     }
   }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    scope.dispose()
+  }
 }
 
 @Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)
