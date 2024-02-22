@@ -12,11 +12,11 @@ class TagTest {
   @Test fun testDistinctTag() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      @Provide val taggedFoo: @Tag1 Foo = Foo()
+      @Provide val taggedFoo: @Tag1 @Tag2 Foo = Foo()
     """,
     """
       fun invoke(): Pair<Foo, Foo> {
-        return inject<Foo>() to inject<@Tag1 Foo>()
+        return inject<Foo>() to inject<@Tag1 @Tag2 Foo>()
       } 
     """
   ) {

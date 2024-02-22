@@ -68,14 +68,14 @@ import org.jetbrains.kotlin.utils.*
     val substitutor = NewTypeSubstitutorByConstructorMap(
       buildMap {
         for ((parameter, argument) in resolvedCall.typeArguments) {
-          this[parameter.typeConstructor] = argument.unwrap()
+          this[parameter.typeConstructor] = argument.prepareForInjekt()
         }
 
         fun KotlinType.putAll() {
           for ((index, parameter) in constructor.parameters.withIndex()) {
             val argument = arguments[index]
             if (argument.type != parameter.defaultType)
-              this@buildMap[parameter.typeConstructor] = arguments[index].type.unwrap()
+              this@buildMap[parameter.typeConstructor] = arguments[index].type.unwrap().prepareForInjekt()
           }
         }
 

@@ -78,20 +78,18 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
       }
     }
 
-    val type = run {
-      val tags = if (this is ConstructorDescriptor)
-        buildList {
-          addAll(constructedClass.classifierInfo(ctx).tags)
-          for (tagAnnotation in getTags())
-            add(tagAnnotation.type)
-        }
-      else emptyList()
-      tags.wrapTags(returnType ?: ctx.nullableAnyType)
-    }
+    val tags = if (this is ConstructorDescriptor)
+      buildList {
+        addAll(constructedClass.classifierInfo(ctx).tags)
+        for (tagAnnotation in getTags())
+          add(tagAnnotation.type.prepareForInjekt())
+      }
+    else emptyList()
+    val type = tags.wrapTags((returnType ?: ctx.nullableAnyType).prepareForInjekt())
 
     val parameterTypes = buildMap {
       for (parameter in allParameters)
-        this[parameter.injektIndex()] = parameter.type
+        this[parameter.injektIndex()] = parameter.type.prepareForInjekt()
     }
 
     val injectParameters = valueParameters
@@ -197,19 +195,16 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
 
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
-        expandedType != null -> listOf(expandedType)
+        expandedType != null -> listOf(expandedType.prepareForInjekt())
         isTag -> listOf(ctx.anyType)
-        else -> typeConstructor.supertypes.toList()
+        else -> typeConstructor.supertypes.map { it.prepareForInjekt() }
       }
     }
 
-    val tags = getTags().map { it.type }
+    val tags = getTags().map { it.type.prepareForInjekt() }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
-      ClassifierInfo(
-        tags = tags,
-        lazySuperTypes = lazySuperTypes
-      )
+      ClassifierInfo(tags = tags, lazySuperTypes = lazySuperTypes)
     } else {
       val info = if (this is TypeParameterDescriptor)
         ClassifierInfo(tags = emptyList(), lazySuperTypes = lazySuperTypes)

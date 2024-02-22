@@ -20,13 +20,13 @@ import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun KotlinType.prepare(): UnwrappedType {
+fun KotlinType.prepareForInjekt(): UnwrappedType {
   val unwrapped = unwrap()
     .let { unwrapped ->
       if (unwrapped.arguments.isEmpty()) unwrapped
       else {
         val newArguments = unwrapped.arguments.map {
-          TypeProjectionImpl(it.projectionKind, it.type.prepare())
+          TypeProjectionImpl(it.projectionKind, it.type.prepareForInjekt())
         }
         when (unwrapped) {
           is SimpleType -> replace(newArguments)
@@ -37,7 +37,8 @@ fun KotlinType.prepare(): UnwrappedType {
         }
       }
     }
-  return unwrapped.cast()
+
+  return getTags().map { it.type.prepareForInjekt() }.wrapTags(unwrapped).unwrap()
 }
 
 fun KotlinType.injektHashCode(ctx: Context): Int {
@@ -210,7 +211,11 @@ fun KotlinType.runCandidateInference(
   }
 
   if (typeVariables.isEmpty())
-    return if (isSubtypeOf(superType)) EmptySubstitutor else null
+    return try {
+      if (isSubtypeOf(superType)) EmptySubstitutor else null
+    } catch (e: Throwable) {
+      throw e
+    }
 
   val toTypeVariablesSubstitutor = NewTypeSubstitutorByConstructorMap(
     typeVariables.mapKeys { it.key.typeConstructor }.mapValues {
@@ -290,22 +295,29 @@ fun KotlinType.withUniqueId(value: String?): KotlinType = when {
   else -> unwrap().replaceAttributes(attributes + UniqueIdTypeAttribute(value))
 }
 
-fun List<KotlinType>.wrapTags(type: KotlinType): KotlinType = foldRight(type) { nextTag, acc ->
-  nextTag.wrapTag(acc)
-}
+fun List<KotlinType>.wrapTags(type: KotlinType): KotlinType = if (isEmpty()) type
+else fold(type) { acc, nextTag ->
+    nextTag.wrapTag(acc)
+  }
 
-fun KotlinType.wrapTag(type: KotlinType): KotlinType {
-  val newArguments = if (arguments.size < constructor.parameters.size)
-    arguments + type.asTypeProjection()
-  else arguments.dropLast(1) + type.asTypeProjection()
-  return replace(newArguments)
-}
+fun KotlinType.wrapTag(
+  type: KotlinType?,
+  arguments: List<TypeProjection> = this.arguments
+): KotlinType = KotlinTypeFactory.simpleTypeWithNonTrivialMemberScope(
+  attributes = TypeAttributes.Empty,
+  constructor = constructor as? TagTypeConstructor ?: TagTypeConstructor(constructor),
+  arguments = if (type != null) arguments + type.asTypeProjection() else arguments,
+  nullable = isMarkedNullable,
+  memberScope = memberScope
+)
 
 fun KotlinType.unwrapTags(): KotlinType =
   if (constructor.declarationDescriptor?.hasAnnotation(InjektFqNames.Tag) != true) this
   else arguments.last().type.unwrapTags()
 
-class TagTypeConstructor(val tagAnnotation: TypeConstructor) : TypeConstructor {
+class TagTypeConstructor(
+  val tagAnnotation: TypeConstructor,
+) : TypeConstructor {
   private val _parameters = tagAnnotation.parameters +
       TypeParameterDescriptorImpl.createForFurtherModification(
         tagAnnotation.declarationDescriptor!!,
@@ -327,9 +339,20 @@ class TagTypeConstructor(val tagAnnotation: TypeConstructor) : TypeConstructor {
 
   override fun isDenotable() = false
 
-  override fun getDeclarationDescriptor(): ClassifierDescriptor? = null
+  override fun getDeclarationDescriptor(): ClassifierDescriptor? = tagAnnotation.declarationDescriptor
 
   override fun getBuiltIns() = tagAnnotation.builtIns
 
   @TypeRefinement override fun refine(kotlinTypeRefiner: KotlinTypeRefiner): TypeConstructor = this
+
+  override fun hashCode(): Int {
+    var result = tagAnnotation.hashCode()
+    result = 31 * result + "tag".hashCode()
+    return result
+  }
+
+  override fun equals(other: Any?): Boolean =
+    other is TagTypeConstructor && tagAnnotation == other.tagAnnotation
+
+  override fun toString(): String = tagAnnotation.declarationDescriptor!!.fqNameSafe.asString()
 }

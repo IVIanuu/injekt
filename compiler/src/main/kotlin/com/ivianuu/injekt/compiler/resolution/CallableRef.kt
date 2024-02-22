@@ -47,7 +47,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       parameterTypes = info.parameterTypes,
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
-          this[typeParameter] = typeParameter.defaultType.asTypeProjection()
+          this[typeParameter] = typeParameter.defaultType.prepareForInjekt().asTypeProjection()
       },
       callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
       safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
