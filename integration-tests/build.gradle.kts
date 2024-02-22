@@ -45,3 +45,10 @@ kotlin {
     }
   }
 }
+
+tasks.withType<Test> {
+  jvmArgs(
+    "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+    "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
+  )
+}
