@@ -15,20 +15,23 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isNullableType
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
-fun TypeRef.collectInjectables(
+fun KotlinType.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
-): List<CallableRef> = ctx.cached("type_injectables", this to classBodyView) {
+): List<CallableRef> = ctx.cached("type_injectables", injektHashCode(ctx) to classBodyView) {
   // special case to support @Provide () -> Foo
   if (isProvideFunctionType(ctx)) {
-    val callable = classifier
-      .descriptor!!
+    val callable = constructor
+      .declarationDescriptor!!
       .defaultType
       .memberScope
       .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -36,46 +39,53 @@ fun TypeRef.collectInjectables(
       .toCallableRef(ctx)
       .let { callable ->
         callable.copy(
-          type = arguments.last(),
+          type = arguments.last().type,
           parameterTypes = callable.parameterTypes.toMutableMap().apply {
             this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
           }
-        ).substitute(
-          classifier.typeParameters
-            .zip(arguments)
-            .toMap()
         )
+          .substitute(
+            NewTypeSubstitutorByConstructorMap(
+              constructor.parameters
+                .map { it.typeConstructor(ctx) }
+                .zip(arguments.map { it.type.unwrap() })
+                .toMap()
+            )
+          )
       }
 
     return@cached listOf(callable)
   }
 
   buildList {
-    classifier
-      .descriptor
+    constructor
+      .declarationDescriptor
       ?.defaultType
       ?.memberScope
       ?.collectMemberInjectables(ctx) { callable ->
-        val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-          CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
-            .overriddenTreeAsSequence(false)
-            .last()
-            .containingDeclaration
-            .cast<ClassDescriptor>()
-            .toClassifierRef(ctx)
-          classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
-            .zip(subtypeView(originalClassifier)!!.arguments)
-        } else classifier.typeParameters.zip(arguments).toMap()
-        val substituted = callable.substitute(substitutionMap)
-
-        add(
-          substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-              substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-            } else substituted.parameterTypes
+        val substituted = callable.substitute(
+          NewTypeSubstitutorByConstructorMap(
+            if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+              CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+              val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
+                .overriddenTreeAsSequence(false)
+                .last()
+                .containingDeclaration
+                .cast<ClassDescriptor>()
+              constructor.parameters
+                .map { it.typeConstructor(ctx) }
+                .zip(arguments.map { it.type.unwrap() })
+                .toMap() +
+                  originalClassifier.declaredTypeParameters
+                    .map { it.typeConstructor(ctx) }
+                    .zip(subtypeView(originalClassifier)!!.arguments.map { it.type.unwrap() })
+            } else constructor.parameters.map { it.typeConstructor(ctx) }.zip(arguments.map { it.type.unwrap() }).toMap()
           )
+        )
+
+        this += substituted.copy(
+          parameterTypes = substituted.parameterTypes.toMutableMap()
+            .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
         )
       }
   }
@@ -130,9 +140,10 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
     ImplicitClassReceiver(this),
     Annotations.EMPTY
   ).toCallableRef(ctx)
-  return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
+  val info = classifierInfo(ctx)
+  return if (!tagged || info.tags.isEmpty()) callable
   else {
-    val taggedType = callable.type.classifier.tags.wrap(callable.type)
+    val taggedType = info.tags.wrapTags(callable.type)
     callable.copy(type = taggedType, originalType = taggedType)
   }
 }
@@ -145,20 +156,23 @@ fun CallableRef.collectInjectables(
 ) {
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
+  if (typeArguments.any {
+    it.key.declarationDescriptor!!.hasAnnotation(InjektFqNames.Spread) &&
+        it.value.type == it.key.declarationDescriptor!!.defaultType
+  }) {
     addSpreadingInjectable(this)
     return
   }
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
+  val nextCallable = copy(type = type.withUniqueId(UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
   nextCallable
     .type
     .collectInjectables(
-      nextCallable.type.classifier.descriptor?.parentsWithSelf
+      nextCallable.type.constructor.declarationDescriptor?.parentsWithSelf
         ?.mapNotNull { it.findPsi() }
         ?.any { callableParent -> scope.allScopes.any { it.owner == callableParent } } == true,
       ctx
@@ -167,11 +181,11 @@ fun CallableRef.collectInjectables(
       innerCallable
         .copy(
           callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()),
-          type = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          type = if (nextCallable.type.isNullableType()) innerCallable.type.withNullability(true)
           else innerCallable.type,
-          originalType = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
+          originalType = if (nextCallable.type.isNullableType()) innerCallable.type.withNullability(true)
           else innerCallable.type,
-          parameterTypes = if (nextCallable.type.isNullableType &&
+          parameterTypes = if (nextCallable.type.isNullableType() &&
             DISPATCH_RECEIVER_INDEX in innerCallable.parameterTypes) innerCallable.parameterTypes
             .toMutableMap().apply {
               put(
@@ -229,7 +243,7 @@ private fun InjectablesScope.canSee(callable: CallableRef, ctx: Context): Boolea
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
       (callable.callable is ClassConstructorDescriptor &&
-          callable.type.unwrapTags().classifier.isObject) ||
+          callable.type.unwrapTags().constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT) ||
       callable.callable.parentsWithSelf.mapNotNull { it.findPsi() }.any { callableParent ->
         allScopes.any { it.owner == callableParent }
       } ||

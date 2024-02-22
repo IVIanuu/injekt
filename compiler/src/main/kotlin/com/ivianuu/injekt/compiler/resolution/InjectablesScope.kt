@@ -5,7 +5,12 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.calls.inference.components.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 
 class InjectablesScope(
   val name: String,
@@ -13,12 +18,12 @@ class InjectablesScope(
   val owner: KtElement? = null,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  val typeParameters: List<ClassifierRef> = emptyList(),
+  val typeParameters: List<TypeConstructor> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
-  val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
+  val resultsByType = mutableMapOf<Int, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
 
   private val injectables = mutableListOf<CallableRef>()
@@ -32,10 +37,16 @@ class InjectablesScope(
 
   data class SpreadingInjectable(
     val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeParameters.single {
-      it.isSpread
-    }.defaultType.substitute(callable.typeArguments),
-    val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf()
+    val constraintType: KotlinType = callable.typeArguments.keys.single {
+      it.declarationDescriptor!!.hasAnnotation(InjektFqNames.Spread)
+    }.declarationDescriptor!!.defaultType.substitute(
+      NewTypeSubstitutorByConstructorMap(
+        callable.typeArguments
+          .mapKeys { it.key }
+          .mapValues { it.value.type.unwrap() }
+      )
+    ),
+    val processedCandidateTypes: MutableSet<Int> = mutableSetOf()
   ) {
     fun copy() = SpreadingInjectable(
       callable,
@@ -48,7 +59,11 @@ class InjectablesScope(
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
+  data class CallableRequestKey(
+    val type: KotlinType,
+    val typeKey: Int,
+    val staticTypeParameters: List<TypeConstructor>,
+  )
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   init {
@@ -68,11 +83,12 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.frameworkKey.isEmpty() &&
-      request.type.classifier == ctx.listClassifier) return emptyList()
+    if (request.type.uniqueId == null &&
+      request.type.constructor.declarationDescriptor
+        ?.fqNameSafe == StandardNames.FqNames.list) return emptyList()
 
     return injectablesForType(
-      CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
+      CallableRequestKey(request.type, request.typeKey, requestingScope.allStaticTypeParameters)
     ).filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
   }
 
@@ -84,13 +100,13 @@ class InjectablesScope(
         parent?.injectablesForType(key)?.let { addAll(it) }
 
         for (candidate in injectables) {
-          if (key.type.frameworkKey.isNotEmpty() &&
-            candidate.type.frameworkKey != key.type.frameworkKey) continue
-          val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
-          if (!context.isOk) continue
+          if (key.type.uniqueId != null &&
+            candidate.type.uniqueId != key.type.uniqueId) continue
+          val substitutor = candidate.type.runCandidateInference(key.type, key.staticTypeParameters, ctx = ctx)
+            ?: continue
           this += CallableInjectable(
             this@InjectablesScope,
-            candidate.substitute(context.fixedTypeVariables),
+            candidate.substitute(substitutor),
             key.type
           )
         }
@@ -98,14 +114,15 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
-    request.type.classifier == ctx.listClassifier -> {
-      val singleElementType = request.type.arguments[0]
+  fun builtInInjectableForRequest(request: InjectableRequest): Injectable? = when {
+    request.type.isFunctionType &&
+        !request.type.hasAnnotation(InjektFqNames.Provide) -> LambdaInjectable(this, request)
+    request.type.constructor.declarationDescriptor?.fqNameSafe == StandardNames.FqNames.list -> {
+      val singleElementType = request.type.arguments[0].type
       val collectionElementType = ctx.collectionClassifier.defaultType
-        .withArguments(listOf(singleElementType))
+        .replace(listOf(singleElementType.asTypeProjection()))
 
-      val key = CallableRequestKey(request.type, allStaticTypeParameters)
+      val key = CallableRequestKey(request.type, request.typeKey, allStaticTypeParameters)
 
       val elements = listElementsTypesForType(singleElementType, collectionElementType, key)
 
@@ -122,10 +139,10 @@ class InjectablesScope(
   }
 
   private fun listElementsTypesForType(
-    singleElementType: TypeRef,
-    collectionElementType: TypeRef,
+    singleElementType: KotlinType,
+    collectionElementType: KotlinType,
     key: CallableRequestKey
-  ): List<TypeRef> {
+  ): List<KotlinType> {
     if (injectables.isEmpty())
       return parent?.listElementsTypesForType(singleElementType, collectionElementType, key) ?: emptyList()
 
@@ -134,15 +151,12 @@ class InjectablesScope(
         ?.let { addAll(it) }
 
       for (candidate in injectables.toList()) {
-        var context =
-          candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
-        if (!context.isOk)
-          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
-        if (!context.isOk) continue
+        val substitutor =
+          candidate.type.runCandidateInference(singleElementType, key.staticTypeParameters, ctx = ctx)
+            ?: candidate.type.runCandidateInference(collectionElementType, key.staticTypeParameters, ctx = ctx)
+            ?: continue
 
-        val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
-
-        add(substitutedCandidate.type)
+        add(candidate.substitute(substitutor).type)
       }
     }
   }
@@ -152,27 +166,26 @@ class InjectablesScope(
       spreadInjectables(spreadingInjectable, candidate.type)
   }
 
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
-    if (!spreadingInjectable.processedCandidateTypes.add(candidateType) ||
+  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: KotlinType) {
+    if (!spreadingInjectable.processedCandidateTypes.add(candidateType.injektHashCode(ctx)) ||
       spreadingInjectable in spreadingInjectableChain) return
 
-    val context = buildContextForSpreadingInjectable(
+    val substitutor = runSpreadingInjectableInference(
       spreadingInjectable.constraintType,
       candidateType,
       allStaticTypeParameters,
       ctx
-    )
-    if (!context.isOk) return
+    ) ?: return
 
     val substitutedInjectable = spreadingInjectable.callable
       .copy(
         type = spreadingInjectable.callable.type
-          .substitute(context.fixedTypeVariables),
+          .substitute(substitutor),
         parameterTypes = spreadingInjectable.callable.parameterTypes
-          .mapValues { it.value.substitute(context.fixedTypeVariables) },
+          .mapValues { it.value.substitute(substitutor) },
         typeArguments = spreadingInjectable.callable
           .typeArguments
-          .mapValues { it.value.substitute(context.fixedTypeVariables) }
+          .mapValues { it.value.substitute(substitutor) }
       )
 
     spreadingInjectableChain += spreadingInjectable

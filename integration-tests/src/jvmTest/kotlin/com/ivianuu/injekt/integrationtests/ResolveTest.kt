@@ -410,38 +410,32 @@ class ResolveTest {
     """
   )
 
-  fun main() {
-    fun <T> lol() {
-
-    }
-  }
-
   @Test fun testResolvesInjectableWithTypeParameterInScope() = singleAndMultiCodegen(
     """
-      @Provide fun <T> list(): List<T> = emptyList()
+      @Provide fun <T> set(): Set<T> = emptySet()
     """,
     """
       fun <T> invoke() {
-        inject<List<T>>()
+        inject<Set<T>>()
       } 
     """
   )
 
   @Test fun testCannotUseNonReifiedTypeParameterForReifiedInjectable() = singleAndMultiCodegen(
     """
-      @Provide inline fun <reified T> set(): Set<T> {
-        T::class
+      @Provide inline fun <reified B> set(): Set<B> {
+        B::class
         return emptySet()
       }
     """,
     """
-      fun <T> invoke() {
-        inject<Set<T>>()
+      fun <A> invoke() {
+        inject<Set<A>>()
       }
     """
   ) {
     compilationShouldHaveFailed(
-      "type parameter T of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.T> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.T is not reified"
+      "type parameter B of injectable com.ivianuu.injekt.integrationtests.set() of type kotlin.collections.Set<com.ivianuu.injekt.integrationtests.invoke.A> for parameter x of function com.ivianuu.injekt.inject is reified but type argument com.ivianuu.injekt.integrationtests.invoke.A is not reified"
     )
   }
 
@@ -471,7 +465,7 @@ class ResolveTest {
     """
   )
 
-  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = singleAndMultiCodegen(
+  @Test fun testInvocationOfFunctionDeclaredInSuperClassWithGenericInjectParameters() = multiCodegen(
     """
       open class MySuperClass<T> {
         fun <S : T> func(s: S = inject) {

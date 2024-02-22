@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 interface InjektErrors {
   companion object {
@@ -64,11 +65,11 @@ fun InjectionResult.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
       if (failure == unwrappedFailure) {
         appendLine(
-          "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
+          "type parameter ${unwrappedFailure.parameter.fqNameSafe.shortName()} " +
               "of injectable ${unwrappedFailure.candidate.callableFqName}() of type ${failureRequest.type.renderToString()} " +
               "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
               "is reified but type argument " +
-              "${unwrappedFailure.argument.fqName} is not reified."
+              "${unwrappedFailure.argument.fqNameSafe} is not reified."
         )
       } else {
         appendLine("type argument kind mismatch.")
@@ -116,7 +117,7 @@ fun InjectionResult.Error.render(): String = buildString {
 
         if (request.callableTypeArguments.isNotEmpty()) {
           append(request.callableTypeArguments.values.joinToString(", ", "<", ">") {
-            it.renderToString()
+            it.type.renderToString()
           })
         }
       }
@@ -126,7 +127,7 @@ fun InjectionResult.Error.render(): String = buildString {
           if (candidate.parameterDescriptors.isNotEmpty()) {
             for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
               val argument = candidate.type.unwrapTags().arguments[index]
-              append("${parameter.name}: ${argument.renderToString()}")
+              append("${parameter.name}: ${argument.type.renderToString()}")
               if (index != candidate.parameterDescriptors.lastIndex)
                 append(",")
             }
@@ -153,7 +154,7 @@ fun InjectionResult.Error.render(): String = buildString {
           append("/* ")
           when (failure) {
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-              append("${failure.parameter.fqName.shortName()} is reified: ")
+              append("${failure.parameter.fqNameSafe.shortName()} is reified: ")
             }
             is ResolutionResult.Failure.CandidateAmbiguity -> {
               append(
@@ -185,7 +186,7 @@ fun InjectionResult.Error.render(): String = buildString {
 
     when (unwrappedFailure) {
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> {
-        appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified.")
+        appendLine("but type argument ${unwrappedFailure.argument.fqNameSafe} is not reified.")
       }
       is ResolutionResult.Failure.CandidateAmbiguity -> {
         appendLine(

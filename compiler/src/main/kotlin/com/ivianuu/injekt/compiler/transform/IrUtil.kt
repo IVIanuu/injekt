@@ -2,8 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, ObsoleteDescriptorBasedAPI::class,
-  FirIncompatiblePluginAPI::class
+@file:OptIn(ObsoleteDescriptorBasedAPI::class, ObsoleteDescriptorBasedAPI::class,
+  UnsafeCastFunction::class
 )
 
 package com.ivianuu.injekt.compiler.transform
@@ -25,6 +25,8 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 
@@ -36,53 +38,26 @@ fun CallableDescriptor.irCallable(irCtx: IrPluginContext): IrFunction =
     irCtx.symbolTable.descriptorExtension.referenceProperty(this).ensureBound(irCtx).owner.getter!!
   else irCtx.symbolTable.referenceFunction(this).ensureBound(irCtx).owner
 
-fun TypeRef.toIrType(irCtx: IrPluginContext): IrTypeArgument {
-  if (isStarProjection) return IrStarProjectionImpl
-  return when {
-    classifier.isTag -> arguments.last().toIrType(irCtx)
-      .typeOrNull!!
-      .cast<IrSimpleType>()
-      .let { type ->
-        val tagConstructor = irCtx.referenceClass(classifier.fqName)!!.constructors.single()
-        IrSimpleTypeImpl(
-          type.originalKotlinType,
-          type.classifier,
-          type.nullability,
-          type.arguments,
-          listOf(
-            DeclarationIrBuilder(irCtx, tagConstructor)
-              .irCall(
-                tagConstructor,
-                tagConstructor.owner.returnType
-                  .classifierOrFail
-                  .typeWith(
-                    arguments.dropLast(1)
-                      .map { it.toIrType(irCtx).typeOrNull ?: irCtx.irBuiltIns.anyNType }
-                  )
-              ).apply {
-                tagConstructor.owner.typeParameters.indices
-                  .forEach { index ->
-                    putTypeArgument(index, arguments[index].toIrType(irCtx).typeOrNull!!)
-                  }
-              }
-          ) + type.annotations,
-          type.abbreviation
-        )
-      }
+fun TypeProjection.toIrTypeArgument(irCtx: IrPluginContext): IrTypeArgument =
+  if (isStarProjection) IrStarProjectionImpl
+  else type.toIrType(irCtx).cast()
+
+fun KotlinType.toIrType(irCtx: IrPluginContext): IrType =
+  when (constructor) {
+    is TagTypeConstructor -> arguments.last().toIrTypeArgument(irCtx).typeOrNull!!
     else -> IrSimpleTypeImpl(
-      if (classifier.isTypeParameter) {
-        when (val container = classifier.descriptor!!.containingDeclaration) {
+      if (constructor.isTypeParameterTypeConstructor()) {
+        when (val container = constructor.declarationDescriptor!!.containingDeclaration) {
           is CallableDescriptor -> container.irCallable(irCtx).typeParameters
           is ClassDescriptor -> container.irClass(irCtx).typeParameters
           else -> throw AssertionError("Unexpected container $container")
-        }.single { it.descriptor.name == classifier.descriptor.name }.symbol
-      } else irCtx.symbolTable.referenceClassifier(classifier.descriptor!!).ensureBound(irCtx),
+        }.single { it.descriptor.name == constructor.declarationDescriptor!!.name }.symbol
+      } else irCtx.symbolTable.referenceClassifier(constructor.declarationDescriptor!!).ensureBound(irCtx),
       isMarkedNullable,
-      arguments.map { it.toIrType(irCtx) },
+      arguments.map { it.toIrTypeArgument(irCtx) },
       emptyList()
     )
   }
-}
 
 fun <T : IrSymbol> T.ensureBound(irCtx: IrPluginContext): T = apply {
   if (!isBound)

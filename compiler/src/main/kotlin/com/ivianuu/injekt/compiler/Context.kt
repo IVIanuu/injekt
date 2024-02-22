@@ -2,32 +2,59 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(TypeRefinement::class, TypeRefinement::class)
+
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.calls.components.*
+import org.jetbrains.kotlin.resolve.calls.inference.components.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
 @Suppress("NewApi")
-class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeCheckerContext {
+class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   fun withTrace(trace: BindingTrace?) = Context(module, trace)
 
-  override val ctx: Context get() = this
-
-  override fun isDenotable(type: TypeRef): Boolean = true
-
-  val listClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.list.toClassifierRef(ctx) }
-  val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.collection.toClassifierRef(ctx) }
-  val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.nullableNothingType.toTypeRef(ctx = ctx) }
-  val anyType by lazy(LazyThreadSafetyMode.NONE) { module.builtIns.anyType.toTypeRef(ctx = ctx) }
-  val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
-    anyType.copy(isMarkedNullable = true)
-  }
+  val collectionClassifier get() = module.builtIns.collection
+  val anyType get() = module.builtIns.anyType
+  val nullableAnyType get() = module.builtIns.nullableAnyType
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
-      .toClassifierRef(ctx).defaultType.copy(arguments = listOf(STAR_PROJECTION_TYPE))
+      .defaultType
+  }
+
+  val constraintInjector by lazy(LazyThreadSafetyMode.NONE) {
+    ConstraintInjector(
+      ConstraintIncorporator(typeApproximator, oracle, utilContext),
+      typeApproximator,
+      LanguageVersionSettingsImpl.DEFAULT
+    )
+  }
+
+  private val typeApproximator by lazy(LazyThreadSafetyMode.NONE) {
+    TypeApproximator(module.builtIns, LanguageVersionSettingsImpl.DEFAULT)
+  }
+  private val oracle by lazy(LazyThreadSafetyMode.NONE) {
+    TrivialConstraintTypeInferenceOracle(
+      ClassicTypeSystemContextForCS(
+        module.builtIns, module.getKotlinTypeRefiner()
+      )
+    )
+  }
+  private val utilContext by lazy(LazyThreadSafetyMode.NONE) {
+    ClassicConstraintSystemUtilContext(module.getKotlinTypeRefiner(), module.builtIns)
+  }
+  val resultTypeResolver by lazy(LazyThreadSafetyMode.NONE) {
+    ResultTypeResolver(
+      typeApproximator,
+      oracle,
+      LanguageVersionSettingsImpl.DEFAULT
+    )
   }
 }
 

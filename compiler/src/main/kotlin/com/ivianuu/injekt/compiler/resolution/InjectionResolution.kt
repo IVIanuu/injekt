@@ -9,6 +9,10 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.CommonSupertypes.*
+import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -53,8 +57,8 @@ sealed interface ResolutionResult {
       }
 
       data class ReifiedTypeArgumentMismatch(
-        val parameter: ClassifierRef,
-        val argument: ClassifierRef,
+        val parameter: TypeParameterDescriptor,
+        val argument: TypeParameterDescriptor,
         override val candidate: Injectable
       ) : WithCandidate {
         override val failureOrdering: Int
@@ -110,13 +114,14 @@ fun InjectablesScope.resolveRequests(
 }
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
-  resultsByType[request.type]?.let { return it }
+  val key = request.type.injektHashCode(ctx)
+  resultsByType[key]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
-    ?: tryToResolveRequestWithFrameworkInjectable(request)
+    ?: tryToResolveRequestWithBuiltInInjectable(request)
     ?: ResolutionResult.Failure.NoCandidates(request)
 
-  resultsByType[request.type] = result
+  resultsByType[key] = result
   return result
 }
 
@@ -126,9 +131,9 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
   .takeIf { it.isNotEmpty() }
   ?.let { resolveCandidates(request, it) }
 
-private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
+private fun InjectablesScope.tryToResolveRequestWithBuiltInInjectable(
   request: InjectableRequest
-): ResolutionResult? = frameworkInjectableForRequest(request)?.let { resolveCandidate(it) }
+): ResolutionResult? = builtInInjectableForRequest(request)?.let { resolveCandidate(it) }
 
 private fun InjectablesScope.computeForCandidate(
   candidate: Injectable,
@@ -149,12 +154,12 @@ private fun InjectablesScope.computeForCandidate(
         previousCandidate is CallableInjectable &&
         previousCandidate.callable.callable.containingDeclaration.fqNameSafe
           .asString().startsWith(InjektFqNames.Function.asString()))
-        candidate.dependencies.first().type == previousCandidate.dependencies.first().type
+        candidate.dependencies.first().typeKey == previousCandidate.dependencies.first().typeKey
       else previousCandidate.callableFqName == candidate.callableFqName
 
       if (isSameCallable &&
         previousCandidate.type.coveringSet == candidate.type.coveringSet &&
-        (previousCandidate.type.typeSize < candidate.type.typeSize ||
+        (previousCandidate.type.typeSize(ctx) < candidate.type.typeSize(ctx) ||
             previousCandidate.type == candidate.type)) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
@@ -229,26 +234,24 @@ private fun InjectablesScope.resolveCandidates(
 private fun InjectablesScope.resolveCandidate(
   candidate: Injectable
 ): ResolutionResult = computeForCandidate(candidate) {
-  if (candidate is CallableInjectable) {
-    for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
-      val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
+  if (candidate is CallableInjectable)
+    for ((parameterConstructor, typeArgument) in candidate.callable.typeArguments) {
+      val parameterDescriptor = parameterConstructor.declarationDescriptor!!.cast<TypeParameterDescriptor>()
+      val argumentDescriptor = typeArgument.type.constructor.declarationDescriptor as? TypeParameterDescriptor
         ?: continue
-      val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
-      if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
+      if (parameterDescriptor.isReified && !argumentDescriptor.isReified)
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
-          typeParameter,
-          typeArgument.classifier,
+          parameterDescriptor,
+          argumentDescriptor,
           candidate
         )
-      }
     }
-  }
 
   if (candidate.dependencies.isEmpty())
     return@computeForCandidate ResolutionResult.Success.Value(candidate, this, emptyMap())
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
-  for (dependency in candidate.dependencies) {
+  for (dependency in candidate.dependencies)
     when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> when {
@@ -265,7 +268,6 @@ private fun InjectablesScope.resolveCandidate(
         )
       }
     }
-  }
 
   return@computeForCandidate ResolutionResult.Success.Value(
     candidate,
@@ -319,42 +321,47 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (bScopeNesting > aScopeNesting) return 1
 
   return compareType(
-    a.safeAs<CallableInjectable>()?.callable?.originalType,
-    b.safeAs<CallableInjectable>()?.callable?.originalType
+    a.safeAs<CallableInjectable>()?.callable?.originalType?.asTypeProjection(),
+    b.safeAs<CallableInjectable>()?.callable?.originalType?.asTypeProjection()
   )
 }
 
 private fun InjectablesScope.compareType(
-  a: TypeRef?,
-  b: TypeRef?,
-  comparedTypes: MutableSet<Pair<TypeRef, TypeRef>> = mutableSetOf()
+  a: TypeProjection?,
+  b: TypeProjection?,
+  comparedTypes: MutableSet<Pair<TypeProjection, TypeProjection>> = mutableSetOf()
 ): Int {
-  if (a == b) return 0
-
+  if (a == null && b == null) return 0
   if (a != null && b == null) return -1
   if (b != null && a == null) return 1
   a!!
   b!!
 
+  if (a.type.injektHashCode(ctx) == b.type.injektHashCode(ctx)) return 0
+
   if (!a.isStarProjection && b.isStarProjection) return -1
   if (a.isStarProjection && !b.isStarProjection) return 1
 
-  if (!a.isMarkedNullable && b.isMarkedNullable) return -1
-  if (!b.isMarkedNullable && a.isMarkedNullable) return 1
+  if (!a.type.isMarkedNullable && b.type.isMarkedNullable) return -1
+  if (!b.type.isMarkedNullable && a.type.isMarkedNullable) return 1
 
-  if (!a.classifier.isTypeParameter && b.classifier.isTypeParameter) return -1
-  if (a.classifier.isTypeParameter && !b.classifier.isTypeParameter) return 1
+  if (!a.type.constructor.isTypeParameterTypeConstructor() &&
+    b.type.constructor.isTypeParameterTypeConstructor()) return -1
+  if (a.type.constructor.isTypeParameterTypeConstructor() &&
+    !b.type.constructor.isTypeParameterTypeConstructor()) return 1
 
   val pair = a to b
   if (!comparedTypes.add(pair)) return 0
 
-  fun compareSameClassifier(a: TypeRef?, b: TypeRef?): Int {
-    if (a == b) return 0
+  fun compareSameClassifier(a: KotlinType?, b: KotlinType?): Int {
+    if (a == null && b == null) return 0
 
     if (a != null && b == null) return -1
     if (b != null && a == null) return 1
     a!!
     b!!
+
+    if (a.injektHashCode(ctx) == b.injektHashCode(ctx)) return 0
 
     var diff = 0
     a.arguments.zip(b.arguments).forEach { (aTypeArgument, bTypeArgument) ->
@@ -365,18 +372,18 @@ private fun InjectablesScope.compareType(
     return 0
   }
 
-  if (a.classifier != b.classifier) {
-    val aSubTypeOfB = a.isSubTypeOf(b, ctx)
-    val bSubTypeOfA = b.isSubTypeOf(a, ctx)
+  if (a.type.constructor != b.type.constructor) {
+    val aSubTypeOfB = a.type.isSubtypeOf(b.type)
+    val bSubTypeOfA = b.type.isSubtypeOf(a.type)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
-    val aCommonSuperType = commonSuperType(a.superTypes, ctx = ctx)
-    val bCommonSuperType = commonSuperType(b.superTypes, ctx = ctx)
+    val aCommonSuperType = commonSupertype(a.type.constructor.supertypes).asTypeProjection()
+    val bCommonSuperType = commonSupertype(b.type.constructor.supertypes).asTypeProjection()
     val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
     if (diff < 0) return -1
     if (diff > 0) return 1
   } else {
-    val diff = compareSameClassifier(a, b)
+    val diff = compareSameClassifier(a.type, b.type)
     if (diff < 0) return -1
     if (diff > 0) return 1
   }

@@ -239,7 +239,7 @@ private fun ClassInjectablesScope(
     parent = finalParent,
     owner = clazz.findPsi().cast(),
     initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters,
     ctx = ctx
   )
 }
@@ -280,7 +280,7 @@ private fun ClassInitInjectablesScope(
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters,
     ctx = ctx
   )
 
@@ -301,14 +301,11 @@ private fun ConstructorPreInitInjectablesScope(
     until = null,
     ctx = ctx
   )
-  val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
-    it.toClassifierRef(ctx)
-  }
   return InjectableScopeOrParent(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
     parent = parameterScopes,
     owner = constructor.findPsi().cast(),
-    typeParameters = typeParameters,
+    typeParameters = constructor.constructedClass.declaredTypeParameters,
     nesting = parameterScopes.nesting,
     ctx = ctx
   )
@@ -331,7 +328,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
     owner = function.findPsi().cast(),
-    typeParameters = function.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = function.typeParameters,
     ctx = ctx
   )
 }
@@ -346,15 +343,13 @@ private fun FunctionInjectablesScope(
 ) {
   val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
   val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is ConstructorDescriptor)
-    function.constructedClass.declaredTypeParameters
-  else function.typeParameters)
-    .map { it.toClassifierRef(ctx) }
   InjectableScopeOrParent(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
     owner = function.findPsi().cast(),
-    typeParameters = typeParameters,
+    typeParameters = (if (function is ConstructorDescriptor)
+      function.constructedClass.declaredTypeParameters
+    else function.typeParameters),
     nesting = parameterScopes.nesting,
     ctx = ctx
   )
@@ -397,7 +392,7 @@ private fun FunctionParameterInjectablesScope(
     parent = parent,
     owner = (parameter.callable.findPsi() ?: function.findPsi()).cast(),
     initialInjectables = listOf(parameter),
-    typeParameters = function.toCallableRef(ctx).typeParameters,
+    typeParameters = function.typeParameters,
     nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
     else parent.nesting + 1,
     ctx = ctx
@@ -421,7 +416,7 @@ private fun PropertyInjectablesScope(
         .filter { it.isProvide(ctx) || property.isProvide(ctx) }
         .forEach { add(it.toCallableRef(ctx)) }
     },
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters,
     ctx = ctx
   )
 }
@@ -447,7 +442,7 @@ private fun PropertyInitInjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
     parent = finalParent,
     owner = property.findPsi().cast(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters,
     ctx = ctx
   )
 }
@@ -543,11 +538,20 @@ fun InjectableScopeOrParent(
   owner: KtElement? = null,
   initialInjectables: List<CallableRef> = emptyList(),
   injectablesPredicate: (CallableRef) -> Boolean = { true },
-  typeParameters: List<ClassifierRef> = emptyList(),
+  typeParameters: List<TypeParameterDescriptor> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
 ): InjectablesScope {
   val finalInitialInjectables = initialInjectables.filter(injectablesPredicate)
   return if (typeParameters.isEmpty() && finalInitialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, finalInitialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
+  else InjectablesScope(
+    name,
+    parent,
+    owner,
+    finalInitialInjectables,
+    injectablesPredicate,
+    typeParameters.map { it.typeConstructor(ctx) },
+    nesting,
+    ctx
+  )
 }

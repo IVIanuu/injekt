@@ -15,8 +15,10 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
+import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.extensions.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.*
 
 @OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
@@ -63,25 +65,28 @@ import org.jetbrains.kotlin.utils.*
 
     val file = callExpression.containingKtFile
 
-    val substitutionMap = buildMap {
-      for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef(ctx)] = argument.toTypeRef(ctx)
-
-      fun TypeRef.putAll() {
-        for ((index, parameter) in classifier.typeParameters.withIndex()) {
-          val argument = arguments[index]
-          if (argument.classifier != parameter)
-            this@buildMap[parameter] = arguments[index]
+    val substitutor = NewTypeSubstitutorByConstructorMap(
+      buildMap {
+        for ((parameter, argument) in resolvedCall.typeArguments) {
+          this[parameter.typeConstructor(ctx)] = argument.unwrap()
         }
-      }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
-    }
+        fun KotlinType.putAll() {
+          for ((index, parameter) in constructor.parameters.withIndex()) {
+            val argument = arguments[index]
+            if (argument.type != parameter.defaultType)
+              this@buildMap[parameter.typeConstructor(ctx)] = arguments[index].type.unwrap()
+          }
+        }
+
+        resolvedCall.dispatchReceiver?.type?.putAll()
+        resolvedCall.extensionReceiver?.type?.putAll()
+      }
+    )
 
     val callee = resultingDescriptor
       .toCallableRef(ctx)
-      .substitute(substitutionMap)
+      .substitute(substitutor)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments
       .mapKeys { it.key.injektIndex() }
@@ -90,7 +95,7 @@ import org.jetbrains.kotlin.utils.*
       .transform {
         val index = it.injektIndex()
         if (valueArgumentsByIndex[index] is DefaultValueArgument && index in info.injectParameters)
-          add(it.toInjectableRequest(callee))
+          add(it.toInjectableRequest(callee, ctx))
       }
 
     if (requests.isEmpty()) return

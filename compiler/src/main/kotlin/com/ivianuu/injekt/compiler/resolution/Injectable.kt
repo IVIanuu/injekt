@@ -13,10 +13,11 @@ import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
-  val type: TypeRef
+  val type: KotlinType
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScope: InjectablesScope? get() = null
   val callableFqName: FqName
@@ -26,30 +27,34 @@ sealed interface Injectable {
 class CallableInjectable(
   override val ownerScope: InjectablesScope,
   val callable: CallableRef,
-  override val type: TypeRef
+  override val type: KotlinType
 ) : Injectable {
   override val dependencies = (if (callable.callable is ConstructorDescriptor) callable.callable.valueParameters
       else callable.callable.allParameters)
-    .map { it.toInjectableRequest(callable) }
+    .map { it.toInjectableRequest(callable, ownerScope.ctx) }
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
   else callable.callable.fqNameSafe
 }
 
 class ListInjectable(
-  override val type: TypeRef,
+  override val type: KotlinType,
   override val ownerScope: InjectablesScope,
-  elements: List<TypeRef>,
-  val singleElementType: TypeRef,
-  val collectionElementType: TypeRef
+  elements: List<KotlinType>,
+  val singleElementType: KotlinType,
+  val collectionElementType: KotlinType
 ) : Injectable {
   override val callableFqName = FqName("listOf")
   override val dependencies = elements
     .mapIndexed { index, element ->
       InjectableRequest(
         type = element,
+        typeKey = element.injektHashCode(ownerScope.ctx),
         callableFqName = callableFqName,
-        callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
+        callableTypeArguments = type.constructor.parameters
+          .map { it.typeConstructor(ownerScope.ctx) }
+          .zip(type.arguments)
+          .toMap(),
         parameterName = "element$index".asNameId(),
         parameterIndex = index
       )
@@ -64,7 +69,8 @@ class LambdaInjectable(
   override val callableFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
     InjectableRequest(
-      type = type.arguments.last(),
+      type = type.arguments.last().type,
+      typeKey = type.arguments.last().type.injektHashCode(ownerScope.ctx),
       callableFqName = callableFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0
@@ -72,8 +78,8 @@ class LambdaInjectable(
   )
 
   val parameterDescriptors = type
-    .classifier
-    .descriptor!!
+    .constructor
+    .declarationDescriptor
     .cast<ClassDescriptor>()
     .unsubstitutedMemberScope
     .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
@@ -89,7 +95,7 @@ class LambdaInjectable(
       .mapIndexed { index, parameter ->
         parameter
           .toCallableRef(ownerScope.ctx)
-          .copy(type = type.arguments[index])
+          .copy(type = type.arguments[index].type)
       }
   )
 
@@ -101,17 +107,19 @@ class LambdaInjectable(
 }
 
 data class InjectableRequest(
-  val type: TypeRef,
+  val typeKey: Int,
+  val type: KotlinType,
   val callableFqName: FqName,
-  val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
+  val callableTypeArguments: Map<TypeConstructor, TypeProjection> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest =
+fun ParameterDescriptor.toInjectableRequest(callable: CallableRef, ctx: Context): InjectableRequest =
   InjectableRequest(
     type = callable.parameterTypes[injektIndex()]!!,
+    typeKey = callable.parameterTypes[injektIndex()]!!.injektHashCode(ctx),
     callableFqName = callable.callableFqName,
     callableTypeArguments = callable.typeArguments,
     parameterName = injektName(),
