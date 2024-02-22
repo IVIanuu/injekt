@@ -19,7 +19,7 @@ suspend fun main() {
 
 # Setup
 ```kotlin
-// gradle.properties
+// in your gradle.properties
 org.gradle.jvmargs=-Dkotlin.daemon.jvm.options=--add-opens=java.base/java.lang=ALL-UNNAMED,--add-opens=java.base/java.lang.reflect=ALL-UNNAMED
 
 // in your buildscript
