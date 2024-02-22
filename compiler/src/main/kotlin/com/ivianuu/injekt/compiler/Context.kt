@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
 @Suppress("NewApi")
@@ -26,6 +27,7 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) {
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
     module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
       .defaultType
+      .replaceArgumentsWithStarProjections()
   }
 
   val constraintInjector by lazy(LazyThreadSafetyMode.NONE) {
