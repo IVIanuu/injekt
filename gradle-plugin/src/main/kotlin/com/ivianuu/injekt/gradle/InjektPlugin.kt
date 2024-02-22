@@ -18,6 +18,14 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       "ksp",
       "com.ivianuu.injekt:ksp:${BuildConfig.VERSION}"
     )
+    target.dependencies.add(
+      "implementation",
+      "com.ivianuu.injekt:core:${BuildConfig.VERSION}"
+    )
+    target.dependencies.add(
+      "implementation",
+      "com.ivianuu.injekt:common:${BuildConfig.VERSION}"
+    )
   }
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
