@@ -36,13 +36,6 @@ buildscript {
 plugins {
   apply("com.ivianuu.injekt")
 }
-
-dependencies {
-  // core runtime
-  implementation("com.ivianuu.injekt:core:${latest_version}")
-  // optional - common utilities
-  implementation("com.ivianuu.injekt:common:${latest_version}")
-}
 ```
 
 # Provide injectables
