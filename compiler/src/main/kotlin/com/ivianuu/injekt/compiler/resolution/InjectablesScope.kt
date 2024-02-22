@@ -68,7 +68,7 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.uniqueId.isEmpty() &&
+    if (request.type.uniqueId == null &&
       request.type.classifier == ctx.listClassifier) return emptyList()
 
     return injectablesForType(
@@ -84,8 +84,7 @@ class InjectablesScope(
         parent?.injectablesForType(key)?.let { addAll(it) }
 
         for (candidate in injectables) {
-          if (key.type.uniqueId.isNotEmpty() &&
-            candidate.type.uniqueId != key.type.uniqueId) continue
+          if (key.type.uniqueId != null && candidate.type.uniqueId != key.type.uniqueId) continue
           val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
           this += CallableInjectable(
