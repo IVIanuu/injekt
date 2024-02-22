@@ -7,6 +7,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.resolve.*
 import java.io.*
 
@@ -20,7 +21,7 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
     )
 
     moduleFragment.transform(InjectCallTransformer(pluginContext, ctx), null)
-
+    moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, ctx)
   }
 }
