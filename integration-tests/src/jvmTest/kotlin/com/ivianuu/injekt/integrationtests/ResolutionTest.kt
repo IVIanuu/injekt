@@ -322,7 +322,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "nonnull"
   }
 
-  @Test fun testPrefersUserInjectableErrorOverFrameworkInjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersUserInjectableErrorOverBuiltInInjectable() = singleAndMultiCodegen(
     """
       @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
     """,

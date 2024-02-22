@@ -113,7 +113,7 @@ private fun InjectablesScope.resolveRequest(request: InjectableRequest): Resolut
   resultsByType[request.type]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
-    ?: tryToResolveRequestWithFrameworkInjectable(request)
+    ?: tryToResolveRequestWithBuiltInInjectable(request)
     ?: ResolutionResult.Failure.NoCandidates(request)
 
   resultsByType[request.type] = result
@@ -126,9 +126,9 @@ private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
   .takeIf { it.isNotEmpty() }
   ?.let { resolveCandidates(request, it) }
 
-private fun InjectablesScope.tryToResolveRequestWithFrameworkInjectable(
+private fun InjectablesScope.tryToResolveRequestWithBuiltInInjectable(
   request: InjectableRequest
-): ResolutionResult? = frameworkInjectableForRequest(request)?.let { resolveCandidate(it) }
+): ResolutionResult? = builtInInjectableForRequest(request)?.let { resolveCandidate(it) }
 
 private fun InjectablesScope.computeForCandidate(
   candidate: Injectable,

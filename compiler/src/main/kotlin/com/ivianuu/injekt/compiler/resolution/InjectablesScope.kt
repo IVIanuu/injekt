@@ -68,7 +68,7 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.frameworkKey.isEmpty() &&
+    if (request.type.uniqueId.isEmpty() &&
       request.type.classifier == ctx.listClassifier) return emptyList()
 
     return injectablesForType(
@@ -84,8 +84,8 @@ class InjectablesScope(
         parent?.injectablesForType(key)?.let { addAll(it) }
 
         for (candidate in injectables) {
-          if (key.type.frameworkKey.isNotEmpty() &&
-            candidate.type.frameworkKey != key.type.frameworkKey) continue
+          if (key.type.uniqueId.isNotEmpty() &&
+            candidate.type.uniqueId != key.type.uniqueId) continue
           val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
           this += CallableInjectable(
@@ -98,7 +98,7 @@ class InjectablesScope(
     }
   }
 
-  fun frameworkInjectableForRequest(request: InjectableRequest): Injectable? = when {
+  fun builtInInjectableForRequest(request: InjectableRequest): Injectable? = when {
     request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
     request.type.classifier == ctx.listClassifier -> {
       val singleElementType = request.type.arguments[0]

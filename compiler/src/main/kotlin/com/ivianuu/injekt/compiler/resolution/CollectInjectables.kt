@@ -152,7 +152,7 @@ fun CallableRef.collectInjectables(
 
   if (type.isUnconstrained(scope.allStaticTypeParameters)) return
 
-  val nextCallable = copy(type = type.copy(frameworkKey = UUID.randomUUID().toString()))
+  val nextCallable = copy(type = type.copy(uniqueId = UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
   nextCallable

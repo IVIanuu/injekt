@@ -130,7 +130,7 @@ fun KotlinType.toTypeRef(
         },
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
       isStarProjection = false,
-      frameworkKey = "",
+      uniqueId = "",
       variance = variance
     )
 
@@ -165,7 +165,7 @@ data class TypeRef(
   val arguments: List<TypeRef> = emptyList(),
   val isProvide: Boolean = false,
   val isStarProjection: Boolean = false,
-  val frameworkKey: String = "",
+  val uniqueId: String? = null,
   val variance: TypeVariance = TypeVariance.INV,
   val source: ClassifierRef? = null
 ) {
@@ -248,7 +248,7 @@ data class TypeRef(
       result = 31 * result + arguments.hashCode()
       result = 31 * result + isProvide.hashCode()
       result = 31 * result + isStarProjection.hashCode()
-      result = 31 * result + frameworkKey.hashCode()
+      result = 31 * result + uniqueId.hashCode()
       result = 31 * result + variance.hashCode()
       _hashCode = result
       return result
