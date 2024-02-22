@@ -130,7 +130,7 @@ fun KotlinType.toTypeRef(
         },
       isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
       isStarProjection = false,
-      uniqueId = "",
+      uniqueId = null,
       variance = variance
     )
 
