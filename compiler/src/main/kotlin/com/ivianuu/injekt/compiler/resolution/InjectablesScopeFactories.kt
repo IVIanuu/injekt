@@ -550,7 +550,7 @@ fun InjectableScopeOrParent(
     owner,
     finalInitialInjectables,
     injectablesPredicate,
-    typeParameters.map { it.typeConstructor(ctx) },
+    typeParameters,
     nesting,
     ctx
   )

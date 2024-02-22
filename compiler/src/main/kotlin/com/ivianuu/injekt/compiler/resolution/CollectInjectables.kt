@@ -47,7 +47,7 @@ fun KotlinType.collectInjectables(
           .substitute(
             NewTypeSubstitutorByConstructorMap(
               constructor.parameters
-                .map { it.typeConstructor(ctx) }
+                .map { it.typeConstructor }
                 .zip(arguments.map { it.type.unwrap() })
                 .toMap()
             )
@@ -73,13 +73,13 @@ fun KotlinType.collectInjectables(
                 .containingDeclaration
                 .cast<ClassDescriptor>()
               constructor.parameters
-                .map { it.typeConstructor(ctx) }
+                .map { it.typeConstructor }
                 .zip(arguments.map { it.type.unwrap() })
                 .toMap() +
                   originalClassifier.declaredTypeParameters
-                    .map { it.typeConstructor(ctx) }
+                    .map { it.typeConstructor }
                     .zip(subtypeView(originalClassifier)!!.arguments.map { it.type.unwrap() })
-            } else constructor.parameters.map { it.typeConstructor(ctx) }.zip(arguments.map { it.type.unwrap() }).toMap()
+            } else constructor.parameters.map { it.typeConstructor }.zip(arguments.map { it.type.unwrap() }).toMap()
           )
         )
 
@@ -157,8 +157,7 @@ fun CallableRef.collectInjectables(
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
   if (typeArguments.any {
-    it.key.declarationDescriptor!!.hasAnnotation(InjektFqNames.Spread) &&
-        it.value.type == it.key.declarationDescriptor!!.defaultType
+    it.key.hasAnnotation(InjektFqNames.Spread) && it.value.type == it.key.defaultType
   }) {
     addSpreadingInjectable(this)
     return

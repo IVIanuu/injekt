@@ -6,6 +6,7 @@ package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.builtins.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
@@ -18,7 +19,7 @@ class InjectablesScope(
   val owner: KtElement? = null,
   val initialInjectables: List<CallableRef> = emptyList(),
   val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  val typeParameters: List<TypeConstructor> = emptyList(),
+  val typeParameters: List<TypeParameterDescriptor> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
@@ -38,11 +39,11 @@ class InjectablesScope(
   data class SpreadingInjectable(
     val callable: CallableRef,
     val constraintType: KotlinType = callable.typeArguments.keys.single {
-      it.declarationDescriptor!!.hasAnnotation(InjektFqNames.Spread)
-    }.declarationDescriptor!!.defaultType.substitute(
+      it.typeConstructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.Spread)
+    }.defaultType.substitute(
       NewTypeSubstitutorByConstructorMap(
         callable.typeArguments
-          .mapKeys { it.key }
+          .mapKeys { it.key.typeConstructor }
           .mapValues { it.value.type.unwrap() }
       )
     ),
@@ -62,7 +63,7 @@ class InjectablesScope(
   data class CallableRequestKey(
     val type: KotlinType,
     val typeKey: Int,
-    val staticTypeParameters: List<TypeConstructor>,
+    val staticTypeParameters: List<TypeParameterDescriptor>,
   )
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 

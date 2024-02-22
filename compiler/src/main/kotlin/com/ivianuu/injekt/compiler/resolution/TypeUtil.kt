@@ -48,9 +48,6 @@ fun KotlinType.injektHashCode(ctx: Context): Int {
   return result
 }
 
-fun TypeParameterDescriptor.typeConstructor(ctx: Context) =
-  ctx.cached("type_constructor", uniqueKey(ctx)) { typeConstructor }
-
 fun KotlinType.substitute(substitutor: NewTypeSubstitutor) = substitutor.safeSubstitute(unwrap())
 
 fun TypeProjection.substitute(substitutor: NewTypeSubstitutor) =
@@ -155,9 +152,9 @@ fun KotlinType.isProvideFunctionType(ctx: Context): Boolean =
 val KotlinType.isFunctionType: Boolean
   get() = constructor.declarationDescriptor!!.fqNameSafe.asString().startsWith("kotlin.Function")
 
-fun KotlinType.isUnconstrained(staticTypeParameters: List<TypeConstructor>): Boolean =
+fun KotlinType.isUnconstrained(staticTypeParameters: List<TypeParameterDescriptor>): Boolean =
   constructor.isTypeParameterTypeConstructor() &&
-      constructor !in staticTypeParameters &&
+      constructor.declarationDescriptor !in staticTypeParameters &&
       constructor.supertypes.all {
         it.constructor.declarationDescriptor?.fqNameSafe == InjektFqNames.Any ||
             it.isUnconstrained(staticTypeParameters)
@@ -166,12 +163,12 @@ fun KotlinType.isUnconstrained(staticTypeParameters: List<TypeConstructor>): Boo
 fun runSpreadingInjectableInference(
   constraintType: KotlinType,
   candidateType: KotlinType,
-  staticTypeParameters: List<TypeConstructor>,
+  staticTypeParameters: List<TypeParameterDescriptor>,
   ctx: Context
 ): NewTypeSubstitutor? {
   val candidateTypeParameters = candidateType.allTypes(ctx)
     .filter { it.constructor.isTypeParameterTypeConstructor() }
-    .map { it.constructor }
+    .map { it.constructor.declarationDescriptor!!.cast<TypeParameterDescriptor>() }
   return candidateType.runCandidateInference(
     constraintType,
     candidateTypeParameters + staticTypeParameters,
@@ -182,7 +179,7 @@ fun runSpreadingInjectableInference(
 
 fun KotlinType.runCandidateInference(
   superType: KotlinType,
-  staticTypeParameters: List<TypeConstructor>,
+  staticTypeParameters: List<TypeParameterDescriptor>,
   ctx: Context,
   collectSuperTypeVariables: Boolean = false,
 ): NewTypeSubstitutor? {
@@ -197,7 +194,8 @@ fun KotlinType.runCandidateInference(
     forEachType {
       if (it.constructor.isTypeParameterTypeConstructor()) {
         val typeParameter = it.constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
-        put(typeParameter, TypeVariableFromCallableDescriptor(typeParameter))
+        if (typeParameter !in staticTypeParameters)
+          put(typeParameter, TypeVariableFromCallableDescriptor(typeParameter))
       }
     }
 
@@ -205,7 +203,8 @@ fun KotlinType.runCandidateInference(
       superType.forEachType {
         if (it.constructor.isTypeParameterTypeConstructor()) {
           val typeParameter = it.constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
-          put(typeParameter, TypeVariableFromCallableDescriptor(typeParameter))
+          if (typeParameter !in staticTypeParameters)
+            put(typeParameter, TypeVariableFromCallableDescriptor(typeParameter))
         }
       }
   }
@@ -214,7 +213,7 @@ fun KotlinType.runCandidateInference(
     return if (isSubtypeOf(superType)) EmptySubstitutor else null
 
   val toTypeVariablesSubstitutor = NewTypeSubstitutorByConstructorMap(
-    typeVariables.mapKeys { it.key.typeConstructor(ctx) }.mapValues {
+    typeVariables.mapKeys { it.key.typeConstructor }.mapValues {
       it.value.defaultType(constraintSystem.typeSystemContext).cast()
     }
   )
@@ -264,7 +263,7 @@ fun KotlinType.runCandidateInference(
   return if (constraintSystem.hasContradiction) null
   else NewTypeSubstitutorByConstructorMap(
     constraintSystem.fixedTypeVariables
-      .mapKeys { it.key.cast<TypeVariableTypeConstructor>().originalTypeParameter!!.typeConstructor(ctx) }
+      .mapKeys { it.key.cast<TypeVariableTypeConstructor>().originalTypeParameter!!.typeConstructor }
       .mapValues { it.value.cast() }
   )
 }

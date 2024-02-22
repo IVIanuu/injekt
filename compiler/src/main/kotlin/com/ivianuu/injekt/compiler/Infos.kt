@@ -60,10 +60,10 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
           val substitutor = NewTypeSubstitutorByConstructorMap(
             buildMap {
               for ((index, typeParameter) in rootClassifier.declaredTypeParameters.withIndex())
-                this[typeParameter.typeConstructor(ctx)] = superType.arguments[index].type.unwrap()
+                this[typeParameter.typeConstructor] = superType.arguments[index].type.unwrap()
 
               for ((index, typeParameter) in rootOverriddenCallable.typeParameters.withIndex())
-                this[typeParameter.typeConstructor(ctx)] = typeParameters[index].defaultType
+                this[typeParameter.typeConstructor] = typeParameters[index].defaultType
             }
           )
           info.copy(

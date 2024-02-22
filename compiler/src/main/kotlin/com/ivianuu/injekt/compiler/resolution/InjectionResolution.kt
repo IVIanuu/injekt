@@ -235,8 +235,7 @@ private fun InjectablesScope.resolveCandidate(
   candidate: Injectable
 ): ResolutionResult = computeForCandidate(candidate) {
   if (candidate is CallableInjectable)
-    for ((parameterConstructor, typeArgument) in candidate.callable.typeArguments) {
-      val parameterDescriptor = parameterConstructor.declarationDescriptor!!.cast<TypeParameterDescriptor>()
+    for ((parameterDescriptor, typeArgument) in candidate.callable.typeArguments) {
       val argumentDescriptor = typeArgument.type.constructor.declarationDescriptor as? TypeParameterDescriptor
         ?: continue
       if (parameterDescriptor.isReified && !argumentDescriptor.isReified)

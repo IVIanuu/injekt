@@ -52,7 +52,6 @@ class ListInjectable(
         typeKey = element.injektHashCode(ownerScope.ctx),
         callableFqName = callableFqName,
         callableTypeArguments = type.constructor.parameters
-          .map { it.typeConstructor(ownerScope.ctx) }
           .zip(type.arguments)
           .toMap(),
         parameterName = "element$index".asNameId(),
@@ -110,7 +109,7 @@ data class InjectableRequest(
   val typeKey: Int,
   val type: KotlinType,
   val callableFqName: FqName,
-  val callableTypeArguments: Map<TypeConstructor, TypeProjection> = emptyMap(),
+  val callableTypeArguments: Map<TypeParameterDescriptor, TypeProjection> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true

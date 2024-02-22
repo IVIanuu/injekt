@@ -20,7 +20,7 @@ data class CallableRef(
   val type: KotlinType,
   val originalType: KotlinType,
   val parameterTypes: Map<Int, KotlinType>,
-  val typeArguments: Map<TypeConstructor, TypeProjection>,
+  val typeArguments: Map<TypeParameterDescriptor, TypeProjection>,
   val callableFqName: FqName,
   val injectParameters: Set<Int>
 )
@@ -47,7 +47,7 @@ fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
       parameterTypes = info.parameterTypes,
       typeArguments = buildMap {
         for (typeParameter in typeParameters)
-          this[typeParameter.typeConstructor(ctx)] = typeParameter.defaultType.asTypeProjection()
+          this[typeParameter] = typeParameter.defaultType.asTypeProjection()
       },
       callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
       safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
