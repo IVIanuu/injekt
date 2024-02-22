@@ -13,6 +13,7 @@ class Scope<N> : SynchronizedObject() {
 
   inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
     val value = values.getOrPut(key) { init() ?: NULL }
+    @Suppress("UNCHECKED_CAST")
     (if (value !== NULL) value else null) as T
   }
 

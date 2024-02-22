@@ -34,7 +34,7 @@ object Deps {
     }
   }
 
-  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.22.0"
+  const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.23.2"
 
   object AutoService {
     private const val version = "1.1.0"
