@@ -204,7 +204,7 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
   kspIncremental = false
   kspWithCompilation = true
 
-  componentRegistrars += InjektComponentRegistrar()
+  compilerPluginRegistrars += InjektCompilerPluginRegistrar()
   commandLineProcessors += InjektCommandLineProcessor()
 
   inheritClassPath = true
