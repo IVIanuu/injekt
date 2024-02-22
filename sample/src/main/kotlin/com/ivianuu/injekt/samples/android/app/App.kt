@@ -12,26 +12,6 @@ import com.ivianuu.injekt.samples.android.ui.*
 class App : Application() {
   @Provide private val appScope = Scope<AppScope>()
   val appComponent by lazy { inject<AppComponent>() }
-
-  /* generated
-  val appComponent by lazy {
-    inject(
-      x = AppComponent(mainActivityComponent = { activityScope ->
-        MainActivityComponent(
-          appTheme = AppTheme.impl,
-          appUi = AppUi.impl(
-            presenter = CounterPresenter.impl(
-              db = Scoped.scoped(
-                scope = appScope,
-                key = TypeKey(value = "com.ivianuu.injekt.samples.android.data.CounterDbImpl"),
-                init = { CounterDbImpl() }
-              )
-            )
-          )
-        )
-      }
-    ))
-  }*/
 }
 
 object AppScope

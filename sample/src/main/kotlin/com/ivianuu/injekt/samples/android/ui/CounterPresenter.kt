@@ -13,23 +13,21 @@ data class CounterState(
 
 fun interface CounterPresenter {
   @Composable operator fun invoke(): CounterState
+}
 
-  @Provide companion object {
-    @Provide fun impl(db: CounterDb) = CounterPresenter {
-      val scope = rememberCoroutineScope()
-      CounterState(
-        state = db.counter.collectAsState(0).value,
-        incCounter = {
-          scope.launch {
-            db.updateCounter { it.inc() }
-          }
-        },
-        decCounter = {
-          scope.launch {
-            db.updateCounter { it.dec() }
-          }
-        }
-      )
+@Provide fun CounterPresenter(db: CounterDb) = CounterPresenter {
+  val scope = rememberCoroutineScope()
+  CounterState(
+    state = db.counter.collectAsState(0).value,
+    incCounter = {
+      scope.launch {
+        db.updateCounter { it.inc() }
+      }
+    },
+    decCounter = {
+      scope.launch {
+        db.updateCounter { it.dec() }
+      }
     }
-  }
+  )
 }

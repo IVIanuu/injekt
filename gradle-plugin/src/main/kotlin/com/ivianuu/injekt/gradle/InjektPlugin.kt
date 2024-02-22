@@ -4,10 +4,12 @@
 
 package com.ivianuu.injekt.gradle
 
+import com.google.auto.service.*
 import org.gradle.api.*
 import org.gradle.api.provider.*
 import org.jetbrains.kotlin.gradle.plugin.*
 
+@AutoService(KotlinCompilerPluginSupportPlugin::class)
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
     kotlinCompilation.target.project.plugins.hasPlugin(InjektPlugin::class.java)
@@ -17,14 +19,6 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     target.dependencies.add(
       "ksp",
       "com.ivianuu.injekt:ksp:${BuildConfig.VERSION}"
-    )
-    target.dependencies.add(
-      "implementation",
-      "com.ivianuu.injekt:core:${BuildConfig.VERSION}"
-    )
-    target.dependencies.add(
-      "implementation",
-      "com.ivianuu.injekt:common:${BuildConfig.VERSION}"
     )
   }
 

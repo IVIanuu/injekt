@@ -11,36 +11,32 @@ import androidx.compose.ui.*
 import androidx.compose.ui.unit.*
 import com.ivianuu.injekt.*
 
-fun interface AppUi {
-  @Composable operator fun invoke()
-
-  @Provide companion object {
-    @Provide fun impl(presenter: CounterPresenter) = AppUi {
-      Scaffold(
-        topBar = {
-          TopAppBar(
-            title = { Text("Injekt sample") },
-            backgroundColor = MaterialTheme.colors.primary
-          )
-        }
+@Provide class AppUi(private val presenter: CounterPresenter) {
+  @Composable fun Content() {
+    Scaffold(
+      topBar = {
+        TopAppBar(
+          title = { Text("Injekt sample") },
+          backgroundColor = MaterialTheme.colors.primary
+        )
+      }
+    ) {
+      val state = presenter()
+      Column(
+        modifier = Modifier
+          .padding(it)
+          .fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        val state = presenter()
-        Column(
-          modifier = Modifier
-            .padding(it)
-            .fillMaxSize(),
-          verticalArrangement = Arrangement.Center,
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Text("Count ${state.state}", style = MaterialTheme.typography.subtitle1)
-          Spacer(Modifier.height(8.dp))
-          Button(onClick = state.incCounter) {
-            Text("Inc")
-          }
-          Spacer(Modifier.height(8.dp))
-          Button(onClick = state.decCounter) {
-            Text("Dec")
-          }
+        Text("Count ${state.state}", style = MaterialTheme.typography.subtitle1)
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = state.incCounter) {
+          Text("Inc")
+        }
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = state.decCounter) {
+          Text("Dec")
         }
       }
     }

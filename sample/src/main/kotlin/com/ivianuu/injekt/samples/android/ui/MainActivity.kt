@@ -19,8 +19,8 @@ class MainActivity : ComponentActivity() {
 
     val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
-      component.appTheme {
-        component.appUi()
+      component.appTheme.Content {
+        component.appUi.Content()
       }
     }
   }

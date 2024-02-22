@@ -29,10 +29,10 @@ object SingletonScope
 /** A coffee maker to brew the coffee.  */
 @Provide class CoffeeMaker(
   private val logger: CoffeeLogger,
-  heater: () -> Heater, // Create a possibly costly heater only when we use it.
+  heater: () -> Heater,
   private val pump: Pump,
 ) {
-  private val heater by lazy(heater)
+  private val heater by lazy(heater) // Create a possibly costly heater only when we use it.
 
   fun brew() {
     heater.on()

@@ -4,7 +4,18 @@
 
 plugins {
   kotlin("jvm")
+  id("java-gradle-plugin")
+  id("com.google.devtools.ksp")
   id("com.github.gmazzo.buildconfig") version "3.0.2"
+}
+
+gradlePlugin {
+  plugins {
+    create("injekt") {
+      id = "com.ivianuu.injekt"
+      implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
+    }
+  }
 }
 
 buildConfig {
@@ -14,6 +25,8 @@ buildConfig {
 }
 
 dependencies {
+  implementation(Deps.AutoService.annotations)
+  ksp(Deps.AutoService.processor)
   compileOnly(gradleApi())
   compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.Kotlin.gradlePlugin)

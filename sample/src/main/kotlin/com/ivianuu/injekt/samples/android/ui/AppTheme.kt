@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import com.ivianuu.injekt.*
 
 fun interface AppTheme {
-  @Composable operator fun invoke(content: @Composable () -> Unit)
+  @Composable fun Content(content: @Composable () -> Unit)
 
   @Provide companion object {
     @Provide val impl = AppTheme { content ->
