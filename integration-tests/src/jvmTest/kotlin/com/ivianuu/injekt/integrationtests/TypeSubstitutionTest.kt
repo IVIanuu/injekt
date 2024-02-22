@@ -76,7 +76,7 @@ class TypeSubstitutionTest {
       .let {
         it.withArguments(listOf(intType) + it.arguments.drop(1))
       }
-    val context = buildContextForSpreadingInjectable(
+    val context = runSpreadingInjectableInference(
       scopedT.defaultType,
       substitutionType,
       emptyList(),
@@ -128,7 +128,7 @@ class TypeSubstitutionTest {
     superType: TypeRef,
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ): Map<ClassifierRef, TypeRef> {
-    val context = subType.buildContext(
+    val context = subType.runCandidateInference(
       superType,
       staticTypeParameters,
       true,

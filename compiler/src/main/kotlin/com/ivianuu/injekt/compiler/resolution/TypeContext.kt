@@ -152,7 +152,7 @@ sealed interface ConstraintPosition {
   data object Unknown : ConstraintPosition
 }
 
-fun buildContextForSpreadingInjectable(
+fun runSpreadingInjectableInference(
   constraintType: TypeRef,
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
@@ -163,7 +163,7 @@ fun buildContextForSpreadingInjectable(
     if (it.classifier.isTypeParameter)
       candidateTypeParameters += it.classifier
   }
-  return candidateType.buildContext(
+  return candidateType.runCandidateInference(
     constraintType,
     candidateTypeParameters + staticTypeParameters,
     true,
@@ -171,7 +171,7 @@ fun buildContextForSpreadingInjectable(
   )
 }
 
-fun TypeRef.buildContext(
+fun TypeRef.runCandidateInference(
   superType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,
   collectSuperTypeVariables: Boolean = false,

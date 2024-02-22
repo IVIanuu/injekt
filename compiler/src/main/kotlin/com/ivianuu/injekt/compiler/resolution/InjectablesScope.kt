@@ -85,7 +85,7 @@ class InjectablesScope(
 
         for (candidate in injectables) {
           if (key.type.uniqueId != null && candidate.type.uniqueId != key.type.uniqueId) continue
-          val context = candidate.type.buildContext(key.type, key.staticTypeParameters, ctx = ctx)
+          val context = candidate.type.runCandidateInference(key.type, key.staticTypeParameters, ctx = ctx)
           if (!context.isOk) continue
           this += CallableInjectable(
             this@InjectablesScope,
@@ -134,9 +134,9 @@ class InjectablesScope(
 
       for (candidate in injectables.toList()) {
         var context =
-          candidate.type.buildContext(singleElementType, key.staticTypeParameters, ctx = ctx)
+          candidate.type.runCandidateInference(singleElementType, key.staticTypeParameters, ctx = ctx)
         if (!context.isOk)
-          context = candidate.type.buildContext(collectionElementType, key.staticTypeParameters, ctx = ctx)
+          context = candidate.type.runCandidateInference(collectionElementType, key.staticTypeParameters, ctx = ctx)
         if (!context.isOk) continue
 
         val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
@@ -155,7 +155,7 @@ class InjectablesScope(
     if (!spreadingInjectable.processedCandidateTypes.add(candidateType) ||
       spreadingInjectable in spreadingInjectableChain) return
 
-    val context = buildContextForSpreadingInjectable(
+    val context = runSpreadingInjectableInference(
       spreadingInjectable.constraintType,
       candidateType,
       allStaticTypeParameters,

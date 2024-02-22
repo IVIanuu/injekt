@@ -144,7 +144,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     other: TypeRef,
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
-    val context = buildContext(
+    val context = runCandidateInference(
       other,
       staticTypeParameters,
       true,
@@ -163,7 +163,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     other: TypeRef,
     staticTypeParameters: List<ClassifierRef> = emptyList()
   ) {
-    val context = buildContext(
+    val context = runCandidateInference(
       other,
       staticTypeParameters,
       true,
