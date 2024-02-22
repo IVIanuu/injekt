@@ -6,7 +6,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -47,9 +46,7 @@ fun TypeProjection.toPersistedTypeProjection(ctx: Context) = PersistedTypeProjec
 fun PersistedKotlinType.toKotlinType(ctx: Context): KotlinType {
   val arguments = arguments.map { it.toTypeProjection(ctx) }
   val classifier = classifierDescriptorForKey(classifierKey, ctx)
-  return if (classifier.hasAnnotation(InjektFqNames.Tag))
-    classifier.defaultType.wrapTag(null, arguments)
-  else classifier.defaultType
+  return classifier.defaultType
     .replace(
       newArguments = arguments,
       newAnnotations = if (!isProvide) Annotations.EMPTY

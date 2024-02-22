@@ -253,9 +253,9 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
   ): IrExpression = when (injectable.callable.callable) {
-    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapTags()
+    is ReceiverParameterDescriptor -> if (injectable.callable.type
       .constructor.declarationDescriptor.safeAs<ClassDescriptor>()?.kind == ClassKind.OBJECT)
-      objectExpression(injectable.callable.type.unwrapTags())
+      objectExpression(injectable.callable.type)
     else parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)

@@ -6,13 +6,11 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.fir.resolve.inference.model.*
 import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.storage.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext.isTypeParameterTypeConstructor
@@ -70,9 +68,10 @@ fun KotlinType.allTypes(ctx: Context): Collection<KotlinType> {
 fun KotlinType.withNullability(isMarkedNullable: Boolean) =
   if (isMarkedNullable) makeNullable() else makeNotNullable()
 
-fun KotlinType.forEachType(action: (KotlinType) -> Unit) {
+fun KotlinType.forEachTypeWithSuperTypes(action: (KotlinType) -> Unit) {
   action(this)
-  arguments.forEach { it.type.forEachType(action) }
+  arguments.forEach { it.type.forEachTypeWithSuperTypes(action) }
+  supertypes().forEach { it.forEachTypeWithSuperTypes(action) }
 }
 
 fun KotlinType.anyType(action: (KotlinType) -> Boolean): Boolean =
@@ -184,15 +183,48 @@ fun KotlinType.runCandidateInference(
   ctx: Context,
   collectSuperTypeVariables: Boolean = false,
 ): NewTypeSubstitutor? {
+  val typeSystemContextDelegate = ClassicTypeSystemContextForCS(builtIns, ctx.module.getKotlinTypeRefiner())
+
+  fun injektTypeCheckerState(
+    errorTypesEqualToAnything: Boolean,
+    stubTypesEqualToAnything: Boolean
+  ) = object : TypeCheckerState(
+    errorTypesEqualToAnything,
+    stubTypesEqualToAnything,
+    true,
+    SimpleClassicTypeSystemContext,
+    KotlinTypePreparator.Default,
+    ctx.module.getKotlinTypeRefiner()
+  ) {
+    override fun customIsSubtypeOf(subType: KotlinTypeMarker, superType: KotlinTypeMarker): Boolean {
+      val subTags = subType.cast<KotlinType>().getTags()
+      val superTags = superType.cast<KotlinType>().getTags()
+      if (subTags.size != superTags.size) return false
+
+      for (i in subTags.indices) {
+        val subTag = subTags[i].type
+        val superTag = superTags[i].type
+        if (!AbstractTypeChecker.isSubtypeOf(this, subTag, superTag))
+          return false
+      }
+
+      return true
+    }
+  }
+
   val constraintSystem = NewConstraintSystemImpl(
     ctx.constraintInjector,
-    builtIns,
-    ctx.module.getKotlinTypeRefiner(),
+    object : TypeSystemInferenceExtensionContext by typeSystemContextDelegate {
+      override fun newTypeCheckerState(
+        errorTypesEqualToAnything: Boolean,
+        stubTypesEqualToAnything: Boolean
+      ): TypeCheckerState = injektTypeCheckerState(errorTypesEqualToAnything, stubTypesEqualToAnything)
+    },
     LanguageVersionSettingsImpl.DEFAULT
   )
 
   val typeVariables = buildMap {
-    forEachType {
+    forEachTypeWithSuperTypes {
       if (it.constructor.isTypeParameterTypeConstructor()) {
         val typeParameter = it.constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
         if (typeParameter !in staticTypeParameters)
@@ -201,7 +233,7 @@ fun KotlinType.runCandidateInference(
     }
 
     if (collectSuperTypeVariables)
-      superType.forEachType {
+      superType.forEachTypeWithSuperTypes {
         if (it.constructor.isTypeParameterTypeConstructor()) {
           val typeParameter = it.constructor.declarationDescriptor.cast<TypeParameterDescriptor>()
           if (typeParameter !in staticTypeParameters)
@@ -211,11 +243,10 @@ fun KotlinType.runCandidateInference(
   }
 
   if (typeVariables.isEmpty())
-    return try {
-      if (isSubtypeOf(superType)) EmptySubstitutor else null
-    } catch (e: Throwable) {
-      throw e
-    }
+    return if (AbstractTypeChecker.isSubtypeOf(
+        injektTypeCheckerState(false, false),
+      this, superType
+    )) EmptySubstitutor else null
 
   val toTypeVariablesSubstitutor = NewTypeSubstitutorByConstructorMap(
     typeVariables.mapKeys { it.key.typeConstructor }.mapValues {
@@ -238,7 +269,7 @@ fun KotlinType.runCandidateInference(
     fun MutableVariableWithConstraints.getNestedTypeVariables(): Collection<KotlinType> {
       val nestedTypeVariables = mutableMapOf<Int, KotlinType>()
       constraints.forEach { constraint ->
-        constraint.type.cast<KotlinType>().forEachType {
+        constraint.type.cast<KotlinType>().forEachTypeWithSuperTypes {
           if (it.constructor.declarationDescriptor in typeVariables)
             nestedTypeVariables[it.injektHashCode(ctx)] = it
         }
@@ -296,63 +327,10 @@ fun KotlinType.withUniqueId(value: String?): KotlinType = when {
 }
 
 fun List<KotlinType>.wrapTags(type: KotlinType): KotlinType = if (isEmpty()) type
-else fold(type) { acc, nextTag ->
-    nextTag.wrapTag(acc)
-  }
-
-fun KotlinType.wrapTag(
-  type: KotlinType?,
-  arguments: List<TypeProjection> = this.arguments
-): KotlinType = KotlinTypeFactory.simpleTypeWithNonTrivialMemberScope(
-  attributes = TypeAttributes.Empty,
-  constructor = constructor as? TagTypeConstructor ?: TagTypeConstructor(constructor),
-  arguments = if (type != null) arguments + type.asTypeProjection() else arguments,
-  nullable = isMarkedNullable,
-  memberScope = memberScope
+else type.replace(
+  newAnnotations = Annotations.create(
+    type.annotations
+      .filter { it.type.constructor.declarationDescriptor?.hasAnnotation(InjektFqNames.Tag) != true } +
+        map { AnnotationDescriptorImpl(it, emptyMap(), SourceElement.NO_SOURCE) }
+  )
 )
-
-fun KotlinType.unwrapTags(): KotlinType =
-  if (constructor.declarationDescriptor?.hasAnnotation(InjektFqNames.Tag) != true) this
-  else arguments.last().type.unwrapTags()
-
-class TagTypeConstructor(
-  val tagAnnotation: TypeConstructor,
-) : TypeConstructor {
-  private val _parameters = tagAnnotation.parameters +
-      TypeParameterDescriptorImpl.createForFurtherModification(
-        tagAnnotation.declarationDescriptor!!,
-        Annotations.EMPTY,
-        false,
-        Variance.OUT_VARIANCE,
-        "TaggedType".asNameId(),
-        tagAnnotation.parameters.size,
-        SourceElement.NO_SOURCE,
-        LockBasedStorageManager.NO_LOCKS
-      )
-
-  override fun getParameters(): List<TypeParameterDescriptor> = _parameters
-
-  private val _superTypes = listOf(builtIns.anyType)
-  override fun getSupertypes() = _superTypes
-
-  override fun isFinal() = true
-
-  override fun isDenotable() = false
-
-  override fun getDeclarationDescriptor(): ClassifierDescriptor? = tagAnnotation.declarationDescriptor
-
-  override fun getBuiltIns() = tagAnnotation.builtIns
-
-  @TypeRefinement override fun refine(kotlinTypeRefiner: KotlinTypeRefiner): TypeConstructor = this
-
-  override fun hashCode(): Int {
-    var result = tagAnnotation.hashCode()
-    result = 31 * result + "tag".hashCode()
-    return result
-  }
-
-  override fun equals(other: Any?): Boolean =
-    other is TagTypeConstructor && tagAnnotation == other.tagAnnotation
-
-  override fun toString(): String = tagAnnotation.declarationDescriptor!!.fqNameSafe.asString()
-}

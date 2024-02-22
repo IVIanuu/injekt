@@ -126,7 +126,7 @@ fun InjectionResult.Error.render(): String = buildString {
           append("{ ")
           if (candidate.parameterDescriptors.isNotEmpty()) {
             for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
-              val argument = candidate.type.unwrapTags().arguments[index]
+              val argument = candidate.type.arguments[index]
               append("${parameter.name}: ${argument.type.renderToString()}")
               if (index != candidate.parameterDescriptors.lastIndex)
                 append(",")

@@ -44,7 +44,6 @@ fun TypeProjection.toIrTypeArgument(irCtx: IrPluginContext): IrTypeArgument =
 
 fun KotlinType.toIrType(irCtx: IrPluginContext): IrType =
   when (constructor) {
-    is TagTypeConstructor -> arguments.last().toIrTypeArgument(irCtx).typeOrNull!!
     else -> IrSimpleTypeImpl(
       if (constructor.isTypeParameterTypeConstructor()) {
         when (val container = constructor.declarationDescriptor!!.containingDeclaration) {
