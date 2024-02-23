@@ -196,17 +196,42 @@ class InjectCallTransformer(
   private fun ScopeContext.lambdaExpression(
     result: ResolutionResult.Success.Value,
     injectable: LambdaInjectable
-  ): IrExpression = irBuilder.irLambda(injectable.type.toIrType().typeOrNull!!) { function ->
+  ): IrExpression {
+    val type = injectable.type.toIrType().typeOrNull.cast<IrSimpleType>()
+    val returnType = type.arguments.last().typeOrNull!!
+
+    val lambda = IrFactoryImpl.buildFun {
+      origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+      name = Name.special("<anonymous>")
+      this.returnType = returnType
+      visibility = DescriptorVisibilities.LOCAL
+    }.apply {
+      parent = irBuilder.scope.getLocalDeclarationParent()
+      annotations = annotations + type.annotations.map {
+        it.deepCopyWithSymbols()
+      }
+
+      val irBuilder = DeclarationIrBuilder(irCtx, symbol)
+
+      type.arguments.forEachIndexed { index, typeArgument ->
+        if (index < type.arguments.lastIndex) {
+          addValueParameter(
+            irBuilder.scope.inventNameForTemporary("p"),
+            typeArgument.typeOrNull!!
+          )
+        }
+      }
+
       val dependencyResult = result.dependencyResults.values.single()
       val dependencyScopeContext = if (injectable.dependencyScope == this@lambdaExpression.scope) null
       else ScopeContext(
         this@lambdaExpression, rootContext,
-        injectable.dependencyScope, scope
+        injectable.dependencyScope, irBuilder.scope
       )
 
       fun ScopeContext.createExpression(): IrExpression {
         for ((index, parameter) in injectable.parameterDescriptors.withIndex())
-          parameterMap[parameter] = function.valueParameters[index]
+          parameterMap[parameter] = valueParameters[index]
         return expressionFor(dependencyResult.cast())
           .also {
             injectable.parameterDescriptors.forEach {
@@ -215,11 +240,24 @@ class InjectCallTransformer(
           }
       }
 
-      irBlock {
-        +(dependencyScopeContext?.run { createExpression() } ?: createExpression())
-          .also { dependencyScopeContext?.statements?.forEach { +it } }
+      this.body = irBuilder.run {
+        irBlockBody {
+          +irReturn(
+            (dependencyScopeContext?.run { createExpression() } ?: createExpression())
+              .also { dependencyScopeContext?.statements?.forEach { +it } }
+          )
+        }
       }
     }
+
+    return IrFunctionExpressionImpl(
+      startOffset = UNDEFINED_OFFSET,
+      endOffset = UNDEFINED_OFFSET,
+      type = type,
+      function = lambda,
+      origin = IrStatementOrigin.LAMBDA
+    )
+  }
 
   private val mutableListOf = irCtx.referenceFunctions(
     FqName("kotlin.collections.mutableListOf")
@@ -461,49 +499,6 @@ class InjectCallTransformer(
         )
       }
     }
-  }
-
-  private fun IrBuilderWithScope.irLambda(
-    type: IrType,
-    startOffset: Int = UNDEFINED_OFFSET,
-    endOffset: Int = UNDEFINED_OFFSET,
-    body: IrBuilderWithScope.(IrFunction) -> IrExpression,
-  ): IrExpression {
-    type as IrSimpleType
-    val returnType = type.arguments.last().typeOrNull!!
-
-    val lambda = IrFactoryImpl.buildFun {
-      origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-      name = Name.special("<anonymous>")
-      this.returnType = returnType
-      visibility = DescriptorVisibilities.LOCAL
-    }.apply {
-      parent = scope.getLocalDeclarationParent()
-      type.arguments.forEachIndexed { index, typeArgument ->
-        if (index < type.arguments.lastIndex) {
-          addValueParameter(
-            scope.inventNameForTemporary("p"),
-            typeArgument.typeOrNull!!
-          )
-        }
-      }
-      annotations = annotations + type.annotations.map {
-        it.deepCopyWithSymbols()
-      }
-      this.body = DeclarationIrBuilder(context, symbol).run {
-        irBlockBody {
-          +irReturn(body(this, this@apply))
-        }
-      }
-    }
-
-    return IrFunctionExpressionImpl(
-      startOffset = startOffset,
-      endOffset = endOffset,
-      type = type,
-      function = lambda,
-      origin = IrStatementOrigin.LAMBDA
-    )
   }
 
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
