@@ -9,7 +9,12 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.builtins.functions.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
+import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.types.*
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.load.java.descriptors.*
 import org.jetbrains.kotlin.load.kotlin.*
 import org.jetbrains.kotlin.name.*
@@ -59,110 +64,114 @@ fun Annotated.getTags(): List<AnnotationDescriptor> =
   }
 
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
-  when (val original = this.original) {
-    is ConstructorDescriptor -> "constructor:${original.constructedClass.fqNameSafe}:" +
-        "${original.visibility.name}:" +
-        "${
-          original.valueParameters
-            .joinToString(",") {
-              it.type
-                .fullyAbbreviatedType
-                .uniqueTypeKey()
-            }
-        }:${original.returnType.fullyAbbreviatedType.uniqueTypeKey()}"
-    is ClassDescriptor -> "class:$fqNameSafe"
-    is FunctionDescriptor -> "function:$fqNameSafe:" +
-        "${original.visibility.name}:" +
-        original.typeParameters.joinToString {
-          buildString {
-            append(it.name.asString())
-            it.upperBounds.forEach { upperBound ->
-              append(
-                upperBound
-                  .fullyAbbreviatedType
-                  .uniqueTypeKey()
-              )
-            }
-          }
-        } +
-        listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-          .plus(original.valueParameters)
-          .joinToString(",") { parameter ->
-            buildString {
-              when {
-                parameter === original.dispatchReceiverParameter -> append("d:")
-                parameter === original.extensionReceiverParameter -> append("e:")
-                else -> append("p:")
-              }
-              append(
-                parameter.type
-                  .fullyAbbreviatedType
-                  .uniqueTypeKey()
-              )
-            }
-          } +
-        ":" +
-        original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
-    is PropertyDescriptor -> "property:$fqNameSafe:" +
-        "${original.visibility.name}:" +
-        original.typeParameters.joinToString {
-          buildString {
-            append(it.name.asString())
-            it.upperBounds.forEach { upperBound ->
-              append(
-                upperBound
-                  .fullyAbbreviatedType
-                  .uniqueTypeKey()
-              )
-            }
-          }
-        } +
-        listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-          .joinToString(",") { parameter ->
-            buildString {
-              when {
-                parameter === original.dispatchReceiverParameter -> append("d:")
-                parameter === original.extensionReceiverParameter -> append("e:")
-                else -> append("p:")
-              }
-              append(
-                parameter.type
-                  .fullyAbbreviatedType
-                  .uniqueTypeKey()
-              )
-            }
-          } +
-        ":" +
-        original.returnType?.fullyAbbreviatedType?.uniqueTypeKey().orEmpty()
-    is TypeAliasDescriptor -> "typealias:$fqNameSafe"
-    is TypeParameterDescriptor ->
-      "typeparameter:$fqNameSafe:${containingDeclaration!!.uniqueKey(ctx)}"
-    is ReceiverParameterDescriptor -> "receiver:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-    is ValueParameterDescriptor -> "value_parameter:$fqNameSafe:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
-    is VariableDescriptor -> "variable:${fqNameSafe}:${original.type.fullyAbbreviatedType.uniqueTypeKey()}"
+  when (this) {
+    is TypeParameterDescriptor -> typeParameterUniqueKey(name, containingDeclaration.fqNameSafe, containingDeclaration.uniqueKey(ctx))
+    is ClassifierDescriptor -> classLikeUniqueKey(fqNameSafe)
+    is LocalVariableDescriptor -> localVariableUniqueKey(
+      fqNameSafe,
+      returnType.uniqueTypeKey(),
+      containingDeclaration.uniqueKey(ctx)
+    )
+    is CallableDescriptor -> callableUniqueKey(
+      fqNameSafe,
+      typeParameters.map { it.name },
+      listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
+        .plus(original.valueParameters)
+        .map { it.type.uniqueTypeKey() },
+      returnType!!.uniqueTypeKey()
+    )
     else -> error("Unexpected declaration $this")
   }
 }
 
-fun KotlinType.uniqueTypeKey(depth: Int = 0): String {
-  if (depth > 15) return ""
-  return buildString {
-    append(constructor.declarationDescriptor!!.fqNameSafe)
-    arguments.forEachIndexed { index, typeArgument ->
-      if (index == 0) append("<")
-      append(typeArgument.type.fullyAbbreviatedType.uniqueTypeKey(depth + 1))
-      if (index != arguments.lastIndex) append(", ")
-      else append(">")
-    }
-    if (isMarkedNullable) append("?")
-  }
+fun KotlinType.uniqueTypeKey(): String = uniqueTypeKey(
+  classIdOrName = {
+    constructor.declarationDescriptor.safeAs<TypeParameterDescriptor>()?.name?.asString()
+      ?: constructor.declarationDescriptor?.classId?.asString()
+      ?: constructor.declarationDescriptor.safeAs<ClassDescriptor>()
+        ?.takeIf { it.visibility == DescriptorVisibilities.LOCAL }
+        ?.name
+        ?.takeIf { it != SpecialNames.NO_NAME_PROVIDED }
+        ?.asString()
+  },
+  arguments = {
+    arguments.map { if (it.isStarProjection) null else it.type }
+  },
+  isMarkedNullable = { isMarkedNullable }
+)
+
+fun IrDeclaration.uniqueKey(ctx: Context): String = when (this) {
+  is IrTypeParameter -> typeParameterUniqueKey(name, parent.kotlinFqName, parent.cast<IrDeclaration>().uniqueKey(ctx))
+  is IrClass -> classLikeUniqueKey(fqNameForIrSerialization)
+  is IrFunction -> callableUniqueKey(
+    kotlinFqName,
+    (if (this is IrConstructor) constructedClass.typeParameters else typeParameters).map { it.name },
+    listOfNotNull(dispatchReceiverParameter, extensionReceiverParameter)
+      .plus(valueParameters)
+      .map { it.type.uniqueTypeKey() },
+    returnType.uniqueTypeKey()
+  )
+  is IrProperty -> callableUniqueKey(
+    parent.kotlinFqName.child(name),
+    getter!!.typeParameters.map { it.name },
+    listOfNotNull(getter!!.dispatchReceiverParameter, getter!!.extensionReceiverParameter)
+      .map { it.type.uniqueTypeKey() },
+    getter!!.returnType.uniqueTypeKey()
+  )
+  is IrVariable -> localVariableUniqueKey(
+    parent.kotlinFqName.child(name),
+    type.uniqueTypeKey(),
+    parent.cast<IrDeclaration>().uniqueKey(ctx)
+  )
+  else -> error("Unexpected declaration $this")
 }
 
-val KotlinType.fullyAbbreviatedType: KotlinType
-  get() {
-    val abbreviatedType = getAbbreviatedType()
-    return if (abbreviatedType != null && abbreviatedType != this) abbreviatedType.fullyAbbreviatedType else this
-  }
+fun IrType.uniqueTypeKey(): String = uniqueTypeKey(
+  classIdOrName = {
+    classOrNull?.owner?.classId?.asString()
+      ?: classifierOrNull?.owner?.cast<IrDeclarationWithName>()?.name
+        ?.takeIf { it != SpecialNames.NO_NAME_PROVIDED }
+        ?.asString()
+  },
+  arguments = { safeAs<IrSimpleType>()?.arguments?.map { it.typeOrNull } ?: emptyList() },
+  isMarkedNullable = { isMarkedNullable() }
+)
+
+private fun classLikeUniqueKey(fqName: FqName) = "class_like:$fqName"
+
+private fun callableUniqueKey(
+  fqName: FqName,
+  typeParameterNames: List<Name>,
+  parameterUniqueKeys: List<String>,
+  returnTypeUniqueKey: String
+) = "callable:$fqName:" +
+    typeParameterNames.joinToString(",") { it.asString() } + ":" +
+    parameterUniqueKeys.joinToString(",") + ":" +
+    returnTypeUniqueKey
+
+private fun localVariableUniqueKey(
+  fqName: FqName,
+  typeUniqueKey: String,
+  parentUniqueKey: String
+) = "variable:${fqName}:$typeUniqueKey:${parentUniqueKey}"
+
+private fun typeParameterUniqueKey(
+  name: Name,
+  parentFqName: FqName,
+  parentUniqueKey: String
+) = "typeparameter:${parentFqName}.$name:${parentUniqueKey}"
+
+private fun <T> T.uniqueTypeKey(
+  classIdOrName: T.() -> String?,
+  arguments: T. () -> List<T?>,
+  isMarkedNullable: T.() -> Boolean
+): String = buildString {
+  append(classIdOrName())
+  append(arguments().joinToString(",") {
+    it?.uniqueTypeKey(classIdOrName, arguments, isMarkedNullable) ?: "*"
+  })
+  if (isMarkedNullable()) append("?")
+}
 
 @OptIn(ExperimentalTypeInference::class)
 inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R>.(T) -> Unit): List<R> =

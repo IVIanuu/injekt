@@ -382,26 +382,32 @@ class InjectCallTransformer(
   )
   else irBuilder.irGet(
     injectable.type.toIrType().typeOrNull!!,
-    compilationDeclarations.variables.single { it.descriptor == descriptor }.symbol
+    compilationDeclarations.variables
+      .singleOrNull { it.uniqueKey(ctx) == descriptor.uniqueKey(ctx) }
+      ?.symbol
+      ?: error("Couldn't find ${descriptor.uniqueKey(ctx)} in ${compilationDeclarations.variables.map { it.uniqueKey(ctx) }}")
   )
 
   private fun CallableDescriptor.irCallable() = when (this) {
     is ClassConstructorDescriptor -> compilationDeclarations.constructors
-        .singleOrNull { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-        ?: irCtx.referenceConstructors(constructedClass.fqNameSafe)
-          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-          .owner
+      .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
+      ?: irCtx.referenceConstructors(constructedClass.fqNameSafe)
+        .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
+        ?.owner
+      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${compilationDeclarations.constructors.map { it.uniqueKey(ctx) }}")
     is FunctionDescriptor -> compilationDeclarations.functions.singleOrNull {
-        it.descriptor.uniqueKey(ctx) == uniqueKey(ctx)
+        it.uniqueKey(ctx) == uniqueKey(ctx)
       } ?: irCtx.referenceFunctions(fqNameSafe)
-        .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-        .owner
+        .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
+        ?.owner
+    ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceFunctions(fqNameSafe).map { it.owner.uniqueKey(ctx) }}")
     is PropertyDescriptor -> (compilationDeclarations.properties
-      .singleOrNull { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+      .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
       ?: irCtx.referenceProperties(fqNameSafe)
-      .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-      .owner)
-      .getter!!
+      .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
+      ?.owner)
+      ?.getter
+      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceProperties(fqNameSafe).map { it.owner.uniqueKey(ctx) }}")
     else -> throw AssertionError("Unexpected callable $this")
   }
 
@@ -448,22 +454,22 @@ class InjectCallTransformer(
         val key = classifier.descriptor!!.uniqueKey(ctx)
         val fqName = FqName(key.split(":")[1])
         val irClassifier = compilationDeclarations.classes.singleOrNull {
-          it.descriptor.uniqueKey(ctx) == key
+          it.uniqueKey(ctx) == key
         }
           ?.symbol
           ?: irCtx.referenceClass(fqName)
           ?: irCtx.referenceFunctions(fqName.parent())
             .flatMap { it.owner.typeParameters }
-            .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+            .singleOrNull { it.uniqueKey(ctx) == key }
             ?.symbol
           ?: irCtx.referenceProperties(fqName.parent())
             .flatMap { it.owner.getter!!.typeParameters }
-            .singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+            .singleOrNull { it.uniqueKey(ctx) == key }
             ?.symbol
           ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
             ?.owner
             ?.typeParameters
-            ?.singleOrNull { it.descriptor.uniqueKey(ctx) == key }
+            ?.singleOrNull { it.uniqueKey(ctx) == key }
             ?.symbol
           ?: error("Could not get for $fqName $key")
         IrSimpleTypeImpl(
