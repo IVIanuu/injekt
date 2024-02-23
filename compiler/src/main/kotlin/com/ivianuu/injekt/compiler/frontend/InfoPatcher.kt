@@ -392,7 +392,7 @@ fun DescriptorVisibility.shouldPersistInfo() = this == DescriptorVisibilities.PU
 
 fun InjektType.toPersistedInjektType(ctx: Context): PersistedInjektType =
   PersistedInjektType(
-    classifierKey = classifier.descriptor?.uniqueKey(ctx) ?: "",
+    classifierKey = classifier.key,
     arguments = arguments.map { it.toPersistedInjektType(ctx) },
     isStarProjection = isStarProjection,
     variance = variance,
