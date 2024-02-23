@@ -2,8 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, ObsoleteDescriptorBasedAPI::class,
-  FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class
+@file:OptIn(UnsafeCastFunction::class, FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class,
+  ObsoleteDescriptorBasedAPI::class
 )
 
 package com.ivianuu.injekt.compiler.backend
@@ -35,7 +35,7 @@ import java.io.*
 import kotlin.collections.*
 
 class InjectCallTransformer(
-  private val localDeclarations: LocalDeclarations,
+  private val compilationDeclarations: CompilationDeclarations,
   private val irCtx: IrPluginContext,
   private val ctx: Context
 ) : IrElementTransformerVoidWithContext() {
@@ -382,52 +382,27 @@ class InjectCallTransformer(
   )
   else irBuilder.irGet(
     injectable.type.toIrType().typeOrNull!!,
-    localDeclarations.variables.single { it.descriptor == descriptor }.symbol
+    compilationDeclarations.variables.single { it.descriptor == descriptor }.symbol
   )
 
-  private fun CallableDescriptor.irCallable(): IrFunction {
-    when (this) {
-      is ClassConstructorDescriptor -> {
-        if (constructedClass.visibility == DescriptorVisibilities.LOCAL)
-          return localDeclarations.classes
-            .single { it.descriptor.uniqueKey(ctx) == constructedClass.uniqueKey(ctx) }
-            .constructors
-            .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-
-        return irCtx.referenceConstructors(constructedClass.fqNameSafe)
+  private fun CallableDescriptor.irCallable() = when (this) {
+    is ClassConstructorDescriptor -> compilationDeclarations.constructors
+        .singleOrNull { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+        ?: irCtx.referenceConstructors(constructedClass.fqNameSafe)
           .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
           .owner
-      }
-      is FunctionDescriptor -> {
-        if (visibility == DescriptorVisibilities.LOCAL)
-          return localDeclarations.functions.single {
-            it.descriptor.uniqueKey(ctx) == uniqueKey(ctx)
-          }
-
-        if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
-            ?.visibility == DescriptorVisibilities.LOCAL)
-          return localDeclarations.classes.flatMap { it.declarations }
-            .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-            .cast()
-
-        return irCtx.referenceFunctions(fqNameSafe)
-          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-          .owner
-      }
-      is PropertyDescriptor -> {
-        if (containingDeclaration.safeAs<DeclarationDescriptorWithVisibility>()
-            ?.visibility == DescriptorVisibilities.LOCAL)
-          return localDeclarations.classes.flatMap { it.declarations }
-            .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-            .cast()
-
-        return irCtx.referenceProperties(fqNameSafe)
-          .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
-          .owner
-          .getter!!
-      }
-      else -> throw AssertionError("Unexpected callable $this")
-    }
+    is FunctionDescriptor -> compilationDeclarations.functions.singleOrNull {
+        it.descriptor.uniqueKey(ctx) == uniqueKey(ctx)
+      } ?: irCtx.referenceFunctions(fqNameSafe)
+        .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+        .owner
+    is PropertyDescriptor -> (compilationDeclarations.properties
+      .singleOrNull { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+      ?: irCtx.referenceProperties(fqNameSafe)
+      .single { it.descriptor.uniqueKey(ctx) == uniqueKey(ctx) }
+      .owner)
+      .getter!!
+    else -> throw AssertionError("Unexpected callable $this")
   }
 
   private fun InjektType.toIrType(): IrTypeArgument {
@@ -472,7 +447,7 @@ class InjectCallTransformer(
       else -> {
         val key = classifier.descriptor!!.uniqueKey(ctx)
         val fqName = FqName(key.split(":")[1])
-        val irClassifier = localDeclarations.classes.singleOrNull {
+        val irClassifier = compilationDeclarations.classes.singleOrNull {
           it.descriptor.uniqueKey(ctx) == key
         }
           ?.symbol
@@ -528,21 +503,31 @@ class InjectCallTransformer(
   }
 }
 
-class LocalDeclarations : IrElementTransformerVoid() {
+class CompilationDeclarations : IrElementTransformerVoid() {
   val classes = mutableSetOf<IrClass>()
+  val constructors = mutableSetOf<IrConstructor>()
   val functions = mutableSetOf<IrFunction>()
+  val properties = mutableSetOf<IrProperty>()
   val variables = mutableSetOf<IrVariable>()
 
   override fun visitClass(declaration: IrClass): IrStatement {
-    if (declaration.visibility == DescriptorVisibilities.LOCAL)
-      classes += declaration
+    classes += declaration
     return super.visitClass(declaration)
   }
 
+  override fun visitConstructor(declaration: IrConstructor): IrStatement {
+    constructors += declaration
+    return super.visitConstructor(declaration)
+  }
+
   override fun visitFunction(declaration: IrFunction): IrStatement {
-    if (declaration.visibility == DescriptorVisibilities.LOCAL)
-      functions += declaration
+    functions += declaration
     return super.visitFunction(declaration)
+  }
+
+  override fun visitProperty(declaration: IrProperty): IrStatement {
+    properties += declaration
+    return super.visitProperty(declaration)
   }
 
   override fun visitVariable(declaration: IrVariable): IrStatement {

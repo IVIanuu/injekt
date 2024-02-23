@@ -20,9 +20,9 @@ class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExten
       DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
     )
 
-    val localDeclarations = LocalDeclarations()
-    moduleFragment.transform(localDeclarations, null)
-    moduleFragment.transform(InjectCallTransformer(localDeclarations, pluginContext, ctx), null)
+    val compilationDeclarations = CompilationDeclarations()
+    moduleFragment.transform(compilationDeclarations, null)
+    moduleFragment.transform(InjectCallTransformer(compilationDeclarations, pluginContext, ctx), null)
     moduleFragment.patchDeclarationParents()
     moduleFragment.dumpToFiles(dumpDir, ctx)
   }
