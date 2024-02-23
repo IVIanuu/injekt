@@ -39,7 +39,6 @@ kotlin {
     val commonMain by getting {
       dependencies {
         api(project(":core"))
-        api(Deps.Coroutines.core)
       }
     }
     named("jvmTest") {

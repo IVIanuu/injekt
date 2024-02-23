@@ -27,8 +27,7 @@ android {
 }
 
 dependencies {
-  implementation(Deps.AndroidX.Activity.activity)
-  implementation(Deps.AndroidX.Activity.compose)
+  implementation(Deps.androidxActivityCompose)
   implementation(project(":common"))
   implementation(Deps.Compose.material)
   kotlinCompilerPluginClasspath(Deps.Compose.compiler)

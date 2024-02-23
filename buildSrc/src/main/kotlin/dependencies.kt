@@ -16,23 +16,7 @@ object Build {
 object Deps {
   const val androidGradlePlugin = "com.android.tools.build:gradle:8.2.2"
 
-  object AndroidX {
-    object Activity {
-      private const val version = "1.5.1"
-      const val activity = "androidx.activity:activity:$version"
-      const val compose = "androidx.activity:activity-compose:$version"
-    }
-
-    object Lifecycle {
-      private const val version = "2.5.1"
-      const val runtime = "androidx.lifecycle:lifecycle-runtime-ktx:$version"
-    }
-
-    object Test {
-      const val core = "androidx.test:core-ktx:1.4.0"
-      const val junit = "androidx.test.ext:junit:1.0.0"
-    }
-  }
+  const val androidxActivityCompose = "androidx.activity:activity-compose:1.5.1"
 
   const val atomicFuGradlePlugin = "org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.23.2"
 
@@ -45,7 +29,7 @@ object Deps {
   const val classGraph = "io.github.classgraph:classgraph:4.8.108"
 
   object Compose {
-    const val version = "1.6.0-rc01"
+    const val version = "1.6.0-rc02"
     const val compiler = "org.jetbrains.compose.compiler:compiler:1.5.8"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
@@ -54,13 +38,10 @@ object Deps {
   object Coroutines {
     private const val version = "1.8.0"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
-    const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
   }
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
-
-  const val gradleTestKit = "dev.gradleplugins:gradle-test-kit:7.3.3"
 
   object Injekt {
     const val version = "0.0.1-dev736"
@@ -97,6 +78,4 @@ object Deps {
   }
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.27.0"
-
-  const val mockk = "io.mockk:mockk:1.11.0"
 }

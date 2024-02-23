@@ -35,12 +35,7 @@ kotlin {
         implementation(Deps.KotlinCompileTesting.ksp)
 
         implementation(Deps.kotestAssertions)
-
         implementation(Deps.junit)
-        implementation(Deps.AndroidX.Test.core)
-        implementation(Deps.AndroidX.Test.junit)
-        implementation(Deps.junit)
-        implementation(Deps.kotestAssertions)
       }
     }
   }
