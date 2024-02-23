@@ -509,16 +509,6 @@ class InjectCallTransformer(
       SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ) ?: return result
 
-    // some ir transformations reuse the start and end offsets
-    // we ensure that were not transforming wrong calls
-    if (!expression.symbol.owner.isPropertyAccessor &&
-      expression.symbol.owner.descriptor.containingDeclaration
-        .safeAs<ClassDescriptor>()
-        ?.defaultType
-        ?.isFunctionOrSuspendFunctionType != true &&
-      injectionResult.callee.callable.fqNameSafe != result.symbol.owner.descriptor.fqNameSafe)
-      return result
-
     return DeclarationIrBuilder(irCtx, result.symbol)
       .irBlock {
         val rootContext = RootContext(injectionResult)
