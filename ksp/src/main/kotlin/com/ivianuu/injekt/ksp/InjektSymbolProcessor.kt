@@ -84,10 +84,10 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
 
   private fun KSDeclaration.uniqueKey(): String = buildString {
     modifiers.forEach { append(it) }
+    annotations.forEach { append(it.annotationType.uniqueTypeKey()) }
 
     when (this@uniqueKey) {
       is KSClassDeclaration -> {
-        annotations.forEach { append(it.annotationType.uniqueTypeKey()) }
         superTypes.forEach { append(it.uniqueTypeKey()) }
         primaryConstructor?.uniqueKey()?.let { append(it) }
       }
