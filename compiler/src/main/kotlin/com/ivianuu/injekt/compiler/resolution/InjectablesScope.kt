@@ -24,20 +24,20 @@ class InjectablesScope(
   private val injectables = mutableListOf<CallableRef>()
   private val allInjectables get() = allScopes.flatMap { injectables }
 
-  private val spreadingInjectables: MutableList<SpreadingInjectable> =
-    parent?.spreadingInjectables?.mapTo(mutableListOf()) { it.copy() } ?: mutableListOf()
+  private val addOnInjectables: MutableList<AddOnInjectable> =
+    parent?.addOnInjectables?.mapTo(mutableListOf()) { it.copy() } ?: mutableListOf()
 
-  private val spreadingInjectableChain: MutableList<SpreadingInjectable> =
-    parent?.spreadingInjectables ?: mutableListOf()
+  private val addOnInjectableChain: MutableList<AddOnInjectable> =
+    parent?.addOnInjectables ?: mutableListOf()
 
-  data class SpreadingInjectable(
+  data class AddOnInjectable(
     val callable: CallableRef,
     val constraintType: TypeRef = callable.typeParameters.single {
-      it.isSpread
+      it.isAddOn
     }.defaultType.substitute(callable.typeArguments),
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf()
   ) {
-    fun copy() = SpreadingInjectable(
+    fun copy() = AddOnInjectable(
       callable,
       constraintType,
       processedCandidateTypes.toMutableSet()
@@ -56,11 +56,11 @@ class InjectablesScope(
       injectable.collectInjectables(
         scope = this,
         addInjectable = { injectables += it },
-        addSpreadingInjectable = { spreadingInjectables += SpreadingInjectable(it) },
+        addAddOnInjectable = { addOnInjectables += AddOnInjectable(it) },
         ctx = ctx
       )
 
-    spreadingInjectables.toList().forEach { spreadInjectables(it) }
+    addOnInjectables.toList().forEach { collectAddOnInjectables(it) }
   }
 
   fun injectablesForRequest(
@@ -146,52 +146,55 @@ class InjectablesScope(
     }
   }
 
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable) {
+  private fun collectAddOnInjectables(addOnInjectable: AddOnInjectable) {
     for (candidate in allInjectables.toList())
-      spreadInjectables(spreadingInjectable, candidate.type)
+      collectAddOnInjectables(addOnInjectable, candidate.type)
   }
 
-  private fun spreadInjectables(spreadingInjectable: SpreadingInjectable, candidateType: TypeRef) {
-    if (!spreadingInjectable.processedCandidateTypes.add(candidateType) ||
-      spreadingInjectable in spreadingInjectableChain) return
+  private fun collectAddOnInjectables(candidateType: TypeRef) {
+    for (addOnInjectable in addOnInjectables.toList())
+      collectAddOnInjectables(addOnInjectable, candidateType)
+  }
 
-    val context = runSpreadingInjectableInference(
-      spreadingInjectable.constraintType,
+  private fun collectAddOnInjectables(addOnInjectable: AddOnInjectable, candidateType: TypeRef) {
+    if (!addOnInjectable.processedCandidateTypes.add(candidateType) ||
+      addOnInjectable in addOnInjectableChain) return
+
+    val context = runAddOnInjectableInference(
+      addOnInjectable.constraintType,
       candidateType,
       allStaticTypeParameters,
       ctx
     )
     if (!context.isOk) return
 
-    val substitutedInjectable = spreadingInjectable.callable
+    val substitutedInjectable = addOnInjectable.callable
       .copy(
-        type = spreadingInjectable.callable.type
+        type = addOnInjectable.callable.type
           .substitute(context.fixedTypeVariables),
-        parameterTypes = spreadingInjectable.callable.parameterTypes
+        parameterTypes = addOnInjectable.callable.parameterTypes
           .mapValues { it.value.substitute(context.fixedTypeVariables) },
-        typeArguments = spreadingInjectable.callable
+        typeArguments = addOnInjectable.callable
           .typeArguments
           .mapValues { it.value.substitute(context.fixedTypeVariables) }
       )
 
-    spreadingInjectableChain += spreadingInjectable
+    addOnInjectableChain += addOnInjectable
 
     substitutedInjectable.collectInjectables(
       scope = this,
       addInjectable = { next ->
         injectables += next
-        for (innerSpreadingInjectable in spreadingInjectables.toList())
-          spreadInjectables(innerSpreadingInjectable, next.type)
+        collectAddOnInjectables(next.type)
       },
-      addSpreadingInjectable = { next ->
-        val newSpreadingInjectable = SpreadingInjectable(next)
-        spreadingInjectables += newSpreadingInjectable
-        spreadInjectables(newSpreadingInjectable)
+      addAddOnInjectable = { next ->
+        AddOnInjectable(next)
+          .also { collectAddOnInjectables(it) }
       },
       ctx = ctx
     )
 
-    spreadingInjectableChain -= spreadingInjectable
+    addOnInjectableChain -= addOnInjectable
   }
 
   override fun toString(): String = "InjectablesScope($name)"

@@ -76,7 +76,7 @@ class TypeSubstitutionTest {
       .let {
         it.withArguments(listOf(intType) + it.arguments.drop(1))
       }
-    val context = runSpreadingInjectableInference(
+    val context = runAddOnInjectableInference(
       scopedT.defaultType,
       substitutionType,
       emptyList(),
@@ -103,7 +103,7 @@ class TypeSubstitutionTest {
           
           interface ModelKeyUiScope<K : Key<*>, S>
           
-          @Provide fun <@Spread U : ModelKeyUi<K, S>, K : Key<*>, S> modelKeyUi(): KeyUi<K> = TODO()
+          @Provide fun <@AddOn U : ModelKeyUi<K, S>, K : Key<*>, S> modelKeyUi(): KeyUi<K> = TODO()
         """
       ),
       source(

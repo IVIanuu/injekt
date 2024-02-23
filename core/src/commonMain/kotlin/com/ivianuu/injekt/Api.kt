@@ -64,4 +64,4 @@ inline fun <T> inject(x: T = inject) = x
 annotation class Tag
 
 @Target(AnnotationTarget.TYPE_PARAMETER)
-annotation class Spread
+annotation class AddOn

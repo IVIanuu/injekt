@@ -122,15 +122,15 @@ class ModuleTest {
     compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.fooModuleProvider.invoke.foo")
   }
 
-  @Test fun testModuleWithSpreadingInjectable() = codegen(
+  @Test fun testModuleWithAddOnInjectable() = codegen(
     """
       class Token
 
-      class SpreadModule<T> {
-        @Provide fun <@Spread S : T> token() = Token()
+      class AddOnModule<T> {
+        @Provide fun <@AddOn S : T> token() = Token()
       }
-      @Provide val fooModule1 = SpreadModule<Foo>()
-      @Provide val fooModule2 = SpreadModule<Foo>()
+      @Provide val fooModule1 = AddOnModule<Foo>()
+      @Provide val fooModule2 = AddOnModule<Foo>()
 
       @Provide val foo = Foo()
 

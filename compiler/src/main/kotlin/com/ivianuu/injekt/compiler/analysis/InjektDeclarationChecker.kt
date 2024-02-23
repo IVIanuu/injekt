@@ -43,7 +43,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     ctx: Context
   ) {
     if (descriptor.hasAnnotation(InjektFqNames.Provide))
-      checkSpreadingInjectable(declaration, descriptor.typeParameters, ctx)
+      checkAddOnInjectable(declaration, descriptor.typeParameters, ctx)
     checkOverrides(declaration, descriptor, ctx)
     checkExceptActual(declaration, descriptor, ctx)
   }
@@ -104,7 +104,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       )
 
     if (isProvider)
-      checkSpreadingInjectable(declaration, descriptor.declaredTypeParameters, ctx)
+      checkAddOnInjectable(declaration, descriptor.declaredTypeParameters, ctx)
 
     checkExceptActual(declaration, descriptor, ctx)
 
@@ -146,20 +146,20 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       ctx.reportError(declaration, "injectable variable must be initialized, delegated or marked with lateinit")
   }
 
-  private fun checkSpreadingInjectable(
+  private fun checkAddOnInjectable(
     declaration: KtDeclaration,
     typeParameters: List<TypeParameterDescriptor>,
     ctx: Context
   ) {
-    val spreadParameters = typeParameters.filter { it.hasAnnotation(InjektFqNames.Spread) }
-    if (spreadParameters.size > 1)
-      spreadParameters
+    val addOnParameters = typeParameters.filter { it.hasAnnotation(InjektFqNames.AddOn) }
+    if (addOnParameters.size > 1)
+      addOnParameters
         .drop(1)
         .forEach {
           ctx.reportError(
-            it.annotations.findAnnotation(InjektFqNames.Spread)
+            it.annotations.findAnnotation(InjektFqNames.AddOn)
               ?.source?.getPsi() ?: declaration,
-            "a declaration may have only one @Spread type parameter"
+            "a declaration may have only one @AddOn type parameter"
           )
         }
   }
@@ -220,8 +220,8 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
 
     for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
       val typeParameter = typeParameters[index]
-      if (typeParameter.hasAnnotation(InjektFqNames.Spread) !=
-        overriddenTypeParameter.hasAnnotation(InjektFqNames.Spread))
+      if (typeParameter.hasAnnotation(InjektFqNames.AddOn) !=
+        overriddenTypeParameter.hasAnnotation(InjektFqNames.AddOn))
         return false
     }
 

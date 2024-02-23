@@ -141,13 +141,13 @@ fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): CallableR
 fun CallableRef.collectInjectables(
   scope: InjectablesScope,
   addInjectable: (CallableRef) -> Unit,
-  addSpreadingInjectable: (CallableRef) -> Unit,
+  addAddOnInjectable: (CallableRef) -> Unit,
   ctx: Context
 ) {
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
-  if (typeParameters.any { it.isSpread && typeArguments[it] == it.defaultType }) {
-    addSpreadingInjectable(this)
+  if (typeParameters.any { it.isAddOn && typeArguments[it] == it.defaultType }) {
+    addAddOnInjectable(this)
     return
   }
 
@@ -184,7 +184,7 @@ fun CallableRef.collectInjectables(
         .collectInjectables(
           scope = scope,
           addInjectable = addInjectable,
-          addSpreadingInjectable = addSpreadingInjectable,
+          addAddOnInjectable = addAddOnInjectable,
           ctx = ctx
         )
     }

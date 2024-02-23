@@ -152,7 +152,7 @@ sealed interface ConstraintPosition {
   data object Unknown : ConstraintPosition
 }
 
-fun runSpreadingInjectableInference(
+fun runAddOnInjectableInference(
   constraintType: TypeRef,
   candidateType: TypeRef,
   staticTypeParameters: List<ClassifierRef>,

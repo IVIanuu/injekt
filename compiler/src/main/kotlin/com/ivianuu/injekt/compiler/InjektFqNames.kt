@@ -9,10 +9,10 @@ import org.jetbrains.kotlin.name.*
 
 object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
-  val Provide = InjektPackage.child("Provide".asNameId())
+  val AddOn = InjektPackage.child("AddOn".asNameId())
   val inject = InjektPackage.child("inject".asNameId())
+  val Provide = InjektPackage.child("Provide".asNameId())
   val Tag = InjektPackage.child("Tag".asNameId())
-  val Spread = InjektPackage.child("Spread".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val DeclarationInfo = InternalPackage.child("DeclarationInfo".asNameId())

@@ -136,10 +136,10 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("'foo' overrides nothing")
   }
 
-  @Test fun testNonSpreadTypeParameterOverrideWithSpreadOverridden() = singleAndMultiCodegen(
+  @Test fun testNonAddOnTypeParameterOverrideWithAddOnOverridden() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
-        @Provide abstract fun <@Spread T : Bar> foo(): Foo
+        @Provide abstract fun <@AddOn T : Bar> foo(): Foo
       }
     """,
     """
@@ -214,9 +214,9 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
-  @Test fun testExpectActualFunctionSpreadTypeParameterMismatch() = multiPlatformCodegen(
+  @Test fun testExpectActualFunctionAddOnTypeParameterMismatch() = multiPlatformCodegen(
     """
-      @Provide expect fun <@Spread T> myFunc(): Foo
+      @Provide expect fun <@AddOn T> myFunc(): Foo
     """,
     """
       @Provide actual fun <T> myFunc(): Foo = Foo()
@@ -225,9 +225,9 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
-  @Test fun testExpectActualClassSpreadTypeParameterMismatch() = multiPlatformCodegen(
+  @Test fun testExpectActualClassAddOnTypeParameterMismatch() = multiPlatformCodegen(
     """
-      @Provide expect class Dep<@Spread T>
+      @Provide expect class Dep<@AddOn T>
     """,
     """
       @Provide actual class Dep<T>

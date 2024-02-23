@@ -9,12 +9,12 @@ import io.kotest.matchers.collections.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
-class SpreadingInjectableTest {
-  @Test fun testSpreadingInjectableFunction() = singleAndMultiCodegen(
+class AddOnInjectableTest {
+  @Test fun testAddOnInjectableFunction() = singleAndMultiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class Trigger
-      @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
+      @Provide fun <@AddOn T : @Trigger S, S> triggerImpl(instance: T): S = instance
 
       @Provide fun foo(): @Trigger Foo = Foo()
     """,
@@ -25,9 +25,9 @@ class SpreadingInjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testSpreadingInjectableClass() = singleAndMultiCodegen(
+  @Test fun testAddOnInjectableClass() = singleAndMultiCodegen(
     """
-      @Provide class MyModule<@Spread T : @Trigger S, S> {
+      @Provide class MyModule<@AddOn T : @Trigger S, S> {
         @Provide fun intoSet(instance: T): @Final S = instance
       }
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
@@ -46,19 +46,19 @@ class SpreadingInjectableTest {
     invokeSingleFile<List<Foo>>().size shouldBe 1
   }
 
-  @Test fun testMultipleSpreadTypeParameters() = codegen(
+  @Test fun testMultipleAddOnTypeParameters() = codegen(
     """
-      @Provide fun <@Spread T, @Spread S> triggerImpl() = Unit
+      @Provide fun <@AddOn T, @AddOn S> triggerImpl() = Unit
     """
   ) {
-    compilationShouldHaveFailed("only one @Spread")
+    compilationShouldHaveFailed("only one @AddOn")
   }
 
-  @Test fun testSpreadingInjectableTriggeredByClass() = singleAndMultiCodegen(
+  @Test fun testAddOnInjectableForClass() = singleAndMultiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class Trigger
-      @Provide fun <@Spread T : @Trigger S, S> triggerImpl(instance: T): S = instance
+      @Provide fun <@AddOn T : @Trigger S, S> triggerImpl(instance: T): S = instance
       
       @Trigger @Provide class NotAny
     """,
@@ -69,12 +69,12 @@ class SpreadingInjectableTest {
     invokeSingleFile()
   }
 
-  @Test fun testSpreadingInjectableChain() = singleAndMultiCodegen(
+  @Test fun testAddOnInjectableChain() = singleAndMultiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE) 
       annotation class A
       
-      @Provide fun <@Spread T : @A S, S> aImpl() = AModule_<S>()
+      @Provide fun <@AddOn T : @A S, S> aImpl() = AModule_<S>()
       
       class AModule_<T> {
         @Provide fun my(instance: T): @B T = instance
@@ -82,7 +82,7 @@ class SpreadingInjectableTest {
       
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class B
-      @Provide fun <@Spread T : @B S, S> bImpl() = BModule_<T>()
+      @Provide fun <@AddOn T : @B S, S> bImpl() = BModule_<T>()
       
       class BModule_<T> {
         @Provide fun my(instance: T): @C Any? = instance
@@ -90,7 +90,7 @@ class SpreadingInjectableTest {
       
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class C
-      @Provide fun <@Spread T : @C Any?> cImpl() = Foo()
+      @Provide fun <@AddOn T : @C Any?> cImpl() = Foo()
       
       @Provide fun dummy(): @A Long = 0L
     """,
@@ -101,11 +101,11 @@ class SpreadingInjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testMultipleSpreadCandidatesWithSameType() = singleAndMultiCodegen(
+  @Test fun testMultipleAddOnCandidatesWithSameType() = singleAndMultiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class Trigger
-      @Provide fun <@Spread T : @Trigger String> triggerImpl(instance: T): String = instance
+      @Provide fun <@AddOn T : @Trigger String> triggerImpl(instance: T): String = instance
 
       @Provide fun a(): @Trigger String = "a"
       @Provide fun b(): @Trigger String = "b"
@@ -118,12 +118,12 @@ class SpreadingInjectableTest {
       .shouldContainExactly("a", "b")
   }
 
-  @Test fun testRecursiveSpreadingInjectables() = singleAndMultiCodegen(
+  @Test fun testRecursiveAddOnInjectables() = singleAndMultiCodegen(
     """
       object Result
 
-      @Provide fun <@Spread T : Foo> a(): Result = Result
-      @Provide fun <@Spread T : Foo> b(): Result = Result
+      @Provide fun <@AddOn T : Foo> a(): Result = Result
+      @Provide fun <@AddOn T : Foo> b(): Result = Result
 
       @Provide fun foo() = Foo()
     """,
