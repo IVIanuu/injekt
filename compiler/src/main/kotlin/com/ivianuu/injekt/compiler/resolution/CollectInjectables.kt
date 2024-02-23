@@ -26,37 +26,12 @@ fun TypeRef.collectInjectables(
   classBodyView: Boolean,
   ctx: Context
 ): List<CallableRef> = ctx.cached("type_injectables", this to classBodyView) {
-  // special case to support @Provide () -> Foo
-  if (isProvideFunctionType(ctx)) {
-    val callable = classifier
-      .descriptor!!
-      .defaultType
-      .memberScope
-      .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-      .first()
-      .toCallableRef(ctx)
-      .let { callable ->
-        callable.copy(
-          type = arguments.last(),
-          parameterTypes = callable.parameterTypes.toMutableMap().apply {
-            this[DISPATCH_RECEIVER_INDEX] = this@collectInjectables
-          }
-        ).substitute(
-          classifier.typeParameters
-            .zip(arguments)
-            .toMap()
-        )
-      }
-
-    return@cached listOf(callable)
-  }
-
   buildList {
     classifier
       .descriptor
       ?.defaultType
       ?.memberScope
-      ?.collectMemberInjectables(ctx) { callable ->
+      ?.collectMemberInjectables(ctx, this@collectInjectables) { callable ->
         val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
           CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
@@ -84,13 +59,16 @@ fun TypeRef.collectInjectables(
 
 fun ResolutionScope.collectMemberInjectables(
   ctx: Context,
+  type: TypeRef? = null,
   onEach: (DeclarationDescriptor) -> Unit = {},
   consumer: (CallableRef) -> Unit
 ) {
   for (declaration in getContributedDescriptors()) {
     onEach(declaration)
     if ((declaration is CallableMemberDescriptor || declaration is VariableDescriptor) &&
-      declaration.isProvide(ctx))
+      (declaration.isProvide(ctx) ||
+          (declaration.name.asString() == "invoke" &&
+              type?.isProvideFunctionType(ctx) == true)))
       consumer(declaration.cast<CallableDescriptor>().toCallableRef(ctx))
   }
 }
