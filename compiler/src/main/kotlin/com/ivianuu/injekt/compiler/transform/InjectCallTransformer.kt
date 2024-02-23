@@ -260,10 +260,10 @@ class InjectCallTransformer(
   private fun ScopeContext.callableExpression(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
-  ): IrExpression = when (injectable.callable.callable) {
-    is ReceiverParameterDescriptor -> if (injectable.callable.type.unwrapTags().classifier.isObject)
-      objectExpression(injectable.callable.type.unwrapTags())
-    else parameterExpression(injectable.callable.callable, injectable)
+  ): IrExpression = if (injectable.callable.type.unwrapTags().classifier.isObject)
+    objectExpression(injectable.callable.type.unwrapTags())
+  else when (injectable.callable.callable) {
+    is ReceiverParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
     else -> functionExpression(result, injectable, injectable.callable.callable)

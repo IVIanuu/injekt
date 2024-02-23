@@ -185,11 +185,7 @@ fun collectPackageInjectables(
         onEach = { declaration ->
           if (declaration is ClassDescriptor) {
             collectInjectables(declaration.unsubstitutedInnerClassesScope)
-
-            if (declaration.kind == ClassKind.OBJECT && declaration.isProvide(ctx))
-              injectables += declaration.injectableReceiver(true, ctx)
-            else
-              injectables += declaration.injectableConstructors(ctx)
+            injectables += declaration.injectableConstructors(ctx)
           }
         }
       ) {
