@@ -2,10 +2,11 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, IDEAPluginsCompatibilityAPI::class)
+@file:OptIn(IDEAPluginsCompatibilityAPI::class, UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.builtins.functions.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
@@ -192,6 +193,12 @@ fun ParameterDescriptor.injektName(): Name = when (injektIndex()) {
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
 
+val CallableDescriptor.callableId get() = CallableId(
+  findPackage().fqName,
+  containingDeclaration.safeAs<ClassDescriptor>()?.classId?.relativeClassName,
+  name
+)
+
 fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescriptor) index else {
   val callable = containingDeclaration as? CallableDescriptor
   when {
@@ -199,6 +206,16 @@ fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescripto
         (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
     original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
     else -> throw AssertionError("Unexpected descriptor $this")
+  }
+}
+
+fun IrDeclaration.injektIndex(): Int {
+  if (parent is IrClass) return DISPATCH_RECEIVER_INDEX
+  val callable = parent.cast<IrFunction>()
+  return when {
+    this == callable.dispatchReceiverParameter -> DISPATCH_RECEIVER_INDEX
+    this == callable.extensionReceiverParameter -> EXTENSION_RECEIVER_INDEX
+    else -> callable.valueParameters.indexOf(this)
   }
 }
 

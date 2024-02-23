@@ -2,9 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, FirIncompatiblePluginAPI::class, ObsoleteDescriptorBasedAPI::class,
-  ObsoleteDescriptorBasedAPI::class
-)
+@file:OptIn(UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler.backend
 
@@ -149,7 +147,7 @@ class InjectCallTransformer(
         else -> putValueArgument(
           symbol.owner
             .valueParameters
-            .first { it.descriptor.injektIndex() == request.parameterIndex }
+            .first { it.injektIndex() == request.parameterIndex }
             .index,
           expression
         )
@@ -260,7 +258,7 @@ class InjectCallTransformer(
   }
 
   private val mutableListOf = irCtx.referenceFunctions(
-    FqName("kotlin.collections.mutableListOf")
+    CallableId(FqName("kotlin.collections"), "mutableListOf".asNameId())
   ).single { it.owner.valueParameters.isEmpty() }
   private val listAdd = mutableListOf.owner.returnType
     .classOrNull!!
@@ -311,7 +309,7 @@ class InjectCallTransformer(
   }
 
   private fun ScopeContext.objectExpression(type: InjektType): IrExpression =
-    irBuilder.irGetObject(irCtx.referenceClass(type.classifier.fqName)!!)
+    irBuilder.irGetObject(irCtx.referenceClass(type.classifier.classId!!)!!)
 
   private fun ScopeContext.functionExpression(
     result: ResolutionResult.Success.Value,
@@ -333,15 +331,14 @@ class InjectCallTransformer(
       val element = scope.irElement
       when {
         element is IrClass &&
-            element.descriptor == descriptor.type.constructor.declarationDescriptor ->
+            element.uniqueKey(ctx) == descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
           irGet(element.thisReceiver!!)
         element is IrFunction &&
-            element.dispatchReceiverParameter?.descriptor?.type?.constructor?.declarationDescriptor ==
-            descriptor.type.constructor.declarationDescriptor ->
+            element.dispatchReceiverParameter?.type?.uniqueTypeKey() == descriptor.type.uniqueTypeKey() ->
           irGet(element.dispatchReceiverParameter!!)
         element is IrProperty &&
             allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-            element.parentClassOrNull?.descriptor == descriptor.type.constructor.declarationDescriptor ->
+            element.parentClassOrNull?.uniqueKey(ctx) == descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
           irGet(element.getter!!.dispatchReceiverParameter!!)
         else -> null
       }
@@ -358,7 +355,7 @@ class InjectCallTransformer(
         injectable.type.toIrType().typeOrNull!!,
         (parameterMap[descriptor] ?: containingDeclaration.irCallable()
           .allParameters
-          .single { it.descriptor.injektIndex() == descriptor.injektIndex() })
+          .single { it.injektIndex() == descriptor.injektIndex() })
           .symbol
       )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
@@ -391,23 +388,23 @@ class InjectCallTransformer(
   private fun CallableDescriptor.irCallable() = when (this) {
     is ClassConstructorDescriptor -> compilationDeclarations.constructors
       .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
-      ?: irCtx.referenceConstructors(constructedClass.fqNameSafe)
+      ?: irCtx.referenceConstructors(constructedClass.classId!!)
         .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
         ?.owner
       ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${compilationDeclarations.constructors.map { it.uniqueKey(ctx) }}")
     is FunctionDescriptor -> compilationDeclarations.functions.singleOrNull {
         it.uniqueKey(ctx) == uniqueKey(ctx)
-      } ?: irCtx.referenceFunctions(fqNameSafe)
+      } ?: irCtx.referenceFunctions(callableId)
         .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
         ?.owner
-    ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceFunctions(fqNameSafe).map { it.owner.uniqueKey(ctx) }}")
+    ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceFunctions(callableId).map { it.owner.uniqueKey(ctx) }}")
     is PropertyDescriptor -> (compilationDeclarations.properties
       .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
-      ?: irCtx.referenceProperties(fqNameSafe)
+      ?: irCtx.referenceProperties(callableId)
       .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
       ?.owner)
       ?.getter
-      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceProperties(fqNameSafe).map { it.owner.uniqueKey(ctx) }}")
+      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceProperties(callableId).map { it.owner.uniqueKey(ctx) }}")
     else -> throw AssertionError("Unexpected callable $this")
   }
 
@@ -418,7 +415,7 @@ class InjectCallTransformer(
         .typeOrNull!!
         .cast<IrSimpleType>()
         .let { type ->
-          val tagConstructor = irCtx.referenceClass(classifier.fqName)!!
+          val tagConstructor = irCtx.referenceClass(classifier.classId!!)!!
             .constructors.single()
           IrSimpleTypeImpl(
             type.originalKotlinType,
@@ -451,27 +448,39 @@ class InjectCallTransformer(
           )
         }
       else -> {
-        val key = classifier.descriptor!!.uniqueKey(ctx)
-        val fqName = FqName(key.split(":")[1])
+        val key = classifier.key
         val irClassifier = compilationDeclarations.classes.singleOrNull {
           it.uniqueKey(ctx) == key
         }
           ?.symbol
-          ?: irCtx.referenceClass(fqName)
-          ?: irCtx.referenceFunctions(fqName.parent())
-            .flatMap { it.owner.typeParameters }
-            .singleOrNull { it.uniqueKey(ctx) == key }
-            ?.symbol
-          ?: irCtx.referenceProperties(fqName.parent())
-            .flatMap { it.owner.getter!!.typeParameters }
-            .singleOrNull { it.uniqueKey(ctx) == key }
-            ?.symbol
-          ?: (irCtx.referenceClass(fqName.parent()) ?: irCtx.referenceTypeAlias(fqName.parent()))
-            ?.owner
-            ?.typeParameters
-            ?.singleOrNull { it.uniqueKey(ctx) == key }
-            ?.symbol
-          ?: error("Could not get for $fqName $key")
+          ?: classifier.descriptor
+            .safeAs<ClassDescriptor>()
+            ?.let { irCtx.referenceClass(it.classId!!) }
+          ?: classifier.descriptor.safeAs<TypeParameterDescriptor>()
+            ?.let { typeParameterDescriptor ->
+              typeParameterDescriptor.containingDeclaration
+                .safeAs<FunctionDescriptor>()
+                ?.let { irCtx.referenceFunctions(it.callableId) }
+                ?.flatMap { it.owner.typeParameters }
+                ?.singleOrNull { it.uniqueKey(ctx) == key }
+                ?.symbol
+                ?: typeParameterDescriptor.containingDeclaration
+                  .safeAs<PropertyDescriptor>()
+                  ?.let { irCtx.referenceProperties(it.callableId) }
+                  ?.flatMap { it.owner.getter!!.typeParameters }
+                  ?.singleOrNull { it.uniqueKey(ctx) == key }
+                  ?.symbol
+                ?: (typeParameterDescriptor.containingDeclaration
+                  .safeAs<ClassDescriptor>()
+                  ?.let { irCtx.referenceClass(it.classId!!) }
+                  ?: typeParameterDescriptor.containingDeclaration
+                    .safeAs<TypeAliasDescriptor>()
+                    ?.let { irCtx.referenceTypeAlias(it.classId!!) })
+                  ?.owner
+                  ?.typeParameters
+                  ?.singleOrNull { it.uniqueKey(ctx) == key }
+                  ?.symbol
+            } ?: error("Could not get for $classifier $key")
         IrSimpleTypeImpl(
           irClassifier,
           isMarkedNullable,

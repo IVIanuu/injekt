@@ -85,6 +85,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     fqName: FqName = FqName("SubType${id}"),
   ) = InjektClassifier(
     key = fqName.asString(),
+    classId = ClassId.topLevel(fqName),
     fqName = fqName,
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
@@ -98,6 +99,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ) = InjektClassifier(
     key = fqName.asString(),
     fqName = fqName,
+    classId = ClassId.topLevel(fqName),
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (superTypes.isNotEmpty()) superTypes.toList() else listOf(any)
     },
@@ -124,6 +126,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   ) = InjektClassifier(
     key = fqName.asString(),
     fqName = fqName,
+    classId = null,
     lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       if (upperBounds.isNotEmpty()) upperBounds.toList() else
         listOf(any.copy(isMarkedNullable = nullable))

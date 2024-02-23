@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 data class InjektClassifier(
   val key: String,
   val fqName: FqName,
+  val classId: ClassId?,
   val typeParameters: List<InjektClassifier> = emptyList(),
   val lazySuperTypes: Lazy<List<InjektType>> = lazyOf(emptyList()),
   val isTypeParameter: Boolean = false,
@@ -69,19 +70,20 @@ fun ClassifierDescriptor.toInjektClassifier(ctx: Context): InjektClassifier =
 
     val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
 
-    if (isTag) {
+    if (isTag)
       typeParameters += InjektClassifier(
         key = "${uniqueKey(ctx)}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
+        classId = null,
         isTypeParameter = true,
         lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
         variance = TypeVariance.OUT
       )
-    }
 
     InjektClassifier(
       key = original.uniqueKey(ctx),
       fqName = original.fqNameSafe,
+      classId = classId,
       typeParameters = typeParameters,
       lazySuperTypes = info.lazySuperTypes,
       isTypeParameter = this is TypeParameterDescriptor,
@@ -271,7 +273,7 @@ fun InjektType.withVariance(variance: TypeVariance) =
   else copy(variance = variance)
 
 val STAR_PROJECTION_TYPE = InjektType(
-  classifier = InjektClassifier("*", StandardNames.FqNames.any.toSafe()),
+  classifier = InjektClassifier("*", StandardNames.FqNames.any.toSafe(), null),
   isStarProjection = true,
 )
 
