@@ -103,18 +103,12 @@ fun ClassDescriptor.injectableConstructors(ctx: Context): List<InjektCallable> =
       }
   }
 
-fun ClassDescriptor.injectableReceiver(tagged: Boolean, ctx: Context): InjektCallable {
-  val callable = ReceiverParameterDescriptorImpl(
+fun ClassDescriptor.injectableReceiver(ctx: Context): InjektCallable =
+  ReceiverParameterDescriptorImpl(
     this,
     ImplicitClassReceiver(this),
     Annotations.EMPTY
   ).toInjektCallable(ctx)
-  return if (!tagged || callable.type.classifier.tags.isEmpty()) callable
-  else {
-    val taggedType = callable.type.classifier.tags.wrap(callable.type)
-    callable.copy(type = taggedType, originalType = taggedType)
-  }
-}
 
 fun InjektCallable.collectInjectables(
   scope: InjectablesScope,

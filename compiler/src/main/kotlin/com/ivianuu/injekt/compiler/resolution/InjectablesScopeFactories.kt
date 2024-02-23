@@ -238,7 +238,7 @@ private fun ClassInjectablesScope(
     name = name,
     parent = finalParent,
     owner = clazz.findPsi().cast(),
-    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
+    initialInjectables = listOf(clazz.injectableReceiver(ctx)),
     typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
@@ -273,7 +273,7 @@ private fun ClassInitInjectablesScope(
     name = name,
     parent = parent,
     owner = clazz.findPsi().cast(),
-    initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
+    initialInjectables = listOf(clazz.injectableReceiver(ctx)),
     injectablesPredicate = {
       val psiProperty = it.callable.findPsi().safeAs<KtProperty>() ?: return@InjectableScopeOrParent true
       psiProperty.getParentOfType<KtClass>(false) != psiClass ||
