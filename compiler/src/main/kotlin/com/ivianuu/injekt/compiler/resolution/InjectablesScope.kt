@@ -32,7 +32,7 @@ class InjectablesScope(
 
   data class AddOnInjectable(
     val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeParameters.single {
+    val constraintType: TypeRef = callable.typeArguments.keys.single {
       it.isAddOn
     }.defaultType.substitute(callable.typeArguments),
     val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf()

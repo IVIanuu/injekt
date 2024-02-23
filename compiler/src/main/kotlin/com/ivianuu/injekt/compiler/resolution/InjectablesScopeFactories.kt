@@ -397,7 +397,7 @@ private fun FunctionParameterInjectablesScope(
     parent = parent,
     owner = (parameter.callable.findPsi() ?: function.findPsi()).cast(),
     initialInjectables = listOf(parameter),
-    typeParameters = function.toCallableRef(ctx).typeParameters,
+    typeParameters = function.toCallableRef(ctx).typeArguments.keys.toList(),
     nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
     else parent.nesting + 1,
     ctx = ctx

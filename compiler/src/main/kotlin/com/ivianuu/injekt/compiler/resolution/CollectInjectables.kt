@@ -124,7 +124,7 @@ fun CallableRef.collectInjectables(
 ) {
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
-  if (typeParameters.any { it.isAddOn && typeArguments[it] == it.defaultType }) {
+  if (typeArguments.any { it.key.isAddOn && it.value == it.key.defaultType }) {
     addAddOnInjectable(this)
     return
   }

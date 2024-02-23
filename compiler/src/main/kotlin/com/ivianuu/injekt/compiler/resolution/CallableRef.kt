@@ -17,7 +17,6 @@ data class CallableRef(
   val callable: CallableDescriptor,
   val type: TypeRef,
   val originalType: TypeRef,
-  val typeParameters: List<ClassifierRef>,
   val parameterTypes: Map<Int, TypeRef>,
   val typeArguments: Map<ClassifierRef, TypeRef>,
   val callableFqName: FqName,
@@ -26,7 +25,7 @@ data class CallableRef(
 
 fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   if (map == typeArguments) return this
-  val substitutedTypeParameters = typeParameters.substitute(map)
+  val substitutedTypeParameters = typeArguments.keys.toList().substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
     it.defaultType
   }
@@ -38,12 +37,14 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
       },
-    typeParameters = substitutedTypeParameters,
     typeArguments = typeArguments
       .mapValues {
         it.value
           .substitute(map)
           .substitute(typeParameterSubstitutionMap)
+      }
+      .mapKeys { (typeParameter, _) ->
+        substitutedTypeParameters.single { it.key == typeParameter.key }
       }
   )
 }
@@ -51,18 +52,13 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
 fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
   ctx.cached("callable_ref", this) {
     val info = callableInfo(ctx)
-    val typeParameters = typeParameters.map { it.toClassifierRef(ctx) }
-
     CallableRef(
       callable = this,
       type = info.type,
       originalType = info.type,
-      typeParameters = typeParameters,
       parameterTypes = info.parameterTypes,
-      typeArguments = buildMap {
-        for (typeParameter in typeParameters)
-          this[typeParameter] = typeParameter.defaultType
-      },
+      typeArguments = typeParameters.map { it.toClassifierRef(ctx) }
+        .associateWith { it.defaultType },
       callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
       safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
         it.lambdaInjectable.callableFqName.child(it.name)
