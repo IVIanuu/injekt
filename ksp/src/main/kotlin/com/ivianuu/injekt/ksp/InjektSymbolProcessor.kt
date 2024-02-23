@@ -12,7 +12,6 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
-@OptIn(UnsafeCastFunction::class)
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
     resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asString())
@@ -85,12 +84,11 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
 
   private fun KSDeclaration.uniqueKey(): String = buildString {
     modifiers.forEach { append(it) }
+    annotations.forEach { append(it.annotationType.uniqueTypeKey()) }
 
     when (this@uniqueKey) {
       is KSClassDeclaration -> {
         superTypes.forEach { append(it.uniqueTypeKey()) }
-        annotations
-          .forEach { append(it.annotationType.uniqueTypeKey()) }
         primaryConstructor?.uniqueKey()?.let { append(it) }
       }
       is KSFunctionDeclaration -> {
@@ -108,8 +106,19 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     }
   }
 
-  private fun KSTypeReference.uniqueTypeKey() = resolve().safeAs<KSTypeImpl>()
-    ?.kotlinType?.uniqueTypeKey() ?: "error"
+  private fun KSTypeReference.uniqueTypeKey(): String = buildString {
+    fun KSType.append() {
+      annotations.forEach { it.annotationType.resolve().append() }
+      append(declaration.qualifiedName!!.asString())
+      arguments.forEach {
+        append(it.type?.uniqueTypeKey())
+        append(it.variance)
+      }
+      append(isMarkedNullable)
+    }
+
+    resolve().append()
+  }
 
   @AutoService(SymbolProcessorProvider::class)
   class Provider : SymbolProcessorProvider {
