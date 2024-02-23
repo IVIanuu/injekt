@@ -168,17 +168,7 @@ class InjectablesScope(
     )
     if (!context.isOk) return
 
-    val substitutedInjectable = addOnInjectable.callable
-      .copy(
-        type = addOnInjectable.callable.type
-          .substitute(context.fixedTypeVariables),
-        parameterTypes = addOnInjectable.callable.parameterTypes
-          .mapValues { it.value.substitute(context.fixedTypeVariables) },
-        typeArguments = addOnInjectable.callable
-          .typeArguments
-          .mapValues { it.value.substitute(context.fixedTypeVariables) }
-      )
-
+    val substitutedInjectable = addOnInjectable.callable.substitute(context.fixedTypeVariables)
     addOnInjectableChain += addOnInjectable
 
     substitutedInjectable.collectInjectables(
