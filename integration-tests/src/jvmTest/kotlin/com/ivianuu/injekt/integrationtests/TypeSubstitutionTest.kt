@@ -71,7 +71,7 @@ class TypeSubstitutionTest {
       .getContributedFunctions("scoped".asNameId(), NoLookupLocation.FROM_BACKEND)
       .single()
       .typeParameters
-      .map { it.toClassifierRef(ctx) }
+      .map { it.toInjektClassifier(ctx) }
     val substitutionType = scoped.wrap(stringType)
       .let {
         it.withArguments(listOf(intType) + it.arguments.drop(1))
@@ -124,10 +124,10 @@ class TypeSubstitutionTest {
   )
 
   private fun TypeCheckerTestContext.getSubstitutionMap(
-    subType: TypeRef,
-    superType: TypeRef,
-    staticTypeParameters: List<ClassifierRef> = emptyList()
-  ): Map<ClassifierRef, TypeRef> {
+    subType: InjektType,
+    superType: InjektType,
+    staticTypeParameters: List<InjektClassifier> = emptyList()
+  ): Map<InjektClassifier, InjektType> {
     val context = subType.runCandidateInference(
       superType,
       staticTypeParameters,

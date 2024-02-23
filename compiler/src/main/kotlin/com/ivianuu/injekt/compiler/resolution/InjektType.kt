@@ -16,61 +16,61 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-data class ClassifierRef(
+data class InjektClassifier(
   val key: String,
   val fqName: FqName,
-  val typeParameters: List<ClassifierRef> = emptyList(),
-  val lazySuperTypes: Lazy<List<TypeRef>> = lazyOf(emptyList()),
+  val typeParameters: List<InjektClassifier> = emptyList(),
+  val lazySuperTypes: Lazy<List<InjektType>> = lazyOf(emptyList()),
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
   val isTag: Boolean = false,
   val descriptor: ClassifierDescriptor? = null,
-  val tags: List<TypeRef> = emptyList(),
+  val tags: List<InjektType> = emptyList(),
   val isAddOn: Boolean = false,
   val variance: TypeVariance = TypeVariance.INV
 ) {
   val superTypes by lazySuperTypes
 
-  val untaggedType: TypeRef = TypeRef(
+  val untaggedType: InjektType = InjektType(
     classifier = this,
     arguments = typeParameters.map { it.defaultType },
     variance = variance
   )
   val defaultType = tags.wrap(untaggedType)
 
-  override fun equals(other: Any?): Boolean = (other is ClassifierRef) && key == other.key
+  override fun equals(other: Any?): Boolean = (other is InjektClassifier) && key == other.key
   override fun hashCode(): Int = key.hashCode()
   override fun toString(): String = key
 }
 
-fun List<TypeRef>.wrap(type: TypeRef): TypeRef = foldRight(type) { nextTag, acc ->
+fun List<InjektType>.wrap(type: InjektType): InjektType = foldRight(type) { nextTag, acc ->
   nextTag.wrap(acc)
 }
 
-fun TypeRef.unwrapTags(): TypeRef = if (!classifier.isTag) this
+fun InjektType.unwrapTags(): InjektType = if (!classifier.isTag) this
 else arguments.last().unwrapTags()
 
-fun TypeRef.wrap(type: TypeRef): TypeRef {
+fun InjektType.wrap(type: InjektType): InjektType {
   val newArguments = if (arguments.size < classifier.typeParameters.size)
     arguments + type
   else arguments.dropLast(1) + type
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
-  ctx.cached("classifier_ref", this) {
+fun ClassifierDescriptor.toInjektClassifier(ctx: Context): InjektClassifier =
+  ctx.cached("injekt_classifier", this) {
     val info = classifierInfo(ctx)
 
     val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
       ?.declaredTypeParameters
-      ?.map { it.toClassifierRef(ctx) }
+      ?.map { it.toInjektClassifier(ctx) }
       ?.toMutableList()
       ?: mutableListOf()
 
     val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
 
     if (isTag) {
-      typeParameters += ClassifierRef(
+      typeParameters += InjektClassifier(
         key = "${uniqueKey(ctx)}.\$TT",
         fqName = fqNameSafe.child("\$TT".asNameId()),
         isTypeParameter = true,
@@ -79,7 +79,7 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
       )
     }
 
-    ClassifierRef(
+    InjektClassifier(
       key = original.uniqueKey(ctx),
       fqName = original.fqNameSafe,
       typeParameters = typeParameters,
@@ -94,11 +94,11 @@ fun ClassifierDescriptor.toClassifierRef(ctx: Context): ClassifierRef =
     )
   }
 
-fun KotlinType.toTypeRef(
+fun KotlinType.toInjektType(
   ctx: Context,
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV
-): TypeRef {
+): InjektType {
   return if (isStarProjection) STAR_PROJECTION_TYPE else {
     val unwrapped = getAbbreviation() ?: this
     val kotlinType = when {
@@ -108,9 +108,9 @@ fun KotlinType.toTypeRef(
       else -> return ctx.nullableAnyType
     }
 
-    val classifier = kotlinType.constructor.declarationDescriptor!!.toClassifierRef(ctx)
+    val classifier = kotlinType.constructor.declarationDescriptor!!.toInjektClassifier(ctx)
 
-    val rawType = TypeRef(
+    val rawType = InjektType(
       classifier = classifier,
       isMarkedNullable = kotlinType.isMarkedNullable,
       arguments = kotlinType.arguments
@@ -118,7 +118,7 @@ fun KotlinType.toTypeRef(
         // of it's parent class which is irrelevant for us
         .take(classifier.typeParameters.size)
         .map {
-          it.type.toTypeRef(
+          it.type.toInjektType(
             ctx = ctx,
             isStarProjection = it.isStarProjection,
             variance = it.projectionKind.convertVariance()
@@ -138,7 +138,7 @@ fun KotlinType.toTypeRef(
     val tagAnnotations = unwrapped.getTags()
     var result = if (tagAnnotations.isNotEmpty()) {
       tagAnnotations
-        .map { it.type.toTypeRef(ctx) }
+        .map { it.type.toInjektType(ctx) }
         .map {
           it.copy(
             arguments = it.arguments,
@@ -160,20 +160,20 @@ fun KotlinType.toTypeRef(
   }
 }
 
-data class TypeRef(
-  val classifier: ClassifierRef,
+data class InjektType(
+  val classifier: InjektClassifier,
   val isMarkedNullable: Boolean = false,
-  val arguments: List<TypeRef> = emptyList(),
+  val arguments: List<InjektType> = emptyList(),
   val isProvide: Boolean = false,
   val isStarProjection: Boolean = false,
   val uniqueId: String? = null,
   val variance: TypeVariance = TypeVariance.INV,
-  val source: ClassifierRef? = null
+  val source: InjektClassifier? = null
 ) {
   override fun toString(): String = renderToString()
 
   override fun equals(other: Any?) =
-    other is TypeRef && other.hashCode() == hashCode()
+    other is InjektType && other.hashCode() == hashCode()
 
   private var _hashCode: Int = 0
 
@@ -185,8 +185,8 @@ data class TypeRef(
     }
   }
 
-  private var _superTypes: List<TypeRef>? = null
-  val superTypes: List<TypeRef> get() {
+  private var _superTypes: List<InjektType>? = null
+  val superTypes: List<InjektType> get() {
     if (_superTypes == null) {
       val substitutionMap = buildMap {
         for ((index, parameter) in classifier.typeParameters.withIndex())
@@ -202,11 +202,11 @@ data class TypeRef(
     return _superTypes!!
   }
 
-  private var _allTypes: Set<TypeRef>? = null
-  val allTypes: Set<TypeRef> get() {
+  private var _allTypes: Set<InjektType>? = null
+  val allTypes: Set<InjektType> get() {
     if (_allTypes == null) {
-      val allTypes = mutableSetOf<TypeRef>()
-      fun collect(inner: TypeRef) {
+      val allTypes = mutableSetOf<InjektType>()
+      fun collect(inner: InjektType) {
         if (!allTypes.add(inner)) return
         inner.arguments.forEach { collect(it) }
         inner.superTypes.forEach { collect(it) }
@@ -231,9 +231,9 @@ data class TypeRef(
     return _isNullableType!!
   }
 
-  private val subtypeViews = mutableMapOf<ClassifierRef, TypeRef?>()
-  fun subtypeView(classifier: ClassifierRef): TypeRef? = subtypeViews.getOrPut(classifier) {
-    fun TypeRef.inner(): TypeRef? {
+  private val subtypeViews = mutableMapOf<InjektClassifier, InjektType?>()
+  fun subtypeView(classifier: InjektClassifier): InjektType? = subtypeViews.getOrPut(classifier) {
+    fun InjektType.inner(): InjektType? {
       if (this.classifier == classifier) return this
       return superTypes
         .firstNotNullOfOrNull { it.subtypeView(classifier) }
@@ -258,35 +258,35 @@ data class TypeRef(
   }
 }
 
-fun TypeRef.withArguments(arguments: List<TypeRef>): TypeRef =
+fun InjektType.withArguments(arguments: List<InjektType>): InjektType =
   if (this.arguments == arguments) this
   else copy(arguments = arguments)
 
-fun TypeRef.withNullability(isMarkedNullable: Boolean) =
+fun InjektType.withNullability(isMarkedNullable: Boolean) =
   if (this.isMarkedNullable == isMarkedNullable) this
   else copy(isMarkedNullable = isMarkedNullable)
 
-fun TypeRef.withVariance(variance: TypeVariance) =
+fun InjektType.withVariance(variance: TypeVariance) =
   if (this.variance == variance) this
   else copy(variance = variance)
 
-val STAR_PROJECTION_TYPE = TypeRef(
-  classifier = ClassifierRef("*", StandardNames.FqNames.any.toSafe()),
+val STAR_PROJECTION_TYPE = InjektType(
+  classifier = InjektClassifier("*", StandardNames.FqNames.any.toSafe()),
   isStarProjection = true,
 )
 
-fun TypeRef.anyType(action: (TypeRef) -> Boolean): Boolean =
+fun InjektType.anyType(action: (InjektType) -> Boolean): Boolean =
   action(this) || arguments.any { it.anyType(action) }
 
-fun TypeRef.anySuperType(action: (TypeRef) -> Boolean): Boolean =
+fun InjektType.anySuperType(action: (InjektType) -> Boolean): Boolean =
   action(this) || superTypes.any { it.anySuperType(action) }
 
-fun TypeRef.firstSuperTypeOrNull(action: (TypeRef) -> Boolean): TypeRef? =
+fun InjektType.firstSuperTypeOrNull(action: (InjektType) -> Boolean): InjektType? =
   takeIf(action) ?: superTypes.firstNotNullOfOrNull { it.firstSuperTypeOrNull(action) }
 
-fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<ClassifierRef> {
+fun List<InjektClassifier>.substitute(map: Map<InjektClassifier, InjektType>): List<InjektClassifier> {
   if (map.isEmpty()) return this
-  val allNewSuperTypes = map { mutableListOf<TypeRef>() }
+  val allNewSuperTypes = map { mutableListOf<InjektType>() }
   val newClassifiers = mapIndexed { index, classifier ->
     classifier.copy(lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { allNewSuperTypes[index] })
   }
@@ -301,7 +301,7 @@ fun List<ClassifierRef>.substitute(map: Map<ClassifierRef, TypeRef>): List<Class
   return newClassifiers
 }
 
-fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
+fun InjektType.substitute(map: Map<InjektClassifier, InjektType>): InjektType {
   if (map.isEmpty()) return this
   map[classifier]?.let { substitution ->
     val newNullability = if (isStarProjection) substitution.isMarkedNullable
@@ -330,17 +330,17 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
   return this
 }
 
-fun TypeRef.renderToString() = buildString {
+fun InjektType.renderToString() = buildString {
   render { append(it) }
 }
 
-fun TypeRef.render(
+fun InjektType.render(
   depth: Int = 0,
-  renderType: (TypeRef) -> Boolean = { true },
+  renderType: (InjektType) -> Boolean = { true },
   append: (String) -> Unit
 ) {
   if (depth > 15) return
-  fun TypeRef.inner() {
+  fun InjektType.inner() {
     if (!renderType(this)) return
 
     when {
@@ -360,11 +360,11 @@ fun TypeRef.render(
   inner()
 }
 
-val TypeRef.typeSize: Int
+val InjektType.typeSize: Int
   get() {
     var typeSize = 0
-    val seen = mutableSetOf<TypeRef>()
-    fun visit(type: TypeRef) {
+    val seen = mutableSetOf<InjektType>()
+    fun visit(type: InjektType) {
       typeSize++
       if (seen.add(type))
         type.arguments.forEach { visit(it) }
@@ -373,11 +373,11 @@ val TypeRef.typeSize: Int
     return typeSize
   }
 
-val TypeRef.coveringSet: Set<ClassifierRef>
+val InjektType.coveringSet: Set<InjektClassifier>
   get() {
-    val classifiers = mutableSetOf<ClassifierRef>()
-    val seen = mutableSetOf<TypeRef>()
-    fun visit(type: TypeRef) {
+    val classifiers = mutableSetOf<InjektClassifier>()
+    val seen = mutableSetOf<InjektType>()
+    fun visit(type: InjektType) {
       if (!seen.add(type)) return
       classifiers += type.classifier
       type.arguments.forEach { visit(it) }
@@ -386,15 +386,15 @@ val TypeRef.coveringSet: Set<ClassifierRef>
     return classifiers
   }
 
-val TypeRef.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
+val InjektType.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
-fun TypeRef.isProvideFunctionType(ctx: Context): Boolean =
+fun InjektType.isProvideFunctionType(ctx: Context): Boolean =
   isProvide && isSubTypeOf(ctx.functionType, ctx)
 
-val TypeRef.isFunctionType: Boolean
+val InjektType.isFunctionType: Boolean
   get() = classifier.fqName.asString().startsWith("kotlin.Function")
 
-fun TypeRef.isUnconstrained(staticTypeParameters: List<ClassifierRef>): Boolean =
+fun InjektType.isUnconstrained(staticTypeParameters: List<InjektClassifier>): Boolean =
   classifier.isTypeParameter &&
       classifier !in staticTypeParameters &&
       classifier.superTypes.all {

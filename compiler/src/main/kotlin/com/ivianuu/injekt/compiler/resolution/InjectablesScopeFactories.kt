@@ -239,7 +239,7 @@ private fun ClassInjectablesScope(
     parent = finalParent,
     owner = clazz.findPsi().cast(),
     initialInjectables = listOf(clazz.injectableReceiver(false, ctx)),
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -280,7 +280,7 @@ private fun ClassInitInjectablesScope(
           psiProperty.delegateExpressionOrInitializer == null ||
           it.callable in visibleInjectableDeclarations
     },
-    typeParameters = clazz.declaredTypeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 
@@ -302,7 +302,7 @@ private fun ConstructorPreInitInjectablesScope(
     ctx = ctx
   )
   val typeParameters = constructor.constructedClass.declaredTypeParameters.map {
-    it.toClassifierRef(ctx)
+    it.toInjektClassifier(ctx)
   }
   return InjectableScopeOrParent(
     name = "CONSTRUCTOR PRE INIT ${constructor.fqNameSafe}",
@@ -331,7 +331,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
     name = "DEFAULT VALUE ${valueParameter.fqNameSafe}",
     parent = parameterScopes,
     owner = function.findPsi().cast(),
-    typeParameters = function.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = function.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -349,7 +349,7 @@ private fun FunctionInjectablesScope(
   val typeParameters = (if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
   else function.typeParameters)
-    .map { it.toClassifierRef(ctx) }
+    .map { it.toInjektClassifier(ctx) }
   InjectableScopeOrParent(
     name = "$baseName ${function.fqNameSafe}",
     parent = parameterScopes,
@@ -373,7 +373,7 @@ private fun FunctionParameterInjectablesScopes(
       if (it !== function.dispatchReceiverParameter &&
         (maxIndex == null || it.injektIndex() < maxIndex) &&
         it.isProvide(ctx))
-        add(it.toCallableRef(ctx))
+        add(it.toInjektCallable(ctx))
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -388,7 +388,7 @@ private fun FunctionParameterInjectablesScopes(
 private fun FunctionParameterInjectablesScope(
   parent: InjectablesScope,
   function: FunctionDescriptor,
-  parameter: CallableRef,
+  parameter: InjektCallable,
   ctx: Context
 ): InjectablesScope {
   parameter.callable as ParameterDescriptor
@@ -397,7 +397,7 @@ private fun FunctionParameterInjectablesScope(
     parent = parent,
     owner = (parameter.callable.findPsi() ?: function.findPsi()).cast(),
     initialInjectables = listOf(parameter),
-    typeParameters = function.toCallableRef(ctx).typeArguments.keys.toList(),
+    typeParameters = function.toInjektCallable(ctx).typeArguments.keys.toList(),
     nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
     else parent.nesting + 1,
     ctx = ctx
@@ -419,9 +419,9 @@ private fun PropertyInjectablesScope(
     initialInjectables = buildList {
       property.allParameters
         .filter { it.isProvide(ctx) || property.isProvide(ctx) }
-        .forEach { add(it.toCallableRef(ctx)) }
+        .forEach { add(it.toInjektCallable(ctx)) }
     },
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -447,7 +447,7 @@ private fun PropertyInitInjectablesScope(
     name = "PROPERTY INIT ${property.fqNameSafe}",
     parent = finalParent,
     owner = property.findPsi().cast(),
-    typeParameters = property.typeParameters.map { it.toClassifierRef(ctx) },
+    typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -497,7 +497,7 @@ private fun BlockExpressionInjectablesScope(
       parent = finalParent,
       initialInjectables = when (injectableDeclaration) {
         is ClassDescriptor -> injectableDeclaration.injectableConstructors(ctx)
-        is CallableDescriptor -> listOf(injectableDeclaration.toCallableRef(ctx))
+        is CallableDescriptor -> listOf(injectableDeclaration.toInjektCallable(ctx))
         else -> throw AssertionError("Unexpected injectable $injectableDeclaration")
       },
       nesting = if (visibleInjectableDeclarations.size > 1) finalParent.nesting
@@ -541,9 +541,9 @@ fun InjectableScopeOrParent(
   name: String,
   parent: InjectablesScope,
   owner: KtElement? = null,
-  initialInjectables: List<CallableRef> = emptyList(),
-  injectablesPredicate: (CallableRef) -> Boolean = { true },
-  typeParameters: List<ClassifierRef> = emptyList(),
+  initialInjectables: List<InjektCallable> = emptyList(),
+  injectablesPredicate: (InjektCallable) -> Boolean = { true },
+  typeParameters: List<InjektClassifier> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: Context
 ): InjectablesScope {

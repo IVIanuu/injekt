@@ -91,7 +91,7 @@ class InjectCallTransformer(
     val irScope: Scope
   ) {
     val irBuilder = DeclarationIrBuilder(irCtx, irScope.scopeOwnerSymbol)
-    val functionWrappedExpressions = mutableMapOf<TypeRef, ScopeContext.() -> IrExpression>()
+    val functionWrappedExpressions = mutableMapOf<InjektType, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == rootContext.result.scope) rootContext.statements else mutableListOf()
     val parameterMap: MutableMap<ParameterDescriptor, IrValueParameter> =
@@ -272,7 +272,7 @@ class InjectCallTransformer(
     else -> functionExpression(result, injectable, injectable.callable.callable)
   }
 
-  private fun ScopeContext.objectExpression(type: TypeRef): IrExpression =
+  private fun ScopeContext.objectExpression(type: InjektType): IrExpression =
     irBuilder.irGetObject(irCtx.referenceClass(type.classifier.fqName)!!)
 
   private fun ScopeContext.functionExpression(
@@ -326,7 +326,7 @@ class InjectCallTransformer(
       else -> error("Unexpected parent $descriptor $containingDeclaration")
     }
 
-  private fun IrFunctionAccessExpression.fillTypeParameters(callable: CallableRef) {
+  private fun IrFunctionAccessExpression.fillTypeParameters(callable: InjektCallable) {
     callable
       .typeArguments
       .values
@@ -392,7 +392,7 @@ class InjectCallTransformer(
     }
   }
 
-  private fun TypeRef.toIrType(): IrTypeArgument {
+  private fun InjektType.toIrType(): IrTypeArgument {
     if (isStarProjection) return IrStarProjectionImpl
     return when {
       classifier.isTag -> arguments.last().toIrType()

@@ -65,9 +65,9 @@ import org.jetbrains.kotlin.utils.*
 
     val substitutionMap = buildMap {
       for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toClassifierRef(ctx)] = argument.toTypeRef(ctx)
+        this[parameter.toInjektClassifier(ctx)] = argument.toInjektType(ctx)
 
-      fun TypeRef.putAll() {
+      fun InjektType.putAll() {
         for ((index, parameter) in classifier.typeParameters.withIndex()) {
           val argument = arguments[index]
           if (argument.classifier != parameter)
@@ -75,12 +75,12 @@ import org.jetbrains.kotlin.utils.*
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toTypeRef(ctx)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toTypeRef(ctx)?.putAll()
+      resolvedCall.dispatchReceiver?.type?.toInjektType(ctx)?.putAll()
+      resolvedCall.extensionReceiver?.type?.toInjektType(ctx)?.putAll()
     }
 
     val callee = resultingDescriptor
-      .toCallableRef(ctx)
+      .toInjektCallable(ctx)
       .substitute(substitutionMap)
 
     val valueArgumentsByIndex = resolvedCall.valueArguments

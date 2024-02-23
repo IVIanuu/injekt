@@ -13,17 +13,17 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-data class CallableRef(
+data class InjektCallable(
   val callable: CallableDescriptor,
-  val type: TypeRef,
-  val originalType: TypeRef,
-  val parameterTypes: Map<Int, TypeRef>,
-  val typeArguments: Map<ClassifierRef, TypeRef>,
+  val type: InjektType,
+  val originalType: InjektType,
+  val parameterTypes: Map<Int, InjektType>,
+  val typeArguments: Map<InjektClassifier, InjektType>,
   val callableFqName: FqName,
   val injectParameters: Set<Int>
 )
 
-fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
+fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCallable {
   if (map == typeArguments) return this
   val substitutedTypeParameters = typeArguments.keys.toList().substitute(map)
   val typeParameterSubstitutionMap = substitutedTypeParameters.associateWith {
@@ -49,15 +49,15 @@ fun CallableRef.substitute(map: Map<ClassifierRef, TypeRef>): CallableRef {
   )
 }
 
-fun CallableDescriptor.toCallableRef(ctx: Context): CallableRef =
-  ctx.cached("callable_ref", this) {
+fun CallableDescriptor.toInjektCallable(ctx: Context): InjektCallable =
+  ctx.cached("injekt_callable", this) {
     val info = callableInfo(ctx)
-    CallableRef(
+    InjektCallable(
       callable = this,
       type = info.type,
       originalType = info.type,
       parameterTypes = info.parameterTypes,
-      typeArguments = typeParameters.map { it.toClassifierRef(ctx) }
+      typeArguments = typeParameters.map { it.toInjektClassifier(ctx) }
         .associateWith { it.defaultType },
       callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
       safeAs<LambdaInjectable.ParameterDescriptor>()?.let {

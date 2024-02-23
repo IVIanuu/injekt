@@ -11,17 +11,17 @@ class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   val owner: KtElement? = null,
-  val initialInjectables: List<CallableRef> = emptyList(),
-  val injectablesPredicate: (CallableRef) -> Boolean = { true },
-  val typeParameters: List<ClassifierRef> = emptyList(),
+  val initialInjectables: List<InjektCallable> = emptyList(),
+  val injectablesPredicate: (InjektCallable) -> Boolean = { true },
+  val typeParameters: List<InjektClassifier> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: Context
 ) {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
-  val resultsByType = mutableMapOf<TypeRef, ResolutionResult>()
+  val resultsByType = mutableMapOf<InjektType, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
 
-  private val injectables = mutableListOf<CallableRef>()
+  private val injectables = mutableListOf<InjektCallable>()
   private val allInjectables get() = allScopes.flatMap { injectables }
 
   private val addOnInjectables: MutableList<AddOnInjectable> =
@@ -31,11 +31,11 @@ class InjectablesScope(
     parent?.addOnInjectables ?: mutableListOf()
 
   data class AddOnInjectable(
-    val callable: CallableRef,
-    val constraintType: TypeRef = callable.typeArguments.keys.single {
+    val callable: InjektCallable,
+    val constraintType: InjektType = callable.typeArguments.keys.single {
       it.isAddOn
     }.defaultType.substitute(callable.typeArguments),
-    val processedCandidateTypes: MutableSet<TypeRef> = mutableSetOf()
+    val processedCandidateTypes: MutableSet<InjektType> = mutableSetOf()
   ) {
     fun copy() = AddOnInjectable(
       callable,
@@ -48,7 +48,7 @@ class InjectablesScope(
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val type: TypeRef, val staticTypeParameters: List<ClassifierRef>)
+  data class CallableRequestKey(val type: InjektType, val staticTypeParameters: List<InjektClassifier>)
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   init {
@@ -121,10 +121,10 @@ class InjectablesScope(
   }
 
   private fun listElementsTypesForType(
-    singleElementType: TypeRef,
-    collectionElementType: TypeRef,
+    singleElementType: InjektType,
+    collectionElementType: InjektType,
     key: CallableRequestKey
-  ): List<TypeRef> {
+  ): List<InjektType> {
     if (injectables.isEmpty())
       return parent?.listElementsTypesForType(singleElementType, collectionElementType, key) ?: emptyList()
 
@@ -151,12 +151,12 @@ class InjectablesScope(
       collectAddOnInjectables(addOnInjectable, candidate.type)
   }
 
-  private fun collectAddOnInjectables(candidateType: TypeRef) {
+  private fun collectAddOnInjectables(candidateType: InjektType) {
     for (addOnInjectable in addOnInjectables.toList())
       collectAddOnInjectables(addOnInjectable, candidateType)
   }
 
-  private fun collectAddOnInjectables(addOnInjectable: AddOnInjectable, candidateType: TypeRef) {
+  private fun collectAddOnInjectables(addOnInjectable: AddOnInjectable, candidateType: InjektType) {
     if (!addOnInjectable.processedCandidateTypes.add(candidateType) ||
       addOnInjectable in addOnInjectableChain) return
 

@@ -62,8 +62,8 @@ class InfoPatcher(private val baseCtx: Context) : DeclarationChecker {
  * but is critical to injekt
  */
 data class CallableInfo(
-  val type: TypeRef,
-  val parameterTypes: Map<Int, TypeRef>,
+  val type: InjektType,
+  val parameterTypes: Map<Int, InjektType>,
   val injectParameters: Set<Int>
 )
 
@@ -85,19 +85,19 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
           val rootOverriddenCallable = overriddenTreeUniqueAsSequence(false).last()
           val rootClassifier = rootOverriddenCallable.containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef(ctx)
+            .toInjektClassifier(ctx)
           val classifierInfo = containingDeclaration
             .cast<ClassDescriptor>()
-            .toClassifierRef(ctx)
+            .toInjektClassifier(ctx)
           val superType = classifierInfo.defaultType.firstSuperTypeOrNull {
             it.classifier == rootClassifier
           }!!
-          val substitutionMap = buildMap<ClassifierRef, TypeRef> {
+          val substitutionMap = buildMap<InjektClassifier, InjektType> {
             for ((index, typeParameter) in rootClassifier.typeParameters.withIndex())
               this[typeParameter] = superType.arguments[index]
 
             for ((index, typeParameter) in rootOverriddenCallable.typeParameters.withIndex())
-              this[typeParameter.toClassifierRef(ctx)] = typeParameters[index].defaultType.toTypeRef(ctx)
+              this[typeParameter.toInjektClassifier(ctx)] = typeParameters[index].defaultType.toInjektType(ctx)
           }
           info.copy(
             type = info.type.substitute(substitutionMap),
@@ -116,15 +116,15 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
         buildList {
           addAll(constructedClass.classifierInfo(ctx).tags)
           for (tagAnnotation in getTags())
-            add(tagAnnotation.type.toTypeRef(ctx))
+            add(tagAnnotation.type.toInjektType(ctx))
         }
       else emptyList()
-      tags.wrap(returnType?.toTypeRef(ctx) ?: ctx.nullableAnyType)
+      tags.wrap(returnType?.toInjektType(ctx) ?: ctx.nullableAnyType)
     }
 
     val parameterTypes = buildMap {
       for (parameter in allParameters)
-        this[parameter.injektIndex()] = parameter.type.toTypeRef(ctx)
+        this[parameter.injektIndex()] = parameter.type.toInjektType(ctx)
     }
 
     val injectParameters = valueParameters
@@ -173,22 +173,22 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
 }
 
 @Serializable data class PersistedCallableInfo(
-  val type: PersistedTypeRef,
-  val parameterTypes: Map<Int, PersistedTypeRef>,
+  val type: PersistedInjektType,
+  val parameterTypes: Map<Int, PersistedInjektType>,
   val injectParameters: Set<Int>
 )
 
 fun CallableInfo.toPersistedCallableInfo(ctx: Context) = PersistedCallableInfo(
-  type = type.toPersistedTypeRef(ctx),
+  type = type.toPersistedInjektType(ctx),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toPersistedTypeRef(ctx) },
+    .mapValues { it.value.toPersistedInjektType(ctx) },
   injectParameters = injectParameters
 )
 
 fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
-  type = type.toTypeRef(ctx),
+  type = type.toInjektType(ctx),
   parameterTypes = parameterTypes
-    .mapValues { it.value.toTypeRef(ctx) },
+    .mapValues { it.value.toInjektType(ctx) },
   injectParameters = injectParameters
 )
 
@@ -196,7 +196,7 @@ fun PersistedCallableInfo.toCallableInfo(ctx: Context) = CallableInfo(
  * Stores information about a classifier which is NOT stored by the kotlin compiler
  * but is critical to injekt
  */
-class ClassifierInfo(val tags: List<TypeRef>, val lazySuperTypes: Lazy<List<TypeRef>>) {
+class ClassifierInfo(val tags: List<InjektType>, val lazySuperTypes: Lazy<List<InjektType>>) {
   val superTypes by lazySuperTypes
 }
 
@@ -226,7 +226,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
     }
 
     val expandedType = (original as? TypeAliasDescriptor)?.underlyingType
-      ?.toTypeRef(ctx)
+      ?.toInjektType(ctx)
 
     val isTag = hasAnnotation(InjektFqNames.Tag)
 
@@ -234,12 +234,12 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       when {
         expandedType != null -> listOf(expandedType)
         isTag -> listOf(ctx.anyType)
-        else -> typeConstructor.supertypes.map { it.toTypeRef(ctx) }
+        else -> typeConstructor.supertypes.map { it.toInjektType(ctx) }
       }
     }
 
     val tags = getTags()
-      .map { it.type.toTypeRef(ctx) }
+      .map { it.type.toInjektType(ctx) }
 
     if (isDeserializedDeclaration() || fqNameSafe.asString() == "java.io.Serializable") {
       ClassifierInfo(
@@ -262,18 +262,18 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
   }
 
 @Serializable data class PersistedClassifierInfo(
-  val tags: List<PersistedTypeRef>,
-  val superTypes: List<PersistedTypeRef>
+  val tags: List<PersistedInjektType>,
+  val superTypes: List<PersistedInjektType>
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(ctx: Context) = ClassifierInfo(
-  tags = tags.map { it.toTypeRef(ctx) },
-  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toTypeRef(ctx) } }
+  tags = tags.map { it.toInjektType(ctx) },
+  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toInjektType(ctx) } }
 )
 
 fun ClassifierInfo.toPersistedClassifierInfo(ctx: Context) = PersistedClassifierInfo(
-  tags = tags.map { it.toPersistedTypeRef(ctx) },
-  superTypes = superTypes.map { it.toPersistedTypeRef(ctx) }
+  tags = tags.map { it.toPersistedInjektType(ctx) },
+  superTypes = superTypes.map { it.toPersistedInjektType(ctx) }
 )
 
 private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: Context) {
@@ -348,7 +348,7 @@ private fun String.toChunkedArrayValue() = ArrayValue(
   chunked((65535 * 0.8f).toInt()).map { StringValue(it) }
 ) { it.builtIns.array.defaultType.replace(listOf(it.builtIns.stringType.asTypeProjection())) }
 
-private fun TypeRef.shouldBePersisted(): Boolean = anyType { it.classifier.isTag }
+private fun InjektType.shouldBePersisted(): Boolean = anyType { it.classifier.isTag }
 
 private fun Annotated.updateAnnotation(annotation: AnnotationDescriptor) {
   val newAnnotations = Annotations.create(
@@ -381,38 +381,38 @@ fun DescriptorVisibility.shouldPersistInfo() = this == DescriptorVisibilities.PU
     this == DescriptorVisibilities.INTERNAL ||
     this == DescriptorVisibilities.PROTECTED
 
-@Serializable data class PersistedTypeRef(
+@Serializable data class PersistedInjektType(
   val classifierKey: String,
-  val arguments: List<PersistedTypeRef> = emptyList(),
+  val arguments: List<PersistedInjektType> = emptyList(),
   val isStarProjection: Boolean,
   val variance: TypeVariance,
   val isMarkedNullable: Boolean,
   val isProvide: Boolean
 )
 
-fun TypeRef.toPersistedTypeRef(ctx: Context): PersistedTypeRef =
-  PersistedTypeRef(
+fun InjektType.toPersistedInjektType(ctx: Context): PersistedInjektType =
+  PersistedInjektType(
     classifierKey = classifier.descriptor?.uniqueKey(ctx) ?: "",
-    arguments = arguments.map { it.toPersistedTypeRef(ctx) },
+    arguments = arguments.map { it.toPersistedInjektType(ctx) },
     isStarProjection = isStarProjection,
     variance = variance,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide
   )
 
-fun PersistedTypeRef.toTypeRef(ctx: Context): TypeRef {
+fun PersistedInjektType.toInjektType(ctx: Context): InjektType {
   if (isStarProjection) return STAR_PROJECTION_TYPE
   val classifier = classifierDescriptorForKey(classifierKey, ctx)
-    .toClassifierRef(ctx)
+    .toInjektClassifier(ctx)
   val arguments = if (classifier.isTag) {
     arguments
-      .map { it.toTypeRef(ctx) } +
+      .map { it.toInjektType(ctx) } +
         listOfNotNull(
           if (arguments.size < classifier.typeParameters.size)
             ctx.nullableAnyType
           else null
         )
-  } else arguments.map { it.toTypeRef(ctx) }
+  } else arguments.map { it.toInjektType(ctx) }
   return classifier.untaggedType.copy(
     arguments = arguments,
     variance = variance,

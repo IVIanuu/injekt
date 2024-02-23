@@ -14,17 +14,17 @@ import java.util.*
 
 sealed interface InjectionResult {
   val scope: InjectablesScope
-  val callee: CallableRef
+  val callee: InjektCallable
 
   data class Success(
     override val scope: InjectablesScope,
-    override val callee: CallableRef,
+    override val callee: InjektCallable,
     val results: Map<InjectableRequest, ResolutionResult.Success>
   ) : InjectionResult
 
   data class Error(
     override val scope: InjectablesScope,
-    override val callee: CallableRef,
+    override val callee: InjektCallable,
     val failureRequest: InjectableRequest,
     val failure: ResolutionResult.Failure
   ) : InjectionResult
@@ -53,8 +53,8 @@ sealed interface ResolutionResult {
       }
 
       data class ReifiedTypeArgumentMismatch(
-        val parameter: ClassifierRef,
-        val argument: ClassifierRef,
+        val parameter: InjektClassifier,
+        val argument: InjektClassifier,
         override val candidate: Injectable
       ) : WithCandidate {
         override val failureOrdering: Int
@@ -87,7 +87,7 @@ sealed interface ResolutionResult {
 }
 
 fun InjectablesScope.resolveRequests(
-  callee: CallableRef,
+  callee: InjektCallable,
   requests: List<InjectableRequest>
 ): InjectionResult {
   val successes = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
@@ -325,9 +325,9 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
 }
 
 private fun InjectablesScope.compareType(
-  a: TypeRef?,
-  b: TypeRef?,
-  comparedTypes: MutableSet<Pair<TypeRef, TypeRef>> = mutableSetOf()
+  a: InjektType?,
+  b: InjektType?,
+  comparedTypes: MutableSet<Pair<InjektType, InjektType>> = mutableSetOf()
 ): Int {
   if (a == b) return 0
 
@@ -348,7 +348,7 @@ private fun InjectablesScope.compareType(
   val pair = a to b
   if (!comparedTypes.add(pair)) return 0
 
-  fun compareSameClassifier(a: TypeRef?, b: TypeRef?): Int {
+  fun compareSameClassifier(a: InjektType?, b: InjektType?): Int {
     if (a == b) return 0
 
     if (a != null && b == null) return -1

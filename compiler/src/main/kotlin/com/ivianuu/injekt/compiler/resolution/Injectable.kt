@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
-  val type: TypeRef
+  val type: InjektType
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScope: InjectablesScope? get() = null
   val callableFqName: FqName
@@ -25,8 +25,8 @@ sealed interface Injectable {
 
 class CallableInjectable(
   override val ownerScope: InjectablesScope,
-  val callable: CallableRef,
-  override val type: TypeRef
+  val callable: InjektCallable,
+  override val type: InjektType
 ) : Injectable {
   override val dependencies = (if (callable.callable is ConstructorDescriptor) callable.callable.valueParameters
       else callable.callable.allParameters)
@@ -37,11 +37,11 @@ class CallableInjectable(
 }
 
 class ListInjectable(
-  override val type: TypeRef,
+  override val type: InjektType,
   override val ownerScope: InjectablesScope,
-  elements: List<TypeRef>,
-  val singleElementType: TypeRef,
-  val collectionElementType: TypeRef
+  elements: List<InjektType>,
+  val singleElementType: InjektType,
+  val collectionElementType: InjektType
 ) : Injectable {
   override val callableFqName = FqName("listOf")
   override val dependencies = elements
@@ -88,7 +88,7 @@ class LambdaInjectable(
     initialInjectables = parameterDescriptors
       .mapIndexed { index, parameter ->
         parameter
-          .toCallableRef(ownerScope.ctx)
+          .toInjektCallable(ownerScope.ctx)
           .copy(type = type.arguments[index])
       }
   )
@@ -101,15 +101,15 @@ class LambdaInjectable(
 }
 
 data class InjectableRequest(
-  val type: TypeRef,
+  val type: InjektType,
   val callableFqName: FqName,
-  val callableTypeArguments: Map<ClassifierRef, TypeRef> = emptyMap(),
+  val callableTypeArguments: Map<InjektClassifier, InjektType> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
   val isRequired: Boolean = true
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: CallableRef): InjectableRequest =
+fun ParameterDescriptor.toInjectableRequest(callable: InjektCallable): InjectableRequest =
   InjectableRequest(
     type = callable.parameterTypes[injektIndex()]!!,
     callableFqName = callable.callableFqName,
