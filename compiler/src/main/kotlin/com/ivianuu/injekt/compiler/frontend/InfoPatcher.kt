@@ -4,7 +4,7 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*

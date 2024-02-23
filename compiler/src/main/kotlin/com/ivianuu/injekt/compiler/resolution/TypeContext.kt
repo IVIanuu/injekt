@@ -52,8 +52,7 @@ fun InjektType.isSubTypeOf(superType: InjektType, ctx: TypeCheckerContext): Bool
   ) return true
 
   if (superType.classifier.fqName == InjektFqNames.Any &&
-    (superType.isMarkedNullable || !isNullableType)
-  ) return true
+    (superType.isMarkedNullable || !isNullableType)) return true
 
   subtypeView(superType.classifier)
     ?.let { return it.isSubTypeOfSameClassifier(superType, ctx) }
@@ -183,13 +182,12 @@ fun InjektType.runCandidateInference(
     if (it.classifier.isTypeParameter)
       typeCtx.addTypeVariable(it.classifier)
   }
-
-  if (collectSuperTypeVariables) {
+  if (collectSuperTypeVariables)
     superType.allTypes.forEach {
       if (it.classifier.isTypeParameter)
         typeCtx.addTypeVariable(it.classifier)
     }
-  }
+
   typeCtx.addInitialSubTypeConstraint(this, superType)
   typeCtx.fixTypeVariables()
   return typeCtx
@@ -347,11 +345,8 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
 
     if (isSuitableType(firstCandidate, variableWithConstraints)) return firstCandidate
 
-    return if (isSuitableType(secondCandidate, variableWithConstraints)) {
-      secondCandidate
-    } else {
-      firstCandidate
-    }
+    return if (isSuitableType(secondCandidate, variableWithConstraints)) secondCandidate
+    else firstCandidate
   }
 
   private fun isSuitableType(
@@ -425,11 +420,10 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
 
     if (subType.classifier in typeVariables)
       return addUpperConstraint(subType, superType) && (answer ?: true)
-    else {
+    else
       subType.source?.let {
         return addUpperConstraint(it.defaultType, superType) && (answer ?: true)
       }
-    }
 
     return answer
   }
@@ -445,10 +439,9 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
 
     var result = true
 
-    if (typeVariable.isMarkedNullable) {
+    if (typeVariable.isMarkedNullable)
       result = superType.classifier in typeVariables ||
           ctx.nullableNothingType.isSubTypeOf(superType, this)
-    }
 
     return result
   }
@@ -465,23 +458,19 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
   }
 
   private fun directWithVariable(typeVariable: InjektClassifier, constraint: Constraint) {
-    if (constraint.kind != ConstraintKind.LOWER) {
+    if (constraint.kind != ConstraintKind.LOWER)
       typeVariables[typeVariable]!!.constraints.toList().forEach {
         if (!isOk) return@forEach
-        if (it.kind != ConstraintKind.UPPER) {
+        if (it.kind != ConstraintKind.UPPER)
           runIsSubTypeOf(it.type, constraint.type)
-        }
       }
-    }
 
-    if (constraint.kind != ConstraintKind.UPPER) {
+    if (constraint.kind != ConstraintKind.UPPER)
       typeVariables[typeVariable]!!.constraints.toList().forEach {
         if (!isOk) return@forEach
-        if (it.kind != ConstraintKind.LOWER) {
+        if (it.kind != ConstraintKind.LOWER)
           runIsSubTypeOf(constraint.type, it.type)
-        }
       }
-    }
   }
 
   private fun insideOtherConstraint(typeVariable: InjektClassifier, constraint: Constraint) {
@@ -496,9 +485,8 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
   }
 
   private fun runIsSubTypeOf(subType: InjektType, superType: InjektType) {
-    if (!subType.isSubTypeOf(superType, this)) {
+    if (!subType.isSubTypeOf(superType, this))
       addError(TypeContextError.ConstraintError(subType, superType, ConstraintKind.UPPER))
-    }
   }
 
   private fun generateNewConstraint(
@@ -513,18 +501,16 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
       ConstraintKind.LOWER -> otherConstraint.type.copy(variance = TypeVariance.IN, source = otherVariable)
     }
     val substitutedType = baseConstraint.type.substitute(mapOf(otherVariable to newConstraint))
-    if (baseConstraint.kind != ConstraintKind.LOWER) {
+    if (baseConstraint.kind != ConstraintKind.LOWER)
       addNewConstraint(
         targetVariable, baseConstraint,
         otherVariable, otherConstraint, substitutedType, ConstraintKind.UPPER
       )
-    }
-    if (baseConstraint.kind != ConstraintKind.UPPER) {
+    if (baseConstraint.kind != ConstraintKind.UPPER)
       addNewConstraint(
         targetVariable, baseConstraint,
         otherVariable, otherConstraint, substitutedType, ConstraintKind.LOWER
       )
-    }
   }
 
   private fun addNewConstraint(
@@ -657,27 +643,19 @@ private fun superTypeWithInjectableClassifier(
     fun collapseRecursiveArgumentIfPossible(argument: InjektType): InjektType {
       if (argument.isStarProjection) return argument
       val argumentClassifier = argument.classifier
-      return if (argument.variance == TypeVariance.OUT &&
-        argumentClassifier == classifier
-      ) {
-        STAR_PROJECTION_TYPE
-      } else {
-        argument
-      }
+      return if (argument.variance == TypeVariance.OUT
+        && argumentClassifier == classifier) STAR_PROJECTION_TYPE else argument
     }
 
-    val argument = if (thereIsStar || typeArguments.isEmpty()) {
-      STAR_PROJECTION_TYPE
-    } else {
-      collapseRecursiveArgumentIfPossible(
-        calculateArgument(
-          parameter,
-          typeArguments,
-          depth,
-          ctx
-        )
+    val argument = if (thereIsStar || typeArguments.isEmpty()) STAR_PROJECTION_TYPE
+    else collapseRecursiveArgumentIfPossible(
+      calculateArgument(
+        parameter,
+        typeArguments,
+        depth,
+        ctx
       )
-    }
+    )
 
     arguments.add(argument)
   }
@@ -703,30 +681,24 @@ private fun calculateArgument(
     val thereIsOut = arguments.any { it.variance == TypeVariance.OUT }
     val thereIsIn = arguments.any { it.variance == TypeVariance.IN }
     if (thereIsOut) {
-      if (thereIsIn) {
-        return STAR_PROJECTION_TYPE
-      } else {
-        true
-      }
-    } else {
-      !thereIsIn
-    }
+      if (thereIsIn) return STAR_PROJECTION_TYPE
+      else true
+    } else !thereIsIn
   }
 
   if (asOut) {
     val parameterIsNotInv = parameter.variance != TypeVariance.INV
 
-    if (parameterIsNotInv) {
+    if (parameterIsNotInv)
       return commonSuperType(arguments, depth + 1, ctx)
-    }
 
     val equalToEachOtherType = arguments.firstOrNull { potentialSuperType ->
       arguments.all { it.isEqualTo(potentialSuperType, ctx) }
     }
 
-    return if (equalToEachOtherType == null) {
+    return if (equalToEachOtherType == null)
       commonSuperType(arguments, depth + 1, ctx).withVariance(TypeVariance.OUT)
-    } else {
+    else {
       val thereIsNotInv = arguments.any { it.variance != TypeVariance.INV }
       equalToEachOtherType.withVariance(if (thereIsNotInv) TypeVariance.OUT else TypeVariance.INV)
     }

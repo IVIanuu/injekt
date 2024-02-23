@@ -279,7 +279,7 @@ fun memberScopeForFqName(
   val classDescriptor = parentMemberScope.getContributedClassifier(
     fqName.shortName(),
     lookupLocation
-  ) as? ClassDescriptor ?: return null
+  ).safeAs<ClassDescriptor>() ?: return null
 
   return classDescriptor.unsubstitutedMemberScope
 }

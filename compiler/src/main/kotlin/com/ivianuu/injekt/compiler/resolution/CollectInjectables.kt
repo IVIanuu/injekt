@@ -7,7 +7,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.analysis.*
+import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
@@ -40,18 +40,20 @@ fun InjektType.collectInjectables(
             .containingDeclaration
             .cast<ClassDescriptor>()
             .toInjektClassifier(ctx)
-          classifier.typeParameters.zip(arguments).toMap() + originalClassifier.typeParameters
-            .zip(subtypeView(originalClassifier)!!.arguments)
+          buildMap {
+            classifier.typeParameters.zip(arguments).forEach { put(it.first, it.second) }
+            originalClassifier.typeParameters
+              .zip(subtypeView(originalClassifier)!!.arguments)
+              .forEach { put(it.first, it.second) }
+          }
         } else classifier.typeParameters.zip(arguments).toMap()
         val substituted = callable.substitute(substitutionMap)
 
-        add(
-          substituted.copy(
-            parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-              substituted.parameterTypes.toMutableMap()
-                .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-            } else substituted.parameterTypes
-          )
+        this += substituted.copy(
+          parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
+            substituted.parameterTypes.toMutableMap()
+              .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
+          } else substituted.parameterTypes
         )
       }
   }
