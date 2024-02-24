@@ -317,6 +317,7 @@ class InjectCallTransformer(
     else -> when (injectable.callable.symbol) {
       //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
       //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
+      is FirValueParameterSymbol -> parameterExpression(injectable, injectable.callable.symbol)
       else -> functionExpression(result, injectable, injectable.callable.symbol)
     }
   }
@@ -357,21 +358,18 @@ class InjectCallTransformer(
     } ?: error("unexpected receiver $type")
   }
 
-  /*private fun ScopeContext.parameterExpression(
-    descriptor: ParameterDescriptor,
-    injectable: CallableInjectable
+  private fun ScopeContext.parameterExpression(
+    injectable: CallableInjectable,
+    symbol: FirValueParameterSymbol,
   ): IrExpression =
-    when (val containingDeclaration = descriptor.containingDeclaration) {
-      is ClassDescriptor -> receiverExpression(descriptor)
-      is CallableDescriptor -> irBuilder.irGet(
-        injectable.type.toIrType().typeOrNull!!,
-        lambdaParametersMap[descriptor] ?: (containingDeclaration.irCallable()
-          .allParameters
-          .single { it.injektIndex() == descriptor.injektIndex() })
-          .symbol
-      )
-      else -> error("Unexpected parent $descriptor $containingDeclaration")
-    }*/
+    irBuilder.irGet(
+      injectable.type.toIrType().typeOrNull!!,
+      lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
+        .owner
+        .valueParameters
+        .single { it.symbol.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
+        .symbol
+    )
 
   /*private fun ScopeContext.localVariableExpression(
     descriptor: LocalVariableDescriptor,

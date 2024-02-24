@@ -84,13 +84,13 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
       classId = safeAs<FirClassLikeSymbol<*>>()?.classId,
       typeParameters = typeParameters ?: emptyList(),
       lazySuperTypes = info.lazySuperTypes,
-      isTypeParameter = this is TypeParameterDescriptor,
-      isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+      isTypeParameter = this is FirTypeParameterSymbol,
+      isObject = this is FirRegularClassSymbol && classKind == ClassKind.OBJECT,
       isTag = isTag(ctx),
       symbol = this,
       tags = info.tags,
       isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
-      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+      variance = (this as? FirTypeParameterSymbol)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
 
