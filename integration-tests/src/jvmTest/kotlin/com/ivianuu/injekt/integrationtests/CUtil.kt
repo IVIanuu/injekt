@@ -199,30 +199,41 @@ fun multiPlatformCodegen(
   )
 }
 
-fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
-  symbolProcessorProviders += InjektSymbolProcessor.Provider()
-  kspIncremental = false
-  kspWithCompilation = true
+fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
+  fun baseCompilation(block: KotlinCompilation.() -> Unit) = KotlinCompilation().apply {
+    inheritClassPath = true
+    jvmTarget = "1.8"
+    verbose = false
+    block()
+  }
 
-  compilerPluginRegistrars += InjektCompilerPluginRegistrar()
-  commandLineProcessors += InjektCommandLineProcessor()
+  val kspCompilation = baseCompilation {
+    symbolProcessorProviders += InjektSymbolProcessor.Provider()
+    kspIncremental = false
+    kspWithCompilation = true
+  }
 
-  inheritClassPath = true
-  jvmTarget = "1.8"
-  verbose = false
-  kotlincArguments += "-XXLanguage:+NewInference"
-  dumpAllFiles = true
-  block()
-  pluginOptions += PluginOption(
-    "com.ivianuu.injekt",
-    "dumpDir",
-    workingDir.resolve("injekt/dump")
-      .also { it.mkdirs() }
-      .absolutePath
-  )
+  kspCompilation.compile()
+
+  val pluginCompilation = baseCompilation {
+    classpaths += kspCompilation.classesDir
+
+    dumpAllFiles = true
+    compilerPluginRegistrars += InjektCompilerPluginRegistrar()
+    commandLineProcessors += InjektCommandLineProcessor()
+    pluginOptions += PluginOption(
+      "com.ivianuu.injekt",
+      "dumpDir",
+      workingDir.resolve("injekt/dump")
+        .also { it.mkdirs() }
+        .absolutePath
+    )
+
+    block()
+  }
+
+  return pluginCompilation.compile()
 }
-
-fun compile(block: KotlinCompilation.() -> Unit = {}) = compilation(block).compile()
 
 interface KotlinCompilationAssertionScope {
   val result: JvmCompilationResult
@@ -255,34 +266,3 @@ fun KotlinCompilationAssertionScope.compilationShouldHaveFailed(message: String?
 fun KotlinCompilationAssertionScope.shouldContainMessage(message: String) {
   result.messages shouldContain message
 }
-
-@Suppress("Assert")
-inline fun KotlinCompilationAssertionScope.irAssertions(block: (String) -> Unit) {
-  compilationShouldBeOk()
-  result.outputDirectory
-    .parentFile
-    .resolve("injekt/dump")
-    .walkTopDown()
-    .filter { it.isFile }
-    .map { it.readText() }
-    .joinToString("\n")
-    .also {
-      assert(it.isNotEmpty()) {
-        "Source is empty"
-      }
-    }
-    .let(block)
-}
-
-@Suppress("Assert")
-fun KotlinCompilationAssertionScope.irShouldContain(times: Int, text: String) {
-  irAssertions {
-    val matchesCount = it.countMatches(text)
-    assert(matchesCount == times) {
-      "expected '$text' $times times but was found $matchesCount times in '$it'"
-    }
-  }
-}
-
-private fun String.countMatches(other: String): Int = split(other)
-  .dropLastWhile { it.isEmpty() }.size - 1

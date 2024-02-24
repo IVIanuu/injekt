@@ -5,6 +5,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import io.kotest.matchers.*
+import io.kotest.matchers.string.*
 import io.kotest.matchers.types.*
 import org.junit.*
 
@@ -277,7 +278,7 @@ class ResolutionTest {
       fun invoke() = useOrd<Int>()
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = IntOrd)")
+    invokeSingleFile()!!.javaClass.name shouldContain "IntOrd"
   }
 
   @Test fun testPrefersMoreSpecificType4() = singleAndMultiCodegen(
@@ -292,7 +293,7 @@ class ResolutionTest {
       fun invoke() = useOrd<Int>()
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = intOrd<Int>())")
+    invokeSingleFile()!!.javaClass.name shouldContain "intOrd"
   }
 
   @Test fun testPrefersMoreSpecificType5() = singleAndMultiCodegen(
@@ -307,7 +308,7 @@ class ResolutionTest {
       fun invoke() = useOrd<Int>()
     """
   ) {
-    irShouldContain(1, "useOrd<Int>(ord = numberOrd<Int>())")
+    invokeSingleFile()!!.javaClass.name shouldContain "numberOrd"
   }
 
   @Test fun testPrefersNonNullType() = singleAndMultiCodegen(
