@@ -2,13 +2,13 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(DfaInternals::class)
+@file:OptIn(UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.resolve.dfa.*
+import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
@@ -16,45 +16,33 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
-fun InjektType.collectInjectables(
-  classBodyView: Boolean,
+fun InjektType.collectModuleInjectables(
   ctx: InjektContext
-): List<InjektCallable> = ctx.cached("type_injectables", this to classBodyView) {
+): List<InjektCallable> = ctx.cached("module_injectables", this) {
   buildList {
-    /*classifier
-      .descriptor
-      ?.defaultType
-      ?.memberScope
-      ?.collectMemberInjectables(ctx, this@collectInjectables) { callable ->
-        /*val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
-          CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-          val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
-            .overriddenTreeAsSequence(false)
-            .last()
-            .containingDeclaration
-            .cast<ClassDescriptor>()
-            .toInjektClassifier(ctx)
-          buildMap {
-            classifier.typeParameters.zip(arguments).forEach { put(it.first, it.second) }
-            originalClassifier.typeParameters
-              .zip(subtypeView(originalClassifier)!!.arguments)
-              .forEach { put(it.first, it.second) }
-          }
-        } else classifier.typeParameters.zip(arguments).toMap()
-        val substituted = callable.substitute(substitutionMap)
+    fun InjektType.visit() {
+      val classSymbol = classifier.symbol.safeAs<FirClassSymbol<*>>() ?: return
 
-        this += substituted.copy(
-          parameterTypes = if (substituted.parameterTypes[DISPATCH_RECEIVER_INDEX] != this@collectInjectables) {
-            substituted.parameterTypes.toMutableMap()
-              .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
-          } else substituted.parameterTypes
-        )*/
-        TODO()
-      }*/
+      superTypes.forEach { it.visit() }
+
+      for (declaration in classSymbol.declarationSymbols) {
+        if (declaration !is FirConstructorSymbol &&
+          declaration is FirCallableSymbol<*> &&
+          !declaration.isOverride &&
+          declaration.hasAnnotation(InjektFqNames.Provide, ctx.session)) {
+          val substitutionMap = classifier.typeParameters
+            .zip(subtypeView(declaration.dispatchReceiverType?.toInjektType(ctx)?.classifier!!)!!.arguments)
+            .toMap()
+          this@buildList += declaration.toInjektCallable(ctx).substitute(substitutionMap)
+        }
+      }
+    }
+
+    visit()
   }
 }
 
-fun InjektCallable.collectInjectables(
+fun InjektCallable.collectModuleInjectables(
   scope: InjectablesScope,
   addInjectable: (InjektCallable) -> Unit,
   addAddOnInjectable: (InjektCallable) -> Unit,
@@ -74,10 +62,7 @@ fun InjektCallable.collectInjectables(
 
   nextCallable
     .type
-    .collectInjectables(
-      scope.allScopes.any { it.owner?.symbol == nextCallable.type.classifier.symbol },
-      ctx
-    )
+    .collectModuleInjectables(ctx)
     .forEach { innerCallable ->
       innerCallable
         .copy(
@@ -95,7 +80,7 @@ fun InjektCallable.collectInjectables(
               )
             } else innerCallable.parameterTypes
         )
-        .collectInjectables(
+        .collectModuleInjectables(
           scope = scope,
           addInjectable = addInjectable,
           addAddOnInjectable = addAddOnInjectable,
@@ -121,33 +106,29 @@ fun collectGlobalInjectables(ctx: InjektContext): List<InjektCallable> = collect
   .flatMap { collectPackageInjectables(it, ctx) }
 
 fun collectPackageInjectables(packageFqName: FqName, ctx: InjektContext): List<InjektCallable> =
-  if (packageFqName !in collectPackagesWithInjectables(ctx)) emptyList()
-  else buildList {
-    fun collectClassInjectables(classSymbol: FirClassSymbol<*>) {
-      for (declarationSymbol in classSymbol.declarationSymbols) {
-        if (declarationSymbol is FirConstructorSymbol &&
-          ((declarationSymbol.isPrimary &&
-              classSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)) ||
-              declarationSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)))
-          add(declarationSymbol.toInjektCallable(ctx))
+  ctx.cached("injectables_in_package", packageFqName) {
+    if (packageFqName !in collectPackagesWithInjectables(ctx)) emptyList()
+    else buildList {
+      fun collectClassInjectables(classSymbol: FirClassSymbol<*>) {
+        for (declarationSymbol in classSymbol.declarationSymbols) {
+          if (declarationSymbol is FirConstructorSymbol &&
+            ((declarationSymbol.isPrimary &&
+                classSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)) ||
+                declarationSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)))
+            this += declarationSymbol.toInjektCallable(ctx)
 
-        if (declarationSymbol is FirClassSymbol<*>)
-          collectClassInjectables(declarationSymbol)
+          if (declarationSymbol is FirClassSymbol<*>)
+            collectClassInjectables(declarationSymbol)
+        }
+      }
+
+      for (declaration in collectDeclarationsInFqName(packageFqName, ctx)) {
+        if (declaration is FirRegularClassSymbol) collectClassInjectables(declaration)
+        if (declaration is FirCallableSymbol<*> &&
+          declaration.hasAnnotation(InjektFqNames.Provide, ctx.session))
+          this += declaration.toInjektCallable(ctx)
       }
     }
-
-    ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(packageFqName)
-      ?.mapNotNull {
-        ctx.session.symbolProvider.getRegularClassSymbolByClassId(ClassId(packageFqName, it))
-      }
-      ?.forEach { collectClassInjectables(it) }
-
-    ctx.session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(packageFqName)
-      ?.flatMap { name ->
-        ctx.session.symbolProvider.getTopLevelCallableSymbols(packageFqName, name)
-      }
-      ?.filter { it.hasAnnotation(InjektFqNames.Provide, ctx.session) }
-      ?.forEach { add(it.toInjektCallable(ctx)) }
   }
 
 fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =

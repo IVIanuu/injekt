@@ -53,7 +53,7 @@ class InjectablesScope(
 
   init {
     for (injectable in initialInjectables)
-      injectable.collectInjectables(
+      injectable.collectModuleInjectables(
         scope = this,
         addInjectable = { injectables += it },
         addAddOnInjectable = { addOnInjectables += AddOnInjectable(it) },
@@ -171,7 +171,7 @@ class InjectablesScope(
     val substitutedInjectable = addOnInjectable.callable.substitute(context.fixedTypeVariables)
     addOnInjectableChain += addOnInjectable
 
-    substitutedInjectable.collectInjectables(
+    substitutedInjectable.collectModuleInjectables(
       scope = this,
       addInjectable = { next ->
         injectables += next

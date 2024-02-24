@@ -16,7 +16,7 @@ import java.util.*
 
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), true)
+    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false)
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }

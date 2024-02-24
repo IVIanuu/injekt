@@ -303,7 +303,7 @@ private fun ConstructorPreInitInjectablesScope(
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope {
-  val parameterScopes = FunctionParameterInjectablesScopes(
+  /*val parameterScopes = FunctionParameterInjectablesScopes(
     parent = ClassCompanionInjectablesScope(constructor.constructedClass, parent, ctx),
     function = constructor,
     until = null,
@@ -319,7 +319,7 @@ private fun ConstructorPreInitInjectablesScope(
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting,
     ctx = ctx
-  )
+  )*/ TODO()
 }
 
 private fun ValueParameterDefaultValueInjectablesScope(
@@ -327,7 +327,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope {
-  val function = valueParameter.containingDeclaration.cast<FunctionDescriptor>()
+  /*val function = valueParameter.containingDeclaration.cast<FunctionDescriptor>()
   val parameterScopes = FunctionParameterInjectablesScopes(
     if (function is ConstructorDescriptor) ClassCompanionInjectablesScope(function.constructedClass, parent, ctx)
     else parent,
@@ -341,7 +341,7 @@ private fun ValueParameterDefaultValueInjectablesScope(
     owner = function.findPsi().cast(),
     typeParameters = function.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
-  )
+  )*/ TODO()
 }
 
 private fun FunctionInjectablesScope(
@@ -352,7 +352,7 @@ private fun FunctionInjectablesScope(
   "function_scope",
   DescriptorWithParentScope(function, parent.name)
 ) {
-  val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
+  /*val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
   val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
   val typeParameters = (if (function is ConstructorDescriptor)
     function.constructedClass.declaredTypeParameters
@@ -365,7 +365,7 @@ private fun FunctionInjectablesScope(
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting,
     ctx = ctx
-  )
+  )*/ TODO()
 }
 
 private fun FunctionParameterInjectablesScopes(
@@ -440,7 +440,7 @@ private fun PropertyInitInjectablesScope(
   position: KtElement,
   ctx: InjektContext
 ): InjectablesScope {
-  val finalParent = if (property.containingDeclaration is ClassDescriptor) {
+  /*val finalParent = if (property.containingDeclaration is ClassDescriptor) {
     ClassInitInjectablesScope(
       clazz = property.containingDeclaration.cast(),
       parent = parent,
@@ -457,7 +457,7 @@ private fun PropertyInitInjectablesScope(
     owner = property.findPsi().cast(),
     typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
-  )
+  )*/ TODO()
 }
 
 private fun LocalVariableInjectablesScope(

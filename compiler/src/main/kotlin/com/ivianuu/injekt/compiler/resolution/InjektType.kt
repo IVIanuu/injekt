@@ -61,39 +61,38 @@ fun InjektType.wrap(type: InjektType): InjektType {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toInjektClassifier(ctx: InjektContext): InjektClassifier = TODO()
+fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassifier =
+  ctx.cached("injekt_classifier", this) {
+    val info = classifierInfo(ctx)
 
-fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassifier {
-  val info = classifierInfo(ctx)
+    val typeParameters = typeParameterSymbols
+      ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
 
-  val typeParameters = typeParameterSymbols
-    ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
+    if (typeParameters != null && isTag(ctx))
+      typeParameters += InjektClassifier(
+        key = "${uniqueKey(ctx)}.\$TT",
+        fqName = fqName.child("\$TT".asNameId()),
+        classId = null,
+        isTypeParameter = true,
+        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
+        variance = TypeVariance.OUT
+      )
 
-  if (typeParameters != null && isTag(ctx))
-    typeParameters += InjektClassifier(
-      key = "${uniqueKey(ctx)}.\$TT",
-      fqName = fqName.child("\$TT".asNameId()),
-      classId = null,
-      isTypeParameter = true,
-      lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
-      variance = TypeVariance.OUT
+    InjektClassifier(
+      key = uniqueKey(ctx),
+      fqName = fqName,
+      classId = safeAs<FirClassLikeSymbol<*>>()?.classId,
+      typeParameters = typeParameters ?: emptyList(),
+      lazySuperTypes = info.lazySuperTypes,
+      isTypeParameter = this is TypeParameterDescriptor,
+      isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+      isTag = isTag(ctx),
+      symbol = this,
+      tags = info.tags,
+      isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
+      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
     )
-
-  return InjektClassifier(
-    key = uniqueKey(ctx),
-    fqName = fqName,
-    classId = safeAs<FirClassLikeSymbol<*>>()?.classId,
-    typeParameters = typeParameters ?: emptyList(),
-    lazySuperTypes = info.lazySuperTypes,
-    isTypeParameter = this is TypeParameterDescriptor,
-    isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-    isTag = isTag(ctx),
-    symbol = this,
-    tags = info.tags,
-    isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
-    variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
-  )
-}
+  }
 
 fun ConeTypeProjection.toInjektType(ctx: InjektContext): InjektType = when (kind) {
   ProjectionKind.STAR -> STAR_PROJECTION_TYPE
@@ -277,9 +276,6 @@ fun InjektType.anyType(action: (InjektType) -> Boolean): Boolean =
 
 fun InjektType.anySuperType(action: (InjektType) -> Boolean): Boolean =
   action(this) || superTypes.any { it.anySuperType(action) }
-
-fun InjektType.firstSuperTypeOrNull(action: (InjektType) -> Boolean): InjektType? =
-  takeIf(action) ?: superTypes.firstNotNullOfOrNull { it.firstSuperTypeOrNull(action) }
 
 fun List<InjektClassifier>.substitute(map: Map<InjektClassifier, InjektType>): List<InjektClassifier> {
   if (map.isEmpty()) return this

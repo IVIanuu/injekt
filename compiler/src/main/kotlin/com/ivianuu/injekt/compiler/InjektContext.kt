@@ -7,7 +7,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
@@ -20,29 +19,28 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 class InjektContext : TypeCheckerContext {
   lateinit var session: FirSession
 
-  @PublishedApi internal val map = mutableMapOf<Any, Any>()
+  @PublishedApi internal val maps = mutableMapOf<String, MutableMap<Any?, Any?>>()
 
-  fun <K, V : Any> cachedOrNull(kind: String, key: K): V? = map[kind to key] as? V
+  fun <K, V> cachedOrNull(kind: String, key: K): V? =
+    maps[kind]?.get(key)?.takeIf { it !== Null } as? V
 
-  inline fun <K, V : Any> cached(
+  inline fun <K, V> cached(
     kind: String,
     key: K,
     computation: () -> V
-  ): V = map.getOrPut(kind to key) { computation() } as V
+  ): V = maps.getOrPut(kind) { mutableMapOf() }
+    .getOrPut(key) { computation() ?: Null }
+    .takeIf { it !== Null } as V
 
   override val ctx: InjektContext get() = this
 
   override fun isDenotable(type: InjektType): Boolean = true
 
   val listClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    session.symbolProvider.getClassLikeSymbolByClassId(
-      ClassId.topLevel(StandardNames.FqNames.list)
-    )!!.toInjektClassifier(this)
+    session.symbolProvider.getClassLikeSymbolByClassId(StandardClassIds.List)!!.toInjektClassifier(this)
   }
   val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    session.symbolProvider.getClassLikeSymbolByClassId(
-      ClassId.topLevel(StandardNames.FqNames.list)
-    )!!.toInjektClassifier(this)
+    session.symbolProvider.getClassLikeSymbolByClassId(StandardClassIds.Collection)!!.toInjektClassifier(this)
   }
   val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) {
     session.builtinTypes.nullableNothingType.coneType.toInjektType(ctx = ctx)
@@ -55,9 +53,13 @@ class InjektContext : TypeCheckerContext {
   }
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
     session.symbolProvider.getClassLikeSymbolByClassId(
-      ClassId.topLevel(StandardNames.FqNames.functionSupertype.toSafe())
+      StandardClassIds.Function
     )!!.cast<FirClassSymbol<*>>().defaultType().toInjektType(this)
       .withArguments(listOf(STAR_PROJECTION_TYPE))
+  }
+
+  companion object {
+    val Null = Any()
   }
 }
 

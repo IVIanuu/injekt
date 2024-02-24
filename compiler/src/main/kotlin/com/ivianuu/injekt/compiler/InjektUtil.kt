@@ -41,79 +41,87 @@ val FirBasedSymbol<*>.fqName: FqName
   }
 
 fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
+  ctx.cached("unique_key", this) {
+    when (this) {
+      is FirTypeParameterSymbol -> typeParameterUniqueKey(
+        name,
+        containingDeclarationSymbol.fqName,
+        containingDeclarationSymbol.uniqueKey(ctx)
+      )
+      is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
+      is FirCallableSymbol<*> -> callableUniqueKey(
+        fqName,
+        typeParameterSymbols.map { it.name },
+        listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
+          .plus(
+            (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
+              .map { it.resolvedReturnType }
+          )
+          .map { it.uniqueTypeKey(ctx) },
+        resolvedReturnType.uniqueTypeKey(ctx)
+      )
+      else -> error("Unexpected declaration $this")
+    }
+  }
+
+fun ConeKotlinType.uniqueTypeKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
+  uniqueTypeKey(
+    classIdOrName = {
+      safeAs<ConeClassLikeType>()?.classId?.asString()
+        ?: safeAs<ConeLookupTagBasedType>()?.lookupTag?.name?.asString()
+    },
+    arguments = {
+      typeArguments.map { if (it.isStarProjection) null else it.type }
+    },
+    isMarkedNullable = { isMarkedNullable }
+  )
+}
+
+fun IrSymbol.uniqueKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
   when (this) {
-    is FirTypeParameterSymbol -> typeParameterUniqueKey(
-      name,
-      containingDeclarationSymbol.fqName,
-      containingDeclarationSymbol.uniqueKey(ctx)
+    is IrTypeParameterSymbol -> typeParameterUniqueKey(
+      owner.name,
+      owner.parent.kotlinFqName,
+      owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
     )
-    is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
-    is FirCallableSymbol<*> -> callableUniqueKey(
-      fqName,
-      typeParameterSymbols.map { it.name },
-      listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
-        .plus(
-          (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
-            .map { it.resolvedReturnType }
-        )
-        .map { it.uniqueTypeKey() },
-      resolvedReturnType.uniqueTypeKey()
+    is IrClassSymbol -> classLikeUniqueKey(owner.fqNameForIrSerialization)
+    is IrFunctionSymbol -> callableUniqueKey(
+      safeAs<IrSimpleFunctionSymbol>()?.owner?.correspondingPropertySymbol?.owner
+        ?.let { it.parent.kotlinFqName.child(it.name) } ?: owner.kotlinFqName,
+      (if (this is IrConstructorSymbol) owner.constructedClass.typeParameters else owner.typeParameters).map { it.name },
+      listOfNotNull(owner.dispatchReceiverParameter, owner.extensionReceiverParameter)
+        .plus(owner.valueParameters)
+        .map { it.type.uniqueTypeKey(ctx) },
+      owner.returnType.uniqueTypeKey(ctx)
+    )
+    is IrPropertySymbol -> callableUniqueKey(
+      owner.parent.kotlinFqName.child(owner.name),
+      owner.getter!!.typeParameters.map { it.name },
+      listOfNotNull(owner.getter!!.dispatchReceiverParameter, owner.getter!!.extensionReceiverParameter)
+        .map { it.type.uniqueTypeKey(ctx) },
+      owner.getter!!.returnType.uniqueTypeKey(ctx)
+    )
+    is IrVariableSymbol -> localVariableUniqueKey(
+      owner.parent.kotlinFqName.child(owner.name),
+      owner.type.uniqueTypeKey(ctx),
+      owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
     )
     else -> error("Unexpected declaration $this")
   }
-
-fun ConeKotlinType.uniqueTypeKey(): String = uniqueTypeKey(
-  classIdOrName = {
-    safeAs<ConeClassLikeType>()?.classId?.asString()
-      ?: safeAs<ConeLookupTagBasedType>()?.lookupTag?.name?.asString()
-  },
-  arguments = {
-    typeArguments.map { if (it.isStarProjection) null else it.type }
-  },
-  isMarkedNullable = { isMarkedNullable }
-)
-
-fun IrSymbol.uniqueKey(ctx: InjektContext): String = when (this) {
-  is IrTypeParameterSymbol -> typeParameterUniqueKey(
-    owner.name,
-    owner.parent.kotlinFqName,
-    owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
-  )
-  is IrClassSymbol -> classLikeUniqueKey(owner.fqNameForIrSerialization)
-  is IrFunctionSymbol -> callableUniqueKey(
-    safeAs<IrSimpleFunctionSymbol>()?.owner?.correspondingPropertySymbol?.owner
-      ?.let { it.parent.kotlinFqName.child(it.name) } ?: owner.kotlinFqName,
-    (if (this is IrConstructorSymbol) owner.constructedClass.typeParameters else owner.typeParameters).map { it.name },
-    listOfNotNull(owner.dispatchReceiverParameter, owner.extensionReceiverParameter)
-      .plus(owner.valueParameters)
-      .map { it.type.uniqueTypeKey() },
-    owner.returnType.uniqueTypeKey()
-  )
-  is IrPropertySymbol -> callableUniqueKey(
-    owner.parent.kotlinFqName.child(owner.name),
-    owner.getter!!.typeParameters.map { it.name },
-    listOfNotNull(owner.getter!!.dispatchReceiverParameter, owner.getter!!.extensionReceiverParameter)
-      .map { it.type.uniqueTypeKey() },
-    owner.getter!!.returnType.uniqueTypeKey()
-  )
-  is IrVariableSymbol -> localVariableUniqueKey(
-    owner.parent.kotlinFqName.child(owner.name),
-    owner.type.uniqueTypeKey(),
-    owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
-  )
-  else -> error("Unexpected declaration $this")
 }
 
-fun IrType.uniqueTypeKey(): String = uniqueTypeKey(
-  classIdOrName = {
-    classOrNull?.owner?.classId?.asString()
-      ?: classifierOrNull?.owner?.cast<IrDeclarationWithName>()?.name
-        ?.takeIf { it != SpecialNames.NO_NAME_PROVIDED }
-        ?.asString()
-  },
-  arguments = { safeAs<IrSimpleType>()?.arguments?.map { it.typeOrNull } ?: emptyList() },
-  isMarkedNullable = { isMarkedNullable() }
-)
+fun IrType.uniqueTypeKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
+  uniqueTypeKey(
+    classIdOrName = {
+      classOrNull?.owner?.classId?.asString()
+        ?: classifierOrNull?.owner?.cast<IrDeclarationWithName>()?.name
+          ?.takeIf { it != SpecialNames.NO_NAME_PROVIDED }
+          ?.asString()
+    },
+    arguments = { safeAs<IrSimpleType>()?.arguments?.map { it.typeOrNull } ?: emptyList() },
+    isMarkedNullable = { isMarkedNullable() }
+  )
+}
 
 private fun classLikeUniqueKey(fqName: FqName) = "class_like:$fqName"
 
@@ -178,58 +186,73 @@ fun findCallableSymbol(
   callableKey: String,
   callableFqName: FqName,
   ctx: InjektContext,
-): FirCallableSymbol<*> = collectDeclarationsInFqName(callableFqName.parent(), ctx)
-  .filterIsInstance<FirCallableSymbol<*>>()
-  .singleOrNull { it.uniqueKey(ctx) == callableKey }
-  ?: error("Could not find callable for $callableKey $callableFqName " +
-      "parent ${callableFqName.parent()} " +
-      "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
+): FirCallableSymbol<*> = ctx.cached("callable_for_key", callableKey) {
+  collectDeclarationsInFqName(callableFqName.parent(), ctx)
+    .filterIsInstance<FirCallableSymbol<*>>()
+    .singleOrNull { it.uniqueKey(ctx) == callableKey }
+    ?: error("Could not find callable for $callableKey $callableFqName " +
+        "parent ${callableFqName.parent()} " +
+        "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
+}
 
 fun findClassifierSymbol(
   classifierKey: String,
   classifierFqName: FqName,
   ctx: InjektContext,
-): FirClassifierSymbol<*> = getClassifierForFqName(classifierFqName, ctx)
-  ?: (getClassifierForFqName(classifierFqName.parent(), ctx)
-    ?.typeParameterSymbols
-    ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
-      .filterIsInstance<FirCallableSymbol<*>>()
-      .filter { it.name == classifierFqName.parent().shortName() }
-      .flatMap { it.typeParameterSymbols })
-    .singleOrNull { it.uniqueKey(ctx) == classifierKey }
-  ?: error("Could not find classifier for $classifierKey $classifierFqName ${collectDeclarationsInFqName(classifierFqName.parent(), ctx).filter { 
-    it.fqName == classifierFqName
-  }.map { it.uniqueKey(ctx) }}")
+): FirClassifierSymbol<*> = ctx.cached("classifier_for_key", classifierKey) {
+  getClassifierForFqName(classifierFqName, ctx)
+    ?: (getClassifierForFqName(classifierFqName.parent(), ctx)
+      ?.typeParameterSymbols
+      ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
+        .filterIsInstance<FirCallableSymbol<*>>()
+        .filter { it.name == classifierFqName.parent().shortName() }
+        .flatMap { it.typeParameterSymbols })
+      .singleOrNull { it.uniqueKey(ctx) == classifierKey }
+    ?: error("Could not find classifier for $classifierKey $classifierFqName ${collectDeclarationsInFqName(classifierFqName.parent(), ctx).filter {
+      it.fqName == classifierFqName
+    }.map { it.uniqueKey(ctx) }}")
+}
 
 fun getClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =
-  collectDeclarationsInFqName(fqName.parent(), ctx)
-    .singleOrNull { it.fqName == fqName }
-    ?.safeAs<FirClassLikeSymbol<*>>()
+  ctx.cached("classifier_for_fq_name", fqName) {
+    if (fqName == InjektFqNames.Any.asSingleFqName())
+      return@cached ctx.anyType.classifier.symbol
 
-fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> {
-  val packageFqName = ctx.session.symbolProvider.getPackage(fqName)
+    if (fqName.asString().startsWith(InjektFqNames.function) ||
+      fqName.asString().startsWith(InjektFqNames.kFunction) ||
+      fqName.asString().startsWith(InjektFqNames.suspendFunction) ||
+      fqName.asString().startsWith(InjektFqNames.kSuspendFunction))
+      ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
+    else collectDeclarationsInFqName(fqName.parent(), ctx)
+      .singleOrNull { it.fqName == fqName }
+      ?.safeAs<FirClassLikeSymbol<*>>()
+  }
 
-  if (fqName.isRoot || packageFqName != null)
-    return buildList {
-      ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
-        ?.mapNotNull {
-          ctx.session.symbolProvider.getRegularClassSymbolByClassId(ClassId(fqName, it))
-        }
-        ?.forEach { add(it) }
+fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> =
+  ctx.cached("declarations_in_fq_name", fqName) {
+    val packageFqName = ctx.session.symbolProvider.getPackage(fqName)
 
-      ctx.session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(fqName)
-        ?.flatMap { name ->
-          ctx.session.symbolProvider.getTopLevelCallableSymbols(fqName, name)
-        }
-        ?.forEach { add(it) }
-    }
+    if (fqName.isRoot || packageFqName != null)
+      return@cached buildList {
+        ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
+          ?.mapNotNull {
+            ctx.session.symbolProvider.getRegularClassSymbolByClassId(ClassId(fqName, it))
+          }
+          ?.forEach { add(it) }
 
-  val parentDeclarations = collectDeclarationsInFqName(fqName.parent(), ctx)
-    .takeIf { it.isNotEmpty() } ?: return emptyList()
+        ctx.session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(fqName)
+          ?.flatMap { name ->
+            ctx.session.symbolProvider.getTopLevelCallableSymbols(fqName, name)
+          }
+          ?.forEach { add(it) }
+      }
 
-  val classSymbol = parentDeclarations
-    .singleOrNull { it.fqName.shortName() == fqName.shortName() }
-    ?.safeAs<FirRegularClassSymbol>()
+    val parentDeclarations = collectDeclarationsInFqName(fqName.parent(), ctx)
+      .takeIf { it.isNotEmpty() } ?: return@cached emptyList()
 
-  return classSymbol?.declarationSymbols ?: emptyList()
-}
+    val classSymbol = parentDeclarations
+      .singleOrNull { it.fqName.shortName() == fqName.shortName() }
+      ?.safeAs<FirRegularClassSymbol>()
+
+    return@cached classSymbol?.declarationSymbols ?: emptyList()
+  }

@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.ir.*
@@ -312,7 +313,7 @@ class InjectCallTransformer(
     injectable: CallableInjectable
   ): IrExpression = when {
     injectable.callable.type.unwrapTags().classifier.isObject -> objectExpression(injectable.callable.type.unwrapTags())
-    request.parameterIndex == DISPATCH_RECEIVER_INDEX -> receiverExpression(result.candidate.type)
+    //injectable.callable.symbol is FirReceiverParameter-> receiverExpression(result.candidate.type)
     else -> when (injectable.callable.symbol) {
       //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
       //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
@@ -344,7 +345,7 @@ class InjectCallTransformer(
             element.symbol.uniqueKey(ctx) == type.classifier.symbol!!.uniqueKey(ctx) ->
           irGet(element.thisReceiver!!)
         element is IrFunction &&
-            element.dispatchReceiverParameter?.type?.uniqueTypeKey() == type.classifier.symbol!!.uniqueKey(ctx) ->
+            element.dispatchReceiverParameter?.type?.uniqueTypeKey(ctx) == type.classifier.symbol!!.uniqueKey(ctx) ->
           irGet(element.dispatchReceiverParameter!!)
         element is IrProperty &&
             allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
