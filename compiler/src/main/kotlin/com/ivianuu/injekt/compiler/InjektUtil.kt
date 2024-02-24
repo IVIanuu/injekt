@@ -55,14 +55,14 @@ fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is Deseria
 
 fun String.asNameId() = Name.identifier(this)
 
-fun Annotated.hasAnnotation(fqName: FqName): Boolean =
-  annotations.hasAnnotation(fqName)
+fun Annotated.hasAnnotation(classId: ClassId): Boolean =
+  annotations.hasAnnotation(classId.asSingleFqName())
 
 fun Annotated.getTags(): List<AnnotationDescriptor> =
-  annotations.filter {
-    val inner = it.type.constructor.declarationDescriptor as ClassDescriptor
-    inner.hasAnnotation(InjektFqNames.Tag) || it.fqName == InjektFqNames.Composable
-  }
+  annotations.filter { it.type.constructor.declarationDescriptor!!.isTag() }
+
+fun ClassifierDescriptor.isTag() =
+  hasAnnotation(InjektFqNames.Tag) || classId == InjektFqNames.Composable
 
 fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
   when (this) {

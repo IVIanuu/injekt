@@ -59,14 +59,14 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
 
     if (isProvider && descriptor.kind == ClassKind.ANNOTATION_CLASS)
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide.asSingleFqName())
           ?.source?.getPsi() ?: declaration,
         "annotation class cannot be injectable"
       )
 
     if (isProvider && descriptor.kind == ClassKind.ENUM_CLASS)
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide.asSingleFqName())
           ?.source?.getPsi() ?: declaration,
         "enum class cannot be injectable"
       )
@@ -82,7 +82,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     if (descriptor.kind == ClassKind.INTERFACE &&
       descriptor.hasAnnotation(InjektFqNames.Provide))
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide.asSingleFqName())
           ?.source?.getPsi() ?: declaration,
         "interface cannot be injectable"
       )
@@ -98,7 +98,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
       descriptor.unsubstitutedPrimaryConstructor?.hasAnnotation(InjektFqNames.Provide) == true
     )
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Provide)
+        descriptor.annotations.findAnnotation(InjektFqNames.Provide.asSingleFqName())
           ?.source?.getPsi() ?: declaration,
         "class cannot be marked with @Provide if it has a @Provide primary constructor"
       )
@@ -111,7 +111,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
     if (descriptor.hasAnnotation(InjektFqNames.Tag) &&
       descriptor.unsubstitutedPrimaryConstructor?.valueParameters?.isNotEmpty() == true)
       ctx.reportError(
-        descriptor.annotations.findAnnotation(InjektFqNames.Tag)
+        descriptor.annotations.findAnnotation(InjektFqNames.Tag.asSingleFqName())
           ?.source?.getPsi() ?: declaration,
         "tag cannot have value parameters"
       )
@@ -157,7 +157,7 @@ class InjektDeclarationChecker(private val baseCtx: Context) : DeclarationChecke
         .drop(1)
         .forEach {
           ctx.reportError(
-            it.annotations.findAnnotation(InjektFqNames.AddOn)
+            it.annotations.findAnnotation(InjektFqNames.AddOn.asSingleFqName())
               ?.source?.getPsi() ?: declaration,
             "a declaration may have only one @AddOn type parameter"
           )

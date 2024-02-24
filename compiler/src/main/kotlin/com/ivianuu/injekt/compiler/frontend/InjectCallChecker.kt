@@ -99,7 +99,7 @@ import org.jetbrains.kotlin.utils.*
 
     val location = KotlinLookupLocation(callExpression)
     memberScopeForFqName(InjektFqNames.InjectablesPackage, location, ctx)
-      ?.recordLookup(InjektFqNames.InjectablesLookup.shortName(), location)
+      ?.recordLookup(InjektFqNames.InjectablesLookup.callableName, location)
 
     when (val result = scope.resolveRequests(callee, requests)) {
       is InjectionResult.Success -> {

@@ -210,7 +210,7 @@ private fun InjectablesScope.canSee(callable: InjektCallable, ctx: Context): Boo
 fun packagesWithInjectables(ctx: Context): Set<FqName> =
   ctx.cached("packages_with_injectables", Unit) {
     memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
-      ?.getContributedFunctions(InjektFqNames.InjectablesLookup.shortName(), NoLookupLocation.FROM_BACKEND)
+      ?.getContributedFunctions(InjektFqNames.InjectablesLookup.callableName, NoLookupLocation.FROM_BACKEND)
       ?.mapTo(mutableSetOf()) {
         it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
       } ?: emptySet()

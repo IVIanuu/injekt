@@ -72,7 +72,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
   else ctx.cached("callable_info", this) {
     if (isDeserializedDeclaration()) {
       val info = annotations
-        .findAnnotation(InjektFqNames.DeclarationInfo)
+        .findAnnotation(InjektFqNames.DeclarationInfo.asSingleFqName())
         ?.readChunkedValue()
         ?.decode<PersistedCallableInfo>()
         ?.toCallableInfo(ctx)
@@ -130,7 +130,7 @@ fun CallableDescriptor.callableInfo(ctx: Context): CallableInfo =
     val injectParameters = valueParameters
       .filter {
         it.findPsi().safeAs<KtParameter>()?.defaultValue?.text ==
-            InjektFqNames.inject.shortName().asString()
+            InjektFqNames.inject.callableName.asString()
       }
       .mapTo(mutableSetOf()) { it.index }
 
@@ -164,7 +164,7 @@ private fun CallableDescriptor.persistInfoIfNeeded(info: CallableInfo, ctx: Cont
   updateAnnotation(
     AnnotationDescriptorImpl(
       ctx.module.findClassAcrossModuleDependencies(
-        ClassId.topLevel(InjektFqNames.DeclarationInfo)
+        InjektFqNames.DeclarationInfo
       )?.defaultType ?: return,
       mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
       SourceElement.NO_SOURCE
@@ -206,7 +206,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
       (if (this is TypeParameterDescriptor) {
         containingDeclaration
           .annotations
-          .findAnnotation(InjektFqNames.TypeParameterInfo)
+          .findAnnotation(InjektFqNames.TypeParameterInfo.asSingleFqName())
           ?.readChunkedValue()
           ?.split("=:=")
           ?.get(cast<TypeParameterDescriptor>().index)
@@ -215,7 +215,7 @@ fun ClassifierDescriptor.classifierInfo(ctx: Context): ClassifierInfo =
           ?.toClassifierInfo(ctx)
       } else {
         annotations
-          .findAnnotation(InjektFqNames.DeclarationInfo)
+          .findAnnotation(InjektFqNames.DeclarationInfo.asSingleFqName())
           ?.readChunkedValue()
           ?.cast<String>()
           ?.decode<PersistedClassifierInfo>()
@@ -284,7 +284,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: 
     if (info.superTypes.none { it.shouldBePersisted() }) return
 
     fun loadTypeParameterInfos() = (container.annotations
-      .findAnnotation(InjektFqNames.TypeParameterInfo)
+      .findAnnotation(InjektFqNames.TypeParameterInfo.asSingleFqName())
       ?.readChunkedValue()
       ?.split("=:=")
       ?: run {
@@ -296,20 +296,20 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: 
       }).toMutableList()
 
     val initialInfosAnnotation = container.annotations
-      .findAnnotation(InjektFqNames.TypeParameterInfo)
+      .findAnnotation(InjektFqNames.TypeParameterInfo.asSingleFqName())
     val initialTypeParameterInfos = loadTypeParameterInfos()
     if (initialTypeParameterInfos[index].isEmpty()) {
       val serializedInfo = info.toPersistedClassifierInfo(ctx).encode()
       // load again if the annotation has changed
       val finalTypeParameterInfos =
-        if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfo) !=
+        if (container.annotations.findAnnotation(InjektFqNames.TypeParameterInfo.asSingleFqName()) !=
           initialInfosAnnotation) loadTypeParameterInfos()
         else initialTypeParameterInfos
       finalTypeParameterInfos[index] = serializedInfo
       container.updateAnnotation(
         AnnotationDescriptorImpl(
           ctx.module.findClassAcrossModuleDependencies(
-            ClassId.topLevel(InjektFqNames.TypeParameterInfo)
+            ClassId.topLevel(InjektFqNames.TypeParameterInfo.asSingleFqName())
           )?.defaultType ?: return,
           mapOf("values".asNameId() to finalTypeParameterInfos.joinToString("=:=").toChunkedArrayValue()),
           SourceElement.NO_SOURCE
@@ -329,7 +329,7 @@ private fun ClassifierDescriptor.persistInfoIfNeeded(info: ClassifierInfo, ctx: 
     updateAnnotation(
       AnnotationDescriptorImpl(
         ctx.module.findClassAcrossModuleDependencies(
-          ClassId.topLevel(InjektFqNames.DeclarationInfo)
+          ClassId.topLevel(InjektFqNames.DeclarationInfo.asSingleFqName())
         )?.defaultType ?: return,
         mapOf("values".asNameId() to serializedInfo.toChunkedArrayValue()),
         SourceElement.NO_SOURCE

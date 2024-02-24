@@ -67,7 +67,7 @@ fun ClassifierDescriptor.toInjektClassifier(ctx: Context): InjektClassifier =
       ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
       ?: mutableListOf()
 
-    val isTag = hasAnnotation(InjektFqNames.Tag) || fqNameSafe == InjektFqNames.Composable
+    val isTag = isTag()
 
     if (isTag)
       typeParameters += InjektClassifier(

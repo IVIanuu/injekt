@@ -9,21 +9,21 @@ import org.jetbrains.kotlin.name.*
 
 object InjektFqNames {
   val InjektPackage = FqName("com.ivianuu.injekt")
-  val AddOn = InjektPackage.child("AddOn".asNameId())
-  val inject = InjektPackage.child("inject".asNameId())
-  val Provide = InjektPackage.child("Provide".asNameId())
-  val Tag = InjektPackage.child("Tag".asNameId())
+  val AddOn = ClassId(InjektPackage, "AddOn".asNameId())
+  val inject = CallableId(InjektPackage, "inject".asNameId())
+  val Provide = ClassId(InjektPackage, "Provide".asNameId())
+  val Tag = ClassId(InjektPackage, "Tag".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
-  val DeclarationInfo = InternalPackage.child("DeclarationInfo".asNameId())
-  val TypeParameterInfo = InternalPackage.child("TypeParameterInfo".asNameId())
+  val DeclarationInfo = ClassId(InternalPackage, "DeclarationInfo".asNameId())
+  val TypeParameterInfo = ClassId(InternalPackage, "TypeParameterInfo".asNameId())
 
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
-  val InjectablesLookup = InjectablesPackage.child("\$\$\$\$\$".asNameId())
+  val InjectablesLookup = CallableId(InjectablesPackage, "\$\$\$\$\$".asNameId())
 
-  val Composable = FqName("androidx.compose.runtime.Composable")
+  val Composable = ClassId.topLevel(FqName("androidx.compose.runtime.Composable"))
 
   val Any = StandardNames.FqNames.any.toSafe()
   val Nothing = StandardNames.FqNames.nothing.toSafe()
-  val Function = StandardNames.FqNames.functionSupertype.toSafe()
+  val Function = ClassId.topLevel(StandardNames.FqNames.functionSupertype.toSafe())
 }

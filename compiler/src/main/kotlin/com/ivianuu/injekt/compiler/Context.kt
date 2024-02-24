@@ -6,7 +6,6 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.util.slicedMap.*
 
@@ -26,7 +25,7 @@ class Context(val module: ModuleDescriptor, val trace: BindingTrace?) : TypeChec
     anyType.copy(isMarkedNullable = true)
   }
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
-    module.findClassAcrossModuleDependencies(ClassId.topLevel(InjektFqNames.Function))!!
+    module.findClassAcrossModuleDependencies(InjektFqNames.Function)!!
       .toInjektClassifier(ctx).defaultType.copy(arguments = listOf(STAR_PROJECTION_TYPE))
   }
 }

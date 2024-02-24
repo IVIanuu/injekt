@@ -14,7 +14,7 @@ import java.util.*
 
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asString())
+    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString())
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -54,7 +54,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         val key = provider.uniqueKey()
 
         appendLine("// $key")
-        appendLine("fun `${InjektFqNames.InjectablesLookup.shortName()}`(")
+        appendLine("fun `${InjektFqNames.InjectablesLookup.callableName}`(")
         appendLine("  marker: ${file.packageName.asString()}.${markerName},")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
