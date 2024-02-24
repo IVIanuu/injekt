@@ -37,6 +37,10 @@ kotlin {
   watchosX64()*/
 
   sourceSets {
+    named("jvmMain") {
+      kotlin.srcDir("build/generated/ksp/jvm/jvmMain/")
+    }
+
     named("jvmTest") {
       dependencies {
         implementation(Deps.junit)
@@ -44,6 +48,12 @@ kotlin {
       }
     }
   }
+}
+
+dependencies {
+  add("kspCommonMainMetadata", project(":ksp"))
+  add("kspJvm", project(":ksp"))
+  add("kspJs", project(":ksp"))
 }
 
 tasks.withType<KotlinCompile> {

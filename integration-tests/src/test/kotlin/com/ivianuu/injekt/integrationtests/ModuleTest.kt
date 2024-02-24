@@ -2,10 +2,13 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.ivianuu.injekt.integrationtests
 
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class ModuleTest {

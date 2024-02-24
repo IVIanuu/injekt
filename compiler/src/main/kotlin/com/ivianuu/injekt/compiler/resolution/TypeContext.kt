@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.types.model.*
 
 interface TypeCheckerContext {
-  val ctx: Context
+  val ctx: InjektContext
   fun isDenotable(type: InjektType): Boolean
   fun addSubTypeConstraint(subType: InjektType, superType: InjektType): Boolean? = null
 }
@@ -193,7 +193,7 @@ fun InjektType.runCandidateInference(
   return typeCtx
 }
 
-class TypeContext(override val ctx: Context) : TypeCheckerContext {
+class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
   private val staticTypeParameters = mutableListOf<InjektClassifier>()
   private val typeVariables = mutableMapOf<InjektClassifier, VariableWithConstraints>()
   val fixedTypeVariables = mutableMapOf<InjektClassifier, InjektType>()

@@ -6,7 +6,7 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
-import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -144,11 +144,11 @@ private fun InjectablesScope.computeForCandidate(
       val previousCandidate = resolutionChain[i]
 
       val isSameCallable = if (candidate is CallableInjectable &&
-        candidate.callable.callable.containingDeclaration.fqNameSafe
-          .asString().startsWith(InjektFqNames.Function.asString()) &&
+        candidate.callable.callable!!.containingDeclaration.fqNameSafe
+          .asString().startsWith(StandardNames.FqNames.functionSupertype.asString()) &&
         previousCandidate is CallableInjectable &&
-        previousCandidate.callable.callable.containingDeclaration.fqNameSafe
-          .asString().startsWith(InjektFqNames.Function.asString()))
+        previousCandidate.callable.callable!!.containingDeclaration.fqNameSafe
+          .asString().startsWith(StandardNames.FqNames.functionSupertype.asString()))
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
       else previousCandidate.callableFqName == candidate.callableFqName
 

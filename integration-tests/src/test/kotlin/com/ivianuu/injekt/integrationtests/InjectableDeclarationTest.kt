@@ -2,19 +2,22 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(ExperimentalCompilerApi::class, ExperimentalCompilerApi::class)
+
 package com.ivianuu.injekt.integrationtests
 
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class InjectableDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
     """
-      @Provide fun foo() = Foo()
+      @Provide fun foo(): @Tag1 Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = inject<@Tag1 Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

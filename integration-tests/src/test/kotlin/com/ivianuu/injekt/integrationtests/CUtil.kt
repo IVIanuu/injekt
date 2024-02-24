@@ -199,24 +199,16 @@ fun multiPlatformCodegen(
   )
 }
 
-fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
-  fun baseCompilation(block: KotlinCompilation.() -> Unit) = KotlinCompilation().apply {
+fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult =
+  KotlinCompilation().apply {
     inheritClassPath = true
     jvmTarget = "1.8"
     verbose = false
-    block()
-  }
 
-  val kspCompilation = baseCompilation {
-    symbolProcessorProviders += InjektSymbolProcessor.Provider()
-    kspIncremental = false
-    kspWithCompilation = true
-  }
-
-  kspCompilation.compile()
-
-  val pluginCompilation = baseCompilation {
-    classpaths += kspCompilation.classesDir
+    configureKsp(useKsp2 = true) {
+      symbolProcessorProviders += InjektSymbolProcessor.Provider()
+      incremental = false
+    }
 
     dumpAllFiles = true
     compilerPluginRegistrars += InjektCompilerPluginRegistrar()
@@ -230,10 +222,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     )
 
     block()
-  }
-
-  return pluginCompilation.compile()
-}
+  }.compile()
 
 interface KotlinCompilationAssertionScope {
   val result: JvmCompilationResult

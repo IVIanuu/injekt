@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.synthetic.*
@@ -27,20 +28,16 @@ import java.util.*
 @AutoService(CompilerPluginRegistrar::class)
 class InjektCompilerPluginRegistrar : CompilerPluginRegistrar() {
   override val supportsK2: Boolean
-    get() = false
+    get() = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    StorageComponentContainerContributor
-      .registerExtension(InjektStorageComponentContainerContributor())
-
-    if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
-      AnalysisHandlerExtension.registerExtension(InjectCallChecker())
-
+    val context = InjektContext()
+    FirExtensionRegistrarAdapter.registerExtension(InjektFirExtensionRegistrar(context))
     // hack to run ensure we run first
     registeredExtensions.cast<MutableMap<ProjectExtensionDescriptor<*>, MutableList<Any>>>()
       .getOrPut(IrGenerationExtension) { mutableListOf() }.add(
         0,
-        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
+        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), context)
       )
   }
 }

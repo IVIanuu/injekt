@@ -29,11 +29,11 @@ class CallableInjectable(
   override val type: InjektType
 ) : Injectable {
   override val dependencies = (if (callable.callable is ConstructorDescriptor) callable.callable.valueParameters
-      else callable.callable.allParameters)
+      else callable.callable!!.allParameters)
     .map { it.toInjectableRequest(callable) }
   override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
     callable.callable.constructedClass.fqNameSafe
-  else callable.callable.fqNameSafe
+  else callable.callable!!.fqNameSafe
 }
 
 class ListInjectable(

@@ -5,34 +5,87 @@
 package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.compiler.*
+import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.backend.common.lower.*
+import org.jetbrains.kotlin.ir.*
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.expressions.*
+import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
 import java.io.*
 
 var dumpAllFiles = false
 
-class InjektIrGenerationExtension(private val dumpDir: File) : IrGenerationExtension {
+class InjektIrGenerationExtension(
+  private val dumpDir: File,
+  private val ctx: InjektContext
+) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    val ctx = Context(
-      pluginContext.moduleDescriptor,
-      DelegatingBindingTrace(pluginContext.bindingContext, "IR trace")
-    )
-
     val compilationDeclarations = CompilationDeclarations()
     moduleFragment.transform(compilationDeclarations, null)
     moduleFragment.transform(InjectCallTransformer(compilationDeclarations, pluginContext, ctx), null)
     moduleFragment.patchDeclarationParents()
+    moduleFragment.persistInfos(ctx, pluginContext)
     moduleFragment.dumpToFiles(dumpDir, ctx)
   }
 }
 
-private fun IrModuleFragment.dumpToFiles(dumpDir: File, ctx: Context) {
+private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginContext) {
+  transform(
+    object : IrElementTransformerVoid() {
+      override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
+        fun addMetadata(value: String) {
+          irCtx.metadataDeclarationRegistrar.addMetadataVisibleAnnotationsToElement(
+            declaration,
+            DeclarationIrBuilder(irCtx, declaration.symbol)
+              .irCallConstructor(
+                irCtx.referenceConstructors(InjektFqNames.DeclarationInfo)
+                  .single(),
+                emptyList()
+              ).apply {
+                putValueArgument(
+                  0,
+                  IrConstImpl.string(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    irCtx.irBuiltIns.stringType,
+                    value
+                  )
+                )
+              }
+          )
+        }
+
+        if (declaration is IrClass || declaration is IrTypeAlias) {
+          val classifierInfo: ClassifierInfo? = ctx.cachedOrNull("classifier_info", declaration.uniqueKey(ctx))
+          if (classifierInfo != null && classifierInfo.shouldBePersisted(ctx)) {
+            addMetadata(classifierInfo.toPersistedClassifierInfo(ctx).encode())
+          }
+        }
+
+        if (declaration is IrFunction || declaration is IrProperty) {
+          val callableInfo: CallableInfo? = ctx.cachedOrNull("callable_info", declaration.uniqueKey(ctx))
+          if (callableInfo != null && callableInfo.shouldBePersisted(ctx)) {
+            addMetadata(callableInfo.toPersistedCallableInfo(ctx).encode())
+          }
+        }
+
+        return super.visitDeclaration(declaration)
+      }
+    },
+    null
+  )
+}
+
+private fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
   files
     .filter {
       dumpAllFiles ||
-          ctx.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
+          context.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
     }
     .forEach { irFile ->
       val file = File(irFile.fileEntry.name)

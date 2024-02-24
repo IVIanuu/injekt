@@ -10,8 +10,12 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.resolve.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -58,107 +62,103 @@ fun InjektType.wrap(type: InjektType): InjektType {
   return withArguments(newArguments)
 }
 
-fun ClassifierDescriptor.toInjektClassifier(ctx: Context): InjektClassifier =
-  ctx.cached("injekt_classifier", this) {
-    val info = classifierInfo(ctx)
+fun ClassifierDescriptor.toInjektClassifier(ctx: InjektContext): InjektClassifier = TODO()
 
-    val typeParameters = safeAs<ClassifierDescriptorWithTypeParameters>()
-      ?.declaredTypeParameters
-      ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
-      ?: mutableListOf()
+fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassifier {
+  val info = classifierInfo(ctx)
 
-    val isTag = isTag()
+  val typeParameters = typeParameterSymbols
+    ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
 
-    if (isTag)
-      typeParameters += InjektClassifier(
-        key = "${uniqueKey(ctx)}.\$TT",
-        fqName = fqNameSafe.child("\$TT".asNameId()),
-        classId = null,
-        isTypeParameter = true,
-        lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
-        variance = TypeVariance.OUT
-      )
-
-    InjektClassifier(
-      key = original.uniqueKey(ctx),
-      fqName = original.fqNameSafe,
-      classId = classId,
-      typeParameters = typeParameters,
-      lazySuperTypes = info.lazySuperTypes,
-      isTypeParameter = this is TypeParameterDescriptor,
-      isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
-      isTag = isTag,
-      descriptor = this,
-      tags = info.tags,
-      isAddOn = hasAnnotation(InjektFqNames.AddOn),
-      variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+  if (typeParameters != null && isTag(ctx))
+    typeParameters += InjektClassifier(
+      key = "${uniqueKey(ctx)}.\$TT",
+      fqName = fqName.child("\$TT".asNameId()),
+      classId = null,
+      isTypeParameter = true,
+      lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { listOf(ctx.nullableAnyType) },
+      variance = TypeVariance.OUT
     )
-  }
+
+  return InjektClassifier(
+    key = uniqueKey(ctx),
+    fqName = fqName,
+    classId = safeAs<FirClassLikeSymbol<*>>()?.classId,
+    typeParameters = typeParameters ?: emptyList(),
+    lazySuperTypes = info.lazySuperTypes,
+    isTypeParameter = this is TypeParameterDescriptor,
+    isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
+    isTag = isTag(ctx),
+    descriptor = null,
+    tags = info.tags,
+    isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
+    variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
+  )
+}
 
 fun KotlinType.toInjektType(
-  ctx: Context,
+  ctx: InjektContext,
   isStarProjection: Boolean = false,
   variance: TypeVariance = TypeVariance.INV
+): InjektType = TODO()
+
+fun ConeTypeProjection.toInjektType(ctx: InjektContext): InjektType = when (kind) {
+  ProjectionKind.STAR -> STAR_PROJECTION_TYPE
+  ProjectionKind.IN -> type!!.toInjektType(ctx, TypeVariance.IN)
+  ProjectionKind.OUT -> type!!.toInjektType(ctx, TypeVariance.OUT)
+  ProjectionKind.INVARIANT -> type!!.toInjektType(ctx, TypeVariance.INV)
+}
+
+fun ConeKotlinType.toInjektType(
+  ctx: InjektContext,
+  variance: TypeVariance = TypeVariance.INV,
 ): InjektType {
-  return if (isStarProjection) STAR_PROJECTION_TYPE else {
-    val unwrapped = getAbbreviation() ?: this
-    val kotlinType = when {
-      unwrapped.constructor.isDenotable -> unwrapped
-      unwrapped.constructor.supertypes.isNotEmpty() -> CommonSupertypes
-        .commonSupertype(unwrapped.constructor.supertypes)
-      else -> return ctx.nullableAnyType
-    }
+  val unwrapped = unwrapLowerBound()
 
-    val classifier = kotlinType.constructor.declarationDescriptor!!.toInjektClassifier(ctx)
+  val classifier = unwrapped.cast<ConeLookupTagBasedType>().lookupTag
+    .toSymbol(ctx.session)!!.toInjektClassifier(ctx)
 
-    val rawType = InjektType(
-      classifier = classifier,
-      isMarkedNullable = kotlinType.isMarkedNullable,
-      arguments = kotlinType.arguments
-        // we use take here because an inner class also contains the type parameters
-        // of it's parent class which is irrelevant for us
-        .take(classifier.typeParameters.size)
-        .map {
-          it.type.toInjektType(
-            ctx = ctx,
-            isStarProjection = it.isStarProjection,
-            variance = it.projectionKind.convertVariance()
-          )
-        }
-        .let {
-          if (classifier.isTag && it.size != classifier.typeParameters.size)
-            it + ctx.nullableAnyType
-          else it
-        },
-      isProvide = kotlinType.hasAnnotation(InjektFqNames.Provide),
-      isStarProjection = false,
-      uniqueId = null,
-      variance = variance
-    )
+  val rawType = InjektType(
+    classifier = classifier,
+    isMarkedNullable = unwrapped.isMarkedNullable,
+    arguments = unwrapped.typeArguments
+      // we use take here because an inner class also contains the type parameters
+      // of it's parent class which is irrelevant for us
+      //.take(classifier.typeParameters.size) // todo
+      .map { it.toInjektType(ctx) }
+      .let {
+        if (classifier.isTag && it.size != classifier.typeParameters.size)
+          it + ctx.nullableAnyType
+        else it
+      },
+    isProvide = unwrapped.customAnnotations.hasAnnotation(InjektFqNames.Provide, ctx.session),
+    isStarProjection = false,
+    uniqueId = null,
+    variance = variance
+  )
 
-    val tagAnnotations = unwrapped.getTags()
-    var result = if (tagAnnotations.isNotEmpty()) {
-      tagAnnotations
-        .map { it.type.toInjektType(ctx) }
-        .map {
-          it.copy(
-            arguments = it.arguments,
-            isMarkedNullable = rawType.isMarkedNullable,
-            isProvide = rawType.isProvide,
-            variance = rawType.variance
-          )
-        }
-        .wrap(rawType)
-    } else rawType
+  val tags = customAnnotations.getTags(ctx)
+  var result = if (tags.isNotEmpty()) {
+    tags
+      .map { it.resolvedType.toInjektType(ctx) }
+      .map {
+        it.copy(
+          arguments = it.arguments,
+          isMarkedNullable = rawType.isMarkedNullable,
+          isProvide = rawType.isProvide,
+          variance = rawType.variance
+        )
+      }
+      .wrap(rawType)
+  } else rawType
 
-    // expand the type
-    while (result.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
-      val expanded = result.unwrapTags().superTypes.single()
-      result = if (result.classifier.isTag) result.wrap(expanded) else expanded
-    }
-
-    result
+  // expand the type
+  while (result.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
+    val expanded = result.unwrapTags().superTypes.single()
+    result = if (result.classifier.isTag) result.wrap(expanded) else expanded
   }
+
+  return result
 }
 
 data class InjektType(
@@ -389,7 +389,7 @@ val InjektType.coveringSet: Set<InjektClassifier>
 
 val InjektType.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
-fun InjektType.isProvideFunctionType(ctx: Context): Boolean =
+fun InjektType.isProvideFunctionType(ctx: InjektContext): Boolean =
   isProvide && isSubTypeOf(ctx.functionType, ctx)
 
 val InjektType.isFunctionType: Boolean

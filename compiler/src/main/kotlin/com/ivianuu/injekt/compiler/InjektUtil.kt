@@ -2,50 +2,44 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(IDEAPluginsCompatibilityAPI::class, UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class)
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.builtins.functions.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
+import org.jetbrains.kotlin.fir.symbols.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.types.*
-import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.load.java.descriptors.*
 import org.jetbrains.kotlin.load.kotlin.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.calls.callUtil.*
-import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-import java.lang.reflect.*
 import kotlin.experimental.*
-import kotlin.reflect.*
 
-fun KtFunction.getArgumentDescriptor(ctx: Context): ValueParameterDescriptor? {
-  val call = KtPsiUtil.getParentCallIfPresent(this) ?: return null
-  val resolvedCall = call.getResolvedCall(ctx.trace!!.bindingContext) ?: return null
-  val valueArgument = resolvedCall.call.getValueArgumentForExpression(this) ?: return null
-  val mapping = resolvedCall.getArgumentMapping(valueArgument) as? ArgumentMatch ?: return null
-  return mapping.valueParameter
+fun KtFunction.getArgumentDescriptor(ctx: InjektContext): ValueParameterDescriptor? {
+  return TODO()
 }
 
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: Context) =
-  ctx.trace!!.bindingContext[BindingContext.DECLARATION_TO_DESCRIPTOR, this] as? D
+fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: InjektContext): D? =
+  TODO()
 
-fun DeclarationDescriptor.isExternalDeclaration(ctx: Context): Boolean =
-  moduleName(ctx) != ctx.module.moduleName(ctx)
+fun DeclarationDescriptor.isExternalDeclaration(ctx: InjektContext): Boolean =
+  moduleName(ctx) != ctx.session.moduleData.name.asString()
 
 fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
     (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
@@ -55,16 +49,15 @@ fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is Deseria
 
 fun String.asNameId() = Name.identifier(this)
 
-fun Annotated.hasAnnotation(classId: ClassId): Boolean =
-  annotations.hasAnnotation(classId.asSingleFqName())
+fun List<FirAnnotation>.getTags(ctx: InjektContext): List<FirAnnotation> = filter {
+  it.resolvedType.toRegularClassSymbol(ctx.session)?.isTag(ctx) == true
+}
 
-fun Annotated.getTags(): List<AnnotationDescriptor> =
-  annotations.filter { it.type.constructor.declarationDescriptor!!.isTag() }
+fun FirClassifierSymbol<*>.isTag(ctx: InjektContext): Boolean =
+  this is FirRegularClassSymbol &&
+      (hasAnnotation(InjektFqNames.Tag, ctx.session) || classId == InjektFqNames.Composable)
 
-fun ClassifierDescriptor.isTag() =
-  hasAnnotation(InjektFqNames.Tag) || classId == InjektFqNames.Composable
-
-fun DeclarationDescriptor.uniqueKey(ctx: Context): String = ctx.cached("unique_key", original) {
+fun DeclarationDescriptor.uniqueKey(ctx: InjektContext): String = ctx.cached("unique_key", original) {
   when (this) {
     is TypeParameterDescriptor -> typeParameterUniqueKey(name, containingDeclaration.fqNameSafe, containingDeclaration.uniqueKey(ctx))
     is ClassifierDescriptor -> classLikeUniqueKey(fqNameSafe)
@@ -101,7 +94,48 @@ fun KotlinType.uniqueTypeKey(): String = uniqueTypeKey(
   isMarkedNullable = { isMarkedNullable }
 )
 
-fun IrDeclaration.uniqueKey(ctx: Context): String = when (this) {
+val FirBasedSymbol<*>.fqName: FqName
+  get() = when (this) {
+    is FirClassLikeSymbol<*> -> classId.asSingleFqName()
+    is FirCallableSymbol<*> -> callableId.asSingleFqName()
+    is FirTypeParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
+    else -> throw AssertionError("Unexpected $this")
+  }
+
+fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
+  when (this) {
+    is FirTypeParameterSymbol -> typeParameterUniqueKey(
+      name,
+      containingDeclarationSymbol.fqName,
+      containingDeclarationSymbol.uniqueKey(ctx)
+    )
+    is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
+    is FirCallableSymbol<*> -> callableUniqueKey(
+      fqName,
+      typeParameterSymbols.map { it.name },
+      listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
+        .plus(
+          (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
+            .map { it.resolvedReturnType }
+        )
+        .map { it.uniqueTypeKey() },
+      resolvedReturnType.uniqueTypeKey()
+    )
+    else -> error("Unexpected declaration $this")
+  }
+
+fun ConeKotlinType.uniqueTypeKey(): String = uniqueTypeKey(
+  classIdOrName = {
+    safeAs<ConeClassLikeType>()?.classId?.asString()
+      ?: safeAs<ConeLookupTagBasedType>()?.lookupTag?.name?.asString()
+  },
+  arguments = {
+    typeArguments.map { if (it.isStarProjection) null else it.type }
+  },
+  isMarkedNullable = { isMarkedNullable }
+)
+
+fun IrDeclaration.uniqueKey(ctx: InjektContext): String = when (this) {
   is IrTypeParameter -> typeParameterUniqueKey(name, parent.kotlinFqName, parent.cast<IrDeclaration>().uniqueKey(ctx))
   is IrClass -> classLikeUniqueKey(fqNameForIrSerialization)
   is IrFunction -> callableUniqueKey(
@@ -219,93 +253,81 @@ fun IrDeclaration.injektIndex(): Int {
   }
 }
 
-fun <T> Any.updatePrivateFinalField(clazz: KClass<*>, fieldName: String, transform: T.() -> T): T {
-  val field = clazz.java.declaredFields
-    .single { it.name == fieldName }
-  field.isAccessible = true
-  val modifiersField = try {
-    Field::class.java.getDeclaredField("modifiers")
-  } catch (e: Throwable) {
-    val getDeclaredFields0 = Class::class.java.getDeclaredMethod("getDeclaredFields0", Boolean::class.java)
-    getDeclaredFields0.isAccessible = true
-    getDeclaredFields0.invoke(Field::class.java, false)
-      .cast<Array<Field>>()
-      .single { it.name == "modifiers" }
-  }
-  modifiersField.isAccessible = true
-  modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-  val currentValue = field.get(this)
-  val newValue = transform(currentValue as T)
-  field.set(this, newValue)
-  return newValue
-}
-
-fun DeclarationDescriptor.moduleName(ctx: Context): String =
+fun DeclarationDescriptor.moduleName(ctx: InjektContext): String =
   getJvmModuleNameForDeserializedDescriptor(this)
     ?.removeSurrounding("<", ">")
-    ?: ctx.module.name.asString().removeSurrounding("<", ">")
+    ?: ctx.session.moduleData.name.asString().removeSurrounding("<", ">")
 
 fun classifierDescriptorForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  ctx: Context
-): ClassifierDescriptor? = if (fqName.isRoot) null
-else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
-  ?.getContributedClassifier(fqName.shortName(), lookupLocation)
+  ctx: InjektContext
+): ClassifierDescriptor? =
+  if (fqName.isRoot) null else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
+    ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
-fun classifierDescriptorForKey(key: String, ctx: Context): ClassifierDescriptor =
-  ctx.cached("classifier_for_key", key) {
-    val fqName = FqName(key.split(":")[1])
-    val classifier = memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-      ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-      ?.takeIf { it.uniqueKey(ctx) == key }
-      ?: functionDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull {
-          it.uniqueKey(ctx) == key
+fun findCallableSymbol(
+  callableKey: String,
+  callableFqName: FqName,
+  ctx: InjektContext,
+): FirCallableSymbol<*> = collectDeclarationsInFqName(callableFqName.parent(), ctx)
+  .filterIsInstance<FirCallableSymbol<*>>()
+  .singleOrNull { it.uniqueKey(ctx) == callableKey }
+  ?: error("Could not find callable for $callableKey $callableFqName")
+
+fun findClassifierSymbol(
+  classifierKey: String,
+  classifierFqName: FqName,
+  ctx: InjektContext,
+): FirClassifierSymbol<*> = getClassifierForFqName(classifierFqName, ctx)
+  ?: (getClassifierForFqName(classifierFqName.parent(), ctx)
+    ?.typeParameterSymbols
+    ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
+      .filterIsInstance<FirCallableSymbol<*>>()
+      .filter { it.name == classifierFqName.parent().shortName() }
+      .flatMap { it.typeParameterSymbols })
+    .singleOrNull { it.uniqueKey(ctx) == classifierKey }
+  ?: error("Could not find classifier for $classifierKey $classifierFqName ${collectDeclarationsInFqName(classifierFqName.parent(), ctx).filter { 
+    it.fqName == classifierFqName
+  }.map { it.uniqueKey(ctx) }}")
+
+fun getClassifierForFqName(fqName: FqName, ctx: InjektContext) =
+  collectDeclarationsInFqName(fqName.parent(), ctx)
+    .singleOrNull { it.fqName == fqName }
+    ?.safeAs<FirClassLikeSymbol<*>>()
+
+fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> {
+  val packageFqName = ctx.session.symbolProvider.getPackage(fqName)
+
+  if (fqName.isRoot || packageFqName != null)
+    return buildList {
+      ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
+        ?.mapNotNull {
+          ctx.session.symbolProvider.getRegularClassSymbolByClassId(ClassId(fqName, it))
         }
-      ?: propertyDescriptorsForFqName(fqName.parent(), ctx)
-        .transform { addAll(it.typeParameters) }
-        .firstOrNull { it.uniqueKey(ctx) == key }
-      ?: classifierDescriptorForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-        .safeAs<ClassifierDescriptorWithTypeParameters>()
-        ?.declaredTypeParameters
-        ?.firstOrNull { it.uniqueKey(ctx) == key }
-      ?: error("Could not get for $fqName $key")
-    classifier
-  }
+        ?.forEach { add(it) }
 
-private fun functionDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<FunctionDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?: emptyList()
+      ctx.session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(fqName)
+        ?.flatMap { name ->
+          ctx.session.symbolProvider.getTopLevelCallableSymbols(fqName, name)
+        }
+        ?.forEach { add(it) }
+    }
 
-private fun propertyDescriptorsForFqName(
-  fqName: FqName,
-  ctx: Context
-): Collection<PropertyDescriptor> =
-  memberScopeForFqName(fqName.parent(), NoLookupLocation.FROM_BACKEND, ctx)
-    ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
-    ?: emptyList()
+  val parentDeclarations = collectDeclarationsInFqName(fqName.parent(), ctx)
+    .takeIf { it.isNotEmpty() } ?: return emptyList()
+
+  val classSymbol = parentDeclarations
+    .singleOrNull { it.fqName.shortName() == fqName.shortName() }
+    ?.safeAs<FirRegularClassSymbol>()
+
+  return classSymbol?.declarationSymbols ?: emptyList()
+}
 
 fun memberScopeForFqName(
   fqName: FqName,
   lookupLocation: LookupLocation,
-  ctx: Context
+  ctx: InjektContext
 ): MemberScope? {
-  val pkg = ctx.module.getPackage(fqName)
-
-  if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
-
-  val parentMemberScope = memberScopeForFqName(fqName.parent(), lookupLocation, ctx) ?: return null
-
-  val classDescriptor = parentMemberScope.getContributedClassifier(
-    fqName.shortName(),
-    lookupLocation
-  ).safeAs<ClassDescriptor>() ?: return null
-
-  return classDescriptor.unsubstitutedMemberScope
+  return TODO()
 }

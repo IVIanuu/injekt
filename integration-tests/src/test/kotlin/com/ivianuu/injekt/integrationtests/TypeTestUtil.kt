@@ -11,7 +11,6 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.com.intellij.mock.*
 import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.compiler.plugin.*
@@ -55,7 +54,7 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(module: ModuleDescriptor) {
-  @Provide val ctx = Context(module, CliBindingTrace())
+  @Provide val ctx = InjektContext()
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())

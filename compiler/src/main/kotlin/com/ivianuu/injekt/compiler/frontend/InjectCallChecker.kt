@@ -1,71 +1,34 @@
-/*
- * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package com.ivianuu.injekt.compiler.frontend
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.analyzer.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.calls.callUtil.*
-import org.jetbrains.kotlin.resolve.calls.model.*
-import org.jetbrains.kotlin.resolve.extensions.*
-import org.jetbrains.kotlin.utils.*
+import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
+import org.jetbrains.kotlin.fir.analysis.checkers.context.*
+import org.jetbrains.kotlin.fir.analysis.checkers.expression.*
+import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.references.*
+import org.jetbrains.kotlin.fir.types.*
 
-@OptIn(IDEAPluginsCompatibilityAPI::class) class InjectCallChecker : AnalysisHandlerExtension {
-  override fun analysisCompleted(
-    project: Project,
-    module: ModuleDescriptor,
-    bindingTrace: BindingTrace,
-    files: Collection<KtFile>
-  ): AnalysisResult? {
-    val ctx = Context(module, bindingTrace)
-    files.forEach { file ->
-      file.accept(
-        object : KtTreeVisitorVoid() {
-          override fun visitCallExpression(expression: KtCallExpression) {
-            super.visitCallExpression(expression)
-            expression.getResolvedCall(ctx.trace!!.bindingContext)
-              ?.let { checkCall(it, ctx) }
-          }
+class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker(
+  MppCheckerKind.Common) {
+  override fun check(
+    expression: FirFunctionCall,
+    context: CheckerContext,
+    reporter: DiagnosticReporter
+  ) {
+    val callee = expression.calleeReference.toResolvedCallableSymbol()
+      ?: return
 
-          override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
-            super.visitSimpleNameExpression(expression)
-            expression.getResolvedCall(ctx.trace!!.bindingContext)
-              ?.let { checkCall(it, ctx) }
-          }
+    val info = callee.callableInfo(ctx)
 
-          override fun visitConstructorDelegationCall(call: KtConstructorDelegationCall) {
-            super.visitConstructorDelegationCall(call)
-            call.getResolvedCall(ctx.trace!!.bindingContext)
-              ?.let { checkCall(it, ctx) }
-          }
-        }
-      )
-    }
-    return null
-  }
-
-  private fun checkCall(resolvedCall: ResolvedCall<*>, ctx: Context) {
-    val resultingDescriptor = resolvedCall.resultingDescriptor
-
-    val info = resultingDescriptor.callableInfo(ctx)
     if (info.injectParameters.isEmpty()) return
 
-    val callExpression = resolvedCall.call.callElement
-
-    val file = callExpression.containingKtFile
-
     val substitutionMap = buildMap {
-      for ((parameter, argument) in resolvedCall.typeArguments)
-        this[parameter.toInjektClassifier(ctx)] = argument.toInjektType(ctx)
+      expression.typeArguments.forEachIndexed { index, argument ->
+        val parameter = callee.typeParameterSymbols[index].toInjektClassifier(ctx)
+        this[parameter] = argument.toConeTypeProjection().toInjektType(ctx)
+      }
 
       fun InjektType.putAll() {
         for ((index, parameter) in classifier.typeParameters.withIndex()) {
@@ -75,45 +38,50 @@ import org.jetbrains.kotlin.utils.*
         }
       }
 
-      resolvedCall.dispatchReceiver?.type?.toInjektType(ctx)?.putAll()
-      resolvedCall.extensionReceiver?.type?.toInjektType(ctx)?.putAll()
+      expression.dispatchReceiver?.resolvedType?.toInjektType(ctx)?.putAll()
+      expression.extensionReceiver?.resolvedType?.toInjektType(ctx)?.putAll()
     }
 
-    val callee = resultingDescriptor
+    val substitutedCallee = callee
       .toInjektCallable(ctx)
       .substitute(substitutionMap)
 
-    val valueArgumentsByIndex = resolvedCall.valueArguments
-      .mapKeys { it.key.injektIndex() }
+    callee.typeParameterSymbols.forEach { it.classifierInfo(ctx).superTypes }
 
-    val requests = callee.callable.allParameters
+    /*val requests = expression.arguments
       .transform {
         val index = it.injektIndex()
         if (valueArgumentsByIndex[index] is DefaultValueArgument && index in info.injectParameters)
           add(it.toInjectableRequest(callee))
       }
 
-    if (requests.isEmpty()) return
+    if (requests.isEmpty()) return*/
 
-    val scope = ElementInjectablesScope(ctx, callExpression)
+    /*val scope = ElementInjectablesScope(ctx, callExpression)
 
-    val location = KotlinLookupLocation(callExpression)
-    memberScopeForFqName(InjektFqNames.InjectablesPackage, location, ctx)
-      ?.recordLookup(InjektFqNames.InjectablesLookup.callableName, location)
+    // look up declarations to support incremental compilation
+    context.session.lookupTracker?.recordLookup(
+      InjektFqNames.InjectablesLookup.callableName,
+      InjektFqNames.InjectablesLookup.packageName.asString(),
+      expression.source,
+      file.source
+    )
 
-    when (val result = scope.resolveRequests(callee, requests)) {
+    val scope = ElementInjectablesScope(expression, context.containingElements, context.session)
+
+    when (val result = scope.resolveRequests(callee.toInjektCallable(context.session), requests)) {
       is InjectionResult.Success -> {
-        ctx.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.virtualFilePath) { Unit }
-        ctx.cached(
+        cache.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
+        cache.cached(
           INJECTION_RESULT_KEY,
           SourcePosition(
-            file.virtualFilePath,
-            callExpression.startOffset,
-            callExpression.endOffset
+            file.sourceFile!!.path!!,
+            expression.source!!.startOffset,
+            expression.source!!.endOffset
           )
         ) { result }
       }
-      is InjectionResult.Error -> ctx.reportError(callExpression, result.render())
-    }
+      is InjectionResult.Error -> reporter.report(expression.source!!, result.toErrorString(), context)
+    }*/
   }
 }

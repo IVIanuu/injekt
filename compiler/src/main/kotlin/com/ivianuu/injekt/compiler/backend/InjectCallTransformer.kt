@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class)
 
 package com.ivianuu.injekt.compiler.backend
 
@@ -35,7 +35,7 @@ import kotlin.collections.*
 class InjectCallTransformer(
   private val compilationDeclarations: CompilationDeclarations,
   private val irCtx: IrPluginContext,
-  private val ctx: Context
+  private val ctx: InjektContext
 ) : IrElementTransformerVoidWithContext() {
   private inner class RootContext(val result: InjectionResult.Success) {
     val statements = mutableListOf<IrStatement>()
@@ -305,7 +305,7 @@ class InjectCallTransformer(
     is ReceiverParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
-    else -> functionExpression(result, injectable, injectable.callable.callable)
+    else -> functionExpression(result, injectable, injectable.callable.callable!!)
   }
 
   private fun ScopeContext.objectExpression(type: InjektType): IrExpression =
@@ -494,7 +494,7 @@ class InjectCallTransformer(
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    val injectionResult = ctx.cachedOrNull<_, InjectionResult.Success?>(
+    val injectionResult = ctx.cachedOrNull<_, InjectionResult.Success>(
       INJECTION_RESULT_KEY,
       SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
     ) ?: return result

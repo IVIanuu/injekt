@@ -15,7 +15,7 @@ class InjectablesScope(
   val injectablesPredicate: (InjektCallable) -> Boolean = { true },
   val typeParameters: List<InjektClassifier> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
-  val ctx: Context
+  val ctx: InjektContext
 ) {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
   val resultsByType = mutableMapOf<InjektType, ResolutionResult>()

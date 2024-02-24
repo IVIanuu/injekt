@@ -9,12 +9,13 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class InjektCallable(
-  val callable: CallableDescriptor,
+  val callable: CallableDescriptor?,
+  val symbol: FirCallableSymbol<*>?,
   val type: InjektType,
   val originalType: InjektType,
   val parameterTypes: Map<Int, InjektType>,
@@ -49,9 +50,9 @@ fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCal
   )
 }
 
-fun CallableDescriptor.toInjektCallable(ctx: Context): InjektCallable =
+fun CallableDescriptor.toInjektCallable(ctx: InjektContext): InjektCallable =
   ctx.cached("injekt_callable", this) {
-    val info = callableInfo(ctx)
+    /*val info = callableInfo(ctx)
     InjektCallable(
       callable = this,
       type = info.type,
@@ -64,6 +65,25 @@ fun CallableDescriptor.toInjektCallable(ctx: Context): InjektCallable =
         it.lambdaInjectable.callableFqName.child(it.name)
       } ?: safeAs<ReceiverParameterDescriptor>()?.fqNameSafe?.parent() ?:
       fqNameSafe,
+      injectParameters = info.injectParameters
+    )*/
+    TODO()
+  }
+
+fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext): InjektCallable =
+  ctx.cached("injekt_callable", this) {
+    val info = callableInfo(ctx)
+    InjektCallable(
+      callable = null,
+      symbol = this,
+      type = info.type,
+      originalType = info.type,
+      parameterTypes = info.parameterTypes,
+      typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
+        .associateWith { it.defaultType },
+      callableFqName = safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
+        it.lambdaInjectable.callableFqName.child(it.name)
+      } ?: fqName,
       injectParameters = info.injectParameters
     )
   }

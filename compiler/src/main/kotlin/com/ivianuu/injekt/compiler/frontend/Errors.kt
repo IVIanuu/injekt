@@ -1,49 +1,39 @@
-/*
- * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package com.ivianuu.injekt.compiler.frontend
 
-import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
+import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
+import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 
-interface InjektErrors {
-  companion object {
-    @JvmField val MAP = DiagnosticFactoryToRendererMap("Injekt")
-
-    @JvmField val INJEKT_ERROR = DiagnosticFactory1.create<PsiElement, String>(Severity.ERROR)
-      .also {
-        MAP.put(
-          it,
-          "{0}",
-          object : DiagnosticParameterRenderer<String> {
-            override fun render(
-              obj: String,
-              renderingContext: RenderingContext,
-            ): String = obj
-          }
-        )
-      }
-
-    init {
-      Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
-        InjektErrors::class.java,
-        InjektDefaultErrorMessages
-      )
-    }
-
-    object InjektDefaultErrorMessages : DefaultErrorMessages.Extension {
-      override fun getMap() = MAP
-    }
+object InjektErrors {
+  val INJEKT_ERROR by error1<PsiElement, String>()
+  init {
+    RootDiagnosticRendererFactory.registerFactory(InjektErrorMessages)
   }
 }
 
-fun Context.reportError(element: PsiElement, message: String) {
-  trace!!.report(InjektErrors.INJEKT_ERROR.on(element, message))
+object InjektErrorMessages : BaseDiagnosticRendererFactory() {
+  override val MAP = KtDiagnosticFactoryToRendererMap("Injekt").also { map ->
+    map.put(
+      InjektErrors.INJEKT_ERROR,
+      "{0}",
+      object : DiagnosticParameterRenderer<String> {
+        override fun render(
+          obj: String,
+          renderingContext: RenderingContext,
+        ): String = obj
+      }
+    )
+  }
 }
+
+@OptIn(InternalDiagnosticFactoryMethod::class) fun DiagnosticReporter.report(
+  element: AbstractKtSourceElement,
+  message: String,
+  context: CheckerContext
+) = report(InjektErrors.INJEKT_ERROR.on(element, message, null), context)
 
 fun InjectionResult.Error.render(): String = buildString {
   var indent = 0
@@ -77,16 +67,16 @@ fun InjectionResult.Error.render(): String = buildString {
     }
     is ResolutionResult.Failure.CandidateAmbiguity -> {
       val errorMessage = if (failure == unwrappedFailure) {
-          "ambiguous injectables:\n\n${
-            unwrappedFailure.candidateResults.joinToString("\n") {
-              it.candidate.callableFqName.asString()
-            }
-          }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
-              "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
-        } else {
-          "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
-              "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
-        }
+        "ambiguous injectables:\n\n${
+          unwrappedFailure.candidateResults.joinToString("\n") {
+            it.candidate.callableFqName.asString()
+          }
+        }\n\ndo all match type ${unwrappedFailureRequest.type.renderToString()} for parameter " +
+            "${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
+      } else {
+        "ambiguous injectables of type ${unwrappedFailureRequest.type.renderToString()} " +
+            "for parameter ${unwrappedFailureRequest.parameterName} of function ${unwrappedFailureRequest.callableFqName}."
+      }
 
       appendLine(errorMessage)
     }
@@ -95,9 +85,9 @@ fun InjectionResult.Error.render(): String = buildString {
     is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> {
       appendLine(
         "no injectable found of type " +
-          "${unwrappedFailureRequest.type.renderToString()} for parameter " +
-          "${unwrappedFailureRequest.parameterName} of function " +
-          "${unwrappedFailureRequest.callableFqName}."
+            "${unwrappedFailureRequest.type.renderToString()} for parameter " +
+            "${unwrappedFailureRequest.parameterName} of function " +
+            "${unwrappedFailureRequest.callableFqName}."
       )
     }
   }.let { }

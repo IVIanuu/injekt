@@ -7,14 +7,13 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
@@ -24,7 +23,7 @@ import java.util.*
 
 fun InjektType.collectInjectables(
   classBodyView: Boolean,
-  ctx: Context
+  ctx: InjektContext
 ): List<InjektCallable> = ctx.cached("type_injectables", this to classBodyView) {
   buildList {
     classifier
@@ -32,7 +31,7 @@ fun InjektType.collectInjectables(
       ?.defaultType
       ?.memberScope
       ?.collectMemberInjectables(ctx, this@collectInjectables) { callable ->
-        val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
+        /*val substitutionMap = if (callable.callable.safeAs<CallableMemberDescriptor>()?.kind ==
           CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
           val originalClassifier = callable.callable.cast<CallableMemberDescriptor>()
             .overriddenTreeAsSequence(false)
@@ -54,13 +53,14 @@ fun InjektType.collectInjectables(
             substituted.parameterTypes.toMutableMap()
               .also { it[DISPATCH_RECEIVER_INDEX] = this@collectInjectables }
           } else substituted.parameterTypes
-        )
+        )*/
+        TODO()
       }
   }
 }
 
 fun ResolutionScope.collectMemberInjectables(
-  ctx: Context,
+  ctx: InjektContext,
   type: InjektType? = null,
   onEach: (DeclarationDescriptor) -> Unit = {},
   consumer: (InjektCallable) -> Unit
@@ -75,8 +75,9 @@ fun ResolutionScope.collectMemberInjectables(
   }
 }
 
-fun Annotated.isProvide(ctx: Context): Boolean =
-  hasAnnotation(InjektFqNames.Provide) ||
+fun Annotated.isProvide(ctx: InjektContext): Boolean =
+  false
+/*  hasAnnotation(InjektFqNames.Provide) ||
       (this is ParameterDescriptor && type.hasAnnotation(InjektFqNames.Provide)) ||
       (this is ValueParameterDescriptor &&
           index in containingDeclaration.cast<CallableDescriptor>().callableInfo(ctx).injectParameters) ||
@@ -93,19 +94,19 @@ fun Annotated.isProvide(ctx: Context): Boolean =
             ?.singleOrNull { it.modality == Modality.ABSTRACT }
             ?.valueParameters
             ?.singleOrNull { it.injektIndex() == injektIndex() }
-            ?.isProvide(ctx) == true)
+            ?.isProvide(ctx) == true)*/
 
-fun ClassDescriptor.injectableConstructors(ctx: Context): List<InjektCallable> =
+fun ClassDescriptor.injectableConstructors(ctx: InjektContext): List<InjektCallable> =
   ctx.cached("injectable_constructors", this) {
     constructors
       .transform { constructor ->
-        if (constructor.hasAnnotation(InjektFqNames.Provide) ||
+        /*if (constructor.hasAnnotation(InjektFqNames.Provide) ||
           (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
-            add(constructor.toInjektCallable(ctx))
+            add(constructor.toInjektCallable(ctx))*/
       }
   }
 
-fun ClassDescriptor.injectableReceiver(ctx: Context): InjektCallable =
+fun ClassDescriptor.injectableReceiver(ctx: InjektContext): InjektCallable =
   ReceiverParameterDescriptorImpl(
     this,
     ImplicitClassReceiver(this),
@@ -116,7 +117,7 @@ fun InjektCallable.collectInjectables(
   scope: InjectablesScope,
   addInjectable: (InjektCallable) -> Unit,
   addAddOnInjectable: (InjektCallable) -> Unit,
-  ctx: Context
+  ctx: InjektContext
 ) {
   if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
 
@@ -164,12 +165,12 @@ fun InjektCallable.collectInjectables(
     }
 }
 
-fun collectGlobalInjectables(ctx: Context): List<InjektCallable> = packagesWithInjectables(ctx)
+fun collectGlobalInjectables(ctx: InjektContext): List<InjektCallable> = packagesWithInjectables(ctx)
   .flatMap { collectPackageInjectables(it, ctx) }
 
 fun collectPackageInjectables(
   packageFqName: FqName,
-  ctx: Context
+  ctx: InjektContext
 ): List<InjektCallable> = ctx.cached("package_injectables", packageFqName) {
     if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
 
@@ -194,11 +195,11 @@ fun collectPackageInjectables(
     injectables
   }
 
-private fun InjectablesScope.canSee(callable: InjektCallable, ctx: Context): Boolean =
-  callable.callable.visibility == DescriptorVisibilities.PUBLIC ||
+private fun InjectablesScope.canSee(callable: InjektCallable, ctx: InjektContext): Boolean =
+  callable.callable!!.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName(ctx) == ctx.module.moduleName(ctx)) ||
+          callable.callable.moduleName(ctx) == ctx.session.moduleData.name.asString()) ||
       (callable.callable is ClassConstructorDescriptor &&
           callable.type.unwrapTags().classifier.isObject) ||
       callable.callable.parentsWithSelf.mapNotNull { it.findPsi() }.any { callableParent ->
@@ -207,7 +208,7 @@ private fun InjectablesScope.canSee(callable: InjektCallable, ctx: Context): Boo
       (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
           callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })
 
-fun packagesWithInjectables(ctx: Context): Set<FqName> =
+fun packagesWithInjectables(ctx: InjektContext): Set<FqName> =
   ctx.cached("packages_with_injectables", Unit) {
     memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
       ?.getContributedFunctions(InjektFqNames.InjectablesLookup.callableName, NoLookupLocation.FROM_BACKEND)
