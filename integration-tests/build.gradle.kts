@@ -8,16 +8,19 @@ plugins {
 }
 
 dependencies {
+  ksp(project(":ksp"))
+
   testImplementation(project(":common"))
   testImplementation(project(":compiler"))
   testImplementation(project(":ksp"))
   testImplementation(Deps.Compose.runtime)
 
-  testImplementation(Deps.Ksp.aaEmbeddable) {
+  /*testImplementation(Deps.Ksp.aaEmbeddable) {
     exclude(group = "com.google.devtools.ksp", module = "common-deps")
   }
   testImplementation(Deps.Ksp.commonDeps)
-  testImplementation(Deps.Ksp.cmdline)
+  testImplementation(Deps.Ksp.cmdline)*/
+  testImplementation(Deps.Ksp.symbolProcessing)
   testImplementation(Deps.Ksp.api)
 
   testImplementation(Deps.Kotlin.compilerEmbeddable)

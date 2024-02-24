@@ -97,7 +97,7 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
   )
 }
 
-private fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
+fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
   files
     .filter {
       dumpAllFiles ||

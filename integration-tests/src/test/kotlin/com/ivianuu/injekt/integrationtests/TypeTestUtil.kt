@@ -6,43 +6,54 @@
 
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.*
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.com.intellij.mock.*
-import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
+import org.jetbrains.kotlin.fir.analysis.checkers.context.*
+import org.jetbrains.kotlin.fir.analysis.checkers.expression.*
+import org.jetbrains.kotlin.fir.analysis.extensions.*
+import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.jvm.extensions.*
 import org.jetbrains.kotlin.types.model.*
 
 fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
   codegen(
     """
+      fun invoke() = listOf<Unit>()
     """,
     config = {
-      componentRegistrars += object : ComponentRegistrar {
-        override fun registerProjectComponents(
-          project: MockProject,
-          configuration: CompilerConfiguration,
-        ) {
-          AnalysisHandlerExtension.registerExtension(
-            project,
-            object : AnalysisHandlerExtension {
-              override fun analysisCompleted(
-                project: Project,
-                module: ModuleDescriptor,
-                bindingTrace: BindingTrace,
-                files: Collection<KtFile>,
-              ): AnalysisResult? {
-                block(TypeCheckerTestContext(module))
-                return null
+      compilerPluginRegistrars += object : CompilerPluginRegistrar() {
+        override val supportsK2: Boolean
+          get() = true
+
+        override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+          FirExtensionRegistrarAdapter.registerExtension(
+            object : FirExtensionRegistrar() {
+              override fun ExtensionRegistrarContext.configurePlugin() {
+                +FirAdditionalCheckersExtension.Factory { session ->
+                  object : FirAdditionalCheckersExtension(session) {
+                    override val expressionCheckers: ExpressionCheckers =
+                      object : ExpressionCheckers() {
+                        override val callCheckers: Set<FirCallChecker> = setOf(
+                          object : FirCallChecker(MppCheckerKind.Platform) {
+                            override fun check(
+                              expression: FirCall,
+                              context: CheckerContext,
+                              reporter: DiagnosticReporter
+                            ) {
+                              block(TypeCheckerTestContext(context.session))
+                            }
+                          }
+                        )
+                      }
+                  }
+                }
               }
             }
           )
@@ -52,8 +63,8 @@ fun withTypeCheckerContext(block: TypeCheckerTestContext.() -> Unit) {
   )
 }
 
-class TypeCheckerTestContext(module: ModuleDescriptor) {
-  @Provide val ctx = InjektContext()
+class TypeCheckerTestContext(session: FirSession) {
+  val ctx = InjektContext().also { it.session = session }
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
@@ -68,12 +79,7 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
   val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
   val nullableNothing = nothing.nullable()
 
-  fun function(parameterCount: Int) = typeFor(
-    FqName("kotlin.Function$parameterCount")
-  )
-
   val tag1 = typeFor(FqName("com.ivianuu.injekt.integrationtests.Tag1"))
-
   val tag2 = typeFor(FqName("com.ivianuu.injekt.integrationtests.Tag2"))
 
   private var id = 0
@@ -187,8 +193,6 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
 }
 
 fun InjektType.nullable() = copy(isMarkedNullable = true)
-
-fun InjektType.nonNull() = copy(isMarkedNullable = false)
 
 fun InjektType.withArguments(vararg arguments: InjektType) =
   withArguments(arguments.toList())

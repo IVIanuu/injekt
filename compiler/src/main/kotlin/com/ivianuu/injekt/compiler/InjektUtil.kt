@@ -224,8 +224,8 @@ fun getClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSym
       fqName.asString().startsWith(InjektFqNames.kSuspendFunction))
       ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
     else collectDeclarationsInFqName(fqName.parent(), ctx)
+      .filterIsInstance<FirClassifierSymbol<*>>()
       .singleOrNull { it.fqName == fqName }
-      ?.safeAs<FirClassLikeSymbol<*>>()
   }
 
 fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> =
