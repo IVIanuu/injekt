@@ -15,7 +15,7 @@ data class InjektCallable(
   val originalType: InjektType,
   val parameterTypes: Map<Int, InjektType>,
   val typeArguments: Map<InjektClassifier, InjektType>,
-  val callableFqName: FqName,
+  val chainFqName: FqName,
   val injectParameters: Set<Int>
 )
 
@@ -45,7 +45,7 @@ fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCal
   )
 }
 
-fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext): InjektCallable =
+fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext, chainFqName: FqName = fqName): InjektCallable =
   ctx.cached("injekt_callable", this) {
     val info = callableInfo(ctx)
     InjektCallable(
@@ -55,9 +55,7 @@ fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext): InjektCallable =
       parameterTypes = info.parameterTypes,
       typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
         .associateWith { it.defaultType },
-      callableFqName = /*safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
-        it.lambdaInjectable.callableFqName.child(it.name)
-      } ?: */fqName,
+      chainFqName = chainFqName,
       injectParameters = info.injectParameters
     )
   }

@@ -75,7 +75,7 @@ fun InjektCallable.collectModuleInjectables(
     .forEach { innerCallable ->
       innerCallable
         .copy(
-          callableFqName = nextCallable.callableFqName.child(innerCallable.callableFqName.shortName()),
+          chainFqName = nextCallable.chainFqName.child(innerCallable.chainFqName.shortName()),
           type = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
           else innerCallable.type,
           originalType = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)

@@ -17,7 +17,7 @@ sealed interface Injectable {
   val type: InjektType
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScope: InjectablesScope? get() = null
-  val callableFqName: FqName
+  val chainFqName: FqName
   val ownerScope: InjectablesScope
 }
 
@@ -27,7 +27,7 @@ class CallableInjectable(
   override val type: InjektType
 ) : Injectable {
   override val dependencies = callable.injectableRequests(emptySet(), ownerScope.ctx)
-  override val callableFqName = callable.callableFqName
+  override val chainFqName = callable.chainFqName
 }
 
 class ListInjectable(
@@ -37,12 +37,12 @@ class ListInjectable(
   val singleElementType: InjektType,
   val collectionElementType: InjektType
 ) : Injectable {
-  override val callableFqName = FqName("listOf")
+  override val chainFqName = FqName("listOf")
   override val dependencies = elements
     .mapIndexed { index, element ->
       InjectableRequest(
         type = element,
-        callableFqName = callableFqName,
+        callableFqName = chainFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
         parameterName = "element$index".asNameId(),
         parameterIndex = index
@@ -55,11 +55,11 @@ class ListInjectable(
   request: InjectableRequest
 ) : Injectable {
   override val type = request.type
-  override val callableFqName = FqName(request.parameterName.asString())
+  override val chainFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
     InjectableRequest(
       type = type.arguments.last(),
-      callableFqName = callableFqName,
+      callableFqName = chainFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0
     )
@@ -83,7 +83,7 @@ class ListInjectable(
     initialInjectables = valueParameterSymbols
       .mapIndexed { index, parameter ->
         parameter
-          .toInjektCallable(ownerScope.ctx)
+          .toInjektCallable(ownerScope.ctx, chainFqName.child(parameter.name))
           .copy(type = type.arguments[index])
       },
     ctx = ownerScope.ctx
@@ -109,7 +109,7 @@ fun InjektCallable.injectableRequests(
       ?.getOrNull(index)
     InjectableRequest(
       type = type,
-      callableFqName = callableFqName,
+      callableFqName = chainFqName,
       callableTypeArguments = typeArguments,
       parameterName = when (index) {
         DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME

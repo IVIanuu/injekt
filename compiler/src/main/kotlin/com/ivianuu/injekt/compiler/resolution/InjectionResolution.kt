@@ -150,7 +150,7 @@ private fun InjectablesScope.computeForCandidate(
         previousCandidate.callable.symbol.fqName
           .asString().startsWith(StandardNames.FqNames.functionSupertype.asString()))
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
-      else previousCandidate.callableFqName == candidate.callableFqName
+      else previousCandidate.chainFqName == candidate.chainFqName
 
       if (isSameCallable &&
         previousCandidate.type.coveringSet == candidate.type.coveringSet &&
