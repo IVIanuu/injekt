@@ -81,9 +81,9 @@ fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext): InjektCallable =
       parameterTypes = info.parameterTypes,
       typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
         .associateWith { it.defaultType },
-      callableFqName = safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
+      callableFqName = /*safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
         it.lambdaInjectable.callableFqName.child(it.name)
-      } ?: fqName,
+      } ?: */fqName,
       injectParameters = info.injectParameters
     )
   }

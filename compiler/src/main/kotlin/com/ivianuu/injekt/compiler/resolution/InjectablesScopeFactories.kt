@@ -10,30 +10,34 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun ElementInjectablesScope(
+  position: FirElement,
+  containingElements: List<FirElement>,
   ctx: InjektContext,
-  element: KtElement,
-  position: KtElement = element
 ): InjectablesScope {
-  val scopeOwner = element.parentsWithSelf
-    .first { (it as KtElement).isScopeOwner(position) }
-    .cast<KtElement>()
+  val scopeOwner = containingElements.last { it.isScopeOwner(position) }
 
   fun createScope(): InjectablesScope {
-    val parentScope = scopeOwner.parents
-      .firstOrNull { (it as KtElement).isScopeOwner(position) }
-      ?.let { ElementInjectablesScope(ctx, it.cast(), position) }
+    val parentScope = containingElements
+      .take(containingElements.indexOf(scopeOwner))
+      .let { parentElements ->
+        parentElements
+          .lastOrNull { it.isScopeOwner(position) }
+          ?.let { ElementInjectablesScope(it, parentElements, ctx) }
+      }
 
     return when (scopeOwner) {
-      is KtFile -> FileInjectablesScope(scopeOwner, ctx)
-      is KtClassOrObject -> ClassInjectablesScope(
+      is FirFile -> FileInjectablesScope(scopeOwner, ctx)
+      /*is KtClassOrObject -> ClassInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
         ctx
@@ -58,7 +62,7 @@ fun ElementInjectablesScope(
       is KtProperty -> when (val descriptor = scopeOwner.descriptor<VariableDescriptor>(ctx)!!) {
         is PropertyDescriptor -> {
           if (scopeOwner.delegateExpressionOrInitializer != null &&
-            scopeOwner.delegateExpressionOrInitializer!! in element.parentsWithSelf)
+            scopeOwner.delegateExpressionOrInitializer!! in position.parentsWithSelf)
             PropertyInitInjectablesScope(descriptor, parentScope!!, position, ctx)
           else
             PropertyInjectablesScope(descriptor, parentScope!!, ctx)
@@ -70,8 +74,8 @@ fun ElementInjectablesScope(
         ?.descriptor<ClassDescriptor>(ctx)
         ?.unsubstitutedPrimaryConstructor
         ?.let { ConstructorPreInitInjectablesScope(it, parentScope!!, ctx) }
-        ?: parentScope!!
-      is KtClassInitializer -> ClassInitInjectablesScope(
+        ?: parentScope!!*/
+      /*is KtClassInitializer -> ClassInitInjectablesScope(
         clazz = scopeOwner.getParentOfType<KtClassOrObject>(false)!!.descriptor(ctx)!!,
         parent = parentScope!!,
         position = position,
@@ -82,7 +86,7 @@ fun ElementInjectablesScope(
         ?.unsubstitutedPrimaryConstructor
         ?.let { FunctionInjectablesScope(it, parentScope!!, ctx) }
         ?: parentScope!!
-      is KtBlockExpression -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!, ctx)
+      is KtBlockExpression -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!, ctx)*/
       else -> throw AssertionError("Unexpected scope owner $scopeOwner")
     }
   }
@@ -93,16 +97,19 @@ fun ElementInjectablesScope(
     createScope()
 }
 
-private fun KtElement.isScopeOwner(position: KtElement): Boolean {
-  if (this is KtFile ||
-    this is KtClassInitializer ||
-    this is KtProperty ||
-    this is KtParameter ||
-    this is KtSuperTypeList ||
-    this is KtBlockExpression)
+private fun FirElement.isScopeOwner(position: FirElement): Boolean {
+  if (this is FirFile
+    //this is KtClassInitializer ||
+  //  this is FirProperty ||
+  //  this is FirReceiverParameter ||
+   // this is FirValueParameter
+    //this is KtSuperTypeList ||
+    /*this is KtBlockExpression*/)
     return true
 
-  if (this is KtFunction && position.parents.none { it in valueParameters })
+  return false
+
+  /*if (this is KtFunction && position.parents.none { it in valueParameters })
     return true
 
   if (this is KtClassOrObject) {
@@ -168,10 +175,10 @@ private fun KtElement.isScopeOwner(position: KtElement): Boolean {
       })
         return true
 
-  return false
+  return false*/
 }
 
-private fun FileInjectablesScope(file: KtFile, ctx: InjektContext): InjectablesScope =
+private fun FileInjectablesScope(file: FirFile, ctx: InjektContext): InjectablesScope =
   ctx.cached("file_scope", file) {
     InjectableScopeOrParent(
       name = "FILE ${file.name}",
@@ -179,12 +186,12 @@ private fun FileInjectablesScope(file: KtFile, ctx: InjektContext): InjectablesS
       owner = file,
       ctx = ctx,
       initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
-        .filter { it.callable!!.findPsi()?.containingFile == file }
+        .filter { ctx.session.firProvider.getContainingFile(it.symbol!!) == file }
     )
   }
 
-private fun FileInitInjectablesScope(position: KtElement, ctx: InjektContext): InjectablesScope {
-  val file = position.containingKtFile
+private fun FileInitInjectablesScope(position: FirElement, ctx: InjektContext): InjectablesScope {
+  /*val file = position
 
   val visibleInjectableDeclarations = file
     .declarations
@@ -212,7 +219,8 @@ private fun FileInitInjectablesScope(position: KtElement, ctx: InjektContext): I
     ctx = ctx,
     initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
       .filter { it.callable!!.findPsi()?.containingFile == file }
-  )
+  )*/
+  TODO()
 }
 
 private fun ClassCompanionInjectablesScope(
@@ -440,7 +448,7 @@ private fun PropertyInitInjectablesScope(
       ctx = ctx
     )
   } else {
-    FileInitInjectablesScope(position = position, ctx = ctx)
+    TODO()// FileInitInjectablesScope(position = position, ctx = ctx)
   }
 
   return InjectableScopeOrParent(
@@ -507,15 +515,15 @@ private fun BlockExpressionInjectablesScope(
   }
 }
 
-fun InternalGlobalInjectablesScope(ctx: InjektContext, file: KtFile): InjectablesScope =
-  ctx.cached("internal_global_scope", file.virtualFilePath) {
+fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFile): InjectablesScope =
+  ctx.cached("internal_global_scope", file) {
     InjectableScopeOrParent(
       name = "INTERNAL GLOBAL EXCEPT $file",
       parent = ExternalGlobalInjectablesScope(ctx),
       initialInjectables = collectGlobalInjectables(ctx)
         .filter {
-          !it.callable!!.isExternalDeclaration(ctx) &&
-              it.callable.findPsi()?.containingFile != file
+          it.symbol!!.moduleData == ctx.session.moduleData &&
+              ctx.session.firProvider.getContainingFile(it.symbol) != file
         },
       ctx = ctx
     )
@@ -527,7 +535,7 @@ fun ExternalGlobalInjectablesScope(ctx: InjektContext): InjectablesScope =
       name = "EXTERNAL GLOBAL",
       parent = null,
       initialInjectables = collectGlobalInjectables(ctx)
-        .filter { it.callable!!.isExternalDeclaration(ctx) },
+        .filter { it.symbol!!.moduleData != ctx.session.moduleData },
       ctx = ctx
     )
   }
@@ -540,7 +548,7 @@ data class DescriptorWithParentScope(
 fun InjectableScopeOrParent(
   name: String,
   parent: InjectablesScope,
-  owner: KtElement? = null,
+  owner: FirElement? = null,
   initialInjectables: List<InjektCallable> = emptyList(),
   injectablesPredicate: (InjektCallable) -> Boolean = { true },
   typeParameters: List<InjektClassifier> = emptyList(),

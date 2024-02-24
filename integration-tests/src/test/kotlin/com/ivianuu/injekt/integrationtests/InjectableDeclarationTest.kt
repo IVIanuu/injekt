@@ -14,10 +14,10 @@ import org.junit.*
 class InjectableDeclarationTest {
   @Test fun testProvideFunction() = singleAndMultiCodegen(
     """
-      @Provide fun foo(): @Tag1 Foo = Foo()
+      @Provide fun foo(): Foo = Foo()
     """,
     """
-      fun invoke() = inject<@Tag1 Foo>() 
+      fun invoke() = inject<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

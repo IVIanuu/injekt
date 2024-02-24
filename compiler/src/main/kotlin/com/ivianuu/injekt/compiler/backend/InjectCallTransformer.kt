@@ -13,7 +13,8 @@ import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
@@ -27,7 +28,6 @@ import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 import kotlin.collections.*
@@ -92,8 +92,8 @@ class InjectCallTransformer(
     val functionWrappedExpressions = mutableMapOf<InjektType, ScopeContext.() -> IrExpression>()
     val statements =
       if (scope == rootContext.result.scope) rootContext.statements else mutableListOf()
-    val parameterMap: MutableMap<ParameterDescriptor, IrValueParameter> =
-      parent?.parameterMap ?: mutableMapOf()
+    val lambdaParametersMap: MutableMap<FirValueParameterSymbol, IrValueParameterSymbol> =
+      parent?.lambdaParametersMap ?: mutableMapOf()
 
     fun findScopeContext(scopeToFind: InjectablesScope): ScopeContext {
       val finalScope = rootContext.mapScopeIfNeeded(scopeToFind)
@@ -153,6 +153,15 @@ class InjectCallTransformer(
         )
       }
     }
+  }
+
+  private fun IrFunctionAccessExpression.fillTypeParameters(callable: InjektCallable) {
+    callable
+      .typeArguments
+      .values
+      .forEachIndexed { index, typeArgument ->
+        putTypeArgument(index, typeArgument.toIrType().typeOrNull)
+      }
   }
 
   private fun ResolutionResult.Success.Value.shouldWrap(ctx: RootContext): Boolean =
@@ -228,12 +237,12 @@ class InjectCallTransformer(
       )
 
       fun ScopeContext.createExpression(): IrExpression {
-        for ((index, parameter) in injectable.parameterDescriptors.withIndex())
-          parameterMap[parameter] = valueParameters[index]
+        for ((index, parameter) in injectable.valueParameterSymbols.withIndex())
+          lambdaParametersMap[parameter] = valueParameters[index].symbol
         return expressionFor(dependencyResult.cast())
           .also {
-            injectable.parameterDescriptors.forEach {
-              parameterMap -= it
+            injectable.valueParameterSymbols.forEach {
+              lambdaParametersMap -= it
             }
           }
       }
@@ -302,10 +311,10 @@ class InjectCallTransformer(
   ): IrExpression = if (injectable.callable.type.unwrapTags().classifier.isObject)
     objectExpression(injectable.callable.type.unwrapTags())
   else when (injectable.callable.callable) {
-    is ReceiverParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
-    is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
-    is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
-    else -> functionExpression(result, injectable, injectable.callable.callable!!)
+    //is ReceiverParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
+    //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
+    //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
+    else -> functionExpression(result, injectable, injectable.callable.symbol!!.cast())
   }
 
   private fun ScopeContext.objectExpression(type: InjektType): IrExpression =
@@ -314,9 +323,9 @@ class InjectCallTransformer(
   private fun ScopeContext.functionExpression(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable,
-    descriptor: CallableDescriptor
+    firFunctionSymbol: FirFunctionSymbol<*>
   ): IrExpression = irBuilder.irCall(
-    descriptor.irCallable().symbol,
+    firFunctionSymbol.toIrCallableSymbol(),
     injectable.type.toIrType().typeOrNull!!
   )
     .apply {
@@ -331,21 +340,22 @@ class InjectCallTransformer(
       val element = scope.irElement
       when {
         element is IrClass &&
-            element.uniqueKey(ctx) == descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
+            element.symbol.uniqueKey(ctx) == descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
           irGet(element.thisReceiver!!)
         element is IrFunction &&
             element.dispatchReceiverParameter?.type?.uniqueTypeKey() == descriptor.type.uniqueTypeKey() ->
           irGet(element.dispatchReceiverParameter!!)
         element is IrProperty &&
             allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-            element.parentClassOrNull?.uniqueKey(ctx) == descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
+            element.parentClassOrNull?.symbol?.uniqueKey(ctx) ==
+            descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
           irGet(element.getter!!.dispatchReceiverParameter!!)
         else -> null
       }
     } ?: error("unexpected $descriptor")
   }
 
-  private fun ScopeContext.parameterExpression(
+  /*private fun ScopeContext.parameterExpression(
     descriptor: ParameterDescriptor,
     injectable: CallableInjectable
   ): IrExpression =
@@ -353,24 +363,15 @@ class InjectCallTransformer(
       is ClassDescriptor -> receiverExpression(descriptor)
       is CallableDescriptor -> irBuilder.irGet(
         injectable.type.toIrType().typeOrNull!!,
-        (parameterMap[descriptor] ?: containingDeclaration.irCallable()
+        lambdaParametersMap[descriptor] ?: (containingDeclaration.irCallable()
           .allParameters
           .single { it.injektIndex() == descriptor.injektIndex() })
           .symbol
       )
       else -> error("Unexpected parent $descriptor $containingDeclaration")
-    }
+    }*/
 
-  private fun IrFunctionAccessExpression.fillTypeParameters(callable: InjektCallable) {
-    callable
-      .typeArguments
-      .values
-      .forEachIndexed { index, typeArgument ->
-        putTypeArgument(index, typeArgument.toIrType().typeOrNull)
-      }
-  }
-
-  private fun ScopeContext.localVariableExpression(
+  /*private fun ScopeContext.localVariableExpression(
     descriptor: LocalVariableDescriptor,
     injectable: CallableInjectable
   ): IrExpression = if (descriptor.getter != null) irBuilder.irCall(
@@ -383,28 +384,27 @@ class InjectCallTransformer(
       .singleOrNull { it.uniqueKey(ctx) == descriptor.uniqueKey(ctx) }
       ?.symbol
       ?: error("Couldn't find ${descriptor.uniqueKey(ctx)} in ${compilationDeclarations.variables.map { it.uniqueKey(ctx) }}")
-  )
+  )*/
 
-  private fun CallableDescriptor.irCallable() = when (this) {
-    is ClassConstructorDescriptor -> compilationDeclarations.constructors
+  private fun FirCallableSymbol<*>.toIrCallableSymbol(): IrFunctionSymbol = when (this) {
+    is FirConstructorSymbol -> compilationDeclarations.constructors
       .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
-      ?: irCtx.referenceConstructors(constructedClass.classId!!)
-        .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
-        ?.owner
+      ?: irCtx.referenceConstructors(resolvedReturnType.classId!!)
+        .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
       ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${compilationDeclarations.constructors.map { it.uniqueKey(ctx) }}")
-    is FunctionDescriptor -> compilationDeclarations.functions.singleOrNull {
+    is FirFunctionSymbol<*> -> compilationDeclarations.functions.singleOrNull {
         it.uniqueKey(ctx) == uniqueKey(ctx)
       } ?: irCtx.referenceFunctions(callableId)
-        .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
-        ?.owner
-    ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceFunctions(callableId).map { it.owner.uniqueKey(ctx) }}")
-    is PropertyDescriptor -> (compilationDeclarations.properties
+        .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
+    ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceFunctions(callableId).map { it.uniqueKey(ctx) }}")
+    is FirPropertySymbol -> (compilationDeclarations.properties
       .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
       ?: irCtx.referenceProperties(callableId)
-      .singleOrNull { it.owner.uniqueKey(ctx) == uniqueKey(ctx) }
-      ?.owner)
+      .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) })
+      ?.owner
       ?.getter
-      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceProperties(callableId).map { it.owner.uniqueKey(ctx) }}")
+      ?.symbol
+      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceProperties(callableId).map { it.uniqueKey(ctx) }}")
     else -> throw AssertionError("Unexpected callable $this")
   }
 
@@ -452,33 +452,50 @@ class InjectCallTransformer(
         val irClassifier = compilationDeclarations.classes.singleOrNull {
           it.uniqueKey(ctx) == key
         }
-          ?.symbol
-          ?: classifier.descriptor
-            .safeAs<ClassDescriptor>()
-            ?.let { irCtx.referenceClass(it.classId!!) }
-          ?: classifier.descriptor.safeAs<TypeParameterDescriptor>()
-            ?.let { typeParameterDescriptor ->
-              typeParameterDescriptor.containingDeclaration
-                .safeAs<FunctionDescriptor>()
-                ?.let { irCtx.referenceFunctions(it.callableId) }
+          ?: classifier.symbol
+            .safeAs<FirRegularClassSymbol>()
+            ?.let { irCtx.referenceClass(it.classId) }
+          ?: classifier.symbol.safeAs<FirTypeParameterSymbol>()
+            ?.let { firTypeParameterSymbol ->
+              firTypeParameterSymbol.containingDeclarationSymbol
+                .safeAs<FirFunctionSymbol<*>>()
+                ?.let { containingFunctionSymbol ->
+                  compilationDeclarations.functions
+                    .filter { it.uniqueKey(ctx) == containingFunctionSymbol.uniqueKey(ctx) } +
+                      irCtx.referenceFunctions(containingFunctionSymbol.callableId)
+                }
                 ?.flatMap { it.owner.typeParameters }
-                ?.singleOrNull { it.uniqueKey(ctx) == key }
+                ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
                 ?.symbol
-                ?: typeParameterDescriptor.containingDeclaration
-                  .safeAs<PropertyDescriptor>()
-                  ?.let { irCtx.referenceProperties(it.callableId) }
+                ?: firTypeParameterSymbol.containingDeclarationSymbol
+                  .safeAs<FirPropertySymbol>()
+                  ?.let { containingPropertySymbol ->
+                    compilationDeclarations.properties
+                      .filter { it.uniqueKey(ctx) == containingPropertySymbol.uniqueKey(ctx) } +
+                        irCtx.referenceProperties(containingPropertySymbol.callableId)
+                  }
                   ?.flatMap { it.owner.getter!!.typeParameters }
-                  ?.singleOrNull { it.uniqueKey(ctx) == key }
+                  ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
                   ?.symbol
-                ?: (typeParameterDescriptor.containingDeclaration
-                  .safeAs<ClassDescriptor>()
-                  ?.let { irCtx.referenceClass(it.classId!!) }
-                  ?: typeParameterDescriptor.containingDeclaration
-                    .safeAs<TypeAliasDescriptor>()
-                    ?.let { irCtx.referenceTypeAlias(it.classId!!) })
-                  ?.owner
-                  ?.typeParameters
-                  ?.singleOrNull { it.uniqueKey(ctx) == key }
+                ?: firTypeParameterSymbol.containingDeclarationSymbol
+                  .safeAs<FirRegularClassSymbol>()
+                  ?.let { containingClassSymbol ->
+                    compilationDeclarations.classes
+                      .filter { it.uniqueKey(ctx) == containingClassSymbol.uniqueKey(ctx) } +
+                        listOfNotNull(irCtx.referenceClass(containingClassSymbol.classId))
+                  }
+                  ?.flatMap { it.owner.typeParameters }
+                  ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
+                  ?.symbol
+                  ?: firTypeParameterSymbol.containingDeclarationSymbol
+                    .safeAs<FirTypeAliasSymbol>()
+                    ?.let { containingTypeAlias ->
+                      compilationDeclarations.typeAliases
+                        .filter { it.uniqueKey(ctx) == containingTypeAlias.uniqueKey(ctx) } +
+                          listOfNotNull(irCtx.referenceTypeAlias(containingTypeAlias.classId))
+                    }
+                    ?.flatMap { it.owner.typeParameters }
+                    ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
                   ?.symbol
             } ?: error("Could not get for $classifier $key")
         IrSimpleTypeImpl(
@@ -519,34 +536,40 @@ class InjectCallTransformer(
 }
 
 class CompilationDeclarations : IrElementTransformerVoid() {
-  val classes = mutableSetOf<IrClass>()
-  val constructors = mutableSetOf<IrConstructor>()
-  val functions = mutableSetOf<IrFunction>()
-  val properties = mutableSetOf<IrProperty>()
-  val variables = mutableSetOf<IrVariable>()
+  val classes = mutableSetOf<IrClassSymbol>()
+  val constructors = mutableSetOf<IrConstructorSymbol>()
+  val functions = mutableSetOf<IrFunctionSymbol>()
+  val properties = mutableSetOf<IrPropertySymbol>()
+  val typeAliases = mutableSetOf<IrTypeAliasSymbol>()
+  val variables = mutableSetOf<IrVariableSymbol>()
 
   override fun visitClass(declaration: IrClass): IrStatement {
-    classes += declaration
+    classes += declaration.symbol
     return super.visitClass(declaration)
   }
 
   override fun visitConstructor(declaration: IrConstructor): IrStatement {
-    constructors += declaration
+    constructors += declaration.symbol
     return super.visitConstructor(declaration)
   }
 
   override fun visitFunction(declaration: IrFunction): IrStatement {
-    functions += declaration
+    functions += declaration.symbol
     return super.visitFunction(declaration)
   }
 
   override fun visitProperty(declaration: IrProperty): IrStatement {
-    properties += declaration
+    properties += declaration.symbol
     return super.visitProperty(declaration)
   }
 
+  override fun visitTypeAlias(declaration: IrTypeAlias): IrStatement {
+    typeAliases += declaration.symbol
+    return super.visitTypeAlias(declaration)
+  }
+
   override fun visitVariable(declaration: IrVariable): IrStatement {
-    variables += declaration
+    variables += declaration.symbol
     return super.visitVariable(declaration)
   }
 }

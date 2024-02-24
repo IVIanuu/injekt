@@ -1,14 +1,19 @@
+@file:OptIn(UnsafeCastFunction::class)
+
 package com.ivianuu.injekt.compiler.frontend
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.references.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker(
   MppCheckerKind.Common) {
@@ -17,8 +22,10 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
     context: CheckerContext,
     reporter: DiagnosticReporter
   ) {
+    val file = context.containingFile ?: return
+
     val callee = expression.calleeReference.toResolvedCallableSymbol()
-      ?: return
+      .safeAs<FirFunctionSymbol<*>>() ?: return
 
     val info = callee.callableInfo(ctx)
 
@@ -46,18 +53,15 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       .toInjektCallable(ctx)
       .substitute(substitutionMap)
 
-    callee.typeParameterSymbols.forEach { it.classifierInfo(ctx).superTypes }
+    val explicitArguments = expression.resolvedArgumentMapping
+      ?.mapTo(mutableSetOf()) { callee.valueParameterSymbols.indexOf(it.value.symbol) }
+      ?: emptySet()
 
-    /*val requests = expression.arguments
-      .transform {
-        val index = it.injektIndex()
-        if (valueArgumentsByIndex[index] is DefaultValueArgument && index in info.injectParameters)
-          add(it.toInjectableRequest(callee))
-      }
+    val requests = substitutedCallee.injectableRequests(explicitArguments)
 
-    if (requests.isEmpty()) return*/
+    if (requests.isEmpty()) return
 
-    /*val scope = ElementInjectablesScope(ctx, callExpression)
+    val scope = ElementInjectablesScope(expression, context.containingElements, ctx)
 
     // look up declarations to support incremental compilation
     context.session.lookupTracker?.recordLookup(
@@ -67,12 +71,10 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       file.source
     )
 
-    val scope = ElementInjectablesScope(expression, context.containingElements, context.session)
-
-    when (val result = scope.resolveRequests(callee.toInjektCallable(context.session), requests)) {
+    when (val result = scope.resolveRequests(callee.toInjektCallable(ctx), requests)) {
       is InjectionResult.Success -> {
-        cache.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
-        cache.cached(
+        ctx.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
+        ctx.cached(
           INJECTION_RESULT_KEY,
           SourcePosition(
             file.sourceFile!!.path!!,
@@ -81,7 +83,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
           )
         ) { result }
       }
-      is InjectionResult.Error -> reporter.report(expression.source!!, result.toErrorString(), context)
-    }*/
+      is InjectionResult.Error -> reporter.report(expression.source!!, result.render(), context)
+    }
   }
 }

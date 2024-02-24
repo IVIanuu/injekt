@@ -30,6 +30,7 @@ data class InjektClassifier(
   val isObject: Boolean = false,
   val isTag: Boolean = false,
   val descriptor: ClassifierDescriptor? = null,
+  val symbol: FirClassifierSymbol<*>? = null,
   val tags: List<InjektType> = emptyList(),
   val isAddOn: Boolean = false,
   val variance: TypeVariance = TypeVariance.INV
@@ -90,6 +91,7 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
     isTag = isTag(ctx),
     descriptor = null,
+    symbol = this,
     tags = info.tags,
     isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
     variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV

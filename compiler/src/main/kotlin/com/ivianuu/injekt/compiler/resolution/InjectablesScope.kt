@@ -5,12 +5,12 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.fir.*
 
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
-  val owner: KtElement? = null,
+  val owner: FirElement? = null,
   val initialInjectables: List<InjektCallable> = emptyList(),
   val injectablesPredicate: (InjektCallable) -> Boolean = { true },
   val typeParameters: List<InjektClassifier> = emptyList(),

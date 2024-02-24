@@ -10,11 +10,12 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.*
 import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.fir.*
-import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
@@ -165,38 +166,8 @@ fun InjektCallable.collectInjectables(
     }
 }
 
-fun collectGlobalInjectables(ctx: InjektContext): List<InjektCallable> = packagesWithInjectables(ctx)
-  .flatMap { collectPackageInjectables(it, ctx) }
-
-fun collectPackageInjectables(
-  packageFqName: FqName,
-  ctx: InjektContext
-): List<InjektCallable> = ctx.cached("package_injectables", packageFqName) {
-    if (packageFqName !in packagesWithInjectables(ctx)) return@cached emptyList()
-
-    val injectables = mutableListOf<InjektCallable>()
-
-    fun collectInjectables(scope: MemberScope) {
-      scope.collectMemberInjectables(
-        ctx = ctx,
-        onEach = { declaration ->
-          if (declaration is ClassDescriptor) {
-            collectInjectables(declaration.unsubstitutedInnerClassesScope)
-            injectables += declaration.injectableConstructors(ctx)
-          }
-        }
-      ) {
-        injectables += it
-      }
-    }
-
-    collectInjectables(memberScopeForFqName(packageFqName, NoLookupLocation.FROM_BACKEND, ctx)!!)
-
-    injectables
-  }
-
 private fun InjectablesScope.canSee(callable: InjektCallable, ctx: InjektContext): Boolean =
-  callable.callable!!.visibility == DescriptorVisibilities.PUBLIC ||
+  /*callable.callable!!.visibility == DescriptorVisibilities.PUBLIC ||
       callable.callable.visibility == DescriptorVisibilities.LOCAL ||
       (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
           callable.callable.moduleName(ctx) == ctx.session.moduleData.name.asString()) ||
@@ -206,13 +177,47 @@ private fun InjectablesScope.canSee(callable: InjektCallable, ctx: InjektContext
         allScopes.any { it.owner == callableParent }
       } ||
       (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
-          callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })
+          callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })*/ true
 
-fun packagesWithInjectables(ctx: InjektContext): Set<FqName> =
+fun collectGlobalInjectables(ctx: InjektContext): List<InjektCallable> = collectPackagesWithInjectables(ctx)
+  .flatMap { collectPackageInjectables(it, ctx) }
+
+fun collectPackageInjectables(packageFqName: FqName, ctx: InjektContext): List<InjektCallable> =
+  if (packageFqName !in collectPackagesWithInjectables(ctx)) emptyList()
+  else buildList {
+    fun collectClassInjectables(classSymbol: FirClassSymbol<*>) {
+      for (declarationSymbol in classSymbol.declarationSymbols) {
+        if (declarationSymbol is FirConstructorSymbol &&
+          ((declarationSymbol.isPrimary &&
+              classSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)) ||
+              declarationSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)))
+          add(declarationSymbol.toInjektCallable(ctx))
+
+        if (declarationSymbol is FirClassSymbol<*>)
+          collectClassInjectables(declarationSymbol)
+      }
+    }
+
+    ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(packageFqName)
+      ?.mapNotNull {
+        ctx.session.symbolProvider.getRegularClassSymbolByClassId(ClassId(packageFqName, it))
+      }
+      ?.forEach { collectClassInjectables(it) }
+
+    ctx.session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(packageFqName)
+      ?.flatMap { name ->
+        ctx.session.symbolProvider.getTopLevelCallableSymbols(packageFqName, name)
+      }
+      ?.filter { it.hasAnnotation(InjektFqNames.Provide, ctx.session) }
+      ?.forEach { add(it.toInjektCallable(ctx)) }
+  }
+
+fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
   ctx.cached("packages_with_injectables", Unit) {
-    memberScopeForFqName(InjektFqNames.InjectablesPackage, NoLookupLocation.FROM_BACKEND, ctx)
-      ?.getContributedFunctions(InjektFqNames.InjectablesLookup.callableName, NoLookupLocation.FROM_BACKEND)
-      ?.mapTo(mutableSetOf()) {
-        it.valueParameters.first().type.constructor.declarationDescriptor!!.containingPackage()!!
-      } ?: emptySet()
+    ctx.session.symbolProvider.getTopLevelFunctionSymbols(
+      InjektFqNames.InjectablesLookup.packageName,
+      InjektFqNames.InjectablesLookup.callableName
+    ).mapTo(mutableSetOf()) {
+      it.valueParameterSymbols.first().resolvedReturnType.classId!!.packageFqName
+    }
   }

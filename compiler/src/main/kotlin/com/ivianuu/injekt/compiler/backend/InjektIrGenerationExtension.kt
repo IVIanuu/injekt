@@ -61,17 +61,17 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
         }
 
         if (declaration is IrClass || declaration is IrTypeAlias) {
-          val classifierInfo: ClassifierInfo? = ctx.cachedOrNull("classifier_info", declaration.uniqueKey(ctx))
-          if (classifierInfo != null && classifierInfo.shouldBePersisted(ctx)) {
+          val classifierInfo: ClassifierInfo? =
+            ctx.cachedOrNull("classifier_info", declaration.symbol.uniqueKey(ctx))
+          if (classifierInfo != null && classifierInfo.shouldBePersisted(ctx))
             addMetadata(classifierInfo.toPersistedClassifierInfo(ctx).encode())
-          }
         }
 
         if (declaration is IrFunction || declaration is IrProperty) {
-          val callableInfo: CallableInfo? = ctx.cachedOrNull("callable_info", declaration.uniqueKey(ctx))
-          if (callableInfo != null && callableInfo.shouldBePersisted(ctx)) {
+          val callableInfo: CallableInfo? =
+            ctx.cachedOrNull("callable_info", declaration.symbol.uniqueKey(ctx))
+          if (callableInfo != null && callableInfo.shouldBePersisted(ctx))
             addMetadata(callableInfo.toPersistedCallableInfo(ctx).encode())
-          }
         }
 
         return super.visitDeclaration(declaration)

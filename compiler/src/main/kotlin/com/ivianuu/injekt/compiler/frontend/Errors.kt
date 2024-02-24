@@ -114,11 +114,11 @@ fun InjectionResult.Error.render(): String = buildString {
       when (candidate) {
         is LambdaInjectable -> {
           append("{ ")
-          if (candidate.parameterDescriptors.isNotEmpty()) {
-            for ((index, parameter) in candidate.parameterDescriptors.withIndex()) {
+          if (candidate.valueParameterSymbols.isNotEmpty()) {
+            for ((index, parameter) in candidate.valueParameterSymbols.withIndex()) {
               val argument = candidate.type.unwrapTags().arguments[index]
               append("${parameter.name}: ${argument.renderToString()}")
-              if (index != candidate.parameterDescriptors.lastIndex)
+              if (index != candidate.valueParameterSymbols.lastIndex)
                 append(",")
             }
 

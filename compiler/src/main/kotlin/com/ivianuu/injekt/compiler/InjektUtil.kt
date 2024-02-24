@@ -2,14 +2,12 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class)
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.builtins.functions.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
-import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
@@ -18,34 +16,19 @@ import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.load.java.descriptors.*
-import org.jetbrains.kotlin.load.kotlin.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import kotlin.experimental.*
 
-fun KtFunction.getArgumentDescriptor(ctx: InjektContext): ValueParameterDescriptor? {
-  return TODO()
-}
-
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: InjektContext): D? =
   TODO()
-
-fun DeclarationDescriptor.isExternalDeclaration(ctx: InjektContext): Boolean =
-  moduleName(ctx) != ctx.session.moduleData.name.asString()
-
-fun DeclarationDescriptor.isDeserializedDeclaration(): Boolean = this is DeserializedDescriptor ||
-    (this is PropertyAccessorDescriptor && correspondingProperty.isDeserializedDeclaration()) ||
-    this is DeserializedTypeParameterDescriptor ||
-    this is JavaClassDescriptor ||
-    this is FunctionClassDescriptor
 
 fun String.asNameId() = Name.identifier(this)
 
@@ -135,28 +118,32 @@ fun ConeKotlinType.uniqueTypeKey(): String = uniqueTypeKey(
   isMarkedNullable = { isMarkedNullable }
 )
 
-fun IrDeclaration.uniqueKey(ctx: InjektContext): String = when (this) {
-  is IrTypeParameter -> typeParameterUniqueKey(name, parent.kotlinFqName, parent.cast<IrDeclaration>().uniqueKey(ctx))
-  is IrClass -> classLikeUniqueKey(fqNameForIrSerialization)
-  is IrFunction -> callableUniqueKey(
-    kotlinFqName,
-    (if (this is IrConstructor) constructedClass.typeParameters else typeParameters).map { it.name },
-    listOfNotNull(dispatchReceiverParameter, extensionReceiverParameter)
-      .plus(valueParameters)
-      .map { it.type.uniqueTypeKey() },
-    returnType.uniqueTypeKey()
+fun IrSymbol.uniqueKey(ctx: InjektContext): String = when (this) {
+  is IrTypeParameterSymbol -> typeParameterUniqueKey(
+    owner.name,
+    owner.parent.kotlinFqName,
+    owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
   )
-  is IrProperty -> callableUniqueKey(
-    parent.kotlinFqName.child(name),
-    getter!!.typeParameters.map { it.name },
-    listOfNotNull(getter!!.dispatchReceiverParameter, getter!!.extensionReceiverParameter)
+  is IrClassSymbol -> classLikeUniqueKey(owner.fqNameForIrSerialization)
+  is IrFunctionSymbol -> callableUniqueKey(
+    owner.kotlinFqName,
+    (if (this is IrConstructor) constructedClass.typeParameters else owner.typeParameters).map { it.name },
+    listOfNotNull(owner.dispatchReceiverParameter, owner.extensionReceiverParameter)
+      .plus(owner.valueParameters)
       .map { it.type.uniqueTypeKey() },
-    getter!!.returnType.uniqueTypeKey()
+    owner.returnType.uniqueTypeKey()
   )
-  is IrVariable -> localVariableUniqueKey(
-    parent.kotlinFqName.child(name),
-    type.uniqueTypeKey(),
-    parent.cast<IrDeclaration>().uniqueKey(ctx)
+  is IrPropertySymbol -> callableUniqueKey(
+    owner.parent.kotlinFqName.child(owner.name),
+    owner.getter!!.typeParameters.map { it.name },
+    listOfNotNull(owner.getter!!.dispatchReceiverParameter, owner.getter!!.extensionReceiverParameter)
+      .map { it.type.uniqueTypeKey() },
+    owner.getter!!.returnType.uniqueTypeKey()
+  )
+  is IrVariableSymbol -> localVariableUniqueKey(
+    owner.parent.kotlinFqName.child(owner.name),
+    owner.type.uniqueTypeKey(),
+    owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
   )
   else -> error("Unexpected declaration $this")
 }
@@ -252,11 +239,6 @@ fun IrDeclaration.injektIndex(): Int {
     else -> callable.valueParameters.indexOf(this)
   }
 }
-
-fun DeclarationDescriptor.moduleName(ctx: InjektContext): String =
-  getJvmModuleNameForDeserializedDescriptor(this)
-    ?.removeSurrounding("<", ">")
-    ?: ctx.session.moduleData.name.asString().removeSurrounding("<", ">")
 
 fun classifierDescriptorForFqName(
   fqName: FqName,
