@@ -2,8 +2,9 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.frontend
 
+import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
