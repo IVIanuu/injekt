@@ -2,6 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
+
 package com.ivianuu.injekt.ksp
 
 import com.google.auto.service.*
@@ -14,7 +16,7 @@ import java.util.*
 
 class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString())
+    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), true)
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }

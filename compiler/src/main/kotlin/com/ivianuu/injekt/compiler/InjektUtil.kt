@@ -34,6 +34,7 @@ fun FirClassifierSymbol<*>.isTag(ctx: InjektContext): Boolean =
 val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
     is FirClassLikeSymbol<*> -> classId.asSingleFqName()
+    is FirConstructorSymbol -> callableId.asSingleFqName().parent().child(SpecialNames.INIT)
     is FirCallableSymbol<*> -> callableId.asSingleFqName()
     is FirTypeParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
     else -> throw AssertionError("Unexpected $this")
@@ -80,8 +81,9 @@ fun IrSymbol.uniqueKey(ctx: InjektContext): String = when (this) {
   )
   is IrClassSymbol -> classLikeUniqueKey(owner.fqNameForIrSerialization)
   is IrFunctionSymbol -> callableUniqueKey(
-    owner.kotlinFqName,
-    (if (this is IrConstructor) constructedClass.typeParameters else owner.typeParameters).map { it.name },
+    safeAs<IrSimpleFunctionSymbol>()?.owner?.correspondingPropertySymbol?.owner
+      ?.let { it.parent.kotlinFqName.child(it.name) } ?: owner.kotlinFqName,
+    (if (this is IrConstructorSymbol) owner.constructedClass.typeParameters else owner.typeParameters).map { it.name },
     listOfNotNull(owner.dispatchReceiverParameter, owner.extensionReceiverParameter)
       .plus(owner.valueParameters)
       .map { it.type.uniqueTypeKey() },
@@ -179,7 +181,9 @@ fun findCallableSymbol(
 ): FirCallableSymbol<*> = collectDeclarationsInFqName(callableFqName.parent(), ctx)
   .filterIsInstance<FirCallableSymbol<*>>()
   .singleOrNull { it.uniqueKey(ctx) == callableKey }
-  ?: error("Could not find callable for $callableKey $callableFqName")
+  ?: error("Could not find callable for $callableKey $callableFqName " +
+      "parent ${callableFqName.parent()} " +
+      "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
 
 fun findClassifierSymbol(
   classifierKey: String,

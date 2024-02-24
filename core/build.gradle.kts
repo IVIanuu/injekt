@@ -37,10 +37,6 @@ kotlin {
   watchosX64()*/
 
   sourceSets {
-    named("jvmMain") {
-      kotlin.srcDir("build/generated/ksp/jvm/jvmMain/")
-    }
-
     named("jvmTest") {
       dependencies {
         implementation(Deps.junit)

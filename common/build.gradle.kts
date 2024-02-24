@@ -41,9 +41,6 @@ kotlin {
         api(project(":core"))
       }
     }
-    named("jvmMain") {
-      kotlin.srcDir("build/generated/ksp/jvm/jvmMain/")
-    }
     named("jvmTest") {
       dependencies {
         implementation(Deps.Coroutines.test)

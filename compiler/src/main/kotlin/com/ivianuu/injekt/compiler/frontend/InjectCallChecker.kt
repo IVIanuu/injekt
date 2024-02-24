@@ -15,8 +15,7 @@ import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker(
-  MppCheckerKind.Common) {
+class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker(MppCheckerKind.Platform) {
   override fun check(
     expression: FirFunctionCall,
     context: CheckerContext,
@@ -57,7 +56,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       ?.mapTo(mutableSetOf()) { callee.valueParameterSymbols.indexOf(it.value.symbol) }
       ?: emptySet()
 
-    val requests = substitutedCallee.injectableRequests(explicitArguments)
+    val requests = substitutedCallee.injectableRequests(explicitArguments, ctx)
 
     if (requests.isEmpty()) return
 

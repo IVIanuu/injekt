@@ -310,15 +310,14 @@ class InjectCallTransformer(
     request: InjectableRequest,
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
-  ): IrExpression = if (injectable.callable.type.unwrapTags().classifier.isObject)
-    objectExpression(injectable.callable.type.unwrapTags())
-  else if (request.parameterIndex == DISPATCH_RECEIVER_INDEX)
-    receiverExpression(result.candidate.type)
-  else when (injectable.callable.symbol) {
-    //is ReceiverParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
-    //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
-    //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
-    else -> functionExpression(result, injectable, injectable.callable.symbol!!.cast())
+  ): IrExpression = when {
+    injectable.callable.type.unwrapTags().classifier.isObject -> objectExpression(injectable.callable.type.unwrapTags())
+    request.parameterIndex == DISPATCH_RECEIVER_INDEX -> receiverExpression(result.candidate.type)
+    else -> when (injectable.callable.symbol) {
+      //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
+      //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
+      else -> functionExpression(result, injectable, injectable.callable.symbol)
+    }
   }
 
   private fun ScopeContext.objectExpression(type: InjektType): IrExpression =
@@ -327,9 +326,9 @@ class InjectCallTransformer(
   private fun ScopeContext.functionExpression(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable,
-    firFunctionSymbol: FirFunctionSymbol<*>
+    symbol: FirCallableSymbol<*>
   ): IrExpression = irBuilder.irCall(
-    firFunctionSymbol.toIrCallableSymbol(),
+    symbol.toIrCallableSymbol(),
     injectable.type.toIrType().typeOrNull!!
   )
     .apply {

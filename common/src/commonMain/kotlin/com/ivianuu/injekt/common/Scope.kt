@@ -34,8 +34,8 @@ fun interface ScopeDisposable {
 @Tag
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class Scoped<N> {
-  companion object {
-    inline fun <@AddOn T : @Scoped<N> S, reified S : Any, N> scoped(
+  @Provide companion object {
+    @Provide inline fun <@AddOn T : @Scoped<N> S, reified S : Any, N> scoped(
       scope: Scope<N>,
       crossinline init: () -> T,
     ): S = scope(typeOf<S>()) { init() }

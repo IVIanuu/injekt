@@ -10,10 +10,7 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
-import org.jetbrains.kotlin.fir.analysis.checkers.context.*
-import org.jetbrains.kotlin.fir.analysis.checkers.declaration.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.*
@@ -23,26 +20,6 @@ import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
-
-class InfoGeneratorChecker(private val ctx: InjektContext) : FirBasicDeclarationChecker(MppCheckerKind.Common) {
-  override fun check(
-    declaration: FirDeclaration,
-    context: CheckerContext,
-    reporter: DiagnosticReporter
-  ) {
-    when (declaration) {
-      is FirClassLikeDeclaration -> {
-        declaration.symbol.classifierInfo(ctx)
-        declaration.typeParameters.forEach { it.symbol.classifierInfo(ctx) }
-      }
-      is FirCallableDeclaration -> {
-        declaration.symbol.callableInfo(ctx)
-        declaration.typeParameters.forEach { it.symbol.classifierInfo(ctx) }
-      }
-      else -> {}
-    }
-  }
-}
 
 class CallableInfo(
   val symbol: FirCallableSymbol<*>,

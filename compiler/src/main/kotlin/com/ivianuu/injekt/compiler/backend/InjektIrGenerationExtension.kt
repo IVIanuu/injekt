@@ -2,6 +2,8 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(UnsafeCastFunction::class)
+
 package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.compiler.*
@@ -16,6 +18,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 
 var dumpAllFiles = false
@@ -60,18 +63,31 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
           )
         }
 
-        if (declaration is IrClass || declaration is IrTypeAlias) {
-          val classifierInfo: ClassifierInfo? =
-            ctx.cachedOrNull("classifier_info", declaration.symbol.uniqueKey(ctx))
-          if (classifierInfo != null && classifierInfo.shouldBePersisted(ctx))
-            addMetadata(classifierInfo.toPersistedClassifierInfo(ctx).encode())
-        }
+        if (!declaration.isLocal && declaration.origin == IrDeclarationOrigin.DEFINED) {
+          if (declaration is IrClass || declaration is IrTypeAlias) {
+            val firClassifierSymbol = findClassifierSymbol(
+              declaration.symbol.uniqueKey(ctx),
+              declaration.parent.kotlinFqName.child(declaration.cast<IrDeclarationWithName>().name),
+              ctx
+            )
 
-        if (declaration is IrFunction || declaration is IrProperty) {
-          val callableInfo: CallableInfo? =
-            ctx.cachedOrNull("callable_info", declaration.symbol.uniqueKey(ctx))
-          if (callableInfo != null && callableInfo.shouldBePersisted(ctx))
-            addMetadata(callableInfo.toPersistedCallableInfo(ctx).encode())
+            val classifierInfo = firClassifierSymbol.classifierInfo(ctx)
+            if (classifierInfo.shouldBePersisted(ctx))
+              addMetadata(classifierInfo.toPersistedClassifierInfo(ctx).encode())
+          }
+
+          if (declaration is IrFunction || declaration is IrProperty) {
+            val firCallableSymbol = findCallableSymbol(
+              declaration.symbol.uniqueKey(ctx),
+              declaration.parent.kotlinFqName.child(declaration.cast<IrDeclarationWithName>().name),
+              ctx
+            )
+
+            val callableInfo = firCallableSymbol.callableInfo(ctx)
+            if (callableInfo.shouldBePersisted(ctx))
+              addMetadata(callableInfo.toPersistedCallableInfo(ctx).encode())
+          }
+
         }
 
         return super.visitDeclaration(declaration)

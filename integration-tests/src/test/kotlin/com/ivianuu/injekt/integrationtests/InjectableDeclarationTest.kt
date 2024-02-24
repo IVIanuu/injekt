@@ -40,7 +40,7 @@ class InjectableDeclarationTest {
       @Provide class Dep(val foo: Foo)
     """,
     """
-      fun invoke() = inject<Dep>() 
+      fun invoke() = inject<Dep>()
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
