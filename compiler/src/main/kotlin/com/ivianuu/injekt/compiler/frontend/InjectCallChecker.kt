@@ -56,7 +56,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       ?.mapTo(mutableSetOf()) { callee.valueParameterSymbols.indexOf(it.value.symbol) }
       ?: emptySet()
 
-    val requests = substitutedCallee.injectableRequests(explicitArguments, ctx)
+    val requests = substitutedCallee.injectableRequests(explicitArguments)
 
     if (requests.isEmpty()) return
 

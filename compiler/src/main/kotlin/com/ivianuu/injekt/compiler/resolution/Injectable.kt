@@ -26,7 +26,7 @@ class CallableInjectable(
   val callable: InjektCallable,
   override val type: InjektType
 ) : Injectable {
-  override val dependencies = callable.injectableRequests(emptySet(), ownerScope.ctx)
+  override val dependencies = callable.injectableRequests(emptySet())
   override val chainFqName = callable.chainFqName
 }
 
@@ -99,10 +99,7 @@ data class InjectableRequest(
   val isRequired: Boolean = true
 )
 
-fun InjektCallable.injectableRequests(
-  exclude: Set<Int>,
-  ctx: InjektContext
-): List<InjectableRequest> =
+fun InjektCallable.injectableRequests(exclude: Set<Int>): List<InjectableRequest> =
   parameterTypes.map { (index, type) ->
     if (index in exclude) return@map null
     val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
