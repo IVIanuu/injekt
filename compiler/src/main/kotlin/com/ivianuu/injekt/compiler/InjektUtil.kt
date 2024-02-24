@@ -6,29 +6,20 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
-import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import kotlin.experimental.*
-
-fun <D : DeclarationDescriptor> KtDeclaration.descriptor(ctx: InjektContext): D? =
-  TODO()
 
 fun String.asNameId() = Name.identifier(this)
 
@@ -39,43 +30,6 @@ fun List<FirAnnotation>.getTags(ctx: InjektContext): List<FirAnnotation> = filte
 fun FirClassifierSymbol<*>.isTag(ctx: InjektContext): Boolean =
   this is FirRegularClassSymbol &&
       (hasAnnotation(InjektFqNames.Tag, ctx.session) || classId == InjektFqNames.Composable)
-
-fun DeclarationDescriptor.uniqueKey(ctx: InjektContext): String = ctx.cached("unique_key", original) {
-  when (this) {
-    is TypeParameterDescriptor -> typeParameterUniqueKey(name, containingDeclaration.fqNameSafe, containingDeclaration.uniqueKey(ctx))
-    is ClassifierDescriptor -> classLikeUniqueKey(fqNameSafe)
-    is LocalVariableDescriptor -> localVariableUniqueKey(
-      fqNameSafe,
-      returnType.uniqueTypeKey(),
-      containingDeclaration.uniqueKey(ctx)
-    )
-    is CallableDescriptor -> callableUniqueKey(
-      fqNameSafe,
-      typeParameters.map { it.name },
-      listOfNotNull(original.dispatchReceiverParameter, original.extensionReceiverParameter)
-        .plus(original.valueParameters)
-        .map { it.type.uniqueTypeKey() },
-      returnType!!.uniqueTypeKey()
-    )
-    else -> error("Unexpected declaration $this")
-  }
-}
-
-fun KotlinType.uniqueTypeKey(): String = uniqueTypeKey(
-  classIdOrName = {
-    constructor.declarationDescriptor.safeAs<TypeParameterDescriptor>()?.name?.asString()
-      ?: constructor.declarationDescriptor?.classId?.asString()
-      ?: constructor.declarationDescriptor.safeAs<ClassDescriptor>()
-        ?.takeIf { it.visibility == DescriptorVisibilities.LOCAL }
-        ?.name
-        ?.takeIf { it != SpecialNames.NO_NAME_PROVIDED }
-        ?.asString()
-  },
-  arguments = {
-    arguments.map { if (it.isStarProjection) null else it.type }
-  },
-  isMarkedNullable = { isMarkedNullable }
-)
 
 val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
@@ -205,30 +159,8 @@ inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 
-fun ParameterDescriptor.injektName(): Name = when (injektIndex()) {
-  DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-  EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-  else -> name
-}
-
 const val DISPATCH_RECEIVER_INDEX = -2
 const val EXTENSION_RECEIVER_INDEX = -1
-
-val CallableDescriptor.callableId get() = CallableId(
-  findPackage().fqName,
-  containingDeclaration.safeAs<ClassDescriptor>()?.classId?.relativeClassName,
-  name
-)
-
-fun ParameterDescriptor.injektIndex(): Int = if (this is ValueParameterDescriptor) index else {
-  val callable = containingDeclaration as? CallableDescriptor
-  when {
-    original == callable?.dispatchReceiverParameter?.original ||
-        (this is ReceiverParameterDescriptor && containingDeclaration is ClassDescriptor) -> DISPATCH_RECEIVER_INDEX
-    original == callable?.extensionReceiverParameter?.original -> EXTENSION_RECEIVER_INDEX
-    else -> throw AssertionError("Unexpected descriptor $this")
-  }
-}
 
 fun IrDeclaration.injektIndex(): Int {
   if (parent is IrClass) return DISPATCH_RECEIVER_INDEX
@@ -239,14 +171,6 @@ fun IrDeclaration.injektIndex(): Int {
     else -> callable.valueParameters.indexOf(this)
   }
 }
-
-fun classifierDescriptorForFqName(
-  fqName: FqName,
-  lookupLocation: LookupLocation,
-  ctx: InjektContext
-): ClassifierDescriptor? =
-  if (fqName.isRoot) null else memberScopeForFqName(fqName.parent(), lookupLocation, ctx)
-    ?.getContributedClassifier(fqName.shortName(), lookupLocation)
 
 fun findCallableSymbol(
   callableKey: String,
@@ -273,7 +197,7 @@ fun findClassifierSymbol(
     it.fqName == classifierFqName
   }.map { it.uniqueKey(ctx) }}")
 
-fun getClassifierForFqName(fqName: FqName, ctx: InjektContext) =
+fun getClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =
   collectDeclarationsInFqName(fqName.parent(), ctx)
     .singleOrNull { it.fqName == fqName }
     ?.safeAs<FirClassLikeSymbol<*>>()
@@ -304,12 +228,4 @@ fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBas
     ?.safeAs<FirRegularClassSymbol>()
 
   return classSymbol?.declarationSymbols ?: emptyList()
-}
-
-fun memberScopeForFqName(
-  fqName: FqName,
-  lookupLocation: LookupLocation,
-  ctx: InjektContext
-): MemberScope? {
-  return TODO()
 }

@@ -6,9 +6,9 @@
 
 package com.ivianuu.injekt.compiler.resolution
 
+import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.builtins.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -144,10 +144,10 @@ private fun InjectablesScope.computeForCandidate(
       val previousCandidate = resolutionChain[i]
 
       val isSameCallable = if (candidate is CallableInjectable &&
-        candidate.callable.callable!!.containingDeclaration.fqNameSafe
+        candidate.callable.symbol.fqName
           .asString().startsWith(StandardNames.FqNames.functionSupertype.asString()) &&
         previousCandidate is CallableInjectable &&
-        previousCandidate.callable.callable!!.containingDeclaration.fqNameSafe
+        previousCandidate.callable.symbol.fqName
           .asString().startsWith(StandardNames.FqNames.functionSupertype.asString()))
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
       else previousCandidate.callableFqName == candidate.callableFqName
@@ -231,10 +231,10 @@ private fun InjectablesScope.resolveCandidate(
 ): ResolutionResult = computeForCandidate(candidate) {
   if (candidate is CallableInjectable) {
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
-      val argumentDescriptor = typeArgument.classifier.descriptor as? TypeParameterDescriptor
+      val argumentSymbol = typeArgument.classifier.symbol as? FirTypeParameterSymbol
         ?: continue
-      val parameterDescriptor = typeParameter.descriptor as TypeParameterDescriptor
-      if (parameterDescriptor.isReified && !argumentDescriptor.isReified) {
+      val parameterSymbol = typeParameter.symbol as FirTypeParameterSymbol
+      if (parameterSymbol.isReified && !argumentSymbol.isReified) {
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
           typeParameter,
           typeArgument.classifier,

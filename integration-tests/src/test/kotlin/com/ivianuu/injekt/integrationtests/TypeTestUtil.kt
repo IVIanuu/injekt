@@ -16,7 +16,6 @@ import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
@@ -109,13 +108,12 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     fqName: FqName = FqName("TypeParameter${id++}"),
     nullable: Boolean = true,
     variance: TypeVariance = TypeVariance.INV
-  ): InjektType =
-    typeParameter(
-      upperBounds = *emptyArray(),
-      nullable = nullable,
-      fqName = fqName,
-      variance = variance
-    )
+  ) = typeParameter(
+    upperBounds = emptyArray(),
+    nullable = nullable,
+    fqName = fqName,
+    variance = variance
+  )
 
   fun typeParameter(
     vararg upperBounds: InjektType,
@@ -134,9 +132,8 @@ class TypeCheckerTestContext(module: ModuleDescriptor) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = classifierDescriptorForFqName(
-    fqName, NoLookupLocation.FROM_BACKEND, ctx)
-    ?.defaultType?.toInjektType(ctx = ctx) ?: error("Wtf $fqName")
+  fun typeFor(fqName: FqName) = getClassifierForFqName(fqName, ctx)
+    ?.toInjektClassifier(ctx)?.defaultType ?: error("Wtf $fqName")
 
   infix fun InjektType.shouldBeAssignableTo(other: InjektType) {
     shouldBeAssignableTo(other, emptyList())

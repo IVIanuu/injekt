@@ -11,7 +11,7 @@ import com.ivianuu.injekt.compiler.resolution.*
 import io.kotest.matchers.*
 import io.kotest.matchers.maps.*
 import org.jetbrains.kotlin.compiler.plugin.*
-import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.name.*
 import org.junit.*
 
@@ -66,15 +66,15 @@ class TypeSubstitutionTest {
 
   @Test fun testGetSubstitutionMapInScopedLikeScenario() = withTypeCheckerContext {
     val scoped = typeFor(FqName("com.ivianuu.injekt.common.Scoped"))
-    val (scopedT, scopedU, scopedN) = memberScopeForFqName(
+
+    val (scopedT, scopedU, scopedN) = collectDeclarationsInFqName(
       FqName("com.ivianuu.injekt.common.Scoped.Companion"),
-      NoLookupLocation.FROM_BACKEND,
       ctx
-    )!!
-      .getContributedFunctions("scoped".asNameId(), NoLookupLocation.FROM_BACKEND)
-      .single()
-      .typeParameters
+    )
+      .single { it.fqName.shortName() == "scoped".asNameId() }
+      .typeParameterSymbols!!
       .map { it.toInjektClassifier(ctx) }
+
     val substitutionType = scoped.wrap(stringType)
       .let {
         it.withArguments(listOf(intType) + it.arguments.drop(1))

@@ -2,23 +2,17 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(DfaInternals::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.annotations.*
-import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.resolve.dfa.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.resolve.scopes.*
-import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
@@ -27,7 +21,7 @@ fun InjektType.collectInjectables(
   ctx: InjektContext
 ): List<InjektCallable> = ctx.cached("type_injectables", this to classBodyView) {
   buildList {
-    classifier
+    /*classifier
       .descriptor
       ?.defaultType
       ?.memberScope
@@ -56,63 +50,9 @@ fun InjektType.collectInjectables(
           } else substituted.parameterTypes
         )*/
         TODO()
-      }
+      }*/
   }
 }
-
-fun ResolutionScope.collectMemberInjectables(
-  ctx: InjektContext,
-  type: InjektType? = null,
-  onEach: (DeclarationDescriptor) -> Unit = {},
-  consumer: (InjektCallable) -> Unit
-) {
-  for (declaration in getContributedDescriptors()) {
-    onEach(declaration)
-    if ((declaration is CallableMemberDescriptor || declaration is VariableDescriptor) &&
-      (declaration.isProvide(ctx) ||
-          (declaration.name.asString() == "invoke" &&
-              type?.isProvideFunctionType(ctx) == true)))
-      consumer(declaration.cast<CallableDescriptor>().toInjektCallable(ctx))
-  }
-}
-
-fun Annotated.isProvide(ctx: InjektContext): Boolean =
-  false
-/*  hasAnnotation(InjektFqNames.Provide) ||
-      (this is ParameterDescriptor && type.hasAnnotation(InjektFqNames.Provide)) ||
-      (this is ValueParameterDescriptor &&
-          index in containingDeclaration.cast<CallableDescriptor>().callableInfo(ctx).injectParameters) ||
-      (this is ParameterDescriptor &&
-          containingDeclaration.safeAs<FunctionDescriptor>()
-            ?.findPsi()
-            ?.safeAs<KtFunction>()
-            ?.getArgumentDescriptor(ctx)
-            ?.containingDeclaration
-            ?.returnType
-            ?.memberScope
-            ?.getContributedDescriptors()
-            ?.filterIsInstance<FunctionDescriptor>()
-            ?.singleOrNull { it.modality == Modality.ABSTRACT }
-            ?.valueParameters
-            ?.singleOrNull { it.injektIndex() == injektIndex() }
-            ?.isProvide(ctx) == true)*/
-
-fun ClassDescriptor.injectableConstructors(ctx: InjektContext): List<InjektCallable> =
-  ctx.cached("injectable_constructors", this) {
-    constructors
-      .transform { constructor ->
-        /*if (constructor.hasAnnotation(InjektFqNames.Provide) ||
-          (constructor.isPrimary && hasAnnotation(InjektFqNames.Provide)))
-            add(constructor.toInjektCallable(ctx))*/
-      }
-  }
-
-fun ClassDescriptor.injectableReceiver(ctx: InjektContext): InjektCallable =
-  ReceiverParameterDescriptorImpl(
-    this,
-    ImplicitClassReceiver(this),
-    Annotations.EMPTY
-  ).toInjektCallable(ctx)
 
 fun InjektCallable.collectInjectables(
   scope: InjectablesScope,
@@ -135,9 +75,7 @@ fun InjektCallable.collectInjectables(
   nextCallable
     .type
     .collectInjectables(
-      nextCallable.type.classifier.descriptor?.parentsWithSelf
-        ?.mapNotNull { it.findPsi() }
-        ?.any { callableParent -> scope.allScopes.any { it.owner == callableParent } } == true,
+      scope.allScopes.any { it.owner?.symbol == nextCallable.type.classifier.symbol },
       ctx
     )
     .forEach { innerCallable ->

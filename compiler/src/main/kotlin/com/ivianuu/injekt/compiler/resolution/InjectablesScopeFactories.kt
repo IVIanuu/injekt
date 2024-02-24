@@ -7,7 +7,6 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.fir.*
@@ -15,7 +14,6 @@ import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -238,7 +236,7 @@ private fun ClassInjectablesScope(
   "class_scope",
   DescriptorWithParentScope(clazz, parent.name)
 ) {
-  val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
+  /*val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
   val name = if (clazz.isCompanionObject)
     "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
   else "CLASS ${clazz.fqNameSafe}"
@@ -249,7 +247,8 @@ private fun ClassInjectablesScope(
     initialInjectables = listOf(clazz.injectableReceiver(ctx)),
     typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
-  )
+  )*/
+  TODO()
 }
 
 private fun ClassInitInjectablesScope(
@@ -258,7 +257,7 @@ private fun ClassInitInjectablesScope(
   position: KtElement,
   ctx: InjektContext
 ): InjectablesScope {
-  val psiClass = clazz.findPsi()!!
+  /*val psiClass = clazz.findPsi()!!
   val visibleInjectableDeclarations = psiClass
     .cast<KtClassOrObject>()
     .declarations
@@ -295,7 +294,8 @@ private fun ClassInitInjectablesScope(
   val primaryConstructor = clazz.unsubstitutedPrimaryConstructor
 
   return if (primaryConstructor == null) classInitScope
-  else FunctionInjectablesScope(primaryConstructor, classInitScope, ctx)
+  else FunctionInjectablesScope(primaryConstructor, classInitScope, ctx)*/
+  TODO()
 }
 
 private fun ConstructorPreInitInjectablesScope(
@@ -374,7 +374,7 @@ private fun FunctionParameterInjectablesScopes(
   until: ValueParameterDescriptor? = null,
   ctx: InjektContext
 ): InjectablesScope {
-  val maxIndex = until?.injektIndex()
+  /*val maxIndex = until?.injektIndex()
 
   return function.allParameters
     .transform {
@@ -390,7 +390,7 @@ private fun FunctionParameterInjectablesScopes(
         parameter = nextParameter,
         ctx = ctx
       )
-    }
+    }*/TODO()
 }
 
 private fun FunctionParameterInjectablesScope(
@@ -399,7 +399,7 @@ private fun FunctionParameterInjectablesScope(
   parameter: InjektCallable,
   ctx: InjektContext
 ): InjectablesScope {
-  parameter.callable as ParameterDescriptor
+  /*parameter.callable as ParameterDescriptor
   return InjectableScopeOrParent(
     name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
     parent = parent,
@@ -409,7 +409,7 @@ private fun FunctionParameterInjectablesScope(
     nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
     else parent.nesting + 1,
     ctx = ctx
-  )
+  )*/ TODO()
 }
 
 private fun PropertyInjectablesScope(
@@ -420,7 +420,7 @@ private fun PropertyInjectablesScope(
   "property_scope",
   DescriptorWithParentScope(property, parent.name)
 ) {
-  InjectableScopeOrParent(
+  /*InjectableScopeOrParent(
     name = "PROPERTY ${property.fqNameSafe}",
     parent = parent,
     owner = property.findPsi().cast(),
@@ -431,7 +431,7 @@ private fun PropertyInjectablesScope(
     },
     typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
     ctx = ctx
-  )
+  )*/TODO()
 }
 
 private fun PropertyInitInjectablesScope(
@@ -483,7 +483,7 @@ private fun BlockExpressionInjectablesScope(
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope {
-  val visibleInjectableDeclarations = block.statements
+  /*val visibleInjectableDeclarations = block.statements
     .transform { declaration ->
       if (declaration.endOffset < position.startOffset &&
         declaration is KtNamedDeclaration) {
@@ -512,7 +512,7 @@ private fun BlockExpressionInjectablesScope(
       else finalParent.nesting + 1,
       ctx = ctx
     )
-  }
+  }*/TODO()
 }
 
 fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFile): InjectablesScope =

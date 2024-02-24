@@ -7,12 +7,10 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.calls.components.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
@@ -100,17 +98,6 @@ data class InjectableRequest(
   val parameterIndex: Int,
   val isRequired: Boolean = true
 )
-
-fun ParameterDescriptor.toInjectableRequest(callable: InjektCallable): InjectableRequest =
-  InjectableRequest(
-    type = callable.parameterTypes[injektIndex()]!!,
-    callableFqName = callable.callableFqName,
-    callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(),
-    parameterIndex = injektIndex(),
-    isRequired = this !is ValueParameterDescriptor ||
-        injektIndex() in callable.injectParameters || !hasDefaultValue()
-  )
 
 fun InjektCallable.injectableRequests(exclude: Set<Int>): List<InjectableRequest> =
   parameterTypes.map { (index, type) ->

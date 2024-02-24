@@ -16,7 +16,6 @@ import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -29,7 +28,6 @@ data class InjektClassifier(
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
   val isTag: Boolean = false,
-  val descriptor: ClassifierDescriptor? = null,
   val symbol: FirClassifierSymbol<*>? = null,
   val tags: List<InjektType> = emptyList(),
   val isAddOn: Boolean = false,
@@ -90,19 +88,12 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
     isTypeParameter = this is TypeParameterDescriptor,
     isObject = this is ClassDescriptor && kind == ClassKind.OBJECT,
     isTag = isTag(ctx),
-    descriptor = null,
     symbol = this,
     tags = info.tags,
     isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
     variance = (this as? TypeParameterDescriptor)?.variance?.convertVariance() ?: TypeVariance.INV
   )
 }
-
-fun KotlinType.toInjektType(
-  ctx: InjektContext,
-  isStarProjection: Boolean = false,
-  variance: TypeVariance = TypeVariance.INV
-): InjektType = TODO()
 
 fun ConeTypeProjection.toInjektType(ctx: InjektContext): InjektType = when (kind) {
   ProjectionKind.STAR -> STAR_PROJECTION_TYPE
@@ -117,8 +108,10 @@ fun ConeKotlinType.toInjektType(
 ): InjektType {
   val unwrapped = unwrapLowerBound()
 
+  if (this is ConeErrorType) return ctx.nullableAnyType
+
   val classifier = unwrapped.cast<ConeLookupTagBasedType>().lookupTag
-    .toSymbol(ctx.session)!!.toInjektClassifier(ctx)
+    .toSymbol(ctx.session)?.toInjektClassifier(ctx) ?: error("Wtf $javaClass ${renderReadableWithFqNames()}")
 
   val rawType = InjektType(
     classifier = classifier,
@@ -155,7 +148,8 @@ fun ConeKotlinType.toInjektType(
   } else rawType
 
   // expand the type
-  while (result.unwrapTags().classifier.descriptor is TypeAliasDescriptor) {
+  while (result.unwrapTags().classifier.symbol is FirTypeAliasSymbol) {
+    println("hello ever ever ever???")
     val expanded = result.unwrapTags().superTypes.single()
     result = if (result.classifier.isTag) result.wrap(expanded) else expanded
   }

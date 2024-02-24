@@ -101,16 +101,17 @@ class InjectCallTransformer(
       return parent!!.findScopeContext(finalScope)
     }
 
-    fun expressionFor(result: ResolutionResult.Success.Value): IrExpression {
+    fun expressionFor(request: InjectableRequest, result: ResolutionResult.Success.Value): IrExpression {
       val scopeContext = findScopeContext(result.scope)
-      return scopeContext.expressionForImpl(result)
+      return scopeContext.expressionForImpl(request, result)
     }
 
     private fun expressionForImpl(
+      request: InjectableRequest,
       result: ResolutionResult.Success.Value
     ): IrExpression = wrapExpressionInFunctionIfNeeded(result) {
       val expression = when (val candidate = result.candidate) {
-        is CallableInjectable -> callableExpression(result, candidate)
+        is CallableInjectable -> callableExpression(request, result, candidate)
         is LambdaInjectable -> lambdaExpression(result, candidate)
         is ListInjectable -> listExpression(result, candidate)
       }
@@ -140,7 +141,7 @@ class InjectCallTransformer(
   ) {
     for ((request, result) in results) {
       if (result !is ResolutionResult.Success.Value) continue
-      val expression = ctx.expressionFor(result)
+      val expression = ctx.expressionFor(request, result)
       when (request.parameterIndex) {
         DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
         EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
@@ -229,7 +230,7 @@ class InjectCallTransformer(
         }
       }
 
-      val dependencyResult = result.dependencyResults.values.single()
+      val (dependencyRequest, dependencyResult) = result.dependencyResults.toList().single()
       val dependencyScopeContext = if (injectable.dependencyScope == this@lambdaExpression.scope) null
       else ScopeContext(
         this@lambdaExpression, rootContext,
@@ -239,7 +240,7 @@ class InjectCallTransformer(
       fun ScopeContext.createExpression(): IrExpression {
         for ((index, parameter) in injectable.valueParameterSymbols.withIndex())
           lambdaParametersMap[parameter] = valueParameters[index].symbol
-        return expressionFor(dependencyResult.cast())
+        return expressionFor(dependencyRequest, dependencyResult.cast())
           .also {
             injectable.valueParameterSymbols.forEach {
               lambdaParametersMap -= it
@@ -291,14 +292,14 @@ class InjectCallTransformer(
         }
     )
 
-    result.dependencyResults.values.forEach { dependencyResult ->
+    result.dependencyResults.forEach { (dependencyRequest, dependencyResult) ->
       dependencyResult as ResolutionResult.Success.Value
       +irCall(
         if (dependencyResult.candidate.type.isSubTypeOf(injectable.collectionElementType, ctx))
           listAddAll else listAdd
       ).apply {
         dispatchReceiver = irGet(tmpList)
-        putValueArgument(0, expressionFor(dependencyResult))
+        putValueArgument(0, expressionFor(dependencyRequest, dependencyResult))
       }
     }
 
@@ -306,11 +307,14 @@ class InjectCallTransformer(
   }
 
   private fun ScopeContext.callableExpression(
+    request: InjectableRequest,
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
   ): IrExpression = if (injectable.callable.type.unwrapTags().classifier.isObject)
     objectExpression(injectable.callable.type.unwrapTags())
-  else when (injectable.callable.callable) {
+  else if (request.parameterIndex == DISPATCH_RECEIVER_INDEX)
+    receiverExpression(result.candidate.type)
+  else when (injectable.callable.symbol) {
     //is ReceiverParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
     //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
@@ -333,26 +337,24 @@ class InjectCallTransformer(
       inject(this@functionExpression, result.dependencyResults)
     }
 
-  private fun ScopeContext.receiverExpression(
-    descriptor: ParameterDescriptor
-  ): IrExpression = irBuilder.run {
+  private fun ScopeContext.receiverExpression(type: InjektType): IrExpression = irBuilder.run {
     allScopes.reversed().firstNotNullOfOrNull { scope ->
       val element = scope.irElement
       when {
         element is IrClass &&
-            element.symbol.uniqueKey(ctx) == descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
+            element.symbol.uniqueKey(ctx) == type.classifier.symbol!!.uniqueKey(ctx) ->
           irGet(element.thisReceiver!!)
         element is IrFunction &&
-            element.dispatchReceiverParameter?.type?.uniqueTypeKey() == descriptor.type.uniqueTypeKey() ->
+            element.dispatchReceiverParameter?.type?.uniqueTypeKey() == type.classifier.symbol!!.uniqueKey(ctx) ->
           irGet(element.dispatchReceiverParameter!!)
         element is IrProperty &&
             allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
             element.parentClassOrNull?.symbol?.uniqueKey(ctx) ==
-            descriptor.type.constructor.declarationDescriptor!!.uniqueKey(ctx) ->
+            type.classifier.symbol!!.uniqueKey(ctx) ->
           irGet(element.getter!!.dispatchReceiverParameter!!)
         else -> null
       }
-    } ?: error("unexpected $descriptor")
+    } ?: error("unexpected receiver $type")
   }
 
   /*private fun ScopeContext.parameterExpression(
