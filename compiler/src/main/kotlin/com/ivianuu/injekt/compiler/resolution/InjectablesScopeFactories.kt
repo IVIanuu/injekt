@@ -535,7 +535,7 @@ fun ExternalGlobalInjectablesScope(ctx: InjektContext): InjectablesScope =
       name = "EXTERNAL GLOBAL",
       parent = null,
       initialInjectables = collectGlobalInjectables(ctx)
-        .filter { it.symbol!!.moduleData != ctx.session.moduleData },
+        .filter { it.symbol.moduleData != ctx.session.moduleData },
       ctx = ctx
     )
   }

@@ -29,11 +29,20 @@ fun InjektType.collectModuleInjectables(
         if (declaration !is FirConstructorSymbol &&
           declaration is FirCallableSymbol<*> &&
           !declaration.isOverride &&
-          declaration.hasAnnotation(InjektFqNames.Provide, ctx.session)) {
+          (declaration.hasAnnotation(InjektFqNames.Provide, ctx.session) ||
+              (declaration.name.asString() == "invoke" && isProvideFunctionType(ctx)))) {
           val substitutionMap = classifier.typeParameters
             .zip(subtypeView(declaration.dispatchReceiverType?.toInjektType(ctx)?.classifier!!)!!.arguments)
             .toMap()
-          this@buildList += declaration.toInjektCallable(ctx).substitute(substitutionMap)
+          this@buildList += declaration.toInjektCallable(ctx)
+            .substitute(substitutionMap)
+            .let { callable ->
+              if (callable.parameterTypes[DISPATCH_RECEIVER_INDEX] == this) callable
+              else callable.copy(
+                parameterTypes = callable.parameterTypes.toMutableMap()
+                  .also { it[DISPATCH_RECEIVER_INDEX] = this }
+              )
+            }
         }
       }
     }
