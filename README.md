@@ -1,104 +1,28 @@
 # Injekt
 
 Next gen dependency injection library for Kotlin.
-# Coffee maker sample from Dagger:
 ```kotlin
-/** The main app responsible for brewing the coffee and printing the logs.  */
-fun main() {
-  val maker = inject<CoffeeMaker>()
-  val logger = inject<CoffeeLogger>()
+@Provide fun jsonParser() = JsonParser()
 
-  maker.brew()
-  logger.logs.forEach { println(it) }
-}
+interface Http
 
-/** singleton scope */
-object SingletonScope
-@Provide val singletonScope = Scope<SingletonScope>()
+@Provide class RealHttp : Http
 
-/** A logger to logs steps while brewing coffee.  */
-@Provide @Scoped<SingletonScope> class CoffeeLogger {
-  private val _logs = mutableListOf<String>()
-  val logs: List<String> get() = _logs.toList()
+@Provide class Api(private val http: Http, private val jsonParser: JsonParser)
 
-  fun log(msg: String) {
-    _logs += msg
-  }
-}
+@Provide class Repository(private val api: Api)
 
-/** A coffee maker to brew the coffee.  */
-@Provide class CoffeeMaker(
-  private val logger: CoffeeLogger,
-  heater: () -> Heater,
-  private val pump: Pump,
-) {
-  private val heater by lazy(heater) // Create a possibly costly heater only when we use it.
-
-  fun brew() {
-    heater.on()
-    pump.pump()
-    logger.log(" [_]P coffee! [_]P ")
-    heater.off()
-  }
-}
-
-/** A heater to heat the coffee.  */
-interface Heater {
-  fun on()
-  fun off()
-  val isHot: Boolean
-}
-
-/** An electric heater to heat the coffee.  */
-@Provide @Scoped<SingletonScope> class ElectricHeater(private val logger: CoffeeLogger) : Heater {
-  override var isHot = false
-    private set
-
-  override fun on() {
-    isHot = true
-    logger.log("~ ~ ~ heating ~ ~ ~")
-  }
-
-  override fun off() {
-    isHot = false
-  }
-}
-
-/** A pump to pump the coffee.  */
-interface Pump {
-  fun pump()
-}
-
-/** A thermosiphon to pump the coffee.  */
-@Provide class Thermosiphon(private val logger: CoffeeLogger, private val heater: Heater) : Pump {
-  override fun pump() {
-    if (heater.isHot)
-      logger.log("=> => pumping => =>")
-  }
-}
+val repo = inject<Repository>()
 ```
 
 # Setup
 ```kotlin
-// in your gradle.properties
-org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8 \
-  -Dkotlin.daemon.jvm.options=--add-opens=java.base/java.lang=ALL-UNNAMED,--add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
-  --add-opens=java.base/java.lang=ALL-UNNAMED \
-  --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-
-// in your buildscript
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-  dependencies {
-    classpath("com.ivianuu.injekt:injekt-gradle-plugin:${latest_version}")
-  }
+plugins {
+  id("com.ivianuu.injekt") version latest_version
 }
 
-// in your app module
-plugins {
-  apply("com.ivianuu.injekt")
+repositories {
+  mavenCentral()
 }
 
 dependencies {
