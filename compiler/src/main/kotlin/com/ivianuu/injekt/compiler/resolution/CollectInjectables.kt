@@ -9,6 +9,7 @@ package com.ivianuu.injekt.compiler.resolution
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
@@ -31,7 +32,10 @@ fun InjektType.collectModuleInjectables(
       for (declaration in classSymbol.declarationSymbols) {
         if (declaration !is FirConstructorSymbol &&
           declaration is FirCallableSymbol<*> &&
-          !declaration.isOverride &&
+          (!declaration.isOverride ||
+              declaration.safeAs<FirNamedFunctionSymbol>()
+                ?.directOverriddenFunctions(ctx.session, ctx.scopeSession)
+                ?.first()?.isInjectable(ctx) == false) &&
           (declaration.isInjectable(ctx) ||
               (declaration.name.asString() == "invoke" && isProvideFunctionType(ctx)))) {
           val substitutionMap = classifier.typeParameters
@@ -93,8 +97,6 @@ fun InjektCallable.collectModuleInjectables(
   addAddOnInjectable: (InjektCallable) -> Unit,
   ctx: InjektContext
 ) {
-  if (!scope.canSee(this, ctx) || !scope.allScopes.all { it.injectablesPredicate(this) }) return
-
   if (typeArguments.any { it.key.isAddOn && it.value == it.key.defaultType }) {
     addAddOnInjectable(this)
     return
@@ -133,19 +135,6 @@ fun InjektCallable.collectModuleInjectables(
         )
     }
 }
-
-private fun InjectablesScope.canSee(callable: InjektCallable, ctx: InjektContext): Boolean =
-  /*callable.callable!!.visibility == DescriptorVisibilities.PUBLIC ||
-      callable.callable.visibility == DescriptorVisibilities.LOCAL ||
-      (callable.callable.visibility == DescriptorVisibilities.INTERNAL &&
-          callable.callable.moduleName(ctx) == ctx.session.moduleData.name.asString()) ||
-      (callable.callable is ClassConstructorDescriptor &&
-          callable.type.unwrapTags().classifier.isObject) ||
-      callable.callable.parentsWithSelf.mapNotNull { it.findPsi() }.any { callableParent ->
-        allScopes.any { it.owner == callableParent }
-      } ||
-      (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
-          callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })*/ true
 
 fun FirRegularClassSymbol.collectInjectableConstructors(ctx: InjektContext) = declarationSymbols
   .filterIsInstance<FirConstructorSymbol>()

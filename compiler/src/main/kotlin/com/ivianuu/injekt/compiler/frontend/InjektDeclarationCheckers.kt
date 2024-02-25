@@ -17,7 +17,6 @@ import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 object InjektFunctionChecker : FirFunctionChecker(MppCheckerKind.Common) {
@@ -27,30 +26,19 @@ object InjektFunctionChecker : FirFunctionChecker(MppCheckerKind.Common) {
     reporter: DiagnosticReporter
   ) {
     if (declaration.hasAnnotation(InjektFqNames.Provide, context.session))
-      checkSpreadTypeParameters(
+      checkAddOnTypeParameters(
         declaration.typeParameters.map { it.symbol.fir },
         context,
         reporter
       )
     checkOverrides(declaration, context, reporter)
-    checkExceptActual(declaration, context, reporter)
-  }
-}
-
-object InjektConstructorChecker : FirConstructorChecker(MppCheckerKind.Common) {
-  override fun check(
-    declaration: FirConstructor,
-    context: CheckerContext,
-    reporter: DiagnosticReporter
-  ) {
-    checkExceptActual(declaration, context, reporter)
   }
 }
 
 object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
   override fun check(declaration: FirClass, context: CheckerContext, reporter: DiagnosticReporter) {
     val injectableConstructors = declaration.declarations
-      .filterIsInstance<FirConstructorSymbol>()
+      .filterIsInstance<FirConstructor>()
       .filter { it.hasAnnotation(InjektFqNames.Provide, context.session) }
 
     val isInjectable = injectableConstructors.isNotEmpty() ||
@@ -58,21 +46,21 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
 
     if (isInjectable && declaration.classKind == ClassKind.ANNOTATION_CLASS)
       reporter.report(
-        declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
+        declaration.source!!,
         "annotation class cannot be injectable",
         context
       )
 
     if (isInjectable && declaration.classKind == ClassKind.ENUM_CLASS)
       reporter.report(
-        declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
+        declaration.source!!,
         "enum class cannot be injectable",
         context
       )
 
     if (isInjectable && declaration.status.isInner)
       reporter.report(
-        declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
+        declaration.source!!,
         "inner class cannot be injectable",
         context
       )
@@ -80,7 +68,7 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
     if (declaration.classKind == ClassKind.INTERFACE &&
       declaration.hasAnnotation(InjektFqNames.Provide, context.session))
       reporter.report(
-        declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
+        declaration.source!!,
         "interface cannot be injectable",
         context
       )
@@ -88,7 +76,7 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
     if (isInjectable && declaration.classKind == ClassKind.CLASS &&
       declaration.status.modality == Modality.ABSTRACT)
       reporter.report(
-        declaration.getModifier(KtTokens.ABSTRACT_KEYWORD)!!.source,
+        declaration.source!!,
         "abstract class cannot be injectable",
         context
       )
@@ -98,20 +86,18 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         ?.hasAnnotation(InjektFqNames.Provide, context.session) == true
     )
       reporter.report(
-        declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
+        declaration.source!!,
         "class cannot be marked with @Provide if it has a @Provide primary constructor",
         context
       )
 
     if (isInjectable)
-      checkSpreadTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
-
-    checkExceptActual(declaration, context, reporter)
-
+      checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
+    
     if (declaration.hasAnnotation(InjektFqNames.Tag, context.session) &&
       declaration.primaryConstructorIfAny(context.session)?.valueParameterSymbols?.isNotEmpty() == true)
       reporter.report(
-        declaration.getAnnotationByClassId(InjektFqNames.Tag, context.session)!!.source!!,
+        declaration.source!!,
         "tag cannot have value parameters",
         context
       )
@@ -125,7 +111,6 @@ object InjektPropertyChecker : FirPropertyChecker(MppCheckerKind.Common) {
     reporter: DiagnosticReporter
   ) {
     checkOverrides(declaration, context, reporter)
-    checkExceptActual(declaration, context, reporter)
 
     if (declaration.hasAnnotation(InjektFqNames.Provide, context.session) &&
       declaration.getter == null &&
@@ -140,7 +125,7 @@ object InjektPropertyChecker : FirPropertyChecker(MppCheckerKind.Common) {
   }
 }
 
-private fun checkSpreadTypeParameters(
+private fun checkAddOnTypeParameters(
   typeParameters: List<FirTypeParameter>,
   context: CheckerContext,
   reporter: DiagnosticReporter
@@ -153,7 +138,7 @@ private fun checkSpreadTypeParameters(
       .drop(1)
       .forEach {
         reporter.report(
-          it.getAnnotationByClassId(InjektFqNames.AddOn, context.session)!!.source!!,
+          it.source!!,
           "a declaration may have only one @AddOn type parameter",
           context
         )
@@ -178,28 +163,6 @@ private fun checkOverrides(
         context
       )
     }
-}
-
-private fun checkExceptActual(
-  declaration: FirMemberDeclaration,
-  context: CheckerContext,
-  reporter: DiagnosticReporter
-) {
-  if (!declaration.status.isActual) return
-
-  if (declaration is FirCallableDeclaration)
-    declaration.symbol.expectForActual
-      ?.values
-      ?.first()
-      ?.first()
-      ?.takeUnless { isValidOverride(declaration, it.fir.cast(), context.session) }
-      ?.let {
-        reporter.report(
-          FirErrors.ACTUAL_WITHOUT_EXPECT
-            .on(declaration.source!!, declaration.symbol, emptyMap(), null),
-          context
-        )
-      }
 }
 
 private fun isValidOverride(

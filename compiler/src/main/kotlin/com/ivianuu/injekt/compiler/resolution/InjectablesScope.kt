@@ -2,17 +2,22 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(SymbolInternals::class, UnsafeCastFunction::class)
+
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.symbols.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   val owner: FirBasedSymbol<*>? = null,
   val initialInjectables: List<InjektCallable> = emptyList(),
-  val injectablesPredicate: (InjektCallable) -> Boolean = { true },
   val typeParameters: List<InjektClassifier> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: InjektContext
@@ -68,12 +73,20 @@ class InjectablesScope(
     requestingScope: InjectablesScope
   ): List<Injectable> {
     // we return merged collections
-    if (request.type.uniqueId == null &&
-      request.type.classifier == ctx.listClassifier) return emptyList()
-
-    return injectablesForType(
-      CallableRequestKey(request.type, requestingScope.allStaticTypeParameters)
-    ).filter { injectable -> allScopes.all { it.injectablesPredicate(injectable.callable) } }
+    return if (request.type.uniqueId == null && request.type.classifier == ctx.listClassifier) emptyList()
+    else injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
+      .filter { injectable ->
+        ctx.session.visibilityChecker.isVisible(
+          if (injectable.callable.originalType.unwrapTags().classifier.symbol
+            ?.safeAs<FirRegularClassSymbol>()?.classKind == ClassKind.OBJECT)
+            injectable.callable.originalType.unwrapTags().classifier.symbol!!.fir.cast()
+          else injectable.callable.symbol.fir,
+          ctx.session,
+          allScopes.firstNotNullOf { it.owner.safeAs<FirFileSymbol>()?.fir },
+          allScopes.mapNotNull { it.owner?.fir },
+          null,
+        )
+      }
   }
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {

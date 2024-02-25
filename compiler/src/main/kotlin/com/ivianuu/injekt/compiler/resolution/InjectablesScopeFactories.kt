@@ -250,7 +250,7 @@ fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): Inj
   ctx.cached("internal_global_scope", file) {
     InjectableScopeOrParent(
       name = "INTERNAL GLOBAL EXCEPT ${file.fir.name}",
-      parent = ExternalGlobalInjectablesScope(ctx),
+      parent = ExternalGlobalInjectablesScope(ctx, file),
       initialInjectables = collectGlobalInjectables(ctx)
         .filter {
           it.symbol.moduleData == ctx.session.moduleData &&
@@ -260,11 +260,12 @@ fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): Inj
     )
   }
 
-fun ExternalGlobalInjectablesScope(ctx: InjektContext): InjectablesScope =
+fun ExternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): InjectablesScope =
   ctx.cached("external_global_scope", Unit) {
     InjectablesScope(
       name = "EXTERNAL GLOBAL",
       parent = null,
+      owner = file,
       initialInjectables = collectGlobalInjectables(ctx)
         .filter { it.symbol.moduleData != ctx.session.moduleData },
       ctx = ctx
@@ -276,12 +277,10 @@ fun InjectableScopeOrParent(
   parent: InjectablesScope,
   owner: FirBasedSymbol<*>? = null,
   initialInjectables: List<InjektCallable> = emptyList(),
-  injectablesPredicate: (InjektCallable) -> Boolean = { true },
   typeParameters: List<InjektClassifier> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: InjektContext
 ): InjectablesScope {
-  val finalInitialInjectables = initialInjectables.filter(injectablesPredicate)
-  return if (typeParameters.isEmpty() && finalInitialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, finalInitialInjectables, injectablesPredicate, typeParameters, nesting, ctx)
+  return if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
+  else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, ctx)
 }

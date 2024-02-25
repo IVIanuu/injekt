@@ -168,47 +168,6 @@ fun multiCodegen(
   }.assertions()
 }
 
-fun multiPlatformCodegen(
-  @Language("kotlin") commonSource: String,
-  @Language("kotlin") platformSource: String,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
-) {
-  multiPlatformCodegen(
-    commonSources = listOf(source(commonSource)),
-    platformSources = listOf(invokableSource(platformSource)),
-    config = config,
-    assertions = assertions
-  )
-}
-
-fun multiPlatformCodegen(
-  commonSources: List<SourceFile>,
-  platformSources: List<SourceFile>,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
-) {
-  val result = compile {
-    kotlincArguments += "-Xmulti-platform=true"
-    commonSources
-      .map {
-        SourceFile::class.java
-          .declaredMethods
-          .first { it.name.startsWith("writeIfNeeded") }
-          .invoke(it, workingDir.resolve("sources").also { it.mkdirs() })
-      }
-      .forEach { kotlincArguments += "-Xcommon-sources=$it" }
-    sources = platformSources + commonSources
-    config()
-  }
-  assertions(
-    object : KotlinCompilationAssertionScope {
-      override val result: JvmCompilationResult
-        get() = result
-    }
-  )
-}
-
 fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
   fun baseCompilation(block: KotlinCompilation.() -> Unit) = KotlinCompilation().apply {
     inheritClassPath = true

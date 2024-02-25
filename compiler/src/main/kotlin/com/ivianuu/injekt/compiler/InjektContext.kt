@@ -57,6 +57,7 @@ class InjektContext : TypeCheckerContext {
     )!!.cast<FirClassSymbol<*>>().defaultType().toInjektType(this)
       .withArguments(listOf(STAR_PROJECTION_TYPE))
   }
+  val scopeSession by lazy(LazyThreadSafetyMode.NONE) { ScopeSession() }
 
   companion object {
     val Null = Any()

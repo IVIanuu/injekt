@@ -97,20 +97,6 @@ class ResolutionTest {
     invokeSingleFile(expected) shouldBeSameInstanceAs expected
   }
 
-  @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
-    """
-      class MyClass(@Provide constructorFoo: Foo) {
-        val finalFoo = inject<Foo>()
-        @Provide val classFoo = Foo()
-      }
-
-      fun invoke(constructorFoo: Foo) = MyClass(constructorFoo).finalFoo
-    """
-  ) {
-    val expected = Foo()
-    invokeSingleFile(expected) shouldBeSameInstanceAs expected
-  }
-
   @Test fun testPrefersFunctionParameterInjectableOverInternalInjectable() = codegen(
     """
       @Provide val internalFoo = Foo()

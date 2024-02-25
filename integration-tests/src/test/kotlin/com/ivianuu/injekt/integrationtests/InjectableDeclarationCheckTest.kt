@@ -147,7 +147,7 @@ class InjectableDeclarationCheckTest {
     """,
     """
       class MySubClass : MySuperClass() {
-        @Provide override fun <T : Bar> foo(): Foo = TODO()
+        @Provide override fun <T : Bar> foo() = Foo()
       } 
     """
   ) {
@@ -167,75 +167,5 @@ class InjectableDeclarationCheckTest {
     """
   ) {
     compilationShouldHaveFailed("'foo' overrides nothing")
-  }
-
-  @Test fun testActualProvideFunctionWithoutProvideAnnotation() = multiPlatformCodegen(
-    """
-      @Provide expect fun foo(): Foo 
-    """,
-    """
-      actual fun foo(): Foo = Foo()
-    """
-  ) {
-    compilationShouldHaveFailed("no corresponding expected declaration")
-  }
-
-  @Test fun testActualProvidePropertyWithoutProvideAnnotation() = multiPlatformCodegen(
-    """
-      @Provide expect val foo: Foo 
-    """,
-    """
-      actual val foo: Foo = Foo()
-    """
-  ) {
-    compilationShouldHaveFailed("no corresponding expected declaration")
-  }
-
-  @Test fun testActualInjectableClassWithoutProvideAnnotation() = multiPlatformCodegen(
-    """
-      @Provide expect class Dep 
-    """,
-    """
-      actual class Dep
-    """
-  ) {
-    compilationShouldHaveFailed("no corresponding expected declaration")
-  }
-
-  @Test fun testActualProvideConstructorWithoutProvideAnnotation() = multiPlatformCodegen(
-    """
-      expect class Dep {
-        @Provide constructor()
-      }
-    """,
-    """
-      actual class Dep {
-        actual constructor()
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("no corresponding expected declaration")
-  }
-
-  @Test fun testExpectActualFunctionAddOnTypeParameterMismatch() = multiPlatformCodegen(
-    """
-      @Provide expect fun <@AddOn T> myFunc(): Foo
-    """,
-    """
-      @Provide actual fun <T> myFunc(): Foo = Foo()
-    """
-  ) {
-    compilationShouldHaveFailed("no corresponding expected declaration")
-  }
-
-  @Test fun testExpectActualClassAddOnTypeParameterMismatch() = multiPlatformCodegen(
-    """
-      @Provide expect class Dep<@AddOn T>
-    """,
-    """
-      @Provide actual class Dep<T>
-    """
-  ) {
-    compilationShouldHaveFailed("no corresponding expected declaration")
   }
 }

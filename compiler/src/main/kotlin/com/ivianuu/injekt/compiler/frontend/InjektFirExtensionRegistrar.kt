@@ -21,7 +21,6 @@ class InjektFirCheckersExtension(
 
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
     override val functionCheckers = setOf(InjektFunctionChecker)
-    override val constructorCheckers = setOf(InjektConstructorChecker)
     override val propertyCheckers = setOf(InjektPropertyChecker)
     override val classCheckers = setOf(InjektClassChecker)
   }
