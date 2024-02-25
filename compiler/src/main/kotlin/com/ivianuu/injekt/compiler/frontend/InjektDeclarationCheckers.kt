@@ -85,7 +85,8 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         context
       )
 
-    if (isProvider && declaration.status.modality == Modality.ABSTRACT)
+    if (isProvider && declaration.classKind == ClassKind.CLASS &&
+      declaration.status.modality == Modality.ABSTRACT)
       reporter.report(
         declaration.getModifier(KtTokens.ABSTRACT_KEYWORD)!!.source,
         "abstract class cannot be injectable",

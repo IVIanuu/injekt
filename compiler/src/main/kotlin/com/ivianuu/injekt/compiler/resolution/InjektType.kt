@@ -148,7 +148,6 @@ fun ConeKotlinType.toInjektType(
 
   // expand the type
   while (result.unwrapTags().classifier.symbol is FirTypeAliasSymbol) {
-    error("")
     val expanded = result.unwrapTags().superTypes.single()
     result = if (result.classifier.isTag) result.wrap(expanded) else expanded
   }

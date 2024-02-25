@@ -155,9 +155,8 @@ class TypeCheckerTestContext(session: FirSession) {
       true,
       ctx
     )
-    if (!context.isOk) {
+    if (!context.isOk)
       throw AssertionError("'$this' is not assignable to '$other'")
-    }
   }
 
   infix fun InjektType.shouldNotBeAssignableTo(other: InjektType) {
@@ -174,21 +173,18 @@ class TypeCheckerTestContext(session: FirSession) {
       true,
       ctx
     )
-    if (context.isOk) {
+    if (context.isOk)
       throw AssertionError("'$this' is assignable to '$other'")
-    }
   }
 
   infix fun InjektType.shouldBeSubTypeOf(other: InjektType) {
-    if (!isSubTypeOf(other, ctx)) {
+    if (!isSubTypeOf(other, ctx))
       throw AssertionError("'$this' is not sub type of '$other'")
-    }
   }
 
   infix fun InjektType.shouldNotBeSubTypeOf(other: InjektType) {
-    if (isSubTypeOf(other, ctx)) {
+    if (isSubTypeOf(other, ctx))
       throw AssertionError("'$this' is sub type of '$other'")
-    }
   }
 }
 

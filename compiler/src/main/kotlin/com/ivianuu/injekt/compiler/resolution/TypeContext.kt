@@ -47,11 +47,11 @@ fun InjektType.isSubTypeOf(superType: InjektType, ctx: TypeCheckerContext): Bool
   ctx.addSubTypeConstraint(this, superType)
     ?.let { return it }
 
-  if (classifier.fqName == InjektFqNames.Nothing &&
+  if (classifier.classId == InjektFqNames.Nothing &&
     (!isMarkedNullable || superType.isNullableType)
   ) return true
 
-  if (superType.classifier.fqName == InjektFqNames.Any &&
+  if (superType.classifier.classId == InjektFqNames.Any &&
     (superType.isMarkedNullable || !isNullableType)) return true
 
   subtypeView(superType.classifier)
@@ -353,7 +353,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
     resultType: InjektType,
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
-    if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
+    if (resultType.classifier.classId == InjektFqNames.Nothing) return false
     val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))

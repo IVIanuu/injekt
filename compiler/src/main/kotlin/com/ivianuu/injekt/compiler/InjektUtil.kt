@@ -35,6 +35,7 @@ val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
     is FirClassLikeSymbol<*> -> classId.asSingleFqName()
     is FirConstructorSymbol -> callableId.asSingleFqName().parent().child(SpecialNames.INIT)
+    is FirValueParameterSymbol -> containingFunctionSymbol.fqName.child(name)
     is FirCallableSymbol<*> -> callableId.asSingleFqName()
     is FirTypeParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
     else -> throw AssertionError("Unexpected $this")
@@ -105,6 +106,12 @@ fun IrSymbol.uniqueKey(ctx: InjektContext): String = ctx.cached("unique_key", th
       owner.parent.kotlinFqName.child(owner.name),
       owner.type.uniqueTypeKey(ctx),
       owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
+    )
+    is IrValueParameterSymbol -> callableUniqueKey(
+      owner.parent.kotlinFqName.child(owner.name),
+      emptyList(),
+      emptyList(),
+      owner.type.uniqueTypeKey(ctx)
     )
     else -> error("Unexpected declaration $this")
   }

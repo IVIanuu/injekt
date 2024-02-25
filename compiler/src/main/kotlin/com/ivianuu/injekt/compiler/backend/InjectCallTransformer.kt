@@ -367,7 +367,10 @@ class InjectCallTransformer(
       lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
         .owner
         .valueParameters
-        .single { it.symbol.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
+        .let {
+          it.singleOrNull { it.symbol.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
+            ?: error("Wtf")
+        }
         .symbol
     )
 

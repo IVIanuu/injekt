@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
@@ -12,6 +12,8 @@ import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
+import org.jetbrains.kotlin.fir.symbols.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
@@ -22,19 +24,19 @@ fun ElementInjectablesScope(
   containingElements: List<FirElement>,
   ctx: InjektContext,
 ): InjectablesScope {
-  val scopeOwner = containingElements.last { it.isScopeOwner(position) }
+  val scopeOwner = containingElements.last { it.isScopeOwner(position, containingElements) }
 
   fun createScope(): InjectablesScope {
     val parentScope = containingElements
       .take(containingElements.indexOf(scopeOwner))
       .let { parentElements ->
         parentElements
-          .lastOrNull { it.isScopeOwner(position) }
+          .lastOrNull { it.isScopeOwner(position, parentElements) }
           ?.let { ElementInjectablesScope(it, parentElements, ctx) }
       }
 
     return when (scopeOwner) {
-      is FirFile -> FileInjectablesScope(scopeOwner, ctx)
+      is FirFile -> FileInjectablesScope(scopeOwner.symbol, ctx)
       /*is KtClassOrObject -> ClassInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
@@ -46,13 +48,13 @@ fun ElementInjectablesScope(
           scopeOwner.descriptor(ctx)!!,
           parentScope!!,
           ctx
-        ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)
-      is KtFunction -> FunctionInjectablesScope(
-        scopeOwner.descriptor(ctx)!!,
+        ) else FunctionInjectablesScope(scopeOwner.descriptor(ctx)!!, parentScope!!, ctx)*/
+      is FirFunction -> FunctionInjectablesScope(
+        scopeOwner.symbol,
         parentScope!!,
         ctx
       )
-      is KtParameter -> ValueParameterDefaultValueInjectablesScope(
+      /*is KtParameter -> ValueParameterDefaultValueInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
         ctx
@@ -95,7 +97,10 @@ fun ElementInjectablesScope(
     createScope()
 }
 
-private fun FirElement.isScopeOwner(position: FirElement): Boolean {
+private fun FirElement.isScopeOwner(
+  position: FirElement,
+  containingElements: List<FirElement>,
+): Boolean {
   if (this is FirFile
     //this is KtClassInitializer ||
   //  this is FirProperty ||
@@ -105,12 +110,10 @@ private fun FirElement.isScopeOwner(position: FirElement): Boolean {
     /*this is KtBlockExpression*/)
     return true
 
-  return false
-
-  /*if (this is KtFunction && position.parents.none { it in valueParameters })
+  if (this is FirFunction && containingElements.none { it in valueParameters })
     return true
 
-  if (this is KtClassOrObject) {
+  /*if (this is KtClassOrObject) {
     val propertyInitializerOrDelegateExpression = position.getParentOfType<KtProperty>(false)
       ?.takeUnless { it.isLocal }
       ?.delegateExpressionOrInitializer
@@ -171,20 +174,20 @@ private fun FirElement.isScopeOwner(position: FirElement): Boolean {
             (parent is KtNamedFunction && parent.parent == this) ||
             (parent is KtPropertyAccessor && parent.property.parent == this)
       })
-        return true
+        return true*/
 
-  return false*/
+  return false
 }
 
-private fun FileInjectablesScope(file: FirFile, ctx: InjektContext): InjectablesScope =
+private fun FileInjectablesScope(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("file_scope", file) {
     InjectableScopeOrParent(
-      name = "FILE ${file.name}",
+      name = "FILE ${file.fir.name}",
       parent = InternalGlobalInjectablesScope(ctx, file),
       owner = file,
       ctx = ctx,
-      initialInjectables = collectPackageInjectables(file.packageFqName, ctx)
-        .filter { ctx.session.firProvider.getContainingFile(it.symbol!!) == file }
+      initialInjectables = collectPackageInjectables(file.fir.packageFqName, ctx)
+        .filter { ctx.session.firProvider.getContainingFile(it.symbol)?.symbol == file }
     )
   }
 
@@ -234,7 +237,7 @@ private fun ClassInjectablesScope(
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "class_scope",
-  DescriptorWithParentScope(clazz, parent.name)
+  clazz to parent.name
 ) {
   /*val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
   val name = if (clazz.isCompanionObject)
@@ -345,43 +348,41 @@ private fun ValueParameterDefaultValueInjectablesScope(
 }
 
 private fun FunctionInjectablesScope(
-  function: FunctionDescriptor,
+  function: FirFunctionSymbol<*>,
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "function_scope",
-  DescriptorWithParentScope(function, parent.name)
+  function to parent.name
 ) {
-  /*val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
-  val baseName = if (function is ConstructorDescriptor) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is ConstructorDescriptor)
-    function.constructedClass.declaredTypeParameters
-  else function.typeParameters)
+  val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, ctx)
+  val baseName = if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"
+  val typeParameters = (if (function is FirConstructorSymbol)
+    function.resolvedReturnType.cast<FirClassSymbol<*>>().typeParameterSymbols
+  else function.typeParameterSymbols)
     .map { it.toInjektClassifier(ctx) }
   InjectableScopeOrParent(
-    name = "$baseName ${function.fqNameSafe}",
+    name = "$baseName ${function.fqName}",
     parent = parameterScopes,
-    owner = function.findPsi().cast(),
+    owner = function,
     typeParameters = typeParameters,
     nesting = parameterScopes.nesting,
     ctx = ctx
-  )*/ TODO()
+  )
 }
 
 private fun FunctionParameterInjectablesScopes(
   parent: InjectablesScope,
-  function: FunctionDescriptor,
-  until: ValueParameterDescriptor? = null,
+  function: FirFunctionSymbol<*>,
+  until: FirValueParameterSymbol? = null,
   ctx: InjektContext
 ): InjectablesScope {
-  /*val maxIndex = until?.injektIndex()
+  val maxIndex = function.valueParameterSymbols.indexOfFirst { it == until }
 
-  return function.allParameters
-    .transform {
-      if (it !== function.dispatchReceiverParameter &&
-        (maxIndex == null || it.injektIndex() < maxIndex) &&
-        it.isProvide(ctx))
-        add(it.toInjektCallable(ctx))
+  return function.valueParameterSymbols
+    .filterIndexed { index, valueParameter ->
+      (maxIndex == -1 || index < maxIndex) &&
+          valueParameter.hasAnnotation(InjektFqNames.Provide, ctx.session)
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -390,27 +391,24 @@ private fun FunctionParameterInjectablesScopes(
         parameter = nextParameter,
         ctx = ctx
       )
-    }*/TODO()
+    }
 }
 
 private fun FunctionParameterInjectablesScope(
   parent: InjectablesScope,
-  function: FunctionDescriptor,
-  parameter: InjektCallable,
+  function: FirFunctionSymbol<*>,
+  parameter: FirValueParameterSymbol,
   ctx: InjektContext
-): InjectablesScope {
-  /*parameter.callable as ParameterDescriptor
-  return InjectableScopeOrParent(
-    name = "FUNCTION PARAMETER ${parameter.callable.fqNameSafe.parent()}.${parameter.callable.injektName()}",
-    parent = parent,
-    owner = (parameter.callable.findPsi() ?: function.findPsi()).cast(),
-    initialInjectables = listOf(parameter),
-    typeParameters = function.toInjektCallable(ctx).typeArguments.keys.toList(),
-    nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
-    else parent.nesting + 1,
-    ctx = ctx
-  )*/ TODO()
-}
+): InjectablesScope = InjectableScopeOrParent(
+  name = "FUNCTION PARAMETER ${parameter.name}",
+  parent = parent,
+  owner = parameter,
+  initialInjectables = listOf(parameter.toInjektCallable(ctx)),
+  typeParameters = function.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
+  nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
+  else parent.nesting + 1,
+  ctx = ctx
+)
 
 private fun PropertyInjectablesScope(
   property: PropertyDescriptor,
@@ -418,7 +416,7 @@ private fun PropertyInjectablesScope(
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "property_scope",
-  DescriptorWithParentScope(property, parent.name)
+  property to parent.name
 ) {
   /*InjectableScopeOrParent(
     name = "PROPERTY ${property.fqNameSafe}",
@@ -466,7 +464,7 @@ private fun LocalVariableInjectablesScope(
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "local_variable_scope",
-  DescriptorWithParentScope(variable, parent.name)
+  variable to parent.name
 ) {
   InjectableScopeOrParent(
     name = "LOCAL VARIABLE ${variable.fqNameSafe}",
@@ -515,15 +513,15 @@ private fun BlockExpressionInjectablesScope(
   }*/TODO()
 }
 
-fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFile): InjectablesScope =
+fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): InjectablesScope =
   ctx.cached("internal_global_scope", file) {
     InjectableScopeOrParent(
-      name = "INTERNAL GLOBAL EXCEPT $file",
+      name = "INTERNAL GLOBAL EXCEPT ${file.fir.name}",
       parent = ExternalGlobalInjectablesScope(ctx),
       initialInjectables = collectGlobalInjectables(ctx)
         .filter {
-          it.symbol!!.moduleData == ctx.session.moduleData &&
-              ctx.session.firProvider.getContainingFile(it.symbol) != file
+          it.symbol.moduleData == ctx.session.moduleData &&
+              ctx.session.firProvider.getContainingFile(it.symbol)?.symbol != file
         },
       ctx = ctx
     )
@@ -540,15 +538,10 @@ fun ExternalGlobalInjectablesScope(ctx: InjektContext): InjectablesScope =
     )
   }
 
-data class DescriptorWithParentScope(
-  val declaration: DeclarationDescriptor,
-  val parentName: String?,
-)
-
 fun InjectableScopeOrParent(
   name: String,
   parent: InjectablesScope,
-  owner: FirElement? = null,
+  owner: FirBasedSymbol<*>? = null,
   initialInjectables: List<InjektCallable> = emptyList(),
   injectablesPredicate: (InjektCallable) -> Boolean = { true },
   typeParameters: List<InjektClassifier> = emptyList(),
