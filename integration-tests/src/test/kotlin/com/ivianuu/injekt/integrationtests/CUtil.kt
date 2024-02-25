@@ -267,7 +267,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     classpaths += kspCompilation.classesDir
 
     dumpAllFiles = true
-    compilerPluginRegistrars += InjektCompilerPluginRegistrar()
+    componentRegistrars += InjektComponentRegistrar()
     commandLineProcessors += InjektCommandLineProcessor()
     pluginOptions += PluginOption(
       "com.ivianuu.injekt",
