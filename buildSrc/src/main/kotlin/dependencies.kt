@@ -76,12 +76,6 @@ object Deps {
     const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
     const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
-    // todo tmp for testing
-    const val cmdline = "com.google.devtools.ksp:symbol-processing-cmdline:$version"
-    // todo tmp for testing
-    const val aaEmbeddable = "com.google.devtools.ksp:symbol-processing-aa-embeddable:$version"
-    // todo tmp for testing
-    const val commonDeps = "com.google.devtools.ksp:symbol-processing-common-deps:$version"
   }
 
   const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.27.0"

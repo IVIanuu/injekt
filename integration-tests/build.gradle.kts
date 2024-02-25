@@ -15,11 +15,6 @@ dependencies {
   testImplementation(project(":ksp"))
   testImplementation(Deps.Compose.runtime)
 
-  /*testImplementation(Deps.Ksp.aaEmbeddable) {
-    exclude(group = "com.google.devtools.ksp", module = "common-deps")
-  }
-  testImplementation(Deps.Ksp.commonDeps)
-  testImplementation(Deps.Ksp.cmdline)*/
   testImplementation(Deps.Ksp.symbolProcessing)
   testImplementation(Deps.Ksp.api)
 
@@ -29,11 +24,4 @@ dependencies {
 
   testImplementation(Deps.kotestAssertions)
   testImplementation(Deps.junit)
-}
-
-tasks.withType<Test> {
-  jvmArgs(
-    "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-    "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
-  )
 }
