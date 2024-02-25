@@ -16,8 +16,6 @@ import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.symbols.*
-import org.jetbrains.kotlin.ir.types.*
-import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import kotlin.experimental.*
@@ -67,25 +65,8 @@ fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
         containingDeclarationSymbol.fqName,
         containingDeclarationSymbol.uniqueKey(ctx)
       )
-      is FirClassLikeSymbol<*> -> if (SpecialNames.ANONYMOUS.asString() in fqName.asString() ||
-        SpecialNames.LOCAL.asString() in fqName.asString())
-        localClassLikeUniqueKey(name, source!!.startOffset, source!!.endOffset)
-      else classLikeUniqueKey(fqName)
-      is FirCallableSymbol<*> -> if (this is FirFunctionWithoutNameSymbol<*> ||
-        (this is FirValueParameterSymbol && containingFunctionSymbol is FirFunctionWithoutNameSymbol<*>) ||
-        SpecialNames.ANONYMOUS.asString() in fqName.asString() ||
-        SpecialNames.LOCAL.asString() in fqName.asString())
-        localCallableUniqueKey(
-          when (this) {
-            is FirConstructorSymbol -> SpecialNames.INIT
-            is FirFunctionWithoutNameSymbol<*> -> SpecialNames.ANONYMOUS
-            else -> name
-          },
-          source?.startOffset
-            ?: error("Wtf"),
-          source!!.endOffset
-        )
-      else callableUniqueKey(
+      is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
+      is FirCallableSymbol<*> -> callableUniqueKey(
         fqName,
         typeParameterSymbols.map { it.name },
         listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
@@ -113,74 +94,7 @@ fun ConeKotlinType.uniqueTypeKey(ctx: InjektContext): String = ctx.cached("uniqu
   )
 }
 
-fun IrSymbol.uniqueKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
-  when (this) {
-    is IrTypeParameterSymbol -> typeParameterUniqueKey(
-      owner.name,
-      owner.parent.kotlinFqName,
-      owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
-    )
-    is IrClassSymbol -> if (SpecialNames.NO_NAME_PROVIDED.asString() in owner.fqNameForIrSerialization.asString() ||
-      owner.isLocal)
-      localClassLikeUniqueKey(
-        if (owner.name == SpecialNames.NO_NAME_PROVIDED) SpecialNames.ANONYMOUS else owner.name,
-        owner.startOffset,
-        owner.endOffset
-      )
-    else
-      classLikeUniqueKey(owner.fqNameForIrSerialization)
-    is IrFunctionSymbol -> if (SpecialNames.NO_NAME_PROVIDED.asString() in owner.fqNameForIrSerialization.asString() ||
-      owner.isLocal)
-      localCallableUniqueKey(owner.name, owner.startOffset, owner.endOffset)
-    else callableUniqueKey(
-      safeAs<IrSimpleFunctionSymbol>()?.owner?.correspondingPropertySymbol?.owner
-        ?.let { it.parent.kotlinFqName.child(it.name) } ?: owner.kotlinFqName,
-      (if (this is IrConstructorSymbol) owner.constructedClass.typeParameters else owner.typeParameters).map { it.name },
-      listOfNotNull(owner.dispatchReceiverParameter, owner.extensionReceiverParameter)
-        .plus(owner.valueParameters)
-        .map { it.type.uniqueTypeKey(ctx) },
-      owner.returnType.uniqueTypeKey(ctx)
-    )
-    is IrPropertySymbol -> if (SpecialNames.NO_NAME_PROVIDED.asString() in owner.parent.kotlinFqName.child(owner.name).asString() ||
-      owner.isLocal)
-      localCallableUniqueKey(owner.name, owner.startOffset, owner.endOffset)
-    else callableUniqueKey(
-      owner.parent.kotlinFqName.child(owner.name),
-      owner.getter!!.typeParameters.map { it.name },
-      listOfNotNull(owner.getter!!.dispatchReceiverParameter, owner.getter!!.extensionReceiverParameter)
-        .map { it.type.uniqueTypeKey(ctx) },
-      owner.getter!!.returnType.uniqueTypeKey(ctx)
-    )
-    is IrValueParameterSymbol -> if (owner.isLocal)
-      localCallableUniqueKey(owner.name, owner.startOffset, owner.endOffset)
-    else callableUniqueKey(
-      owner.parent.kotlinFqName.child(owner.name),
-      emptyList(),
-      emptyList(),
-      owner.type.uniqueTypeKey(ctx)
-    )
-    is IrVariableSymbol -> localCallableUniqueKey(owner.name, owner.startOffset, owner.endOffset)
-    else -> error("Unexpected declaration $this")
-  }
-}
-
-fun IrType.uniqueTypeKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
-  uniqueTypeKey(
-    classIdOrName = {
-      classOrNull?.owner?.classId?.asString()
-        ?: classifierOrNull?.owner?.cast<IrDeclarationWithName>()?.name
-          ?.takeIf { it != SpecialNames.NO_NAME_PROVIDED }
-          ?.asString()
-    },
-    arguments = { safeAs<IrSimpleType>()?.arguments?.map { it.typeOrNull } ?: emptyList() },
-    isMarkedNullable = { isMarkedNullable() }
-  )
-}
-
 private fun classLikeUniqueKey(fqName: FqName) = "class_like:$fqName"
-
-private fun localClassLikeUniqueKey(name: Name, startOffset: Int, endOffset: Int) =
-  localDeclarationUniqueKey("class", name, startOffset, endOffset)
 
 private fun callableUniqueKey(
   fqName: FqName,
@@ -191,15 +105,6 @@ private fun callableUniqueKey(
     typeParameterNames.joinToString(",") { it.asString() } + ":" +
     parameterUniqueKeys.joinToString(",") + ":" +
     returnTypeUniqueKey
-
-private fun localCallableUniqueKey(
-  name: Name,
-  startOffset: Int,
-  endOffset: Int
-) = localDeclarationUniqueKey("callable", name, startOffset, endOffset)
-
-private fun localDeclarationUniqueKey(kind: String, name: Name, startOffset: Int, endOffset: Int) =
-  "local_$kind:$name:$startOffset:$endOffset"
 
 private fun typeParameterUniqueKey(
   name: Name,
@@ -242,7 +147,7 @@ fun IrDeclaration.injektIndex(): Int {
   }
 }
 
-fun findCallableSymbol(
+fun findCallableForKey(
   callableKey: String,
   callableFqName: FqName,
   ctx: InjektContext,
@@ -255,13 +160,13 @@ fun findCallableSymbol(
         "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
 }
 
-fun findClassifierSymbol(
+fun findClassifierForKey(
   classifierKey: String,
   classifierFqName: FqName,
   ctx: InjektContext,
 ): FirClassifierSymbol<*> = ctx.cached("classifier_for_key", classifierKey) {
-  getClassifierForFqName(classifierFqName, ctx)
-    ?: (getClassifierForFqName(classifierFqName.parent(), ctx)
+  findClassifierForFqName(classifierFqName, ctx)
+    ?: (findClassifierForFqName(classifierFqName.parent(), ctx)
       ?.typeParameterSymbols
       ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
         .filterIsInstance<FirCallableSymbol<*>>()
@@ -273,7 +178,7 @@ fun findClassifierSymbol(
     }.map { it.uniqueKey(ctx) }}")
 }
 
-fun getClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =
+fun findClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =
   ctx.cached("classifier_for_fq_name", fqName) {
     if (fqName == InjektFqNames.Any.asSingleFqName())
       return@cached ctx.anyType.classifier.symbol

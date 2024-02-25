@@ -65,7 +65,7 @@ class ListInjectable(
     )
   )
 
-  val valueParameterSymbols = findClassifierSymbol(type.classifier.key, type.classifier.fqName, ownerScope.ctx)
+  val valueParameterSymbols = findClassifierForKey(type.classifier.key, type.classifier.fqName, ownerScope.ctx)
     .cast<FirRegularClassSymbol>()
     .declarationSymbols
     .filterIsInstance<FirFunctionSymbol<*>>()

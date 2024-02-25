@@ -10,6 +10,9 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
+import org.jetbrains.kotlin.fir.backend.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
@@ -65,11 +68,11 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
 
         if (!declaration.isLocal && declaration.origin == IrDeclarationOrigin.DEFINED) {
           if (declaration is IrClass || declaration is IrTypeAlias) {
-            val firClassifierSymbol = findClassifierSymbol(
-              declaration.symbol.uniqueKey(ctx),
-              declaration.parent.kotlinFqName.child(declaration.cast<IrDeclarationWithName>().name),
-              ctx
-            )
+            val firClassifierSymbol = (if (declaration is IrTypeAlias)
+              ctx.session.symbolProvider.getClassLikeSymbolByClassId(declaration.classIdOrFail)
+            else declaration.safeAs<IrMetadataSourceOwner>()
+              ?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol?.safeAs<FirClassifierSymbol<*>>())
+              ?: error("wtf")
 
             val classifierInfo = firClassifierSymbol.classifierInfo(ctx)
             if (classifierInfo.shouldBePersisted(ctx))
@@ -77,17 +80,13 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
           }
 
           if (declaration is IrFunction || declaration is IrProperty) {
-            val firCallableSymbol = findCallableSymbol(
-              declaration.symbol.uniqueKey(ctx),
-              declaration.parent.kotlinFqName.child(declaration.cast<IrDeclarationWithName>().name),
-              ctx
-            )
+            val firCallableSymbol = declaration.safeAs<IrMetadataSourceOwner>()
+              ?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol?.cast<FirCallableSymbol<*>>()!!
 
             val callableInfo = firCallableSymbol.callableInfo(ctx)
             if (callableInfo.shouldBePersisted(ctx))
               addMetadata(callableInfo.toPersistedCallableInfo(ctx).encode())
           }
-
         }
 
         return super.visitDeclaration(declaration)

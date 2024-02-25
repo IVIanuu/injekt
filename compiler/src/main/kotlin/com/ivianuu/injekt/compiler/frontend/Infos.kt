@@ -101,7 +101,7 @@ fun CallableInfo.toPersistedCallableInfo(ctx: InjektContext) = PersistedCallable
 
 fun PersistedCallableInfo.toCallableInfo(ctx: InjektContext) = try {
   CallableInfo(
-    symbol = findCallableSymbol(callableKey, FqName(callableFqName), ctx),
+    symbol = findCallableForKey(callableKey, FqName(callableFqName), ctx),
     type = type.toInjektType(ctx),
     parameterTypes = parameterTypes.mapValues { it.value.toInjektType(ctx) },
     injectParameters = injectParameters
@@ -177,7 +177,7 @@ fun ClassifierInfo.shouldBePersisted(ctx: InjektContext): Boolean =
 )
 
 fun PersistedClassifierInfo.toClassifierInfo(ctx: InjektContext) = ClassifierInfo(
-  symbol = findClassifierSymbol(classifierKey, FqName(classifierFqName), ctx),
+  symbol = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx),
   tags = tags.map { it.toInjektType(ctx) },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toInjektType(ctx) } }
 )
@@ -234,7 +234,7 @@ fun InjektType.toPersistedInjektType(ctx: InjektContext): PersistedInjektType =
 
 fun PersistedInjektType.toInjektType(ctx: InjektContext): InjektType {
   if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = findClassifierSymbol(classifierKey, FqName(classifierFqName), ctx)
+  val classifier = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx)
     .toInjektClassifier(ctx)
   val arguments = if (classifier.isTag) {
     arguments

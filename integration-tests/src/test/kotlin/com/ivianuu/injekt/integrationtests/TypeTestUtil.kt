@@ -138,7 +138,7 @@ class TypeCheckerTestContext(session: FirSession) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = getClassifierForFqName(fqName, ctx)
+  fun typeFor(fqName: FqName) = findClassifierForFqName(fqName, ctx)
     ?.toInjektClassifier(ctx)?.defaultType ?: error("Wtf $fqName")
 
   infix fun InjektType.shouldBeAssignableTo(other: InjektType) {

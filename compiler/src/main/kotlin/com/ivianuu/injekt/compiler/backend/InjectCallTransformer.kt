@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class, DfaInternals::class)
 
 package com.ivianuu.injekt.compiler.backend
 
@@ -13,7 +13,12 @@ import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.backend.*
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.utils.*
+import org.jetbrains.kotlin.fir.lazy.*
+import org.jetbrains.kotlin.fir.resolve.dfa.*
+import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.ir.*
@@ -347,20 +352,22 @@ class InjectCallTransformer(
           val element = scope.irElement
           when {
             element is IrClass &&
-                element.symbol.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ->
+                element.symbol.toFirSymbol<FirClassSymbol<*>>() == injectable.type.classifier.symbol ->
               element.thisReceiver!!.symbol
             element is IrFunction &&
-                ((element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) &&
+                ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
+                    injectable.type.classifier.symbol!! &&
                     element.dispatchReceiverParameter != null) ||
                     element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset) ->
               when (symbol.name) {
-                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("Wtf $symbol ${symbol.uniqueKey(ctx)} ${element.symbol.uniqueKey(ctx)}")
-                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter?.symbol ?: error("Wtf $symbol ${element.symbol.uniqueKey(ctx)}")
+                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("wtf $symbol")
+                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter?.symbol ?: error("wtf $symbol")
                 else -> null
               }
             element is IrProperty &&
                 allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-                ((element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) &&
+                ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
+                    injectable.type.classifier.symbol!! &&
                     element.getter?.dispatchReceiverParameter != null) ||
                     element.getter?.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset)->
               when (symbol.name) {
@@ -374,46 +381,83 @@ class InjectCallTransformer(
         ?: lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
         .owner
         .valueParameters
-        .let {
-          it.singleOrNull { it.symbol.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
-            ?: error("Wtf $symbol $injectable")
-        }
-        .symbol
+        .singleOrNull { it.name == symbol.name }
+        ?.symbol
+        ?: error("wtf $symbol")
     )
 
   private fun ScopeContext.localVariableExpression(
     injectable: CallableInjectable,
     symbol: FirPropertySymbol,
-  ): IrExpression = if (symbol.getterSymbol != null) irBuilder.irCall(
-    symbol.getterSymbol!!.toIrCallableSymbol(),
-    injectable.type.toIrType().typeOrNull!!
-  )
-  else irBuilder.irGet(
-    injectable.type.toIrType().typeOrNull!!,
-    compilationDeclarations.variables
-      .singleOrNull { it.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
-      ?: error("Couldn't find ${symbol.uniqueKey(ctx)} in ${compilationDeclarations.variables.map { it.uniqueKey(ctx) }}")
-  )
+  ): IrExpression {
+    return if (symbol.getterSymbol != null) irBuilder.irCall(
+      symbol.getterSymbol!!.toIrCallableSymbol(),
+      injectable.type.toIrType().typeOrNull!!
+    )
+    else irBuilder.irGet(
+      injectable.type.toIrType().typeOrNull!!,
+      compilationDeclarations.declarations
+        .singleOrNull {
+          it.owner.startOffset == symbol.source!!.startOffset &&
+              it.owner.endOffset == symbol.source!!.endOffset
+        }
+        ?.cast()
+        ?: error("wtf $this")
+    )
+  }
+
+  private inline fun <reified T : FirBasedSymbol<*>> IrSymbol.toFirSymbol() =
+    (owner.safeAs<IrMetadataSourceOwner>()?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol ?:
+      owner.safeAs<AbstractFir2IrLazyDeclaration<*>>()?.fir?.safeAs<FirMemberDeclaration>()?.symbol)
+      ?.safeAs<T>()
+
+  private fun FirClassifierSymbol<*>.toIrClassifierSymbol(): IrSymbol = when (this) {
+    is FirClassSymbol<*> -> compilationDeclarations.declarations
+      .singleOrNull { it.toFirSymbol<FirClassSymbol<*>>() == this }
+      ?: irCtx.referenceClass(classId)
+        ?.takeIf { it.toFirSymbol<FirClassSymbol<*>>() == this }
+      ?: error("wtf $this")
+    is FirTypeAliasSymbol -> irCtx.referenceTypeAlias(classId) ?: error("wtf $this")
+    is FirTypeParameterSymbol -> (containingDeclarationSymbol
+      .safeAs<FirCallableSymbol<*>>()
+      ?.toIrCallableSymbol()
+      ?.owner
+      ?.typeParameters
+      ?: containingDeclarationSymbol
+        .safeAs<FirClassifierSymbol<*>>()
+        ?.toIrClassifierSymbol()
+        ?.owner
+        ?.cast<IrTypeParametersContainer>()
+        ?.typeParameters)
+      ?.singleOrNull { it.name == name }
+      ?.symbol
+      ?: error("wtf $this")
+    else -> throw AssertionError("Unexpected classifier $this")
+  }
 
   private fun FirCallableSymbol<*>.toIrCallableSymbol(): IrFunctionSymbol = when (this) {
-    is FirConstructorSymbol -> compilationDeclarations.constructors
-      .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
+    is FirConstructorSymbol -> compilationDeclarations.declarations
+      .singleOrNull { it.toFirSymbol<FirConstructorSymbol>() == this }
+      ?.cast<IrConstructorSymbol>()
       ?: irCtx.referenceConstructors(resolvedReturnType.classId!!)
-        .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
-      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${compilationDeclarations.constructors.map { it.uniqueKey(ctx) }}")
-    is FirFunctionSymbol<*> -> compilationDeclarations.functions.singleOrNull {
-        it.uniqueKey(ctx) == uniqueKey(ctx)
-      } ?: irCtx.referenceFunctions(callableId)
-        .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
-      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${compilationDeclarations.functions.map { it.uniqueKey(ctx) }}")
-    is FirPropertySymbol -> (compilationDeclarations.properties
-      .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
+        .singleOrNull { it.toFirSymbol<FirConstructorSymbol>() == this }
+      ?: error("wtf $this")
+    is FirFunctionSymbol<*> -> compilationDeclarations.declarations.singleOrNull {
+      it.toFirSymbol<FirFunctionSymbol<*>>() == this
+    }
+      ?.cast<IrFunctionSymbol>()
+      ?: irCtx.referenceFunctions(callableId)
+        .singleOrNull { it.toFirSymbol<FirFunctionSymbol<*>>() == this }
+      ?: error("wtf $this")
+    is FirPropertySymbol -> (compilationDeclarations.declarations
+      .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this }
+      ?.cast<IrPropertySymbol>()
       ?: irCtx.referenceProperties(callableId)
-      .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) })
+      .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this })
       ?.owner
       ?.getter
       ?.symbol
-      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceProperties(callableId).map { it.uniqueKey(ctx) }}")
+      ?: error("wtf $this")
     else -> throw AssertionError("Unexpected callable $this")
   }
 
@@ -456,69 +500,12 @@ class InjectCallTransformer(
             type.abbreviation
           )
         }
-      else -> {
-        val key = classifier.key
-        val irClassifier = compilationDeclarations.classes.singleOrNull {
-          it.uniqueKey(ctx) == key
-        }
-          ?: classifier.symbol
-            .safeAs<FirRegularClassSymbol>()
-            ?.let { irCtx.referenceClass(it.classId) }
-          ?: classifier.symbol.safeAs<FirTypeParameterSymbol>()
-            ?.let { firTypeParameterSymbol ->
-              firTypeParameterSymbol.containingDeclarationSymbol
-                .safeAs<FirFunctionSymbol<*>>()
-                ?.let { containingFunctionSymbol ->
-                  compilationDeclarations.functions
-                    .filter { it.uniqueKey(ctx) == containingFunctionSymbol.uniqueKey(ctx) }
-                    .takeUnless { it.isEmpty() }
-                    ?: irCtx.referenceFunctions(containingFunctionSymbol.callableId)
-                }
-                ?.flatMap { it.owner.typeParameters }
-                ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
-                ?.symbol
-                ?: firTypeParameterSymbol.containingDeclarationSymbol
-                  .safeAs<FirPropertySymbol>()
-                  ?.let { containingPropertySymbol ->
-                    compilationDeclarations.properties
-                      .filter { it.uniqueKey(ctx) == containingPropertySymbol.uniqueKey(ctx) }
-                      .takeUnless { it.isEmpty() }
-                      ?: irCtx.referenceProperties(containingPropertySymbol.callableId)
-                  }
-                  ?.flatMap { it.owner.getter!!.typeParameters }
-                  ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
-                  ?.symbol
-                ?: firTypeParameterSymbol.containingDeclarationSymbol
-                  .safeAs<FirRegularClassSymbol>()
-                  ?.let { containingClassSymbol ->
-                    compilationDeclarations.classes
-                      .filter { it.uniqueKey(ctx) == containingClassSymbol.uniqueKey(ctx) }
-                      .takeUnless { it.isEmpty() }
-                      ?: listOfNotNull(irCtx.referenceClass(containingClassSymbol.classId))
-                  }
-                  ?.flatMap { it.owner.typeParameters }
-                  ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
-                  ?.symbol
-                  ?: firTypeParameterSymbol.containingDeclarationSymbol
-                    .safeAs<FirTypeAliasSymbol>()
-                    ?.let { containingTypeAlias ->
-                      compilationDeclarations.typeAliases
-                        .filter { it.uniqueKey(ctx) == containingTypeAlias.uniqueKey(ctx) }
-                        .takeUnless { it.isEmpty() }
-                        ?: listOfNotNull(irCtx.referenceTypeAlias(containingTypeAlias.classId))
-                    }
-                    ?.flatMap { it.owner.typeParameters }
-                    ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
-                  ?.symbol
-            }
-          ?: error("Could not get for $key")
-        IrSimpleTypeImpl(
-          irClassifier,
-          isMarkedNullable,
-          arguments.map { it.toIrType() },
-          emptyList()
-        )
-      }
+      else -> IrSimpleTypeImpl(
+        classifier.symbol!!.toIrClassifierSymbol().cast(),
+        isMarkedNullable,
+        arguments.map { it.toIrType() },
+        emptyList()
+      )
     }
   }
 
@@ -550,40 +537,9 @@ class InjectCallTransformer(
 }
 
 class CompilationDeclarations : IrElementTransformerVoid() {
-  val classes = mutableSetOf<IrClassSymbol>()
-  val constructors = mutableSetOf<IrConstructorSymbol>()
-  val functions = mutableSetOf<IrFunctionSymbol>()
-  val properties = mutableSetOf<IrPropertySymbol>()
-  val typeAliases = mutableSetOf<IrTypeAliasSymbol>()
-  val variables = mutableSetOf<IrVariableSymbol>()
-
-  override fun visitClass(declaration: IrClass): IrStatement {
-    classes += declaration.symbol
-    return super.visitClass(declaration)
-  }
-
-  override fun visitConstructor(declaration: IrConstructor): IrStatement {
-    constructors += declaration.symbol
-    return super.visitConstructor(declaration)
-  }
-
-  override fun visitFunction(declaration: IrFunction): IrStatement {
-    functions += declaration.symbol
-    return super.visitFunction(declaration)
-  }
-
-  override fun visitProperty(declaration: IrProperty): IrStatement {
-    properties += declaration.symbol
-    return super.visitProperty(declaration)
-  }
-
-  override fun visitTypeAlias(declaration: IrTypeAlias): IrStatement {
-    typeAliases += declaration.symbol
-    return super.visitTypeAlias(declaration)
-  }
-
-  override fun visitVariable(declaration: IrVariable): IrStatement {
-    variables += declaration.symbol
-    return super.visitVariable(declaration)
+  val declarations = mutableListOf<IrSymbol>()
+  override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
+    declarations += declaration.symbol
+    return super.visitDeclaration(declaration)
   }
 }
