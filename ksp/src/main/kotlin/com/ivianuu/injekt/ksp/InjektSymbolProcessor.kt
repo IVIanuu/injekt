@@ -23,12 +23,12 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     return emptyList()
   }
 
-  private fun processFile(file: KSFile, providers: List<KSDeclaration>) {
+  private fun processFile(file: KSFile, injectables: List<KSDeclaration>) {
     val markerName = "_${
       file.fileName.removeSuffix(".kt")
         .substringAfterLast(".")
         .substringAfterLast("/")
-    }_ProvidersMarker"
+    }_InjectablesMarker"
 
     val markerCode = buildString {
       if (file.packageName.asString().isNotEmpty()) {
@@ -52,19 +52,19 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       appendLine("package ${InjektFqNames.InjectablesPackage}")
       appendLine()
 
-      for ((i, provider) in providers.withIndex()) {
-        val key = provider.uniqueKey()
+      for ((i, injectable) in injectables.withIndex()) {
+        val hash = injectable.declarationHash()
 
-        appendLine("// $key")
+        appendLine("// $hash")
         appendLine("fun `${InjektFqNames.InjectablesLookup.callableName}`(")
         appendLine("  marker: ${file.packageName.asString()}.${markerName},")
         repeat(i + 1) {
           appendLine("  index$it: Byte,")
         }
 
-        val finalKey = String(Base64.getEncoder().encode(key.toByteArray()))
+        val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
 
-        finalKey
+        finalHash
           .filter { it.isLetterOrDigit() }
           .chunked(256)
           .forEachIndexed { index, value ->
@@ -84,36 +84,36 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     ).write(injectablesLookupCode.toByteArray())
   }
 
-  private fun KSDeclaration.uniqueKey(): String = buildString {
+  private fun KSDeclaration.declarationHash(): String = buildString {
     modifiers.forEach { append(it) }
-    annotations.forEach { append(it.annotationType.uniqueTypeKey()) }
+    annotations.forEach { append(it.annotationType.typeHash()) }
 
-    when (this@uniqueKey) {
+    when (this@declarationHash) {
       is KSClassDeclaration -> {
-        superTypes.forEach { append(it.uniqueTypeKey()) }
-        primaryConstructor?.uniqueKey()?.let { append(it) }
+        superTypes.forEach { append(it.typeHash()) }
+        primaryConstructor?.declarationHash()?.let { append(it) }
       }
       is KSFunctionDeclaration -> {
-        append(extensionReceiver?.uniqueTypeKey())
+        append(extensionReceiver?.typeHash())
         parameters.forEach {
-          append(it.type.uniqueTypeKey())
+          append(it.type.typeHash())
           append(it.hasDefault)
         }
-        append(returnType?.uniqueTypeKey())
+        append(returnType?.typeHash())
       }
       is KSPropertyDeclaration -> {
-        append(extensionReceiver?.uniqueTypeKey())
-        append(type.uniqueTypeKey())
+        append(extensionReceiver?.typeHash())
+        append(type.typeHash())
       }
     }
   }
 
-  private fun KSTypeReference.uniqueTypeKey(): String = buildString {
+  private fun KSTypeReference.typeHash(): String = buildString {
     fun KSType.append() {
       annotations.forEach { it.annotationType.resolve().append() }
       append(declaration.qualifiedName!!.asString())
       arguments.forEach {
-        append(it.type?.uniqueTypeKey())
+        append(it.type?.typeHash())
         append(it.variance)
       }
       append(isMarkedNullable)
