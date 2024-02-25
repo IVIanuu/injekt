@@ -51,4 +51,10 @@ kotlin {
   }
 }
 
+dependencies {
+  add("kspCommonMainMetadata", project(":ksp"))
+  add("kspJvm", project(":ksp"))
+  add("kspJs", project(":ksp"))
+}
+
 plugins.apply("com.vanniktech.maven.publish")

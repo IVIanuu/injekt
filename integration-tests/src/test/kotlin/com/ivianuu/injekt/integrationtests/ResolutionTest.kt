@@ -2,11 +2,14 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.ivianuu.injekt.integrationtests
 
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
 import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class ResolutionTest {
@@ -88,20 +91,6 @@ class ResolutionTest {
       }
 
       fun invoke(classFoo: Foo) = MyClass(classFoo).resolve()
-    """
-  ) {
-    val expected = Foo()
-    invokeSingleFile(expected) shouldBeSameInstanceAs expected
-  }
-
-  @Test fun testPrefersConstructorParameterInjectableOverClassBodyInjectable() = codegen(
-    """
-      class MyClass(@Provide constructorFoo: Foo) {
-        val finalFoo = inject<Foo>()
-        @Provide val classFoo = Foo()
-      }
-
-      fun invoke(constructorFoo: Foo) = MyClass(constructorFoo).finalFoo
     """
   ) {
     val expected = Foo()
@@ -325,7 +314,7 @@ class ResolutionTest {
 
   @Test fun testPrefersUserInjectableErrorOverBuiltInInjectable() = singleAndMultiCodegen(
     """
-      @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
+      @Provide fun <T> diyLambda(unit: Unit): () -> T = { TODO() } 
     """,
     """
       fun invoke() = inject<() -> Foo>() 

@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.types.model.*
 
 interface TypeCheckerContext {
-  val ctx: Context
+  val ctx: InjektContext
   fun isDenotable(type: InjektType): Boolean
   fun addSubTypeConstraint(subType: InjektType, superType: InjektType): Boolean? = null
 }
@@ -47,11 +47,11 @@ fun InjektType.isSubTypeOf(superType: InjektType, ctx: TypeCheckerContext): Bool
   ctx.addSubTypeConstraint(this, superType)
     ?.let { return it }
 
-  if (classifier.fqName == InjektFqNames.Nothing &&
+  if (classifier.classId == InjektFqNames.Nothing &&
     (!isMarkedNullable || superType.isNullableType)
   ) return true
 
-  if (superType.classifier.fqName == InjektFqNames.Any &&
+  if (superType.classifier.classId == InjektFqNames.Any &&
     (superType.isMarkedNullable || !isNullableType)) return true
 
   subtypeView(superType.classifier)
@@ -193,7 +193,7 @@ fun InjektType.runCandidateInference(
   return typeCtx
 }
 
-class TypeContext(override val ctx: Context) : TypeCheckerContext {
+class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
   private val staticTypeParameters = mutableListOf<InjektClassifier>()
   private val typeVariables = mutableMapOf<InjektClassifier, VariableWithConstraints>()
   val fixedTypeVariables = mutableMapOf<InjektClassifier, InjektType>()
@@ -353,7 +353,7 @@ class TypeContext(override val ctx: Context) : TypeCheckerContext {
     resultType: InjektType,
     variableWithConstraints: VariableWithConstraints
   ): Boolean {
-    if (resultType.classifier.fqName == InjektFqNames.Nothing) return false
+    if (resultType.classifier.classId == InjektFqNames.Nothing) return false
     val filteredConstraints = variableWithConstraints.constraints
     for (constraint in filteredConstraints) {
       if (!checkConstraint(constraint.type, constraint.kind, resultType))

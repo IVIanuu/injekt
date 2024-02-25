@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.*
+import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.resolve.diagnostics.*
 import org.jetbrains.kotlin.resolve.extensions.*
 import org.jetbrains.kotlin.synthetic.*
@@ -24,23 +25,24 @@ import java.io.*
 import java.util.*
 
 @OptIn(ExperimentalCompilerApi::class)
-@AutoService(CompilerPluginRegistrar::class)
-class InjektCompilerPluginRegistrar : CompilerPluginRegistrar() {
+@AutoService(ComponentRegistrar::class)
+class InjektComponentRegistrar : ComponentRegistrar {
   override val supportsK2: Boolean
-    get() = false
+    get() = true
 
-  override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    StorageComponentContainerContributor
-      .registerExtension(InjektStorageComponentContainerContributor())
+  override fun registerProjectComponents(
+    project: MockProject,
+    configuration: CompilerConfiguration,
+  ) {
+    val context = InjektContext()
+    FirExtensionRegistrarAdapter.registerExtension(project, InjektFirExtensionRegistrar(context))
 
-    if (configuration[CLIConfigurationKeys.METADATA_DESTINATION_DIRECTORY] == null)
-      AnalysisHandlerExtension.registerExtension(InjectCallChecker())
-
-    // hack to run ensure we run first
-    registeredExtensions.cast<MutableMap<ProjectExtensionDescriptor<*>, MutableList<Any>>>()
-      .getOrPut(IrGenerationExtension) { mutableListOf() }.add(
-        0,
-        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey))
+    project.extensionArea
+      .getExtensionPoint(IrGenerationExtension.extensionPointName)
+      .registerExtension(
+        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), context),
+        LoadingOrder.FIRST,
+        project
       )
   }
 }

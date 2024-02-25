@@ -30,5 +30,6 @@ dependencies {
   implementation(Deps.androidxActivityCompose)
   implementation(project(":common"))
   implementation(Deps.Compose.material)
+  ksp(project(":ksp"))
   kotlinCompilerPluginClasspath(Deps.Compose.compiler)
 }

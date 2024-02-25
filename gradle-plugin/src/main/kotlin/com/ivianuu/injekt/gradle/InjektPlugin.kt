@@ -16,10 +16,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun apply(target: Project) {
     target.pluginManager.apply("com.google.devtools.ksp")
-    target.dependencies.add(
+    /*target.dependencies.add(
       "ksp",
       "com.ivianuu.injekt:ksp:${BuildConfig.VERSION}"
-    )
+    )*/
   }
 
   override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>) =

@@ -2,10 +2,13 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.ivianuu.injekt.integrationtests
 
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
+import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class ModuleTest {
@@ -41,8 +44,8 @@ class ModuleTest {
       class MyModule<T>(private val instance: T) {
         @Provide fun provide() = instance to instance
       }
-      @Provide val fooModule = MyModule(Foo())
-      @Provide val stringModule = MyModule("__")
+      @Provide fun fooModule() = MyModule(Foo())
+      @Provide fun stringModule() = MyModule("__")
     """,
     """
         fun invoke() = inject<Pair<Foo, Foo>>() 
@@ -140,4 +143,19 @@ class ModuleTest {
     val values = invokeSingleFile<List<Any>>()
     values shouldBe values.distinct()
   }
+
+  @Test fun testSubClassModule() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+      abstract class AbstractBarModule<T> {
+        @Provide fun bar(foo: Foo, value: T) = Bar(foo)
+      }
+      @Provide class BarModuleImpl : AbstractBarModule<String>() {
+        @Provide val string = ""
+      } 
+    """,
+    """
+      fun invoke() = inject<Bar>() 
+    """
+  )
 }

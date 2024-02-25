@@ -3,42 +3,32 @@
  */
 
 plugins {
-  kotlin("multiplatform")
+  kotlin("jvm")
   id("com.ivianuu.injekt")
 }
 
-kotlin {
-  jvm()
+dependencies {
+  ksp(project(":ksp"))
 
-  targets.forEach {
-    it.compilations.forEach {
-      it.kotlinOptions.freeCompilerArgs += "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi"
-    }
+  testImplementation(project(":common"))
+  testImplementation(project(":compiler"))
+  testImplementation(project(":ksp"))
+  testImplementation(Deps.Compose.runtime)
+
+  /*testImplementation(Deps.Ksp.aaEmbeddable) {
+    exclude(group = "com.google.devtools.ksp", module = "common-deps")
   }
+  testImplementation(Deps.Ksp.commonDeps)
+  testImplementation(Deps.Ksp.cmdline)*/
+  testImplementation(Deps.Ksp.symbolProcessing)
+  testImplementation(Deps.Ksp.api)
 
-  sourceSets {
-    named("jvmTest") {
-      dependencies {
-        implementation(project(":common"))
-        implementation(project(":compiler"))
-        implementation(project(":ksp"))
+  testImplementation(Deps.Kotlin.compilerEmbeddable)
+  testImplementation(Deps.KotlinCompileTesting.core)
+  testImplementation(Deps.KotlinCompileTesting.ksp)
 
-        implementation(Deps.Compose.runtime)
-
-        implementation(Deps.Ksp.api)
-        implementation(Deps.Ksp.symbolProcessing)
-
-        implementation(Deps.classGraph)
-
-        implementation(Deps.Kotlin.compilerEmbeddable)
-        implementation(Deps.KotlinCompileTesting.kotlinCompileTesting)
-        implementation(Deps.KotlinCompileTesting.ksp)
-
-        implementation(Deps.kotestAssertions)
-        implementation(Deps.junit)
-      }
-    }
-  }
+  testImplementation(Deps.kotestAssertions)
+  testImplementation(Deps.junit)
 }
 
 tasks.withType<Test> {

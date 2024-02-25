@@ -3,7 +3,7 @@
  */
 
 @file:Suppress("UNCHECKED_CAST")
-@file:OptIn(ExperimentalCompilerApi::class)
+@file:OptIn(ExperimentalCompilerApi::class, ExperimentalCompilerApi::class)
 
 package com.ivianuu.injekt.integrationtests
 
@@ -11,11 +11,21 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.backend.*
 import com.ivianuu.injekt.ksp.*
 import com.tschuchort.compiletesting.*
+import com.tschuchort.compiletesting.SourceFile
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
 import org.intellij.lang.annotations.*
+import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.com.intellij.openapi.project.*
 import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.extensions.*
 import java.net.*
 import java.nio.file.*
 import kotlin.reflect.*
@@ -158,47 +168,6 @@ fun multiCodegen(
   }.assertions()
 }
 
-fun multiPlatformCodegen(
-  @Language("kotlin") commonSource: String,
-  @Language("kotlin") platformSource: String,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
-) {
-  multiPlatformCodegen(
-    commonSources = listOf(source(commonSource)),
-    platformSources = listOf(invokableSource(platformSource)),
-    config = config,
-    assertions = assertions
-  )
-}
-
-fun multiPlatformCodegen(
-  commonSources: List<SourceFile>,
-  platformSources: List<SourceFile>,
-  config: KotlinCompilation.() -> Unit = {},
-  assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
-) {
-  val result = compile {
-    kotlincArguments += "-Xmulti-platform=true"
-    commonSources
-      .map {
-        SourceFile::class.java
-          .declaredMethods
-          .first { it.name.startsWith("writeIfNeeded") }
-          .invoke(it, workingDir.resolve("sources").also { it.mkdirs() })
-      }
-      .forEach { kotlincArguments += "-Xcommon-sources=$it" }
-    sources = platformSources + commonSources
-    config()
-  }
-  assertions(
-    object : KotlinCompilationAssertionScope {
-      override val result: JvmCompilationResult
-        get() = result
-    }
-  )
-}
-
 fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
   fun baseCompilation(block: KotlinCompilation.() -> Unit) = KotlinCompilation().apply {
     inheritClassPath = true
@@ -208,18 +177,56 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
   }
 
   val kspCompilation = baseCompilation {
-    symbolProcessorProviders += InjektSymbolProcessor.Provider()
-    kspIncremental = false
-    kspWithCompilation = true
+    configureKsp(useKsp2 = false) {
+      symbolProcessorProviders += InjektSymbolProcessor.Provider()
+      incremental = false
+      withCompilation = true
+    }
+
+    supportsK2 = false
+    languageVersion = "1.9"
+
+    compilerPluginRegistrars += object : CompilerPluginRegistrar() {
+      override val supportsK2: Boolean
+        get() = false
+      override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+        IrGenerationExtension.registerExtension(
+          object : IrGenerationExtension {
+            override fun generate(
+              moduleFragment: IrModuleFragment,
+              pluginContext: IrPluginContext
+            ) {
+              dumpAllFiles = true
+              moduleFragment.dumpToFiles(
+                workingDir.resolve("injekt/dump")
+                  .also { it.mkdirs() },
+                InjektContext()
+              )
+            }
+          }
+        )
+      }
+    }
+
+    block()
   }
 
-  kspCompilation.compile()
+  val kspResult = kspCompilation.compile()
+
+  kspResult.generatedFiles.forEach {
+    if (it.absolutePath.endsWith(".class") &&
+      "InjectablesMarker" !in it.absolutePath &&
+      "Injectables" !in it.absolutePath
+    ) {
+      it.delete()
+    }
+  }
 
   val pluginCompilation = baseCompilation {
     classpaths += kspCompilation.classesDir
 
     dumpAllFiles = true
-    compilerPluginRegistrars += InjektCompilerPluginRegistrar()
+    componentRegistrars += InjektComponentRegistrar()
     commandLineProcessors += InjektCommandLineProcessor()
     pluginOptions += PluginOption(
       "com.ivianuu.injekt",

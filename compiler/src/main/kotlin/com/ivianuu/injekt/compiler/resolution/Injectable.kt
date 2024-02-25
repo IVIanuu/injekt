@@ -7,19 +7,17 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import org.jetbrains.kotlin.backend.common.descriptors.*
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.incremental.components.*
+import org.jetbrains.kotlin.fir.declarations.builder.*
+import org.jetbrains.kotlin.fir.symbols.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.calls.components.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
   val type: InjektType
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScope: InjectablesScope? get() = null
-  val callableFqName: FqName
+  val chainFqName: FqName
   val ownerScope: InjectablesScope
 }
 
@@ -28,12 +26,8 @@ class CallableInjectable(
   val callable: InjektCallable,
   override val type: InjektType
 ) : Injectable {
-  override val dependencies = (if (callable.callable is ConstructorDescriptor) callable.callable.valueParameters
-      else callable.callable.allParameters)
-    .map { it.toInjectableRequest(callable) }
-  override val callableFqName = if (callable.callable is ClassConstructorDescriptor)
-    callable.callable.constructedClass.fqNameSafe
-  else callable.callable.fqNameSafe
+  override val dependencies = callable.injectableRequests(emptySet())
+  override val chainFqName = callable.chainFqName
 }
 
 class ListInjectable(
@@ -43,12 +37,12 @@ class ListInjectable(
   val singleElementType: InjektType,
   val collectionElementType: InjektType
 ) : Injectable {
-  override val callableFqName = FqName("listOf")
+  override val chainFqName = FqName("listOf")
   override val dependencies = elements
     .mapIndexed { index, element ->
       InjectableRequest(
         type = element,
-        callableFqName = callableFqName,
+        callableFqName = chainFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
         parameterName = "element$index".asNameId(),
         parameterIndex = index
@@ -56,48 +50,44 @@ class ListInjectable(
     }
 }
 
-class LambdaInjectable(
+@OptIn(SymbolInternals::class) class LambdaInjectable(
   override val ownerScope: InjectablesScope,
   request: InjectableRequest
 ) : Injectable {
   override val type = request.type
-  override val callableFqName = FqName(request.parameterName.asString())
+  override val chainFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
     InjectableRequest(
       type = type.arguments.last(),
-      callableFqName = callableFqName,
+      callableFqName = chainFqName,
       parameterName = "instance".asNameId(),
       parameterIndex = 0
     )
   )
 
-  val parameterDescriptors = type
-    .classifier
-    .descriptor!!
-    .cast<ClassDescriptor>()
-    .unsubstitutedMemberScope
-    .getContributedFunctions("invoke".asNameId(), NoLookupLocation.FROM_BACKEND)
-    .first()
-    .valueParameters
-    .map { ParameterDescriptor(it, this) }
+  val valueParameterSymbols = findClassifierForKey(type.classifier.key, type.classifier.fqName, ownerScope.ctx)
+    .cast<FirRegularClassSymbol>()
+    .declarationSymbols
+    .filterIsInstance<FirFunctionSymbol<*>>()
+    .single { it.name.asString() == "invoke" }
+    .valueParameterSymbols
+    .map { original ->
+      buildValueParameterCopy(original.fir) {
+        symbol = FirValueParameterSymbol(original.name)
+      }.symbol
+    }
 
   override val dependencyScope = InjectableScopeOrParent(
     name = "LAMBDA $type",
     parent = ownerScope,
-    ctx = ownerScope.ctx,
-    initialInjectables = parameterDescriptors
+    initialInjectables = valueParameterSymbols
       .mapIndexed { index, parameter ->
         parameter
-          .toInjektCallable(ownerScope.ctx)
+          .toInjektCallable(ownerScope.ctx, chainFqName.child(parameter.name))
           .copy(type = type.arguments[index])
-      }
+      },
+    ctx = ownerScope.ctx
   )
-
-  // required to distinct between individual lambdas in codegen
-  class ParameterDescriptor(
-    private val delegate: ValueParameterDescriptor,
-    val lambdaInjectable: LambdaInjectable
-  ) : ValueParameterDescriptor by delegate
 }
 
 data class InjectableRequest(
@@ -109,13 +99,23 @@ data class InjectableRequest(
   val isRequired: Boolean = true
 )
 
-fun ParameterDescriptor.toInjectableRequest(callable: InjektCallable): InjectableRequest =
-  InjectableRequest(
-    type = callable.parameterTypes[injektIndex()]!!,
-    callableFqName = callable.callableFqName,
-    callableTypeArguments = callable.typeArguments,
-    parameterName = injektName(),
-    parameterIndex = injektIndex(),
-    isRequired = this !is ValueParameterDescriptor ||
-        injektIndex() in callable.injectParameters || !hasDefaultValue()
-  )
+fun InjektCallable.injectableRequests(exclude: Set<Int>): List<InjectableRequest> =
+  parameterTypes.map { (index, type) ->
+    if (index in exclude) return@map null
+    val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
+      ?.getOrNull(index)
+    InjectableRequest(
+      type = type,
+      callableFqName = chainFqName,
+      callableTypeArguments = typeArguments,
+      parameterName = when (index) {
+        DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+        EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+        else -> valueParameter!!.name
+      },
+      parameterIndex = index,
+      isRequired = valueParameter == null ||
+          symbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(valueParameter) in injectParameters ||
+          !valueParameter.hasDefaultValue
+    )
+  }.filterNotNull()

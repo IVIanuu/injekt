@@ -2,24 +2,20 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
-
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.frontend.*
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 
 data class InjektCallable(
-  val callable: CallableDescriptor,
+  val symbol: FirCallableSymbol<*>,
   val type: InjektType,
   val originalType: InjektType,
   val parameterTypes: Map<Int, InjektType>,
   val typeArguments: Map<InjektClassifier, InjektType>,
-  val callableFqName: FqName,
+  val chainFqName: FqName,
   val injectParameters: Set<Int>
 )
 
@@ -49,21 +45,17 @@ fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCal
   )
 }
 
-fun CallableDescriptor.toInjektCallable(ctx: Context): InjektCallable =
+fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext, chainFqName: FqName = fqName): InjektCallable =
   ctx.cached("injekt_callable", this) {
     val info = callableInfo(ctx)
     InjektCallable(
-      callable = this,
+      symbol = this,
       type = info.type,
       originalType = info.type,
       parameterTypes = info.parameterTypes,
-      typeArguments = typeParameters.map { it.toInjektClassifier(ctx) }
+      typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
         .associateWith { it.defaultType },
-      callableFqName = safeAs<ConstructorDescriptor>()?.constructedClass?.fqNameSafe ?:
-      safeAs<LambdaInjectable.ParameterDescriptor>()?.let {
-        it.lambdaInjectable.callableFqName.child(it.name)
-      } ?: safeAs<ReceiverParameterDescriptor>()?.fqNameSafe?.parent() ?:
-      fqNameSafe,
+      chainFqName = chainFqName,
       injectParameters = info.injectParameters
     )
   }

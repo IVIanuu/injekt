@@ -46,6 +46,12 @@ kotlin {
   }
 }
 
+dependencies {
+  add("kspCommonMainMetadata", project(":ksp"))
+  add("kspJvm", project(":ksp"))
+  add("kspJs", project(":ksp"))
+}
+
 tasks.withType<KotlinCompile> {
   kotlinOptions.jvmTarget = "1.8"
 }

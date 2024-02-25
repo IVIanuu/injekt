@@ -4,7 +4,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.name.*
 
 object InjektFqNames {
@@ -16,14 +15,17 @@ object InjektFqNames {
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val DeclarationInfo = ClassId(InternalPackage, "DeclarationInfo".asNameId())
-  val TypeParameterInfo = ClassId(InternalPackage, "TypeParameterInfo".asNameId())
 
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
   val InjectablesLookup = CallableId(InjectablesPackage, "\$\$\$\$\$".asNameId())
 
   val Composable = ClassId.topLevel(FqName("androidx.compose.runtime.Composable"))
 
-  val Any = StandardNames.FqNames.any.toSafe()
-  val Nothing = StandardNames.FqNames.nothing.toSafe()
-  val Function = ClassId.topLevel(StandardNames.FqNames.functionSupertype.toSafe())
+  val Any = StandardClassIds.Any
+  val Nothing = StandardClassIds.Nothing
+
+  val function = StandardClassIds.Function.asFqNameString()
+  val kFunction = StandardClassIds.KFunction.asFqNameString()
+  val suspendFunction = StandardClassIds.BASE_COROUTINES_PACKAGE.child("SuspendFunction".asNameId()).asString()
+  val kSuspendFunction = StandardClassIds.BASE_COROUTINES_PACKAGE.child("KSuspendFunction".asNameId()).asString()
 }
