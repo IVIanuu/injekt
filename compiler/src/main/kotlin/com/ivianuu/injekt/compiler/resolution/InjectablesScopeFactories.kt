@@ -91,30 +91,6 @@ private fun FunctionInjectablesScope(
   "function_scope",
   function to parent.name
 ) {
-  val parameterScopes = FunctionParameterInjectablesScopes(parent, function, null, containingElements, ctx)
-  val baseName = if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is FirConstructorSymbol)
-    function.resolvedReturnType.type.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
-  else function.typeParameterSymbols)
-    .map { it.toInjektClassifier(ctx) }
-  InjectableScopeOrParent(
-    name = "$baseName ${function.fqName}",
-    parent = parameterScopes,
-    owner = function,
-    typeParameters = typeParameters,
-    nesting = parameterScopes.nesting,
-    ctx = ctx
-  )
-}
-
-private fun FunctionParameterInjectablesScopes(
-  parent: InjectablesScope,
-  function: FirFunctionSymbol<*>,
-  until: FirValueParameterSymbol? = null,
-  containingElements: List<FirElement>,
-  ctx: InjektContext
-): InjectablesScope {
-  val maxIndex = function.valueParameterSymbols.indexOfFirst { it == until }
   val lambdaValueParameterTypes = function.safeAs<FirAnonymousFunctionSymbol>()
     ?.fir?.typeRef?.coneType?.typeArguments?.map { it.toInjektType(ctx) }
   val funInterfaceProvideValueParameters = function.safeAs<FirAnonymousFunctionSymbol>()
@@ -130,7 +106,7 @@ private fun FunctionParameterInjectablesScopes(
         ?.let { funInterfaceFunction ->
           buildSet {
             if (funInterfaceFunction.receiverParameter
-              ?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true)
+                ?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true)
               this += EXTENSION_RECEIVER_INDEX
             funInterfaceFunction.valueParameterSymbols.forEachIndexed { index, valueParameter ->
               if (valueParameter.isInjectable(ctx))
@@ -139,53 +115,42 @@ private fun FunctionParameterInjectablesScopes(
           }
         }
     }
-  return buildList<FirValueParameterSymbol> {
-    if (function.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true ||
-      function.receiverParameter != null &&
-      (lambdaValueParameterTypes?.get(0)?.isProvide == true ||
-          funInterfaceProvideValueParameters?.contains(EXTENSION_RECEIVER_INDEX) == true))
-      this += injectableReceiver(
-        EXTENSION_RECEIVER_INDEX,
-        function.receiverParameter!!.typeRef.coneType,
-        function,
-        function.receiverParameter!!.source!!.startOffset,
-        function.receiverParameter!!.source!!.endOffset,
-        ctx
-      )
-    this += function.valueParameterSymbols
-  }
-    .filterIndexed { index, valueParameter ->
-      (maxIndex == -1 || index < maxIndex) && (valueParameter.isInjectable(ctx) ||
-          lambdaValueParameterTypes?.get(
-            index + (if (function.receiverParameter != null) 1 else 0)
-          )?.isProvide == true ||
-          funInterfaceProvideValueParameters?.contains(index) == true)
+  val baseName = if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"
+  val typeParameters = (if (function is FirConstructorSymbol)
+    function.resolvedReturnType.type.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
+  else function.typeParameterSymbols)
+    .map { it.toInjektClassifier(ctx) }
+  InjectableScopeOrParent(
+    name = "$baseName ${function.fqName}",
+    parent = parent,
+    owner = function,
+    typeParameters = typeParameters,
+    initialInjectables = buildList<FirValueParameterSymbol> {
+      if (function.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true ||
+        function.receiverParameter != null &&
+        (lambdaValueParameterTypes?.get(0)?.isProvide == true ||
+            funInterfaceProvideValueParameters?.contains(EXTENSION_RECEIVER_INDEX) == true))
+        this += injectableReceiver(
+          EXTENSION_RECEIVER_INDEX,
+          function.receiverParameter!!.typeRef.coneType,
+          function,
+          function.receiverParameter!!.source!!.startOffset,
+          function.receiverParameter!!.source!!.endOffset,
+          ctx
+        )
+      this += function.valueParameterSymbols
     }
-    .fold(parent) { acc, nextParameter ->
-      FunctionParameterInjectablesScope(
-        parent = acc,
-        function = function,
-        parameter = nextParameter,
-        ctx = ctx
-      )
-    }
+      .filterIndexed { index, valueParameter ->
+        (valueParameter.isInjectable(ctx) ||
+            lambdaValueParameterTypes?.get(
+              index + (if (function.receiverParameter != null) 1 else 0)
+            )?.isProvide == true ||
+            funInterfaceProvideValueParameters?.contains(index) == true)
+      }
+      .map { it.toInjektCallable(ctx) },
+    ctx = ctx
+  )
 }
-
-private fun FunctionParameterInjectablesScope(
-  parent: InjectablesScope,
-  function: FirFunctionSymbol<*>,
-  parameter: FirValueParameterSymbol,
-  ctx: InjektContext
-): InjectablesScope = InjectableScopeOrParent(
-  name = "FUNCTION PARAMETER ${parameter.name}",
-  parent = parent,
-  owner = parameter,
-  initialInjectables = listOf(parameter.toInjektCallable(ctx)),
-  typeParameters = function.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
-  nesting = if (parent.name.startsWith("FUNCTION PARAMETER")) parent.nesting
-  else parent.nesting + 1,
-  ctx = ctx
-)
 
 private fun PropertyInjectablesScope(
   property: FirPropertySymbol,
@@ -280,7 +245,5 @@ fun InjectableScopeOrParent(
   typeParameters: List<InjektClassifier> = emptyList(),
   nesting: Int = parent.nesting.inc(),
   ctx: InjektContext
-): InjectablesScope {
-  return if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
-  else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, ctx)
-}
+): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
+else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, ctx)
