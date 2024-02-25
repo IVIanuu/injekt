@@ -328,7 +328,7 @@ class ResolutionTest {
 
   @Test fun testPrefersUserInjectableErrorOverBuiltInInjectable() = singleAndMultiCodegen(
     """
-      @Provide fun <T> diyProvider(unit: Unit): () -> T = { TODO() } 
+      @Provide fun <T> diyLambda(unit: Unit): () -> T = { TODO() } 
     """,
     """
       fun invoke() = inject<() -> Foo>() 

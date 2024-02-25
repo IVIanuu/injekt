@@ -256,7 +256,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
 
   kspResult.generatedFiles.forEach {
     if (it.absolutePath.endsWith(".class") &&
-      "ProvidersMarker" !in it.absolutePath &&
+      "InjectablesMarker" !in it.absolutePath &&
       "Injectables" !in it.absolutePath
     ) {
       it.delete()
