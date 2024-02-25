@@ -7,6 +7,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
@@ -57,6 +58,8 @@ fun injectableReceiver(
   index: Int,
   type: ConeKotlinType,
   containingFunctionSymbol: FirFunctionSymbol<*>,
+  startOffset: Int,
+  endOffset: Int,
   ctx: InjektContext
 ): FirValueParameterSymbol = buildValueParameter {
   resolvePhase = FirResolvePhase.BODY_RESOLVE
@@ -65,6 +68,11 @@ fun injectableReceiver(
   isCrossinline = false
   isNoinline = false
   isVararg = false
+  source = containingFunctionSymbol.source!!.fakeElement(
+    KtFakeSourceElementKind.ReceiverFromType,
+    startOffset,
+    endOffset
+  )
 
   name = when (index) {
     DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME

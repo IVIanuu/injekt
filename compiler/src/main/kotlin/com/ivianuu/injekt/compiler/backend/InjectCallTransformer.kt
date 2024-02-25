@@ -350,14 +350,17 @@ class InjectCallTransformer(
                 element.symbol.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ->
               element.thisReceiver!!.symbol
             element is IrFunction &&
-                element.symbol.uniqueKey(ctx) == symbol.containingFunctionSymbol.uniqueKey(ctx) ->
+                (element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ||
+                    element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset) ->
               when (symbol.name) {
-                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter!!.symbol
-                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter!!.symbol
+                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("Wtf $symbol ${element.symbol.uniqueKey(ctx)}")
+                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter!!.symbol ?: error("Wtf $symbol ${element.symbol.uniqueKey(ctx)}")
                 else -> null
               }
             element is IrProperty &&
-                allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField ->
+                allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
+                (element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ||
+                    element.getter?.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset)->
               when (symbol.name) {
                 DISPATCH_RECEIVER_NAME -> element.getter!!.dispatchReceiverParameter!!.symbol
                 EXTENSION_RECEIVER_NAME -> element.getter!!.extensionReceiverParameter!!.symbol
@@ -400,7 +403,7 @@ class InjectCallTransformer(
         it.uniqueKey(ctx) == uniqueKey(ctx)
       } ?: irCtx.referenceFunctions(callableId)
         .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
-    ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${irCtx.referenceFunctions(callableId).map { it.uniqueKey(ctx) }}")
+      ?: error("Nope couldn't find ${uniqueKey(ctx)} in ${compilationDeclarations.functions.map { it.uniqueKey(ctx) }}")
     is FirPropertySymbol -> (compilationDeclarations.properties
       .singleOrNull { it.uniqueKey(ctx) == uniqueKey(ctx) }
       ?: irCtx.referenceProperties(callableId)
@@ -465,8 +468,9 @@ class InjectCallTransformer(
                 .safeAs<FirFunctionSymbol<*>>()
                 ?.let { containingFunctionSymbol ->
                   compilationDeclarations.functions
-                    .filter { it.uniqueKey(ctx) == containingFunctionSymbol.uniqueKey(ctx) } +
-                      irCtx.referenceFunctions(containingFunctionSymbol.callableId)
+                    .filter { it.uniqueKey(ctx) == containingFunctionSymbol.uniqueKey(ctx) }
+                    .takeUnless { it.isEmpty() }
+                    ?: irCtx.referenceFunctions(containingFunctionSymbol.callableId)
                 }
                 ?.flatMap { it.owner.typeParameters }
                 ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
@@ -475,8 +479,9 @@ class InjectCallTransformer(
                   .safeAs<FirPropertySymbol>()
                   ?.let { containingPropertySymbol ->
                     compilationDeclarations.properties
-                      .filter { it.uniqueKey(ctx) == containingPropertySymbol.uniqueKey(ctx) } +
-                        irCtx.referenceProperties(containingPropertySymbol.callableId)
+                      .filter { it.uniqueKey(ctx) == containingPropertySymbol.uniqueKey(ctx) }
+                      .takeUnless { it.isEmpty() }
+                      ?: irCtx.referenceProperties(containingPropertySymbol.callableId)
                   }
                   ?.flatMap { it.owner.getter!!.typeParameters }
                   ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
@@ -485,8 +490,9 @@ class InjectCallTransformer(
                   .safeAs<FirRegularClassSymbol>()
                   ?.let { containingClassSymbol ->
                     compilationDeclarations.classes
-                      .filter { it.uniqueKey(ctx) == containingClassSymbol.uniqueKey(ctx) } +
-                        listOfNotNull(irCtx.referenceClass(containingClassSymbol.classId))
+                      .filter { it.uniqueKey(ctx) == containingClassSymbol.uniqueKey(ctx) }
+                      .takeUnless { it.isEmpty() }
+                      ?: listOfNotNull(irCtx.referenceClass(containingClassSymbol.classId))
                   }
                   ?.flatMap { it.owner.typeParameters }
                   ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
@@ -495,13 +501,15 @@ class InjectCallTransformer(
                     .safeAs<FirTypeAliasSymbol>()
                     ?.let { containingTypeAlias ->
                       compilationDeclarations.typeAliases
-                        .filter { it.uniqueKey(ctx) == containingTypeAlias.uniqueKey(ctx) } +
-                          listOfNotNull(irCtx.referenceTypeAlias(containingTypeAlias.classId))
+                        .filter { it.uniqueKey(ctx) == containingTypeAlias.uniqueKey(ctx) }
+                        .takeUnless { it.isEmpty() }
+                        ?: listOfNotNull(irCtx.referenceTypeAlias(containingTypeAlias.classId))
                     }
                     ?.flatMap { it.owner.typeParameters }
                     ?.singleOrNull { it.symbol.uniqueKey(ctx) == key }
                   ?.symbol
-            } ?: error("Could not get for $classifier $key")
+            }
+          ?: error("Could not get for $key")
         IrSimpleTypeImpl(
           irClassifier,
           isMarkedNullable,

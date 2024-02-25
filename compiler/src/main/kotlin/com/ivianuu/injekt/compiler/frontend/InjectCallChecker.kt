@@ -60,7 +60,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 
     if (requests.isEmpty()) return
 
-    val scope = ElementInjectablesScope(expression, context.containingElements, ctx)
+    val scope = ElementInjectablesScope(context.containingElements, expression, ctx)
 
     // look up declarations to support incremental compilation
     context.session.lookupTracker?.recordLookup(
