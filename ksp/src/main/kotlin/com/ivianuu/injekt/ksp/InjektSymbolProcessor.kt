@@ -2,8 +2,6 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
-
 package com.ivianuu.injekt.ksp
 
 import com.google.auto.service.*
