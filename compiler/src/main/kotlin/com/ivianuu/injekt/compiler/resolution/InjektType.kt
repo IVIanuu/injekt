@@ -116,9 +116,6 @@ fun ConeKotlinType.toInjektType(
     classifier = classifier,
     isMarkedNullable = unwrapped.isMarkedNullable,
     arguments = unwrapped.typeArguments
-      // we use take here because an inner class also contains the type parameters
-      // of it's parent class which is irrelevant for us
-      //.take(classifier.typeParameters.size) // todo
       .map { it.toInjektType(ctx) }
       .let {
         if (classifier.isTag && it.size != classifier.typeParameters.size)
