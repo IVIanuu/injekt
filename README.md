@@ -93,7 +93,7 @@ There is no ```@Module``` annotation in Injekt instead a module is just a provid
 more @Provide declarations
 ```kotlin
 // object module which is marked with @Provide
-// can be used to organize providers
+// can be used to organize injectables
 @Provide object DatabaseModule {
   @Provide fun databaseFile(): File = ...
 }
