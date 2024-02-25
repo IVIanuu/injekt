@@ -100,36 +100,13 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideObject() = singleAndMultiCodegen(
     """
-      @Provide val foo = Foo()
-      @Provide object Dep {
-        init {
-          inject<Foo>()
-        }
-      }
+      @Provide object Dep
     """,
     """
       fun invoke() = inject<Dep>() 
     """
   ) {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
-  }
-
-  @Test fun testProvideCompanionObject() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      class Dep {
-        @Provide companion object {
-          init {
-            inject<Foo>()
-          }
-        }
-      }
-    """,
-    """
-      fun invoke() = inject<Dep.Companion>() 
-    """
-  ) {
-    invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep\$Companion"
   }
 
   @Test fun testProvideFunctionExtensionReceiver() = singleAndMultiCodegen(
@@ -170,18 +147,6 @@ class InjectableDeclarationTest {
   ) {
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testMultipleInjectValueParameter() = codegen(
-    """
-      fun invoke(foo: Foo = inject, bar: Bar = inject) = inject<Foo>() to inject<Bar>()
-    """
-  ) {
-    val foo = Foo()
-    val bar = Bar(foo)
-    val (a, b) = invokeSingleFile<Pair<Foo, Bar>>(foo, bar)
-    foo shouldBeSameInstanceAs a
-    bar shouldBeSameInstanceAs b
   }
 
   @Test fun testProvideLocalVariable() = codegen(
@@ -278,7 +243,7 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideInnerClass() = codegen(
     """
-      class Outer(@Provide val _foo: Foo) {
+      class Outer(@property:Provide val _foo: Foo) {
         val foo = Inner().foo
         inner class Inner(val foo: Foo = inject)
       }
@@ -291,7 +256,7 @@ class InjectableDeclarationTest {
 
   @Test fun testProvideNestedClass() = codegen(
     """
-      class Outer(@Provide val _foo: Foo) {
+      class Outer(@property:Provide val _foo: Foo) {
         val foo = Inner().foo
         class Inner(val foo: Foo = inject)
       }

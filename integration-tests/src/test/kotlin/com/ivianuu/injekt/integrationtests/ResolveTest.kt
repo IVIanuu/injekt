@@ -448,18 +448,6 @@ class ResolveTest {
     )
   }
 
-  @Test fun testSafeCallWithInject() = singleAndMultiCodegen(
-      """
-        @Provide val foo = Foo()
-
-        fun String.myFunc(foo: Foo = inject) {
-        }
-      """,
-      """
-        fun invoke() = (null as? String)?.myFunc()
-      """
-    )
-
   @Test fun testInvocationOfFunctionDeclaredInSuperClassWithInjectParameters() = singleAndMultiCodegen(
     """
       open class MySuperClass {

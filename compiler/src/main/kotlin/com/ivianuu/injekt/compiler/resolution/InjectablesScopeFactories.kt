@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class, DfaInternals::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
@@ -11,9 +11,14 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.utils.*
+import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.resolve.*
+import org.jetbrains.kotlin.fir.resolve.dfa.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
@@ -37,12 +42,12 @@ fun ElementInjectablesScope(
 
     return when (scopeOwner) {
       is FirFile -> FileInjectablesScope(scopeOwner.symbol, ctx)
-      /*is KtClassOrObject -> ClassInjectablesScope(
-        scopeOwner.descriptor(ctx)!!,
+      is FirClass -> ClassInjectablesScope(
+        scopeOwner.symbol,
         parentScope!!,
         ctx
       )
-      is KtConstructor<*> ->
+      /*is KtConstructor<*> ->
         if (scopeOwner.bodyExpression.let { it == null || it !in position.parents })
         ConstructorPreInitInjectablesScope(
           scopeOwner.descriptor(ctx)!!,
@@ -58,19 +63,9 @@ fun ElementInjectablesScope(
         scopeOwner.descriptor(ctx)!!,
         parentScope!!,
         ctx
-      )
-      is KtProperty -> when (val descriptor = scopeOwner.descriptor<VariableDescriptor>(ctx)!!) {
-        is PropertyDescriptor -> {
-          if (scopeOwner.delegateExpressionOrInitializer != null &&
-            scopeOwner.delegateExpressionOrInitializer!! in position.parentsWithSelf)
-            PropertyInitInjectablesScope(descriptor, parentScope!!, position, ctx)
-          else
-            PropertyInjectablesScope(descriptor, parentScope!!, ctx)
-        }
-        is LocalVariableDescriptor -> LocalVariableInjectablesScope(descriptor, parentScope!!, ctx)
-        else -> throw AssertionError("Unexpected variable descriptor $descriptor")
-      }
-      is KtSuperTypeList -> scopeOwner.getParentOfType<KtClassOrObject>(false)
+      )*/
+      is FirProperty -> PropertyInjectablesScope(scopeOwner.symbol, parentScope!!, ctx)
+      /*is KtSuperTypeList -> scopeOwner.getParentOfType<KtClassOrObject>(false)
         ?.descriptor<ClassDescriptor>(ctx)
         ?.unsubstitutedPrimaryConstructor
         ?.let { ConstructorPreInitInjectablesScope(it, parentScope!!, ctx) }
@@ -85,8 +80,8 @@ fun ElementInjectablesScope(
         ?.descriptor<ClassDescriptor>(ctx)
         ?.unsubstitutedPrimaryConstructor
         ?.let { FunctionInjectablesScope(it, parentScope!!, ctx) }
-        ?: parentScope!!
-      is KtBlockExpression -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!, ctx)*/
+        ?: parentScope!!*/
+      is FirBlock -> BlockExpressionInjectablesScope(scopeOwner, position, parentScope!!, ctx)
       else -> throw AssertionError("Unexpected scope owner $scopeOwner")
     }
   }
@@ -101,80 +96,17 @@ private fun FirElement.isScopeOwner(
   position: FirElement,
   containingElements: List<FirElement>,
 ): Boolean {
-  if (this is FirFile
-    //this is KtClassInitializer ||
-  //  this is FirProperty ||
-  //  this is FirReceiverParameter ||
-   // this is FirValueParameter
-    //this is KtSuperTypeList ||
-    /*this is KtBlockExpression*/)
-    return true
+  if (
+    this is FirBlock ||
+    this is FirFile ||
+    this is FirProperty
+    ) return true
 
   if (this is FirFunction && containingElements.none { it in valueParameters })
     return true
 
-  /*if (this is KtClassOrObject) {
-    val propertyInitializerOrDelegateExpression = position.getParentOfType<KtProperty>(false)
-      ?.takeUnless { it.isLocal }
-      ?.delegateExpressionOrInitializer
-
-    if (propertyInitializerOrDelegateExpression != null) {
-      val parentsBetweenInitializerAndPosition = position.parentsWithSelf
-        .takeWhile { it != propertyInitializerOrDelegateExpression }
-        .toList()
-      if (parentsBetweenInitializerAndPosition.none { it is KtNamedDeclaration       })
-          return false
-    }
-
-    val classInitializer = position.getParentOfType<KtClassInitializer>(false)
-
-    if (classInitializer != null) {
-      val parentsBetweenInitializerAndPosition = position.parents
-        .takeWhile { it != classInitializer }
-        .toList()
-      if (parentsBetweenInitializerAndPosition.none { it is KtNamedDeclaration })
-        return false
-    }
-  }
-
-  if (this is KtObjectDeclaration &&
-    position.getParentOfType<KtSuperTypeList>(false)
-      ?.getParentOfType<KtClassOrObject>(false) != this)
+  if (this is FirClassSymbol<*>)
     return true
-
-  if (this is KtClass && position.getParentOfType<KtSuperTypeList>(false) == null) {
-    val constructor = position.getParentOfType<KtConstructor<*>>(false)
-    if (constructor != null &&
-      constructor.bodyExpression.let { it == null || it !in position.parents })
-      return false
-
-    val allClassesBetween = position.parentsWithSelf
-      .filterIsInstance<KtClassOrObject>()
-      .takeWhile { it != this }
-      .toList()
-    val nearestClassFromPosition = allClassesBetween.firstOrNull()
-      ?: return true
-
-    return (nearestClassFromPosition !is KtObjectDeclaration ||
-        nearestClassFromPosition.isObjectLiteral()) &&
-        allClassesBetween.all {
-          it.hasModifier(KtTokens.INNER_KEYWORD) ||
-              it.isObjectLiteral()
-        }
-  }
-
-  if (this is KtClassBody && position.parents
-      .takeWhile { it != this }
-      .none { parent ->
-        parent is KtClassInitializer ||
-            (parent is KtProperty && parent.delegateExpressionOrInitializer != null &&
-                parent.delegateExpressionOrInitializer!! in position.parents
-              .takeWhile { it !is KtFunctionLiteral }) ||
-            parent is KtClass ||
-            (parent is KtNamedFunction && parent.parent == this) ||
-            (parent is KtPropertyAccessor && parent.property.parent == this)
-      })
-        return true*/
 
   return false
 }
@@ -225,33 +157,36 @@ private fun FileInitInjectablesScope(position: FirElement, ctx: InjektContext): 
 }
 
 private fun ClassCompanionInjectablesScope(
-  clazz: ClassDescriptor,
+  clazz: FirClassSymbol<*>,
   parent: InjectablesScope,
   ctx: InjektContext
-): InjectablesScope = clazz.companionObjectDescriptor
+): InjectablesScope = clazz.safeAs<FirRegularClassSymbol>()?.companionObjectSymbol
   ?.let { ClassInjectablesScope(it, parent, ctx) } ?: parent
 
 private fun ClassInjectablesScope(
-  clazz: ClassDescriptor,
+  clazz: FirClassSymbol<*>,
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "class_scope",
   clazz to parent.name
 ) {
-  /*val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
-  val name = if (clazz.isCompanionObject)
-    "COMPANION ${clazz.containingDeclaration.fqNameSafe}"
-  else "CLASS ${clazz.fqNameSafe}"
+  val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
+  val name = if (clazz.isCompanion) "COMPANION ${clazz.fqName}"
+  else "CLASS ${clazz.fqName}"
   InjectableScopeOrParent(
     name = name,
     parent = finalParent,
-    owner = clazz.findPsi().cast(),
-    initialInjectables = listOf(clazz.injectableReceiver(ctx)),
-    typeParameters = clazz.declaredTypeParameters.map { it.toInjektClassifier(ctx) },
+    owner = clazz,
+    initialInjectables = listOf(injectableReceiver(
+      DISPATCH_RECEIVER_INDEX,
+      clazz.defaultType(),
+      clazz.declarationSymbols.filterIsInstance<FirConstructorSymbol>().first(),
+      ctx
+    ).toInjektCallable(ctx)),
+    typeParameters = clazz.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     ctx = ctx
-  )*/
-  TODO()
+  )
 }
 
 private fun ClassInitInjectablesScope(
@@ -379,10 +314,15 @@ private fun FunctionParameterInjectablesScopes(
 ): InjectablesScope {
   val maxIndex = function.valueParameterSymbols.indexOfFirst { it == until }
 
-  return function.valueParameterSymbols
+  return buildList<FirValueParameterSymbol> {
+    if (function.dispatchReceiverType != null)
+      this += injectableReceiver(DISPATCH_RECEIVER_INDEX, function.dispatchReceiverType!!, function, ctx)
+    if (function.receiverParameter != null)
+      this += injectableReceiver(EXTENSION_RECEIVER_INDEX, function.receiverParameter!!.typeRef.coneType, function, ctx)
+    this += function.valueParameterSymbols
+  }
     .filterIndexed { index, valueParameter ->
-      (maxIndex == -1 || index < maxIndex) &&
-          valueParameter.hasAnnotation(InjektFqNames.Provide, ctx.session)
+      (maxIndex == -1 || index < maxIndex) && valueParameter.isInjectable(ctx)
     }
     .fold(parent) { acc, nextParameter ->
       FunctionParameterInjectablesScope(
@@ -411,25 +351,29 @@ private fun FunctionParameterInjectablesScope(
 )
 
 private fun PropertyInjectablesScope(
-  property: PropertyDescriptor,
+  property: FirPropertySymbol,
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "property_scope",
   property to parent.name
 ) {
-  /*InjectableScopeOrParent(
-    name = "PROPERTY ${property.fqNameSafe}",
+  InjectableScopeOrParent(
+    name = "PROPERTY ${property.fqName}",
     parent = parent,
-    owner = property.findPsi().cast(),
+    owner = property,
     initialInjectables = buildList {
-      property.allParameters
-        .filter { it.isProvide(ctx) || property.isProvide(ctx) }
-        .forEach { add(it.toInjektCallable(ctx)) }
+      if (property.dispatchReceiverType != null)
+        this += injectableReceiver(DISPATCH_RECEIVER_INDEX, property.dispatchReceiverType!!, property.getterSymbol!!, ctx)
+          .toInjektCallable(ctx)
+
+      if (property.receiverParameter != null)
+        this += injectableReceiver(EXTENSION_RECEIVER_INDEX, property.receiverParameter!!.typeRef.coneType, property.getterSymbol!!, ctx)
+          .toInjektCallable(ctx)
     },
-    typeParameters = property.typeParameters.map { it.toInjektClassifier(ctx) },
+    typeParameters = property.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     ctx = ctx
-  )*/TODO()
+  )
 }
 
 private fun PropertyInitInjectablesScope(
@@ -476,41 +420,33 @@ private fun LocalVariableInjectablesScope(
 }
 
 private fun BlockExpressionInjectablesScope(
-  block: KtBlockExpression,
-  position: KtElement,
+  block: FirBlock,
+  position: FirElement,
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope {
-  /*val visibleInjectableDeclarations = block.statements
-    .transform { declaration ->
-      if (declaration.endOffset < position.startOffset &&
-        declaration is KtNamedDeclaration) {
-        declaration.descriptor<DeclarationDescriptor>(ctx)
-          ?.takeIf { it.isProvide(ctx) }
-          ?.let { add(it) }
+  val injectablesBeforePosition = block.statements
+    .filter { declaration ->
+      declaration.source!!.endOffset < position.source!!.startOffset &&
+          declaration.symbol?.isInjectable(ctx) == true
+    }
+    .flatMap {
+      when (it) {
+        is FirRegularClass -> it.symbol.collectInjectableConstructors(ctx)
+          .map { it.toInjektCallable(ctx) }
+        is FirCallableDeclaration -> listOf(it.symbol.toInjektCallable(ctx))
+        else -> emptyList()
       }
     }
-  if (visibleInjectableDeclarations.isEmpty()) return parent
-  val injectableDeclaration = visibleInjectableDeclarations.last()
-  val key = block to injectableDeclaration
-  return ctx.cached("block_scope", key) {
-    val finalParent = if (visibleInjectableDeclarations.size > 1)
-      BlockExpressionInjectablesScope(block, injectableDeclaration.findPsi().cast(), parent, ctx)
-    else parent
-
-    InjectableScopeOrParent(
-      name = "BLOCK AT ${injectableDeclaration.name}",
-      parent = finalParent,
-      initialInjectables = when (injectableDeclaration) {
-        is ClassDescriptor -> injectableDeclaration.injectableConstructors(ctx)
-        is CallableDescriptor -> listOf(injectableDeclaration.toInjektCallable(ctx))
-        else -> throw AssertionError("Unexpected injectable $injectableDeclaration")
-      },
-      nesting = if (visibleInjectableDeclarations.size > 1) finalParent.nesting
-      else finalParent.nesting + 1,
-      ctx = ctx
-    )
-  }*/TODO()
+  return if (injectablesBeforePosition.isEmpty()) parent
+  else InjectableScopeOrParent(
+    name = "BLOCK AT ${position.source!!.startOffset}",
+    parent = parent,
+    initialInjectables = injectablesBeforePosition,
+    nesting = if (injectablesBeforePosition.size > 1) parent.nesting
+    else parent.nesting + 1,
+    ctx = ctx
+  )
 }
 
 fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): InjectablesScope =

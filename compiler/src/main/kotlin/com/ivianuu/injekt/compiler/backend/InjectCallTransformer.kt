@@ -112,7 +112,7 @@ class InjectCallTransformer(
       result: ResolutionResult.Success.Value
     ): IrExpression = wrapExpressionInFunctionIfNeeded(result) {
       val expression = when (val candidate = result.candidate) {
-        is CallableInjectable -> callableExpression(request, result, candidate)
+        is CallableInjectable -> callableExpression(result, candidate)
         is LambdaInjectable -> lambdaExpression(result, candidate)
         is ListInjectable -> listExpression(result, candidate)
       }
@@ -308,16 +308,14 @@ class InjectCallTransformer(
   }
 
   private fun ScopeContext.callableExpression(
-    request: InjectableRequest,
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
   ): IrExpression = when {
     injectable.callable.type.unwrapTags().classifier.isObject -> objectExpression(injectable.callable.type.unwrapTags())
-    //injectable.callable.symbol is FirReceiverParameter-> receiverExpression(result.candidate.type)
-    else -> when (injectable.callable.symbol) {
-      //is ValueParameterDescriptor -> parameterExpression(injectable.callable.callable, injectable)
-      //is LocalVariableDescriptor -> localVariableExpression(injectable.callable.callable, injectable)
-      is FirValueParameterSymbol -> parameterExpression(injectable, injectable.callable.symbol)
+    else -> when {
+      injectable.callable.symbol is FirPropertySymbol &&
+          injectable.callable.symbol.isLocal -> localVariableExpression(injectable, injectable.callable.symbol)
+      injectable.callable.symbol is FirValueParameterSymbol -> parameterExpression(injectable, injectable.callable.symbol)
       else -> functionExpression(result, injectable, injectable.callable.symbol)
     }
   }
@@ -338,56 +336,59 @@ class InjectCallTransformer(
       inject(this@functionExpression, result.dependencyResults)
     }
 
-  private fun ScopeContext.receiverExpression(type: InjektType): IrExpression = irBuilder.run {
-    allScopes.reversed().firstNotNullOfOrNull { scope ->
-      val element = scope.irElement
-      when {
-        element is IrClass &&
-            element.symbol.uniqueKey(ctx) == type.classifier.symbol!!.uniqueKey(ctx) ->
-          irGet(element.thisReceiver!!)
-        element is IrFunction &&
-            element.dispatchReceiverParameter?.type?.uniqueTypeKey(ctx) == type.classifier.symbol!!.uniqueKey(ctx) ->
-          irGet(element.dispatchReceiverParameter!!)
-        element is IrProperty &&
-            allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-            element.parentClassOrNull?.symbol?.uniqueKey(ctx) ==
-            type.classifier.symbol!!.uniqueKey(ctx) ->
-          irGet(element.getter!!.dispatchReceiverParameter!!)
-        else -> null
-      }
-    } ?: error("unexpected receiver $type")
-  }
-
   private fun ScopeContext.parameterExpression(
     injectable: CallableInjectable,
     symbol: FirValueParameterSymbol,
   ): IrExpression =
     irBuilder.irGet(
       injectable.type.toIrType().typeOrNull!!,
-      lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
+      (if (symbol.name == DISPATCH_RECEIVER_NAME || symbol.name == EXTENSION_RECEIVER_NAME)
+        allScopes.reversed().firstNotNullOfOrNull { scope ->
+          val element = scope.irElement
+          when {
+            element is IrClass &&
+                element.symbol.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ->
+              element.thisReceiver!!.symbol
+            element is IrFunction &&
+                element.symbol.uniqueKey(ctx) == symbol.containingFunctionSymbol.uniqueKey(ctx) ->
+              when (symbol.name) {
+                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter!!.symbol
+                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter!!.symbol
+                else -> null
+              }
+            element is IrProperty &&
+                allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField ->
+              when (symbol.name) {
+                DISPATCH_RECEIVER_NAME -> element.getter!!.dispatchReceiverParameter!!.symbol
+                EXTENSION_RECEIVER_NAME -> element.getter!!.extensionReceiverParameter!!.symbol
+                else -> null
+              }
+            else -> null
+          }
+        } else null)
+        ?: lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
         .owner
         .valueParameters
         .let {
           it.singleOrNull { it.symbol.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
-            ?: error("Wtf")
+            ?: error("Wtf $symbol $injectable")
         }
         .symbol
     )
 
-  /*private fun ScopeContext.localVariableExpression(
-    descriptor: LocalVariableDescriptor,
-    injectable: CallableInjectable
-  ): IrExpression = if (descriptor.getter != null) irBuilder.irCall(
-    descriptor.getter!!.irCallable().symbol,
+  private fun ScopeContext.localVariableExpression(
+    injectable: CallableInjectable,
+    symbol: FirPropertySymbol,
+  ): IrExpression = if (symbol.getterSymbol != null) irBuilder.irCall(
+    symbol.getterSymbol!!.toIrCallableSymbol(),
     injectable.type.toIrType().typeOrNull!!
   )
   else irBuilder.irGet(
     injectable.type.toIrType().typeOrNull!!,
     compilationDeclarations.variables
-      .singleOrNull { it.uniqueKey(ctx) == descriptor.uniqueKey(ctx) }
-      ?.symbol
-      ?: error("Couldn't find ${descriptor.uniqueKey(ctx)} in ${compilationDeclarations.variables.map { it.uniqueKey(ctx) }}")
-  )*/
+      .singleOrNull { it.uniqueKey(ctx) == symbol.uniqueKey(ctx) }
+      ?: error("Couldn't find ${symbol.uniqueKey(ctx)} in ${compilationDeclarations.variables.map { it.uniqueKey(ctx) }}")
+  )
 
   private fun FirCallableSymbol<*>.toIrCallableSymbol(): IrFunctionSymbol = when (this) {
     is FirConstructorSymbol -> compilationDeclarations.constructors

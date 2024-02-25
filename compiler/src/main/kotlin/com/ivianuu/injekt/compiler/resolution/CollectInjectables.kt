@@ -7,7 +7,9 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
@@ -29,7 +31,7 @@ fun InjektType.collectModuleInjectables(
         if (declaration !is FirConstructorSymbol &&
           declaration is FirCallableSymbol<*> &&
           !declaration.isOverride &&
-          (declaration.hasAnnotation(InjektFqNames.Provide, ctx.session) ||
+          (declaration.isInjectable(ctx) ||
               (declaration.name.asString() == "invoke" && isProvideFunctionType(ctx)))) {
           val substitutionMap = classifier.typeParameters
             .zip(subtypeView(declaration.dispatchReceiverType?.toInjektType(ctx)?.classifier!!)!!.arguments)
@@ -50,6 +52,32 @@ fun InjektType.collectModuleInjectables(
     visit()
   }
 }
+
+fun injectableReceiver(
+  index: Int,
+  type: ConeKotlinType,
+  containingFunctionSymbol: FirFunctionSymbol<*>,
+  ctx: InjektContext
+): FirValueParameterSymbol = buildValueParameter {
+  resolvePhase = FirResolvePhase.BODY_RESOLVE
+  moduleData = ctx.session.moduleData
+  origin = FirDeclarationOrigin.Source
+  isCrossinline = false
+  isNoinline = false
+  isVararg = false
+
+  name = when (index) {
+    DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+    EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+    else -> throw AssertionError("Unexpected receiver index $index")
+  }
+  symbol = FirValueParameterSymbol(name)
+  returnTypeRef = type.toFirResolvedTypeRef()
+  this.containingFunctionSymbol = containingFunctionSymbol
+
+  if (index == EXTENSION_RECEIVER_INDEX)
+    containingFunctionSymbol.receiverParameter?.annotations?.let { annotations += it }
+}.symbol
 
 fun InjektCallable.collectModuleInjectables(
   scope: InjectablesScope,
@@ -111,6 +139,10 @@ private fun InjectablesScope.canSee(callable: InjektCallable, ctx: InjektContext
       (callable.callable.findPsi()?.isTopLevelKtOrJavaMember() == true &&
           callable.callable.findPsi()!!.containingFile in allScopes.mapNotNull { it.owner?.containingFile })*/ true
 
+fun FirRegularClassSymbol.collectInjectableConstructors(ctx: InjektContext) = declarationSymbols
+  .filterIsInstance<FirConstructorSymbol>()
+  .filter { it.isInjectable(ctx) }
+
 fun collectGlobalInjectables(ctx: InjektContext): List<InjektCallable> = collectPackagesWithInjectables(ctx)
   .flatMap { collectPackageInjectables(it, ctx) }
 
@@ -122,8 +154,7 @@ fun collectPackageInjectables(packageFqName: FqName, ctx: InjektContext): List<I
         for (declarationSymbol in classSymbol.declarationSymbols) {
           if (declarationSymbol is FirConstructorSymbol &&
             ((declarationSymbol.isPrimary &&
-                classSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)) ||
-                declarationSymbol.hasAnnotation(InjektFqNames.Provide, ctx.session)))
+                classSymbol.isInjectable(ctx)) || declarationSymbol.isInjectable(ctx)))
             this += declarationSymbol.toInjektCallable(ctx)
 
           if (declarationSymbol is FirClassSymbol<*>)
@@ -133,8 +164,7 @@ fun collectPackageInjectables(packageFqName: FqName, ctx: InjektContext): List<I
 
       for (declaration in collectDeclarationsInFqName(packageFqName, ctx)) {
         if (declaration is FirRegularClassSymbol) collectClassInjectables(declaration)
-        if (declaration is FirCallableSymbol<*> &&
-          declaration.hasAnnotation(InjektFqNames.Provide, ctx.session))
+        else if (declaration is FirCallableSymbol<*> && declaration.isInjectable(ctx))
           this += declaration.toInjektCallable(ctx)
       }
     }

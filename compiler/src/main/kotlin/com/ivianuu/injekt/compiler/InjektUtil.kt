@@ -6,6 +6,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
@@ -22,6 +23,23 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 import kotlin.experimental.*
 
 fun String.asNameId() = Name.identifier(this)
+
+fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
+  if (hasAnnotation(InjektFqNames.Provide, ctx.session)) return true
+
+  if (this is FirConstructorSymbol && isPrimary &&
+    resolvedReturnType.toRegularClassSymbol(ctx.session)!!.isInjectable(ctx))
+    return true
+
+  if (this is FirValueParameterSymbol) {
+    val callableInfo = containingFunctionSymbol.callableInfo(ctx)
+    val index = containingFunctionSymbol.valueParameterSymbols.indexOf(this)
+    if (index in callableInfo.injectParameters)
+      return true
+  }
+
+  return false
+}
 
 fun List<FirAnnotation>.getTags(ctx: InjektContext): List<FirAnnotation> = filter {
   it.resolvedType.toRegularClassSymbol(ctx.session)?.isTag(ctx) == true
@@ -43,14 +61,20 @@ val FirBasedSymbol<*>.fqName: FqName
 
 fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
   ctx.cached("unique_key", this) {
-    when (this) {
-      is FirTypeParameterSymbol -> typeParameterUniqueKey(
+    when {
+      this is FirTypeParameterSymbol -> typeParameterUniqueKey(
         name,
         containingDeclarationSymbol.fqName,
         containingDeclarationSymbol.uniqueKey(ctx)
       )
-      is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
-      is FirCallableSymbol<*> -> callableUniqueKey(
+      this is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
+      this is FirPropertySymbol && isLocal -> localVariableUniqueKey(
+        name,
+        source!!.startOffset,
+        source!!.endOffset,
+        resolvedReturnType.uniqueTypeKey(ctx)
+      )
+      this is FirCallableSymbol<*> -> callableUniqueKey(
         fqName,
         typeParameterSymbols.map { it.name },
         listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
@@ -102,11 +126,8 @@ fun IrSymbol.uniqueKey(ctx: InjektContext): String = ctx.cached("unique_key", th
         .map { it.type.uniqueTypeKey(ctx) },
       owner.getter!!.returnType.uniqueTypeKey(ctx)
     )
-    is IrVariableSymbol -> localVariableUniqueKey(
-      owner.parent.kotlinFqName.child(owner.name),
-      owner.type.uniqueTypeKey(ctx),
-      owner.parent.cast<IrDeclaration>().symbol.uniqueKey(ctx)
-    )
+    is IrVariableSymbol ->
+      localVariableUniqueKey(owner.name, owner.startOffset, owner.endOffset, owner.type.uniqueTypeKey(ctx))
     is IrValueParameterSymbol -> callableUniqueKey(
       owner.parent.kotlinFqName.child(owner.name),
       emptyList(),
@@ -143,10 +164,11 @@ private fun callableUniqueKey(
     returnTypeUniqueKey
 
 private fun localVariableUniqueKey(
-  fqName: FqName,
-  typeUniqueKey: String,
-  parentUniqueKey: String
-) = "variable:${fqName}:$typeUniqueKey:${parentUniqueKey}"
+  name: Name,
+  startOffset: Int,
+  endOffset: Int,
+  returnTypeUniqueKey: String
+) = "variable:${name}:$startOffset:$endOffset:$returnTypeUniqueKey"
 
 private fun typeParameterUniqueKey(
   name: Name,
