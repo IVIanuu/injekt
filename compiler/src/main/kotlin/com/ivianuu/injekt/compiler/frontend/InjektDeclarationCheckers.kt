@@ -49,28 +49,28 @@ object InjektConstructorChecker : FirConstructorChecker(MppCheckerKind.Common) {
 
 object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
   override fun check(declaration: FirClass, context: CheckerContext, reporter: DiagnosticReporter) {
-    val provideConstructors = declaration.declarations
+    val injectableConstructors = declaration.declarations
       .filterIsInstance<FirConstructorSymbol>()
       .filter { it.hasAnnotation(InjektFqNames.Provide, context.session) }
 
-    val isProvider = provideConstructors.isNotEmpty() ||
+    val isInjectable = injectableConstructors.isNotEmpty() ||
         declaration.hasAnnotation(InjektFqNames.Provide, context.session)
 
-    if (isProvider && declaration.classKind == ClassKind.ANNOTATION_CLASS)
+    if (isInjectable && declaration.classKind == ClassKind.ANNOTATION_CLASS)
       reporter.report(
         declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
         "annotation class cannot be injectable",
         context
       )
 
-    if (isProvider && declaration.classKind == ClassKind.ENUM_CLASS)
+    if (isInjectable && declaration.classKind == ClassKind.ENUM_CLASS)
       reporter.report(
         declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
         "enum class cannot be injectable",
         context
       )
 
-    if (isProvider && declaration.status.isInner)
+    if (isInjectable && declaration.status.isInner)
       reporter.report(
         declaration.getAnnotationByClassId(InjektFqNames.Provide, context.session)!!.source!!,
         "inner class cannot be injectable",
@@ -85,7 +85,7 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         context
       )
 
-    if (isProvider && declaration.classKind == ClassKind.CLASS &&
+    if (isInjectable && declaration.classKind == ClassKind.CLASS &&
       declaration.status.modality == Modality.ABSTRACT)
       reporter.report(
         declaration.getModifier(KtTokens.ABSTRACT_KEYWORD)!!.source,
@@ -103,7 +103,7 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         context
       )
 
-    if (isProvider)
+    if (isInjectable)
       checkSpreadTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
 
     checkExceptActual(declaration, context, reporter)

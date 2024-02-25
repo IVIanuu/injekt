@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class InjectableDeclarationCheckTest {
-  @Test fun testProvideAnnotationClass() = codegen(
+  @Test fun testInjectableAnnotationClass() = codegen(
     """
       @Provide annotation class MyAnnotation
     """
@@ -19,7 +19,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("annotation class cannot be injectable")
   }
 
-  @Test fun testProvideConstructorOnAnnotationClass() = codegen(
+  @Test fun testInjectableConstructorOnAnnotationClass() = codegen(
     """
       annotation class MyAnnotation @Provide constructor()
     """
@@ -27,7 +27,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("annotation class cannot be injectable")
   }
 
-  @Test fun testProvideEnumClass() = codegen(
+  @Test fun testInjectableEnumClass() = codegen(
     """
       @Provide enum class MyEnum
     """
@@ -35,7 +35,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("enum class cannot be injectable")
   }
 
-  @Test fun testProvideInnerClass() = codegen(
+  @Test fun testInjectableInnerClass() = codegen(
     """
       class MyOuterClass {
         @Provide inner class MyInnerClass
@@ -45,7 +45,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("inner class cannot be injectable")
   }
 
-  @Test fun testProvideAbstractClass() = codegen(
+  @Test fun testInjectableAbstractClass() = codegen(
     """
       @Provide abstract class MyClass
     """
@@ -53,7 +53,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("abstract class cannot be injectable")
   }
 
-  @Test fun testProvideConstructorAbstractClass() = codegen(
+  @Test fun testInjectableConstructorAbstractClass() = codegen(
     """
       abstract class MyClass @Provide constructor()
     """
@@ -61,7 +61,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("abstract class cannot be injectable")
   }
 
-  @Test fun testProvideInterface() = codegen(
+  @Test fun testInjectableInterface() = codegen(
     """
       @Provide interface MyInterface
     """
@@ -69,7 +69,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("interface cannot be injectable")
   }
 
-  @Test fun testOverrideProvideValueParameterPropertyOnProvideClass() = codegen(
+  @Test fun testOverrideInjectableValueParameterPropertyOnInjectableClass() = codegen(
     """
       abstract class AbstractDep {
         @Provide abstract val foo: Foo
@@ -78,7 +78,7 @@ class InjectableDeclarationCheckTest {
     """
   )
 
-  @Test fun testProvideLocalVariableWithoutInitializer() = codegen(
+  @Test fun testInjectableLocalVariableWithoutInitializer() = codegen(
     """
       fun invoke() {
         @Provide val a: String
@@ -90,7 +90,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("injectable variable must be initialized")
   }
 
-  @Test fun testProvideFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
+  @Test fun testInjectableFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
         @Provide abstract fun foo(): Foo
@@ -124,7 +124,7 @@ class InjectableDeclarationCheckTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testProvideFunctionOverrideWithoutProvideAnnotation() = codegen(
+  @Test fun testInjectableFunctionOverrideWithoutProvideAnnotation() = codegen(
     """
       abstract class MySuperClass {
         @Provide abstract fun foo(): Foo
@@ -154,7 +154,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("'foo' overrides nothing")
   }
 
-  @Test fun testProvidePropertyOverrideWithoutProvideAnnotation() = singleAndMultiCodegen(
+  @Test fun testInjectablePropertyOverrideWithoutProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {
         @Provide abstract val foo: Foo
@@ -191,7 +191,7 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("no corresponding expected declaration")
   }
 
-  @Test fun testActualProvideClassWithoutProvideAnnotation() = multiPlatformCodegen(
+  @Test fun testActualInjectableClassWithoutProvideAnnotation() = multiPlatformCodegen(
     """
       @Provide expect class Dep 
     """,

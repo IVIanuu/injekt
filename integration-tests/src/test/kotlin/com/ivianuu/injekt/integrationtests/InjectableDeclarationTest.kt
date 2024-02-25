@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class InjectableDeclarationTest {
-  @Test fun testProvideFunction() = singleAndMultiCodegen(
+  @Test fun testInjectableFunction() = singleAndMultiCodegen(
     """
       @Provide fun foo(): Foo = Foo()
     """,
@@ -23,7 +23,7 @@ class InjectableDeclarationTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testProvideProperty() = singleAndMultiCodegen(
+  @Test fun testInjectableProperty() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
     """,
@@ -34,7 +34,7 @@ class InjectableDeclarationTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testProvideClass() = singleAndMultiCodegen(
+  @Test fun testInjectableClass() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       @Provide class Dep(val foo: Foo)
@@ -46,7 +46,7 @@ class InjectableDeclarationTest {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
   }
 
-  @Test fun testProvideClassPrimaryConstructor() = singleAndMultiCodegen(
+  @Test fun testInjectablePrimaryConstructor() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       class Dep @Provide constructor(val foo: Foo)
@@ -58,7 +58,7 @@ class InjectableDeclarationTest {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
   }
 
-  @Test fun testProvideClassSecondaryConstructor() = singleAndMultiCodegen(
+  @Test fun testInjectableSecondaryConstructor() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       class Dep {
@@ -84,7 +84,7 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testNestedProvideClass() = singleAndMultiCodegen(
+  @Test fun testNestedInjectableClass() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       class Outer {
@@ -98,7 +98,7 @@ class InjectableDeclarationTest {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Outer\$Dep"
   }
 
-  @Test fun testProvideObject() = singleAndMultiCodegen(
+  @Test fun testInjectableObject() = singleAndMultiCodegen(
     """
       @Provide object Dep
     """,
@@ -109,7 +109,7 @@ class InjectableDeclarationTest {
     invokeSingleFile<Any>().javaClass.name shouldBe "com.ivianuu.injekt.integrationtests.Dep"
   }
 
-  @Test fun testProvideFunctionExtensionReceiver() = singleAndMultiCodegen(
+  @Test fun testInjectableFunctionExtensionReceiver() = singleAndMultiCodegen(
     """
       fun @receiver:Provide Foo.bar() = Bar(inject())
     """,
@@ -120,7 +120,7 @@ class InjectableDeclarationTest {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvidePropertyExtensionReceiver() = singleAndMultiCodegen(
+  @Test fun testInjectablePropertyExtensionReceiver() = singleAndMultiCodegen(
     """
       val @receiver:Provide Foo.bar get() = Bar(inject())
     """,
@@ -131,7 +131,7 @@ class InjectableDeclarationTest {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testProvideValueParameter() = codegen(
+  @Test fun testInjectableValueParameter() = codegen(
     """
       fun invoke(@Provide foo: Foo) = inject<Foo>()
     """
@@ -149,7 +149,7 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testProvideLocalVariable() = codegen(
+  @Test fun testInjectableLocalVariable() = codegen(
     """
       fun invoke(foo: Foo): Foo {
         @Provide val providedFoo = foo
@@ -161,7 +161,7 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testProvideDelegatedLocalVariable() = codegen(
+  @Test fun testInjectableDelegatedLocalVariable() = codegen(
     """
       fun invoke(foo: Foo): Foo {
         @Provide val providedFoo by lazy { foo }
@@ -173,7 +173,7 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testProvideLambdaParameterUseSite() = singleAndMultiCodegen(
+  @Test fun testInjectableLambdaParameterUseSite() = singleAndMultiCodegen(
     """
       inline fun <T, R> withProvidedInstance(value: T, block: (T) -> R) = block(value)
     """,
@@ -202,12 +202,10 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testProvideLocalClass() = codegen(
+  @Test fun testInjectableLocalClass() = codegen(
     """
-      fun invoke(_foo: Foo): Foo {
-        @Provide class FooProvider(__foo: Foo = _foo) {
-          val foo = __foo
-        }
+      fun invoke(@Provide _foo: Foo): Foo {
+        @Provide class FooProvider(val foo: Foo)
         return inject<FooProvider>().foo
       }
     """
@@ -216,7 +214,7 @@ class InjectableDeclarationTest {
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testProvideLocalFunction() = codegen(
+  @Test fun testInjectableLocalFunction() = codegen(
     """
       fun invoke(foo: Foo): Foo {
         @Provide fun foo() = foo
@@ -241,33 +239,7 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testProvideInnerClass() = codegen(
-    """
-      class Outer(@property:Provide val _foo: Foo) {
-        val foo = Inner().foo
-        inner class Inner(val foo: Foo = inject)
-      }
-      fun invoke(foo: Foo): Foo = Outer(foo).foo
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testProvideNestedClass() = codegen(
-    """
-      class Outer(@property:Provide val _foo: Foo) {
-        val foo = Inner().foo
-        class Inner(val foo: Foo = inject)
-      }
-      fun invoke(foo: Foo): Foo = Outer(foo).foo
-    """
-  ) {
-    val foo = Foo()
-    invokeSingleFile(foo) shouldBeSameInstanceAs foo
-  }
-
-  @Test fun testSuperClassPrimaryProvideConstructorParameter() = codegen(
+  @Test fun testSuperClassPrimaryInjectableConstructorParameter() = codegen(
     """
       abstract class MySuperClass(@property:Provide val foo: Foo)
     """,
@@ -277,7 +249,7 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testProvideFunctionInLocalClass() = codegen(
+  @Test fun testInjectableInLocalClass() = codegen(
     """
       fun invoke() {
         class MyClass {
@@ -292,7 +264,7 @@ class InjectableDeclarationTest {
     """
   )
 
-  @Test fun testProvideFunctionInAnonymousObject() = codegen(
+  @Test fun testInjectableInAnonymousObject() = codegen(
     """
       fun invoke() {
         object : Any() {
