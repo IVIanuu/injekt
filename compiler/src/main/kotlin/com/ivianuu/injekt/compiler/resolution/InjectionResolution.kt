@@ -152,10 +152,7 @@ private fun InjectablesScope.computeForCandidate(
         candidate.dependencies.first().type == previousCandidate.dependencies.first().type
       else previousCandidate.chainFqName == candidate.chainFqName
 
-      if (isSameCallable &&
-        previousCandidate.type.coveringSet == candidate.type.coveringSet &&
-        (previousCandidate.type.typeSize < candidate.type.typeSize ||
-            previousCandidate.type == candidate.type)) {
+      if (isSameCallable && previousCandidate.type == candidate.type) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
         resultsByCandidate[candidate] = result
         return result
@@ -173,10 +170,7 @@ private fun InjectablesScope.resolveCandidates(
   request: InjectableRequest,
   candidates: List<Injectable>
 ): ResolutionResult {
-  if (candidates.size == 1) {
-    val candidate = candidates.single()
-    return resolveCandidate(candidate)
-  }
+  if (candidates.size == 1) return resolveCandidate(candidates.single())
 
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null

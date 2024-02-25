@@ -349,32 +349,6 @@ fun InjektType.render(
   inner()
 }
 
-val InjektType.typeSize: Int
-  get() {
-    var typeSize = 0
-    val seen = mutableSetOf<InjektType>()
-    fun visit(type: InjektType) {
-      typeSize++
-      if (seen.add(type))
-        type.arguments.forEach { visit(it) }
-    }
-    visit(this)
-    return typeSize
-  }
-
-val InjektType.coveringSet: Set<InjektClassifier>
-  get() {
-    val classifiers = mutableSetOf<InjektClassifier>()
-    val seen = mutableSetOf<InjektType>()
-    fun visit(type: InjektType) {
-      if (!seen.add(type)) return
-      classifiers += type.classifier
-      type.arguments.forEach { visit(it) }
-    }
-    visit(this)
-    return classifiers
-  }
-
 val InjektType.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
 fun InjektType.isProvideFunctionType(ctx: InjektContext): Boolean =

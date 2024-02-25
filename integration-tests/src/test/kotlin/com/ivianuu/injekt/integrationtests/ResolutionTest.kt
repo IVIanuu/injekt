@@ -334,4 +334,30 @@ class ResolutionTest {
   ) {
     compilationShouldHaveFailed("ambiguous")
   }
+
+  @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: B)
+      @Provide class B(a: A)
+    """,
+    """
+      fun invoke() = inject<A>() 
+    """
+  ) {
+    compilationShouldHaveFailed("diverging")
+  }
+
+  @Test fun testLambdaBreaksCircularDependency() = singleAndMultiCodegen(
+    """
+      @Provide class A(b: B)
+      @Provide class B(a: (B) -> A) {
+        val a = a(this)
+      }
+    """,
+    """
+      fun invoke() = inject<B>()
+    """
+  ) {
+    invokeSingleFile()
+  }
 }
