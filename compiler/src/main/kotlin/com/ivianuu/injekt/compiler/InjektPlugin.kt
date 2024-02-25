@@ -25,19 +25,24 @@ import java.io.*
 import java.util.*
 
 @OptIn(ExperimentalCompilerApi::class)
-@AutoService(CompilerPluginRegistrar::class)
-class InjektCompilerPluginRegistrar : CompilerPluginRegistrar() {
+@AutoService(ComponentRegistrar::class)
+class InjektComponentRegistrar : ComponentRegistrar {
   override val supportsK2: Boolean
     get() = true
 
-  override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+  override fun registerProjectComponents(
+    project: MockProject,
+    configuration: CompilerConfiguration,
+  ) {
     val context = InjektContext()
-    FirExtensionRegistrarAdapter.registerExtension(InjektFirExtensionRegistrar(context))
-    // hack to run ensure we run first
-    registeredExtensions.cast<MutableMap<ProjectExtensionDescriptor<*>, MutableList<Any>>>()
-      .getOrPut(IrGenerationExtension) { mutableListOf() }.add(
-        0,
-        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), context)
+    FirExtensionRegistrarAdapter.registerExtension(project, InjektFirExtensionRegistrar(context))
+
+    project.extensionArea
+      .getExtensionPoint(IrGenerationExtension.extensionPointName)
+      .registerExtension(
+        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), context),
+        LoadingOrder.FIRST,
+        project
       )
   }
 }

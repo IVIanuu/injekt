@@ -311,8 +311,8 @@ fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBas
       .takeIf { it.isNotEmpty() } ?: return@cached emptyList()
 
     val classSymbol = parentDeclarations
+      .filterIsInstance<FirRegularClassSymbol>()
       .singleOrNull { it.fqName.shortName() == fqName.shortName() }
-      ?.safeAs<FirRegularClassSymbol>()
 
     return@cached classSymbol?.declarationSymbols ?: emptyList()
   }

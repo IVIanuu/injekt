@@ -350,16 +350,18 @@ class InjectCallTransformer(
                 element.symbol.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ->
               element.thisReceiver!!.symbol
             element is IrFunction &&
-                (element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ||
+                ((element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) &&
+                    element.dispatchReceiverParameter != null) ||
                     element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset) ->
               when (symbol.name) {
-                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("Wtf $symbol ${element.symbol.uniqueKey(ctx)}")
-                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter!!.symbol ?: error("Wtf $symbol ${element.symbol.uniqueKey(ctx)}")
+                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("Wtf $symbol ${symbol.uniqueKey(ctx)} ${element.symbol.uniqueKey(ctx)}")
+                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter?.symbol ?: error("Wtf $symbol ${element.symbol.uniqueKey(ctx)}")
                 else -> null
               }
             element is IrProperty &&
                 allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-                (element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) ||
+                ((element.parentClassOrNull?.symbol?.uniqueKey(ctx) == injectable.type.classifier.symbol!!.uniqueKey(ctx) &&
+                    element.getter?.dispatchReceiverParameter != null) ||
                     element.getter?.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset)->
               when (symbol.name) {
                 DISPATCH_RECEIVER_NAME -> element.getter!!.dispatchReceiverParameter!!.symbol
