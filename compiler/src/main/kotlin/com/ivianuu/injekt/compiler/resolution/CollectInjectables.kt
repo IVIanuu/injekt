@@ -29,7 +29,7 @@ fun InjektType.collectModuleInjectables(
 
       superTypes.forEach { it.visit() }
 
-      for (declaration in classSymbol.declarationSymbols) {
+      for (declaration in classSymbol.declarationSymbols)
         if (declaration !is FirConstructorSymbol &&
           declaration is FirCallableSymbol<*> &&
           (!declaration.isOverride ||
@@ -51,7 +51,6 @@ fun InjektType.collectModuleInjectables(
               )
             }
         }
-      }
     }
 
     visit()
