@@ -105,12 +105,17 @@ fun ConeKotlinType.toInjektType(
   ctx: InjektContext,
   variance: TypeVariance = TypeVariance.INV,
 ): InjektType {
-  val unwrapped = unwrapLowerBound()
-
   if (this is ConeErrorType) return ctx.nullableAnyType
+  val unwrapped = when(this) {
+    is ConeCapturedType -> lowerType ?: return STAR_PROJECTION_TYPE
+    is ConeDefinitelyNotNullType -> original.unwrapLowerBound()
+    is ConeFlexibleType -> lowerBound.unwrapLowerBound()
+    is ConeSimpleKotlinType -> this
+  }
 
-  val classifier = unwrapped.cast<ConeLookupTagBasedType>().lookupTag
-    .toSymbol(ctx.session)?.toInjektClassifier(ctx) ?: error("Wtf $javaClass ${renderReadableWithFqNames()}")
+  val classifier = unwrapped.safeAs<ConeLookupTagBasedType>()?.lookupTag
+    ?.toSymbol(ctx.session)?.toInjektClassifier(ctx)
+    ?: return ctx.nullableAnyType
 
   val rawType = InjektType(
     classifier = classifier,
@@ -361,7 +366,7 @@ fun InjektType.isUnconstrained(staticTypeParameters: List<InjektClassifier>): Bo
   classifier.isTypeParameter &&
       classifier !in staticTypeParameters &&
       classifier.superTypes.all {
-        it.classifier.fqName == InjektFqNames.Any ||
+        it.classifier.classId == InjektFqNames.Any ||
             it.isUnconstrained(staticTypeParameters)
       }
 
