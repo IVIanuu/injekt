@@ -77,7 +77,7 @@ class ListInjectable(
       }.symbol
     }
 
-  override val dependencyScope = InjectableScopeOrParent(
+  override val dependencyScope = injectableScopeOrParentIfEmpty(
     name = "LAMBDA $type",
     parent = ownerScope,
     initialInjectables = valueParameterSymbols

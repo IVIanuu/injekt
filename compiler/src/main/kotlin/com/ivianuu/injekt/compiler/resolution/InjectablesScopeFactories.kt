@@ -20,26 +20,26 @@ import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun ElementInjectablesScope(
+fun elementInjectablesScopeOf(
   containingElements: List<FirElement>,
   position: FirElement,
   ctx: InjektContext,
 ): InjectablesScope = containingElements.fold(null as InjectablesScope?) { parentScope, element ->
   when (element) {
-    is FirFile -> FileInjectablesScope(element.symbol, ctx)
-    is FirClass -> ClassInjectablesScope(element.symbol, parentScope!!, ctx)
-    is FirFunction -> FunctionInjectablesScope(element.symbol, parentScope!!, containingElements, ctx)
-    is FirProperty -> PropertyInjectablesScope(element.symbol, parentScope!!, ctx)
-    is FirBlock -> BlockExpressionInjectablesScope(element, position, parentScope!!, ctx)
+    is FirFile -> fileInjectablesScopeOf(element.symbol, ctx)
+    is FirClass -> classInjectablesScopeOf(element.symbol, parentScope!!, ctx)
+    is FirFunction -> functionInjectablesScopeOf(element.symbol, parentScope!!, containingElements, ctx)
+    is FirProperty -> propertyInjectablesScopeOf(element.symbol, parentScope!!, ctx)
+    is FirBlock -> blockExpressionScopeOf(element, position, parentScope!!, ctx)
     else -> parentScope
   }
 }!!
 
-private fun FileInjectablesScope(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
+private fun fileInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("file_scope", file) {
-    InjectableScopeOrParent(
+    injectableScopeOrParentIfEmpty(
       name = "FILE ${file.fir.name}",
-      parent = InternalGlobalInjectablesScope(ctx, file),
+      parent = internalGlobalInjectablesScopeOf(file, ctx),
       owner = file,
       ctx = ctx,
       initialInjectables = collectPackageInjectables(file.fir.packageFqName, ctx)
@@ -47,14 +47,14 @@ private fun FileInjectablesScope(file: FirFileSymbol, ctx: InjektContext): Injec
     )
   }
 
-private fun ClassCompanionInjectablesScope(
+private fun classCompanionInjectablesScopeOf(
   clazz: FirClassSymbol<*>,
   parent: InjectablesScope,
   ctx: InjektContext
 ): InjectablesScope = clazz.safeAs<FirRegularClassSymbol>()?.companionObjectSymbol
-  ?.let { ClassInjectablesScope(it, parent, ctx) } ?: parent
+  ?.let { classInjectablesScopeOf(it, parent, ctx) } ?: parent
 
-private fun ClassInjectablesScope(
+private fun classInjectablesScopeOf(
   clazz: FirClassSymbol<*>,
   parent: InjectablesScope,
   ctx: InjektContext
@@ -62,10 +62,10 @@ private fun ClassInjectablesScope(
   "class_scope",
   clazz to parent.name
 ) {
-  val finalParent = ClassCompanionInjectablesScope(clazz, parent, ctx)
+  val finalParent = classCompanionInjectablesScopeOf(clazz, parent, ctx)
   val name = if (clazz.isCompanion) "COMPANION ${clazz.fqName}"
   else "CLASS ${clazz.fqName}"
-  InjectableScopeOrParent(
+  injectableScopeOrParentIfEmpty(
     name = name,
     parent = finalParent,
     owner = clazz,
@@ -82,7 +82,7 @@ private fun ClassInjectablesScope(
   )
 }
 
-private fun FunctionInjectablesScope(
+private fun functionInjectablesScopeOf(
   function: FirFunctionSymbol<*>,
   parent: InjectablesScope,
   containingElements: List<FirElement>,
@@ -120,7 +120,7 @@ private fun FunctionInjectablesScope(
     function.resolvedReturnType.type.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
   else function.typeParameterSymbols)
     .map { it.toInjektClassifier(ctx) }
-  InjectableScopeOrParent(
+  injectableScopeOrParentIfEmpty(
     name = "$baseName ${function.fqName}",
     parent = parent,
     owner = function,
@@ -152,7 +152,7 @@ private fun FunctionInjectablesScope(
   )
 }
 
-private fun PropertyInjectablesScope(
+private fun propertyInjectablesScopeOf(
   property: FirPropertySymbol,
   parent: InjectablesScope,
   ctx: InjektContext
@@ -160,7 +160,7 @@ private fun PropertyInjectablesScope(
   "property_scope",
   property to parent.name
 ) {
-  InjectableScopeOrParent(
+  injectableScopeOrParentIfEmpty(
     name = "PROPERTY ${property.fqName}",
     parent = parent,
     owner = property,
@@ -181,7 +181,7 @@ private fun PropertyInjectablesScope(
   )
 }
 
-private fun BlockExpressionInjectablesScope(
+private fun blockExpressionScopeOf(
   block: FirBlock,
   position: FirElement,
   parent: InjectablesScope,
@@ -201,7 +201,7 @@ private fun BlockExpressionInjectablesScope(
       }
     }
   return if (injectablesBeforePosition.isEmpty()) parent
-  else InjectableScopeOrParent(
+  else injectableScopeOrParentIfEmpty(
     name = "BLOCK AT ${position.source!!.startOffset}",
     parent = parent,
     initialInjectables = injectablesBeforePosition,
@@ -211,11 +211,11 @@ private fun BlockExpressionInjectablesScope(
   )
 }
 
-fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): InjectablesScope =
+private fun internalGlobalInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("internal_global_scope", file) {
-    InjectableScopeOrParent(
+    injectableScopeOrParentIfEmpty(
       name = "INTERNAL GLOBAL EXCEPT ${file.fir.name}",
-      parent = ExternalGlobalInjectablesScope(ctx, file),
+      parent = externalGlobalInjectablesScopeOf(file, ctx),
       initialInjectables = collectGlobalInjectables(ctx)
         .filter {
           it.symbol.moduleData == ctx.session.moduleData &&
@@ -225,7 +225,7 @@ fun InternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): Inj
     )
   }
 
-fun ExternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): InjectablesScope =
+private fun externalGlobalInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("external_global_scope", Unit) {
     InjectablesScope(
       name = "EXTERNAL GLOBAL",
@@ -237,7 +237,7 @@ fun ExternalGlobalInjectablesScope(ctx: InjektContext, file: FirFileSymbol): Inj
     )
   }
 
-fun InjectableScopeOrParent(
+fun injectableScopeOrParentIfEmpty(
   name: String,
   parent: InjectablesScope,
   owner: FirBasedSymbol<*>? = null,
