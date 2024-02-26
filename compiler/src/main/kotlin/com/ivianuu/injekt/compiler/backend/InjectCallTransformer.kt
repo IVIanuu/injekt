@@ -198,18 +198,13 @@ class InjectCallTransformer(
     injectable: LambdaInjectable
   ): IrExpression {
     val type = injectable.type.toIrType(this).typeOrNull.cast<IrSimpleType>()
-    val returnType = type.arguments.last().typeOrNull!!
-
     val lambda = IrFactoryImpl.buildFun {
       origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
       name = Name.special("<anonymous>")
-      this.returnType = returnType
+      returnType = type.arguments.last().typeOrNull!!
       visibility = DescriptorVisibilities.LOCAL
     }.apply {
       parent = irBuilder.scope.getLocalDeclarationParent()
-      annotations = annotations + type.annotations.map {
-        it.deepCopyWithSymbols()
-      }
 
       val irBuilder = DeclarationIrBuilder(irCtx, symbol)
 
