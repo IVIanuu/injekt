@@ -191,10 +191,7 @@ private fun InjectablesScope.resolveCandidates(
         successes.firstOrNull()
           ?.safeAs<ResolutionResult.Success.Value>()?.candidate, candidate
       ) < 0
-    ) {
-      // we cannot get a better result
-      break
-    }
+    ) break // we cannot get a better result
 
     when (val candidateResult = resolveCandidate(candidate)) {
       is ResolutionResult.Success -> {
@@ -223,26 +220,24 @@ private fun InjectablesScope.resolveCandidates(
 private fun InjectablesScope.resolveCandidate(
   candidate: Injectable
 ): ResolutionResult = computeForCandidate(candidate) {
-  if (candidate is CallableInjectable) {
+  if (candidate is CallableInjectable)
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentSymbol = typeArgument.classifier.symbol as? FirTypeParameterSymbol
         ?: continue
       val parameterSymbol = typeParameter.symbol as FirTypeParameterSymbol
-      if (parameterSymbol.isReified && !argumentSymbol.isReified) {
+      if (parameterSymbol.isReified && !argumentSymbol.isReified)
         return@computeForCandidate ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch(
           typeParameter,
           typeArgument.classifier,
           candidate
         )
-      }
     }
-  }
 
   if (candidate.dependencies.isEmpty())
     return@computeForCandidate ResolutionResult.Success.Value(candidate, this, emptyMap())
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
-  for (dependency in candidate.dependencies) {
+  for (dependency in candidate.dependencies)
     when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> when {
@@ -259,7 +254,6 @@ private fun InjectablesScope.resolveCandidate(
         )
       }
     }
-  }
 
   return@computeForCandidate ResolutionResult.Success.Value(
     candidate,
