@@ -380,7 +380,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
           add(it.type)
       }
       .takeIf { it.isNotEmpty() }
-      ?.let { intersectTypes(it, this) }
+      ?.intersectTypes(this)
 
   private fun findSubType(variableWithConstraints: VariableWithConstraints): InjektType? =
     variableWithConstraints.constraints
@@ -389,7 +389,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
           add(it.type)
       }
       .takeIf { it.isNotEmpty() }
-      ?.let { commonSuperType(it, ctx = this) }
+      ?.commonSuperType(ctx = this)
 
   private fun List<InjektType>.singleBestRepresentative(): InjektType? {
     if (size == 1) return first()
@@ -485,7 +485,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
 
   private fun runIsSubTypeOf(subType: InjektType, superType: InjektType) {
     if (!subType.isSubTypeOf(superType, this))
-      addError(TypeContextError.ConstraintError(subType, superType, ConstraintKind.UPPER))
+      errors += TypeContextError.ConstraintError(subType, superType, ConstraintKind.UPPER)
   }
 
   private fun generateNewConstraint(
@@ -533,22 +533,17 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
       )
     )
   }
-
-  private fun addError(error: TypeContextError) {
-    errors += error
-  }
 }
 
-fun commonSuperType(
-  types: List<InjektType>,
-  depth: Int = -(types.maxOfOrNull { it.typeDepth } ?: 0),
+fun List<InjektType>.commonSuperType(
+  depth: Int = -(maxOfOrNull { it.typeDepth } ?: 0),
   ctx: TypeCheckerContext
 ): InjektType {
-  types.singleOrNull()?.let { return it }
-  val notAllNotNull = types.any { it.isNullableType }
-  val notNullTypes = if (notAllNotNull) types.map { it.withNullability(false) } else types
+  singleOrNull()?.let { return it }
+  val notAllNotNull = any { it.isNullableType }
+  val notNullTypes = if (notAllNotNull) map { it.withNullability(false) } else this
 
-  val commonSuperType = commonSuperTypeForNotNullTypes(notNullTypes, depth, ctx)
+  val commonSuperType = notNullTypes.commonSuperTypeForNotNullTypes(depth, ctx)
   return if (notAllNotNull)
     commonSuperType.takeIf { it.classifier.isTypeParameter }
       ?: commonSuperType.withNullability(true)
@@ -556,26 +551,25 @@ fun commonSuperType(
     commonSuperType
 }
 
-private fun uniquify(types: List<InjektType>, ctx: TypeCheckerContext): List<InjektType> {
+private fun List<InjektType>.uniquify(ctx: TypeCheckerContext): List<InjektType> {
   val uniqueTypes = mutableListOf<InjektType>()
-  for (type in types) {
+  for (type in this) {
     val isNewUniqueType = uniqueTypes.none { it.isEqualTo(type, ctx) }
     if (isNewUniqueType) uniqueTypes += type
   }
   return uniqueTypes
 }
 
-private fun commonSuperTypeForNotNullTypes(
-  types: List<InjektType>,
+private fun List<InjektType>.commonSuperTypeForNotNullTypes(
   depth: Int,
   ctx: TypeCheckerContext
 ): InjektType {
-  if (types.size == 1) return types.single()
+  if (size == 1) return single()
 
-  val uniqueTypes = uniquify(types, ctx)
+  val uniqueTypes = uniquify(ctx)
   if (uniqueTypes.size == 1) return uniqueTypes.single()
 
-  val explicitSupertypes = filterTypes(uniqueTypes) { lower, upper -> lower.isSubTypeOf(upper, ctx) }
+  val explicitSupertypes = uniqueTypes.filterTypes { lower, upper -> lower.isSubTypeOf(upper, ctx) }
   if (explicitSupertypes.size == 1) return explicitSupertypes.single()
 
   return findSuperTypeConstructorsAndIntersectResult(explicitSupertypes, depth, ctx)
@@ -585,19 +579,17 @@ private fun findSuperTypeConstructorsAndIntersectResult(
   types: List<InjektType>,
   depth: Int,
   ctx: TypeCheckerContext
-): InjektType = intersectTypes(
-  allCommonSuperTypeClassifiers(types)
-    .map { superTypeWithInjectableClassifier(types, it, depth, ctx) },
-  ctx
-)
+): InjektType = types.allCommonSuperTypeClassifiers()
+  .map { superTypeWithInjectableClassifier(types, it, depth, ctx) }
+  .intersectTypes(ctx)
 
-private fun allCommonSuperTypeClassifiers(types: List<InjektType>): List<InjektClassifier> {
-  val result = collectAllSupertypes(types.first())
+private fun List<InjektType>.allCommonSuperTypeClassifiers(): List<InjektClassifier> {
+  val result = first().collectAllSupertypes()
   // retain all super constructors of the first type that are present in the supertypes of all other types
-  for (type in types) {
-    if (type === types.first()) continue
+  for (type in this) {
+    if (type === first()) continue
 
-    result.retainAll(collectAllSupertypes(type))
+    result.retainAll(type.collectAllSupertypes())
   }
   // remove all constructors that have subtype(s) with constructors from the resulting set - they are less precise
   return result.filterNot { target ->
@@ -607,8 +599,8 @@ private fun allCommonSuperTypeClassifiers(types: List<InjektType>): List<InjektC
   }
 }
 
-private fun collectAllSupertypes(type: InjektType) = mutableSetOf<InjektClassifier>().apply {
-  type.anySuperType {
+private fun InjektType.collectAllSupertypes() = mutableSetOf<InjektClassifier>().apply {
+  anySuperType {
     add(it.classifier)
     false
   }
@@ -689,49 +681,46 @@ private fun calculateArgument(
     val parameterIsNotInv = parameter.variance != TypeVariance.INV
 
     if (parameterIsNotInv)
-      return commonSuperType(arguments, depth + 1, ctx)
+      return arguments.commonSuperType(depth + 1, ctx)
 
     val equalToEachOtherType = arguments.firstOrNull { potentialSuperType ->
       arguments.all { it.isEqualTo(potentialSuperType, ctx) }
     }
 
     return if (equalToEachOtherType == null)
-      commonSuperType(arguments, depth + 1, ctx).withVariance(TypeVariance.OUT)
+      arguments.commonSuperType(depth + 1, ctx).withVariance(TypeVariance.OUT)
     else {
       val thereIsNotInv = arguments.any { it.variance != TypeVariance.INV }
       equalToEachOtherType.withVariance(if (thereIsNotInv) TypeVariance.OUT else TypeVariance.INV)
     }
   } else {
-    val type = intersectTypes(arguments, ctx)
+    val type = arguments.intersectTypes(ctx)
     return if (parameter.variance != TypeVariance.INV) type else type.withVariance(TypeVariance.IN)
   }
 }
 
-private fun intersectTypes(types: List<InjektType>, ctx: TypeCheckerContext): InjektType {
-  if (types.size == 1) return types.single()
+private fun List<InjektType>.intersectTypes(ctx: TypeCheckerContext): InjektType {
+  if (size == 1) return single()
 
-  val resultNullability = types.fold(false) { nullability, type ->
+  val resultNullability = fold(false) { nullability, type ->
     nullability || type.isNullableType
   }
 
-  val correctNullability = types.mapTo(mutableSetOf()) {
+  val correctNullability = mapTo(mutableSetOf()) {
     it.withNullability(resultNullability)
   }
 
-  return intersectTypesWithoutIntersectionType(correctNullability, ctx)
+  return correctNullability.intersectTypesWithoutIntersectionType(ctx)
 }
 
-private fun intersectTypesWithoutIntersectionType(
-  types: Set<InjektType>,
-  ctx: TypeCheckerContext
-): InjektType {
-  if (types.size == 1) return types.single()
+private fun Set<InjektType>.intersectTypesWithoutIntersectionType(ctx: TypeCheckerContext): InjektType {
+  if (size == 1) return single()
 
-  val filteredEqualTypes = filterTypes(types) { lower, upper ->
+  val filteredEqualTypes = filterTypes { lower, upper ->
     isStrictSupertype(lower, upper, ctx.ctx)
   }
 
-  val filteredSuperAndEqualTypes = filterTypes(filteredEqualTypes) { lower, upper ->
+  val filteredSuperAndEqualTypes = filteredEqualTypes.filterTypes { lower, upper ->
     lower.isEqualTo(upper, ctx.ctx)
   }
 
@@ -743,9 +732,9 @@ private fun intersectTypesWithoutIntersectionType(
   else ctx.ctx.nullableAnyType
 }
 
-private fun filterTypes(types: Collection<InjektType>, predicate: (InjektType, InjektType) -> Boolean) = types
-  .filterNot { upper ->
-    types.any { lower -> lower !== upper && predicate(lower, upper) }
+private fun Collection<InjektType>.filterTypes(predicate: (InjektType, InjektType) -> Boolean) =
+  filterNot { upper ->
+    any { lower -> lower !== upper && predicate(lower, upper) }
   }
 
 private fun isStrictSupertype(

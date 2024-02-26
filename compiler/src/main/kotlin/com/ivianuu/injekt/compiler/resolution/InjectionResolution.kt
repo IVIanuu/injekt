@@ -358,8 +358,8 @@ private fun InjectablesScope.compareType(
     val bSubTypeOfA = b.isSubTypeOf(a, ctx)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
-    val aCommonSuperType = commonSuperType(a.superTypes, ctx = ctx)
-    val bCommonSuperType = commonSuperType(b.superTypes, ctx = ctx)
+    val aCommonSuperType = a.superTypes.commonSuperType(ctx = ctx)
+    val bCommonSuperType = b.superTypes.commonSuperType(ctx = ctx)
     val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
     if (diff < 0) return -1
     if (diff > 0) return 1
