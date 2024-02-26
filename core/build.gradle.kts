@@ -37,19 +37,13 @@ kotlin {
   watchosX64()*/
 
   sourceSets {
-    named("jvmTest") {
+    jvmTest {
       dependencies {
         implementation(Deps.junit)
         implementation(Deps.kotestAssertions)
       }
     }
   }
-}
-
-dependencies {
-  add("kspCommonMainMetadata", project(":ksp"))
-  add("kspJvm", project(":ksp"))
-  add("kspJs", project(":ksp"))
 }
 
 tasks.withType<KotlinCompile> {

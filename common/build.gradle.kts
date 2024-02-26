@@ -36,12 +36,12 @@ kotlin {
   watchosX64()*/
 
   sourceSets {
-    val commonMain by getting {
+    commonMain {
       dependencies {
         api(project(":core"))
       }
     }
-    named("jvmTest") {
+    jvmTest {
       dependencies {
         implementation(Deps.Coroutines.test)
         implementation(Deps.junit)
@@ -49,12 +49,6 @@ kotlin {
       }
     }
   }
-}
-
-dependencies {
-  add("kspCommonMainMetadata", project(":ksp"))
-  add("kspJvm", project(":ksp"))
-  add("kspJs", project(":ksp"))
 }
 
 plugins.apply("com.vanniktech.maven.publish")

@@ -7,7 +7,6 @@ package com.ivianuu.injekt.ksp
 import com.google.auto.service.*
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
-import com.google.devtools.ksp.symbol.impl.kotlin.*
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*

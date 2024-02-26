@@ -13,7 +13,6 @@ dependencies {
   ksp(Deps.AutoService.processor)
   compileOnly(Deps.Kotlin.compilerEmbeddable)
   compileOnly(Deps.Ksp.api)
-  compileOnly(Deps.Ksp.symbolProcessing)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

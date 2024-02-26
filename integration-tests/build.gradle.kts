@@ -8,8 +8,6 @@ plugins {
 }
 
 dependencies {
-  ksp(project(":ksp"))
-
   testImplementation(project(":common"))
   testImplementation(project(":compiler"))
   testImplementation(project(":ksp"))

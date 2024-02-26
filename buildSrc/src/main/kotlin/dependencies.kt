@@ -41,11 +41,8 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
 
-  // todo tmp for testing
-  const val guava = "com.google.guava:guava:33.0.0-jre"
-
   object Injekt {
-    const val version = "0.0.1-dev738"
+    const val version = "0.0.1-dev739"
     const val gradlePlugin = "com.ivianuu.injekt:gradle-plugin:$version"
   }
 
