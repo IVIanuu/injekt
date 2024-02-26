@@ -90,42 +90,6 @@ class TypeSubstitutionTest {
     context.fixedTypeVariables[scopedN] shouldBe intType
   }
 
-  @Test fun todoExtractToTypeOnlyTest() = codegen(
-    listOf(
-      source(
-        """
-          interface Key<R>
-    
-          interface DialogKey<R> : Key<R>
-    
-          @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-          annotation class KeyUiTag<K : Key<*>>
-          typealias KeyUi<K> = @KeyUiTag<K> @Composable () -> Unit
-    
-          typealias ModelKeyUi<K, S> = (ModelKeyUiScope<K, S>) -> Unit
-          
-          interface ModelKeyUiScope<K : Key<*>, S>
-          
-          @Provide fun <@AddOn U : ModelKeyUi<K, S>, K : Key<*>, S> modelKeyUi(): KeyUi<K> = TODO()
-        """
-      ),
-      source(
-        """
-          object DonationKey : DialogKey<Unit>
-
-          object DonationModel
-
-          @Provide val donationUi: ModelKeyUi<DonationKey, DonationModel> = TODO()
-        """
-      ),
-      source(
-        """
-          fun invoke() = inject<KeyUi<DonationKey>>()
-        """
-      )
-    )
-  )
-
   private fun TypeCheckerTestContext.getSubstitutionMap(
     subType: InjektType,
     superType: InjektType,
