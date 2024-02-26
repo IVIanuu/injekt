@@ -106,17 +106,23 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
   }
 
   private fun KSTypeReference.typeHash(): String = buildString {
+    val visited = mutableSetOf<KSType>()
     fun KSType.append() {
+      if (!visited.add(this)) return
       annotations.forEach { it.annotationType.resolve().append() }
-      append(declaration.qualifiedName!!.asString())
-      arguments.forEach {
-        append(it.type?.typeHash())
-        append(it.variance)
+      append(declaration.qualifiedName?.asString())
+      arguments.forEach { argument ->
+        append(argument.type?.let { append(it) })
+        append(argument.variance)
       }
       append(isMarkedNullable)
     }
 
-    resolve().append()
+    try {
+      resolve().append()
+    } catch (e: Throwable) {
+      throw IllegalStateException("Wtf ${resolve()}", e)
+    }
   }
 
   @AutoService(SymbolProcessorProvider::class)
