@@ -24,7 +24,3 @@ annotation class Tag2
 
 @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class TypedTag<T>
-
-object TestScope1
-
-object TestScope2

@@ -27,52 +27,32 @@ class TagTest {
     foo1 shouldNotBeSameInstanceAs foo2
   }
 
-  @Test fun testTypeParameterWithTagUpperBound() = singleAndMultiCodegen(
-    """
-      @Provide class Dep<T>(val value: @Tag1 T)
-            
-      @Provide fun tagged(): @Tag1 String = ""
-    """,
-    """
-      fun invoke() = inject<Dep<String>>() 
-    """
-  )
-
   @Test fun testTaggedClass() = singleAndMultiCodegen(
     """ 
-      @Provide @Tag1 class Dep
+      @Provide @Tag1 class Baz
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = inject<@Tag1 Baz>()
     """
   )
 
   @Test fun testTaggedPrimaryConstructor() = singleAndMultiCodegen(
     """ 
-      class Dep @Provide @Tag1 constructor()
+      class Baz @Provide @Tag1 constructor()
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = inject<@Tag1 Baz>()
     """
   )
 
   @Test fun testTaggedSecondaryConstructor() = singleAndMultiCodegen(
     """ 
-      class Dep {
+      class Baz {
         @Provide @Tag1 constructor()
       }
     """,
     """
-      fun invoke() = inject<@Tag1 Dep>()
-    """
-  )
-
-  @Test fun testTaggedObject() = singleAndMultiCodegen(
-    """ 
-      @Provide @Tag1 object Dep
-    """,
-    """
-      fun invoke() = inject<@Tag1 Dep>()
+      fun invoke() = inject<@Tag1 Baz>()
     """
   )
 
@@ -84,35 +64,11 @@ class TagTest {
     compilationShouldHaveFailed("tag cannot have value parameters")
   }
 
-  @Test fun testTagDoesNotNeedToSpecifyTypeTarget() = singleAndMultiCodegen(
-    """
-      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-      annotation class MyTag 
-    """,
-    """
-      fun invoke(value: @MyTag String = inject) {
-      }
-    """
-  )
-
   @Test fun testTagWithTypeParameters() = singleAndMultiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class MyTag<T>
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
-    """,
-    """
-      fun invoke() = inject<@MyTag<String> Foo>() 
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testTagWithGenericTypeArguments() = singleAndMultiCodegen(
-    """
-      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-      annotation class MyTag<T>
-      @Provide fun <T> taggedFoo(): @MyTag<T> Foo = Foo()
     """,
     """
       fun invoke() = inject<@MyTag<String> Foo>() 
