@@ -13,7 +13,7 @@ data class CounterState(
 )
 
 fun interface CounterPresenter {
-  @Composable operator fun invoke(): CounterState
+  @Composable fun state(): CounterState
 }
 
 @Provide fun CounterPresenter(db: CounterDb, scope: ScopedCoroutineScope<ActivityScope>) = CounterPresenter {

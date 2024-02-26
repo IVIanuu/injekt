@@ -21,7 +21,7 @@ import com.ivianuu.injekt.*
         )
       }
     ) {
-      val state = presenter()
+      val state = presenter.state()
       Column(
         modifier = Modifier
           .padding(it)
