@@ -312,6 +312,18 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "nonnull"
   }
 
+  @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
+    """
+      @Provide class FooModule {
+        @Provide fun foo() = Foo()
+      }
+
+      fun createFoo(@Provide foo1: Foo, @Provide foo2: Foo) = inject<Foo>()
+    """
+  ) {
+    compilationShouldHaveFailed("ambiguous")
+  }
+
   @Test fun testPrefersUserInjectableErrorOverBuiltInInjectable() = singleAndMultiCodegen(
     """
       @Provide fun <T> diyLambda(unit: Unit): () -> T = { TODO() } 
@@ -321,18 +333,6 @@ class ResolutionTest {
     """
   ) {
     compilationShouldHaveFailed("no injectable")
-  }
-
-  @Test fun testDoesNotPreferValueArgumentOverAnother() = codegen(
-    """
-      @Provide class FooModule {
-        @Provide fun foo() = Foo()
-      }
-
-      fun createFoo(foo1: Foo = inject, foo2: Foo = inject) = inject<Foo>()
-    """
-  ) {
-    compilationShouldHaveFailed("ambiguous")
   }
 
   @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
