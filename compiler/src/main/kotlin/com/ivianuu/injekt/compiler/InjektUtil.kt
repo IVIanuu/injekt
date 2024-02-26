@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.frontend.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
@@ -60,68 +61,33 @@ val FirBasedSymbol<*>.fqName: FqName
 fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
   ctx.cached("unique_key", this) {
     when (this) {
-      is FirTypeParameterSymbol -> typeParameterUniqueKey(
-        name,
-        containingDeclarationSymbol.fqName,
-        containingDeclarationSymbol.uniqueKey(ctx)
-      )
-      is FirClassLikeSymbol<*> -> classLikeUniqueKey(fqName)
-      is FirCallableSymbol<*> -> callableUniqueKey(
-        fqName,
-        typeParameterSymbols.map { it.name },
-        listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
-          .plus(
-            (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
-              .map { it.resolvedReturnType }
-          )
-          .map { it.uniqueTypeKey(ctx) },
-        resolvedReturnType.uniqueTypeKey(ctx)
-      )
+      is FirTypeParameterSymbol -> "typeparameter:${containingDeclarationSymbol.uniqueKey(ctx)}:$name"
+      is FirClassLikeSymbol<*> -> "class_like:$fqName"
+      is FirCallableSymbol<*> -> "callable:$fqName:" +
+          typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
+          listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
+            .plus(
+              (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
+                .map { it.resolvedReturnType }
+            ).joinToString(",") { it.uniqueTypeKey(ctx) } + ":" +
+          resolvedReturnType.uniqueTypeKey(ctx)
       else -> error("Unexpected declaration $this")
     }
   }
 
 fun ConeKotlinType.uniqueTypeKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
-  uniqueTypeKey(
-    classIdOrName = {
-      safeAs<ConeClassLikeType>()?.classId?.asString()
-        ?: safeAs<ConeLookupTagBasedType>()?.lookupTag?.name?.asString()
-    },
-    arguments = {
-      typeArguments.map { if (it.isStarProjection) null else it.type }
-    },
-    isMarkedNullable = { isMarkedNullable }
-  )
-}
-
-private fun classLikeUniqueKey(fqName: FqName) = "class_like:$fqName"
-
-private fun callableUniqueKey(
-  fqName: FqName,
-  typeParameterNames: List<Name>,
-  parameterUniqueKeys: List<String>,
-  returnTypeUniqueKey: String
-) = "callable:$fqName:" +
-    typeParameterNames.joinToString(",") { it.asString() } + ":" +
-    parameterUniqueKeys.joinToString(",") + ":" +
-    returnTypeUniqueKey
-
-private fun typeParameterUniqueKey(
-  name: Name,
-  parentFqName: FqName,
-  parentUniqueKey: String
-) = "typeparameter:${parentFqName}.$name:${parentUniqueKey}"
-
-private fun <T> T.uniqueTypeKey(
-  classIdOrName: T.() -> String?,
-  arguments: T. () -> List<T?>,
-  isMarkedNullable: T.() -> Boolean
-): String = buildString {
-  append(classIdOrName())
-  append(arguments().joinToString(",") {
-    it?.uniqueTypeKey(classIdOrName, arguments, isMarkedNullable) ?: "*"
-  })
-  if (isMarkedNullable()) append("?")
+  buildString {
+    val finalType = fullyExpandedType(ctx.session)
+    append(
+      finalType.safeAs<ConeClassLikeType>()?.classId?.asString()
+        ?: finalType.safeAs<ConeLookupTagBasedType>()?.lookupTag?.name?.asString()
+    )
+    finalType.typeArguments.joinToString(",") {
+      if (it.isStarProjection) "*"
+      else it.type?.uniqueTypeKey(ctx).orEmpty()
+    }.let { append(it) }
+    if (finalType.isMarkedNullable) append("?")
+  }
 }
 
 @OptIn(ExperimentalTypeInference::class)
