@@ -2,18 +2,15 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
-
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.plugin.*
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
-import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 
 @Suppress("NewApi")
 class InjektContext : TypeCheckerContext {
@@ -52,10 +49,8 @@ class InjektContext : TypeCheckerContext {
     anyType.copy(isMarkedNullable = true)
   }
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
-    session.symbolProvider.getClassLikeSymbolByClassId(
-      StandardClassIds.Function
-    )!!.cast<FirClassSymbol<*>>().defaultType().toInjektType(this)
-      .withArguments(listOf(STAR_PROJECTION_TYPE))
+    StandardClassIds.Function.createConeType(session, arrayOf(ConeStarProjection))
+      .toInjektType(ctx)
   }
   val scopeSession by lazy(LazyThreadSafetyMode.NONE) { ScopeSession() }
 
