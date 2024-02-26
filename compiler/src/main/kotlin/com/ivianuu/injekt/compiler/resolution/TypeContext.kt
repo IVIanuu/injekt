@@ -253,7 +253,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
         .also { possibleNewConstraints = null }
       var anyAdded = false
       for (constraint in constraintsToProcess) {
-        if (shouldWeSkipConstraint(constraint)) continue
+        if (shouldSkipConstraint(constraint)) continue
         val variableWithConstraints = typeVariables[constraint.typeVariable]!!
         val wasAdded = variableWithConstraints.addConstraint(constraint)
         anyAdded = anyAdded || wasAdded
@@ -266,7 +266,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
     }
   }
 
-  private fun shouldWeSkipConstraint(constraint: Constraint): Boolean {
+  private fun shouldSkipConstraint(constraint: Constraint): Boolean {
     if (constraint.kind == ConstraintKind.EQUAL)
       return false
 
@@ -286,8 +286,7 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
   }
 
   fun fixTypeVariables() {
-    while (true) {
-      if (!isOk) break
+    while (isOk) {
       val unfixedTypeVariables = typeVariables
         .filterKeys { it !in fixedTypeVariables }
         .values
@@ -459,17 +458,17 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
 
   private fun directWithVariable(typeVariable: InjektClassifier, constraint: Constraint) {
     if (constraint.kind != ConstraintKind.LOWER)
-      typeVariables[typeVariable]!!.constraints.toList().forEach {
-        if (!isOk) return@forEach
-        if (it.kind != ConstraintKind.UPPER)
-          runIsSubTypeOf(it.type, constraint.type)
+      for (otherConstraint in typeVariables[typeVariable]!!.constraints.toList()) {
+        if (!isOk) break
+        if (otherConstraint.kind != ConstraintKind.UPPER)
+          runIsSubTypeOf(otherConstraint.type, constraint.type)
       }
 
     if (constraint.kind != ConstraintKind.UPPER)
-      typeVariables[typeVariable]!!.constraints.toList().forEach {
-        if (!isOk) return@forEach
-        if (it.kind != ConstraintKind.LOWER)
-          runIsSubTypeOf(constraint.type, it.type)
+      for (otherConstraint in typeVariables[typeVariable]!!.constraints.toList()) {
+        if (!isOk) break
+        if (otherConstraint.kind != ConstraintKind.LOWER)
+          runIsSubTypeOf(constraint.type, otherConstraint.type)
       }
   }
 
