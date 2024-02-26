@@ -82,8 +82,8 @@ class InjectablesScope(
             injectable.callable.originalType.unwrapTags().classifier.symbol!!.fir.cast()
           else injectable.callable.symbol.fir,
           ctx.session,
-          allScopes.firstNotNullOf { it.owner.safeAs<FirFileSymbol>()?.fir },
-          allScopes.mapNotNull { it.owner?.fir },
+          requestingScope.allScopes.firstNotNullOf { it.owner.safeAs<FirFileSymbol>()?.fir },
+          requestingScope.allScopes.mapNotNull { it.owner?.fir },
           null,
         )
       }
