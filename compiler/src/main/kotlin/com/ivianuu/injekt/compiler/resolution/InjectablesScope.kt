@@ -17,7 +17,7 @@ class InjectablesScope(
   val name: String,
   val parent: InjectablesScope?,
   val owner: FirBasedSymbol<*>? = null,
-  val initialInjectables: List<InjektCallable> = emptyList(),
+  initialInjectables: List<InjektCallable> = emptyList(),
   val typeParameters: List<InjektClassifier> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: InjektContext

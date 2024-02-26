@@ -101,7 +101,7 @@ class TagTest {
       }
     """,
     """
-      fun invoke() = inject<ComponentScope<TestScope1>>()
+      fun invoke() = inject<ComponentScope<Foo>>()
     """
   )
 }
