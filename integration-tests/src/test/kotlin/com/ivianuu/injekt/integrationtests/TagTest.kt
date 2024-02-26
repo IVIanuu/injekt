@@ -89,7 +89,7 @@ class TagTest {
     """
   )
 
-  @Test fun testGenericTagTypeAliasPattern() = multiCodegen(
+  @Test fun testGenericTagTypeAliasPattern() = singleAndMultiCodegen(
     """
       typealias ComponentScope<N> = @ComponentScopeTag<N> String
 
