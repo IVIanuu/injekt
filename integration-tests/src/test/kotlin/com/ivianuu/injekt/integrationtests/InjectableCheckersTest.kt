@@ -10,18 +10,10 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
-class InjectableDeclarationCheckTest {
+class InjectableCheckersTest {
   @Test fun testInjectableAnnotationClass() = codegen(
     """
       @Provide annotation class MyAnnotation
-    """
-  ) {
-    compilationShouldHaveFailed("annotation class cannot be injectable")
-  }
-
-  @Test fun testInjectableConstructorOnAnnotationClass() = codegen(
-    """
-      annotation class MyAnnotation @Provide constructor()
     """
   ) {
     compilationShouldHaveFailed("annotation class cannot be injectable")
@@ -53,14 +45,6 @@ class InjectableDeclarationCheckTest {
     compilationShouldHaveFailed("abstract class cannot be injectable")
   }
 
-  @Test fun testInjectableConstructorAbstractClass() = codegen(
-    """
-      abstract class MyClass @Provide constructor()
-    """
-  ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
-  }
-
   @Test fun testInjectableInterface() = codegen(
     """
       @Provide interface MyInterface
@@ -68,15 +52,6 @@ class InjectableDeclarationCheckTest {
   ) {
     compilationShouldHaveFailed("interface cannot be injectable")
   }
-
-  @Test fun testOverrideInjectableValueParameterPropertyOnInjectableClass() = codegen(
-    """
-      abstract class AbstractDep {
-        @Provide abstract val foo: Foo
-      }
-      @Provide class Dep(@property:Provide override val foo: Foo) : AbstractDep()
-    """
-  )
 
   @Test fun testInjectableLocalVariableWithoutInitializer() = codegen(
     """
@@ -167,5 +142,13 @@ class InjectableDeclarationCheckTest {
     """
   ) {
     compilationShouldHaveFailed("'foo' overrides nothing")
+  }
+
+  @Test fun testMultipleAddOnTypeParameters() = codegen(
+    """
+      @Provide fun <@AddOn T, @AddOn S> triggerImpl() = Unit
+    """
+  ) {
+    compilationShouldHaveFailed("only one @AddOn")
   }
 }

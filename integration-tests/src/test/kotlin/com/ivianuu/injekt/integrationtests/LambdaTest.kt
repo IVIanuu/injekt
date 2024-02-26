@@ -22,7 +22,7 @@ class LambdaTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testLambdaWithParams() = codegen(
+  @Test fun testLambdaInjectableWithParams() = codegen(
     """
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
@@ -33,7 +33,7 @@ class LambdaTest {
     invokeSingleFile().shouldBeTypeOf<Bar>()
   }
 
-  @Test fun testCannotRequestLambdaForNonExistingInjectable() = codegen(
+  @Test fun testCannotRequestLambdaInjectableForNonExistingInjectable() = codegen(
     """ 
       fun invoke(): Foo = inject<() -> Foo>()()
     """

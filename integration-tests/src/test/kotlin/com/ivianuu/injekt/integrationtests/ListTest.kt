@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class ListTest {
-  @Test fun testList() = singleAndMultiCodegen(
+  @Test fun testListInjectable() = singleAndMultiCodegen(
     """
       @Provide fun commandA() = CommandA()
 
@@ -33,7 +33,7 @@ class ListTest {
     childList[1].shouldBeTypeOf<CommandB>()
   }
 
-  @Test fun testListWithoutElements() = codegen(
+  @Test fun testListInjectableWithoutElements() = codegen(
     """
       fun invoke() = inject<List<Command>>()
     """

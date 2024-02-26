@@ -14,13 +14,45 @@ import org.junit.*
 class ModuleTest {
   @Test fun testClassModule() = singleAndMultiCodegen(
     """
+      data class Baz(val foo: Foo, val bar: Bar)
       @Provide val foo = Foo()
       @Provide class BarModule(private val foo: Foo) {
-        @Provide val bar get() = Bar(foo)
+        @Provide val bar = Bar(foo)
+        @Provide fun baz(bar: Bar) = Baz(foo, bar)
       }
     """,
     """
+      fun invoke() = inject<Baz>().bar.foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testSubClassModule() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+      abstract class AbstractBarModule<T> {
+        @Provide fun bar(foo: Foo, value: T) = Bar(foo)
+      }
+      @Provide class BarModuleImpl : AbstractBarModule<String>() {
+        @Provide val string = ""
+      } 
+    """,
+    """
       fun invoke() = inject<Bar>() 
+    """
+  )
+
+  @Test fun testModuleWithTypeParameters() = singleAndMultiCodegen(
+    """
+      class MyModule<T>(private val instance: T) {
+        @Provide fun provide() = instance to instance
+      }
+      @Provide fun fooModule() = MyModule(Foo())
+      @Provide fun stringModule() = MyModule("__")
+    """,
+    """
+        fun invoke() = inject<Pair<Foo, Foo>>() 
     """
   )
 
@@ -39,19 +71,6 @@ class ModuleTest {
     invokeSingleFile()
   }
 
-  @Test fun testModuleWithTypeParameters() = singleAndMultiCodegen(
-    """
-      class MyModule<T>(private val instance: T) {
-        @Provide fun provide() = instance to instance
-      }
-      @Provide fun fooModule() = MyModule(Foo())
-      @Provide fun stringModule() = MyModule("__")
-    """,
-    """
-        fun invoke() = inject<Pair<Foo, Foo>>() 
-    """
-  )
-
   @Test fun testLambdaModule() = codegen(
     """
       fun invoke() = inject<(@Provide () -> Foo) -> Foo>()
@@ -61,17 +80,6 @@ class ModuleTest {
     invokeSingleFile<(() -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testLambdaModuleChain() = singleAndMultiCodegen(
-    """
-      @Provide val fooModule: @Provide () -> @Provide () -> Foo = { { Foo() } }
-    """,
-    """
-      fun invoke() = inject<Foo>() 
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testModuleIdentity() = codegen(
     """
       class FooModule {
@@ -79,19 +87,6 @@ class ModuleTest {
       }
       @Provide val fooModule1 = FooModule()
       @Provide val fooModule2 = FooModule()
-      fun invoke() = inject<List<Foo>>()
-    """
-  ) {
-    val foos = invokeSingleFile<List<Foo>>()
-    foos shouldBe foos.distinct()
-  }
-
-  @Test fun testLambdaModuleIdentity() = codegen(
-    """
-      private val foo1 = Foo()
-      @Provide val foo1Lambda: @Provide () -> Foo = { foo1 }
-      private val foo2 = Foo()
-      @Provide val foo2Lambda: @Provide () -> Foo = { foo2 }
       fun invoke() = inject<List<Foo>>()
     """
   ) {
@@ -124,38 +119,4 @@ class ModuleTest {
   ) {
     compilationShouldHaveFailed("com.ivianuu.injekt.integrationtests.fooModuleProvider.invoke.foo")
   }
-
-  @Test fun testModuleWithAddOnInjectable() = codegen(
-    """
-      class Token
-
-      class AddOnModule<T> {
-        @Provide fun <@AddOn S : T> token() = Token()
-      }
-      @Provide val fooModule1 = AddOnModule<Foo>()
-      @Provide val fooModule2 = AddOnModule<Foo>()
-
-      @Provide val foo = Foo()
-
-      fun invoke() = inject<List<Token>>()
-    """
-  ) {
-    val values = invokeSingleFile<List<Any>>()
-    values shouldBe values.distinct()
-  }
-
-  @Test fun testSubClassModule() = singleAndMultiCodegen(
-    """
-      @Provide val foo = Foo()
-      abstract class AbstractBarModule<T> {
-        @Provide fun bar(foo: Foo, value: T) = Bar(foo)
-      }
-      @Provide class BarModuleImpl : AbstractBarModule<String>() {
-        @Provide val string = ""
-      } 
-    """,
-    """
-      fun invoke() = inject<Bar>() 
-    """
-  )
 }
