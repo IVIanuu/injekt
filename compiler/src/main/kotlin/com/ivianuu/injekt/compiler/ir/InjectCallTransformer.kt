@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class, DfaInternals::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class)
 
 package com.ivianuu.injekt.compiler.ir
 
@@ -329,67 +329,64 @@ class InjectCallTransformer(
   private fun ScopeContext.parameterExpression(
     injectable: CallableInjectable,
     symbol: FirValueParameterSymbol,
-  ): IrExpression =
-    irBuilder.irGet(
-      injectable.type.toIrType(this).typeOrNull!!,
-      (if (symbol.name == DISPATCH_RECEIVER_NAME || symbol.name == EXTENSION_RECEIVER_NAME)
-        allScopes.reversed().firstNotNullOfOrNull { scope ->
-          val element = scope.irElement
-          when {
-            element is IrClass &&
-                element.symbol.toFirSymbol<FirClassSymbol<*>>() == injectable.type.classifier.symbol ->
-              element.thisReceiver!!.symbol
-            element is IrFunction &&
-                ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
-                    injectable.type.classifier.symbol!! &&
-                    element.dispatchReceiverParameter != null) ||
-                    element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset) ->
-              when (symbol.name) {
-                DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("wtf $symbol")
-                EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter?.symbol ?: error("wtf $symbol")
-                else -> null
-              }
-            element is IrProperty &&
-                allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-                ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
-                    injectable.type.classifier.symbol!! &&
-                    element.getter?.dispatchReceiverParameter != null) ||
-                    element.getter?.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset)->
-              when (symbol.name) {
-                DISPATCH_RECEIVER_NAME -> element.getter!!.dispatchReceiverParameter!!.symbol
-                EXTENSION_RECEIVER_NAME -> element.getter!!.extensionReceiverParameter!!.symbol
-                else -> null
-              }
-            else -> null
-          }
-        } else null)
-        ?: lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
+  ): IrExpression = irBuilder.irGet(
+    injectable.type.toIrType(this).typeOrNull!!,
+    (if (symbol.name == DISPATCH_RECEIVER_NAME || symbol.name == EXTENSION_RECEIVER_NAME)
+      allScopes.reversed().firstNotNullOfOrNull { scope ->
+        val element = scope.irElement
+        when {
+          element is IrClass &&
+              element.symbol.toFirSymbol<FirClassSymbol<*>>() == injectable.type.classifier.symbol ->
+            element.thisReceiver!!.symbol
+          element is IrFunction &&
+              ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
+                  injectable.type.classifier.symbol!! &&
+                  element.dispatchReceiverParameter != null) ||
+                  element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset) ->
+            when (symbol.name) {
+              DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("wtf $symbol")
+              EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter?.symbol ?: error("wtf $symbol")
+              else -> null
+            }
+          element is IrProperty &&
+              allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
+              ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
+                  injectable.type.classifier.symbol!! &&
+                  element.getter?.dispatchReceiverParameter != null) ||
+                  element.getter?.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset)->
+            when (symbol.name) {
+              DISPATCH_RECEIVER_NAME -> element.getter!!.dispatchReceiverParameter!!.symbol
+              EXTENSION_RECEIVER_NAME -> element.getter!!.extensionReceiverParameter!!.symbol
+              else -> null
+            }
+          else -> null
+        }
+      } else null)
+      ?: lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
         .owner
         .valueParameters
         .singleOrNull { it.name == symbol.name }
         ?.symbol
-        ?: error("wtf $symbol")
-    )
+      ?: error("wtf $symbol")
+  )
 
   private fun ScopeContext.localVariableExpression(
     injectable: CallableInjectable,
     symbol: FirPropertySymbol,
-  ): IrExpression {
-    return if (symbol.getterSymbol != null) irBuilder.irCall(
-      symbol.getterSymbol!!.toIrCallableSymbol(),
-      injectable.type.toIrType(this).typeOrNull!!
-    )
-    else irBuilder.irGet(
-      injectable.type.toIrType(this).typeOrNull!!,
-      compilationDeclarations.declarations
-        .singleOrNull {
-          it.owner.startOffset == symbol.source!!.startOffset &&
-              it.owner.endOffset == symbol.source!!.endOffset
-        }
-        ?.cast()
-        ?: error("wtf $this")
-    )
-  }
+  ): IrExpression = if (symbol.getterSymbol != null) irBuilder.irCall(
+    symbol.getterSymbol!!.toIrCallableSymbol(),
+    injectable.type.toIrType(this).typeOrNull!!
+  )
+  else irBuilder.irGet(
+    injectable.type.toIrType(this).typeOrNull!!,
+    compilationDeclarations.declarations
+      .singleOrNull {
+        it.owner.startOffset == symbol.source!!.startOffset &&
+            it.owner.endOffset == symbol.source!!.endOffset
+      }
+      ?.cast()
+      ?: error("wtf $this")
+  )
 
   private inline fun <reified T : FirBasedSymbol<*>> IrSymbol.toFirSymbol() =
     (owner.safeAs<IrMetadataSourceOwner>()?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol ?:
