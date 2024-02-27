@@ -11,14 +11,6 @@ import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
 class InjectableCheckersTest {
-  @Test fun testInjectableAnnotationClass() = codegen(
-    """
-      @Provide annotation class MyAnnotation
-    """
-  ) {
-    compilationShouldHaveFailed("annotation class cannot be injectable")
-  }
-
   @Test fun testInjectableEnumClass() = codegen(
     """
       @Provide enum class MyEnum

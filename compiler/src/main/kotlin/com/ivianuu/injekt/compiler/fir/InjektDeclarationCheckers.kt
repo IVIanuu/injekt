@@ -44,13 +44,6 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
     val isInjectable = injectableConstructors.isNotEmpty() ||
         declaration.hasAnnotation(InjektFqNames.Provide, context.session)
 
-    if (isInjectable && declaration.classKind == ClassKind.ANNOTATION_CLASS)
-      reporter.report(
-        declaration.source!!,
-        "annotation class cannot be injectable",
-        context
-      )
-
     if (isInjectable && declaration.classKind == ClassKind.ENUM_CLASS)
       reporter.report(
         declaration.source!!,

@@ -106,7 +106,9 @@ class InjectableTest {
     """
       fun invoke() = inject<MyOuterClass.MyInnerClass>()
     """
-  )
+  ) {
+    invokeSingleFile()
+  }
 
   @Test fun testLocalInjectableClass() = codegen(
     """
@@ -118,6 +120,17 @@ class InjectableTest {
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectableAnnotationClass() = codegen(
+    """
+      @Provide annotation class MyAnnotation
+    """,
+    """
+      fun invoke() = inject<MyAnnotation>()
+    """
+  ) {
+    invokeSingleFile()
   }
 
   @Test fun testInjectablePrimaryConstructor() = singleAndMultiCodegen(
