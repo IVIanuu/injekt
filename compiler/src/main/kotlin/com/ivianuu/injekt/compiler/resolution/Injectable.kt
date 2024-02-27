@@ -77,7 +77,8 @@ class LambdaInjectable(
       }.symbol
     }
 
-  override val dependencyScope = injectableScopeOrParentIfEmpty(
+  override val dependencyScope = if (valueParameterSymbols.isEmpty()) null
+  else InjectablesScope(
     name = "LAMBDA $type",
     parent = ownerScope,
     initialInjectables = valueParameterSymbols

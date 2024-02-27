@@ -8,3 +8,6 @@
 .externalNativeBuild
 /buildSrc/.gradle
 /buildSrc/build
+/.kotlin/errors/errors-1709036168240.log
+/.kotlin/errors/errors-1709036248154.log
+/.kotlin/sessions/kotlin-compiler-18191714269055164237.salive

@@ -24,16 +24,30 @@ fun elementInjectablesScopeOf(
   containingElements: List<FirElement>,
   position: FirElement,
   ctx: InjektContext,
-): InjectablesScope = containingElements.fold(null as InjectablesScope?) { parentScope, element ->
-  when (element) {
-    is FirFile -> fileInjectablesScopeOf(element.symbol, ctx)
-    is FirClass -> classInjectablesScopeOf(element.symbol, parentScope!!, ctx)
-    is FirFunction -> functionInjectablesScopeOf(element.symbol, parentScope!!, containingElements, ctx)
-    is FirProperty -> propertyInjectablesScopeOf(element.symbol, parentScope!!, ctx)
-    is FirBlock -> blockExpressionScopeOf(element, position, parentScope!!, ctx)
-    else -> parentScope
-  }
-}!!
+): InjectablesScope {
+  fun scopeOf(elements: List<FirElement>): InjectablesScope =
+    when (val element = elements.last()) {
+      is FirFile -> fileInjectablesScopeOf(element.symbol, ctx)
+      is FirClass -> {
+        classInjectablesScopeOf(element.symbol, scopeOf(
+          elements
+            .dropLast(1)
+            .reversed()
+            .mapNotNull { parentCandidate ->
+              if (parentCandidate !is FirRegularClass || element.isInner) parentCandidate
+              else parentCandidate.companionObjectSymbol?.fir
+            }
+            .reversed()
+        ), ctx)
+      }
+      is FirFunction -> functionInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), elements, ctx)
+      is FirProperty -> propertyInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), ctx)
+      is FirBlock -> blockExpressionScopeOf(element, position, scopeOf(elements.dropLast(1)), ctx)
+      else -> scopeOf(elements.dropLast(1))
+    }
+
+  return scopeOf(containingElements)
+}
 
 private fun fileInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("file_scope", file) {

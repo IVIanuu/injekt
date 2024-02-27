@@ -32,7 +32,7 @@ import kotlin.reflect.*
 
 var fileIndex = 0
 
-fun source(
+fun sourceOf(
   @Language("kotlin") source: String,
   name: String = "File${fileIndex++}.kt",
   injektImports: Boolean = true,
@@ -57,17 +57,17 @@ fun source(
   }
 )
 
-fun invokableSource(
+fun invokableSourceOf(
   @Language("kotlin") source: String,
   injektImports: Boolean = true,
-) = source(source, "File.kt", injektImports)
+) = sourceOf(source, "File.kt", injektImports)
 
 fun codegen(
   @Language("kotlin") source1: String,
   config: KotlinCompilation.() -> Unit = {},
   assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
 ) = codegen(
-  sources = listOf(invokableSource(source1)),
+  sources = listOf(invokableSourceOf(source1)),
   config = config,
   assertions = assertions
 )
@@ -78,7 +78,7 @@ fun codegen(
   config: KotlinCompilation.() -> Unit = {},
   assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() },
 ) = codegen(
-  sources = listOf(source(source1), invokableSource(source2)),
+  sources = listOf(sourceOf(source1), invokableSourceOf(source2)),
   config = config,
   assertions = assertions
 )
@@ -108,7 +108,7 @@ fun singleAndMultiCodegen(
   assertions: KotlinCompilationAssertionScope.(Boolean) -> Unit = { compilationShouldBeOk() }
 ) {
   singleAndMultiCodegen(
-    listOf(listOf(source(source1)), listOf(invokableSource(source2))),
+    listOf(listOf(sourceOf(source1)), listOf(invokableSourceOf(source2))),
     config, assertions
   )
 }
@@ -136,7 +136,7 @@ fun multiCodegen(
   assertions: KotlinCompilationAssertionScope.() -> Unit = { compilationShouldBeOk() }
 ) {
   multiCodegen(
-    listOf(listOf(source(source1)), listOf(invokableSource(source2))),
+    listOf(listOf(sourceOf(source1)), listOf(invokableSourceOf(source2))),
     config,
     assertions
   )
