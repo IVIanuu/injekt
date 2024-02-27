@@ -158,11 +158,10 @@ fun collectPackageInjectables(packageFqName: FqName, ctx: InjektContext): List<I
         }
       }
 
-      for (declaration in collectDeclarationsInFqName(packageFqName, ctx)) {
+      for (declaration in collectDeclarationsInFqName(packageFqName, ctx))
         if (declaration is FirRegularClassSymbol) collectClassInjectables(declaration)
         else if (declaration is FirCallableSymbol<*> && declaration.isInjectable(ctx))
           this += declaration.toInjektCallable(ctx)
-      }
     }
   }
 
