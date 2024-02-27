@@ -51,19 +51,10 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         context
       )
 
-    if (declaration.classKind == ClassKind.INTERFACE &&
-      declaration.hasAnnotation(InjektFqNames.Provide, context.session))
+    if (isInjectable && declaration.status.modality == Modality.ABSTRACT)
       reporter.report(
         declaration.source!!,
-        "interface cannot be injectable",
-        context
-      )
-
-    if (isInjectable && declaration.classKind == ClassKind.CLASS &&
-      declaration.status.modality == Modality.ABSTRACT)
-      reporter.report(
-        declaration.source!!,
-        "abstract class cannot be injectable",
+        "injectable cannot be abstract",
         context
       )
 

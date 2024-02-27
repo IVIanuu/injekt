@@ -24,7 +24,7 @@ class InjectableCheckersTest {
       @Provide abstract class MyClass
     """
   ) {
-    compilationShouldHaveFailed("abstract class cannot be injectable")
+    compilationShouldHaveFailed("injectable cannot be abstract")
   }
 
   @Test fun testInjectableInterface() = codegen(
@@ -32,7 +32,7 @@ class InjectableCheckersTest {
       @Provide interface MyInterface
     """
   ) {
-    compilationShouldHaveFailed("interface cannot be injectable")
+    compilationShouldHaveFailed("injectable cannot be abstract")
   }
 
   @Test fun testInjectableFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
