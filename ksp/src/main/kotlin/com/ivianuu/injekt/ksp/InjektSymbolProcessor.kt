@@ -20,66 +20,54 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
     return emptyList()
   }
 
-  private fun processFile(file: KSFile, injectables: List<KSDeclaration>) {
-    val markerName = "_${
-      file.fileName.removeSuffix(".kt")
-        .substringAfterLast(".")
-        .substringAfterLast("/")
-    }_InjectablesMarker"
-
-    val markerCode = buildString {
-      if (file.packageName.asString().isNotEmpty()) {
-        appendLine("package ${file.packageName.asString()}")
-        appendLine()
-      }
-
-      appendLine("object $markerName")
-    }
-
-    environment.codeGenerator.createNewFile(
-      dependencies = Dependencies(false, file),
-      packageName = file.packageName.asString(),
-      fileName = file.fileName.removeSuffix(".kt") + "Marker",
-    ).write(markerCode.toByteArray())
-
-    val injectablesLookupCode = buildString {
-      appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
-      appendLine()
-
-      appendLine("package ${InjektFqNames.InjectablesPackage}")
-      appendLine()
-
-      for ((i, injectable) in injectables.withIndex()) {
-        val hash = injectable.declarationHash()
-
-        appendLine("// $hash")
-        appendLine("fun `${InjektFqNames.InjectablesLookup.callableName}`(")
-        appendLine("  marker: ${file.packageName.asString()}.${markerName},")
-        repeat(i + 1) {
-          appendLine("  index$it: Byte,")
-        }
-
-        val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
-
-        finalHash
-          .filter { it.isLetterOrDigit() }
-          .chunked(256)
-          .forEachIndexed { index, value ->
-            appendLine("  hash_${index}_$value: Int,")
-          }
-
-        appendLine(") = Unit")
-        appendLine()
-      }
-    }
-
+  private fun processFile(file: KSFile, injectables: List<KSDeclaration>) =
     environment.codeGenerator.createNewFile(
       dependencies = Dependencies(false, file),
       packageName = InjektFqNames.InjectablesPackage.asString(),
       fileName = "${file.fileName.removeSuffix(".kt")}Injectables_" +
           file.filePath.hashCode().toString().filter { it.isLetterOrDigit() },
-    ).write(injectablesLookupCode.toByteArray())
-  }
+    ).write(
+      buildString {
+        val markerName = "${file.packageName.asString().replace(".", "__")}___${
+          file.fileName.removeSuffix(".kt")
+            .substringAfterLast(".")
+            .substringAfterLast("/")
+        }_InjectablesMarker_${file.filePath.hashCode().toString().filter { it.isLetterOrDigit() }}"
+
+        appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
+        appendLine()
+
+        appendLine("package ${InjektFqNames.InjectablesPackage}")
+        appendLine()
+
+        appendLine("object $markerName")
+        appendLine()
+
+        for ((i, injectable) in injectables.withIndex()) {
+          val hash = injectable.declarationHash()
+
+          appendLine("// $hash")
+          appendLine("fun `${InjektFqNames.InjectablesLookup.callableName}`(")
+          appendLine("  marker: $markerName,")
+          repeat(i + 1) {
+            appendLine("  index$it: Byte,")
+          }
+
+          val finalHash = String(Base64.getEncoder().encode(hash.toByteArray()))
+
+          finalHash
+            .filter { it.isLetterOrDigit() }
+            .chunked(256)
+            .forEachIndexed { index, value ->
+              appendLine("  hash_${index}_$value: Int,")
+            }
+
+          appendLine(") = Unit")
+          appendLine()
+        }
+      }
+      .toByteArray()
+    )
 
   private fun KSDeclaration.declarationHash(): String = buildString {
     modifiers.forEach { append(it) }
@@ -118,11 +106,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
       append(isMarkedNullable)
     }
 
-    try {
-      resolve().append()
-    } catch (e: Throwable) {
-      throw IllegalStateException("Wtf ${resolve()}", e)
-    }
+    resolve().append()
   }
 
   @AutoService(SymbolProcessorProvider::class)

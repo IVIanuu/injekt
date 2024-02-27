@@ -172,6 +172,11 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
       InjektFqNames.InjectablesLookup.packageName,
       InjektFqNames.InjectablesLookup.callableName
     ).mapTo(mutableSetOf()) {
-      it.valueParameterSymbols.first().resolvedReturnType.classId!!.packageFqName
+      FqName(
+        it.valueParameterSymbols.first().resolvedReturnType.type.type.classId!!.shortClassName.asString()
+          .split("___")
+          .first()
+          .replace("__", ".")
+      )
     }
   }
