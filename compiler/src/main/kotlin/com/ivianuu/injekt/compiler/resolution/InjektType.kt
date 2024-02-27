@@ -35,12 +35,13 @@ data class InjektClassifier(
 ) {
   val superTypes by lazySuperTypes
 
-  val untaggedType: InjektType = InjektType(
-    classifier = this,
-    arguments = typeParameters.map { it.defaultType },
-    variance = variance
+  val defaultType: InjektType = tags.wrap(
+    InjektType(
+      classifier = this,
+      arguments = typeParameters.map { it.defaultType },
+      variance = variance
+    )
   )
-  val defaultType = tags.wrap(untaggedType)
 
   override fun equals(other: Any?): Boolean = (other is InjektClassifier) && key == other.key
   override fun hashCode(): Int = key.hashCode()

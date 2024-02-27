@@ -232,23 +232,13 @@ fun InjektType.toPersistedInjektType(ctx: InjektContext): PersistedInjektType =
     isProvide = isProvide
   )
 
-fun PersistedInjektType.toInjektType(ctx: InjektContext): InjektType {
-  if (isStarProjection) return STAR_PROJECTION_TYPE
-  val classifier = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx)
-    .toInjektClassifier(ctx)
-  val arguments = if (classifier.isTag) {
-    arguments
-      .map { it.toInjektType(ctx) } +
-        listOfNotNull(
-          if (arguments.size < classifier.typeParameters.size)
-            ctx.nullableAnyType
-          else null
-        )
-  } else arguments.map { it.toInjektType(ctx) }
-  return classifier.untaggedType.copy(
-    arguments = arguments,
+fun PersistedInjektType.toInjektType(ctx: InjektContext): InjektType =
+  if (isStarProjection) STAR_PROJECTION_TYPE
+  else InjektType(
+    classifier = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx)
+      .toInjektClassifier(ctx),
+    arguments = arguments.map { it.toInjektType(ctx) },
     variance = variance,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide
   )
-}
