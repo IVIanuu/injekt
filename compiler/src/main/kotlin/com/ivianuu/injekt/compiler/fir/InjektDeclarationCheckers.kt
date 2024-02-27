@@ -67,16 +67,6 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         context
       )
 
-    if (declaration.hasAnnotation(InjektFqNames.Provide, context.session) &&
-      declaration.primaryConstructorIfAny(context.session)
-        ?.hasAnnotation(InjektFqNames.Provide, context.session) == true
-    )
-      reporter.report(
-        declaration.source!!,
-        "class cannot be marked with @Provide if it has a @Provide primary constructor",
-        context
-      )
-
     if (isInjectable)
       checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
     
