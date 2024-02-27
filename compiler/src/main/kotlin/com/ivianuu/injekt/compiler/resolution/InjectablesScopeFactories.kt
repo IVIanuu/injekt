@@ -28,18 +28,16 @@ fun elementInjectablesScopeOf(
   fun scopeOf(elements: List<FirElement>): InjectablesScope =
     when (val element = elements.last()) {
       is FirFile -> fileInjectablesScopeOf(element.symbol, ctx)
-      is FirClass -> {
-        classInjectablesScopeOf(element.symbol, scopeOf(
-          elements
-            .dropLast(1)
-            .reversed()
-            .mapNotNull { parentCandidate ->
-              if (parentCandidate !is FirRegularClass || element.isInner) parentCandidate
-              else parentCandidate.companionObjectSymbol?.fir
-            }
-            .reversed()
-        ), ctx)
-      }
+      is FirClass -> classInjectablesScopeOf(element.symbol, scopeOf(
+        elements
+          .dropLast(1)
+          .reversed()
+          .mapNotNull { parentCandidate ->
+            if (parentCandidate !is FirRegularClass || element.isInner) parentCandidate
+            else parentCandidate.companionObjectSymbol?.fir
+          }
+          .reversed()
+      ), ctx)
       is FirFunction -> functionInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), elements, ctx)
       is FirProperty -> propertyInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), ctx)
       is FirBlock -> blockExpressionScopeOf(element, position, scopeOf(elements.dropLast(1)), ctx)
