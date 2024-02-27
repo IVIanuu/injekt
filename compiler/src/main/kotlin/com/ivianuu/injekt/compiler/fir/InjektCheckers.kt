@@ -95,7 +95,6 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
           INJECTION_RESULT_KEY,
           SourcePosition(
             file.sourceFile!!.path!!,
-            expression.source!!.startOffset,
             expression.source!!.endOffset
           )
         ) { result }

@@ -59,7 +59,7 @@ class InjektContext : TypeCheckerContext {
   }
 }
 
-data class SourcePosition(val filePath: String, val startOffset: Int, val endOffset: Int)
+data class SourcePosition(val filePath: String, val endOffset: Int)
 
 const val INJECTIONS_OCCURRED_IN_FILE_KEY = "injections_occurred_in_file"
 const val INJECTION_RESULT_KEY = "injection_result"

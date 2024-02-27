@@ -462,7 +462,7 @@ class InjectCallTransformer(
 
     val injectionResult = ctx.cachedOrNull<_, InjectionResult.Success>(
       INJECTION_RESULT_KEY,
-      SourcePosition(currentFile.fileEntry.name, result.startOffset, result.endOffset)
+      SourcePosition(currentFile.fileEntry.name, result.endOffset)
     ) ?: return result
 
     return DeclarationIrBuilder(irCtx, result.symbol).irBlock {
