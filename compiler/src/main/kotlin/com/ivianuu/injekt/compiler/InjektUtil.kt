@@ -6,7 +6,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.frontend.*
+import com.ivianuu.injekt.compiler.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*

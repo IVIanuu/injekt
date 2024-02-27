@@ -4,10 +4,10 @@
 
 @file:OptIn(UnsafeCastFunction::class)
 
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.ir
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.frontend.*
+import com.ivianuu.injekt.compiler.fir.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.fir.backend.*

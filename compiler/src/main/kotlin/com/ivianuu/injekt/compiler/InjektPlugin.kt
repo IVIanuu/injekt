@@ -7,8 +7,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.*
-import com.ivianuu.injekt.compiler.backend.*
-import com.ivianuu.injekt.compiler.frontend.*
+import com.ivianuu.injekt.compiler.fir.*
+import com.ivianuu.injekt.compiler.ir.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.com.intellij.mock.*

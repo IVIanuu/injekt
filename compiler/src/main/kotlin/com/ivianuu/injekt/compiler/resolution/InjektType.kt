@@ -7,7 +7,7 @@
 package com.ivianuu.injekt.compiler.resolution
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.frontend.*
+import com.ivianuu.injekt.compiler.fir.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*

@@ -8,7 +8,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.compiler.*
-import com.ivianuu.injekt.compiler.backend.*
+import com.ivianuu.injekt.compiler.ir.*
 import com.ivianuu.injekt.ksp.*
 import com.tschuchort.compiletesting.*
 import com.tschuchort.compiletesting.SourceFile

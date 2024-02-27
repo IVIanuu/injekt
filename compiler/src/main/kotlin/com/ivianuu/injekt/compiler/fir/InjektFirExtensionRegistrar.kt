@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.frontend
+package com.ivianuu.injekt.compiler.fir
 
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.fir.*

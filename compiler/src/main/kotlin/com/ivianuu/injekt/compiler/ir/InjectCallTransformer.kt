@@ -4,7 +4,7 @@
 
 @file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class, DfaInternals::class)
 
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.ir
 
 import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
