@@ -1,39 +1,20 @@
+@file:OptIn(InternalDiagnosticFactoryMethod::class)
+
 package com.ivianuu.injekt.compiler.fir
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
-import org.jetbrains.kotlin.diagnostics.rendering.*
 import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 
-object InjektErrors {
-  val INJEKT_ERROR by error1<PsiElement, String>()
-  init {
-    RootDiagnosticRendererFactory.registerFactory(InjektErrorMessages)
-  }
-}
+private val INJEKT_ERROR by error1<PsiElement, String>()
 
-object InjektErrorMessages : BaseDiagnosticRendererFactory() {
-  override val MAP = KtDiagnosticFactoryToRendererMap("Injekt").also { map ->
-    map.put(
-      InjektErrors.INJEKT_ERROR,
-      "{0}",
-      object : DiagnosticParameterRenderer<String> {
-        override fun render(
-          obj: String,
-          renderingContext: RenderingContext,
-        ): String = obj
-      }
-    )
-  }
-}
-
-@OptIn(InternalDiagnosticFactoryMethod::class) fun DiagnosticReporter.report(
+fun DiagnosticReporter.report(
   element: AbstractKtSourceElement,
   message: String,
   context: CheckerContext
-) = report(InjektErrors.INJEKT_ERROR.on(element, message, null), context)
+) = report(INJEKT_ERROR.on(element, message, null), context)
 
 fun InjectionResult.Error.render(): String = buildString {
   var indent = 0

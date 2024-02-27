@@ -40,29 +40,17 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         declaration.hasAnnotation(InjektFqNames.Provide, context.session)
 
     if (isInjectable && declaration.classKind == ClassKind.ENUM_CLASS)
-      reporter.report(
-        declaration.source!!,
-        "enum class cannot be injectable",
-        context
-      )
+      reporter.report(declaration.source!!, "enum class cannot be injectable", context)
 
     if (isInjectable && declaration.status.modality == Modality.ABSTRACT)
-      reporter.report(
-        declaration.source!!,
-        "injectable cannot be abstract",
-        context
-      )
+      reporter.report(declaration.source!!, "injectable cannot be abstract", context)
 
     if (isInjectable)
       checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
     
     if (declaration.hasAnnotation(InjektFqNames.Tag, context.session) &&
       declaration.primaryConstructorIfAny(context.session)?.valueParameterSymbols?.isNotEmpty() == true)
-      reporter.report(
-        declaration.source!!,
-        "tag cannot have value parameters",
-        context
-      )
+      reporter.report(declaration.source!!, "tag cannot have value parameters", context)
   }
 }
 
