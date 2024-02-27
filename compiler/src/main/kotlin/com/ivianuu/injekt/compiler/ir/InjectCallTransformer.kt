@@ -109,31 +109,28 @@ class InjectCallTransformer(
 
     fun expressionFor(result: ResolutionResult.Success.Value): IrExpression {
       val scopeContext = findScopeContext(result.scope)
-      return scopeContext.expressionForImpl(result)
-    }
+      return if (this != scopeContext) scopeContext.expressionFor(result)
+      else wrapExpressionInFunctionIfNeeded(result) {
+        val expression = when (val candidate = result.candidate) {
+          is CallableInjectable -> callableExpression(result, candidate)
+          is LambdaInjectable -> lambdaExpression(result, candidate)
+          is ListInjectable -> listExpression(result, candidate)
+        }
 
-    private fun expressionForImpl(
-      result: ResolutionResult.Success.Value
-    ): IrExpression = wrapExpressionInFunctionIfNeeded(result) {
-      val expression = when (val candidate = result.candidate) {
-        is CallableInjectable -> callableExpression(result, candidate)
-        is LambdaInjectable -> lambdaExpression(result, candidate)
-        is ListInjectable -> listExpression(result, candidate)
-      }
-
-      if (!result.candidate.type.isNullableType ||
+        if (!result.candidate.type.isNullableType ||
           result.dependencyResults.keys.firstOrNull()?.parameterIndex != DISPATCH_RECEIVER_INDEX) expression
-      else irBuilder.irBlock {
-        expression as IrFunctionAccessExpression
-        val tmpDispatchReceiver = irTemporary(expression.dispatchReceiver!!)
-        expression.dispatchReceiver = irGet(tmpDispatchReceiver)
+        else irBuilder.irBlock {
+          expression as IrFunctionAccessExpression
+          val tmpDispatchReceiver = irTemporary(expression.dispatchReceiver!!)
+          expression.dispatchReceiver = irGet(tmpDispatchReceiver)
 
-        +irIfNull(
-          expression.type,
-          irGet(tmpDispatchReceiver),
-          irNull(),
-          expression
-        )
+          +irIfNull(
+            expression.type,
+            irGet(tmpDispatchReceiver),
+            irNull(),
+            expression
+          )
+        }
       }
     }
   }
