@@ -24,8 +24,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 
-var dumpAllFiles = false
-
 class InjektIrGenerationExtension(
   private val dumpDir: File,
   private val ctx: InjektContext
@@ -95,6 +93,8 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
     null
   )
 }
+
+var dumpAllFiles = false
 
 fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
   files
