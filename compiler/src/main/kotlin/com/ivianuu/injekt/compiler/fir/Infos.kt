@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.*
 import com.ivianuu.injekt.compiler.resolution.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
@@ -29,43 +30,46 @@ class CallableInfo(
 )
 
 fun FirCallableSymbol<*>.callableInfo(ctx: InjektContext): CallableInfo =
-  if (this is FirPropertyAccessorSymbol) propertySymbol.callableInfo(ctx)
-  else ctx.cached("callable_info", uniqueKey(ctx)) {
-    decodeDeclarationInfo<PersistedCallableInfo>(ctx)
-      ?.toCallableInfo(ctx)
-      ?.let { return@cached it }
+  when {
+    this != originalOrSelf() -> originalOrSelf().callableInfo(ctx)
+    this is FirPropertyAccessorSymbol -> propertySymbol.callableInfo(ctx)
+    else -> ctx.cached("callable_info", uniqueKey(ctx)) {
+      decodeDeclarationInfo<PersistedCallableInfo>(ctx)
+        ?.toCallableInfo(ctx)
+        ?.let { return@cached it }
 
-    val type = run {
-      val tags = if (this is FirConstructorSymbol)
-        buildList {
-          addAll(resolvedReturnType.toSymbol(ctx.session)!!.classifierInfo(ctx).tags)
-          for (tagAnnotation in annotations.getTags(ctx))
-            add(tagAnnotation.resolvedType.toInjektType(ctx))
-        }
-      else emptyList()
-      tags.wrap(resolvedReturnType.toInjektType(ctx))
-    }
-
-    val parameterTypes = buildMap {
-      if (dispatchReceiverType != null)
-        this[DISPATCH_RECEIVER_INDEX] = dispatchReceiverType!!.toInjektType(ctx)
-      if (receiverParameter != null)
-        this[EXTENSION_RECEIVER_INDEX] = receiverParameter!!.typeRef.coneType.toInjektType(ctx)
-      if (this@callableInfo is FirFunctionSymbol<*>)
-        valueParameterSymbols.forEachIndexed { index, valueParameter ->
-          this[index] = valueParameter.resolvedReturnType.toInjektType(ctx)
-        }
-    }
-
-    val injectParameters = if (this !is FirFunctionSymbol<*>) emptySet()
-    else valueParameterSymbols
-      .filter {
-        it.defaultValueSource?.getElementTextInContextForDebug() ==
-            InjektFqNames.inject.callableName.asString()
+      val type = run {
+        val tags = if (this is FirConstructorSymbol)
+          buildList {
+            addAll(resolvedReturnType.toSymbol(ctx.session)!!.classifierInfo(ctx).tags)
+            for (tagAnnotation in annotations.getTags(ctx))
+              add(tagAnnotation.resolvedType.toInjektType(ctx))
+          }
+        else emptyList()
+        tags.wrap(resolvedReturnType.toInjektType(ctx))
       }
-      .mapTo(mutableSetOf()) { valueParameterSymbols.indexOf(it) }
 
-    CallableInfo(this, type, parameterTypes, injectParameters)
+      val parameterTypes = buildMap {
+        if (dispatchReceiverType != null)
+          this[DISPATCH_RECEIVER_INDEX] = dispatchReceiverType!!.toInjektType(ctx)
+        if (receiverParameter != null)
+          this[EXTENSION_RECEIVER_INDEX] = receiverParameter!!.typeRef.coneType.toInjektType(ctx)
+        if (this@callableInfo is FirFunctionSymbol<*>)
+          valueParameterSymbols.forEachIndexed { index, valueParameter ->
+            this[index] = valueParameter.resolvedReturnType.toInjektType(ctx)
+          }
+      }
+
+      val injectParameters = if (this !is FirFunctionSymbol<*>) emptySet()
+      else valueParameterSymbols
+        .filter {
+          it.defaultValueSource?.getElementTextInContextForDebug() ==
+              InjektFqNames.inject.callableName.asString()
+        }
+        .mapTo(mutableSetOf()) { valueParameterSymbols.indexOf(it) }
+
+      CallableInfo(this, type, parameterTypes, injectParameters)
+    }
   }
 
 fun CallableInfo.shouldBePersisted(ctx: InjektContext) = injectParameters.isNotEmpty() ||

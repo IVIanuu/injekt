@@ -7,6 +7,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.fir.*
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
@@ -62,7 +63,8 @@ fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
     when (this) {
       is FirTypeParameterSymbol -> "typeparameter:${containingDeclarationSymbol.uniqueKey(ctx)}:$name"
       is FirClassLikeSymbol<*> -> "class_like:$fqName"
-      is FirCallableSymbol<*> -> "callable:$fqName:" +
+      is FirCallableSymbol<*> -> if (this != originalOrSelf()) originalOrSelf().uniqueKey(ctx)
+      else "callable:$fqName:" +
           typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
           listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
             .plus(
