@@ -28,4 +28,6 @@ object InjektFqNames {
   val kFunction = StandardClassIds.KFunction.asFqNameString()
   val suspendFunction = StandardClassIds.BASE_COROUTINES_PACKAGE.child("SuspendFunction".asNameId()).asString()
   val kSuspendFunction = StandardClassIds.BASE_COROUTINES_PACKAGE.child("KSuspendFunction".asNameId()).asString()
+  val composableFunction = FqName("androidx.compose.runtime.internal.ComposableFunction").asString()
+  val kComposableFunction = FqName("androidx.compose.runtime.internal.KComposableFunction").asString()
 }

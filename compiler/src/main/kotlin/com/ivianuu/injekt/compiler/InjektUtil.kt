@@ -149,11 +149,13 @@ fun findClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSy
   ctx.cached("classifier_for_fq_name", fqName) {
     if (fqName == InjektFqNames.Any.asSingleFqName())
       return@cached ctx.anyType.classifier.symbol
-
+    // todo find a way to support ALL function kinds
     if (fqName.asString().startsWith(InjektFqNames.function) ||
       fqName.asString().startsWith(InjektFqNames.kFunction) ||
       fqName.asString().startsWith(InjektFqNames.suspendFunction) ||
-      fqName.asString().startsWith(InjektFqNames.kSuspendFunction))
+      fqName.asString().startsWith(InjektFqNames.kSuspendFunction) ||
+      fqName.asString().startsWith(InjektFqNames.composableFunction) ||
+      fqName.asString().startsWith(InjektFqNames.kComposableFunction))
       ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
     else collectDeclarationsInFqName(fqName.parent(), ctx)
       .filterIsInstance<FirClassifierSymbol<*>>()
