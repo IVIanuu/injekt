@@ -41,8 +41,6 @@ fun elementInjectablesScopeOf(
       is FirProperty -> propertyInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), ctx)
       is FirBlock -> blockExpressionScopeOf(element, position, scopeOf(elements.dropLast(1)), ctx)
       else -> scopeOf(elements.dropLast(1))
-    }.also {
-      println()
     }
 
   return scopeOf(containingElements)
