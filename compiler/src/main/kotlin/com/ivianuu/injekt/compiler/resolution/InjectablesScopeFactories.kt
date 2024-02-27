@@ -62,12 +62,10 @@ private fun classInjectablesScopeOf(
   "class_scope",
   clazz to parent.name
 ) {
-  val finalParent = classCompanionInjectablesScopeOf(clazz, parent, ctx)
-  val name = if (clazz.isCompanion) "COMPANION ${clazz.fqName}"
-  else "CLASS ${clazz.fqName}"
   injectableScopeOrParentIfEmpty(
-    name = name,
-    parent = finalParent,
+    name = if (clazz.isCompanion) "COMPANION ${clazz.fqName}"
+    else "CLASS ${clazz.fqName}",
+    parent = classCompanionInjectablesScopeOf(clazz, parent, ctx),
     owner = clazz,
     initialInjectables = listOf(injectableReceiver(
       DISPATCH_RECEIVER_INDEX,
@@ -115,16 +113,14 @@ private fun functionInjectablesScopeOf(
           }
         }
     }
-  val baseName = if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"
-  val typeParameters = (if (function is FirConstructorSymbol)
-    function.resolvedReturnType.type.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
-  else function.typeParameterSymbols)
-    .map { it.toInjektClassifier(ctx) }
   injectableScopeOrParentIfEmpty(
-    name = "$baseName ${function.fqName}",
+    name = "${if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"} ${function.fqName}",
     parent = parent,
     owner = function,
-    typeParameters = typeParameters,
+    typeParameters = (if (function is FirConstructorSymbol)
+      function.resolvedReturnType.type.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
+    else function.typeParameterSymbols)
+      .map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList<FirValueParameterSymbol> {
       if (function.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true ||
         function.receiverParameter != null &&
@@ -164,6 +160,7 @@ private fun propertyInjectablesScopeOf(
     name = "PROPERTY ${property.fqName}",
     parent = parent,
     owner = property,
+    typeParameters = property.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList {
       if (property.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true)
         this += injectableReceiver(
@@ -176,7 +173,6 @@ private fun propertyInjectablesScopeOf(
         )
           .toInjektCallable(ctx)
     },
-    typeParameters = property.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     ctx = ctx
   )
 }
@@ -200,8 +196,8 @@ private fun blockExpressionScopeOf(
         else -> emptyList()
       }
     }
-  return if (injectablesBeforePosition.isEmpty()) parent
-  else injectableScopeOrParentIfEmpty(
+
+  return injectableScopeOrParentIfEmpty(
     name = "BLOCK AT ${position.source!!.startOffset}",
     parent = parent,
     initialInjectables = injectablesBeforePosition,
