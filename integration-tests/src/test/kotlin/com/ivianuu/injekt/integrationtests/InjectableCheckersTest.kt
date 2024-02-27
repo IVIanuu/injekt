@@ -27,16 +27,6 @@ class InjectableCheckersTest {
     compilationShouldHaveFailed("enum class cannot be injectable")
   }
 
-  @Test fun testInjectableInnerClass() = codegen(
-    """
-      class MyOuterClass {
-        @Provide inner class MyInnerClass
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("inner class cannot be injectable")
-  }
-
   @Test fun testInjectableAbstractClass() = codegen(
     """
       @Provide abstract class MyClass

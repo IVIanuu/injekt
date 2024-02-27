@@ -58,13 +58,6 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         context
       )
 
-    if (isInjectable && declaration.status.isInner)
-      reporter.report(
-        declaration.source!!,
-        "inner class cannot be injectable",
-        context
-      )
-
     if (declaration.classKind == ClassKind.INTERFACE &&
       declaration.hasAnnotation(InjektFqNames.Provide, context.session))
       reporter.report(

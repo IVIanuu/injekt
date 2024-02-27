@@ -97,6 +97,17 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testInnerInjectableClass() = codegen(
+    """
+      @Provide class MyOuterClass {
+        @Provide inner class MyInnerClass
+      }
+    """,
+    """
+      fun invoke() = inject<MyOuterClass.MyInnerClass>()
+    """
+  )
+
   @Test fun testLocalInjectableClass() = codegen(
     """
       fun invoke(): Foo {
