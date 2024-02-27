@@ -59,9 +59,17 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       .toInjektCallable(ctx)
       .substitute(substitutionMap)
 
-    val explicitArguments = expression.resolvedArgumentMapping
-      ?.mapTo(mutableSetOf()) { callee.valueParameterSymbols.indexOf(it.value.symbol) }
-      ?: emptySet()
+    val explicitArguments = buildSet {
+      if (expression.dispatchReceiver != null)
+        this += DISPATCH_RECEIVER_INDEX
+
+      if (expression.extensionReceiver != null)
+        this += EXTENSION_RECEIVER_INDEX
+
+      expression.resolvedArgumentMapping?.forEach {
+        this += callee.valueParameterSymbols.indexOf(it.value.symbol)
+      }
+    }
 
     val requests = substitutedCallee.injectableRequests(explicitArguments)
 
