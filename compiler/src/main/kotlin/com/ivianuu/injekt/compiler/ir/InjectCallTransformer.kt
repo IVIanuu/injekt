@@ -215,11 +215,12 @@ class InjectCallTransformer(
       }
 
       val dependencyResult = result.dependencyResults.values.single()
-      val dependencyScopeContext = if (injectable.dependencyScope == this@lambdaExpression.scope) null
-      else ScopeContext(
-        this@lambdaExpression, rootContext,
-        injectable.dependencyScope, irBuilder.scope
-      )
+      val dependencyScopeContext = injectable.dependencyScope?.let {
+        ScopeContext(
+          this@lambdaExpression, rootContext,
+          it, irBuilder.scope
+        )
+      }
 
       fun ScopeContext.createExpression(): IrExpression {
         for ((index, parameter) in injectable.valueParameterSymbols.withIndex())
@@ -235,7 +236,7 @@ class InjectCallTransformer(
       this.body = irBuilder.irBlockBody {
         +irReturn(
           (dependencyScopeContext?.run { createExpression() } ?: createExpression())
-            .also { dependencyScopeContext?.statements?.forEach { +it } }
+            .also { dependencyScopeContext?.statements?.let { +it } }
         )
       }
     }
