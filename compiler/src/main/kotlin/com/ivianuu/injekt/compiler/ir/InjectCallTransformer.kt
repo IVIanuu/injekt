@@ -332,31 +332,27 @@ class InjectCallTransformer(
     (if (symbol.name == DISPATCH_RECEIVER_NAME || symbol.name == EXTENSION_RECEIVER_NAME)
       allScopes.reversed().firstNotNullOfOrNull { scope ->
         val element = scope.irElement
+        val originalInjectableClassifier = injectable.callable.originalType.classifier.symbol
         when {
           element is IrClass &&
-              element.symbol.toFirSymbol<FirClassSymbol<*>>() == injectable.type.classifier.symbol ->
-            element.thisReceiver!!.symbol
-          element is IrFunction &&
-              ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
-                  injectable.type.classifier.symbol!! &&
-                  element.dispatchReceiverParameter != null) ||
-                  element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset) ->
-            when (symbol.name) {
-              DISPATCH_RECEIVER_NAME -> element.dispatchReceiverParameter?.symbol ?: error("wtf $symbol")
-              EXTENSION_RECEIVER_NAME -> element.extensionReceiverParameter?.symbol ?: error("wtf $symbol")
-              else -> null
-            }
-          element is IrProperty &&
-              allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
-              ((element.parentClassOrNull?.symbol?.toFirSymbol<FirClassSymbol<*>>() ==
-                  injectable.type.classifier.symbol!! &&
-                  element.getter?.dispatchReceiverParameter != null) ||
-                  element.getter?.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset)->
-            when (symbol.name) {
-              DISPATCH_RECEIVER_NAME -> element.getter!!.dispatchReceiverParameter!!.symbol
-              EXTENSION_RECEIVER_NAME -> element.getter!!.extensionReceiverParameter!!.symbol
-              else -> null
-            }
+              element.symbol.toFirSymbol<FirClassifierSymbol<*>>() ==
+              originalInjectableClassifier -> element.thisReceiver!!.symbol
+          symbol.name == DISPATCH_RECEIVER_NAME &&
+              element is IrFunction &&
+              element.dispatchReceiverParameter?.type?.classOrFail?.toFirSymbol<FirClassSymbol<*>>() == originalInjectableClassifier ->
+            element.dispatchReceiverParameter!!.symbol
+          symbol.name == EXTENSION_RECEIVER_NAME &&
+              element is IrFunction &&
+              element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset ->
+            element.extensionReceiverParameter!!.symbol
+          symbol.name == DISPATCH_RECEIVER_NAME &&
+              element is IrProperty &&
+              element.getter!!.dispatchReceiverParameter?.type?.classOrFail?.toFirSymbol<FirClassSymbol<*>>() == originalInjectableClassifier ->
+            element.getter!!.dispatchReceiverParameter!!.symbol
+          symbol.name == EXTENSION_RECEIVER_NAME &&
+              element is IrProperty &&
+              element.getter!!.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset ->
+            element.getter!!.extensionReceiverParameter!!.symbol
           else -> null
         }
       } else null)
