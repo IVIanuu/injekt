@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
 
 package com.ivianuu.injekt.compiler.resolution
 
@@ -50,7 +50,7 @@ class ListInjectable(
     }
 }
 
-@OptIn(SymbolInternals::class) class LambdaInjectable(
+class LambdaInjectable(
   override val ownerScope: InjectablesScope,
   request: InjectableRequest
 ) : Injectable {
