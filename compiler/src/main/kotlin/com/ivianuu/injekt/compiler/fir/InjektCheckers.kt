@@ -71,7 +71,10 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       }
     }
 
-    val requests = substitutedCallee.injectableRequests(explicitArguments)
+    val requests = substitutedCallee.injectableRequests(
+      explicitArguments + callee.valueParameterSymbols.indices
+        .filter { it !in info.injectParameters }
+    )
 
     if (requests.isEmpty()) return
 
