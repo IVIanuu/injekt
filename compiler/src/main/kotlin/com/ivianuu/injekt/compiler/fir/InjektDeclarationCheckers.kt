@@ -7,16 +7,12 @@ package com.ivianuu.injekt.compiler.fir
 import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
-import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 import org.jetbrains.kotlin.fir.analysis.checkers.declaration.*
 import org.jetbrains.kotlin.fir.analysis.diagnostics.*
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.resolve.*
-import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.symbols.*
-import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 object InjektCallableChecker : FirCallableDeclarationChecker(MppCheckerKind.Common) {
@@ -25,12 +21,11 @@ object InjektCallableChecker : FirCallableDeclarationChecker(MppCheckerKind.Comm
     context: CheckerContext,
     reporter: DiagnosticReporter
   ) {
-    if (declaration.hasAnnotation(InjektFqNames.Provide, context.session))
-      checkAddOnTypeParameters(
-        declaration.typeParameters.map { it.symbol.fir },
-        context,
-        reporter
-      )
+    checkAddOnTypeParameters(
+      declaration.typeParameters.map { it.symbol.fir },
+      context,
+      reporter
+    )
     checkOverrides(declaration, context, reporter)
   }
 }
@@ -76,19 +71,17 @@ private fun checkAddOnTypeParameters(
   context: CheckerContext,
   reporter: DiagnosticReporter
 ) {
-  val addOnParameters = typeParameters.filter {
-    it.hasAnnotation(InjektFqNames.AddOn, context.session)
-  }
-  if (addOnParameters.size > 1)
-    addOnParameters
-      .drop(1)
-      .forEach {
-        reporter.report(
-          it.source!!,
-          "a declaration may have only one @AddOn type parameter",
-          context
-        )
-      }
+  typeParameters
+    .filter { it.hasAnnotation(InjektFqNames.AddOn, context.session) }
+    .takeIf { it.size > 1 }
+    ?.drop(1)
+    ?.forEach {
+      reporter.report(
+        it.source!!,
+        "a declaration may have only one @AddOn type parameter",
+        context
+      )
+    }
 }
 
 private fun checkOverrides(
@@ -96,12 +89,25 @@ private fun checkOverrides(
   context: CheckerContext,
   reporter: DiagnosticReporter
 ) {
-  val parentClass = declaration.getContainingClass(context.session) ?: return
+  fun isValidOverride(overriddenDeclaration: FirCallableDeclaration): Boolean {
+    if (overriddenDeclaration.hasAnnotation(InjektFqNames.Provide, context.session) &&
+      !declaration.hasAnnotation(InjektFqNames.Provide, context.session))
+      return false
 
-  parentClass.unsubstitutedScope(context)
-    .getDirectOverriddenMembers(declaration.symbol)
+    declaration.symbol.typeParameterSymbols
+      .zip(overriddenDeclaration.symbol.typeParameterSymbols)
+      .forEach { (typeParameter, overriddenTypeParameter) ->
+        if (typeParameter.hasAnnotation(InjektFqNames.AddOn, context.session) !=
+          overriddenTypeParameter.hasAnnotation(InjektFqNames.AddOn, context.session))
+          return false
+      }
+
+    return true
+  }
+
+  declaration.getDirectOverriddenSymbols(context)
     .firstOrNull()
-    ?.takeUnless { isValidOverride(declaration, it.fir.cast(), context.session) }
+    ?.takeUnless { isValidOverride(it.fir.cast()) }
     ?.let {
       reporter.report(
         FirErrors.NOTHING_TO_OVERRIDE
@@ -109,31 +115,4 @@ private fun checkOverrides(
         context
       )
     }
-}
-
-private fun isValidOverride(
-  declaration: FirDeclaration,
-  overriddenDeclaration: FirDeclaration,
-  session: FirSession
-): Boolean {
-  if (overriddenDeclaration.hasAnnotation(InjektFqNames.Provide, session) &&
-    !declaration.hasAnnotation(InjektFqNames.Provide, session))
-    return false
-
-  val (typeParameters, overriddenTypeParameters) = when (declaration) {
-    is FirCallableDeclaration -> declaration.typeParameters.map { it.symbol } to
-        overriddenDeclaration.cast<FirCallableDeclaration>().typeParameters.map { it.symbol }
-    is FirClassLikeDeclaration -> declaration.typeParameters.map { it.symbol } to
-        overriddenDeclaration.cast<FirClassLikeDeclaration>().typeParameters.map { it.symbol }
-    else -> emptyList<FirTypeParameterSymbol>() to emptyList()
-  }
-
-  for ((index, overriddenTypeParameter) in overriddenTypeParameters.withIndex()) {
-    val typeParameter = typeParameters[index]
-    if (typeParameter.hasAnnotation(InjektFqNames.AddOn, session) !=
-      overriddenTypeParameter.hasAnnotation(InjektFqNames.AddOn, session))
-      return false
-  }
-
-  return true
 }
