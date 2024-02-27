@@ -35,18 +35,6 @@ class InjectableCheckersTest {
     compilationShouldHaveFailed("interface cannot be injectable")
   }
 
-  @Test fun testInjectableLocalVariableWithoutInitializer() = codegen(
-    """
-      fun invoke() {
-        @Provide val a: String
-        inject<String>()
-        a = ""
-      }
-    """
-  ) {
-    compilationShouldHaveFailed("injectable variable must be initialized")
-  }
-
   @Test fun testInjectableFunctionOverrideWithProvideAnnotation() = singleAndMultiCodegen(
     """
       abstract class MySuperClass {

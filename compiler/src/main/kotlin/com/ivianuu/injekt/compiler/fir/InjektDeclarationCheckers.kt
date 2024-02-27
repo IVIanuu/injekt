@@ -87,17 +87,6 @@ object InjektPropertyChecker : FirPropertyChecker(MppCheckerKind.Common) {
     reporter: DiagnosticReporter
   ) {
     checkOverrides(declaration, context, reporter)
-
-    if (declaration.hasAnnotation(InjektFqNames.Provide, context.session) &&
-      declaration.getter == null &&
-      declaration.delegate == null &&
-      !declaration.status.isLateInit &&
-      declaration.initializer == null)
-      reporter.report(
-        declaration.source!!,
-        "injectable variable must be initialized, delegated or marked with lateinit",
-        context
-      )
   }
 }
 
