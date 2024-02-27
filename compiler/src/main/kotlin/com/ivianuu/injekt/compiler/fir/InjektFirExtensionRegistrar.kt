@@ -20,8 +20,7 @@ class InjektFirCheckersExtension(
   init { ctx.session = session }
 
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
-    override val functionCheckers = setOf(InjektFunctionChecker)
-    override val propertyCheckers = setOf(InjektPropertyChecker)
+    override val callableDeclarationCheckers = setOf(InjektCallableChecker)
     override val classCheckers = setOf(InjektClassChecker)
   }
 

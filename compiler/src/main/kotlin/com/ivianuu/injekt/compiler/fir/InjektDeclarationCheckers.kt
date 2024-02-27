@@ -19,9 +19,9 @@ import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-object InjektFunctionChecker : FirFunctionChecker(MppCheckerKind.Common) {
+object InjektCallableChecker : FirCallableDeclarationChecker(MppCheckerKind.Common) {
   override fun check(
-    declaration: FirFunction,
+    declaration: FirCallableDeclaration,
     context: CheckerContext,
     reporter: DiagnosticReporter
   ) {
@@ -77,16 +77,6 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         "tag cannot have value parameters",
         context
       )
-  }
-}
-
-object InjektPropertyChecker : FirPropertyChecker(MppCheckerKind.Common) {
-  override fun check(
-    declaration: FirProperty,
-    context: CheckerContext,
-    reporter: DiagnosticReporter
-  ) {
-    checkOverrides(declaration, context, reporter)
   }
 }
 
