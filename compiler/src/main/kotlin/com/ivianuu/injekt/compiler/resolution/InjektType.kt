@@ -124,7 +124,7 @@ fun ConeKotlinType.toInjektType(
       .map { it.toInjektType(ctx) }
       .let {
         if (classifier.isTag && it.size != classifier.typeParameters.size)
-          it + ctx.nullableAnyType
+          it + List(classifier.typeParameters.size - it.size) { ctx.nullableAnyType }
         else it
       },
     isProvide = unwrapped.customAnnotations.hasAnnotation(InjektFqNames.Provide, ctx.session),
