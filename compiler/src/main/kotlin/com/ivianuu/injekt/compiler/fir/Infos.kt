@@ -65,12 +65,7 @@ fun FirCallableSymbol<*>.callableInfo(ctx: InjektContext): CallableInfo =
       }
       .mapTo(mutableSetOf()) { valueParameterSymbols.indexOf(it) }
 
-    val info = CallableInfo(this, type, parameterTypes, injectParameters)
-
-    // important to cache the info before persisting it
-    ctx.cached("callable_info", uniqueKey(ctx)) { info }
-
-    return@cached info
+    CallableInfo(this, type, parameterTypes, injectParameters)
   }
 
 fun CallableInfo.shouldBePersisted(ctx: InjektContext) = injectParameters.isNotEmpty() ||
@@ -155,13 +150,7 @@ fun FirClassifierSymbol<*>.classifierInfo(ctx: InjektContext): ClassifierInfo =
     }
 
     val tags = annotations.getTags(ctx).map { it.resolvedType.toInjektType(ctx) }
-    val info = ClassifierInfo(this, tags, lazySuperTypes)
-
-    // important to cache the info before persisting it
-    ctx.cached("classifier_info", uniqueKey(ctx)) { info }
-
-    // no accident
-    return@cached info
+    ClassifierInfo(this, tags, lazySuperTypes)
   }
 
 fun ClassifierInfo.shouldBePersisted(ctx: InjektContext): Boolean =
