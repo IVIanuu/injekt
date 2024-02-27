@@ -360,4 +360,26 @@ class ResolutionTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testReifiedTypeArgumentForReifiedTypeParameterWorks() = singleAndMultiCodegen(
+    """
+      @Provide inline fun <reified T : Any> klass() = T::class
+    """,
+    """
+      fun invoke() = inject<KClass<Foo>>()
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testNonReifiedTypeArgumentForReifiedTypeParameterFails() = singleAndMultiCodegen(
+    """
+      @Provide inline fun <reified T : Any> klass() = T::class
+    """,
+    """
+      fun <T : Any> invoke() = inject<KClass<T>>()
+    """
+  ) {
+    compilationShouldHaveFailed("reified")
+  }
 }
