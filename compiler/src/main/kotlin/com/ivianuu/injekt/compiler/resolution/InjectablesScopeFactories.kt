@@ -188,11 +188,11 @@ private fun blockExpressionScopeOf(
       declaration.source!!.endOffset < position.source!!.startOffset &&
           declaration.safeAs<FirDeclaration>()?.symbol?.isInjectable(ctx) == true
     }
-    .flatMap {
-      when (it) {
-        is FirRegularClass -> it.symbol.collectInjectableConstructors(ctx)
+    .flatMap { declaration ->
+      when (declaration) {
+        is FirRegularClass -> declaration.symbol.collectInjectableConstructors(ctx)
           .map { it.toInjektCallable(ctx) }
-        is FirCallableDeclaration -> listOf(it.symbol.toInjektCallable(ctx))
+        is FirCallableDeclaration -> listOf(declaration.symbol.toInjektCallable(ctx))
         else -> emptyList()
       }
     }

@@ -95,9 +95,10 @@ class VariableWithConstraints(val typeVariable: InjektClassifier) {
   val constraints = mutableListOf<Constraint>()
 
   fun addConstraint(constraint: Constraint): Boolean {
-    for (previousConstraint in constraints.toList()) {
+    for (previousConstraint in constraints.toList())
       if (previousConstraint.type == constraint.type) {
-        if (newConstraintIsUseless(previousConstraint, constraint))
+        if (previousConstraint.kind == ConstraintKind.EQUAL ||
+          previousConstraint.kind == constraint.kind)
           return false
 
         val isMatchingForSimplification = when (previousConstraint.kind) {
@@ -120,19 +121,11 @@ class VariableWithConstraints(val typeVariable: InjektClassifier) {
           return true
         }
       }
-    }
 
     constraints += constraint
 
     return true
   }
-
-  private fun newConstraintIsUseless(old: Constraint, new: Constraint): Boolean =
-    old.kind == new.kind || when (old.kind) {
-      ConstraintKind.EQUAL -> true
-      ConstraintKind.LOWER -> new.kind == ConstraintKind.LOWER
-      ConstraintKind.UPPER -> new.kind == ConstraintKind.UPPER
-    }
 }
 
 data class Constraint(
@@ -272,17 +265,12 @@ class TypeContext(override val ctx: InjektContext) : TypeCheckerContext {
 
     val constraintType = constraint.type
 
-    if (constraintType.classifier == constraint.typeVariable) {
-      if (constraintType.isMarkedNullable && constraint.kind == ConstraintKind.LOWER)
-        return false
-      return true
-    }
-    if (constraint.position is ConstraintPosition.DeclaredUpperBound &&
-      constraint.kind == ConstraintKind.UPPER &&
-      constraintType == ctx.nullableAnyType
-    ) return true
+    if (constraintType.classifier == constraint.typeVariable)
+      return !(constraintType.isMarkedNullable && constraint.kind == ConstraintKind.LOWER)
 
-    return false
+    return constraint.position is ConstraintPosition.DeclaredUpperBound &&
+        constraint.kind == ConstraintKind.UPPER &&
+        constraintType == ctx.nullableAnyType
   }
 
   fun fixTypeVariables() {
