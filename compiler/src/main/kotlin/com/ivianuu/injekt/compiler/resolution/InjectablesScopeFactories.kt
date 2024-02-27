@@ -29,19 +29,20 @@ fun elementInjectablesScopeOf(
     when (val element = elements.last()) {
       is FirFile -> fileInjectablesScopeOf(element.symbol, ctx)
       is FirClass -> classInjectablesScopeOf(element.symbol, scopeOf(
-        elements
-          .dropLast(1)
-          .reversed()
-          .mapNotNull { parentCandidate ->
-            if (parentCandidate !is FirRegularClass || element.isInner) parentCandidate
-            else parentCandidate.companionObjectSymbol?.fir
-          }
-          .reversed()
-      ), ctx)
+          elements
+            .dropLast(1)
+            .mapIndexedNotNull { index, parentCandidate ->
+              if (index != elements.lastIndex -1 ||
+                parentCandidate !is FirRegularClass || element.isInner) parentCandidate
+              else parentCandidate.companionObjectSymbol?.fir
+            }
+        ), ctx)
       is FirFunction -> functionInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), elements, ctx)
       is FirProperty -> propertyInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), ctx)
       is FirBlock -> blockExpressionScopeOf(element, position, scopeOf(elements.dropLast(1)), ctx)
       else -> scopeOf(elements.dropLast(1))
+    }.also {
+      println()
     }
 
   return scopeOf(containingElements)
