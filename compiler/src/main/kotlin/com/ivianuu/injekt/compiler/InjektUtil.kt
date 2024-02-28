@@ -140,9 +140,8 @@ fun findClassifierForKey(
         .filter { it.name == classifierFqName.parent().shortName() }
         .flatMap { it.typeParameterSymbols })
       .singleOrNull { it.uniqueKey(ctx) == classifierKey }
-    ?: error("Could not find classifier for $classifierKey $classifierFqName ${collectDeclarationsInFqName(classifierFqName.parent(), ctx).filter {
-      it.fqName == classifierFqName
-    }.map { it.uniqueKey(ctx) }}")
+    ?: error("Could not find classifier for $classifierKey $classifierFqName " +
+        "${collectDeclarationsInFqName(classifierFqName.parent(), ctx).map { it.uniqueKey(ctx) }}")
 }
 
 fun findClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =

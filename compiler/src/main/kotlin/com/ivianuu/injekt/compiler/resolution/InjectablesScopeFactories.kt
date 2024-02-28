@@ -134,9 +134,9 @@ private fun functionInjectablesScopeOf(
       .map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList<FirValueParameterSymbol> {
       if (function.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true ||
-        function.receiverParameter != null &&
-        (lambdaValueParameterTypes?.get(0)?.isProvide == true ||
-            funInterfaceProvideValueParameters?.contains(EXTENSION_RECEIVER_INDEX) == true))
+        (function.receiverParameter != null &&
+            (lambdaValueParameterTypes?.get(0)?.isProvide == true ||
+                funInterfaceProvideValueParameters?.contains(EXTENSION_RECEIVER_INDEX) == true)))
         this += injectableReceiver(
           EXTENSION_RECEIVER_INDEX,
           function.receiverParameter!!.typeRef.coneType,
@@ -145,15 +145,16 @@ private fun functionInjectablesScopeOf(
           function.receiverParameter!!.source!!.endOffset,
           ctx
         )
+
       this += function.valueParameterSymbols
+        .filterIndexed { index, valueParameter ->
+          (valueParameter.isInjectable(ctx) ||
+              lambdaValueParameterTypes?.get(
+                index + (if (function.receiverParameter != null) 1 else 0)
+              )?.isProvide == true ||
+              funInterfaceProvideValueParameters?.contains(index) == true)
+        }
     }
-      .filterIndexed { index, valueParameter ->
-        (valueParameter.isInjectable(ctx) ||
-            lambdaValueParameterTypes?.get(
-              index + (if (function.receiverParameter != null) 1 else 0)
-            )?.isProvide == true ||
-            funInterfaceProvideValueParameters?.contains(index) == true)
-      }
       .map { it.toInjektCallable(ctx) },
     ctx = ctx
   )

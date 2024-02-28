@@ -298,7 +298,17 @@ class InjectableTest {
   }
 
   @Test fun testInjectableLambdaParameterDeclarationSite() = singleAndMultiCodegen("""
-      fun lambdaOf(block: (@Provide Foo) -> Foo) = block
+      fun lambdaOf(block: (@Provide Foo).() -> Foo) = block
+    """,
+    """
+      fun invoke() = lambdaOf { inject<Foo>() }(Foo())
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectableLambdaReceiver() = singleAndMultiCodegen("""
+      fun lambdaOf(block: (@Provide Foo).() -> Foo) = block
     """,
     """
       fun invoke() = lambdaOf { inject<Foo>() }(Foo())
@@ -321,6 +331,16 @@ class InjectableTest {
     """,
     """
       fun invoke() = Lambda<Foo> { inject<Foo>() }.invoke(Foo())
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectableFunInterfaceReceiver() = singleAndMultiCodegen("""
+      fun interface Lambda<T> { fun @receiver:Provide T.invoke(): T }
+    """,
+    """
+      fun invoke() = with(Lambda<Foo> { inject<Foo>() }) { with(Foo()) { invoke() } }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
