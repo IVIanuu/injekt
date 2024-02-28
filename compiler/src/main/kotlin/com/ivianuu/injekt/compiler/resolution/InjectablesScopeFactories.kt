@@ -27,19 +27,44 @@ fun elementInjectablesScopeOf(
 ): InjectablesScope {
   fun scopeOf(elements: List<FirElement>): InjectablesScope =
     when (val element = elements.last()) {
-      is FirFile -> fileInjectablesScopeOf(element.symbol, ctx)
-      is FirClass -> classInjectablesScopeOf(element.symbol, scopeOf(
+      is FirFile -> fileInjectablesScopeOf(file = element.symbol, ctx = ctx)
+      is FirClass -> classInjectablesScopeOf(
+        clazz = element.symbol,
+        parent = scopeOf(
           elements
             .dropLast(1)
             .mapIndexedNotNull { index, parentCandidate ->
-              if (index != elements.lastIndex -1 ||
-                parentCandidate !is FirRegularClass || element.isInner) parentCandidate
+              if (index != elements.lastIndex - 1 ||
+                parentCandidate !is FirRegularClass || element.isInner
+              ) parentCandidate
               else parentCandidate.companionObjectSymbol?.fir
             }
-        ), ctx)
-      is FirFunction -> functionInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), elements, ctx)
-      is FirProperty -> propertyInjectablesScopeOf(element.symbol, scopeOf(elements.dropLast(1)), ctx)
-      is FirBlock -> blockExpressionScopeOf(element, position, scopeOf(elements.dropLast(1)), ctx)
+        ),
+        ctx = ctx
+      )
+      is FirFunction -> functionInjectablesScopeOf(
+        function = element.symbol,
+        parent = scopeOf(
+          elements.dropLast(1)
+            .mapIndexedNotNull { index, parentCandidate ->
+              if (index != elements.lastIndex - 1 || parentCandidate !is FirRegularClass) parentCandidate
+              else null
+            }
+        ),
+        containingElements = elements,
+        ctx = ctx
+      )
+      is FirProperty -> propertyInjectablesScopeOf(
+        property = element.symbol,
+        parent = scopeOf(elements.dropLast(1)),
+        ctx = ctx
+      )
+      is FirBlock -> blockExpressionScopeOf(
+        block = element,
+        position = position,
+        parent = scopeOf(elements.dropLast(1)),
+        ctx = ctx
+      )
       else -> scopeOf(elements.dropLast(1))
     }
 
