@@ -347,6 +347,7 @@ class InjectCallTransformer(
             element.extensionReceiverParameter!!.symbol
           symbol.name == DISPATCH_RECEIVER_NAME &&
               element is IrProperty &&
+              allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
               element.getter!!.dispatchReceiverParameter?.type?.classOrFail?.toFirSymbol<FirClassSymbol<*>>() == originalInjectableClassifier ->
             element.getter!!.dispatchReceiverParameter!!.symbol
           symbol.name == EXTENSION_RECEIVER_NAME &&
