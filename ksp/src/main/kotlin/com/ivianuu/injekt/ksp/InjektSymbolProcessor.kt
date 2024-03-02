@@ -11,7 +11,7 @@ import com.ivianuu.injekt.compiler.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
-class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
+@OptIn(UnsafeCastFunction::class) class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
     resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false)
       .filterIsInstance<KSDeclaration>()
@@ -72,7 +72,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
   private fun KSDeclaration.declarationHash(): String = buildString {
     modifiers.forEach { append(it) }
     annotations.forEach { append(it.annotationType.typeHash()) }
-    append(simpleName)
+    append(simpleName.asString())
 
     when (this@declarationHash) {
       is KSClassDeclaration -> {
@@ -105,6 +105,9 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
         append(argument.variance)
       }
       append(isMarkedNullable)
+      declaration.safeAs<KSClassDeclaration>()?.superTypes?.forEach {
+        it.resolve().append()
+      }
     }
 
     resolve().append()
