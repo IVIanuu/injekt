@@ -72,6 +72,7 @@ class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment)
   private fun KSDeclaration.declarationHash(): String = buildString {
     modifiers.forEach { append(it) }
     annotations.forEach { append(it.annotationType.typeHash()) }
+    append(simpleName)
 
     when (this@declarationHash) {
       is KSClassDeclaration -> {
