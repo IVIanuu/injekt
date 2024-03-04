@@ -133,15 +133,13 @@ fun findClassifierForKey(
   ctx: InjektContext,
 ): FirClassifierSymbol<*> = ctx.cached("classifier_for_key", classifierKey) {
   findClassifierForFqName(classifierFqName, ctx)
-    ?: (findClassifierForFqName(classifierFqName.parent(), ctx)
-      ?.typeParameterSymbols
-      ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
-        .filterIsInstance<FirCallableSymbol<*>>()
-        .filter { it.name == classifierFqName.parent().shortName() }
-        .flatMap { it.typeParameterSymbols })
+    ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
+      .filter { it.fqName.shortName() == classifierFqName.parent().shortName() }
+      .flatMap { it.typeParameterSymbols ?: emptyList() }
       .singleOrNull { it.uniqueKey(ctx) == classifierKey }
     ?: error("Could not find classifier for $classifierKey $classifierFqName " +
-        "${collectDeclarationsInFqName(classifierFqName.parent(), ctx).map { it.uniqueKey(ctx) }}")
+        "${collectDeclarationsInFqName(classifierFqName.parent(), ctx).map { it.uniqueKey(ctx) }} " +
+        "${collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx).map { it.uniqueKey(ctx) }}")
 }
 
 fun findClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =
