@@ -35,7 +35,8 @@ fun InjektType.collectModuleInjectables(
           (!declaration.isOverride ||
               declaration.safeAs<FirNamedFunctionSymbol>()
                 ?.directOverriddenFunctions(ctx.session, ctx.scopeSession)
-                ?.first()?.isInjectable(ctx) == false) &&
+                ?.firstOrNull()
+                ?.isInjectable(ctx) == false) &&
           (declaration.isInjectable(ctx) ||
               (declaration.name.asString() == "invoke" && isProvideFunctionType(ctx)))) {
           val substitutionMap = classifier.typeParameters
