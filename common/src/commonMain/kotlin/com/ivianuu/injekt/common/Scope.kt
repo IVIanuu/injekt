@@ -6,7 +6,6 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.*
 import kotlinx.atomicfu.locks.*
-import kotlin.reflect.*
 
 class Scope<N> : SynchronizedObject() {
   @PublishedApi internal val values = hashMapOf<Any, Any?>()
@@ -16,6 +15,9 @@ class Scope<N> : SynchronizedObject() {
     @Suppress("UNCHECKED_CAST")
     (if (value !== NULL) value else null) as T
   }
+
+  inline operator fun <T> invoke(key: TypeKey<T> = inject, init: () -> T): T =
+    invoke(key.value, init)
 
   fun dispose() {
     values.values.toList().forEach { (it as? ScopeDisposable)?.dispose() }
@@ -35,9 +37,10 @@ fun interface ScopeDisposable {
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
 annotation class Scoped<N> {
   @Provide companion object {
-    @Provide inline fun <@AddOn T : @Scoped<N> S, reified S : Any, N> scoped(
+    @Provide inline fun <@AddOn T : @Scoped<N> S, S : Any, N> scoped(
       scope: Scope<N>,
+      key: TypeKey<S>,
       crossinline init: () -> T,
-    ): S = scope(typeOf<S>()) { init() }
+    ): S = scope(key) { init() }
   }
 }

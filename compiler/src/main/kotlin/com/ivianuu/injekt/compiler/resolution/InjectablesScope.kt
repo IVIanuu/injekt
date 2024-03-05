@@ -130,6 +130,7 @@ class InjectablesScope(
         collectionElementType = collectionElementType
       )
     }
+    request.type.classifier == ctx.typeKeyClassifier -> TypeKeyInjectable(request.type, this)
     else -> null
   }
 

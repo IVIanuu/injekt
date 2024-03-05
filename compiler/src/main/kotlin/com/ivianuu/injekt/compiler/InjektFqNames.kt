@@ -13,6 +13,9 @@ object InjektFqNames {
   val Provide = ClassId(InjektPackage, "Provide".asNameId())
   val Tag = ClassId(InjektPackage, "Tag".asNameId())
 
+  val CommonPackage = InjektPackage.child("common".asNameId())
+  val TypeKey = ClassId(CommonPackage, "TypeKey".asNameId())
+
   val InternalPackage = InjektPackage.child("internal".asNameId())
   val DeclarationInfo = ClassId(InternalPackage, "DeclarationInfo".asNameId())
 

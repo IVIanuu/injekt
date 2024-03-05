@@ -52,6 +52,11 @@ class InjektContext : TypeCheckerContext {
     StandardClassIds.Function.createConeType(session, arrayOf(ConeStarProjection))
       .toInjektType(ctx)
   }
+  val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
+    findClassifierForFqName(InjektFqNames.TypeKey.asSingleFqName(), this)
+      ?.toInjektClassifier(this)
+  }
+
   val scopeSession by lazy(LazyThreadSafetyMode.NONE) { ScopeSession() }
 
   companion object {
