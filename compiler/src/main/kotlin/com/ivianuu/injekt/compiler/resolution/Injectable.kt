@@ -91,6 +91,13 @@ class LambdaInjectable(
   )
 }
 
+class SourceKeyInjectable(
+  override val type: InjektType,
+  override val ownerScope: InjectablesScope
+) : Injectable {
+  override val chainFqName = FqName("sourceKey")
+}
+
 class TypeKeyInjectable(
   override val type: InjektType,
   override val ownerScope: InjectablesScope

@@ -43,7 +43,10 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: InjektContext
 ) : IrElementTransformerVoidWithContext() {
-  private inner class RootContext(val result: InjectionResult.Success) {
+  private inner class RootContext(
+    val result: InjectionResult.Success,
+    val startOffset: Int
+  ) {
     val statements = mutableListOf<IrStatement>()
 
     val highestScope = mutableMapOf<ResolutionResult.Success.Value, InjectablesScope>()
@@ -115,6 +118,7 @@ class InjectCallTransformer(
           is CallableInjectable -> callableExpression(result, candidate)
           is LambdaInjectable -> lambdaExpression(result, candidate)
           is ListInjectable -> listExpression(result, candidate)
+          is SourceKeyInjectable -> sourceKeyExpression()
           is TypeKeyInjectable -> typeKeyExpression(result, candidate)
         }
 
@@ -291,6 +295,25 @@ class InjectCallTransformer(
 
     +irGet(tmpList)
   }
+
+  private val sourceKeyConstructor =
+    irCtx.referenceClass(InjektFqNames.SourceKey)?.constructors?.single()
+
+  private fun ScopeContext.sourceKeyExpression(): IrExpression =
+    irBuilder.irCall(sourceKeyConstructor!!).apply {
+      putValueArgument(
+        0,
+        irBuilder.irString(
+          buildString {
+            append(currentFile.name)
+            append(":")
+            append(currentFile.fileEntry.getLineNumber(rootContext.startOffset) + 1)
+            append(":")
+            append(currentFile.fileEntry.getColumnNumber(rootContext.startOffset))
+          }
+        )
+      )
+    }
 
   private val typeKey = irCtx.referenceClass(InjektFqNames.TypeKey)
   private val typeKeyValue = typeKey?.owner?.properties
@@ -536,7 +559,7 @@ class InjectCallTransformer(
     ) ?: return result
 
     return DeclarationIrBuilder(irCtx, result.symbol).irBlock {
-      val rootContext = RootContext(injectionResult)
+      val rootContext = RootContext(injectionResult, result.startOffset)
       try {
         ScopeContext(
           parent = null,

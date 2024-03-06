@@ -14,6 +14,7 @@ object InjektFqNames {
   val Tag = ClassId(InjektPackage, "Tag".asNameId())
 
   val CommonPackage = InjektPackage.child("common".asNameId())
+  val SourceKey = ClassId(CommonPackage, "SourceKey".asNameId())
   val TypeKey = ClassId(CommonPackage, "TypeKey".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
