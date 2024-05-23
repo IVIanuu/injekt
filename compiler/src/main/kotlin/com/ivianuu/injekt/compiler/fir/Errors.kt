@@ -3,18 +3,10 @@
 package com.ivianuu.injekt.compiler.fir
 
 import com.ivianuu.injekt.compiler.resolution.*
-import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
-import org.jetbrains.kotlin.fir.analysis.checkers.context.*
 
-private val INJEKT_ERROR by error1<PsiElement, String>()
-
-fun DiagnosticReporter.report(
-  element: AbstractKtSourceElement,
-  message: String,
-  context: CheckerContext
-) = report(INJEKT_ERROR.on(element, message, null), context)
+val INJEKT_ERROR by error1<PsiElement, String>()
 
 fun InjectionResult.Error.render(): String = buildString {
   var indent = 0

@@ -82,7 +82,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 
     // look up declarations to support incremental compilation
     context.session.lookupTracker?.recordLookup(
-      InjektFqNames.InjectablesLookup.callableName,
+      InjektFqNames.InjectablesLookup.callableName.asString(),
       InjektFqNames.InjectablesLookup.packageName.asString(),
       expression.source,
       file.source
@@ -99,7 +99,8 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
           )
         ) { result }
       }
-      is InjectionResult.Error -> reporter.report(expression.source!!, result.render(), context)
+      is InjectionResult.Error ->
+        reporter.reportOn(expression.source!!, INJEKT_ERROR, result.render(), context)
     }
   }
 }
@@ -129,17 +130,17 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         declaration.hasAnnotation(InjektFqNames.Provide, context.session)
 
     if (isInjectable && declaration.classKind == ClassKind.ENUM_CLASS)
-      reporter.report(declaration.source!!, "enum class cannot be injectable", context)
+      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "enum class cannot be injectable", context)
 
     if (isInjectable && declaration.status.modality == Modality.ABSTRACT)
-      reporter.report(declaration.source!!, "injectable cannot be abstract", context)
+      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "injectable cannot be abstract", context)
 
     if (isInjectable)
       checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
     
     if (declaration.hasAnnotation(InjektFqNames.Tag, context.session) &&
       declaration.primaryConstructorIfAny(context.session)?.valueParameterSymbols?.isNotEmpty() == true)
-      reporter.report(declaration.source!!, "tag cannot have value parameters", context)
+      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "tag cannot have value parameters", context)
   }
 }
 
@@ -153,8 +154,9 @@ private fun checkAddOnTypeParameters(
     .takeIf { it.size > 1 }
     ?.drop(1)
     ?.forEach {
-      reporter.report(
+      reporter.reportOn(
         it.source!!,
+        INJEKT_ERROR,
         "a declaration may have only one @AddOn type parameter",
         context
       )

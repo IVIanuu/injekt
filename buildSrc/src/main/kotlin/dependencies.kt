@@ -27,14 +27,14 @@ object Deps {
   }
 
   object Compose {
-    const val version = "1.6.0-rc02"
-    const val compiler = "org.jetbrains.compose.compiler:compiler:1.5.9-kt-2.0.0-Beta4"
+    const val version = "1.6.10"
+    const val gradlePlugin = "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:${Kotlin.version}"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
 
   object Coroutines {
-    private const val version = "1.8.0"
+    private const val version = "1.8.1"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
   }
@@ -49,27 +49,27 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "2.0.0-Beta4"
+    const val version = "2.0.0"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
   }
 
   object KotlinCompileTesting {
-    private const val version = "0.5.0-alpha04"
+    private const val version = "0.5.0-alpha07"
     const val core = "dev.zacsweers.kctfork:core:$version"
     const val ksp = "dev.zacsweers.kctfork:ksp:$version"
   }
 
   object KotlinSerialization {
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0-RC"
   }
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:4.4.3"
 
   object Ksp {
-    const val version = "2.0.0-Beta4-1.0.17"
+    const val version = "2.0.0-1.0.21"
     const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
     const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
