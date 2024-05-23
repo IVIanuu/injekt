@@ -129,7 +129,7 @@ private fun functionInjectablesScopeOf(
     ?.fir?.typeRef?.coneType?.typeArguments?.map { it.toInjektType(ctx) }
   val funInterfaceProvideValueParameters = function.safeAs<FirAnonymousFunctionSymbol>()
     ?.let {
-      containingElements.getOrNull(containingElements.indexOf(function.fir) - 3)
+      containingElements.getOrNull(containingElements.indexOf(function.fir) - 2)
         ?.safeAs<FirFunctionCallImpl>()
         ?.resolvedType
         ?.toRegularClassSymbol(ctx.session)
