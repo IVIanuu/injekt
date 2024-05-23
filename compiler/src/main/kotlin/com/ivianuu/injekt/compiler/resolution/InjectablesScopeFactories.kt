@@ -28,43 +28,52 @@ fun elementInjectablesScopeOf(
   fun scopeOf(elements: List<FirElement>): InjectablesScope =
     when (val element = elements.last()) {
       is FirFile -> fileInjectablesScopeOf(file = element.symbol, ctx = ctx)
+
       is FirClass -> classInjectablesScopeOf(
         clazz = element.symbol,
         parent = scopeOf(
           elements
             .dropLast(1)
             .mapIndexedNotNull { index, parentCandidate ->
-              if (index != elements.lastIndex - 1 ||
-                parentCandidate !is FirRegularClass || element.isInner
-              ) parentCandidate
-              else parentCandidate.companionObjectSymbol?.fir
+              when {
+                parentCandidate !is FirRegularClass -> parentCandidate
+                index == elements.lastIndex - 1 && element.isInner -> parentCandidate
+                else -> parentCandidate.companionObjectSymbol?.fir
+              }
             }
         ),
         ctx = ctx
       )
+
       is FirFunction -> functionInjectablesScopeOf(
         function = element.symbol,
         parent = scopeOf(
           elements.dropLast(1)
             .mapIndexedNotNull { index, parentCandidate ->
-              if (index != elements.lastIndex - 1 || parentCandidate !is FirRegularClass) parentCandidate
-              else null
+              when {
+                parentCandidate !is FirRegularClass -> parentCandidate
+                index == elements.lastIndex - 1 -> parentCandidate
+                else -> parentCandidate.companionObjectSymbol?.fir
+              }
             }
         ),
         containingElements = elements,
         ctx = ctx
       )
+
       is FirProperty -> propertyInjectablesScopeOf(
         property = element.symbol,
         parent = scopeOf(elements.dropLast(1)),
         ctx = ctx
       )
+
       is FirBlock -> blockExpressionScopeOf(
         block = element,
         position = position,
         parent = scopeOf(elements.dropLast(1)),
         ctx = ctx
       )
+
       else -> scopeOf(elements.dropLast(1))
     }
 
@@ -103,7 +112,7 @@ private fun classInjectablesScopeOf(
     else "CLASS ${clazz.fqName}",
     parent = classCompanionInjectablesScopeOf(clazz, parent, ctx),
     owner = clazz,
-    initialInjectables = listOf(injectableReceiver(
+    initialInjectables = listOf(injectableReceiverOf(
       DISPATCH_RECEIVER_INDEX,
       clazz.defaultType(),
       clazz.declarationSymbols.filterIsInstance<FirConstructorSymbol>().first(),
@@ -162,7 +171,7 @@ private fun functionInjectablesScopeOf(
         (function.receiverParameter != null &&
             (lambdaValueParameterTypes?.get(0)?.isProvide == true ||
                 funInterfaceProvideValueParameters?.contains(EXTENSION_RECEIVER_INDEX) == true)))
-        this += injectableReceiver(
+        this += injectableReceiverOf(
           EXTENSION_RECEIVER_INDEX,
           function.receiverParameter!!.typeRef.coneType,
           function,
@@ -200,7 +209,7 @@ private fun propertyInjectablesScopeOf(
     typeParameters = property.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList {
       if (property.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true)
-        this += injectableReceiver(
+        this += injectableReceiverOf(
           EXTENSION_RECEIVER_INDEX,
           property.receiverParameter!!.typeRef.coneType,
           property.getterSymbol!!,
