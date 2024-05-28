@@ -5,16 +5,11 @@
 plugins {
   id("com.android.application")
   kotlin("android")
+  id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
   id("com.ivianuu.injekt")
 }
 
 android {
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-  }
-  kotlinOptions { jvmTarget = "17" }
-
   defaultConfig {
     namespace = "com.ivianuu.injekt.samples.android"
     applicationId = Build.applicationId
@@ -24,11 +19,16 @@ android {
     versionCode = Build.versionCode
     versionName = Build.versionName
   }
+
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+  }
+  kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
   implementation(Deps.androidxActivityCompose)
   implementation(project(":common"))
   implementation(Deps.Compose.material)
-  kotlinCompilerPluginClasspath(Deps.Compose.compiler)
 }

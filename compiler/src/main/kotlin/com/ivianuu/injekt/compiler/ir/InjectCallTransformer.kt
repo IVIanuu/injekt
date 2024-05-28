@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 import kotlin.collections.*
@@ -557,6 +558,12 @@ class InjectCallTransformer(
       INJECTION_RESULT_KEY,
       SourcePosition(currentFile.fileEntry.name, result.endOffset)
     ) ?: return result
+
+    // some ir transformations reuse the start and end offsets
+    // we ensure that were not transforming wrong calls
+    if (!expression.symbol.owner.isPropertyAccessor &&
+      injectionResult.callee.symbol.fqName != result.symbol.owner.kotlinFqName)
+      return result
 
     return DeclarationIrBuilder(irCtx, result.symbol).irBlock {
       val rootContext = RootContext(injectionResult, result.startOffset)

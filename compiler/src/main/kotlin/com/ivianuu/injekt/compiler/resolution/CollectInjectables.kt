@@ -58,7 +58,7 @@ fun InjektType.collectModuleInjectables(
   }
 }
 
-fun injectableReceiver(
+fun injectableReceiverOf(
   index: Int,
   type: ConeKotlinType,
   containingFunctionSymbol: FirFunctionSymbol<*>,
