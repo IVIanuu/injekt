@@ -49,12 +49,15 @@ fun elementInjectablesScopeOf(
         function = element.symbol,
         parent = scopeOf(
           elements.dropLast(1)
-            .mapIndexedNotNull { index, parentCandidate ->
-              when {
-                parentCandidate !is FirRegularClass -> parentCandidate
-                index == elements.lastIndex - 1 -> parentCandidate
-                else -> parentCandidate.companionObjectSymbol?.fir
-              }
+            .let { currentElements ->
+              currentElements
+                .mapIndexedNotNull { index, parentCandidate ->
+                  when {
+                    parentCandidate !is FirRegularClass -> parentCandidate
+                    index == elements.indexOfLast { it is FirClass } -> parentCandidate
+                    else -> parentCandidate.companionObjectSymbol?.fir
+                  }
+                }
             }
         ),
         containingElements = elements,
@@ -63,7 +66,19 @@ fun elementInjectablesScopeOf(
 
       is FirProperty -> propertyInjectablesScopeOf(
         property = element.symbol,
-        parent = scopeOf(elements.dropLast(1)),
+        parent = scopeOf(
+          elements.dropLast(1)
+            .let { currentElements ->
+              currentElements
+                .mapIndexedNotNull { index, parentCandidate ->
+                  when {
+                    parentCandidate !is FirRegularClass -> parentCandidate
+                    index == elements.indexOfLast { it is FirClass } -> parentCandidate
+                    else -> parentCandidate.companionObjectSymbol?.fir
+                  }
+                }
+            }
+        ),
         ctx = ctx
       )
 
