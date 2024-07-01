@@ -44,10 +44,7 @@ class InjectCallTransformer(
   private val irCtx: IrPluginContext,
   private val ctx: InjektContext
 ) : IrElementTransformerVoidWithContext() {
-  private inner class RootContext(
-    val result: InjectionResult.Success,
-    val startOffset: Int
-  ) {
+  private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
     val highestScope = mutableMapOf<ResolutionResult.Success.Value, InjectablesScope>()
@@ -388,11 +385,14 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
   ): IrExpression = when {
-    injectable.callable.type.unwrapTags().classifier.isObject -> objectExpression(injectable.callable.type.unwrapTags())
+    injectable.callable.type.unwrapTags().classifier.isObject ->
+      objectExpression(injectable.callable.type.unwrapTags())
     else -> when {
       injectable.callable.symbol is FirPropertySymbol &&
-          injectable.callable.symbol.isLocal -> localVariableExpression(injectable, injectable.callable.symbol)
-      injectable.callable.symbol is FirValueParameterSymbol -> parameterExpression(injectable, injectable.callable.symbol)
+          injectable.callable.symbol.isLocal ->
+            localVariableExpression(injectable, injectable.callable.symbol)
+      injectable.callable.symbol is FirValueParameterSymbol ->
+        parameterExpression(injectable, injectable.callable.symbol)
       else -> functionExpression(result, injectable, injectable.callable.symbol)
     }
   }

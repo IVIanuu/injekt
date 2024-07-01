@@ -1,5 +1,3 @@
-@file:OptIn(InternalDiagnosticFactoryMethod::class)
-
 package com.ivianuu.injekt.compiler.fir
 
 import com.ivianuu.injekt.compiler.resolution.*
