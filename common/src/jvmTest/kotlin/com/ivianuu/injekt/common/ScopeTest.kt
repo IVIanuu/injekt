@@ -18,7 +18,7 @@ class ScopeTest {
     scope("") { "b" } shouldBe "a"
   }
 
-  @Test fun scopeConcurrencyStressTest() = runBlocking(
+  @Test fun scopeConcurrencyStressTest(): Unit = runBlocking(
     newFixedThreadPoolContext(64, "ctx")
   ) {
     val scope = Scope<TestScope>()
