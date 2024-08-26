@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
   kotlin("multiplatform")
-  id("kotlinx-atomicfu")
+  id("org.jetbrains.kotlinx.atomicfu")
   id("com.ivianuu.injekt")
 }
 

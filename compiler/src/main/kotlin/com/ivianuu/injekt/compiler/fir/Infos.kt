@@ -200,8 +200,9 @@ private inline fun <reified T> FirBasedSymbol<*>.decodeDeclarationInfo(ctx: Inje
     ?.mapping
     ?.values
     ?.singleOrNull()
-    ?.safeAs<FirLiteralExpression<String>>()
+    ?.safeAs<FirLiteralExpression>()
     ?.value
+    ?.safeAs<String>()
     ?.decode<T>()
 
 @Serializable data class PersistedInjektType(

@@ -8,19 +8,12 @@ import com.google.auto.service.*
 import com.ivianuu.injekt.compiler.fir.*
 import com.ivianuu.injekt.compiler.ir.*
 import org.jetbrains.kotlin.backend.common.extensions.*
-import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.com.intellij.mock.*
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.fir.extensions.*
-import org.jetbrains.kotlin.resolve.diagnostics.*
-import org.jetbrains.kotlin.resolve.extensions.*
-import org.jetbrains.kotlin.synthetic.*
-import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
-import java.util.*
 
 @OptIn(ExperimentalCompilerApi::class)
 @AutoService(ComponentRegistrar::class)

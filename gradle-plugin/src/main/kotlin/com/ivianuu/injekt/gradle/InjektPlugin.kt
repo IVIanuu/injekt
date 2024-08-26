@@ -5,12 +5,8 @@
 package com.ivianuu.injekt.gradle
 
 import com.google.auto.service.*
-import com.google.devtools.ksp.gradle.*
 import org.gradle.api.*
-import org.gradle.api.provider.*
-import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
-import java.util.Locale.*
 
 @AutoService(KotlinCompilerPluginSupportPlugin::class)
 class InjektPlugin : KotlinCompilerPluginSupportPlugin {
