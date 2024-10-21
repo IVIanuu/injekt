@@ -75,5 +75,5 @@ object Deps {
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
   }
 
-  const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.27.0"
+  const val mavenPublishGradlePlugin = "com.vanniktech:gradle-maven-publish-plugin:0.30.0"
 }
