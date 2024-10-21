@@ -27,14 +27,14 @@ object Deps {
   }
 
   object Compose {
-    const val version = "1.6.11"
+    const val version = "1.7.0"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:${Kotlin.version}"
     const val material = "org.jetbrains.compose.material:material:$version"
     const val runtime = "org.jetbrains.compose.runtime:runtime:$version"
   }
 
   object Coroutines {
-    private const val version = "1.9.0-RC.2"
+    private const val version = "1.9.0"
     const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
     const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
   }
@@ -49,7 +49,7 @@ object Deps {
   const val junit = "junit:junit:4.12"
 
   object Kotlin {
-    const val version = "2.0.20"
+    const val version = "2.0.21"
     const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
     const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"
@@ -63,13 +63,13 @@ object Deps {
 
   object KotlinSerialization {
     const val gradlePlugin = "org.jetbrains.kotlin:kotlin-serialization:${Kotlin.version}"
-    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1"
+    const val json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3"
   }
 
   const val kotestAssertions = "io.kotest:kotest-assertions-core:5.9.1"
 
   object Ksp {
-    const val version = "2.0.20-1.0.24"
+    const val version = "2.0.21-1.0.25"
     const val api = "com.google.devtools.ksp:symbol-processing-api:$version"
     const val gradlePlugin = "com.google.devtools.ksp:symbol-processing-gradle-plugin:$version"
     const val symbolProcessing = "com.google.devtools.ksp:symbol-processing:$version"
