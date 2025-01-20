@@ -139,7 +139,7 @@ fun FirClassifierSymbol<*>.classifierInfo(ctx: InjektContext): ClassifierInfo =
         ?.let { return@cached it }
 
     val expandedType = (this as? FirTypeAliasSymbol)?.resolvedExpandedTypeRef
-      ?.type?.toInjektType(ctx)
+      ?.coneType?.toInjektType(ctx)
 
     val isTag = hasAnnotation(InjektFqNames.Tag, ctx.session)
 
@@ -147,7 +147,7 @@ fun FirClassifierSymbol<*>.classifierInfo(ctx: InjektContext): ClassifierInfo =
       when {
         expandedType != null -> listOf(expandedType)
         isTag -> listOf(ctx.anyType)
-        this is FirTypeParameterSymbol -> resolvedBounds.map { it.type.toInjektType(ctx) }
+        this is FirTypeParameterSymbol -> resolvedBounds.map { it.coneType.toInjektType(ctx) }
         else -> cast<FirClassLikeSymbol<*>>().getSuperTypes(ctx.session, recursive = false)
           .map { it.toInjektType(ctx) }
       }

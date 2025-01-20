@@ -173,7 +173,7 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
       InjektFqNames.InjectablesLookup.callableName
     ).mapTo(mutableSetOf()) {
       FqName(
-        it.valueParameterSymbols.first().resolvedReturnType.type.type.classId!!.shortClassName.asString()
+        it.valueParameterSymbols.first().resolvedReturnType.classId!!.shortClassName.asString()
           .split("___")
           .first()
           .replace("__", ".")

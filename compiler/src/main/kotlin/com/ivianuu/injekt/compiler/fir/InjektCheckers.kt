@@ -190,7 +190,7 @@ private fun checkOverrides(
     ?.let {
       reporter.report(
         FirErrors.NOTHING_TO_OVERRIDE
-          .on(declaration.source!!, declaration.symbol, null),
+          .on(declaration.source!!, declaration.symbol, emptyList(), null),
         context
       )
     }

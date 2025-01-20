@@ -167,7 +167,7 @@ fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBas
       return@cached buildList {
         ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
           ?.mapNotNull {
-            ctx.session.symbolProvider.getRegularClassSymbolByClassId(ClassId(fqName, it))
+            ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId(fqName, it))
           }
           ?.forEach { add(it) }
 

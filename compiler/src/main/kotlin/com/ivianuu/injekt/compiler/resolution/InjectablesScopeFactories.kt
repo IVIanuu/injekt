@@ -178,7 +178,7 @@ private fun functionInjectablesScopeOf(
     parent = parent,
     owner = function,
     typeParameters = (if (function is FirConstructorSymbol)
-      function.resolvedReturnType.type.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
+      function.resolvedReturnType.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
     else function.typeParameterSymbols)
       .map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList<FirValueParameterSymbol> {
