@@ -205,6 +205,7 @@ private fun functionInjectablesScopeOf(
         }
     }
       .map { it.toInjektCallable(ctx) },
+    isContextual = function.hasAnnotation(InjektFqNames.Contextual, ctx.session),
     ctx = ctx
   )
 }
@@ -301,6 +302,7 @@ fun injectableScopeOrParentIfEmpty(
   initialInjectables: List<InjektCallable> = emptyList(),
   typeParameters: List<InjektClassifier> = emptyList(),
   nesting: Int = parent.nesting.inc(),
+  isContextual: Boolean = false,
   ctx: InjektContext
-): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
-else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, ctx)
+): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty() && !isContextual) parent
+else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, isContextual, ctx)

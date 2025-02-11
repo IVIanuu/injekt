@@ -35,6 +35,9 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 
     val info = callee.callableInfo(ctx)
 
+    println("run checker for ${expression.toResolvedCallableSymbol()!!} " +
+        "${info.contextualParameters.map { it.renderToString() }}")
+
     if (info.injectParameters.isEmpty()) return
 
     val substitutionMap = buildMap {

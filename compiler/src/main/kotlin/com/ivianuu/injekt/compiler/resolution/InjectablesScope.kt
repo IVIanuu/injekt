@@ -20,6 +20,7 @@ class InjectablesScope(
   initialInjectables: List<InjektCallable> = emptyList(),
   val typeParameters: List<InjektClassifier> = emptyList(),
   val nesting: Int = parent?.nesting?.inc() ?: 0,
+  val isContextual: Boolean = false,
   val ctx: InjektContext
 ) {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()

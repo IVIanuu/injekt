@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
     val component = (application as App).appComponent.mainActivityComponent(scope)
     setContent {
       component.appTheme.Content {
-        component.appUi.Content()
+        AppUi()
       }
     }
   }
@@ -31,6 +31,6 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)
+@Provide data class MainActivityComponent(val appTheme: AppTheme)
 
 object ActivityScope

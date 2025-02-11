@@ -170,7 +170,7 @@ class InjectCallTransformer(
     ?.highestScope(rootContext)?.let { findScopeContext(it) } ?: this) {
     functionWrappedExpressions.getOrPut(result.candidate.type) expression@ {
       val function = IrFactoryImpl.buildFun {
-        origin = IrDeclarationOrigin.DEFINED
+        origin = IrDeclarationOrigin.LOCAL_FUNCTION
         name = irScope.inventNameForTemporary("function").asNameId()
         returnType = result.candidate.type.toIrType(this@with).typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL

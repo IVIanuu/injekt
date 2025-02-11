@@ -65,3 +65,8 @@ annotation class Tag
 
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class AddOn
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class Contextual
+
+@Contextual inline fun <T> resolve(): T = inject()

@@ -11,6 +11,7 @@ object InjektFqNames {
   val AddOn = ClassId(InjektPackage, "AddOn".asNameId())
   val inject = CallableId(InjektPackage, "inject".asNameId())
   val Provide = ClassId(InjektPackage, "Provide".asNameId())
+  val Contextual = ClassId(InjektPackage, "Contextual".asNameId())
   val Tag = ClassId(InjektPackage, "Tag".asNameId())
 
   val CommonPackage = InjektPackage.child("common".asNameId())
