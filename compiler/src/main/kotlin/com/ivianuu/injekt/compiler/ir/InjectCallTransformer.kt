@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class, SymbolInternals::class)
 
 package com.ivianuu.injekt.compiler.ir
 
@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.ir.*
+import org.jetbrains.kotlin.ir.backend.js.utils.*
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.declarations.*
@@ -40,10 +41,10 @@ import java.io.*
 import kotlin.collections.*
 
 class InjectCallTransformer(
-  private val compilationDeclarations: CompilationDeclarations,
-  private val irCtx: IrPluginContext,
-  private val ctx: InjektContext
-) : IrElementTransformerVoidWithContext() {
+  compilationDeclarations: CompilationDeclarations,
+  irCtx: IrPluginContext,
+  ctx: InjektContext
+) : AbstractInjektTransformer(compilationDeclarations, irCtx, ctx) {
   private inner class RootContext(val result: InjectionResult.Success, val startOffset: Int) {
     val statements = mutableListOf<IrStatement>()
 
@@ -64,7 +65,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.Value.usageKey(ctx: RootContext): Any =
     listOf(candidate::class, candidate.type, highestScope(ctx))
-  
+
   private fun ResolutionResult.Success.Value.highestScope(ctx: RootContext): InjectablesScope =
     ctx.highestScope.getOrPut(this) {
       val anchorScopes = mutableSetOf<InjectablesScope>()
@@ -116,12 +117,14 @@ class InjectCallTransformer(
           is CallableInjectable -> callableExpression(result, candidate)
           is LambdaInjectable -> lambdaExpression(result, candidate)
           is ListInjectable -> listExpression(result, candidate)
+          is ContextualInjectable -> contextualExpression(result, candidate)
           is SourceKeyInjectable -> sourceKeyExpression()
           is TypeKeyInjectable -> typeKeyExpression(result, candidate)
         }
 
         if (!result.candidate.type.isNullableType ||
-          result.dependencyResults.keys.firstOrNull()?.parameterIndex != DISPATCH_RECEIVER_INDEX) expression
+          result.dependencyResults.keys.firstOrNull()?.parameterIndex != DISPATCH_RECEIVER_INDEX
+        ) expression
         else irBuilder.irBlock {
           expression as IrFunctionAccessExpression
           val tmpDispatchReceiver = irTemporary(expression.dispatchReceiver!!)
@@ -138,7 +141,7 @@ class InjectCallTransformer(
     }
   }
 
-  private fun IrFunctionAccessExpression.injectParameters(
+  private fun IrFunctionAccessExpression.injectArguments(
     ctx: ScopeContext,
     results: Map<InjectableRequest, ResolutionResult.Success>
   ) {
@@ -168,11 +171,11 @@ class InjectCallTransformer(
   ): IrExpression = if (!result.shouldWrap(rootContext)) unwrappedExpression()
   else with(result.safeAs<ResolutionResult.Success.Value>()
     ?.highestScope(rootContext)?.let { findScopeContext(it) } ?: this) {
-    functionWrappedExpressions.getOrPut(result.candidate.type) expression@ {
+    functionWrappedExpressions.getOrPut(result.candidate.type) expression@{
       val function = IrFactoryImpl.buildFun {
         origin = IrDeclarationOrigin.LOCAL_FUNCTION
         name = irScope.inventNameForTemporary("function").asNameId()
-        returnType = result.candidate.type.toIrType(this@with).typeOrNull!!
+        returnType = result.candidate.type.toIrType(irBuilder).typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
       }.apply {
         parent = irScope.getLocalDeclarationParent()
@@ -187,7 +190,7 @@ class InjectCallTransformer(
       return@expression {
         irBuilder.irCall(
           function.symbol,
-          result.candidate.type.toIrType(this).typeOrNull!!
+          result.candidate.type.toIrType(irBuilder).typeOrNull!!
         )
       }
     }
@@ -197,7 +200,7 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: LambdaInjectable
   ): IrExpression {
-    val type = injectable.type.toIrType(this).typeOrNull.cast<IrSimpleType>()
+    val type = injectable.type.toIrType(irBuilder).typeOrNull.cast<IrSimpleType>()
     val lambda = IrFactoryImpl.buildFun {
       origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
       name = Name.special("<anonymous>")
@@ -275,7 +278,7 @@ class InjectCallTransformer(
       irCall(mutableListOf).apply {
         putTypeArgument(
           0,
-          injectable.singleElementType.toIrType(this@listExpression).typeOrNull
+          injectable.singleElementType.toIrType(irBuilder).typeOrNull
         )
       }
     )
@@ -292,6 +295,18 @@ class InjectCallTransformer(
     }
 
     +irGet(tmpList)
+  }
+
+  private fun ScopeContext.contextualExpression(
+    result: ResolutionResult.Success.Value,
+    injectable: ContextualInjectable
+  ): IrExpression = irBuilder.run {
+    val function = injectable.ownerScope.owner!!.fir.symbol
+      .cast<FirFunctionSymbol<*>>()
+      .toIrCallableSymbol()
+    val valueParameter = function.owner.valueParameters
+      .single { it.name.asString() == injectable.type.contextualParameterName() }
+    irGet(valueParameter)
   }
 
   private val sourceKeyConstructor =
@@ -375,7 +390,7 @@ class InjectCallTransformer(
     irCall(typeKeyConstructor!!).apply {
       putTypeArgument(
         0,
-        injectable.type.arguments.single().toIrType(this@typeKeyExpression).cast()
+        injectable.type.arguments.single().toIrType(irBuilder).cast()
       )
       putValueArgument(0, stringExpression)
     }
@@ -387,12 +402,15 @@ class InjectCallTransformer(
   ): IrExpression = when {
     injectable.callable.type.unwrapTags().classifier.isObject ->
       objectExpression(injectable.callable.type.unwrapTags())
+
     else -> when {
       injectable.callable.symbol is FirPropertySymbol &&
           injectable.callable.symbol.isLocal ->
-            localVariableExpression(injectable, injectable.callable.symbol)
+        localVariableExpression(injectable, injectable.callable.symbol)
+
       injectable.callable.symbol is FirValueParameterSymbol ->
         parameterExpression(injectable, injectable.callable.symbol)
+
       else -> functionExpression(result, injectable, injectable.callable.symbol)
     }
   }
@@ -406,22 +424,22 @@ class InjectCallTransformer(
     symbol: FirCallableSymbol<*>
   ): IrExpression = irBuilder.irCall(
     symbol.toIrCallableSymbol(),
-    injectable.type.toIrType(this).typeOrNull!!
+    injectable.type.toIrType(irBuilder).typeOrNull!!
   ).apply {
     injectable.callable
       .typeArguments
       .values
       .forEachIndexed { index, typeArgument ->
-        putTypeArgument(index, typeArgument.toIrType(this@functionExpression).typeOrNull)
+        putTypeArgument(index, typeArgument.toIrType(irBuilder).typeOrNull)
       }
-    injectParameters(this@functionExpression, result.dependencyResults)
+    injectArguments(this@functionExpression, result.dependencyResults)
   }
 
   private fun ScopeContext.parameterExpression(
     injectable: CallableInjectable,
     symbol: FirValueParameterSymbol,
   ): IrExpression = irBuilder.irGet(
-    injectable.type.toIrType(this).typeOrNull!!,
+    injectable.type.toIrType(irBuilder).typeOrNull!!,
     (if (symbol.name == DISPATCH_RECEIVER_NAME || symbol.name == EXTENSION_RECEIVER_NAME)
       allScopes.reversed().firstNotNullOfOrNull { scope ->
         val element = scope.irElement
@@ -430,23 +448,28 @@ class InjectCallTransformer(
           element is IrClass &&
               element.symbol.toFirSymbol<FirClassifierSymbol<*>>() ==
               originalInjectableClassifier -> element.thisReceiver!!.symbol
+
           symbol.name == DISPATCH_RECEIVER_NAME &&
               element is IrFunction &&
               element.dispatchReceiverParameter?.type?.classOrFail?.toFirSymbol<FirClassSymbol<*>>() == originalInjectableClassifier ->
             element.dispatchReceiverParameter!!.symbol
+
           symbol.name == EXTENSION_RECEIVER_NAME &&
               element is IrFunction &&
               element.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset ->
             element.extensionReceiverParameter!!.symbol
+
           symbol.name == DISPATCH_RECEIVER_NAME &&
               element is IrProperty &&
               allScopes.getOrNull(allScopes.indexOf(scope) + 1)?.irElement !is IrField &&
               element.getter!!.dispatchReceiverParameter?.type?.classOrFail?.toFirSymbol<FirClassSymbol<*>>() == originalInjectableClassifier ->
             element.getter!!.dispatchReceiverParameter!!.symbol
+
           symbol.name == EXTENSION_RECEIVER_NAME &&
               element is IrProperty &&
               element.getter!!.extensionReceiverParameter?.startOffset == symbol.source!!.startOffset ->
             element.getter!!.extensionReceiverParameter!!.symbol
+
           else -> null
         }
       } else null)
@@ -463,10 +486,10 @@ class InjectCallTransformer(
     symbol: FirPropertySymbol,
   ): IrExpression = if (symbol.getterSymbol != null) irBuilder.irCall(
     symbol.getterSymbol!!.toIrCallableSymbol(),
-    injectable.type.toIrType(this).typeOrNull!!
+    injectable.type.toIrType(irBuilder).typeOrNull!!
   )
   else irBuilder.irGet(
-    injectable.type.toIrType(this).typeOrNull!!,
+    injectable.type.toIrType(irBuilder).typeOrNull!!,
     compilationDeclarations.declarations
       .singleOrNull {
         it.owner.startOffset == symbol.source!!.startOffset &&
@@ -476,96 +499,23 @@ class InjectCallTransformer(
       ?: error("wtf $this")
   )
 
-  private inline fun <reified T : FirBasedSymbol<*>> IrSymbol.toFirSymbol() =
-    (owner.safeAs<IrMetadataSourceOwner>()?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol ?:
-      owner.safeAs<AbstractFir2IrLazyDeclaration<*>>()?.fir?.safeAs<FirMemberDeclaration>()?.symbol)
-      ?.safeAs<T>()
-
-  private fun FirClassifierSymbol<*>.toIrClassifierSymbol(): IrSymbol = when (this) {
-    is FirClassSymbol<*> -> compilationDeclarations.declarations
-      .singleOrNull { it.toFirSymbol<FirClassSymbol<*>>() == this }
-      ?: irCtx.referenceClass(classId)
-        ?.takeIf { it.toFirSymbol<FirClassSymbol<*>>() == this }
-      ?: error("wtf $this")
-    is FirTypeAliasSymbol -> irCtx.referenceTypeAlias(classId) ?: error("wtf $this")
-    is FirTypeParameterSymbol -> (containingDeclarationSymbol
-      .safeAs<FirCallableSymbol<*>>()
-      ?.toIrCallableSymbol()
-      ?.owner
-      ?.typeParameters
-      ?: containingDeclarationSymbol
-        .safeAs<FirClassifierSymbol<*>>()
-        ?.toIrClassifierSymbol()
-        ?.owner
-        ?.cast<IrTypeParametersContainer>()
-        ?.typeParameters)
-      ?.singleOrNull { it.name == name }
-      ?.symbol
-      ?: error("wtf $this")
-    else -> throw AssertionError("Unexpected classifier $this")
-  }
-
-  private fun FirCallableSymbol<*>.toIrCallableSymbol(): IrFunctionSymbol = when (this) {
-    is FirConstructorSymbol -> compilationDeclarations.declarations
-      .singleOrNull { it.toFirSymbol<FirConstructorSymbol>() == this }
-      ?.cast<IrConstructorSymbol>()
-      ?: irCtx.referenceConstructors(resolvedReturnType.classId!!)
-        .singleOrNull { it.toFirSymbol<FirConstructorSymbol>() == this }
-      ?: error("wtf $this")
-    is FirFunctionSymbol<*> -> compilationDeclarations.declarations.singleOrNull {
-      it.toFirSymbol<FirFunctionSymbol<*>>() == this
-    }
-      ?.cast<IrFunctionSymbol>()
-      ?: irCtx.referenceFunctions(callableId)
-        .singleOrNull { it.toFirSymbol<FirFunctionSymbol<*>>() == this }
-      ?: error("wtf $this")
-    is FirPropertySymbol -> (compilationDeclarations.declarations
-      .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this }
-      ?.cast<IrPropertySymbol>()
-      ?: irCtx.referenceProperties(callableId)
-      .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this })
-      ?.owner
-      ?.getter
-      ?.symbol
-      ?: error("wtf $this")
-    else -> throw AssertionError("Unexpected callable $this")
-  }
-
-  private fun InjektType.toIrType(ctx: ScopeContext): IrTypeArgument = when {
-    isStarProjection -> IrStarProjectionImpl
-    classifier.isTag -> arguments.last().toIrType(ctx)
-      .typeOrFail
-      .addAnnotations(
-        listOf(
-          ctx.irBuilder.irCallConstructor(
-            irCtx.referenceClass(classifier.classId!!)!!.constructors.single(),
-            arguments.dropLast(1).map { it.toIrType(ctx).typeOrFail }
-          )
-        )
-      ).cast()
-    else -> IrSimpleTypeImpl(
-      classifier.symbol!!.toIrClassifierSymbol().cast(),
-      isMarkedNullable,
-      arguments.map { it.toIrType(ctx) },
-      emptyList()
-    )
-  }
-
   override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
     val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
 
-    val injectionResult = ctx.cachedOrNull<_, InjectionResult.Success>(
+    val injectionResult = ctx.cachedOrNull<_, InjectionResult>(
       INJECTION_RESULT_KEY,
       SourcePosition(currentFile.fileEntry.name, result.endOffset)
-    ) ?: return result
+    )
+      .safeAs<InjectionResult.Success>() ?: return result
 
     // some ir transformations reuse the start and end offsets
     // we ensure that were not transforming wrong calls
     if (!expression.symbol.owner.isPropertyAccessor &&
-      injectionResult.callee.symbol.fqName != result.symbol.owner.kotlinFqName)
+      injectionResult.callee.symbol.fqName != result.symbol.owner.kotlinFqName
+    )
       return result
 
-    return DeclarationIrBuilder(irCtx, result.symbol).irBlock {
+    return DeclarationIrBuilder(irCtx, result.symbol, result.startOffset, result.endOffset).irBlock {
       val rootContext = RootContext(injectionResult, result.startOffset)
       try {
         ScopeContext(
@@ -573,20 +523,12 @@ class InjectCallTransformer(
           rootContext = rootContext,
           scope = injectionResult.scope,
           irScope = scope
-        ).run { result.injectParameters(this, injectionResult.results) }
+        ).run { result.injectArguments(this, injectionResult.results) }
       } catch (e: Throwable) {
         throw RuntimeException("Wtf ${expression.dump()}", e)
       }
       rootContext.statements.forEach { +it }
       +result
     }
-  }
-}
-
-class CompilationDeclarations : IrElementTransformerVoid() {
-  val declarations = mutableListOf<IrSymbol>()
-  override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
-    declarations += declaration.symbol
-    return super.visitDeclaration(declaration)
   }
 }

@@ -208,6 +208,10 @@ private fun functionInjectablesScopeOf(
     isContextual = function.hasAnnotation(InjektFqNames.Contextual, ctx.session),
     ctx = ctx
   )
+    .also { result ->
+      // cache with different key to allow
+      ctx.cached<_, InjectablesScope>("function_scope_for_ir", function) { result }
+    }
 }
 
 private fun propertyInjectablesScopeOf(

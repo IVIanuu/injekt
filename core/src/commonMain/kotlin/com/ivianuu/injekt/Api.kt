@@ -68,5 +68,3 @@ annotation class AddOn
 
 @Target(AnnotationTarget.FUNCTION)
 annotation class Contextual
-
-@Contextual inline fun <T> resolve(): T = inject()

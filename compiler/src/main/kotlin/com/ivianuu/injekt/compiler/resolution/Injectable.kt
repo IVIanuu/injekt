@@ -91,6 +91,14 @@ class LambdaInjectable(
   )
 }
 
+data class ContextualInjectable(
+  override val type: InjektType,
+  override val ownerScope: InjectablesScope
+) : Injectable {
+  override val chainFqName: FqName = ownerScope.owner!!.fqName
+    .child(type.contextualParameterName().asNameId())
+}
+
 class SourceKeyInjectable(
   override val type: InjektType,
   override val ownerScope: InjectablesScope
@@ -123,26 +131,48 @@ data class InjectableRequest(
   val callableTypeArguments: Map<InjektClassifier, InjektType> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
-  val isRequired: Boolean = true
+  val isRequired: Boolean = true,
+  val isContextual: Boolean = false
 )
 
 fun InjektCallable.injectableRequests(exclude: Set<Int>): List<InjectableRequest> =
-  parameterTypes.map { (index, type) ->
-    if (index in exclude) return@map null
-    val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
-      ?.getOrNull(index)
-    InjectableRequest(
-      type = type,
-      callableFqName = chainFqName,
-      callableTypeArguments = typeArguments,
-      parameterName = when (index) {
-        DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-        EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-        else -> valueParameter!!.name
-      },
-      parameterIndex = index,
-      isRequired = valueParameter == null ||
-          symbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(valueParameter) in injectParameters ||
-          !valueParameter.hasDefaultValue
-    )
-  }.filterNotNull()
+  buildList {
+    parameterTypes.forEach { (index, type) ->
+      if (index in exclude) return@forEach
+      val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
+        ?.getOrNull(index)
+      this += InjectableRequest(
+        type = type,
+        callableFqName = chainFqName,
+        callableTypeArguments = typeArguments,
+        parameterName = when (index) {
+          DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+          EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+          else -> valueParameter!!.name
+        },
+        parameterIndex = index,
+        isRequired = valueParameter == null ||
+            symbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(valueParameter) in injectParameters ||
+            !valueParameter.hasDefaultValue
+      )
+    }
+    contextualParameters.forEachIndexed { index, parameter ->
+      this += InjectableRequest(
+        type = parameter,
+        callableFqName = chainFqName,
+        callableTypeArguments = typeArguments,
+        parameterName = parameter.contextualParameterName().asNameId(),
+        parameterIndex = parameterTypes.count {
+          it.key != DISPATCH_RECEIVER_INDEX &&
+              it.key != EXTENSION_RECEIVER_INDEX
+        } + index,
+        isContextual = true
+      )
+    }
+  }
+
+fun InjektType.contextualParameterName(): String =
+  "\$contextual_" +
+      renderToString().replace(".", "_")
+        .replace("<", "__")
+        .replace(">", "__")

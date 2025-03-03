@@ -54,8 +54,15 @@ class InjectablesScope(
 
   val allStaticTypeParameters = allScopes.flatMap { it.typeParameters }
 
-  data class CallableRequestKey(val type: InjektType, val staticTypeParameters: List<InjektClassifier>)
+  data class CallableRequestKey(
+    val type: InjektType,
+    val staticTypeParameters: List<InjektClassifier>,
+    val isContextual: Boolean
+  )
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
+
+  private val nearestContextualScope = allScopes.lastOrNull { it.isContextual }
+  val contextualInjectables = mutableSetOf<ContextualInjectable>()
 
   init {
     for (injectable in initialInjectables)
@@ -75,7 +82,11 @@ class InjectablesScope(
   ): List<Injectable> {
     // we return merged collections
     return if (request.type.uniqueId == null && request.type.classifier == ctx.listClassifier) emptyList()
-    else injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
+    else injectablesForType(CallableRequestKey(
+      request.type,
+      requestingScope.allStaticTypeParameters,
+      request.isContextual
+    ))
       .filter { injectable ->
         ctx.session.visibilityChecker.isVisible(
           if (injectable.callable.originalType.unwrapTags().classifier.symbol
@@ -92,10 +103,13 @@ class InjectablesScope(
 
   private fun injectablesForType(key: CallableRequestKey): List<CallableInjectable> {
     if (injectables.isEmpty())
-      return parent?.injectablesForType(key) ?: emptyList()
+      return if (isContextual) emptyList()
+      else parent?.injectablesForType(key) ?: emptyList()
+
     return injectablesByRequest.getOrPut(key) {
       buildList {
-        parent?.injectablesForType(key)?.let { addAll(it) }
+        if (!isContextual)
+          parent?.injectablesForType(key)?.let { addAll(it) }
 
         for (candidate in injectables) {
           if (key.type.uniqueId != null && candidate.type.uniqueId != key.type.uniqueId) continue
@@ -111,29 +125,43 @@ class InjectablesScope(
     }
   }
 
-  fun builtInInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
-    request.type.classifier == ctx.listClassifier -> {
-      val singleElementType = request.type.arguments[0]
-      val collectionElementType = ctx.collectionClassifier.defaultType
-        .withArguments(listOf(singleElementType))
+  fun builtInInjectableForRequest(request: InjectableRequest): Injectable? {
+    // source key has no dependencies so its okay to use it here even if we are contextual
+    if (request.type.classifier.classId == InjektFqNames.SourceKey)
+      return SourceKeyInjectable(request.type, this)
 
-      val key = CallableRequestKey(request.type, allStaticTypeParameters)
+    if (nearestContextualScope != null)
+      return ContextualInjectable(request.type, nearestContextualScope)
+        .also { nearestContextualScope.contextualInjectables += it }
 
-      val elements = listElementsTypesForType(singleElementType, collectionElementType, key)
+    return when {
+      request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
+      request.type.classifier == ctx.listClassifier -> {
+        val singleElementType = request.type.arguments[0]
+        val collectionElementType = ctx.collectionClassifier.defaultType
+          .withArguments(listOf(singleElementType))
 
-      if (elements.isEmpty()) null
-      else ListInjectable(
-        type = request.type,
-        ownerScope = this,
-        elements = elements,
-        singleElementType = singleElementType,
-        collectionElementType = collectionElementType
+        val key = CallableRequestKey(request.type, allStaticTypeParameters, isContextual)
+
+        val elements = listElementsTypesForType(singleElementType, collectionElementType, key)
+
+        if (elements.isEmpty()) null
+        else ListInjectable(
+          type = request.type,
+          ownerScope = this,
+          elements = elements,
+          singleElementType = singleElementType,
+          collectionElementType = collectionElementType
+        )
+      }
+
+      request.type.classifier.classId == InjektFqNames.TypeKey -> TypeKeyInjectable(
+        request.type,
+        this
       )
+
+      else -> null
     }
-    request.type.classifier.classId == InjektFqNames.SourceKey -> SourceKeyInjectable(request.type, this)
-    request.type.classifier.classId == InjektFqNames.TypeKey -> TypeKeyInjectable(request.type, this)
-    else -> null
   }
 
   private fun listElementsTypesForType(

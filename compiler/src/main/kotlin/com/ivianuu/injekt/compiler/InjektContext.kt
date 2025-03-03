@@ -6,6 +6,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.resolution.*
 import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.plugin.*
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
@@ -14,7 +15,9 @@ import org.jetbrains.kotlin.name.*
 
 @Suppress("NewApi")
 class InjektContext : TypeCheckerContext {
+  var firDone = false
   lateinit var session: FirSession
+  lateinit var files: List<FirFile>
 
   @PublishedApi internal val maps = mutableMapOf<String, MutableMap<Any?, Any?>>()
 

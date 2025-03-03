@@ -180,3 +180,29 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
       )
     }
   }
+
+fun collectFilesInCompilation(ctx: InjektContext): List<InjektCallable> = collectPackagesWithInjectables(ctx)
+  .flatMap { collectPackageInjectables(it, ctx) }
+
+fun collectFilesOfCompilationInPackage(packageFqName: FqName, ctx: InjektContext): List<InjektCallable> =
+  ctx.cached("injectables_in_package", packageFqName) {
+    if (packageFqName !in collectPackagesWithInjectables(ctx)) emptyList()
+    else buildList {
+      fun collectClassInjectables(classSymbol: FirClassSymbol<*>) {
+        for (declarationSymbol in classSymbol.declarationSymbols) {
+          if (declarationSymbol is FirConstructorSymbol &&
+            ((declarationSymbol.isPrimary &&
+                classSymbol.isInjectable(ctx)) || declarationSymbol.isInjectable(ctx)))
+            this += declarationSymbol.toInjektCallable(ctx)
+
+          if (declarationSymbol is FirClassSymbol<*>)
+            collectClassInjectables(declarationSymbol)
+        }
+      }
+
+      for (declaration in collectDeclarationsInFqName(packageFqName, ctx))
+        if (declaration is FirRegularClassSymbol) collectClassInjectables(declaration)
+        else if (declaration is FirCallableSymbol<*> && declaration.isInjectable(ctx))
+          this += declaration.toInjektCallable(ctx)
+    }
+  }

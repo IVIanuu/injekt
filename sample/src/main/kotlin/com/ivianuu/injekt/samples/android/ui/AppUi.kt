@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.*
 import com.ivianuu.injekt.*
 
 @Composable @Contextual fun AppUi() {
-  val state = CounterPresenter()
   Scaffold(
     topBar = {
       TopAppBar(
@@ -21,6 +20,7 @@ import com.ivianuu.injekt.*
       )
     }
   ) {
+    val state = counterState()
     Column(
       modifier = Modifier
         .padding(it)

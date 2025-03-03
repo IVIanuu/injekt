@@ -5,6 +5,7 @@
 package com.ivianuu.injekt.ksp
 
 import com.google.auto.service.*
+import com.google.devtools.ksp.*
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.ivianuu.injekt.compiler.*
@@ -13,7 +14,8 @@ import java.util.*
 
 @OptIn(UnsafeCastFunction::class) class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false)
+    (resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false) +
+        resolver.getSymbolsWithAnnotation(InjektFqNames.Contextual.asFqNameString(), false))
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -92,6 +94,12 @@ import java.util.*
         append(type.typeHash())
       }
     }
+
+    if (hasAnnotation(InjektFqNames.Contextual.packageFqName.asString(),
+        InjektFqNames.Contextual.shortClassName.asString())) {
+      append("contextual")
+      append(UUID.randomUUID())
+    }
   }
 
   private fun KSTypeReference.typeHash(): String = buildString {
@@ -111,6 +119,16 @@ import java.util.*
     }
 
     resolve().append()
+  }
+
+  private fun KSAnnotated.hasAnnotation(packageName: String, simpleName: String) =
+    annotations.any { it.hasName(packageName, simpleName) }
+
+  private fun KSAnnotation.hasName(packageName: String, simpleName: String): Boolean {
+    // we can skip resolving if the short name doesn't match
+    if (shortName.asString() != simpleName) return false
+    val declaration = annotationType.resolve().declaration
+    return declaration.packageName.asString() == packageName
   }
 
   @AutoService(SymbolProcessorProvider::class)

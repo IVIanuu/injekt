@@ -29,14 +29,47 @@ class CallableInfo(
   val symbol: FirCallableSymbol<*>,
   val type: InjektType,
   val parameterTypes: Map<Int, InjektType>,
-  val injectParameters: Set<Int>,
-  val contextualParameters: Set<InjektType>
-)
+  val injectParameters: Set<Int>
+) {
+  val contextualParameters = mutableSetOf<InjektType>()
+
+  private var resolvedContextualParameters = false
+  fun resolveContextualParameters(ctx: InjektContext) {
+    if (resolvedContextualParameters) return
+    resolvedContextualParameters = true
+    if (symbol.hasAnnotation(InjektFqNames.Contextual, ctx.session)) {
+      symbol.fir.accept(
+        object : FirDefaultVisitorVoid() {
+          override fun visitFunctionCall(functionCall: FirFunctionCall) {
+            super.visitFunctionCall(functionCall)
+            val result = checkCall(
+              functionCall,
+              ctx.ctx
+            )
+            if (result != null) {
+              val scope = result.scope.allScopes
+                .single { it.owner == symbol }
+              scope.contextualInjectables.forEach {
+                contextualParameters.add(it.type)
+              }
+            }
+          }
+
+          override fun visitElement(element: FirElement) {
+            element.acceptChildren(this)
+          }
+        }
+      )
+    }
+  }
+}
 
 fun FirCallableSymbol<*>.callableInfo(ctx: InjektContext): CallableInfo = when {
   this != originalOrSelf() -> originalOrSelf().callableInfo(ctx)
   this is FirPropertyAccessorSymbol -> propertySymbol.callableInfo(ctx)
   else -> ctx.cached("callable_info", uniqueKey(ctx)) {
+    println("create callable info for $fqName")
+
     decodeDeclarationInfo<PersistedCallableInfo>(ctx)
       ?.toCallableInfo(ctx)
       ?.let { return@cached it }
@@ -71,49 +104,13 @@ fun FirCallableSymbol<*>.callableInfo(ctx: InjektContext): CallableInfo = when {
       }
       .mapTo(mutableSetOf()) { valueParameterSymbols.indexOf(it) }
 
-    val contextualParameters = mutableSetOf<InjektType>()
-    fir.accept(
-      object : FirDefaultVisitorVoid() {
-        override fun visitFunctionCall(functionCall: FirFunctionCall) {
-          super.visitFunctionCall(functionCall)
-          val symbol = functionCall.toResolvedCallableSymbol()!!
-          val callable = symbol.toInjektCallable(ctx)
-            .substitute(
-              buildMap {
-                functionCall.typeArguments.forEachIndexed { index, argument ->
-                  val parameter = symbol.typeParameterSymbols[index].toInjektClassifier(ctx)
-                  this[parameter] = argument.toConeTypeProjection().toInjektType(ctx)
-                }
-
-                fun InjektType.putAll() {
-                  for ((index, parameter) in classifier.typeParameters.withIndex()) {
-                    val argument = arguments[index]
-                    if (argument.classifier != parameter)
-                      this@buildMap[parameter] = arguments[index]
-                  }
-                }
-
-                functionCall.dispatchReceiver?.resolvedType?.toInjektType(ctx)?.putAll()
-                functionCall.extensionReceiver?.resolvedType?.toInjektType(ctx)?.putAll()
-              }
-            )
-
-          contextualParameters += callable.contextualParameters
-          contextualParameters += callable.injectParameters
-            .map { callable.parameterTypes[it]!! }
-        }
-
-        override fun visitElement(element: FirElement) {
-          element.acceptChildren(this)
-        }
-      }
-    )
-
-    CallableInfo(this, type, parameterTypes, injectParameters, contextualParameters)
+    CallableInfo(this, type, parameterTypes, injectParameters)
   }
+    .also { it.resolveContextualParameters(ctx) }
 }
 
 fun CallableInfo.shouldBePersisted(ctx: InjektContext) = injectParameters.isNotEmpty() ||
+    contextualParameters.isNotEmpty() ||
     type.shouldBePersisted() ||
     parameterTypes.values.any { it.shouldBePersisted() } ||
     symbol.typeParameterSymbols.any { it.classifierInfo(ctx).shouldBePersisted(ctx) }
@@ -147,9 +144,12 @@ fun PersistedCallableInfo.toCallableInfo(ctx: InjektContext) = try {
     symbol = findCallableForKey(callableKey, FqName(callableFqName), ctx),
     type = type.toInjektType(ctx),
     parameterTypes = parameterTypes.mapValues { it.value.toInjektType(ctx) },
-    injectParameters = injectParameters,
-    contextualParameters = contextualParameters.mapTo(mutableSetOf()) { it.toInjektType(ctx) }
-  )
+    injectParameters = injectParameters
+  ).also { info ->
+    contextualParameters.forEach {
+      info.contextualParameters.add(it.toInjektType(ctx))
+    }
+  }
 } catch (e: Throwable) {
   throw IllegalStateException("Failed to restore $this", e)
 }

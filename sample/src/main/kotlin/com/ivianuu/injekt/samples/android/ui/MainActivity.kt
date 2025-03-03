@@ -31,6 +31,8 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@Provide data class MainActivityComponent(val appTheme: AppTheme)
+@Provide data class MainActivityComponent(
+  val appTheme: AppTheme
+)
 
 object ActivityScope

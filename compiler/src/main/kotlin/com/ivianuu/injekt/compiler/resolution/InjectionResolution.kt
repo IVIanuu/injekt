@@ -20,7 +20,8 @@ sealed interface InjectionResult {
     override val scope: InjectablesScope,
     override val callee: InjektCallable,
     val results: Map<InjectableRequest, ResolutionResult.Success>
-  ) : InjectionResult
+  ) : InjectionResult {
+  }
 
   data class Error(
     override val scope: InjectablesScope,
@@ -110,6 +111,7 @@ fun InjectablesScope.resolveRequests(
 }
 
 private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
+  println("resolve request ${request.type} chain ${resolutionChain.size}")
   resultsByType[request.type]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
@@ -241,17 +243,21 @@ private fun InjectablesScope.resolveCandidate(
     when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> when {
+        // if there are no candidates for the lambda return type
+        // the lambda injectable does technically not exist
         dependency.isRequired && candidate is LambdaInjectable &&
             dependencyResult is ResolutionResult.Failure.NoCandidates ->
           return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
         !dependency.isRequired &&
-            dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.NoCandidates ->
+            dependencyResult.unwrapDependencyFailure(dependency)
+              .second is ResolutionResult.Failure.NoCandidates ->
           successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
-        else -> return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
-          candidate,
-          dependency,
-          dependencyResult
-        )
+        else ->
+          return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
+            candidate,
+            dependency,
+            dependencyResult
+          )
       }
     }
 
