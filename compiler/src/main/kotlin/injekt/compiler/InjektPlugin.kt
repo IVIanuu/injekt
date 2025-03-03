@@ -43,7 +43,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 @OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
-  override val pluginId = "com.ivianuu.injekt"
+  override val pluginId = "injekt"
   override val pluginOptions = listOf(DumpDirOption)
 
   override fun processOption(

@@ -26,10 +26,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       listOf(SubpluginOption("dumpDir", "${kotlinCompilation.target.project.buildDir.resolve("injekt/dump/${kotlinCompilation.defaultSourceSet.name}")}"))
     }
 
-  override fun getCompilerPluginId() = "com.ivianuu.injekt"
+  override fun getCompilerPluginId() = "injekt"
 
   override fun getPluginArtifact() = SubpluginArtifact(
-    groupId = "com.ivianuu.injekt",
+    groupId = "injekt",
     artifactId = "compiler",
     version = BuildConfig.VERSION
   )

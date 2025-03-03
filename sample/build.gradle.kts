@@ -6,12 +6,12 @@ plugins {
   id("com.android.application")
   kotlin("android")
   id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
-  id("com.ivianuu.injekt")
+  id("injekt")
 }
 
 android {
   defaultConfig {
-    namespace = "com.ivianuu.injekt.samples.android"
+    namespace = "injekt.samples.android"
     applicationId = Build.applicationId
     compileSdk = Build.compileSdk
     minSdk = Build.minSdk

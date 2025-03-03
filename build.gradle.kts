@@ -45,10 +45,10 @@ allprojects {
 
   configurations.configureEach {
     resolutionStrategy.dependencySubstitution {
-      substitute(module("com.ivianuu.injekt:ksp:${Deps.Injekt.version}")).using(project(":ksp"))
-      substitute(module("com.ivianuu.injekt:compiler:${Deps.Injekt.version}")).using(project(":compiler"))
-      substitute(module("com.ivianuu.injekt:core:${Deps.Injekt.version}")).using(project(":core"))
-      substitute(module("com.ivianuu.injekt:common:${Deps.Injekt.version}")).using(project(":common"))
+      substitute(module("injekt:ksp:${Deps.Injekt.version}")).using(project(":ksp"))
+      substitute(module("injekt:compiler:${Deps.Injekt.version}")).using(project(":compiler"))
+      substitute(module("injekt:core:${Deps.Injekt.version}")).using(project(":core"))
+      substitute(module("injekt:common:${Deps.Injekt.version}")).using(project(":common"))
     }
   }
 }

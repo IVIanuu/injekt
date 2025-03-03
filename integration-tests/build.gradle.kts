@@ -4,7 +4,7 @@
 
 plugins {
   kotlin("jvm")
-  id("com.ivianuu.injekt")
+  id("injekt")
 }
 
 dependencies {

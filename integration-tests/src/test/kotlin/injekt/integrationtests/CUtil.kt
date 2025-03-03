@@ -224,7 +224,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     componentRegistrars += InjektComponentRegistrar()
     commandLineProcessors += InjektCommandLineProcessor()
     pluginOptions += PluginOption(
-      "com.ivianuu.injekt",
+      "injekt",
       "dumpDir",
       workingDir.resolve("injekt/dump")
         .also { it.mkdirs() }

@@ -12,15 +12,15 @@ plugins {
 gradlePlugin {
   plugins {
     create("injekt") {
-      id = "com.ivianuu.injekt"
-      implementationClass = "com.ivianuu.injekt.gradle.InjektPlugin"
+      id = "injekt"
+      implementationClass = "injekt.gradle.InjektPlugin"
     }
   }
 }
 
 buildConfig {
   className("BuildConfig")
-  packageName("com.ivianuu.injekt.gradle")
+  packageName("injekt.gradle")
   buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
 }
 
