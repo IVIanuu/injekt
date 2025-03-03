@@ -6,9 +6,9 @@
 
 object Build {
   const val applicationId = "injekt.samples.android"
-  const val compileSdk = 34
+  const val compileSdk = 35
   const val minSdk = 27
-  const val targetSdk = 34
+  const val targetSdk = 35
   const val versionCode = 1
   const val versionName = "0.0.1"
 }
