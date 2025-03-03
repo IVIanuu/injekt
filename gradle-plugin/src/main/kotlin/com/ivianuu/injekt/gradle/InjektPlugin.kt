@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package com.ivianuu.injekt.gradle
+package injekt.gradle
 
 import com.google.auto.service.*
 import org.gradle.api.*
@@ -17,7 +17,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     target.pluginManager.apply("com.google.devtools.ksp")
     target.dependencies.add(
       "ksp",
-      "com.ivianuu.injekt:ksp:${BuildConfig.VERSION}"
+      "injekt:ksp:${BuildConfig.VERSION}"
     )
   }
 

@@ -5,7 +5,7 @@
 @file:Suppress("ClassName", "unused")
 
 object Build {
-  const val applicationId = "com.ivianuu.injekt.samples.android"
+  const val applicationId = "injekt.samples.android"
   const val compileSdk = 34
   const val minSdk = 27
   const val targetSdk = 34
