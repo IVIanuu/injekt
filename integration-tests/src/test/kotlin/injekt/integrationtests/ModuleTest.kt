@@ -16,7 +16,7 @@ class ModuleTest {
     """
       data class Baz(val foo: Foo, val bar: Bar)
       @Provide val foo = Foo()
-      @Provide class BarModule(private val foo: Foo) {
+      @Provide class BarModule {
         @Provide val bar = Bar(foo)
         @Provide fun baz(bar: Bar) = Baz(foo, bar)
       }

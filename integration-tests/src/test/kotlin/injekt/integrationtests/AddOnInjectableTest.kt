@@ -26,8 +26,8 @@ class AddOnInjectableTest {
 
   @Test fun testAddOnInjectableClass() = singleAndMultiCodegen(
     """
-      @Provide class AddOnModule<@AddOn T : @Tag1 S, S>(instance: T) {
-        @Provide val untagged: S = instance
+      @Provide class AddOnModule<@AddOn T : @Tag1 S, S> {
+        @Provide fun untagged(instance: T): S = instance
       }
       @Provide fun taggedFoo(): @Tag1 Foo = Foo()
     """,

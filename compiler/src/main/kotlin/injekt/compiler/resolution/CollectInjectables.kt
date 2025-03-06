@@ -107,6 +107,9 @@ fun InjektCallable.collectModuleInjectables(
   val nextCallable = copy(type = type.copy(uniqueId = UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
+  if (nextCallable.parameterTypes.count { it.key != DISPATCH_RECEIVER_INDEX } > 0)
+    return
+
   nextCallable
     .type
     .collectModuleInjectables(ctx)
