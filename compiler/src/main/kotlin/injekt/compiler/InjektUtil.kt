@@ -7,7 +7,6 @@
 package injekt.compiler
 
 import injekt.compiler.fir.*
-import injekt.compiler.fir.callableInfo
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
@@ -46,8 +45,7 @@ fun List<FirAnnotation>.getTags(ctx: InjektContext): List<FirAnnotation> = filte
 }
 
 fun FirClassifierSymbol<*>.isTag(ctx: InjektContext): Boolean =
-  this is FirRegularClassSymbol &&
-      (hasAnnotation(InjektFqNames.Tag, ctx.session) || classId == InjektFqNames.Composable)
+  this is FirRegularClassSymbol && hasAnnotation(InjektFqNames.Tag, ctx.session)
 
 val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
