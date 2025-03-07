@@ -20,7 +20,7 @@ graph.repo
 
 # Setup
 TODO
-Must be checked out and build locally using publishToMavenLocal task
+Must be checked out and build locally using publishToMavenLocal task for now
 
 # Provide injectables
 You can provide dependencies by annotating them with @Provide:
@@ -142,5 +142,10 @@ typealias UserId = @UserIdTag String
 @Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)
 ```
 
+# Errors / Debugging
+Injekt will show an error if there are missing dependencies.
+Additionally it will dump kotlin like code with the generated code in the /build/injekt/dump folder
+for each file where injections happen
+
 # More complex uses can be found in my essentials project(base project for my apps)
-# https://github.com/IVIanuu/essentials
+https://github.com/IVIanuu/essentials
