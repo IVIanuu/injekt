@@ -86,7 +86,7 @@ fun onDestroy() {
 ```
 
 # Multi injection
-You can inject all injectables of a given type by injecting a ```List<T>```
+You can inject all dependencies of a given type by injecting a ```List<T>```
 ```kotlin
 @Provide fun singleElement(): String = "a"
 @Provide fun multipleElements(): Collection<String> = listOf("b", "c")
@@ -120,7 +120,7 @@ You can do this by injecting a function.
 ```
 
 # Distinguish between types
-Sometimes you have multiple injectables of the same type
+Sometimes you have multiple dependencies of the same type
 Injekt will need help to keep them apart here are two strategies:
 
 Value classes:
