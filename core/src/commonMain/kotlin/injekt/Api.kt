@@ -34,8 +34,15 @@ package injekt
 )
 annotation class Provide
 
+/**
+ * Marks the parameter as injectable
+ * If no explicit parameter is passed injekt will fill in the parameter at each call size
+ */
 val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 
+/**
+ * Creates a new instance of [T] using the enclosing providers
+ */
 inline fun <T> create(x: T = inject) = x
 
 /**
@@ -63,5 +70,8 @@ inline fun <T> create(x: T = inject) = x
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class Tag
 
+/**
+ * Todo
+ */
 @Target(AnnotationTarget.TYPE_PARAMETER)
 annotation class AddOn
