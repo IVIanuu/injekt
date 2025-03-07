@@ -1,14 +1,9 @@
 package injekt.common
 
-import injekt.inject
 import kotlin.jvm.*
 
 /**
  * A key for a Injekt type of [T] which can be used as a [Map] key or similar
+ * For example it is used to store [Scoped] instances in a [Scope]
  */
 @JvmInline value class TypeKey<out T>(val value: String)
-
-/**
- * Returns the [TypeKey] of [T]
- */
-inline fun <T> typeKeyOf(x: TypeKey<T> = inject): TypeKey<T> = x

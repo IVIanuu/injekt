@@ -9,7 +9,7 @@ import org.junit.*
 class SourceKeyTest {
   @Test fun testSourceKey() = codegen(
     """
-      fun invoke() = sourceKey()
+      fun invoke() = create<SourceKey>()
     """
   ) {
     invokeSingleFile() shouldBe "File.kt:11:21"
