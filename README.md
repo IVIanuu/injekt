@@ -21,6 +21,18 @@ graph.repo
 # Setup
 TODO
 Must be checked out and build locally using publishToMavenLocal task for now
+```kotlin
+plugins {
+  id("injekt") version latest_version
+}
+
+dependencies {
+  // core runtime
+  implementation("injekt:core:${latest_version}")
+  // optional - common utilities
+  implementation("injekt:common:${latest_version}")
+}
+```
 
 # Provide injectables
 You can provide dependencies by annotating them with @Provide:
