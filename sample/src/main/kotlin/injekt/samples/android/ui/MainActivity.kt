@@ -7,9 +7,9 @@ package injekt.samples.android.ui
 import android.os.*
 import androidx.activity.*
 import androidx.activity.compose.*
+import injekt.*
+import injekt.common.*
 import injekt.samples.android.app.*
-import injekt.Provide
-import injekt.common.Scope
 
 class MainActivity : ComponentActivity() {
   private val scope = Scope<ActivityScope>()
@@ -17,10 +17,10 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    val component = (application as App).appComponent.mainActivityComponent(scope)
+    val dependencies = (application as App).appDependencies.mainActivityDependencies(scope)
     setContent {
-      component.appTheme.Content {
-        component.appUi.Content()
+      dependencies.appTheme.Content {
+        dependencies.appUi.Content()
       }
     }
   }
@@ -31,6 +31,9 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@Provide data class MainActivityComponent(val appTheme: AppTheme, val appUi: AppUi)
+@Provide data class MainActivityDependencies(
+  val appTheme: AppTheme,
+  val appUi: AppUi
+)
 
 object ActivityScope

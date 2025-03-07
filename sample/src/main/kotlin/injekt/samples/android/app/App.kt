@@ -11,11 +11,11 @@ import injekt.samples.android.ui.*
 
 class App : Application() {
   @Provide private val appScope = Scope<AppScope>()
-  val appComponent by lazy { create<AppComponent>() }
+  val appDependencies by lazy { create<AppDependencies>() }
 }
 
 object AppScope
 
-@Provide data class AppComponent(
-  val mainActivityComponent: (Scope<ActivityScope>) -> MainActivityComponent
+@Provide data class AppDependencies(
+  val mainActivityDependencies: (Scope<ActivityScope>) -> MainActivityDependencies
 )
