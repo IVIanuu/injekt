@@ -107,11 +107,11 @@ fun ConeKotlinType.toInjektType(
   variance: TypeVariance = TypeVariance.INV,
 ): InjektType {
   if (this is ConeErrorType) return ctx.nullableAnyType
-  val unwrapped = when(this) {
-    is ConeCapturedType -> lowerType ?: return STAR_PROJECTION_TYPE
-    is ConeDefinitelyNotNullType -> original.unwrapLowerBound()
-    is ConeFlexibleType -> lowerBound.unwrapLowerBound()
-    is ConeSimpleKotlinType -> this
+  val unwrapped = when(val abbreviatedOrSelf = abbreviatedTypeOrSelf) {
+    is ConeCapturedType -> abbreviatedOrSelf.lowerType ?: return STAR_PROJECTION_TYPE
+    is ConeDefinitelyNotNullType -> abbreviatedOrSelf.original.unwrapLowerBound()
+    is ConeFlexibleType -> abbreviatedOrSelf.lowerBound.unwrapLowerBound()
+    is ConeSimpleKotlinType -> abbreviatedOrSelf
   }
 
   val classifier = unwrapped.safeAs<ConeLookupTagBasedType>()?.lookupTag
@@ -134,7 +134,8 @@ fun ConeKotlinType.toInjektType(
     variance = variance
   )
 
-  val tags = customAnnotations.getTags(ctx)
+  val tags = if (abbreviatedType != null) emptyList()
+  else unwrapped.customAnnotations.getTags(ctx)
   var result = if (tags.isNotEmpty()) {
     tags
       .map { it.resolvedType.toInjektType(ctx) }

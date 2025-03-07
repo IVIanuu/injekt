@@ -8,20 +8,17 @@ package injekt.compiler.ir
 
 import injekt.compiler.*
 import injekt.compiler.fir.*
-import injekt.compiler.fir.callableInfo
-import injekt.compiler.fir.classifierInfo
-import injekt.compiler.fir.encode
-import injekt.compiler.fir.shouldBePersisted
-import injekt.compiler.fir.toPersistedCallableInfo
-import injekt.compiler.fir.toPersistedClassifierInfo
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.fir.backend.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.ir.*
 import org.jetbrains.kotlin.ir.builders.*
+import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.util.*
@@ -49,9 +46,30 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
     object : IrElementTransformerVoid() {
       override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
         fun addMetadata(value: String) {
+          val metadataHolderDeclaration = if (declaration !is IrTypeAlias) declaration
+          else {
+            val parent = declaration.parent.cast<IrDeclarationContainer>()
+            IrFactoryImpl.buildFun {
+              origin = IrDeclarationOrigin.DEFINED
+              name = (declaration.name.asString() + "\$DeclarationInfoHolder").asNameId()
+              returnType = irCtx.irBuiltIns.unitType
+              visibility = DescriptorVisibilities.PUBLIC
+              startOffset = declaration.startOffset
+              endOffset = declaration.endOffset
+            }.apply {
+              this.parent = parent
+              parent.declarations += this
+              body = DeclarationIrBuilder(irCtx, symbol).irBlockBody {
+                +irReturn(irUnit())
+              }
+
+              irCtx.metadataDeclarationRegistrar.registerFunctionAsMetadataVisible(this)
+            }
+          }
+
           irCtx.metadataDeclarationRegistrar.addMetadataVisibleAnnotationsToElement(
-            declaration,
-            DeclarationIrBuilder(irCtx, declaration.symbol)
+            metadataHolderDeclaration,
+            DeclarationIrBuilder(irCtx, metadataHolderDeclaration.symbol)
               .irCallConstructor(
                 irCtx.referenceConstructors(InjektFqNames.DeclarationInfo)
                   .single(),

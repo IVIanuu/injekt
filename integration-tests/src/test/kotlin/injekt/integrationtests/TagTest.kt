@@ -77,7 +77,7 @@ class TagTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
+  @Test fun testTagTypeAliasPattern() = multiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class TaggedFooTag
@@ -103,5 +103,46 @@ class TagTest {
     """
       fun invoke() = inject<ComponentScope<Foo>>()
     """
+  )
+
+  @Test fun testComplexTagTypeAliasPatternWithAddOns() = singleAndMultiCodegen(
+    """
+      interface Screen<R>
+
+      @Stable fun interface Ui<S : Screen<*>> {
+        @Composable fun Content()
+      }
+      
+      @Tag @Target(AnnotationTarget.TYPE) annotation class UiTag<S : Screen<*>> {
+        @Provide companion object {
+          @Provide inline fun <@AddOn T : Uii<S>, S : Screen<*>> uiiToUi(
+            crossinline uii: @Composable () -> T
+          ): Ui<S> = Ui { uii() }
+        }
+      }
+      
+      @Provide inline fun <reified T : Any> kclass(): KClass<T> = T::class
+
+      @Provide fun <@AddOn T : Ui<S>, S : Screen<*>> rootNavGraphUiFactory(
+        screenClass: KClass<S>,
+        uiFactory: (S) -> T
+      ): Pair<KClass<Screen<*>>, UiFactory<Screen<*>>> =
+        (screenClass to uiFactory) as Pair<KClass<Screen<*>>, UiFactory<Screen<*>>>
+      
+      typealias Uii<S> = @UiTag<S> Unit
+
+      typealias UiFactory<S> = (S) -> Ui<S>
+    """,
+    """
+      class ActionsScreen : Screen<Unit>
+      
+      @Provide @Composable fun ActionsUi(): Uii<ActionsScreen> {
+      }
+
+      fun invoke() {
+        inject<List<Pair<KClass<Screen<*>>, UiFactory<Screen<*>>>>>()
+      }
+    """,
+    config = { withCompose() }
   )
 }

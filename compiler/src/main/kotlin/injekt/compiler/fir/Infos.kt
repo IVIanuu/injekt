@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
@@ -119,24 +120,38 @@ class ClassifierInfo(
 
 fun FirClassifierSymbol<*>.classifierInfo(ctx: InjektContext): ClassifierInfo =
   ctx.cached("classifier_info", uniqueKey(ctx)) {
-    if (this is FirTypeParameterSymbol) {
-      val index = containingDeclarationSymbol.typeParameterSymbols!!.indexOf(this)
-      (containingDeclarationSymbol.safeAs<FirClassifierSymbol<*>>()
-        ?.decodeDeclarationInfo<PersistedClassifierInfo>(ctx)
-        ?.typeParameterInfos ?:
-      containingDeclarationSymbol.safeAs<FirCallableSymbol<*>>()
-        ?.decodeDeclarationInfo<PersistedCallableInfo>(ctx)
-        ?.typeParameterInfos)
-        ?.let {
-          it.getOrNull(index)
-            ?: error("Wtf $this $containingDeclarationSymbol ${containingDeclarationSymbol.typeParameterSymbols}")
-        }
-        ?.toClassifierInfo(ctx)
-        ?.let { return@cached it }
-    } else
-      decodeDeclarationInfo<PersistedClassifierInfo>(ctx)
-        ?.toClassifierInfo(ctx)
-        ?.let { return@cached it }
+    when (this) {
+      is FirTypeParameterSymbol -> {
+        val index = containingDeclarationSymbol.typeParameterSymbols!!.indexOf(this)
+        (containingDeclarationSymbol.safeAs<FirClassifierSymbol<*>>()
+          ?.decodeDeclarationInfo<PersistedClassifierInfo>(ctx)
+          ?.typeParameterInfos ?:
+        containingDeclarationSymbol.safeAs<FirCallableSymbol<*>>()
+          ?.decodeDeclarationInfo<PersistedCallableInfo>(ctx)
+          ?.typeParameterInfos)
+          ?.let {
+            it.getOrNull(index)
+              ?: error("Wtf $this $containingDeclarationSymbol ${containingDeclarationSymbol.typeParameterSymbols}")
+          }
+          ?.toClassifierInfo(ctx)
+          ?.let { return@cached it }
+      }
+      is FirTypeAliasSymbol -> {
+        ctx.session.symbolProvider.getTopLevelFunctionSymbols(
+          classId.packageFqName,
+          (classId.shortClassName.asString() + "\$DeclarationInfoHolder").asNameId()
+        )
+          .singleOrNull()
+          ?.decodeDeclarationInfo<PersistedClassifierInfo>(ctx)
+          ?.toClassifierInfo(ctx)
+          ?.let { return@cached it }
+      }
+      else -> {
+        decodeDeclarationInfo<PersistedClassifierInfo>(ctx)
+          ?.toClassifierInfo(ctx)
+          ?.let { return@cached it }
+      }
+    }
 
     val expandedType = (this as? FirTypeAliasSymbol)?.resolvedExpandedTypeRef
       ?.coneType?.toInjektType(ctx)
@@ -194,7 +209,7 @@ val json = Json { ignoreUnknownKeys = true }
 inline fun <reified T> T.encode(): String = json.encodeToString(this)
 inline fun <reified T> String.decode(): T = json.decodeFromString(this)
 
-private inline fun <reified T> FirBasedSymbol<*>.decodeDeclarationInfo(ctx: InjektContext) =
+private inline fun <reified T> FirBasedSymbol<*>.decodeDeclarationInfo(ctx: InjektContext): T? =
   getAnnotationByClassId(InjektFqNames.DeclarationInfo, ctx.session)
     ?.argumentMapping
     ?.mapping
