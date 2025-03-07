@@ -143,9 +143,12 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
     if (isInjectable)
       checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
     
-    if (declaration.hasAnnotation(InjektFqNames.Tag, context.session) &&
-      declaration.primaryConstructorIfAny(context.session)?.valueParameterSymbols?.isNotEmpty() == true)
-      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "tag cannot have value parameters", context)
+    if (declaration.hasAnnotation(InjektFqNames.Tag, context.session)) {
+      declaration.constructors(context.session).forEach {
+        if (it.valueParameterSymbols.isNotEmpty())
+          reporter.reportOn(it.source!!, INJEKT_ERROR, "tag cannot have value parameters", context)
+      }
+    }
   }
 }
 
