@@ -6,14 +6,16 @@ package injekt.samples.android.ui
 
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import injekt.Provide
+import injekt.*
+
+@Provide val AppColors = darkColors()
 
 fun interface AppTheme {
   @Composable fun Content(content: @Composable () -> Unit)
 
   @Provide companion object {
-    @Provide val impl = AppTheme { content ->
-      MaterialTheme(colors = darkColors()) {
+    @Provide fun impl(appColors: Colors) = AppTheme { content ->
+      MaterialTheme(colors = appColors) {
         Surface(content = content)
       }
     }
