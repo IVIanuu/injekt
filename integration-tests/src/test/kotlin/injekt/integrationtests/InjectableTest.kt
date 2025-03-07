@@ -214,7 +214,7 @@ class InjectableTest {
 
   @Test fun testInjectableFunctionExtensionReceiver() = singleAndMultiCodegen(
     """
-      fun @receiver:Provide Foo.bar() = Bar(inject())
+      fun @receiver:Provide Foo.bar() = Bar(create())
     """,
     """
       fun invoke() = with(Foo()) { bar().foo }
@@ -225,7 +225,7 @@ class InjectableTest {
 
   @Test fun testInjectablePropertyExtensionReceiver() = singleAndMultiCodegen(
     """
-      val @receiver:Provide Foo.bar get() = Bar(inject())
+      val @receiver:Provide Foo.bar get() = Bar(create())
     """,
     """
       fun invoke() = with(Foo()) { bar.foo }
@@ -238,7 +238,7 @@ class InjectableTest {
     """
       fun invoke(foo: Foo): Foo {
         @Provide val providedFoo = foo
-        return inject()
+        return create()
       }
     """
   ) {
@@ -250,7 +250,7 @@ class InjectableTest {
     """
       fun invoke(foo: Foo): Foo {
         @Provide val providedFoo by lazy { foo }
-        return inject()
+        return create()
       }
     """
   ) {

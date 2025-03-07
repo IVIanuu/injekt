@@ -21,7 +21,7 @@ class ResolutionTest {
       @Provide lateinit var fileFoo: Foo
       fun invoke(foo: Foo): Foo {
         fileFoo = foo
-        return inject()
+        return create()
       }
     """
   ) {
