@@ -19,22 +19,8 @@ graph.repo
 ```
 
 # Setup
-```kotlin
-plugins {
-  id("com.ivianuu.injekt") version latest_version
-}
-
-repositories {
-  mavenCentral()
-}
-
-dependencies {
-  // core runtime
-  implementation("com.ivianuu.injekt:core:${latest_version}")
-  // optional - common utilities
-  implementation("com.ivianuu.injekt:common:${latest_version}")
-}
-```
+TODO
+Must be checked out and build locally using publishToMavenLocal task
 
 # Provide injectables
 You can provide dependencies by annotating them with @Provide:
