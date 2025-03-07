@@ -109,7 +109,7 @@ class ResolutionTest {
 
   @Test fun testPrefersFunctionParameterInjectableOverClassInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo = Foo()) {
+      class MyClass(@property:Provide val classFoo: Foo = Foo()) {
         fun resolve(@Provide functionFoo: Foo) = create<Foo>()
       }
 
@@ -132,7 +132,7 @@ class ResolutionTest {
 
   @Test fun testPrefersFunctionExtensionReceiverInjectableOverClassInjectable() = codegen(
     """
-      class MyClass(@Provide val classFoo: Foo = Foo()) {
+      class MyClass(@property:Provide val classFoo: Foo = Foo()) {
         fun @receiver:Provide Foo.resolve() = create<Foo>()
       }
 
@@ -193,7 +193,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "a"
   }
 
-  @Test fun testPrefersNearerFailureOverResolvableInjectable() = codegen(
+  @Test fun testPrefersCloserFailureOverResolvableInjectable() = codegen(
     """
       @Provide fun a() = "a"
       
@@ -206,7 +206,7 @@ class ResolutionTest {
     compilationShouldHaveFailed()
   }
 
-  @Test fun testPrefersNearerInjectableOverBetterType() = codegen(
+  @Test fun testPrefersCloserInjectableOverBetterType() = codegen(
     """
       fun invoke(): CharSequence {
         @Provide val a: String = "a"
