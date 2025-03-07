@@ -382,4 +382,50 @@ class ResolutionTest {
   ) {
     compilationShouldHaveFailed("reified")
   }
+
+  @Test fun testCorrectSuspendCallContextWorks() = singleAndMultiCodegen(
+    """
+      @Provide suspend fun foo() = Foo()
+    """,
+    """
+      fun invoke() = runBlocking { inject<Foo>() }
+    """
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testWrongSuspendCallContextFails() = singleAndMultiCodegen(
+    """
+      @Provide suspend fun foo() = Foo()
+    """,
+    """
+      fun invoke() = inject<Foo>()
+    """
+  ) {
+    compilationShouldHaveFailed("suspend")
+  }
+
+  @Test fun testCorrectComposableCallContextWorks() = singleAndMultiCodegen(
+    """
+      @Provide @Composable fun foo() = Foo()
+    """,
+    """
+      fun invoke() = runComposing { inject<Foo>() }
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testWrongComposableCallContextFails() = singleAndMultiCodegen(
+    """
+      @Provide @Composable fun foo() = Foo()
+    """,
+    """
+      fun invoke() = inject<Foo>()
+    """,
+    config = { withCompose() }
+  ) {
+    compilationShouldHaveFailed("composable")
+  }
 }

@@ -40,4 +40,27 @@ class LambdaTest {
   ) {
     compilationShouldHaveFailed("no injectable")
   }
+
+  @Test fun testSuspendLambdaInjectable() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke(): Foo = runBlocking { inject<suspend () -> Foo>()() }
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testComposableLambdaInjectable() = singleAndMultiCodegen(
+    """
+      @Provide val foo = Foo()
+    """,
+    """
+      fun invoke(): Foo = runComposing { inject<@Composable () -> Foo>()() }
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 }
