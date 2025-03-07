@@ -16,7 +16,7 @@ class LambdaTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke(): Foo = inject<() -> Foo>()()
+      fun invoke(): Foo = create<() -> Foo>()()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -27,7 +27,7 @@ class LambdaTest {
       @Provide fun bar(foo: Foo) = Bar(foo)
     """,
     """
-      fun invoke() = inject<(Foo) -> Bar>()(Foo()) 
+      fun invoke() = create<(Foo) -> Bar>()(Foo()) 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Bar>()
@@ -35,7 +35,7 @@ class LambdaTest {
 
   @Test fun testCannotRequestLambdaInjectableForNonExistingInjectable() = codegen(
     """ 
-      fun invoke(): Foo = inject<() -> Foo>()()
+      fun invoke(): Foo = create<() -> Foo>()()
     """
   ) {
     compilationShouldHaveFailed("no injectable")
@@ -46,7 +46,7 @@ class LambdaTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke(): Foo = runBlocking { inject<suspend () -> Foo>()() }
+      fun invoke(): Foo = runBlocking { create<suspend () -> Foo>()() }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -57,7 +57,7 @@ class LambdaTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke(): Foo = runComposing { inject<@Composable () -> Foo>()() }
+      fun invoke(): Foo = runComposing { create<@Composable () -> Foo>()() }
     """,
     config = { withCompose() }
   ) {

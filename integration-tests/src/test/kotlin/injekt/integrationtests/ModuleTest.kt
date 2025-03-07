@@ -22,7 +22,7 @@ class ModuleTest {
       }
     """,
     """
-      fun invoke() = inject<Baz>().bar.foo
+      fun invoke() = create<Baz>().bar.foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -39,7 +39,7 @@ class ModuleTest {
       } 
     """,
     """
-      fun invoke() = inject<Bar>() 
+      fun invoke() = create<Bar>() 
     """
   )
 
@@ -52,7 +52,7 @@ class ModuleTest {
       @Provide fun stringModule() = MyModule("__")
     """,
     """
-        fun invoke() = inject<Pair<Foo, Foo>>() 
+        fun invoke() = create<Pair<Foo, Foo>>() 
     """
   )
 
@@ -65,7 +65,7 @@ class ModuleTest {
       @Provide val nullableModule: FooModule? = FooModule()
     """,
     """
-      fun invoke() = inject<Foo?>()
+      fun invoke() = create<Foo?>()
     """
   ) {
     invokeSingleFile()
@@ -73,7 +73,7 @@ class ModuleTest {
 
   @Test fun testLambdaModule() = codegen(
     """
-      fun invoke() = inject<(@Provide () -> Foo) -> Foo>()
+      fun invoke() = create<(@Provide () -> Foo) -> Foo>()
     """
   ) {
     val foo = Foo()
@@ -87,7 +87,7 @@ class ModuleTest {
       }
       @Provide val fooModule1 = FooModule()
       @Provide val fooModule2 = FooModule()
-      fun invoke() = inject<List<Foo>>()
+      fun invoke() = create<List<Foo>>()
     """
   ) {
     val foos = invokeSingleFile<List<Foo>>()
@@ -99,7 +99,7 @@ class ModuleTest {
       @Provide val foo = Foo()
       fun createBar(foo: Foo) = Bar(foo)
       @Provide val barProvider: @Provide KFunction1<Foo, Bar> = ::createBar
-      fun invoke() = inject<Bar>()
+      fun invoke() = create<Bar>()
     """
   ) {
     invokeSingleFile()
@@ -114,7 +114,7 @@ class ModuleTest {
       @Provide val fooModuleProvider: @Provide () -> FooModule = { FooModule() }
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = create<Foo>()
     """
   ) {
     compilationShouldHaveFailed("injekt.integrationtests.fooModuleProvider.invoke.foo")

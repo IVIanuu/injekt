@@ -53,9 +53,9 @@ inline fun <T> create(x: T = inject) = x
  * @Provide val username: @Username String = "Foo"
  *
  * fun main() {
- *   val userId = inject<@UserId String>()
+ *   val userId = create<@UserId String>()
  *   // userId = 123
- *   val username = inject<@Username String>()
+ *   val username = create<@Username String>()
  *   // username = "Foo"
  * }
  * ```

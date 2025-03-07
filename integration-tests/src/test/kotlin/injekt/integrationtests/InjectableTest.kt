@@ -17,7 +17,7 @@ class InjectableTest {
       @Provide fun foo() = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -30,7 +30,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -40,7 +40,7 @@ class InjectableTest {
     """
       fun invoke(): Foo {
         @Provide fun foo() = Foo()
-        return inject<Foo>()
+        return create<Foo>()
       }
     """
   ) {
@@ -52,7 +52,7 @@ class InjectableTest {
       @Provide val foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -65,7 +65,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -77,7 +77,7 @@ class InjectableTest {
       @Provide class Baz(val foo: Foo)
     """,
     """
-      fun invoke() = inject<Baz>().foo
+      fun invoke() = create<Baz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -91,7 +91,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<Qux.Baz>().foo
+      fun invoke() = create<Qux.Baz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -104,7 +104,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<MyOuterClass.MyInnerClass>()
+      fun invoke() = create<MyOuterClass.MyInnerClass>()
     """
   ) {
     invokeSingleFile()
@@ -115,7 +115,7 @@ class InjectableTest {
       fun invoke(): Foo {
         @Provide val foo = Foo()
         @Provide class Baz(val foo: Foo)
-        return inject<Baz>().foo
+        return create<Baz>().foo
       }
     """
   ) {
@@ -127,7 +127,7 @@ class InjectableTest {
       @Provide annotation class MyAnnotation
     """,
     """
-      fun invoke() = inject<MyAnnotation>()
+      fun invoke() = create<MyAnnotation>()
     """
   ) {
     invokeSingleFile()
@@ -139,7 +139,7 @@ class InjectableTest {
       class Baz @Provide constructor(val foo: Foo)
     """,
     """
-      fun invoke() = inject<Baz>().foo
+      fun invoke() = create<Baz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -153,7 +153,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<Baz>().foo
+      fun invoke() = create<Baz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -169,7 +169,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<List<Baz>>().map { it.foo }
+      fun invoke() = create<List<Baz>>().map { it.foo }
     """
   ) {
     invokeSingleFile<List<Foo>>()
@@ -184,7 +184,7 @@ class InjectableTest {
       }
     """,
     """
-      fun invoke() = inject<Baz>().foo 
+      fun invoke() = create<Baz>().foo 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -197,15 +197,15 @@ class InjectableTest {
       fun invoke() {
         @Provide val instance = object : A, B  {
         }
-        inject<A>()
-        inject<B>()
+        create<A>()
+        create<B>()
       }
     """
   )
 
   @Test fun testInjectableValueParameter() = codegen(
     """
-      fun invoke(@Provide foo: Foo) = inject<Foo>()
+      fun invoke(@Provide foo: Foo) = create<Foo>()
     """
   ) {
     val foo = Foo()
@@ -264,7 +264,7 @@ class InjectableTest {
         class Baz {
           @Provide fun foo() = Foo()
           
-          val foo = inject<Foo>()
+          val foo = create<Foo>()
         }
 
         return Baz().foo
@@ -280,7 +280,7 @@ class InjectableTest {
         val baz = object : Any() {
           @Provide fun foo() = Foo()
           
-          val foo = inject<Foo>()
+          val foo = create<Foo>()
         }
 
         return baz.foo
@@ -291,7 +291,7 @@ class InjectableTest {
   }
 
   @Test fun testInjectableLambdaParameterUseSite() = codegen("""
-      fun invoke() = { foo: @Provide Foo -> inject<Foo>() }(Foo())
+      fun invoke() = { foo: @Provide Foo -> create<Foo>() }(Foo())
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -301,7 +301,7 @@ class InjectableTest {
       fun lambdaOf(block: (@Provide Foo).() -> Foo) = block
     """,
     """
-      fun invoke() = lambdaOf { inject<Foo>() }(Foo())
+      fun invoke() = lambdaOf { create<Foo>() }(Foo())
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -311,7 +311,7 @@ class InjectableTest {
       fun lambdaOf(block: (@Provide Foo).() -> Foo) = block
     """,
     """
-      fun invoke() = lambdaOf { inject<Foo>() }(Foo())
+      fun invoke() = lambdaOf { create<Foo>() }(Foo())
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -320,7 +320,7 @@ class InjectableTest {
   @Test fun testInjectableFunInterfaceParameterUseSite() = codegen(
     """
       fun interface Lambda<T> { fun invoke(t: T): T }
-      fun invoke() = Lambda<Foo> { foo: @Provide Foo -> inject<Foo>() }.invoke(Foo())
+      fun invoke() = Lambda<Foo> { foo: @Provide Foo -> create<Foo>() }.invoke(Foo())
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -330,7 +330,7 @@ class InjectableTest {
       fun interface Lambda<T> { fun invoke(@Provide t: T): T }
     """,
     """
-      fun invoke() = Lambda<Foo> { inject<Foo>() }.invoke(Foo())
+      fun invoke() = Lambda<Foo> { create<Foo>() }.invoke(Foo())
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -340,7 +340,7 @@ class InjectableTest {
       fun interface Lambda<T> { fun @receiver:Provide T.invoke(): T }
     """,
     """
-      fun invoke() = with(Lambda<Foo> { inject<Foo>() }) { with(Foo()) { invoke() } }
+      fun invoke() = with(Lambda<Foo> { create<Foo>() }) { with(Foo()) { invoke() } }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

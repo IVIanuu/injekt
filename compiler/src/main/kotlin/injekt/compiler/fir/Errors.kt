@@ -152,7 +152,7 @@ fun InjectionResult.Error.render(ctx: InjektContext): String = buildString {
           if (failure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
             appendLine("${failure.candidate.chainFqName}()")
           } else {
-            appendLine("inject<${request.type.renderToString()}>()")
+            appendLine("create<${request.type.renderToString()}>()")
           }
         }
       }

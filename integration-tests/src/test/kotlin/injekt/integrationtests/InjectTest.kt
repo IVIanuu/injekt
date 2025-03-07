@@ -7,7 +7,7 @@ import org.junit.*
 @OptIn(ExperimentalCompilerApi::class) class InjectTest {
   @Test fun testInjectFunctionValueParameter() = codegen(
     """
-      fun invoke(foo: Foo = inject) = inject<Foo>()
+      fun invoke(foo: Foo = inject) = create<Foo>()
     """
   ) {
     val foo = Foo()

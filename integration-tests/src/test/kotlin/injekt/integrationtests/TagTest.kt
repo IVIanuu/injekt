@@ -19,7 +19,7 @@ class TagTest {
     """,
     """
       fun invoke(): Pair<Foo, Foo> {
-        return inject<Foo>() to inject<@Tag1 Foo>()
+        return create<Foo>() to create<@Tag1 Foo>()
       } 
     """
   ) {
@@ -32,7 +32,7 @@ class TagTest {
       @Provide @Tag1 class Baz
     """,
     """
-      fun invoke() = inject<@Tag1 Baz>()
+      fun invoke() = create<@Tag1 Baz>()
     """
   )
 
@@ -41,7 +41,7 @@ class TagTest {
       class Baz @Provide @Tag1 constructor()
     """,
     """
-      fun invoke() = inject<@Tag1 Baz>()
+      fun invoke() = create<@Tag1 Baz>()
     """
   )
 
@@ -52,7 +52,7 @@ class TagTest {
       }
     """,
     """
-      fun invoke() = inject<@Tag1 Baz>()
+      fun invoke() = create<@Tag1 Baz>()
     """
   )
 
@@ -71,7 +71,7 @@ class TagTest {
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
     """,
     """
-      fun invoke() = inject<@MyTag<String> Foo>() 
+      fun invoke() = create<@MyTag<String> Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -85,7 +85,7 @@ class TagTest {
       @Provide val taggedFoo: TaggedFoo = Foo()
     """,
     """
-      fun invoke() = inject<TaggedFoo>()
+      fun invoke() = create<TaggedFoo>()
     """
   )
 
@@ -101,7 +101,7 @@ class TagTest {
       }
     """,
     """
-      fun invoke() = inject<ComponentScope<Foo>>()
+      fun invoke() = create<ComponentScope<Foo>>()
     """
   )
 
@@ -113,7 +113,7 @@ class TagTest {
       @Provide fun <T> taggedFoo(): @Tag1 TaggedT<String> = Foo()
     """,
     """
-      fun invoke() = inject<@Tag1 @TaggedFooTag<String> Foo>()
+      fun invoke() = create<@Tag1 @TaggedFooTag<String> Foo>()
     """
   ) {
     invokeSingleFile()
@@ -154,7 +154,7 @@ class TagTest {
       }
 
       fun invoke() {
-        inject<List<Pair<KClass<Screen<*>>, UiFactory<Screen<*>>>>>()
+        create<List<Pair<KClass<Screen<*>>, UiFactory<Screen<*>>>>>()
       }
     """,
     config = { withCompose() }

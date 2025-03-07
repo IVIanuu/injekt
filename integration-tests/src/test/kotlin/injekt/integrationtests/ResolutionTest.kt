@@ -34,7 +34,7 @@ class ResolutionTest {
       @Provide val internalFoo = Foo()
       object MyObject {
         @Provide lateinit var objectFoo: Foo
-        fun resolve() = inject<Foo>()
+        fun resolve() = create<Foo>()
       }
 
       fun invoke(objectFoo: Foo): Foo {
@@ -51,7 +51,7 @@ class ResolutionTest {
     """
       @Provide val internalFoo = Foo()
       class MyClass {
-        fun resolve() = inject<Foo>()
+        fun resolve() = create<Foo>()
         companion object {
           @Provide lateinit var companionFoo: Foo
         }
@@ -71,7 +71,7 @@ class ResolutionTest {
     """
       @Provide val internalFoo = Foo()
       class MyClass(@property:Provide val classFoo: Foo) {
-        fun resolve() = inject<Foo>()
+        fun resolve() = create<Foo>()
       }
   
       fun invoke(classFoo: Foo) = MyClass(classFoo).resolve()
@@ -84,7 +84,7 @@ class ResolutionTest {
   @Test fun testPrefersClassInjectableOverClassCompanionInjectable() = codegen(
     """
       class MyClass(@property:Provide val classFoo: Foo) {
-        fun resolve() = inject<Foo>()
+        fun resolve() = create<Foo>()
         companion object {
           @Provide val companionFoo = Foo()
         }
@@ -100,7 +100,7 @@ class ResolutionTest {
   @Test fun testPrefersFunctionParameterInjectableOverInternalInjectable() = codegen(
     """
       @Provide val internalFoo = Foo()
-      fun invoke(@Provide functionFoo: Foo) = inject<Foo>()
+      fun invoke(@Provide functionFoo: Foo) = create<Foo>()
     """
   ) {
     val expected = Foo()
@@ -110,7 +110,7 @@ class ResolutionTest {
   @Test fun testPrefersFunctionParameterInjectableOverClassInjectable() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo = Foo()) {
-        fun resolve(@Provide functionFoo: Foo) = inject<Foo>()
+        fun resolve(@Provide functionFoo: Foo) = create<Foo>()
       }
 
       fun invoke(functionFoo: Foo) = MyClass().resolve(functionFoo)
@@ -123,7 +123,7 @@ class ResolutionTest {
   @Test fun testPrefersFunctionExtensionReceiverInjectableOverInternalInjectable() = codegen(
     """
       @Provide val internalFoo = Foo()
-      fun @receiver:Provide Foo.invoke() = inject<Foo>()
+      fun @receiver:Provide Foo.invoke() = create<Foo>()
     """
   ) {
     val expected = Foo()
@@ -133,7 +133,7 @@ class ResolutionTest {
   @Test fun testPrefersFunctionExtensionReceiverInjectableOverClassInjectable() = codegen(
     """
       class MyClass(@Provide val classFoo: Foo = Foo()) {
-        fun @receiver:Provide Foo.resolve() = inject<Foo>()
+        fun @receiver:Provide Foo.resolve() = create<Foo>()
       }
 
       fun invoke(functionFoo: Foo): Foo {
@@ -150,7 +150,7 @@ class ResolutionTest {
   @Test fun testPrefersLambdaArgument() = codegen(
     """
       @Provide val foo = Foo()
-      fun invoke(foo: Foo) = inject<(Foo) -> Foo>()(foo)
+      fun invoke(foo: Foo) = create<(Foo) -> Foo>()(foo)
     """
   ) {
     val expected = Foo()
@@ -160,7 +160,7 @@ class ResolutionTest {
   @Test fun testPrefersInnerLambdaParameterOverOuterLambdaParameter() = codegen(
     """
       @Provide val foo = Foo()
-      fun invoke(foo: Foo) = inject<(Foo) -> (Foo) -> Foo>()(Foo())(foo)
+      fun invoke(foo: Foo) = create<(Foo) -> (Foo) -> Foo>()(Foo())(foo)
     """
   ) {
     val expected = Foo()
@@ -171,9 +171,9 @@ class ResolutionTest {
     """
       fun invoke(): Pair<String, String> {
         @Provide val injectableA = "a"
-        return inject<String>() to run {
+        return create<String>() to run {
           @Provide val injectableB = "b"
-          inject<String>()
+          create<String>()
         }
       }
     """
@@ -187,7 +187,7 @@ class ResolutionTest {
       @Provide fun b(long: Long) = "b"
     """,
     """
-      fun invoke() = inject<String>() 
+      fun invoke() = create<String>() 
     """
   ) {
     invokeSingleFile() shouldBe "a"
@@ -199,7 +199,7 @@ class ResolutionTest {
       
       fun invoke() {
         @Provide fun b(long: Long) = "b"
-        inject<String>()
+        create<String>()
       } 
     """
   ) {
@@ -212,7 +212,7 @@ class ResolutionTest {
         @Provide val a: String = "a"
         run {
           @Provide val b: CharSequence = "b"
-          return inject<CharSequence>()
+          return create<CharSequence>()
         }
       }
     """
@@ -226,7 +226,7 @@ class ResolutionTest {
       @Provide val b = "b"
     """,
     """
-      fun invoke() = inject<String>() 
+      fun invoke() = create<String>() 
     """
   ) {
     compilationShouldHaveFailed("ambiguous")
@@ -238,7 +238,7 @@ class ResolutionTest {
       @Provide fun <T> anySet(): Set<T> = emptySet()
     """,
     """
-      fun invoke() = inject<Set<String>>() 
+      fun invoke() = create<Set<String>>() 
     """
   ) {
     invokeSingleFile() shouldBe setOf("a", "b", "c")
@@ -250,7 +250,7 @@ class ResolutionTest {
       @Provide fun <T> setSet(): Set<Set<T>> = setOf(setOf("a", "b", "c")) as Set<Set<T>>
     """,
     """
-      fun invoke() = inject<Set<Set<String>>>() 
+      fun invoke() = create<Set<Set<String>>>() 
     """
   ) {
     invokeSingleFile() shouldBe setOf(setOf("a", "b", "c"))
@@ -306,7 +306,7 @@ class ResolutionTest {
       @Provide val nullable: String? = "nullable"
     """,
     """
-      fun invoke() = inject<String?>() 
+      fun invoke() = create<String?>() 
     """
   ) {
     invokeSingleFile() shouldBe "nonnull"
@@ -318,7 +318,7 @@ class ResolutionTest {
         @Provide fun foo() = Foo()
       }
 
-      fun createFoo(@Provide foo1: Foo, @Provide foo2: Foo) = inject<Foo>()
+      fun createFoo(@Provide foo1: Foo, @Provide foo2: Foo) = create<Foo>()
     """
   ) {
     compilationShouldHaveFailed("ambiguous")
@@ -329,7 +329,7 @@ class ResolutionTest {
       @Provide fun <T> diyLambda(unit: Unit): () -> T = { TODO() } 
     """,
     """
-      fun invoke() = inject<() -> Foo>() 
+      fun invoke() = create<() -> Foo>() 
     """
   ) {
     compilationShouldHaveFailed("no injectable")
@@ -341,7 +341,7 @@ class ResolutionTest {
       @Provide class B(a: A)
     """,
     """
-      fun invoke() = inject<A>() 
+      fun invoke() = create<A>() 
     """
   ) {
     compilationShouldHaveFailed("diverging")
@@ -355,7 +355,7 @@ class ResolutionTest {
       }
     """,
     """
-      fun invoke() = inject<B>()
+      fun invoke() = create<B>()
     """
   ) {
     invokeSingleFile()
@@ -366,7 +366,7 @@ class ResolutionTest {
       @Provide inline fun <reified T : Any> klass() = T::class
     """,
     """
-      fun invoke() = inject<KClass<Foo>>()
+      fun invoke() = create<KClass<Foo>>()
     """
   ) {
     invokeSingleFile()
@@ -377,7 +377,7 @@ class ResolutionTest {
       @Provide inline fun <reified T : Any> klass() = T::class
     """,
     """
-      fun <T : Any> invoke() = inject<KClass<T>>()
+      fun <T : Any> invoke() = create<KClass<T>>()
     """
   ) {
     compilationShouldHaveFailed("reified")
@@ -388,7 +388,7 @@ class ResolutionTest {
       @Provide suspend fun foo() = Foo()
     """,
     """
-      fun invoke() = runBlocking { inject<Foo>() }
+      fun invoke() = runBlocking { create<Foo>() }
     """
   ) {
     invokeSingleFile()
@@ -399,7 +399,7 @@ class ResolutionTest {
       @Provide suspend fun foo() = Foo()
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = create<Foo>()
     """
   ) {
     compilationShouldHaveFailed("suspend")
@@ -410,7 +410,7 @@ class ResolutionTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      fun invoke() = runComposing { inject<Foo>() }
+      fun invoke() = runComposing { create<Foo>() }
     """,
     config = { withCompose() }
   ) {
@@ -422,7 +422,7 @@ class ResolutionTest {
       @Provide @Composable fun foo() = Foo()
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = create<Foo>()
     """,
     config = { withCompose() }
   ) {

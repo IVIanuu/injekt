@@ -46,7 +46,7 @@ class InjectableCheckersTest {
         @Provide override fun foo() = Foo()
       }
 
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -63,7 +63,7 @@ class InjectableCheckersTest {
       }
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

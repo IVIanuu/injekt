@@ -18,7 +18,7 @@ class AddOnInjectableTest {
       @Provide fun taggedFoo(): @Tag1 Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>() 
+      fun invoke() = create<Foo>() 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -32,7 +32,7 @@ class AddOnInjectableTest {
       @Provide fun taggedFoo(): @Tag1 Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = create<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -46,7 +46,7 @@ class AddOnInjectableTest {
       @Provide fun taggedFoo(): @Tag1 Foo = Foo()
     """,
     """
-      fun invoke() = inject<Foo>()
+      fun invoke() = create<Foo>()
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -59,7 +59,7 @@ class AddOnInjectableTest {
       @Provide fun b(): @Tag1 String = "b"
     """,
     """
-      fun invoke() = inject<List<String>>() 
+      fun invoke() = create<List<String>>() 
     """
   ) {
     invokeSingleFile<Set<String>>()
@@ -73,7 +73,7 @@ class AddOnInjectableTest {
       @Provide fun foo() = Foo()
     """,
     """
-      fun invoke() = inject<Bar>() 
+      fun invoke() = create<Bar>() 
     """
   )
 }

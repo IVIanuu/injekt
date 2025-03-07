@@ -9,7 +9,7 @@ import org.junit.*
 class TypeKeyTest {
   @Test fun testTypeKey() = codegen(
     """
-      fun invoke() = inject<TypeKey<String>>()
+      fun invoke() = create<TypeKey<String>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String"
@@ -17,7 +17,7 @@ class TypeKeyTest {
 
   @Test fun testNullableTypeKey() = codegen(
     """
-      fun invoke() = inject<TypeKey<String?>>()
+      fun invoke() = create<TypeKey<String?>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.String?"
@@ -25,7 +25,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTypeParameters() = singleAndMultiCodegen(
     """
-      inline fun <T> listTypeKeyOf(single: TypeKey<T> = inject) = inject<TypeKey<List<T>>>()
+      inline fun <T> listTypeKeyOf(single: TypeKey<T> = inject) = create<TypeKey<List<T>>>()
     """,
     """
       fun invoke() = listTypeKeyOf<String>()
@@ -36,7 +36,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithTags() = codegen(
     """
-      fun invoke() = inject<TypeKey<@Tag2 String>>()
+      fun invoke() = create<TypeKey<@Tag2 String>>()
     """
   ) {
     invokeSingleFile() shouldBe "injekt.integrationtests.Tag2<kotlin.String>"
@@ -44,7 +44,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithParameterizedTags() = codegen(
     """
-      fun invoke() = inject<TypeKey<@TypedTag<String> String>>()
+      fun invoke() = create<TypeKey<@TypedTag<String> String>>()
     """
   ) {
     invokeSingleFile() shouldBe "injekt.integrationtests.TypedTag<kotlin.String, kotlin.String>"
@@ -52,7 +52,7 @@ class TypeKeyTest {
 
   @Test fun testTypeKeyWithStar() = codegen(
     """
-      fun invoke() = inject<TypeKey<List<*>>>()
+      fun invoke() = create<TypeKey<List<*>>>()
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"

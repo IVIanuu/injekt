@@ -18,11 +18,11 @@ class ListTest {
 
       class InnerObject {
         @Provide fun commandsB() = listOf(CommandB())
-        val list = inject<List<Command>>()
+        val list = create<List<Command>>()
       }
     """,
     """
-        fun invoke() = inject<List<Command>>() to InnerObject().list 
+        fun invoke() = create<List<Command>>() to InnerObject().list 
     """
   ) {
     val (parentList, childList) = invokeSingleFile<Pair<List<Command>, List<Command>>>()
@@ -35,7 +35,7 @@ class ListTest {
 
   @Test fun testListInjectableWithoutElements() = codegen(
     """
-      fun invoke() = inject<List<Command>>()
+      fun invoke() = create<List<Command>>()
     """
   ) {
     compilationShouldHaveFailed("no injectable")
