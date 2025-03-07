@@ -144,7 +144,7 @@ typealias UserId = @UserIdTag String
 
 # Errors / Debugging
 Injekt will show an error if there are missing dependencies.
-Additionally it will dump kotlin like code with the generated code in the /build/injekt/dump folder
+Additionally it will dump generated code in a kotlin like syntax in the /build/injekt/dump folder
 for each file where injections happen
 
 # More complex uses can be found in my essentials project(base project for my apps)
