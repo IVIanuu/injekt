@@ -10,7 +10,7 @@ import kotlinx.atomicfu.locks.*
 class Scope<N> : SynchronizedObject() {
   @PublishedApi internal val values = hashMapOf<Any, Any>()
 
-  inline operator fun <T> invoke(key: Any, init: () -> T): T {
+  inline fun <T> get(key: Any, init: () -> T): T {
     values[key]?.let {
       @Suppress("UNCHECKED_CAST")
       return (if (it !== NULL) it else null) as T
@@ -22,12 +22,11 @@ class Scope<N> : SynchronizedObject() {
     }
   }
 
-  inline operator fun <T> invoke(key: TypeKey<T> = inject, init: () -> T): T =
-    invoke(key.value, init)
-
   fun dispose() {
-    values.values.toList().forEach { (it as? ScopeDisposable)?.dispose() }
-    values.clear()
+    synchronized(this) {
+      values.values
+        .also { values.clear() }
+    }.forEach { (it as? ScopeDisposable)?.dispose() }
   }
 
   companion object {
@@ -46,7 +45,7 @@ annotation class Scoped<N> {
     @Provide inline fun <@AddOn T : @Scoped<N> S, S : Any, N> scoped(
       scope: Scope<N>,
       key: TypeKey<S>,
-      crossinline init: () -> T,
-    ): S = scope(key) { init() }
+      init: () -> T,
+    ): S = scope.get(key) { init() }
   }
 }

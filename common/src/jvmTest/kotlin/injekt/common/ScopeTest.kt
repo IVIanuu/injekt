@@ -14,8 +14,8 @@ import org.junit.*
 class ScopeTest {
   @Test fun testScope() {
     val scope = Scope<TestScope>()
-    scope("") { "a" } shouldBe "a"
-    scope("") { "b" } shouldBe "a"
+    scope.get("") { "a" } shouldBe "a"
+    scope.get("") { "b" } shouldBe "a"
   }
 
   @Test fun scopeConcurrencyStressTest(): Unit = runBlocking(
@@ -33,7 +33,7 @@ class ScopeTest {
 
     val jobs = (1..64).map {
       launch(start = CoroutineStart.LAZY) {
-        scope("") {
+        scope.get("") {
           holder.inc()
         }
       }
@@ -67,7 +67,7 @@ class ScopeTest {
   @Test fun testDispose() {
     var disposeCalls = 0
     val scope = Scope<TestScope>()
-    scope("") {
+    scope.get("") {
       ScopeDisposable { disposeCalls++ }
     }
     disposeCalls shouldBe 0
