@@ -110,12 +110,14 @@ class TagTest {
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class TaggedFooTag<T>
       typealias TaggedT<T> = @TaggedFooTag<T> Foo
-      @Provide fun <T> taggedFoo(): @Tag1 TaggedT<String> = TODO()
+      @Provide fun <T> taggedFoo(): @Tag1 TaggedT<String> = Foo()
     """,
     """
-      fun invoke() = inject<@Tag1 TaggedT<String>>()
+      fun invoke() = inject<@Tag1 @TaggedFooTag<String> Foo>()
     """
-  )
+  ) {
+    invokeSingleFile()
+  }
 
   @Test fun testComplexTagTypeAliasPatternWithAddOns() = singleAndMultiCodegen(
     """
