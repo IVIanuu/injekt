@@ -4,8 +4,7 @@
 
 package injekt.common
 
-import injekt.Provide
-import injekt.inject
+import injekt.*
 import io.kotest.matchers.*
 import io.kotest.matchers.types.*
 import kotlinx.atomicfu.*
@@ -58,9 +57,9 @@ class ScopeTest {
 
     @Provide val scope = Scope<TestScope>()
     callCount shouldBe 0
-    val a = inject<Foo>()
+    val a = create<Foo>()
     callCount shouldBe 1
-    val b = inject<Foo>()
+    val b = create<Foo>()
     callCount shouldBe 1
     a shouldBeSameInstanceAs b
   }
