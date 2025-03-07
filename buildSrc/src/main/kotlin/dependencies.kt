@@ -41,11 +41,6 @@ object Deps {
 
   const val dokkaGradlePlugin = "org.jetbrains.dokka:dokka-gradle-plugin:2.0.0"
 
-  object Injekt {
-    const val version = "0.0.1-dev747"
-    const val gradlePlugin = "injekt:gradle-plugin:$version"
-  }
-
   const val junit = "junit:junit:4.12"
 
   object Kotlin {

@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
   kotlin("multiplatform")
-  id("injekt")
 }
 
 kotlin {

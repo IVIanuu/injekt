@@ -6,7 +6,6 @@ plugins {
   id("com.android.application")
   kotlin("android")
   id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
-  id("injekt")
 }
 
 android {

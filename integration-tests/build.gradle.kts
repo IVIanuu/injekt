@@ -4,7 +4,6 @@
 
 plugins {
   kotlin("jvm")
-  id("injekt")
   id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
 }
 
