@@ -36,7 +36,7 @@ annotation class Provide
 
 val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 
-inline fun <T> inject(x: T = inject) = x
+inline fun <T> create(x: T = inject) = x
 
 /**
  * Marks an annotation as an tag which can then be used
