@@ -34,7 +34,7 @@ dependencies {
 }
 ```
 
-# Provide injectables
+# Providers
 You can provide dependencies by annotating them with @Provide:
 ```kotlin
 // classes and objects
@@ -93,7 +93,6 @@ fun main() {
   create<List<String>>() == listOf("a", "b", "c") // true
 }
 ```
-All elements which match E or Collection\<E\> will be included in the resulting list.
 
 # Function injection
 Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters,
@@ -111,7 +110,7 @@ You can do this by injecting a function.
   val viewModel by lazy { viewModelFactory("user_id") }
 }
 
-// break circular dependency
+// break cycles
 @Provide class Foo(val bar: Bar)
 @Provide class Bar(foo: (Bar) -> Foo) {
    val foo = foo(this)
