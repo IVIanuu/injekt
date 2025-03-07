@@ -4,19 +4,22 @@
 
 package injekt.common
 
-import injekt.AddOn
-import injekt.Provide
-import injekt.Tag
-import injekt.inject
+import injekt.*
 import kotlinx.atomicfu.locks.*
 
 class Scope<N> : SynchronizedObject() {
-  @PublishedApi internal val values = hashMapOf<Any, Any?>()
+  @PublishedApi internal val values = hashMapOf<Any, Any>()
 
-  inline operator fun <T> invoke(key: Any, init: () -> T): T = synchronized(this) {
-    val value = values.getOrPut(key) { init() ?: NULL }
-    @Suppress("UNCHECKED_CAST")
-    (if (value !== NULL) value else null) as T
+  inline operator fun <T> invoke(key: Any, init: () -> T): T {
+    values[key]?.let {
+      @Suppress("UNCHECKED_CAST")
+      return (if (it !== NULL) it else null) as T
+    }
+    return synchronized(this) {
+      val value = values.getOrPut(key) { init() ?: NULL }
+      @Suppress("UNCHECKED_CAST")
+      (if (value !== NULL) value else null) as T
+    }
   }
 
   inline operator fun <T> invoke(key: TypeKey<T> = inject, init: () -> T): T =
