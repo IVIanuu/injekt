@@ -77,7 +77,7 @@ class TagTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testTagTypeAliasPattern() = multiCodegen(
+  @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
     """
       @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
       annotation class TaggedFooTag
@@ -102,6 +102,18 @@ class TagTest {
     """,
     """
       fun invoke() = inject<ComponentScope<Foo>>()
+    """
+  )
+
+  @Test fun testTaggedTypeAliasWhichAlsoHasTagsInItsExpandedType() = singleAndMultiCodegen(
+    """
+      @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+      annotation class TaggedFooTag<T>
+      typealias TaggedT<T> = @TaggedFooTag<T> Foo
+      @Provide fun <T> taggedFoo(): @Tag1 TaggedT<String> = TODO()
+    """,
+    """
+      fun invoke() = inject<@Tag1 TaggedT<String>>()
     """
   )
 

@@ -134,8 +134,7 @@ fun ConeKotlinType.toInjektType(
     variance = variance
   )
 
-  val tags = if (abbreviatedType != null) emptyList()
-  else unwrapped.customAnnotations.getTags(ctx)
+  val tags = unwrapped.customAnnotations.getTags(ctx)
   var result = if (tags.isNotEmpty()) {
     tags
       .map { it.resolvedType.toInjektType(ctx) }

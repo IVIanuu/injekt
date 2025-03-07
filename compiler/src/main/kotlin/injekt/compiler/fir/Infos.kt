@@ -201,9 +201,7 @@ fun ClassifierInfo.toPersistedClassifierInfo(ctx: InjektContext): PersistedClass
     ?: emptyList()
 )
 
-fun InjektType.shouldBePersisted(): Boolean = anyType {
-  it.classifier.isTag && it.arguments.size > 1
-}
+fun InjektType.shouldBePersisted(): Boolean = anyType { it.classifier.isTag }
 
 val json = Json { ignoreUnknownKeys = true }
 inline fun <reified T> T.encode(): String = json.encodeToString(this)
