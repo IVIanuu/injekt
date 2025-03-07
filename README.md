@@ -6,13 +6,16 @@ Next gen dependency injection library for Kotlin.
 
 interface Http
 
-@Provide class RealHttp : Http
+@Provide class HttpImpl : Http
 
 @Provide class Api(private val http: Http, private val jsonParser: JsonParser)
 
 @Provide class Repository(private val api: Api)
 
-val repo = inject<Repository>()
+@Provide data class AppComponent(val repository: Repository)
+
+val graph = create<AppComponent>()
+graph.repo
 ```
 
 # Setup
@@ -55,18 +58,6 @@ fun run(@Provide config: Config) {
 }
 ```
 
-# Multi injection
-You can inject all injectables of a given type by injecting a ```List<T>```
-```kotlin
-@Provide fun singleElement(): String = "a"
-@Provide fun multipleElements(): Collection<String> = listOf("b", "c")
-
-fun main() {
-  inject<List<String>>() == listOf("a", "b", "c") // true
-}
-```
-All elements which match E or Collection\<E\> will be included in the resulting list.
-
 # Scoping
 The core of Injekt doesn't know anything about scoping, but there is a api in the common module.
 You have to annotate your class or the return type of a function or a property with ```@Scoped``` tag.
@@ -84,40 +75,27 @@ Then you can inject your class.
 
 fun onCreate() {
   // use ui scoped dependency
-  val db = inject<Db>()
+  val db = create<Db>()
+}
+```
+Later it should be disposed like so.
+```kotlin
+fun onDestroy() {
+  uiScope.dispose()
 }
 ```
 
-# Modules
-There is no ```@Module``` annotation in Injekt instead a module is just a provided class which contains
-more @Provide declarations
+# Multi injection
+You can inject all injectables of a given type by injecting a ```List<T>```
 ```kotlin
-// object module which is marked with @Provide
-// can be used to organize injectables
-@Provide object DatabaseModule {
-  @Provide fun databaseFile(): File = ...
-}
-
-// module with parameters which can be provided later
-class NetworkModule(val apiKey: String) {
-  @Provide fun api(): Api = ...
-}
+@Provide fun singleElement(): String = "a"
+@Provide fun multipleElements(): Collection<String> = listOf("b", "c")
 
 fun main() {
-  @Provide val networkModule = NetworkModule(if (isDebug) ... else ...)
-  inject<Api>()
+  create<List<String>>() == listOf("a", "b", "c") // true
 }
 ```
-
-# Components
-There is also no ```@Component``` annotation in Injekt instead a component can be declared
-like this
-```kotlin
-@Provide class ActivityComponent(
-  val api: Api,
-  val createFragmentComponent: (Fragment, Scope<FragmentScope>) -> FragmentComponent
-)
-```
+All elements which match E or Collection\<E\> will be included in the resulting list.
 
 # Function injection
 Sometimes you want to delay the creation, need multiple instances, want to provide additional parameters,
@@ -125,14 +103,14 @@ or to break circular dependencies.
 You can do this by injecting a function.
 ```kotlin
 // inject a function to create multiple Tokens
-fun run(tokenFactory: () -> Token = inject) {
+@Provide class HttpClient(tokenFactory: () -> Token) {
   val tokenA = tokenFactory()
   val tokenB = tokenFactory()
 }
 
 // inject a function to create a MyViewModel with the additional String parameter
-@Composable fun MyScreen(viewModelFactory: (String) -> MyViewModel = inject) {
-  val viewModel = remember { viewModelFactory("user_id") }
+@Provide class MyActivity(viewModelFactory: (String) -> MyViewModel) {
+  val viewModel by lazy { viewModelFactory("user_id") }
 }
 
 // break circular dependency
@@ -140,10 +118,6 @@ fun run(tokenFactory: () -> Token = inject) {
 @Provide class Bar(foo: (Bar) -> Foo) {
    val foo = foo(this)
 }
-
-// inject functions in a inline function to create a conditional Logger with zero overhead
-@Provide inline fun logger(isDebug: IsDebug, loggerImpl: () -> LoggerImpl, noOpLogger: () -> NoOpLogger): Logger =
-  if (isDebug) loggerImpl() else noOpLogger()
 ```
 
 # Distinguish between types
@@ -153,9 +127,9 @@ Injekt will need help to keep them apart here are two strategies:
 Value classes:
 ```kotlin
 @JvmInline value class PlaylistId(val value: String)
-@JvmInline value class TrackId(val value: String)
+@JvmInline value class UserId(val value: String)
 
-fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
+@Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)
 ```
 
 Tags:
@@ -165,9 +139,9 @@ Tags:
 annotation class PlaylistId
 @Tag
 @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-annotation class TrackId
+annotation class UserId
 
-fun loadPlaylistTracks(playlistId: @PlaylistId String = inject, trackId: @TrackId String = inject): List<Track> = ...
+@Provide class PlaylistTracksPresenter(playlistId: @PlaylistId String, userId: @UserId String)
 ```
 
 Optionally you can add a typealias for your tag to make it easier to use
@@ -176,10 +150,10 @@ Optionally you can add a typealias for your tag to make it easier to use
 annotation class PlaylistIdTag
 typealias PlaylistId = @PlaylistIdTag String
 @Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-annotation class TrackIdTag
-typealias TrackId = @TrackIdTag String
+annotation class UserIdTag
+typealias UserId = @UserIdTag String
 
-fun loadPlaylistTracks(playlistId: PlaylistId = inject, trackId: TrackId = inject): List<Track> = ...
+@Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)
 ```
 
 # More complex uses can be found in my essentials project(base project for my apps)
