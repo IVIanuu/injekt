@@ -9,9 +9,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.unit.*
-import injekt.Provide
+import injekt.*
 
-@Provide class AppUi(private val presenter: CounterPresenter) {
+@Provide class AppUi(private val presenter: @Composable () -> CounterState) {
   @Composable fun Content() {
     Scaffold(
       topBar = {
@@ -21,7 +21,7 @@ import injekt.Provide
         )
       }
     ) {
-      val state = presenter.state()
+      val state = presenter()
       Column(
         modifier = Modifier
           .padding(it)
