@@ -43,7 +43,7 @@ val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 /**
  * Creates a new instance of [T] using the enclosing providers
  */
-inline fun <T> create(x: T = inject) = x
+inline fun <T> create(x: T = inject): T = x
 
 /**
  * Marks an annotation as an tag which can then be used
