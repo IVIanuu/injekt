@@ -5,14 +5,13 @@
 package injekt.samples.android.app
 
 import android.app.*
-import injekt.Provide
-import injekt.common.Scope
-import injekt.inject
+import injekt.*
+import injekt.common.*
 import injekt.samples.android.ui.*
 
 class App : Application() {
   @Provide private val appScope = Scope<AppScope>()
-  val appComponent by lazy { inject<AppComponent>() }
+  val appComponent by lazy { create<AppComponent>() }
 }
 
 object AppScope
