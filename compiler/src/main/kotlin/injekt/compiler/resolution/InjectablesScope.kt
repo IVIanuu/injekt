@@ -19,6 +19,7 @@ class InjectablesScope(
   val owner: FirBasedSymbol<*>? = null,
   initialInjectables: List<InjektCallable> = emptyList(),
   val typeParameters: List<InjektClassifier> = emptyList(),
+  val callContext: CallContext = CallContext.DEFAULT,
   val nesting: Int = parent?.nesting?.inc() ?: 0,
   val ctx: InjektContext
 ) {
@@ -111,7 +112,12 @@ class InjectablesScope(
   }
 
   fun builtInInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isFunctionType && !request.type.isProvide -> LambdaInjectable(this, request)
+    request.type.isNonKFunctionType(ctx) && !request.type.isProvide -> {
+      LambdaInjectable(
+        request = request,
+        ownerScope = this
+      )
+    }
     request.type.classifier == ctx.listClassifier -> {
       val singleElementType = request.type.arguments[0]
       val collectionElementType = ctx.collectionClassifier.defaultType

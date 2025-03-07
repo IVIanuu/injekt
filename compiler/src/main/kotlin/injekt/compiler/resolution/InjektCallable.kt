@@ -5,7 +5,7 @@
 package injekt.compiler.resolution
 
 import injekt.compiler.*
-import injekt.compiler.fir.callableInfo
+import injekt.compiler.fir.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.name.*
 
@@ -16,7 +16,8 @@ data class InjektCallable(
   val parameterTypes: Map<Int, InjektType>,
   val typeArguments: Map<InjektClassifier, InjektType>,
   val chainFqName: FqName,
-  val injectParameters: Set<Int>
+  val injectParameters: Set<Int>,
+  val callContext: CallContext
 )
 
 fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCallable {
@@ -56,6 +57,7 @@ fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext, chainFqName: FqNam
       typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
         .associateWith { it.defaultType },
       chainFqName = chainFqName,
-      injectParameters = info.injectParameters
+      injectParameters = info.injectParameters,
+      callContext = callContext(ctx)
     )
   }

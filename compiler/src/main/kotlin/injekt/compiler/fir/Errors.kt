@@ -4,13 +4,14 @@
 
 package injekt.compiler.fir
 
+import injekt.compiler.*
 import injekt.compiler.resolution.*
 import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
 
 val INJEKT_ERROR by error1<PsiElement, String>()
 
-fun InjectionResult.Error.render(): String = buildString {
+fun InjectionResult.Error.render(ctx: InjektContext): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++
@@ -27,6 +28,18 @@ fun InjectionResult.Error.render(): String = buildString {
   appendLine()
 
   when (unwrappedFailure) {
+    is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
+      if (failure == unwrappedFailure) {
+        appendLine(
+          "injectable ${unwrappedFailure.candidate.chainFqName}() of type ${failureRequest.type.renderToString()} " +
+              "for parameter ${failureRequest.parameterName} of function ${failureRequest.callableFqName} " +
+              "is a ${unwrappedFailure.candidate.callContext.name.lowercase()} function " +
+              "but current call context is ${unwrappedFailure.actualCallContext.name.lowercase()}."
+        )
+      } else {
+        appendLine("call context mismatch.")
+      }
+    }
     is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch -> if (failure == unwrappedFailure)
       appendLine(
         "type parameter ${unwrappedFailure.parameter.fqName.shortName()} " +
@@ -67,9 +80,16 @@ fun InjectionResult.Error.render(): String = buildString {
     fun printCall(
       request: InjectableRequest,
       failure: ResolutionResult.Failure,
-      candidate: Injectable?
+      candidate: Injectable?,
+      callContext: CallContext
     ) {
-      if (candidate !is LambdaInjectable) {
+      if (candidate is LambdaInjectable) {
+        when (candidate.type.callContext) {
+          CallContext.DEFAULT -> {}
+          CallContext.COMPOSABLE -> append("@Composable ")
+          CallContext.SUSPEND -> append("suspend ")
+        }
+      } else {
         append("${request.callableFqName}")
 
         if (request.callableTypeArguments.isNotEmpty())
@@ -77,6 +97,7 @@ fun InjectionResult.Error.render(): String = buildString {
             it.renderToString()
           })
       }
+
       when (candidate) {
         is LambdaInjectable -> {
           append("{ ")
@@ -95,17 +116,25 @@ fun InjectionResult.Error.render(): String = buildString {
         else -> appendLine("(")
       }
       withIndent {
+        if (candidate is LambdaInjectable &&
+          unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
+          appendLine("${indent()}/* ${candidate.dependencyScope?.callContext?.name?.lowercase()} call context */")
+        }
+
         append(indent())
         if (candidate !is LambdaInjectable)
           append("${request.parameterName} = ")
         if (failure is ResolutionResult.Failure.WithCandidate.DependencyFailure)
           printCall(
             failure.dependencyRequest, failure.dependencyFailure,
-            failure.candidate
+            failure.candidate,
+            if (candidate is LambdaInjectable) request.type.callContext else callContext
           )
         else {
           append("/* ")
           when (failure) {
+            is ResolutionResult.Failure.WithCandidate.CallContextMismatch ->
+              append("${failure.candidate.callContext.name.lowercase()} call:")
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch ->
               append("${failure.parameter.fqName.shortName()} is reified: ")
             is ResolutionResult.Failure.CandidateAmbiguity -> append(
@@ -120,7 +149,11 @@ fun InjectionResult.Error.render(): String = buildString {
             is ResolutionResult.Failure.WithCandidate.DivergentInjectable -> append("missing:")
           }.let { }
           append(" */ ")
-          appendLine("inject<${request.type.renderToString()}>()")
+          if (failure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
+            appendLine("${failure.candidate.chainFqName}()")
+          } else {
+            appendLine("inject<${request.type.renderToString()}>()")
+          }
         }
       }
       append(indent())
@@ -129,12 +162,24 @@ fun InjectionResult.Error.render(): String = buildString {
     }
 
     withIndent {
+      if (unwrappedFailure is ResolutionResult.Failure.WithCandidate.CallContextMismatch) {
+        appendLine("${indent()}/* ${scope.callContext.name.lowercase()} call context */")
+      }
       append(indent())
-      printCall(failureRequest, failure, null)
+      printCall(
+        failureRequest,
+        failure,
+        null,
+        if (failureRequest.type.isNonKFunctionType(ctx)) failureRequest.type.callContext
+        else scope.callContext
+      )
     }
     appendLine()
 
     when (unwrappedFailure) {
+      is ResolutionResult.Failure.WithCandidate.CallContextMismatch -> {
+        appendLine("but call context was ${unwrappedFailure.actualCallContext.name.lowercase()}.")
+      }
       is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch ->
         appendLine("but type argument ${unwrappedFailure.argument.fqName} is not reified.")
       is ResolutionResult.Failure.CandidateAmbiguity -> appendLine(

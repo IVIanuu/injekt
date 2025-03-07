@@ -20,7 +20,44 @@ import java.util.*
     return emptyList()
   }
 
-  private fun processFile(file: KSFile, injectables: List<KSDeclaration>) =
+  private fun processFile(file: KSFile, injectables: List<KSDeclaration>) {
+    val topLevelFunctionInjectables = injectables
+      .filter { it is KSFunctionDeclaration && it.parent is KSFile }
+      .filterIsInstance<KSFunctionDeclaration>()
+    if (topLevelFunctionInjectables.isNotEmpty())
+      environment.codeGenerator.createNewFile(
+        dependencies = Dependencies(false, file),
+        packageName = file.packageName.asString(),
+        "${file.fileName}_Injectables"
+      ).write(
+        buildString {
+          appendLine("package ${file.packageName.asString()}")
+
+          topLevelFunctionInjectables.forEach {
+            appendLine("""
+            @injekt.Tag @Target(AnnotationTarget.TYPE)
+            annotation class ${it.simpleName.asString()}
+        """)
+            if (it.parameters.isNotEmpty()) {
+              appendLine("{")
+
+              it.parameters.forEach {
+                if (it.name == null) return@forEach
+                appendLine(
+                  """
+                    @injekt.Tag @Target(AnnotationTarget.TYPE)
+                    annotation class ${it.name!!.asString()}
+                  """
+                )
+              }
+
+              appendLine("}")
+            }
+          }
+        }
+          .toByteArray()
+      )
+
     environment.codeGenerator.createNewFile(
       dependencies = Dependencies(false, file),
       packageName = InjektFqNames.InjectablesPackage.asString(),
@@ -66,8 +103,9 @@ import java.util.*
           appendLine()
         }
       }
-      .toByteArray()
+        .toByteArray()
     )
+  }
 
   private fun KSDeclaration.declarationHash(): String = buildString {
     modifiers.forEach { append(it) }

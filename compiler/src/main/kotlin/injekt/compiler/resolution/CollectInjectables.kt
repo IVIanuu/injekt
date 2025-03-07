@@ -107,6 +107,22 @@ fun InjektCallable.collectModuleInjectables(
   val nextCallable = copy(type = type.copy(uniqueId = UUID.randomUUID().toString()))
   addInjectable(nextCallable)
 
+  if (symbol is FirNamedFunctionSymbol &&
+    symbol.getContainingClassSymbol() == null) {
+    val companionTag = ctx.session.symbolProvider.getClassLikeSymbolByClassId(
+      ClassId.topLevel(symbol.fqName)
+    )
+    if (companionTag != null && companionTag.hasAnnotation(InjektFqNames.Tag, ctx.session))
+      addInjectable(
+        copy(
+          type = companionTag.toInjektClassifier(ctx)
+            .defaultType
+            .wrap(nextCallable.type)
+            .copy(uniqueId = UUID.randomUUID().toString())
+        )
+      )
+  }
+
   if (nextCallable.parameterTypes.count { it.key != DISPATCH_RECEIVER_INDEX } > 0)
     return
 

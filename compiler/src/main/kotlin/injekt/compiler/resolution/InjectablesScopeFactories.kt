@@ -97,7 +97,7 @@ fun elementInjectablesScopeOf(
 
 private fun fileInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("file_scope", file) {
-    injectableScopeOrParentIfEmpty(
+    injectableScopeOrParentIfEmptyAndSameCallContext(
       name = "FILE ${file.fir.name}",
       parent = internalGlobalInjectablesScopeOf(file, ctx),
       owner = file,
@@ -122,7 +122,7 @@ private fun classInjectablesScopeOf(
   "class_scope",
   clazz to parent.name
 ) {
-  injectableScopeOrParentIfEmpty(
+  injectableScopeOrParentIfEmptyAndSameCallContext(
     name = if (clazz.isCompanion) "COMPANION ${clazz.fqName}"
     else "CLASS ${clazz.fqName}",
     parent = classCompanionInjectablesScopeOf(clazz, parent, ctx),
@@ -173,7 +173,7 @@ private fun functionInjectablesScopeOf(
           }
         }
     }
-  injectableScopeOrParentIfEmpty(
+  injectableScopeOrParentIfEmptyAndSameCallContext(
     name = "${if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"} ${function.fqName}",
     parent = parent,
     owner = function,
@@ -205,6 +205,7 @@ private fun functionInjectablesScopeOf(
         }
     }
       .map { it.toInjektCallable(ctx) },
+    callContext = function.callContext(ctx),
     ctx = ctx
   )
 }
@@ -217,7 +218,7 @@ private fun propertyInjectablesScopeOf(
   "property_scope",
   property to parent.name
 ) {
-  injectableScopeOrParentIfEmpty(
+  injectableScopeOrParentIfEmptyAndSameCallContext(
     name = "PROPERTY ${property.fqName}",
     parent = parent,
     owner = property,
@@ -234,6 +235,7 @@ private fun propertyInjectablesScopeOf(
         )
           .toInjektCallable(ctx)
     },
+    callContext = property.callContext(ctx),
     ctx = ctx
   )
 }
@@ -258,19 +260,20 @@ private fun blockExpressionScopeOf(
       }
     }
 
-  return injectableScopeOrParentIfEmpty(
+  return injectableScopeOrParentIfEmptyAndSameCallContext(
     name = "BLOCK AT ${position.source!!.startOffset}",
     parent = parent,
     initialInjectables = injectablesBeforePosition,
     nesting = if (injectablesBeforePosition.size > 1) parent.nesting
     else parent.nesting + 1,
+    callContext = parent.callContext,
     ctx = ctx
   )
 }
 
 private fun internalGlobalInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =
   ctx.cached("internal_global_scope", file) {
-    injectableScopeOrParentIfEmpty(
+    injectableScopeOrParentIfEmptyAndSameCallContext(
       name = "INTERNAL GLOBAL EXCEPT ${file.fir.name}",
       parent = externalGlobalInjectablesScopeOf(file, ctx),
       initialInjectables = collectGlobalInjectables(ctx)
@@ -294,13 +297,27 @@ private fun externalGlobalInjectablesScopeOf(file: FirFileSymbol, ctx: InjektCon
     )
   }
 
-fun injectableScopeOrParentIfEmpty(
+fun injectableScopeOrParentIfEmptyAndSameCallContext(
   name: String,
   parent: InjectablesScope,
   owner: FirBasedSymbol<*>? = null,
   initialInjectables: List<InjektCallable> = emptyList(),
   typeParameters: List<InjektClassifier> = emptyList(),
   nesting: Int = parent.nesting.inc(),
+  callContext: CallContext = CallContext.DEFAULT,
   ctx: InjektContext
-): InjectablesScope = if (typeParameters.isEmpty() && initialInjectables.isEmpty()) parent
-else InjectablesScope(name, parent, owner, initialInjectables, typeParameters, nesting, ctx)
+): InjectablesScope {
+  return if (typeParameters.isEmpty() &&
+    initialInjectables.isEmpty() && callContext == parent.callContext
+  ) parent
+  else InjectablesScope(
+    name,
+    parent,
+    owner,
+    initialInjectables,
+    typeParameters,
+    callContext,
+    nesting,
+    ctx
+  )
+}

@@ -5,9 +5,11 @@
 plugins {
   kotlin("jvm")
   id("injekt")
+  id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
 }
 
 dependencies {
+  testImplementation(Deps.Compose.gradlePlugin)
   testImplementation(project(":common"))
   testImplementation(project(":compiler"))
   testImplementation(project(":ksp"))

@@ -77,7 +77,8 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 
     val requests = substitutedCallee.injectableRequests(
       explicitArguments + callee.valueParameterSymbols.indices
-        .filter { it !in info.injectParameters }
+        .filter { it !in info.injectParameters },
+      ctx
     )
 
     if (requests.isEmpty()) return
@@ -104,7 +105,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
         ) { result }
       }
       is InjectionResult.Error ->
-        reporter.reportOn(expression.source!!, INJEKT_ERROR, result.render(), context)
+        reporter.reportOn(expression.source!!, INJEKT_ERROR, result.render(ctx), context)
     }
   }
 }

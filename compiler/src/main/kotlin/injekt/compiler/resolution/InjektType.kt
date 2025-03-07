@@ -7,7 +7,7 @@
 package injekt.compiler.resolution
 
 import injekt.compiler.*
-import injekt.compiler.fir.classifierInfo
+import injekt.compiler.fir.*
 import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
@@ -360,8 +360,12 @@ val InjektType.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?:
 fun InjektType.isProvideFunctionType(ctx: InjektContext): Boolean =
   isProvide && isSubTypeOf(ctx.functionType, ctx)
 
-val InjektType.isFunctionType: Boolean
-  get() = classifier.fqName.asString().startsWith("kotlin.Function")
+fun InjektType.isNonKFunctionType(ctx: InjektContext): Boolean =
+  classifier.fqName.asString().let {
+    it.startsWith(InjektFqNames.function) ||
+        it.startsWith(InjektFqNames.suspendFunction) ||
+        it.startsWith(InjektFqNames.composableFunction)
+  }
 
 fun InjektType.isUnconstrained(staticTypeParameters: List<InjektClassifier>): Boolean =
   classifier.isTypeParameter &&

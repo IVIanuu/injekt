@@ -85,7 +85,8 @@ class InjectCallTransformer(
           anchorScopes.all {
             it in candidateScope.allScopes ||
                 scope in candidateScope.allScopes
-          }
+          } &&
+              candidateScope.callContext.canCall(candidate.callContext)
         } ?: scope
     }
 
@@ -174,8 +175,18 @@ class InjectCallTransformer(
         name = irScope.inventNameForTemporary("function").asNameId()
         returnType = result.candidate.type.toIrType(this@with).typeOrNull!!
         visibility = DescriptorVisibilities.LOCAL
+        isSuspend = scope.callContext == CallContext.SUSPEND
       }.apply {
         parent = irScope.getLocalDeclarationParent()
+
+        if (result.candidate.callContext == CallContext.COMPOSABLE) {
+          annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
+            .irCallConstructor(
+              irCtx.referenceConstructors(InjektFqNames.Composable)
+                .single(),
+              emptyList()
+            )
+        }
 
         body = DeclarationIrBuilder(irCtx, symbol).irBlockBody {
           +irReturn(unwrappedExpression())
@@ -203,8 +214,18 @@ class InjectCallTransformer(
       name = Name.special("<anonymous>")
       returnType = type.arguments.last().typeOrNull!!
       visibility = DescriptorVisibilities.LOCAL
+      isSuspend = injectable.dependencyCallContext == CallContext.SUSPEND
     }.apply {
       parent = irBuilder.scope.getLocalDeclarationParent()
+
+      if (injectable.dependencyCallContext == CallContext.COMPOSABLE) {
+        annotations = annotations + DeclarationIrBuilder(irCtx, symbol)
+          .irCallConstructor(
+            irCtx.referenceConstructors(InjektFqNames.Composable)
+              .single(),
+            emptyList()
+          )
+      }
 
       val irBuilder = DeclarationIrBuilder(irCtx, symbol)
 
@@ -385,7 +406,9 @@ class InjectCallTransformer(
     result: ResolutionResult.Success.Value,
     injectable: CallableInjectable
   ): IrExpression = when {
-    injectable.callable.type.unwrapTags().classifier.isObject ->
+    injectable.callable.type.unwrapTags().classifier.isObject &&
+        (injectable.callable.symbol.name == DISPATCH_RECEIVER_NAME ||
+            injectable.callable.symbol is FirConstructorSymbol)->
       objectExpression(injectable.callable.type.unwrapTags())
     else -> when {
       injectable.callable.symbol is FirPropertySymbol &&

@@ -7,11 +7,11 @@
 
 package injekt.integrationtests
 
+import androidx.compose.compiler.plugins.kotlin.*
+import androidx.compose.runtime.*
 import com.tschuchort.compiletesting.*
 import injekt.compiler.*
 import injekt.compiler.ir.*
-import injekt.compiler.ir.dumpAllFiles
-import injekt.compiler.ir.dumpToFiles
 import injekt.ksp.*
 import io.kotest.matchers.*
 import io.kotest.matchers.string.*
@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.name.*
 import java.net.*
 import java.nio.file.*
+import kotlin.coroutines.*
 import kotlin.reflect.*
 
 var fileIndex = 0
@@ -267,4 +268,28 @@ fun KotlinCompilationAssertionScope.compilationShouldHaveFailed(message: String?
 
 fun KotlinCompilationAssertionScope.shouldContainMessage(message: String) {
   result.messages shouldContain message
+}
+
+fun KotlinCompilation.withCompose() {
+  compilerPluginRegistrars += ComposePluginRegistrar()
+  commandLineProcessors += ComposeCommandLineProcessor()
+}
+
+fun <R> runComposing(block: @Composable () -> R): R {
+  val recomposer = Recomposer(EmptyCoroutineContext)
+  var result: Any? = null
+  Composition(UnitApplier, recomposer).run {
+    setContent {
+      result = block()
+    }
+  }
+  return result as R
+}
+
+private object UnitApplier : AbstractApplier<Unit>(Unit) {
+  override fun insertBottomUp(index: Int, instance: Unit) {}
+  override fun insertTopDown(index: Int, instance: Unit) {}
+  override fun move(from: Int, to: Int, count: Int) {}
+  override fun remove(index: Int, count: Int) {}
+  override fun onClear() {}
 }

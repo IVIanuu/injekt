@@ -52,6 +52,14 @@ sealed interface ResolutionResult {
           get() = 2
       }
 
+      data class CallContextMismatch(
+        val actualCallContext: CallContext,
+        override val candidate: Injectable,
+      ) : WithCandidate {
+        override val failureOrdering: Int
+          get() = 1
+      }
+
       data class ReifiedTypeArgumentMismatch(
         val parameter: InjektClassifier,
         val argument: InjektClassifier,
@@ -220,6 +228,9 @@ private fun InjectablesScope.resolveCandidates(
 private fun InjectablesScope.resolveCandidate(
   candidate: Injectable
 ): ResolutionResult = computeForCandidate(candidate) {
+  if (!callContext.canCall(candidate.callContext))
+    return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
+
   if (candidate is CallableInjectable)
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
       val argumentSymbol = typeArgument.classifier.symbol as? FirTypeParameterSymbol

@@ -8,6 +8,7 @@ package injekt.compiler.resolution
 
 import injekt.compiler.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
+import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.name.*
@@ -15,6 +16,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 sealed interface Injectable {
   val type: InjektType
+  val callContext: CallContext get() = CallContext.DEFAULT
   val dependencies: List<InjectableRequest> get() = emptyList()
   val dependencyScope: InjectablesScope? get() = null
   val chainFqName: FqName
@@ -26,7 +28,8 @@ class CallableInjectable(
   val callable: InjektCallable,
   override val type: InjektType
 ) : Injectable {
-  override val dependencies = callable.injectableRequests(emptySet())
+  override val dependencies = callable.injectableRequests(emptySet(), ownerScope.ctx)
+  override val callContext: CallContext = callable.callContext
   override val chainFqName = callable.chainFqName
 }
 
@@ -54,6 +57,9 @@ class LambdaInjectable(
   override val ownerScope: InjectablesScope,
   request: InjectableRequest
 ) : Injectable {
+  val dependencyCallContext = if (request.isInline) callContext
+  else request.type.callContext
+
   override val type = request.type
   override val chainFqName = FqName(request.parameterName.asString())
   override val dependencies = listOf(
@@ -61,7 +67,8 @@ class LambdaInjectable(
       type = type.arguments.last(),
       callableFqName = chainFqName,
       parameterName = "instance".asNameId(),
-      parameterIndex = 0
+      parameterIndex = 0,
+      isInline = request.isInline
     )
   )
 
@@ -77,7 +84,8 @@ class LambdaInjectable(
       }.symbol
     }
 
-  override val dependencyScope = if (valueParameterSymbols.isEmpty()) null
+  override val dependencyScope = if (valueParameterSymbols.isEmpty() &&
+    dependencyCallContext == ownerScope.callContext) null
   else InjectablesScope(
     name = "LAMBDA $type",
     parent = ownerScope,
@@ -87,6 +95,7 @@ class LambdaInjectable(
           .toInjektCallable(ownerScope.ctx, chainFqName.child(parameter.name))
           .copy(type = type.arguments[index])
       },
+    callContext = dependencyCallContext,
     ctx = ownerScope.ctx
   )
 }
@@ -123,10 +132,11 @@ data class InjectableRequest(
   val callableTypeArguments: Map<InjektClassifier, InjektType> = emptyMap(),
   val parameterName: Name,
   val parameterIndex: Int,
-  val isRequired: Boolean = true
+  val isRequired: Boolean = true,
+  val isInline: Boolean = false
 )
 
-fun InjektCallable.injectableRequests(exclude: Set<Int>): List<InjectableRequest> =
+fun InjektCallable.injectableRequests(exclude: Set<Int>, ctx: InjektContext): List<InjectableRequest> =
   parameterTypes.map { (index, type) ->
     if (index in exclude) return@map null
     val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
@@ -143,6 +153,10 @@ fun InjektCallable.injectableRequests(exclude: Set<Int>): List<InjectableRequest
       parameterIndex = index,
       isRequired = valueParameter == null ||
           symbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(valueParameter) in injectParameters ||
-          !valueParameter.hasDefaultValue
+          !valueParameter.hasDefaultValue,
+      isInline = symbol.isInline &&
+          valueParameter?.isNoinline != true &&
+          valueParameter?.isCrossinline != true &&
+          valueParameter?.resolvedReturnType?.toInjektType(ctx)?.isNonKFunctionType(ctx) == true
     )
   }.filterNotNull()
