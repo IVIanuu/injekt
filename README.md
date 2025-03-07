@@ -12,10 +12,12 @@ interface Http
 
 @Provide class Repository(private val api: Api)
 
-@Provide data class AppComponent(val repository: Repository)
+@Provide data class AppDependencies(val repository: Repository)
 
-val graph = create<AppComponent>()
-graph.repo
+fun main() {
+  val dependencies = create<AppDependencies>()
+  dependencies.repo
+}
 ```
 
 # Setup
