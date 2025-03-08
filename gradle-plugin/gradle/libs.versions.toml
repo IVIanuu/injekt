@@ -1,0 +1,49 @@
+[versions]
+autoService = "1.1.0"
+compose = "1.7.3"
+coroutines = "1.10.1"
+kotlin = "2.1.0"
+kotlinCompileTesting = "0.7.0"
+ksp = "2.1.0-1.0.29"
+
+[plugins]
+android-application = { id = "com.android.application", version = "8.6.0" }
+atomicFu = { id = "org.jetbrains.kotlinx.atomicfu", version = "0.27.0" }
+buildConfig = { id = "com.github.gmazzo.buildconfig", version = "3.0.2" }
+dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.30.0" }
+
+[libraries]
+androidxActivityCompose = "androidx.activity:activity-compose:1.10.0"
+
+autoService-annotations = { group = "com.google.auto.service", name = "auto-service-annotations", version.ref = "autoService" }
+autoService-ksp = { group = "dev.zacsweers.autoservice", name = "auto-service-ksp", version.ref = "autoService" }
+
+compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-compose-compiler-plugin-embeddable", version.ref = "kotlin" }
+compose-material = { group = "org.jetbrains.compose.material", name = "material", version.ref = "compose" }
+compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose" }
+
+coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+
+junit = "junit:junit:4.12"
+
+kotlin-compilerEmbeddable = { group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable", version.ref = "kotlin" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-gradlePluginApi = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin-api", version.ref = "kotlin" }
+
+kotlinCompileTesting-core = { group = "dev.zacsweers.kctfork", name = "core", version.ref = "kotlinCompileTesting" }
+kotlinCompileTesting-ksp = { group = "dev.zacsweers.kctfork", name = "ksp", version.ref = "kotlinCompileTesting" }
+
+kotlinXSerializationJson = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3"
+
+kotestAssertions = "io.kotest:kotest-assertions-core:5.9.1"
+
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
+ksp-api = { group = "com.google.devtools.ksp", name = "symbol-processing-api", version.ref = "ksp" }
+ksp-symbolProcessing = { group = "com.google.devtools.ksp", name = "symbol-processing", version.ref = "ksp" }

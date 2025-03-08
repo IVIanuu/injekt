@@ -1,3 +1,6 @@
+import com.vanniktech.maven.publish.*
+import java.util.*
+
 /*
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
@@ -8,6 +11,12 @@ plugins {
   alias(libs.plugins.ksp)
   alias(libs.plugins.buildConfig)
   alias(libs.plugins.mavenPublish) apply false
+}
+
+rootDir.parentFile.resolve("gradle/publish.properties").reader().use { reader ->
+  Properties().apply { load(reader) }.forEach { key, value ->
+    project.extensions.extraProperties.set(key.toString(), value)
+  }
 }
 
 gradlePlugin {
@@ -35,4 +44,9 @@ dependencies {
   api(libs.ksp.gradlePlugin)
 }
 
-plugins.apply(libs.plugins.mavenPublish.get().pluginId)
+plugins.apply(libs.plugins.mavenPublish.get().pluginId).run {
+  extensions.getByType<MavenPublishBaseExtension>().run {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+  }
+}

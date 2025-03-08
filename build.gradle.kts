@@ -3,6 +3,7 @@
  */
 
 import com.vanniktech.maven.publish.*
+import java.util.*
 
 buildscript {
   dependencies {
@@ -24,6 +25,12 @@ plugins {
 }
 
 allprojects {
+  rootProject.file("/gradle/publish.properties").reader().use { reader ->
+    Properties().apply { load(reader) }.forEach { key, value ->
+      project.extensions.extraProperties.set(key.toString(), value)
+    }
+  }
+
   plugins.withId("com.vanniktech.maven.publish") {
     extensions.getByType<MavenPublishBaseExtension>().run {
       publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
