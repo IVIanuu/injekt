@@ -15,7 +15,7 @@ interface Http
 @Provide data class AppDependencies(val repository: Repository)
 
 fun main() {
-  val dependencies = create<AppDependencies>()
+  val dependencies = create<AppDependencies>() // translates to AppDependencies(Repository(Api(HttpImpl(), jsonParser()))
   dependencies.repo
 }
 ```

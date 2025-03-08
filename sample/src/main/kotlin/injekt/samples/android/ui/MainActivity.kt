@@ -48,9 +48,8 @@ class MainActivity : ComponentActivity() {
 @Provide data class MainActivityDependencies(
   // inject a list of all UiDecorators provided in the app
   val decorators: List<UiDecorator>,
-  // get a reference to counterUi by injecting a @Composable function
-  // with its return type
-  // we inject a function here because we are not in a @Composable context
+  // get a reference to CounterScreen by injecting a @Composable function
+  // with the return type of CounterScreen
   val counterUi: @Composable () -> @CounterUi Unit
 )
 
