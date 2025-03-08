@@ -11,6 +11,6 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-  versionCatalogs { maybeCreate("libs").apply { from(files("../gradle/libs.versions.toml")) } }
+  //versionCatalogs { maybeCreate("libs").apply { from(files("../gradle/libs.versions.toml")) } }
   repositories { mavenCentral() }
 }

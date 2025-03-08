@@ -11,7 +11,7 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
-class AddOnInjectableTest {
+class AddOnTest {
   @Test fun testAddOnInjectableFunction() = singleAndMultiCodegen(
     """
       @Provide fun <@AddOn T : @Tag1 S, S> addOn(instance: T): S = instance

@@ -10,7 +10,7 @@ import io.kotest.matchers.types.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.junit.*
 
-class InjectableCheckersTest {
+class CheckersTest {
   @Test fun testInjectableEnumClass() = codegen(
     """
       @Provide enum class MyEnum
