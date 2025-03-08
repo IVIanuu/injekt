@@ -4,6 +4,7 @@
 
 package injekt.samples.android.ui
 
+import android.app.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import injekt.*
@@ -33,9 +34,12 @@ fun interface UiDecorator {
   }
 }
 
-@Provide fun analyticsUiDecorator(analytics: Analytics) = UiDecorator { content ->
+@Provide fun analyticsUiDecorator(
+  activity: Activity,
+  analytics: Analytics
+) = UiDecorator { content ->
   LaunchedEffect(true) {
-    analytics.log("Ui Launched")
+    analytics.log("${activity::class.simpleName} Launched")
   }
 
   content()

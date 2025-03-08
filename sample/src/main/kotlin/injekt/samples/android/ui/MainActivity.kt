@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
     // and create our own dependencies with our scope
     val dependencies = (application as App)
       .appDependencies
-      .mainActivityDependencies(scope)
+      .mainActivityDependencies(scope, this)
 
     // combine the list of UiDecorators and set the content
     val decoratedUi: @Composable () -> Unit =

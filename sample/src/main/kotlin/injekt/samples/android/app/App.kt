@@ -37,5 +37,8 @@ object AppScope
   val coroutineScope: ScopedCoroutineScope<AppScope>,
   // add a factory for activity dependencies to allow it to have its own scope
   // this creates a hierarchy of scopes similar to subcomponents in other di libs
-  val mainActivityDependencies: (Scope<ActivityScope>) -> MainActivityDependencies
+  val mainActivityDependencies: (
+    Scope<ActivityScope>,
+    Activity
+  ) -> MainActivityDependencies
 )
