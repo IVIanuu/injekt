@@ -3,16 +3,16 @@
  */
 
 plugins {
-  kotlin("jvm")
-  kotlin("plugin.serialization")
-  id("com.google.devtools.ksp")
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ksp)
 }
 
 dependencies {
-  implementation(Deps.AutoService.annotations)
-  ksp(Deps.AutoService.processor)
-  compileOnly(Deps.Kotlin.compilerEmbeddable)
-  implementation(Deps.KotlinSerialization.json)
+  implementation(libs.autoService.annotations)
+  ksp(libs.autoService.ksp)
+  compileOnly(libs.kotlin.compilerEmbeddable)
+  implementation(libs.kotlinXSerializationJson)
 }
 
-plugins.apply("com.vanniktech.maven.publish")
+plugins.apply(libs.plugins.mavenPublish.get().pluginId)

@@ -6,34 +6,20 @@ import com.vanniktech.maven.publish.*
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 
-buildscript {
-  repositories {
-    mavenLocal()
-    google()
-    mavenCentral()
-    maven("https://plugins.gradle.org/m2")
-  }
-  dependencies {
-    classpath(Deps.androidGradlePlugin)
-    classpath(Deps.atomicFuGradlePlugin)
-    classpath(Deps.Compose.gradlePlugin)
-    classpath(Deps.dokkaGradlePlugin)
-    classpath(Deps.Kotlin.gradlePlugin)
-    classpath(Deps.KotlinSerialization.gradlePlugin)
-    classpath(Deps.Ksp.gradlePlugin)
-    classpath(Deps.mavenPublishGradlePlugin)
-  }
+plugins {
+  alias(libs.plugins.android.application) apply false
+  alias(libs.plugins.atomicFu) apply false
+  alias(libs.plugins.dokka) apply false
+  alias(libs.plugins.kotlin.android) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
+  alias(libs.plugins.kotlin.compose) apply false
+  alias(libs.plugins.kotlin.serialization) apply false
+  alias(libs.plugins.ksp) apply false
+  alias(libs.plugins.mavenPublish) apply false
 }
 
 allprojects {
-  repositories {
-    mavenLocal()
-    google()
-    mavenCentral()
-    maven("https://oss.sonatype.org/content/repositories/snapshots")
-    maven("https://plugins.gradle.org/m2")
-  }
-
   plugins.withId("com.vanniktech.maven.publish") {
     extensions.getByType<MavenPublishBaseExtension>().run {
       publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)

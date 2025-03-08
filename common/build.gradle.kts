@@ -5,8 +5,8 @@ import org.jetbrains.kotlin.gradle.tasks.*
  */
 
 plugins {
-  kotlin("multiplatform")
-  id("org.jetbrains.kotlinx.atomicfu")
+  alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.atomicFu)
 }
 
 kotlin {
@@ -44,9 +44,9 @@ kotlin {
     }
     jvmTest {
       dependencies {
-        implementation(Deps.Coroutines.test)
-        implementation(Deps.junit)
-        implementation(Deps.kotestAssertions)
+        implementation(libs.coroutines.test)
+        implementation(libs.junit)
+        implementation(libs.kotestAssertions)
       }
     }
   }
@@ -56,4 +56,4 @@ tasks.withType<KotlinCompile> {
   kotlinOptions.jvmTarget = "1.8"
 }
 
-plugins.apply("com.vanniktech.maven.publish")
+plugins.apply(libs.plugins.mavenPublish.get().pluginId)

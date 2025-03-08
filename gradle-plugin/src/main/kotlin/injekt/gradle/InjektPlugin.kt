@@ -17,7 +17,7 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
     target.pluginManager.apply("com.google.devtools.ksp")
     target.dependencies.add(
       "ksp",
-      "injekt:ksp:${BuildConfig.VERSION}"
+      "io.github.ivianuu.injekt:ksp:${BuildConfig.VERSION}"
     )
   }
 
@@ -26,10 +26,10 @@ class InjektPlugin : KotlinCompilerPluginSupportPlugin {
       listOf(SubpluginOption("dumpDir", "${kotlinCompilation.target.project.buildDir.resolve("injekt/dump/${kotlinCompilation.defaultSourceSet.name}")}"))
     }
 
-  override fun getCompilerPluginId() = "injekt"
+  override fun getCompilerPluginId() = "io.github.ivianuu.injekt"
 
   override fun getPluginArtifact() = SubpluginArtifact(
-    groupId = "injekt",
+    groupId = "io.github.ivianuu.injekt",
     artifactId = "compiler",
     version = BuildConfig.VERSION
   )

@@ -24,7 +24,7 @@ class Scope<N> : SynchronizedObject() {
 
   fun dispose() {
     synchronized(this) {
-      values.values
+      values.values.toList()
         .also { values.clear() }
     }.forEach { (it as? ScopeDisposable)?.dispose() }
   }

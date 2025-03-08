@@ -3,20 +3,20 @@
  */
 
 plugins {
-  id("com.android.application")
-  kotlin("android")
-  id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.kotlin.android)
+  alias(libs.plugins.kotlin.compose)
 }
 
 android {
   defaultConfig {
     namespace = "injekt.samples.android"
-    applicationId = Build.applicationId
-    compileSdk = Build.compileSdk
-    minSdk = Build.minSdk
-    targetSdk = Build.targetSdk
-    versionCode = Build.versionCode
-    versionName = Build.versionName
+    applicationId = "injekt.samples.android"
+    compileSdk = 35
+    minSdk = 27
+    targetSdk = 35
+    versionCode = 1
+    versionName = "0.0.1"
   }
 
   compileOptions {
@@ -27,7 +27,7 @@ android {
 }
 
 dependencies {
-  implementation(Deps.androidxActivityCompose)
   implementation(project(":common"))
-  implementation(Deps.Compose.material)
+  implementation(libs.androidxActivityCompose)
+  implementation(libs.compose.material)
 }

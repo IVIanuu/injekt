@@ -25,13 +25,13 @@ buildConfig {
 }
 
 dependencies {
-  implementation(Deps.AutoService.annotations)
-  ksp(Deps.AutoService.processor)
+  implementation(libs.autoService.annotations)
+  ksp(libs.autoService.ksp)
   compileOnly(gradleApi())
-  compileOnly(Deps.Kotlin.compilerEmbeddable)
-  compileOnly(Deps.Kotlin.gradlePlugin)
-  compileOnly(Deps.Kotlin.gradlePluginApi)
-  api(Deps.Ksp.gradlePlugin)
+  compileOnly(libs.kotlin.compilerEmbeddable)
+  compileOnly(libs.kotlin.gradlePlugin)
+  compileOnly(libs.kotlin.gradlePluginApi)
+  api(libs.ksp.gradlePlugin)
 }
 
 plugins.apply("com.vanniktech.maven.publish")

@@ -3,24 +3,26 @@
  */
 
 plugins {
-  kotlin("jvm")
-  id("org.jetbrains.kotlin.plugin.compose") version Deps.Kotlin.version
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.compose)
 }
 
 dependencies {
-  testImplementation(Deps.Compose.gradlePlugin)
   testImplementation(project(":common"))
   testImplementation(project(":compiler"))
   testImplementation(project(":ksp"))
-  testImplementation(Deps.Compose.runtime)
 
-  testImplementation(Deps.Ksp.symbolProcessing)
-  testImplementation(Deps.Ksp.api)
+  testImplementation(libs.compose.gradlePlugin)
+  testImplementation(libs.compose.runtime)
 
-  testImplementation(Deps.Kotlin.compilerEmbeddable)
-  testImplementation(Deps.KotlinCompileTesting.core)
-  testImplementation(Deps.KotlinCompileTesting.ksp)
+  testImplementation(libs.ksp.symbolProcessing)
+  testImplementation(libs.ksp.api)
 
-  testImplementation(Deps.kotestAssertions)
-  testImplementation(Deps.junit)
+  testImplementation(libs.kotlin.compilerEmbeddable)
+
+  testImplementation(libs.kotlinCompileTesting.core)
+  testImplementation(libs.kotlinCompileTesting.ksp)
+
+  testImplementation(libs.kotestAssertions)
+  testImplementation(libs.junit)
 }

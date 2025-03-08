@@ -3,16 +3,16 @@
  */
 
 plugins {
-  kotlin("jvm")
-  id("com.google.devtools.ksp")
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.ksp)
 }
 
 dependencies {
   implementation(project(":compiler"))
-  implementation(Deps.AutoService.annotations)
-  ksp(Deps.AutoService.processor)
-  compileOnly(Deps.Kotlin.compilerEmbeddable)
-  compileOnly(Deps.Ksp.api)
+  implementation(libs.autoService.annotations)
+  ksp(libs.autoService.ksp)
+  compileOnly(libs.kotlin.compilerEmbeddable)
+  compileOnly(libs.ksp.api)
 }
 
-plugins.apply("com.vanniktech.maven.publish")
+plugins.apply(libs.plugins.mavenPublish.get().pluginId)
