@@ -15,8 +15,8 @@ import injekt.samples.android.domain.*
 fun interface UiDecorator {
   @Composable fun Content(content: @Composable () -> Unit)
 
-  // declare companion object as provide to ensure that providers
-  // within the body will also be seen by injekt
+  // mark companion object with @Provide to ensure that providers
+  // within its class body will also be seen by injekt.
   // kind of like a module
   @Provide companion object {
     // provide an empty list of UiDecorators to ensure that injekt
