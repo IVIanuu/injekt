@@ -35,7 +35,7 @@ object AppScope
 @Provide data class AppDependencies(
   val analytics: Analytics,
   val coroutineScope: ScopedCoroutineScope<AppScope>,
-  // add a factory for mainActivityDependencies to allow it to have its own scope
+  // add a factory for activity dependencies to allow it to have its own scope
   // this creates a hierarchy of scopes similar to subcomponents in other di libs
   val mainActivityDependencies: (Scope<ActivityScope>) -> MainActivityDependencies
 )
