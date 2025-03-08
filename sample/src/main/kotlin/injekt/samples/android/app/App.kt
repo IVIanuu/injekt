@@ -17,7 +17,7 @@ class App : Application() {
   // and provide it so that the create call below can use it
   @Provide private val appScope = Scope<AppScope>()
   // lazily create an instance of AppDependencies by calling injekt's create() function
-  // injekt uses all declared providers create them
+  // injekt uses all declared providers to create them
   val appDependencies by lazy { create<AppDependencies>() }
 
   override fun onCreate() {
