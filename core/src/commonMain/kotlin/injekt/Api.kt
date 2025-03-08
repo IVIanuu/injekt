@@ -6,31 +6,33 @@
 
 package injekt
 
+import kotlin.annotation.AnnotationTarget.*
+
 /**
  * Provides this declaration in the current scope
  */
 @Target(
   // @Provide class MyClass
-  AnnotationTarget.CLASS,
+  CLASS,
 
   // class MyClass @Provide constructor()
-  AnnotationTarget.CONSTRUCTOR,
+  CONSTRUCTOR,
 
   // @Provide myFunction(): Foo = ...
-  AnnotationTarget.FUNCTION,
+  FUNCTION,
 
   // @Provide val myProperty: Foo get() = ...
-  AnnotationTarget.PROPERTY,
+  PROPERTY,
 
   // @Provide val myVariable: Foo = ...
-  AnnotationTarget.LOCAL_VARIABLE,
+  LOCAL_VARIABLE,
 
   // fun func(@Provide foo: Foo)
-  AnnotationTarget.VALUE_PARAMETER,
+  VALUE_PARAMETER,
 
   // Lambda
   // val func: (Foo) -> Bar = { foo: @Provide Foo -> bar() }
-  AnnotationTarget.TYPE
+  TYPE
 )
 annotation class Provide
 
@@ -51,9 +53,9 @@ inline fun <T> create(x: T = inject): T = x
  *
  * For example:
  * ```
- * @Tag annotation class UserId
+ * @Tag @Target(TYPE, CLASS, CONSTRUCTOR) annotation class UserId
  *
- * @Tag annotation class Username
+ * @Tag @Target(TYPE, CLASS, CONSTRUCTOR) annotation class Username
  *
  * @Provide val userId: @UserId String = "123"
  *
@@ -67,11 +69,11 @@ inline fun <T> create(x: T = inject): T = x
  * }
  * ```
  */
-@Target(AnnotationTarget.ANNOTATION_CLASS)
+@Target(ANNOTATION_CLASS)
 annotation class Tag
 
 /**
  * Todo
  */
-@Target(AnnotationTarget.TYPE_PARAMETER)
+@Target(TYPE_PARAMETER)
 annotation class AddOn

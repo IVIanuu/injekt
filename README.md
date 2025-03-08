@@ -21,18 +21,16 @@ fun main() {
 ```
 
 # Setup
-TODO
-Must be checked out and build locally using publishToMavenLocal task for now
 ```kotlin
 plugins {
-  id("injekt") version latest_version
+  id("io.github.ivianuu.injekt") version latest_version
 }
 
 dependencies {
   // core runtime
-  implementation("injekt:core:${latest_version}")
+  implementation("io.github.ivianuu.injekt:core:${latest_version}")
   // optional - common utilities
-  implementation("injekt:common:${latest_version}")
+  implementation("io.github.ivianuu.injekt:common:${latest_version}")
 }
 ```
 
@@ -62,7 +60,7 @@ fun run(@Provide config: Config) {
 The core of Injekt doesn't know anything about scoping, but there is a api in the common module.
 You have to annotate your class or the return type of a function or a property with ```@Scoped``` tag.
 ```kotlin
-@Provide @Scoped<UiScope> class Db
+@Provide @Scoped<UiScope> class MyViewModel
 ```
 Then you have to provide a ```Scope``` instance.
 ```kotlin
@@ -75,7 +73,7 @@ Then you can inject your class.
 
 fun onCreate() {
   // use ui scoped dependency
-  val db = create<Db>()
+  val db = create<MyViewModel>()
 }
 ```
 Later it should be disposed like so.
@@ -133,11 +131,9 @@ Value classes:
 
 Tags:
 ```kotlin
-@Tag 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+@Tag @Target(CLASS, CONSTRUCTOR, TYPE)
 annotation class PlaylistId
-@Tag
-@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
+@Tag @Target(CLASS, CONSTRUCTOR, TYPE)
 annotation class UserId
 
 @Provide class PlaylistTracksPresenter(playlistId: @PlaylistId String, userId: @UserId String)
@@ -145,11 +141,10 @@ annotation class UserId
 
 Optionally you can add a typealias for your tag to make it easier to use
 ```kotlin
-@Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-annotation class PlaylistIdTag
+@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class PlaylistIdTag
 typealias PlaylistId = @PlaylistIdTag String
-@Tag @Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.TYPE)
-annotation class UserIdTag
+
+@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class UserIdTag
 typealias UserId = @UserIdTag String
 
 @Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)
