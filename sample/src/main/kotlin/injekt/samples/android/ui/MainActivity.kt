@@ -7,6 +7,7 @@ package injekt.samples.android.ui
 import android.os.*
 import androidx.activity.*
 import androidx.activity.compose.*
+import androidx.compose.runtime.*
 import injekt.*
 import injekt.common.*
 import injekt.samples.android.app.*
@@ -18,11 +19,12 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     val dependencies = (application as App).appDependencies.mainActivityDependencies(scope)
-    setContent {
-      dependencies.appTheme.Content {
-        dependencies.appUi.Content()
-      }
-    }
+    val decoratedUi: @Composable () -> Unit =
+      dependencies.decorators
+        .fold({ dependencies.appUi() }) { content, uiDecorator ->
+          { uiDecorator.Content(content) }
+        }
+    setContent(content = decoratedUi)
   }
 
   override fun onDestroy() {
@@ -32,8 +34,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Provide data class MainActivityDependencies(
-  val appTheme: AppTheme,
-  val appUi: AppUi
+  val decorators: List<UiDecorator>,
+  val appUi: @Composable () -> @AppUi Unit
 )
 
 object ActivityScope
