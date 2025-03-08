@@ -13,9 +13,11 @@ import injekt.samples.android.util.*
 import kotlinx.coroutines.*
 
 class App : Application() {
-  // store and provide the app scope here to allow @Scoped<AppScope> instances
+  // store the app scope here to allow @Scoped<AppScope> instances
+  // and provide it so that the create call below can use it
   @Provide private val appScope = Scope<AppScope>()
   // lazily create an instance of AppDependencies by calling injekt's create() function
+  // injekt uses all declared providers create them
   val appDependencies by lazy { create<AppDependencies>() }
 
   override fun onCreate() {
