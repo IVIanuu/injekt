@@ -12,7 +12,7 @@ plugins {
 gradlePlugin {
   plugins {
     create("injekt") {
-      id = "injekt"
+      id = "io.github.ivianuu.injekt"
       implementationClass = "injekt.gradle.InjektPlugin"
     }
   }
