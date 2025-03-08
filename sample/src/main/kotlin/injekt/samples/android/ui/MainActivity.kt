@@ -8,7 +8,6 @@ import android.os.*
 import androidx.activity.*
 import androidx.activity.compose.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
 import injekt.*
 import injekt.common.*
 import injekt.samples.android.app.*
@@ -30,7 +29,7 @@ class MainActivity : ComponentActivity() {
     // combine the list of UiDecorators and set the content
     val decoratedUi: @Composable () -> Unit =
       dependencies.decorators
-        .fold({ dependencies.counterUi(Modifier) }) { content, uiDecorator ->
+        .fold({ dependencies.counterUi() }) { content, uiDecorator ->
           { uiDecorator.Content(content) }
         }
 
@@ -52,9 +51,7 @@ class MainActivity : ComponentActivity() {
   // get a reference to counterUi by injecting a @Composable function
   // with its return type
   // we inject a function here because we are not in a @Composable context
-  // also add Modifier parameter here because there is no Modifier
-  // provided anywhere in the app but CounterUi still requires one
-  val counterUi: @Composable (Modifier) -> @CounterUi Unit
+  val counterUi: @Composable () -> @CounterUi Unit
 )
 
 object ActivityScope

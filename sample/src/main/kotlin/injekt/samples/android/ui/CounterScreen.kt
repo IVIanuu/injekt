@@ -50,6 +50,8 @@ sealed interface CounterEvent {
 // just add @Provide and and unique return type to make it usable with injekt
 @Provide @Composable fun CounterUi(
   state: CounterState,
+  // declare modifier
+  // in case no modifier is provided injekt still compiles because we have a default here
   modifier: Modifier = Modifier
 ): @CounterUi Unit {
   Scaffold(
