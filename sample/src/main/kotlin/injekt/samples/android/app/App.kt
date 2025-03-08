@@ -13,7 +13,9 @@ import injekt.samples.android.util.*
 import kotlinx.coroutines.*
 
 class App : Application() {
+  // store and provide the app scope here to allow @Scoped<AppScope> instances
   @Provide private val appScope = Scope<AppScope>()
+  // lazily create an instance of AppDependencies by calling injekt's create() function
   val appDependencies by lazy { create<AppDependencies>() }
 
   override fun onCreate() {
@@ -24,10 +26,14 @@ class App : Application() {
   }
 }
 
+// name for our AppScope
 object AppScope
 
+// declare dependencies used in our App
 @Provide data class AppDependencies(
   val analytics: Analytics,
   val coroutineScope: ScopedCoroutineScope<AppScope>,
+  // add a factory for mainActivityDependencies to allow it to have its own scope
+  // this creates a hierarchy of scopes similar to subcomponents in other di libs
   val mainActivityDependencies: (Scope<ActivityScope>) -> MainActivityDependencies
 )

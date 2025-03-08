@@ -15,6 +15,9 @@ interface CounterRepo {
   suspend fun updateCounter(transform: (Int) -> Int)
 }
 
+// provide repo impl, scope it to AppScope
+// no need to bind the type or something
+// injekt sees that CounterRepoImpl is sub type of CounterRepo
 @Provide @Scoped<AppScope> class CounterRepoImpl : CounterRepo {
   private val _counter = MutableStateFlow(0)
   override val counter: Flow<Int> by this::_counter

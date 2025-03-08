@@ -24,6 +24,9 @@ sealed interface CounterEvent {
   data object DecCounter : CounterEvent
 }
 
+// directly provide the CounterState here instead of having a wrapper class or interface
+// to allow injekt to directly inject state into CounterUi
+// this makes code feel more naturally and makes it super easy testable
 @Provide @Composable fun CounterPresenter(
   repo: CounterRepo,
   scope: ScopedCoroutineScope<ActivityScope>
@@ -36,10 +39,23 @@ sealed interface CounterEvent {
   }
 }
 
-@Tag @Target(AnnotationTarget.TYPE) annotation class AppUi
+// declare a tag for our CounterUi as return type
+// this is important because otherwise it would return just Unit
+// which would cause problems if we had multiple screens for example
+// the counter presenter above doesn't have this problem
+// because its return type CounterState can be considered unique enough
+@Tag @Target(AnnotationTarget.TYPE) annotation class CounterUi
 
-@Provide @Composable fun AppUi(state: CounterState): @AppUi Unit {
-  Scaffold(topBar = { TopAppBar(title = { Text("Injekt sample") }) }) {
+// declare CounterUi just like a normal @Composable function
+// just add @Provide and and unique return type to make it usable with injekt
+@Provide @Composable fun CounterUi(
+  state: CounterState,
+  modifier: Modifier = Modifier
+): @CounterUi Unit {
+  Scaffold(
+    modifier = modifier,
+    topBar = { TopAppBar(title = { Text("Injekt sample") }) }
+  ) {
     Column(
       modifier = Modifier
         .padding(it)

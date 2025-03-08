@@ -9,8 +9,20 @@ import androidx.compose.runtime.*
 import injekt.*
 import injekt.samples.android.domain.*
 
+// declare UiDecorator interface which will be used by MainActivity
+// to decorate the UI
+// MainActivity will inject a list so we can provide as many as we want
 fun interface UiDecorator {
   @Composable fun Content(content: @Composable () -> Unit)
+
+  // declare companion object as provide to ensure that providers
+  // within the body will also be seen by injekt
+  // kind of like a module
+  @Provide companion object {
+    // provide an empty list of UiDecorators to ensure that injekt
+    // can provide a list even if no UiDecorators are provided
+    @Provide fun defaultUiDecorators(): List<UiDecorator> = emptyList()
+  }
 }
 
 @Provide val AppColors = darkColors()
