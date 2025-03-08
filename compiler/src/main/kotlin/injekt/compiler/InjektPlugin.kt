@@ -6,9 +6,7 @@ package injekt.compiler
 
 import com.google.auto.service.*
 import injekt.compiler.fir.*
-import injekt.compiler.fir.InjektFirExtensionRegistrar
 import injekt.compiler.ir.*
-import injekt.compiler.ir.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.com.intellij.mock.*
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
@@ -43,7 +41,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 @OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
-  override val pluginId = "injekt"
+  override val pluginId = "io.github.ivianuu.injekt"
   override val pluginOptions = listOf(DumpDirOption)
 
   override fun processOption(

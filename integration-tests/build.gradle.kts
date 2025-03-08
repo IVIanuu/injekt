@@ -5,6 +5,7 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.kotlin.compose)
+  id("io.github.ivianuu.injekt")
 }
 
 dependencies {

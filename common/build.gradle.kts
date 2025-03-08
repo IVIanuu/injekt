@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.gradle.tasks.*
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.atomicFu)
+  id("io.github.ivianuu.injekt")
 }
 
 kotlin {

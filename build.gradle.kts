@@ -3,8 +3,12 @@
  */
 
 import com.vanniktech.maven.publish.*
-import org.jetbrains.kotlin.gradle.dsl.*
-import org.jetbrains.kotlin.gradle.plugin.*
+
+buildscript {
+  dependencies {
+    classpath("io.github.ivianuu.injekt:gradle-plugin")
+  }
+}
 
 plugins {
   alias(libs.plugins.android.application) apply false
@@ -27,64 +31,12 @@ allprojects {
     }
   }
 
-  if (project.name == "compiler" ||
-    project.name == "gradle-plugin" ||
-    project.name == "ksp")
-    return@allprojects
-
-  project.pluginManager.apply("com.google.devtools.ksp")
-  dependencies.add("ksp", project(":ksp"))
-
-  fun setupCompilation(compilation: KotlinCompilation<*>) {
-    val project = compilation.compileKotlinTask.project
-    dependencies.add("kotlinCompilerPluginClasspath", project(":compiler"))
-
-    val sourceSetName = name
-
-    val dumpDir = project.buildDir.resolve("injekt/dump/$sourceSetName")
-      .also { it.mkdirs() }
-
-    val pluginOptions = listOf(
-      SubpluginOption(
-        key = "dumpDir",
-        value = dumpDir.absolutePath
-      )
-    )
-
-    pluginOptions.forEach { option ->
-      compilation.kotlinOptions.freeCompilerArgs += listOf(
-        "-P", "plugin:injekt:${option.key}=${option.value}"
-      )
-    }
-  }
-
-  afterEvaluate {
-    when {
-      pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform") -> {
-        extensions.getByType(KotlinMultiplatformExtension::class.java).run {
-          project.afterEvaluate {
-            targets
-              .flatMap { it.compilations }
-              .forEach { setupCompilation(it) }
-          }
-        }
-      }
-      pluginManager.hasPlugin("org.jetbrains.kotlin.android") -> {
-        extensions.getByType(KotlinAndroidProjectExtension::class.java).run {
-          project.afterEvaluate {
-            target.compilations
-              .forEach { setupCompilation(it) }
-          }
-        }
-      }
-      pluginManager.hasPlugin("org.jetbrains.kotlin.jvm") -> {
-        extensions.getByType(KotlinJvmProjectExtension::class.java).run {
-          project.afterEvaluate {
-            target.compilations
-              .forEach { setupCompilation(it) }
-          }
-        }
-      }
+  configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+      substitute(module("io.github.ivianuu.injekt:ksp")).using(project(":ksp"))
+      substitute(module("io.github.ivianuu.injekt:compiler")).using(project(":compiler"))
+      substitute(module("io.github.ivianuu.injekt:core")).using(project(":core"))
+      substitute(module("io.github.ivianuu.injekt:common")).using(project(":common"))
     }
   }
 }

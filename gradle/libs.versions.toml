@@ -9,6 +9,7 @@ ksp = "2.1.0-1.0.29"
 [plugins]
 android-application = { id = "com.android.application", version = "8.6.0" }
 atomicFu = { id = "org.jetbrains.kotlinx.atomicfu", version = "0.27.0" }
+buildConfig = { id = "com.github.gmazzo.buildconfig", version = "3.0.2" }
 dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -3,10 +3,11 @@
  */
 
 plugins {
-  kotlin("jvm")
+  alias(libs.plugins.kotlin.jvm)
   id("java-gradle-plugin")
-  id("com.google.devtools.ksp")
-  id("com.github.gmazzo.buildconfig") version "3.0.2"
+  alias(libs.plugins.ksp)
+  alias(libs.plugins.buildConfig)
+  alias(libs.plugins.mavenPublish) apply false
 }
 
 gradlePlugin {
@@ -34,4 +35,4 @@ dependencies {
   api(libs.ksp.gradlePlugin)
 }
 
-plugins.apply("com.vanniktech.maven.publish")
+plugins.apply(libs.plugins.mavenPublish.get().pluginId)

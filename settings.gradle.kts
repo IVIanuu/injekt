@@ -21,8 +21,13 @@ include(
   ":common",
   ":compiler",
   ":core",
-  ":gradle-plugin",
   ":ksp",
   ":integration-tests",
   ":sample"
 )
+
+includeBuild("gradle-plugin") {
+  dependencySubstitution {
+    substitute(module("io.github.ivianuu.injekt:gradle-plugin")).using(project(":"))
+  }
+}

@@ -225,7 +225,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     componentRegistrars += InjektComponentRegistrar()
     commandLineProcessors += InjektCommandLineProcessor()
     pluginOptions += PluginOption(
-      "injekt",
+      "io.github.ivianuu.injekt",
       "dumpDir",
       workingDir.resolve("injekt/dump")
         .also { it.mkdirs() }
@@ -283,6 +283,7 @@ fun <R> runComposing(block: @Composable () -> R): R {
       result = block()
     }
   }
+  recomposer.cancel()
   return result as R
 }
 
