@@ -252,9 +252,6 @@ private fun InjectablesScope.resolveCandidate(
     when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> when {
-        dependency.isRequired && candidate is LambdaInjectable &&
-            dependencyResult is ResolutionResult.Failure.NoCandidates ->
-          return@computeForCandidate ResolutionResult.Failure.NoCandidates(dependency)
         !dependency.isRequired &&
             dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.NoCandidates ->
           successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
