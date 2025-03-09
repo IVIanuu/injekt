@@ -64,7 +64,7 @@ fun InjektType.wrap(type: InjektType): InjektType {
 
 fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassifier =
   ctx.cached("injekt_classifier", this) {
-    val info = classifierInfo(ctx)
+    val metadata = classifierMetadata(ctx)
 
     val typeParameters = typeParameterSymbols
       ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
@@ -84,12 +84,12 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
       fqName = fqName,
       classId = safeAs<FirClassLikeSymbol<*>>()?.classId,
       typeParameters = typeParameters ?: emptyList(),
-      lazySuperTypes = info.lazySuperTypes,
+      lazySuperTypes = metadata.lazySuperTypes,
       isTypeParameter = this is FirTypeParameterSymbol,
       isObject = this is FirRegularClassSymbol && classKind == ClassKind.OBJECT,
       isTag = isTag(ctx),
       symbol = this,
-      tags = info.tags,
+      tags = metadata.tags,
       isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
       variance = (this as? FirTypeParameterSymbol)?.variance?.convertVariance() ?: TypeVariance.INV
     )

@@ -4,4 +4,4 @@
 
 package injekt.internal
 
-internal annotation class DeclarationInfo(val value: String)
+internal annotation class InjektMetadata(val value: Int)

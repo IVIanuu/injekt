@@ -37,12 +37,12 @@ class InjektIrGenerationExtension(
     moduleFragment.transform(compilationDeclarations, null)
     moduleFragment.transform(InjectCallTransformer(compilationDeclarations, pluginContext, ctx), null)
     moduleFragment.patchDeclarationParents()
-    moduleFragment.persistInfos(ctx, pluginContext)
+    moduleFragment.addInjektMetadata(ctx, pluginContext)
     moduleFragment.dumpToFiles(dumpDir, ctx)
   }
 }
 
-private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginContext) {
+private fun IrModuleFragment.addInjektMetadata(ctx: InjektContext, irCtx: IrPluginContext) {
   transform(
     object : IrElementTransformerVoid() {
       override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
@@ -52,7 +52,7 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
             val parent = declaration.parent.cast<IrDeclarationContainer>()
             IrFactoryImpl.buildFun {
               origin = IrDeclarationOrigin.DEFINED
-              name = (declaration.name.asString() + "\$DeclarationInfoHolder").asNameId()
+              name = (declaration.name.asString() + "\$MetadataHolder").asNameId()
               returnType = irCtx.irBuiltIns.unitType
               visibility = DescriptorVisibilities.PUBLIC
               startOffset = declaration.startOffset
@@ -72,7 +72,7 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
             metadataHolderDeclaration,
             DeclarationIrBuilder(irCtx, metadataHolderDeclaration.symbol)
               .irCallConstructor(
-                irCtx.referenceConstructors(InjektFqNames.DeclarationInfo)
+                irCtx.referenceConstructors(InjektFqNames.InjektMetadata)
                   .single(),
                 emptyList()
               ).apply {
@@ -97,18 +97,18 @@ private fun IrModuleFragment.persistInfos(ctx: InjektContext, irCtx: IrPluginCon
               ?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol?.safeAs<FirClassifierSymbol<*>>())
               ?: error("wtf")
 
-            val classifierInfo = firClassifierSymbol.classifierInfo(ctx)
-            if (classifierInfo.shouldBePersisted(ctx))
-              addMetadata(classifierInfo.toPersistedClassifierInfo(ctx).encode())
+            val classifierMetadata = firClassifierSymbol.classifierMetadata(ctx)
+            if (classifierMetadata.shouldBePersisted(ctx))
+              addMetadata(classifierMetadata.toPersistedClassifierMetadata(ctx).encode())
           }
 
           if (declaration is IrFunction || declaration is IrProperty) {
             val firCallableSymbol = declaration.safeAs<IrMetadataSourceOwner>()
               ?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol?.cast<FirCallableSymbol<*>>()!!
 
-            val callableInfo = firCallableSymbol.callableInfo(ctx)
-            if (callableInfo.shouldBePersisted(ctx))
-              addMetadata(callableInfo.toPersistedCallableInfo(ctx).encode())
+            val callableMetadata = firCallableSymbol.callableMetadata(ctx)
+            if (callableMetadata.shouldBePersisted(ctx))
+              addMetadata(callableMetadata.toPersistedCallableMetadata(ctx).encode())
           }
         }
 

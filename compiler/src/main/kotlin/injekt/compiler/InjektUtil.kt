@@ -31,9 +31,9 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
     return true
 
   if (this is FirValueParameterSymbol) {
-    val callableInfo = containingFunctionSymbol.callableInfo(ctx)
+    val metadata = containingFunctionSymbol.callableMetadata(ctx)
     val index = containingFunctionSymbol.valueParameterSymbols.indexOf(this)
-    if (index in callableInfo.injectParameters)
+    if (index in metadata.injectParameters)
       return true
   }
 

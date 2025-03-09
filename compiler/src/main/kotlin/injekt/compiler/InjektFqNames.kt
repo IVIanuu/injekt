@@ -18,7 +18,7 @@ object InjektFqNames {
   val TypeKey = ClassId(CommonPackage, "TypeKey".asNameId())
 
   val InternalPackage = InjektPackage.child("internal".asNameId())
-  val DeclarationInfo = ClassId(InternalPackage, "DeclarationInfo".asNameId())
+  val InjektMetadata = ClassId(InternalPackage, "InjektMetadata".asNameId())
 
   val InjectablesPackage = InternalPackage.child("injectables".asNameId())
   val InjectablesLookup = CallableId(InjectablesPackage, "\$\$\$\$\$".asNameId())

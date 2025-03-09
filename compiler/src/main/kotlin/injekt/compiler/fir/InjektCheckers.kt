@@ -37,9 +37,9 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
     val callee = expression.calleeReference.toResolvedCallableSymbol()
       .safeAs<FirFunctionSymbol<*>>() ?: return
 
-    val info = callee.callableInfo(ctx)
+    val metadata = callee.callableMetadata(ctx)
 
-    if (info.injectParameters.isEmpty()) return
+    if (metadata.injectParameters.isEmpty()) return
 
     val substitutionMap = buildMap {
       expression.typeArguments.forEachIndexed { index, argument ->
@@ -77,7 +77,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 
     val requests = substitutedCallee.injectableRequests(
       explicitArguments + callee.valueParameterSymbols.indices
-        .filter { it !in info.injectParameters },
+        .filter { it !in metadata.injectParameters },
       ctx
     )
 

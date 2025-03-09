@@ -51,16 +51,16 @@ fun FirCallableSymbol<*>.toInjektCallable(
   chainFqName: FqName = FqName(fqName.pathSegments().filter { !it.isSpecial }.joinToString("."))
 ): InjektCallable =
   ctx.cached("injekt_callable", this) {
-    val info = callableInfo(ctx)
+    val metadata = callableMetadata(ctx)
     InjektCallable(
       symbol = this,
-      type = info.type,
-      originalType = info.type,
-      parameterTypes = info.parameterTypes,
+      type = metadata.type,
+      originalType = metadata.type,
+      parameterTypes = metadata.parameterTypes,
       typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
         .associateWith { it.defaultType },
       chainFqName = chainFqName,
-      injectParameters = info.injectParameters,
+      injectParameters = metadata.injectParameters,
       callContext = callContext(ctx)
     )
   }
