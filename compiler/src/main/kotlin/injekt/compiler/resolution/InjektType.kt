@@ -343,9 +343,10 @@ fun InjektType.render(
 
     if (isStarProjection) append("*")
     else {
-      if (classifier.isTag ||
-        classifier.fqName.asString().startsWith(InjektFqNames.composableFunction))
-        append("@")
+      if (classifier.isTag) append("@")
+
+      if (classifier.fqName.asString().startsWith(InjektFqNames.composableFunction))
+        append("@Composable ")
 
       if (classifier.fqName.asString().startsWith(InjektFqNames.suspendFunction))
         append("suspend ")
