@@ -46,7 +46,10 @@ fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCal
   )
 }
 
-fun FirCallableSymbol<*>.toInjektCallable(ctx: InjektContext, chainFqName: FqName = fqName): InjektCallable =
+fun FirCallableSymbol<*>.toInjektCallable(
+  ctx: InjektContext,
+  chainFqName: FqName = FqName(fqName.pathSegments().filter { !it.isSpecial }.joinToString("."))
+): InjektCallable =
   ctx.cached("injekt_callable", this) {
     val info = callableInfo(ctx)
     InjektCallable(
