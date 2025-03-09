@@ -170,7 +170,7 @@ fun InjectionResult.Error.render(ctx: InjektContext): String = buildString {
         failureRequest,
         failure,
         null,
-        if (failureRequest.type.isNonKFunctionType(ctx)) failureRequest.type.callContext
+        if (failureRequest.type.isNonKFunctionType()) failureRequest.type.callContext
         else scope.callContext
       )
     }

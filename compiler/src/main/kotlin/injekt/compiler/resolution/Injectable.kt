@@ -157,6 +157,6 @@ fun InjektCallable.injectableRequests(exclude: Set<Int>, ctx: InjektContext): Li
       isInline = symbol.isInline &&
           valueParameter?.isNoinline != true &&
           valueParameter?.isCrossinline != true &&
-          valueParameter?.resolvedReturnType?.toInjektType(ctx)?.isNonKFunctionType(ctx) == true
+          valueParameter?.resolvedReturnType?.toInjektType(ctx)?.isNonKFunctionType() == true
     )
   }.filterNotNull()

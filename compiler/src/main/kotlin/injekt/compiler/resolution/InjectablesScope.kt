@@ -112,7 +112,7 @@ class InjectablesScope(
   }
 
   fun builtInInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isNonKFunctionType(ctx) && !request.type.isProvide -> {
+    request.type.isNonKFunctionType() && !request.type.isProvide -> {
       LambdaInjectable(
         request = request,
         ownerScope = this

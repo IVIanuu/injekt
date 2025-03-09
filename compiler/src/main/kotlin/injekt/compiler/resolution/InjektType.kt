@@ -335,21 +335,46 @@ fun InjektType.render(
   append: (String) -> Unit
 ) {
   if (depth > 15) return
+
   fun InjektType.inner() {
     if (!renderType(this)) return
 
-    when {
-      isStarProjection -> append("*")
-      else -> append(classifier.fqName.asString())
+    val isFunctionType = isNonKFunctionType()
+
+    if (isStarProjection) append("*")
+    else {
+      if (classifier.isTag ||
+        classifier.fqName.asString().startsWith(InjektFqNames.composableFunction))
+        append("@")
+
+      if (classifier.fqName.asString().startsWith(InjektFqNames.suspendFunction))
+        append("suspend ")
+
+      if (!isFunctionType)
+        append(classifier.fqName.asString())
     }
+
     if (arguments.isNotEmpty()) {
-      append("<")
-      arguments.forEachIndexed { index, typeArgument ->
-        typeArgument.render(depth = depth + 1, renderType, append)
-        if (index != arguments.lastIndex) append(", ")
+      val argumentsToRender = if (classifier.isTag ||
+        isFunctionType) arguments.dropLast(1)
+      else arguments
+
+      if (argumentsToRender.isNotEmpty() || isFunctionType) {
+        if (isFunctionType) append("(") else append("<")
+        argumentsToRender.forEachIndexed { index, typeArgument ->
+          typeArgument.render(depth = depth + 1, renderType, append)
+          if (index != argumentsToRender.lastIndex) append(", ")
+        }
+        if (isFunctionType) append(")") else append(">")
       }
-      append(">")
+
+      if (classifier.isTag) append(" ")
+      else if (isFunctionType) append(" -> ")
+
+      if (classifier.isTag || isFunctionType)
+        arguments.last().render(depth = depth, renderType, append)
     }
+
     if (isMarkedNullable && !isStarProjection) append("?")
   }
   inner()
@@ -360,7 +385,7 @@ val InjektType.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?:
 fun InjektType.isProvideFunctionType(ctx: InjektContext): Boolean =
   isProvide && isSubTypeOf(ctx.functionType, ctx)
 
-fun InjektType.isNonKFunctionType(ctx: InjektContext): Boolean =
+fun InjektType.isNonKFunctionType(): Boolean =
   classifier.fqName.asString().let {
     it.startsWith(InjektFqNames.function) ||
         it.startsWith(InjektFqNames.suspendFunction) ||

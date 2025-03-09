@@ -39,7 +39,7 @@ class TypeKeyTest {
       fun invoke() = create<TypeKey<@Tag2 String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "injekt.integrationtests.Tag2<kotlin.String>"
+    invokeSingleFile() shouldBe "@injekt.integrationtests.Tag2 kotlin.String"
   }
 
   @Test fun testTypeKeyWithParameterizedTags() = codegen(
@@ -47,7 +47,7 @@ class TypeKeyTest {
       fun invoke() = create<TypeKey<@TypedTag<String> String>>()
     """
   ) {
-    invokeSingleFile() shouldBe "injekt.integrationtests.TypedTag<kotlin.String, kotlin.String>"
+    invokeSingleFile() shouldBe "@injekt.integrationtests.TypedTag<kotlin.String> kotlin.String"
   }
 
   @Test fun testTypeKeyWithStar() = codegen(
@@ -56,5 +56,13 @@ class TypeKeyTest {
     """
   ) {
     invokeSingleFile() shouldBe "kotlin.collections.List<*>"
+  }
+
+  @Test fun testTypeKeyWithFunctionType() = codegen(
+    """
+      fun invoke() = create<TypeKey<(String) -> Int>>()
+    """
+  ) {
+    invokeSingleFile() shouldBe "(kotlin.String) -> kotlin.Int"
   }
 }
