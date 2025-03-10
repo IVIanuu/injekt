@@ -6,7 +6,6 @@ package injekt.common
 
 import injekt.*
 import kotlinx.atomicfu.locks.*
-import kotlin.annotation.AnnotationTarget.*
 
 class Scope<N> : SynchronizedObject() {
   @PublishedApi internal val values = hashMapOf<Any, Any>()
@@ -39,8 +38,7 @@ fun interface ScopeDisposable {
   fun dispose()
 }
 
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE)
-annotation class Scoped<N> {
+@Tag annotation class Scoped<N> {
   @Provide companion object {
     @Provide inline fun <@AddOn T : @Scoped<N> S, S : Any, N> scoped(
       scope: Scope<N>,

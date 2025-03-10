@@ -131,20 +131,18 @@ Value classes:
 
 Tags:
 ```kotlin
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE)
-annotation class PlaylistId
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE)
-annotation class UserId
+@Tag annotation class PlaylistId
+@Tag annotation class UserId
 
 @Provide class PlaylistTracksPresenter(playlistId: @PlaylistId String, userId: @UserId String)
 ```
 
 Optionally you can add a typealias for your tag to make it easier to use
 ```kotlin
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class PlaylistIdTag
+@Tag annotation class PlaylistIdTag
 typealias PlaylistId = @PlaylistIdTag String
 
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class UserIdTag
+@Tag annotation class UserIdTag
 typealias UserId = @UserIdTag String
 
 @Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)

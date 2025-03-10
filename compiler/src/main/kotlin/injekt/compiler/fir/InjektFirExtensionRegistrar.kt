@@ -12,6 +12,11 @@ import org.jetbrains.kotlin.fir.extensions.*
 
 class InjektFirExtensionRegistrar(private val ctx: InjektContext) : FirExtensionRegistrar() {
   override fun ExtensionRegistrarContext.configurePlugin() {
+    +FirStatusTransformerExtension.Factory { session ->
+      ctx.session = session
+      TagAnnotationTargetPatcher(ctx)
+    }
+
     +FirAdditionalCheckersExtension.Factory { session ->
       ctx.session = session
       object : FirAdditionalCheckersExtension(session) {

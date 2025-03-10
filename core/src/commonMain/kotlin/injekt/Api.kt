@@ -53,9 +53,9 @@ inline fun <T> create(x: T = inject): T = x
  *
  * For example:
  * ```
- * @Tag @Target(TYPE, CLASS, CONSTRUCTOR) annotation class UserId
+ * @Tag annotation class UserId
  *
- * @Tag @Target(TYPE, CLASS, CONSTRUCTOR) annotation class Username
+ * @Tag annotation class Username
  *
  * @Provide val userId: @UserId String = "123"
  *

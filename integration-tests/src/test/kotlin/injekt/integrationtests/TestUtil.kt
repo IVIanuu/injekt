@@ -5,7 +5,6 @@
 package injekt.integrationtests
 
 import injekt.*
-import kotlin.annotation.AnnotationTarget.*
 
 class Foo
 
@@ -17,8 +16,8 @@ class CommandA : Command
 
 class CommandB : Command
 
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class Tag1
+@Tag annotation class Tag1
 
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class Tag2
+@Tag annotation class Tag2
 
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class TypedTag<T>
+@Tag annotation class TypedTag<T>
