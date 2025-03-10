@@ -8,18 +8,6 @@ import injekt.*
 import kotlinx.atomicfu.locks.*
 import kotlin.annotation.AnnotationTarget.*
 
-interface Scope<N> : ScopeDisposable {
-  @InternalScopeApi fun lock()
-
-  @InternalScopeApi fun get(key: Any): Any?
-
-  @InternalScopeApi fun put(key: Any, value: Any)
-
-  @InternalScopeApi fun unlock()
-}
-
-fun <N> Scope(): Scope<N> = ScopeImpl()
-
 @Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class Scoped<N> {
   @Provide companion object {
     @Provide inline fun <@AddOn T : @Scoped<N> S, S : Any, N> scoped(
@@ -28,6 +16,18 @@ fun <N> Scope(): Scope<N> = ScopeImpl()
       init: () -> T,
     ): S = scope.get(key) { init() }
   }
+}
+
+fun <N> Scope(): Scope<N> = ScopeImpl()
+
+interface Scope<N> : ScopeDisposable {
+  @InternalScopeApi fun lock()
+
+  @InternalScopeApi fun get(key: Any): Any?
+
+  @InternalScopeApi fun put(key: Any, value: Any)
+
+  @InternalScopeApi fun unlock()
 }
 
 @OptIn(InternalScopeApi::class)
