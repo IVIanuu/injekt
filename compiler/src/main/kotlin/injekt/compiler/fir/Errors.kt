@@ -150,7 +150,7 @@ fun InjectionResult.Error.render(ctx: InjektContext): String = buildString {
           append("/* ")
           when (failure) {
             is ResolutionResult.Failure.WithCandidate.CallContextMismatch ->
-              append("${failure.candidate.callContext.name.lowercase()} call context " +
+              append("${failure.candidate.callContext.name.lowercase()} call " +
                   "${failure.candidate.chainFqName}(...)")
             is ResolutionResult.Failure.WithCandidate.ReifiedTypeArgumentMismatch ->
               append("${failure.parameter.fqName.shortName()} is reified")
