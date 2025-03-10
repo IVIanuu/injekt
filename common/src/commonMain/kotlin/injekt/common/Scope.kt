@@ -8,36 +8,17 @@ import injekt.*
 import kotlinx.atomicfu.locks.*
 import kotlin.annotation.AnnotationTarget.*
 
-class Scope<N> : SynchronizedObject() {
-  @PublishedApi internal val values = hashMapOf<Any, Any>()
+interface Scope<N> : ScopeDisposable {
+  @InternalScopeApi fun lock()
 
-  inline fun <T> get(key: Any, init: () -> T): T {
-    values[key]?.let {
-      @Suppress("UNCHECKED_CAST")
-      return (if (it !== NULL) it else null) as T
-    }
-    return synchronized(this) {
-      val value = values.getOrPut(key) { init() ?: NULL }
-      @Suppress("UNCHECKED_CAST")
-      (if (value !== NULL) value else null) as T
-    }
-  }
+  @InternalScopeApi fun get(key: Any): Any?
 
-  fun dispose() {
-    synchronized(this) {
-      values.values.toList()
-        .also { values.clear() }
-    }.forEach { (it as? ScopeDisposable)?.dispose() }
-  }
+  @InternalScopeApi fun put(key: Any, value: Any)
 
-  companion object {
-    @PublishedApi internal val NULL = Any()
-  }
+  @InternalScopeApi fun unlock()
 }
 
-fun interface ScopeDisposable {
-  fun dispose()
-}
+fun <N> Scope(): Scope<N> = ScopeImpl()
 
 @Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class Scoped<N> {
   @Provide companion object {
@@ -47,4 +28,62 @@ fun interface ScopeDisposable {
       init: () -> T,
     ): S = scope.get(key) { init() }
   }
+}
+
+@OptIn(InternalScopeApi::class)
+inline fun <T> Scope<*>.get(key: Any, init: () -> T): T {
+  get(key)?.let {
+    @Suppress("UNCHECKED_CAST")
+    return (if (it !== NULL) it else null) as T
+  }
+
+  return try {
+    lock()
+    get(key)?.let {
+      @Suppress("UNCHECKED_CAST")
+      return (if (it !== NULL) it else null) as T
+    }
+
+    val value = init() ?: NULL
+    put(key, value)
+
+    @Suppress("UNCHECKED_CAST")
+    (if (value !== NULL) value else null) as T
+  } finally {
+    unlock()
+  }
+}
+
+@RequiresOptIn annotation class InternalScopeApi
+
+@PublishedApi internal val NULL = Any()
+
+@OptIn(InternalScopeApi::class) private class ScopeImpl<N> : Scope<N> {
+  private val values = hashMapOf<Any, Any>()
+  private val lock = ReentrantLock()
+
+  override fun get(key: Any): Any? = values[key]
+
+  override fun put(key: Any, value: Any) {
+    values[key] = value
+  }
+
+  override fun lock() {
+    lock.lock()
+  }
+
+  override fun unlock() {
+    lock.unlock()
+  }
+
+  override fun dispose() {
+    lock.withLock {
+      values.values.toList()
+        .also { values.clear() }
+    }.forEach { (it as? ScopeDisposable)?.dispose() }
+  }
+}
+
+fun interface ScopeDisposable {
+  fun dispose()
 }
