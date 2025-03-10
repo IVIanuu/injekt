@@ -53,4 +53,4 @@ class MainActivity : ComponentActivity() {
   val counterUi: @Composable () -> @CounterUi Unit
 )
 
-object ActivityScope
+data object ActivityScope

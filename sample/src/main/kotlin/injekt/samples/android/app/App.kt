@@ -29,7 +29,7 @@ class App : Application() {
 }
 
 // name for our AppScope
-object AppScope
+data object AppScope
 
 // declare dependencies used in our App
 @Provide data class AppDependencies(
