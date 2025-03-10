@@ -186,3 +186,9 @@ fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBas
 
     return@cached classSymbol?.declarationSymbols ?: emptyList()
   }
+
+val isIde = try {
+  false
+} catch (_: ClassNotFoundException) {
+  true
+}
