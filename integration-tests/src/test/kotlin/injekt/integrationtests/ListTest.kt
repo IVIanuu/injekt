@@ -33,6 +33,21 @@ class ListTest {
     childList[1].shouldBeTypeOf<CommandB>()
   }
 
+  @Test fun testLambdaListInjectable() = singleAndMultiCodegen(
+    """
+      @Provide fun commandA() = CommandA()
+      @Provide fun commandB(): List<() -> Command> = listOf({ CommandB() })
+    """,
+    """
+        fun invoke() = create<List<() -> Command>>() 
+    """
+  ) {
+    val list = invokeSingleFile<List<() -> Command>>()
+    list.size shouldBe 2
+    list[0].invoke().shouldBeTypeOf<CommandA>()
+    list[1].invoke().shouldBeTypeOf<CommandB>()
+  }
+
   @Test fun testListInjectableWithoutElements() = codegen(
     """
       fun invoke() = create<List<Command>>()

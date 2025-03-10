@@ -112,32 +112,51 @@ class InjectablesScope(
   }
 
   fun builtInInjectableForRequest(request: InjectableRequest): Injectable? = when {
-    request.type.isNonKFunctionType() && !request.type.isProvide -> {
-      LambdaInjectable(
-        request = request,
-        ownerScope = this
-      )
-    }
+    request.type.isNonKFunctionType() && !request.type.isProvide -> LambdaInjectable(
+      request = request,
+      ownerScope = this
+    )
     request.type.classifier == ctx.listClassifier -> {
       val singleElementType = request.type.arguments[0]
+      val isFunctionType = singleElementType.isNonKFunctionType() && !singleElementType.isProvide
+      val singleElementTypeToSearchFor = if (!isFunctionType) singleElementType
+      else singleElementType.arguments.last()
       val collectionElementType = ctx.collectionClassifier.defaultType
-        .withArguments(listOf(singleElementType))
+        .withArguments(
+          listOf(
+            if (isFunctionType) singleElementType
+            else singleElementTypeToSearchFor
+          )
+        )
 
       val key = CallableRequestKey(request.type, allStaticTypeParameters)
 
-      val elements = listElementsTypesForType(singleElementType, collectionElementType, key)
+      val foundElements = listElementsTypesForType(
+        singleElementTypeToSearchFor,
+        collectionElementType,
+        key
+      )
 
-      if (elements.isEmpty()) null
+      val finalElements = if (!isFunctionType) foundElements
+        .map { it.first }
+      else foundElements.map { (elementType, isSingle) ->
+        if (!isSingle) elementType
+        else singleElementType.withArguments(singleElementType.arguments.dropLast(1) + elementType)
+      }
+
+      if (finalElements.isEmpty()) null
       else ListInjectable(
         type = request.type,
         ownerScope = this,
-        elements = elements,
+        elements = finalElements,
         singleElementType = singleElementType,
         collectionElementType = collectionElementType
       )
     }
-    request.type.classifier.classId == InjektFqNames.SourceKey -> SourceKeyInjectable(request.type, this)
-    request.type.classifier.classId == InjektFqNames.TypeKey -> TypeKeyInjectable(request.type, this)
+    request.type.classifier.classId == InjektFqNames.SourceKey ->
+      SourceKeyInjectable(request.type, this)
+    request.type.classifier.classId == InjektFqNames.TypeKey ->
+      TypeKeyInjectable(request.type, this)
     else -> null
   }
 
@@ -145,7 +164,7 @@ class InjectablesScope(
     singleElementType: InjektType,
     collectionElementType: InjektType,
     key: CallableRequestKey
-  ): List<InjektType> {
+  ): List<Pair<InjektType, Boolean>> {
     if (injectables.isEmpty())
       return parent?.listElementsTypesForType(singleElementType, collectionElementType, key) ?: emptyList()
 
@@ -154,15 +173,18 @@ class InjectablesScope(
         ?.let { addAll(it) }
 
       for (candidate in injectables.toList()) {
+        var isSingle = true
         var context =
           candidate.type.runCandidateInference(singleElementType, key.staticTypeParameters, ctx = ctx)
-        if (!context.isOk)
+        if (!context.isOk) {
+          isSingle = false
           context = candidate.type.runCandidateInference(collectionElementType, key.staticTypeParameters, ctx = ctx)
+        }
         if (!context.isOk) continue
 
         val substitutedCandidate = candidate.substitute(context.fixedTypeVariables)
 
-        add(substitutedCandidate.type)
+        add(substitutedCandidate.type to isSingle)
       }
     }
   }
