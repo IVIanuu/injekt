@@ -3,6 +3,9 @@
  */
 
 import com.vanniktech.maven.publish.*
+import org.jetbrains.kotlin.gradle.dsl.*
+import org.jetbrains.kotlin.gradle.plugin.*
+import org.jetbrains.kotlin.gradle.tasks.*
 import java.util.*
 
 buildscript {
@@ -25,6 +28,25 @@ plugins {
 }
 
 allprojects {
+  pluginManager.withPlugin("java") {
+    configure<JavaPluginExtension> {
+      toolchain { languageVersion.set(libs.versions.jdk.map(JavaLanguageVersion::of)) }
+    }
+    tasks.withType<JavaCompile>().configureEach {
+      options.release.set(libs.versions.jvmTarget.map(String::toInt))
+    }
+  }
+
+  plugins.withType<KotlinBasePlugin> {
+    project.tasks.withType<KotlinCompilationTask<*>>().configureEach {
+      compilerOptions {
+        if (this is KotlinJvmCompilerOptions)
+          if (project.name != "sample")
+            jvmTarget.set(libs.versions.jvmTarget.map(JvmTarget::fromTarget))
+      }
+    }
+  }
+
   rootProject.file("/gradle/publish.properties").reader().use { reader ->
     Properties().apply { load(reader) }.forEach { key, value ->
       project.extensions.extraProperties.set(key.toString(), value)
