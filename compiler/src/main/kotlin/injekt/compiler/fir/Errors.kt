@@ -6,10 +6,27 @@ package injekt.compiler.fir
 
 import injekt.compiler.*
 import injekt.compiler.resolution.*
-import org.jetbrains.kotlin.com.intellij.psi.*
 import org.jetbrains.kotlin.diagnostics.*
 
-val INJEKT_ERROR by error1<PsiElement, String>()
+private val psiElementClass by lazy {
+  try {
+    Class.forName("org.jetbrains.kotlin.com.intellij.psi.PsiElement")
+  } catch (_: ClassNotFoundException) {
+    Class.forName("com.intellij.psi.PsiElement")
+  }
+    .kotlin
+}
+
+private fun <A> error1(
+  positioningStrategy: AbstractSourceElementPositioningStrategy =
+    SourceElementPositioningStrategies.DEFAULT
+): DiagnosticFactory1DelegateProvider<A> = DiagnosticFactory1DelegateProvider<A>(
+  severity = Severity.ERROR,
+  positioningStrategy = positioningStrategy,
+  psiType = psiElementClass,
+)
+
+val INJEKT_ERROR by error1<String>()
 
 fun InjectionResult.Error.render(ctx: InjektContext): String = buildString {
   var indent = 0
