@@ -222,7 +222,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     classpaths += kspCompilation.classesDir
 
     dumpAllFiles = true
-    componentRegistrars += InjektComponentRegistrar()
+    compilerPluginRegistrars += InjektPluginRegistrar()
     commandLineProcessors += InjektCommandLineProcessor()
     pluginOptions += PluginOption(
       "io.github.ivianuu.injekt",

@@ -2,43 +2,38 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
+@file:OptIn(UnsafeCastFunction::class, ExperimentalCompilerApi::class)
+
 package injekt.compiler
 
 import com.google.auto.service.*
 import injekt.compiler.fir.*
 import injekt.compiler.ir.*
 import org.jetbrains.kotlin.backend.common.extensions.*
-import org.jetbrains.kotlin.com.intellij.mock.*
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.*
 import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.extensions.*
 import org.jetbrains.kotlin.fir.extensions.*
+import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 
-@OptIn(ExperimentalCompilerApi::class)
-@AutoService(ComponentRegistrar::class)
-class InjektComponentRegistrar : ComponentRegistrar {
+@AutoService(CompilerPluginRegistrar::class)
+class InjektPluginRegistrar : CompilerPluginRegistrar() {
   override val supportsK2: Boolean
     get() = true
 
-  override fun registerProjectComponents(
-    project: MockProject,
-    configuration: CompilerConfiguration,
-  ) {
+  override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
     val context = InjektContext()
-    FirExtensionRegistrarAdapter.registerExtension(project, InjektFirExtensionRegistrar(context))
+    FirExtensionRegistrarAdapter.registerExtension(InjektFirExtensionRegistrar(context))
 
-    project.extensionArea
-      .getExtensionPoint(IrGenerationExtension.extensionPointName)
-      .registerExtension(
-        InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), context),
-        LoadingOrder.FIRST,
-        project
-      )
+    // todo we want to run first (before compose) so we have to use this dirty workaround
+    //  to register our extension as first
+    registeredExtensions.cast<MutableMap<ProjectExtensionDescriptor<*>, MutableList<Any>>>()
+      .getOrPut(IrGenerationExtension) { mutableListOf() }
+        .add(0, InjektIrGenerationExtension(configuration.getNotNull(DumpDirKey), context))
   }
 }
 
-@OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
 class InjektCommandLineProcessor : CommandLineProcessor {
   override val pluginId = "io.github.ivianuu.injekt"
