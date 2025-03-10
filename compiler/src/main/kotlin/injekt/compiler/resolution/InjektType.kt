@@ -392,7 +392,7 @@ fun InjektType.isProvideFunctionType(ctx: InjektContext): Boolean =
 
 fun InjektType.isNonKFunctionType(): Boolean =
   classifier.fqName.asString().let {
-    it.startsWith(InjektFqNames.function) ||
+    (it != InjektFqNames.function && it.startsWith(InjektFqNames.function)) ||
         it.startsWith(InjektFqNames.suspendFunction) ||
         it.startsWith(InjektFqNames.composableFunction)
   }
