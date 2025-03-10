@@ -72,6 +72,7 @@ import java.util.*
   private fun KSDeclaration.declarationHash(): String = buildString {
     modifiers.forEach { append(it) }
     annotations.forEach { append(it.annotationType.typeHash()) }
+    typeParameters.forEach { append(it.declarationHash()) }
     append(simpleName.asString())
 
     when (this@declarationHash) {
