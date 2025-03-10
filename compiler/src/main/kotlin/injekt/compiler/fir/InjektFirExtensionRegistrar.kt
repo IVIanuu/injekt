@@ -21,7 +21,9 @@ class InjektFirExtensionRegistrar(private val ctx: InjektContext) : FirExtension
         }
 
         override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
-          override val functionCallCheckers = setOf(InjectCallChecker(ctx))
+          override val functionCallCheckers = setOfNotNull(
+            if (isIde) null else InjectCallChecker(ctx)
+          )
         }
       }
     }
