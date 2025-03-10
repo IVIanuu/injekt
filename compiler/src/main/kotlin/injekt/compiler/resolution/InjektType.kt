@@ -29,19 +29,23 @@ data class InjektClassifier(
   val isObject: Boolean = false,
   val isTag: Boolean = false,
   val symbol: FirClassifierSymbol<*>? = null,
-  val tags: List<InjektType> = emptyList(),
+  val lazyTags: Lazy<List<InjektType>> = lazyOf(emptyList()),
   val isAddOn: Boolean = false,
   val variance: TypeVariance = TypeVariance.INV
 ) {
   val superTypes by lazySuperTypes
 
-  val defaultType: InjektType = tags.wrap(
-    InjektType(
-      classifier = this,
-      arguments = typeParameters.map { it.defaultType },
-      variance = variance
+  val tags by lazyTags
+
+  val defaultType: InjektType by lazy(LazyThreadSafetyMode.NONE) {
+    tags.wrap(
+      InjektType(
+        classifier = this,
+        arguments = typeParameters.map { it.defaultType },
+        variance = variance
+      )
     )
-  )
+  }
 
   override fun equals(other: Any?): Boolean = (other is InjektClassifier) && key == other.key
   override fun hashCode(): Int = key.hashCode()
@@ -89,7 +93,7 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
       isObject = this is FirRegularClassSymbol && classKind == ClassKind.OBJECT,
       isTag = isTag(ctx),
       symbol = this,
-      tags = metadata.tags,
+      lazyTags = metadata.lazyTags,
       isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
       variance = (this as? FirTypeParameterSymbol)?.variance?.convertVariance() ?: TypeVariance.INV
     )

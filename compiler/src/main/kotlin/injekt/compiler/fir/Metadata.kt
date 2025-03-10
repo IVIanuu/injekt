@@ -112,10 +112,11 @@ fun PersistedCallableMetadata.toCallableMetadata(ctx: InjektContext) = try {
 
 class ClassifierMetadata(
   val symbol: FirClassifierSymbol<*>,
-  val tags: List<InjektType>,
+  val lazyTags: Lazy<List<InjektType>>,
   val lazySuperTypes: Lazy<List<InjektType>>,
 ) {
   val superTypes by lazySuperTypes
+  val tags by lazyTags
 }
 
 fun FirClassifierSymbol<*>.classifierMetadata(ctx: InjektContext): ClassifierMetadata =
@@ -168,8 +169,10 @@ fun FirClassifierSymbol<*>.classifierMetadata(ctx: InjektContext): ClassifierMet
       }
     }
 
-    val tags = annotations.getTags(ctx).map { it.resolvedType.toInjektType(ctx) }
-    ClassifierMetadata(this, tags, lazySuperTypes)
+    val lazyTags = lazy(LazyThreadSafetyMode.NONE) {
+      annotations.getTags(ctx).map { it.resolvedType.toInjektType(ctx) }
+    }
+    ClassifierMetadata(this, lazyTags, lazySuperTypes)
   }
 
 fun ClassifierMetadata.shouldBePersisted(ctx: InjektContext): Boolean =
@@ -186,7 +189,7 @@ fun ClassifierMetadata.shouldBePersisted(ctx: InjektContext): Boolean =
 
 fun PersistedClassifierMetadata.toClassifierMetadata(ctx: InjektContext) = ClassifierMetadata(
   symbol = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx),
-  tags = tags.map { it.toInjektType(ctx) },
+  lazyTags = lazy(LazyThreadSafetyMode.NONE) { tags.map { it.toInjektType(ctx) } },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toInjektType(ctx) } }
 )
 

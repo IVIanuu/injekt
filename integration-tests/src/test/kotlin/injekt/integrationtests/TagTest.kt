@@ -66,7 +66,7 @@ class TagTest {
 
   @Test fun testTagWithTypeParameters() = singleAndMultiCodegen(
     """
-      @Tag annotation class MyTag<T>
+      @Tag @Target(AnnotationTarget.TYPE) annotation class MyTag<T>
       @Provide val taggedFoo: @MyTag<String> Foo = Foo()
     """,
     """
@@ -78,7 +78,7 @@ class TagTest {
 
   @Test fun testTagTypeAliasPattern() = singleAndMultiCodegen(
     """
-      @Tag annotation class TaggedFooTag
+      @Tag @Target(AnnotationTarget.TYPE) annotation class TaggedFooTag
       typealias TaggedFoo = @TaggedFooTag Foo
       @Provide val taggedFoo: TaggedFoo = Foo()
     """,
@@ -91,7 +91,7 @@ class TagTest {
     """
       typealias ComponentScope<N> = @ComponentScopeTag<N> String
 
-      @Tag annotation class ComponentScopeTag<N> {
+      @Tag @Target(AnnotationTarget.TYPE) annotation class ComponentScopeTag<N> {
         @Provide companion object {
           @Provide fun <N> scope(): ComponentScope<N> = ""
         }
@@ -104,7 +104,7 @@ class TagTest {
 
   @Test fun testTaggedTypeAliasWhichAlsoHasTagsInItsExpandedType() = singleAndMultiCodegen(
     """
-      @Tag annotation class TaggedFooTag<T>
+      @Tag @Target(AnnotationTarget.TYPE) annotation class TaggedFooTag<T>
       typealias TaggedT<T> = @TaggedFooTag<T> Foo
       @Provide fun <T> taggedFoo(): @Tag1 TaggedT<String> = Foo()
     """,
@@ -123,7 +123,7 @@ class TagTest {
         @Composable fun Content()
       }
       
-      @Tag annotation class UiTag<S : Screen<*>> {
+      @Tag @Target(AnnotationTarget.TYPE) annotation class UiTag<S : Screen<*>> {
         @Provide companion object {
           @Provide inline fun <@AddOn T : Uii<S>, S : Screen<*>> uiiToUi(
             crossinline uii: @Composable () -> T
@@ -154,15 +154,31 @@ class TagTest {
       }
     """,
     config = { withCompose() }
-  )
-
+  ) {
+    invokeSingleFile()
+  }
 
   @Test fun testDoesNotNeedToDeclareTagAnnotationTargets() = singleAndMultiCodegen(
     """
-      @Tag annotation class MyCoolTag
+      @Tag @Target(AnnotationTarget.TYPE) annotation class MyCoolTag
     """,
     """
       @Provide fun provideSomething(): @MyCoolTag Foo = Foo()
+      fun invoke() = create<@MyCoolTag Foo>()
     """
-  )
+  ) {
+    invokeSingleFile()
+  }
+
+  @Test fun testTaggedClassReferencesItself() = singleAndMultiCodegen(
+    """
+      @Provide @Scoped<MyClass> class MyClass
+    """,
+    """
+      @Provide val scope = Scope<MyClass>()
+      fun invoke() = create<MyClass>()
+    """
+  ) {
+    invokeSingleFile()
+  }
 }
