@@ -38,7 +38,7 @@ annotation class Provide
 
 /**
  * Marks the parameter as injectable
- * If no explicit parameter is passed injekt will fill in the parameter at each call size
+ * If no explicit parameter is passed injekt will fill in the parameter at each call site
  */
 val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 
