@@ -37,8 +37,9 @@ import kotlin.annotation.AnnotationTarget.*
 annotation class Provide
 
 /**
- * Marks the parameter as injectable
+ * Marks the parameter as injectable if used as default value
  * If no explicit parameter is passed injekt will fill in the parameter at each call site
+ * see [create]
  */
 val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 
