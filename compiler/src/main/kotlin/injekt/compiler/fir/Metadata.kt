@@ -142,8 +142,9 @@ fun FirClassifierSymbol<*>.classifierMetadata(ctx: InjektContext): ClassifierMet
           classId.packageFqName,
           (classId.shortClassName.asString() + "\$MetadataHolder").asNameId()
         )
-          .singleOrNull()
-          ?.decodeMetadata<PersistedClassifierMetadata>(ctx)
+          // for some reason there are multiple holders sometimes
+          // so just the first non null result
+          .firstNotNullOfOrNull { it.decodeMetadata<PersistedClassifierMetadata>(ctx) }
           ?.toClassifierMetadata(ctx)
           ?.let { return@cached it }
       }
