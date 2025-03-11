@@ -119,33 +119,25 @@ You can do this by injecting a function.
 
 # Distinguish between types
 Sometimes you have multiple dependencies of the same type
-Injekt will need help to keep them apart here are two strategies:
-
-Value classes:
+Injekt will need help to keep them apart here are three strategies:
 ```kotlin
+// value class
 @JvmInline value class PlaylistId(val value: String)
-@JvmInline value class UserId(val value: String)
+@Provide val playlistId = PlaylistId("my_playlist")
 
-@Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)
-```
+// tag annotation
+@Tag annotation class CurrentUserId
+@Provide val currentUserId: @CurrentUserId String = "my_user_id"
 
-Tags:
-```kotlin
-@Tag annotation class PlaylistId
-@Tag annotation class UserId
+// tag typealias
+@Tag typealias PlaylistOwnerId = String
+@Provide val playlistOwnerId: PlaylistOwnerId = "my_playlist_owner_id"
 
-@Provide class PlaylistTracksPresenter(playlistId: @PlaylistId String, userId: @UserId String)
-```
-
-Optionally you can add a typealias for your tag to make it easier to use
-```kotlin
-@Tag annotation class PlaylistIdTag
-typealias PlaylistId = @PlaylistIdTag String
-
-@Tag annotation class UserIdTag
-typealias UserId = @UserIdTag String
-
-@Provide class PlaylistTracksPresenter(playlistId: PlaylistId, userId: UserId)
+@Provide class PlaylistTracksPresenter(
+  playlistId: PlaylistId, // = PlaylistId("my_playlist")
+  currentUserId: @CurrentUserId String, // "my_user_id"
+  playlistOwnerId: PlaylistOwnerId // "my_playlist_owner_id"
+)
 ```
 
 # Errors / Debugging

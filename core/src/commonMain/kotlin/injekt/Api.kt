@@ -49,23 +49,23 @@ val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 inline fun <T> create(x: T = inject): T = x
 
 /**
- * Marks an annotation as an tag which can then be used
+ * Marks the declaration as an tag which can then be used
  * to distinct types
  *
  * For example:
  * ```
  * @Tag annotation class UserId
  *
- * @Tag annotation class Username
+ * @Tag typealias Username = String
  *
  * @Provide val userId: @UserId String = "123"
  *
- * @Provide val username: @Username String = "Foo"
+ * @Provide val username: Username = "Foo"
  *
  * fun main() {
  *   val userId = create<@UserId String>()
  *   // userId = 123
- *   val username = create<@Username String>()
+ *   val username = create<Username>()
  *   // username = "Foo"
  * }
  * ```
