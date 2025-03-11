@@ -198,7 +198,7 @@ fun ClassifierMetadata.toPersistedClassifierMetadata(ctx: InjektContext): Persis
   classifierFqName = symbol.fqName.asString(),
   tags = tags.map { it.toPersistedInjektType(ctx) },
   superTypes = superTypes.map { it.toPersistedInjektType(ctx) },
-  typeParameterMetadata = safeAs<FirClassLikeSymbol<*>>()
+  typeParameterMetadata = symbol.safeAs<FirClassLikeSymbol<*>>()
     ?.typeParameterSymbols
     ?.map { it.classifierMetadata(ctx).toPersistedClassifierMetadata(ctx) }
     ?: emptyList()
