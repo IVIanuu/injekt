@@ -7,7 +7,6 @@
 package injekt.compiler.fir
 
 import injekt.compiler.*
-import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.declaration.*
 import org.jetbrains.kotlin.fir.declarations.*
@@ -34,52 +33,53 @@ class TagAnnotationTargetPatcher(
     containingClass: FirClassLikeSymbol<*>?,
     isLocal: Boolean
   ): FirDeclarationStatus {
-    val targetClassId = ClassId.topLevel(StandardNames.FqNames.target)
-    if (!regularClass.hasAnnotation(targetClassId, session)) {
-      val targetSymbol = targetClassId.toSymbol(session)!!
-        .cast<FirClassSymbol<*>>()
-      val targetConstructorSymbol =
-        targetSymbol.primaryConstructorSymbol(session)!!
-      val allowedTargetsValueParameterSymbol =
-        targetConstructorSymbol.valueParameterSymbols.single()
+    if (regularClass.hasAnnotation(InjektFqNames.Target, session))
+      return super.transformStatus(status, regularClass, containingClass, isLocal)
 
-      regularClass.replaceAnnotations(
-        regularClass.annotations + buildAnnotation {
-          source = regularClass.source
+    val targetSymbol = InjektFqNames.Target
+      .toSymbol(session)!!
+      .cast<FirClassSymbol<*>>()
+    val targetConstructorSymbol =
+      targetSymbol.primaryConstructorSymbol(session)!!
+    val allowedTargetsValueParameterSymbol =
+      targetConstructorSymbol.valueParameterSymbols.single()
 
-          annotationTypeRef = targetSymbol.defaultType().toFirResolvedTypeRef()
+    regularClass.replaceAnnotations(
+      regularClass.annotations + buildAnnotation {
+        source = regularClass.source
 
-          argumentMapping = buildAnnotationArgumentMapping {
-            mapping[Name.identifier("allowedTargets")] =
-              buildVarargArgumentsExpression {
-                coneTypeOrNull = allowedTargetsValueParameterSymbol.resolvedReturnType
-                coneElementTypeOrNull = allowedTargetsValueParameterSymbol.resolvedReturnType
-                  .typeArguments
-                  .single()
-                  .type
+        annotationTypeRef = targetSymbol.defaultType().toFirResolvedTypeRef()
 
-                arguments += buildEnumEntryDeserializedAccessExpression {
-                  enumClassId = StandardClassIds.AnnotationTarget
-                  enumEntryName = Name.identifier("CLASS")
-                }
-                  .toQualifiedPropertyAccessExpression(session)
+        argumentMapping = buildAnnotationArgumentMapping {
+          mapping[Name.identifier("allowedTargets")] =
+            buildVarargArgumentsExpression {
+              coneTypeOrNull = allowedTargetsValueParameterSymbol.resolvedReturnType
+              coneElementTypeOrNull = allowedTargetsValueParameterSymbol.resolvedReturnType
+                .typeArguments
+                .single()
+                .type
 
-                arguments += buildEnumEntryDeserializedAccessExpression {
-                  enumClassId = StandardClassIds.AnnotationTarget
-                  enumEntryName = Name.identifier("CONSTRUCTOR")
-                }
-                  .toQualifiedPropertyAccessExpression(session)
-
-                arguments += buildEnumEntryDeserializedAccessExpression {
-                  enumClassId = StandardClassIds.AnnotationTarget
-                  enumEntryName = Name.identifier("TYPE")
-                }
-                  .toQualifiedPropertyAccessExpression(session)
+              arguments += buildEnumEntryDeserializedAccessExpression {
+                enumClassId = StandardClassIds.AnnotationTarget
+                enumEntryName = Name.identifier("CLASS")
               }
-          }
+                .toQualifiedPropertyAccessExpression(session)
+
+              arguments += buildEnumEntryDeserializedAccessExpression {
+                enumClassId = StandardClassIds.AnnotationTarget
+                enumEntryName = Name.identifier("CONSTRUCTOR")
+              }
+                .toQualifiedPropertyAccessExpression(session)
+
+              arguments += buildEnumEntryDeserializedAccessExpression {
+                enumClassId = StandardClassIds.AnnotationTarget
+                enumEntryName = Name.identifier("TYPE")
+              }
+                .toQualifiedPropertyAccessExpression(session)
+            }
         }
-      )
-    }
+      }
+    )
 
     return super.transformStatus(status, regularClass, containingClass, isLocal)
   }
