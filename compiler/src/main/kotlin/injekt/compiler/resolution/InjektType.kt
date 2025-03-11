@@ -28,6 +28,7 @@ data class InjektClassifier(
   val isTypeParameter: Boolean = false,
   val isObject: Boolean = false,
   val isTag: Boolean = false,
+  val isTypeAlias: Boolean = false,
   val symbol: FirClassifierSymbol<*>? = null,
   val lazyTags: Lazy<List<InjektType>> = lazyOf(emptyList()),
   val isAddOn: Boolean = false,
@@ -56,7 +57,7 @@ fun List<InjektType>.wrap(type: InjektType): InjektType = foldRight(type) { next
   nextTag.wrap(acc)
 }
 
-fun InjektType.unwrapTags(): InjektType = if (!classifier.isTag) this
+fun InjektType.unwrapTags(): InjektType = if (!classifier.isTag || classifier.isTypeAlias) this
 else arguments.last().unwrapTags()
 
 fun InjektType.wrap(type: InjektType): InjektType {
@@ -73,7 +74,7 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
     val typeParameters = typeParameterSymbols
       ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
 
-    if (typeParameters != null && isTag(ctx))
+    if (typeParameters != null && isTagAnnotation(ctx))
       typeParameters += InjektClassifier(
         key = "${uniqueKey(ctx)}.\$TT",
         fqName = fqName.child("\$TT".asNameId()),
@@ -91,7 +92,8 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
       lazySuperTypes = metadata.lazySuperTypes,
       isTypeParameter = this is FirTypeParameterSymbol,
       isObject = this is FirRegularClassSymbol && classKind == ClassKind.OBJECT,
-      isTag = isTag(ctx),
+      isTag = hasAnnotation(InjektFqNames.Tag, ctx.session),
+      isTypeAlias = this is FirTypeAliasSymbol,
       symbol = this,
       lazyTags = metadata.lazyTags,
       isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
@@ -128,7 +130,7 @@ fun ConeKotlinType.toInjektType(
     arguments = unwrapped.typeArguments
       .map { it.toInjektType(ctx) }
       .let {
-        if (classifier.isTag && it.size != classifier.typeParameters.size)
+        if (classifier.isTag && !classifier.isTypeAlias && it.size != classifier.typeParameters.size)
           it + List(classifier.typeParameters.size - it.size) { ctx.nullableAnyType }
         else it
       },
@@ -138,7 +140,7 @@ fun ConeKotlinType.toInjektType(
     variance = variance
   )
 
-  val tags = unwrapped.customAnnotations.getTags(ctx)
+  val tags = unwrapped.customAnnotations.getTagAnnotations(ctx)
   var result = if (tags.isNotEmpty()) {
     tags
       .map { it.resolvedType.toInjektType(ctx) }
@@ -154,7 +156,7 @@ fun ConeKotlinType.toInjektType(
   } else rawType
 
   // expand the type
-  while (result.unwrapTags().classifier.symbol is FirTypeAliasSymbol) {
+  while (result.unwrapTags().classifier.let { it.isTypeAlias && !it.isTag }) {
     val expanded = result.unwrapTags().superTypes.single()
     result = if (result.classifier.isTag) result.wrap(expanded) else expanded
   }
@@ -347,7 +349,7 @@ fun InjektType.render(
 
     if (isStarProjection) append("*")
     else {
-      if (classifier.isTag) append("@")
+      if (classifier.isTag && !classifier.isTypeAlias) append("@")
 
       if (classifier.fqName.asString().startsWith(InjektFqNames.composableFunction))
         append("@Composable ")
@@ -360,7 +362,7 @@ fun InjektType.render(
     }
 
     if (arguments.isNotEmpty()) {
-      val argumentsToRender = if (classifier.isTag ||
+      val argumentsToRender = if ((classifier.isTag && !classifier.isTypeAlias) ||
         isFunctionType) arguments.dropLast(1)
       else arguments
 
@@ -373,10 +375,10 @@ fun InjektType.render(
         if (isFunctionType) append(")") else append(">")
       }
 
-      if (classifier.isTag) append(" ")
+      if (classifier.isTag && !classifier.isTypeAlias) append(" ")
       else if (isFunctionType) append(" -> ")
 
-      if (classifier.isTag || isFunctionType)
+      if ((classifier.isTag && !classifier.isTypeAlias) || isFunctionType)
         arguments.last().render(depth = depth, renderType, append)
     }
 

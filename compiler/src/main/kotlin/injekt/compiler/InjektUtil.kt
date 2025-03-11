@@ -40,11 +40,11 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
   return false
 }
 
-fun List<FirAnnotation>.getTags(ctx: InjektContext): List<FirAnnotation> = filter {
-  it.resolvedType.toRegularClassSymbol(ctx.session)?.isTag(ctx) == true
+fun List<FirAnnotation>.getTagAnnotations(ctx: InjektContext): List<FirAnnotation> = filter {
+  it.resolvedType.toRegularClassSymbol(ctx.session)?.isTagAnnotation(ctx) == true
 }
 
-fun FirClassifierSymbol<*>.isTag(ctx: InjektContext): Boolean =
+fun FirClassifierSymbol<*>.isTagAnnotation(ctx: InjektContext): Boolean =
   this is FirRegularClassSymbol && hasAnnotation(InjektFqNames.Tag, ctx.session)
 
 val FirBasedSymbol<*>.fqName: FqName

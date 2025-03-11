@@ -181,4 +181,17 @@ class TagTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testTypeAliasTag() = singleAndMultiCodegen(
+    """
+      @Tag typealias MyTag<T> = Foo
+      @Provide val taggedFoo: MyTag<String> = Foo()
+      @Provide val untaggedFoo = Foo()
+    """,
+    """
+      fun invoke() = create<MyTag<String>>() 
+    """
+  ) {
+    invokeSingleFile()
+  }
 }

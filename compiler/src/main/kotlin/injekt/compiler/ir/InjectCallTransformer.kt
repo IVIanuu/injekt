@@ -556,7 +556,7 @@ class InjectCallTransformer(
 
   private fun InjektType.toIrType(ctx: ScopeContext): IrTypeArgument = when {
     isStarProjection -> IrStarProjectionImpl
-    classifier.isTag -> arguments.last().toIrType(ctx)
+    classifier.isTag && !classifier.isTypeAlias -> arguments.last().toIrType(ctx)
       .typeOrFail
       .addAnnotations(
         listOf(
@@ -566,6 +566,12 @@ class InjectCallTransformer(
           )
         )
       ).cast()
+    classifier.isTag && classifier.isTypeAlias -> classifier.symbol!!
+      .cast<FirTypeAliasSymbol>()
+      .resolvedExpandedTypeRef
+      .coneType
+      .toInjektType(this@InjectCallTransformer.ctx)
+      .toIrType(ctx)
     else -> IrSimpleTypeImpl(
       classifier.symbol!!.toIrClassifierSymbol().cast(),
       isMarkedNullable,

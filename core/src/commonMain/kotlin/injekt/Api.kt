@@ -70,7 +70,7 @@ inline fun <T> create(x: T = inject): T = x
  * }
  * ```
  */
-@Target(ANNOTATION_CLASS)
+@Target(ANNOTATION_CLASS, TYPEALIAS)
 annotation class Tag
 
 /**

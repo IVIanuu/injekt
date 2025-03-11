@@ -43,7 +43,7 @@ fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata 
         val tags = if (this is FirConstructorSymbol)
           buildList {
             addAll(resolvedReturnType.toSymbol(ctx.session)!!.classifierMetadata(ctx).tags)
-            for (tagAnnotation in annotations.getTags(ctx))
+            for (tagAnnotation in annotations.getTagAnnotations(ctx))
               add(tagAnnotation.resolvedType.toInjektType(ctx))
           }
         else emptyList()
@@ -162,8 +162,8 @@ fun FirClassifierSymbol<*>.classifierMetadata(ctx: InjektContext): ClassifierMet
 
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
-        expandedType != null -> listOf(expandedType)
         isTag -> listOf(ctx.anyType)
+        expandedType != null -> listOf(expandedType)
         this is FirTypeParameterSymbol -> resolvedBounds.map { it.coneType.toInjektType(ctx) }
         else -> cast<FirClassLikeSymbol<*>>().getSuperTypes(ctx.session, recursive = false)
           .map { it.toInjektType(ctx) }
@@ -171,7 +171,7 @@ fun FirClassifierSymbol<*>.classifierMetadata(ctx: InjektContext): ClassifierMet
     }
 
     val lazyTags = lazy(LazyThreadSafetyMode.NONE) {
-      annotations.getTags(ctx).map { it.resolvedType.toInjektType(ctx) }
+      annotations.getTagAnnotations(ctx).map { it.resolvedType.toInjektType(ctx) }
     }
     ClassifierMetadata(this, lazyTags, lazySuperTypes)
   }
