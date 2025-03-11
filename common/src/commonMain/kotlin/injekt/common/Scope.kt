@@ -32,26 +32,23 @@ interface Scope<N> : ScopeDisposable {
 
 @OptIn(InternalScopeApi::class)
 inline fun <T> Scope<*>.get(key: Any, init: () -> T): T {
-  get(key)?.let {
-    @Suppress("UNCHECKED_CAST")
-    return (if (it !== NULL) it else null) as T
-  }
-
+  get(key)?.let { return valueOrNull(it) }
   return try {
     lock()
-    get(key)?.let {
-      @Suppress("UNCHECKED_CAST")
-      return (if (it !== NULL) it else null) as T
-    }
+    get(key)?.let { return valueOrNull(it) }
 
     val value = init() ?: NULL
     put(key, value)
 
-    @Suppress("UNCHECKED_CAST")
-    (if (value !== NULL) value else null) as T
+    valueOrNull(value)
   } finally {
     unlock()
   }
+}
+
+@PublishedApi internal fun <T> valueOrNull(value: Any): T {
+  @Suppress("UNCHECKED_CAST")
+  return (if (value !== NULL) value else null) as T
 }
 
 @RequiresOptIn annotation class InternalScopeApi
