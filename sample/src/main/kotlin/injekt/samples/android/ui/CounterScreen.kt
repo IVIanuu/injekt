@@ -13,7 +13,6 @@ import injekt.*
 import injekt.samples.android.domain.*
 import injekt.samples.android.util.*
 import kotlinx.coroutines.*
-import kotlin.annotation.AnnotationTarget.*
 
 data class CounterState(
   val state: Int,
@@ -45,7 +44,7 @@ sealed interface CounterEvent {
 // which would cause problems if we had multiple screens for example
 // the counter presenter above doesn't have this problem
 // because its return type CounterState can be considered unique enough
-@Tag @Target(TYPE) annotation class CounterUi
+@Tag typealias CounterUi = Unit
 
 // declare CounterUi just like a normal @Composable function
 // just add @Provide and and unique return type to make it usable with injekt
@@ -54,7 +53,7 @@ sealed interface CounterEvent {
   // declare modifier
   // in case no modifier is provided injekt still compiles because we have a default here
   modifier: Modifier = Modifier
-): @CounterUi Unit {
+): CounterUi {
   Scaffold(
     modifier = modifier,
     topBar = { TopAppBar(title = { Text("Injekt sample") }) }

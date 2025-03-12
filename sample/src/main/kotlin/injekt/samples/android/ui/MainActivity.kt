@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
   val decorators: List<UiDecorator>,
   // get a reference to CounterScreen by injecting a @Composable function
   // with the return type of CounterScreen
-  val counterUi: @Composable () -> @CounterUi Unit
+  val counterUi: @Composable () -> CounterUi
 )
 
 data object ActivityScope
