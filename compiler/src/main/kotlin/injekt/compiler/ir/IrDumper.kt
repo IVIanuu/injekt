@@ -4,7 +4,6 @@
 
 package injekt.compiler.ir
 
-import androidx.compose.compiler.plugins.kotlin.lower.*
 import injekt.compiler.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
@@ -23,16 +22,12 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
       val content = try {
         buildString {
           appendLine(
-            try {
-              irFile.dumpSrc()
-            } catch(e: Throwable) {
-              irFile.dumpKotlinLike(
-                KotlinLikeDumpOptions(
-                  useNamedArguments = true,
-                  printFakeOverridesStrategy = FakeOverridesStrategy.NONE
-                )
+            irFile.dumpKotlinLike(
+              KotlinLikeDumpOptions(
+                useNamedArguments = true,
+                printFakeOverridesStrategy = FakeOverridesStrategy.NONE
               )
-            }
+            )
           )
         }
       } catch (e: Throwable) {

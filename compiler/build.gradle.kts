@@ -9,7 +9,6 @@ plugins {
 }
 
 dependencies {
-  compileOnly(libs.compose.gradlePlugin)
   implementation(libs.autoService.annotations)
   ksp(libs.autoService.ksp)
   compileOnly(libs.kotlin.compilerEmbeddable)
