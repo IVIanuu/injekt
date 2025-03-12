@@ -10,7 +10,7 @@ import kotlin.annotation.AnnotationTarget.*
 
 @Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class Scoped<N> {
   @Provide companion object {
-    @Provide inline fun <@AddOn T : @Scoped<N> S, S : Any, N> scoped(
+    @Provide inline fun <@AddOn T : @Scoped<N> S, S, N> scoped(
       scope: Scope<N>,
       key: TypeKey<S>,
       init: () -> T,

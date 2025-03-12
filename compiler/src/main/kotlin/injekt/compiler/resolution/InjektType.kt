@@ -126,7 +126,7 @@ fun ConeKotlinType.toInjektType(
 
   val rawType = InjektType(
     classifier = classifier,
-    isMarkedNullable = unwrapped.isMarkedNullable,
+    isMarkedNullable = (!classifier.isTag || classifier.isTypeAlias) && unwrapped.isMarkedNullable,
     arguments = unwrapped.typeArguments
       .map { it.toInjektType(ctx) }
       .let {
@@ -147,7 +147,7 @@ fun ConeKotlinType.toInjektType(
       .map {
         it.copy(
           arguments = it.arguments,
-          isMarkedNullable = rawType.isMarkedNullable,
+          isMarkedNullable = false,
           isProvide = rawType.isProvide,
           variance = rawType.variance
         )

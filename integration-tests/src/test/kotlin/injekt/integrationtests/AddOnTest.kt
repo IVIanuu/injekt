@@ -76,4 +76,16 @@ class AddOnTest {
       fun invoke() = create<Bar>() 
     """
   )
+
+  @Test fun testAddOnInjectableWithNullableType() = singleAndMultiCodegen(
+    """
+      @Provide fun <@AddOn T : @Tag1 S, S> addOn(instance: T): S = instance
+      @Provide fun taggedFoo(): @Tag1 Foo? = Foo()
+    """,
+    """
+      fun invoke() = create<Foo?>() 
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 }

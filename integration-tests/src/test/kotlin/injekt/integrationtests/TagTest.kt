@@ -194,4 +194,18 @@ class TagTest {
   ) {
     invokeSingleFile()
   }
+
+  @Test fun testTagNullability() = singleAndMultiCodegen(
+    """
+      @Provide val foo: @Scoped<Unit> String? = null
+    """,
+    """
+      fun invoke() {
+        @Provide val scope = Scope<Unit>()
+        create<String?>()
+      }
+    """
+  ) {
+    invokeSingleFile()
+  }
 }
