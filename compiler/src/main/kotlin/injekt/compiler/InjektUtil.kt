@@ -188,6 +188,7 @@ fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBas
   }
 
 val isIde = try {
+  Class.forName("org.jetbrains.kotlin.com.intellij.psi.PsiElement")
   false
 } catch (_: ClassNotFoundException) {
   true
