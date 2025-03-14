@@ -183,13 +183,14 @@ fun ClassifierMetadata.shouldBePersisted(ctx: InjektContext): Boolean =
 @Serializable data class PersistedClassifierMetadata(
   val classifierKey: String,
   val classifierFqName: String,
+  val classifierClassId: String?,
   val tags: List<PersistedInjektType>,
   val superTypes: List<PersistedInjektType>,
   val typeParameterMetadata: List<PersistedClassifierMetadata>
 )
 
 fun PersistedClassifierMetadata.toClassifierMetadata(ctx: InjektContext) = ClassifierMetadata(
-  symbol = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx),
+  symbol = findClassifier(classifierKey, FqName(classifierFqName), ClassId.fromString(classifierKey), ctx),
   lazyTags = lazy(LazyThreadSafetyMode.NONE) { tags.map { it.toInjektType(ctx) } },
   lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toInjektType(ctx) } }
 )
@@ -197,6 +198,7 @@ fun PersistedClassifierMetadata.toClassifierMetadata(ctx: InjektContext) = Class
 fun ClassifierMetadata.toPersistedClassifierMetadata(ctx: InjektContext): PersistedClassifierMetadata = PersistedClassifierMetadata(
   classifierKey = symbol.uniqueKey(ctx),
   classifierFqName = symbol.fqName.asString(),
+  classifierClassId = symbol.safeAs<FirClassLikeSymbol<*>>()?.classId?.toString(),
   tags = tags.map { it.toPersistedInjektType(ctx) },
   superTypes = superTypes.map { it.toPersistedInjektType(ctx) },
   typeParameterMetadata = symbol.safeAs<FirClassLikeSymbol<*>>()
@@ -225,7 +227,8 @@ private inline fun <reified T> FirBasedSymbol<*>.decodeMetadata(ctx: InjektConte
 @Serializable data class PersistedInjektType(
   val classifierKey: String,
   val classifierFqName: String,
-  val arguments: List<PersistedInjektType> = emptyList(),
+  val classifierClassId: String?,
+  val arguments: List<PersistedInjektType>,
   val isStarProjection: Boolean,
   val variance: TypeVariance,
   val isMarkedNullable: Boolean,
@@ -236,6 +239,7 @@ fun InjektType.toPersistedInjektType(ctx: InjektContext): PersistedInjektType =
   PersistedInjektType(
     classifierKey = classifier.key,
     classifierFqName = classifier.fqName.asString(),
+    classifierClassId = classifier.classId?.toString(),
     arguments = arguments.map { it.toPersistedInjektType(ctx) },
     isStarProjection = isStarProjection,
     variance = variance,
@@ -246,7 +250,12 @@ fun InjektType.toPersistedInjektType(ctx: InjektContext): PersistedInjektType =
 fun PersistedInjektType.toInjektType(ctx: InjektContext): InjektType =
   if (isStarProjection) STAR_PROJECTION_TYPE
   else InjektType(
-    classifier = findClassifierForKey(classifierKey, FqName(classifierFqName), ctx)
+    classifier = findClassifier(
+      classifierKey,
+      FqName(classifierFqName),
+      classifierClassId?.let { ClassId.fromString(it) },
+      ctx
+    )
       .toInjektClassifier(ctx),
     arguments = arguments.map { it.toInjektType(ctx) },
     variance = variance,

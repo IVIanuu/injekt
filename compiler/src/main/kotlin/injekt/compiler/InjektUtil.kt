@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
 
 package injekt.compiler
 
@@ -11,11 +11,13 @@ import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.java.*
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.fir.types.jvm.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
@@ -57,21 +59,36 @@ val FirBasedSymbol<*>.fqName: FqName
     else -> throw AssertionError("Unexpected $this")
   }
 
+private fun FirTypeRef.resolveJavaTypeIfNeeded(ctx: InjektContext): FirTypeRef =
+  if (this is FirJavaTypeRef)
+    resolveIfJavaType(ctx.session, MutableJavaTypeParameterStack(), null, FirJavaTypeConversionMode.DEFAULT)
+  else this
+
 fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
   ctx.cached("unique_key", this) {
-    when (this) {
-      is FirTypeParameterSymbol -> "typeparameter:${containingDeclarationSymbol.uniqueKey(ctx)}:$name"
-      is FirClassLikeSymbol<*> -> "class_like:$fqName"
-      is FirCallableSymbol<*> -> if (this != originalOrSelf()) originalOrSelf().uniqueKey(ctx)
-      else "callable:$fqName:" +
-          typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
-          listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
-            .plus(
-              (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
-                .map { it.resolvedReturnType }
-            ).joinToString(",") { it.uniqueTypeKey(ctx) } + ":" +
-          resolvedReturnType.uniqueTypeKey(ctx)
-      else -> error("Unexpected declaration $this")
+    try {
+      when (this) {
+        is FirTypeParameterSymbol -> "typeparameter:${containingDeclarationSymbol.uniqueKey(ctx)}:$name"
+        is FirClassLikeSymbol<*> -> "class_like:$fqName"
+        is FirCallableSymbol<*> -> if (this != originalOrSelf()) originalOrSelf().uniqueKey(ctx)
+        else {
+          "callable:$fqName:" +
+              typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
+              listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
+                .plus(
+                  (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
+                    .map {
+                      it.fir.returnTypeRef
+                        .resolveJavaTypeIfNeeded(ctx)
+                        .coneType
+                    }
+                ).joinToString(",") { it.uniqueTypeKey(ctx) } + ":" +
+              fir.returnTypeRef.resolveJavaTypeIfNeeded(ctx).coneType.uniqueTypeKey(ctx)
+        }
+        else -> error("Unexpected declaration $this")
+      }
+    } catch (e: Throwable) {
+      throw e
     }
   }
 
@@ -126,12 +143,13 @@ fun findCallableForKey(
         "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
 }
 
-fun findClassifierForKey(
+fun findClassifier(
   classifierKey: String,
   classifierFqName: FqName,
+  classifierClassId: ClassId?,
   ctx: InjektContext,
 ): FirClassifierSymbol<*> = ctx.cached("classifier_for_key", classifierKey) {
-  findClassifierForFqName(classifierFqName, ctx)
+  classifierClassId?.let { ctx.session.symbolProvider.getClassLikeSymbolByClassId(it) }
     ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
       .filter { it.fqName.shortName() == classifierFqName.parent().shortName() }
       .flatMap { it.typeParameterSymbols ?: emptyList() }
@@ -140,23 +158,6 @@ fun findClassifierForKey(
         "${collectDeclarationsInFqName(classifierFqName.parent(), ctx).map { it.uniqueKey(ctx) }} " +
         "${collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx).map { it.uniqueKey(ctx) }}")
 }
-
-fun findClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSymbol<*>? =
-  ctx.cached("classifier_for_fq_name", fqName) {
-    if (fqName == InjektFqNames.Any.asSingleFqName())
-      return@cached ctx.anyType.classifier.symbol
-    // todo find a way to support ALL function kinds
-    if (fqName.asString().startsWith(InjektFqNames.function) ||
-      fqName.asString().startsWith(InjektFqNames.kFunction) ||
-      fqName.asString().startsWith(InjektFqNames.suspendFunction) ||
-      fqName.asString().startsWith(InjektFqNames.kSuspendFunction) ||
-      fqName.asString().startsWith(InjektFqNames.composableFunction) ||
-      fqName.asString().startsWith(InjektFqNames.kComposableFunction))
-      ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
-    else collectDeclarationsInFqName(fqName.parent(), ctx)
-      .filterIsInstance<FirClassifierSymbol<*>>()
-      .firstOrNull { it.fqName == fqName }
-  }
 
 fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> =
   ctx.cached("declarations_in_fq_name", fqName) {

@@ -53,8 +53,8 @@ class InjektContext : TypeCheckerContext {
       .toInjektType(ctx)
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    findClassifierForFqName(InjektFqNames.TypeKey.asSingleFqName(), this)
-      ?.toInjektClassifier(this)
+    session.symbolProvider.getClassLikeSymbolByClassId(InjektFqNames.TypeKey)
+      ?.toInjektClassifier(ctx)
   }
 
   val scopeSession by lazy(LazyThreadSafetyMode.NONE) { ScopeSession() }

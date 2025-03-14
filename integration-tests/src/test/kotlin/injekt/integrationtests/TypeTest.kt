@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.fir.analysis.checkers.expression.*
 import org.jetbrains.kotlin.fir.analysis.extensions.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.extensions.*
+import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.types.model.*
 import org.junit.*
@@ -270,6 +271,22 @@ class TypeTest {
     )
     return context.fixedTypeVariables
   }
+
+  @Test fun testNestedJavaType() = multiCodegen(
+    """
+      inline fun buildNotification(
+        channel: java.util.Map<String, String>,
+        scope: Scope<*> = inject,
+        builder: java.util.Map.Entry<String, String>.() -> Unit = {}
+      ): java.util.Map<String, String> = TODO()
+    """,
+    """
+      fun invoke(scope: Scope<*> = inject) = buildNotification(
+        TODO()
+      ) {
+      }
+    """
+  )
 }
 
 private fun typeTest(assertions: TypeCheckerTestContext.() -> Unit) {
@@ -388,7 +405,8 @@ class TypeCheckerTestContext(session: FirSession) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = findClassifierForFqName(fqName, ctx)
+  fun typeFor(fqName: FqName) = ctx.session.symbolProvider
+    .getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
     ?.toInjektClassifier(ctx)?.defaultType ?: error("Wtf $fqName")
 
   infix fun InjektType.shouldBeAssignableTo(other: InjektType) {

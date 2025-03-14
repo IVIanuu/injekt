@@ -72,7 +72,12 @@ class LambdaInjectable(
     )
   )
 
-  val valueParameterSymbols = findClassifierForKey(type.classifier.key, type.classifier.fqName, ownerScope.ctx)
+  val valueParameterSymbols = findClassifier(
+    type.classifier.key,
+    type.classifier.fqName,
+    type.classifier.classId,
+    ownerScope.ctx
+  )
     .cast<FirRegularClassSymbol>()
     .declarationSymbols
     .filterIsInstance<FirFunctionSymbol<*>>()
