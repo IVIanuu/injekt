@@ -23,76 +23,75 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 fun elementInjectablesScopeOf(
   containingElements: List<FirElement>,
   position: FirElement,
-  ctx: InjektContext,
+  ctx: InjektContext
 ): InjectablesScope {
-  fun scopeOf(elements: List<FirElement>): InjectablesScope =
-    when (val element = elements.last()) {
-      is FirFile -> fileInjectablesScopeOf(file = element.symbol, ctx = ctx)
+  val scopeOwners = containingElements
+    .filter {
+      it is FirFile ||
+          it is FirClass ||
+          it is FirFunction ||
+          it is FirProperty ||
+          it is FirBlock
+    }
+    .flatMap {
+      if (it !is FirRegularClass) listOf(it)
+      else listOfNotNull(it.companionObjectSymbol?.fir, it)
+    }
+    .reversed()
+    .let { reversedScopeOwner ->
+      val finalScopeOwners = mutableListOf<FirElement>()
+      var includeClasses = true
+      for (scopeOwner in reversedScopeOwner)
+        when {
+          scopeOwner !is FirClass -> finalScopeOwners += scopeOwner
+          scopeOwner.classKind.isSingleton -> finalScopeOwners += scopeOwner
+          includeClasses -> {
+            finalScopeOwners += scopeOwner
+            includeClasses = scopeOwner.isInner || scopeOwner.isLocal
+          }
+        }
+      finalScopeOwners
+    }
+    .reversed()
+
+  fun scopeOf(remainingScopeOwners: List<FirElement>): InjectablesScope =
+    when (val element = remainingScopeOwners.last()) {
+      is FirFile -> fileInjectablesScopeOf(
+        file = element.symbol,
+        ctx = ctx
+      )
 
       is FirClass -> classInjectablesScopeOf(
         clazz = element.symbol,
-        parent = scopeOf(
-          elements
-            .dropLast(1)
-            .mapIndexedNotNull { index, parentCandidate ->
-              when {
-                parentCandidate !is FirRegularClass -> parentCandidate
-                index == elements.lastIndex - 1 && element.isInner -> parentCandidate
-                else -> parentCandidate.companionObjectSymbol?.fir
-              }
-            }
-        ),
+        parent = scopeOf(remainingScopeOwners.dropLast(1)),
         ctx = ctx
       )
 
       is FirFunction -> functionInjectablesScopeOf(
         function = element.symbol,
-        parent = scopeOf(
-          elements.dropLast(1)
-            .let { currentElements ->
-              currentElements
-                .mapIndexedNotNull { index, parentCandidate ->
-                  when {
-                    parentCandidate !is FirRegularClass -> parentCandidate
-                    index == elements.indexOfLast { it is FirClass } -> parentCandidate
-                    else -> parentCandidate.companionObjectSymbol?.fir
-                  }
-                }
-            }
-        ),
-        containingElements = elements,
+        parent = scopeOf(remainingScopeOwners.dropLast(1)),
+        containingElements = containingElements,
         ctx = ctx
       )
 
       is FirProperty -> propertyInjectablesScopeOf(
         property = element.symbol,
-        parent = scopeOf(
-          elements.dropLast(1)
-            .let { currentElements ->
-              currentElements
-                .mapIndexedNotNull { index, parentCandidate ->
-                  when {
-                    parentCandidate !is FirRegularClass -> parentCandidate
-                    index == elements.indexOfLast { it is FirClass } -> parentCandidate
-                    else -> parentCandidate.companionObjectSymbol?.fir
-                  }
-                }
-            }
-        ),
+        parent = scopeOf(remainingScopeOwners.dropLast(1)),
         ctx = ctx
       )
 
       is FirBlock -> blockExpressionScopeOf(
         block = element,
         position = position,
-        parent = scopeOf(elements.dropLast(1)),
+        parent = scopeOf(remainingScopeOwners.dropLast(1)),
         ctx = ctx
       )
 
-      else -> scopeOf(elements.dropLast(1))
+      else -> scopeOf(remainingScopeOwners.dropLast(1))
     }
 
-  return scopeOf(containingElements)
+  val scope = scopeOf(scopeOwners)
+  return scope
 }
 
 private fun fileInjectablesScopeOf(file: FirFileSymbol, ctx: InjektContext): InjectablesScope =

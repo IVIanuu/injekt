@@ -290,6 +290,24 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testInjectableInAnonymousObject2() = codegen(
+    """
+      class MyClass(@property:Provide val foo: Foo = inject) {
+        fun foo(): Foo {
+          val someObject = object : Any() {
+            fun foo() = create<Foo>()
+          }
+
+          return someObject.foo()
+        }
+      }
+
+      fun invoke(): Foo = MyClass(Foo()).foo()
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testInjectableLambdaParameterUseSite() = codegen("""
       fun invoke() = { foo: @Provide Foo -> create<Foo>() }(Foo())
     """
