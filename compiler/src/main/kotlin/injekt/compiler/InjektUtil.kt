@@ -150,6 +150,9 @@ fun findClassifier(
   ctx: InjektContext,
 ): FirClassifierSymbol<*> = ctx.cached("classifier_for_key", classifierKey) {
   classifierClassId?.let { ctx.session.symbolProvider.getClassLikeSymbolByClassId(it) }
+    ?: collectDeclarationsInFqName(classifierFqName.parent(), ctx)
+      .filterIsInstance<FirClassifierSymbol<*>>()
+      .firstOrNull { it.fqName == classifierFqName }
     ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
       .filter { it.fqName.shortName() == classifierFqName.parent().shortName() }
       .flatMap { it.typeParameterSymbols ?: emptyList() }
