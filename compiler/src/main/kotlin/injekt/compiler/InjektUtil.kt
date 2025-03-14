@@ -120,7 +120,7 @@ fun findCallableForKey(
 ): FirCallableSymbol<*> = ctx.cached("callable_for_key", callableKey) {
   collectDeclarationsInFqName(callableFqName.parent(), ctx)
     .filterIsInstance<FirCallableSymbol<*>>()
-    .singleOrNull { it.uniqueKey(ctx) == callableKey }
+    .firstOrNull { it.uniqueKey(ctx) == callableKey }
     ?: error("Could not find callable for $callableKey $callableFqName " +
         "parent ${callableFqName.parent()} " +
         "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
@@ -135,7 +135,7 @@ fun findClassifierForKey(
     ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
       .filter { it.fqName.shortName() == classifierFqName.parent().shortName() }
       .flatMap { it.typeParameterSymbols ?: emptyList() }
-      .singleOrNull { it.uniqueKey(ctx) == classifierKey }
+      .firstOrNull { it.uniqueKey(ctx) == classifierKey }
     ?: error("Could not find classifier for $classifierKey $classifierFqName " +
         "${collectDeclarationsInFqName(classifierFqName.parent(), ctx).map { it.uniqueKey(ctx) }} " +
         "${collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx).map { it.uniqueKey(ctx) }}")
@@ -155,7 +155,7 @@ fun findClassifierForFqName(fqName: FqName, ctx: InjektContext): FirClassifierSy
       ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
     else collectDeclarationsInFqName(fqName.parent(), ctx)
       .filterIsInstance<FirClassifierSymbol<*>>()
-      .singleOrNull { it.fqName == fqName }
+      .firstOrNull { it.fqName == fqName }
   }
 
 fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> =
@@ -182,7 +182,7 @@ fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBas
 
     val classSymbol = parentDeclarations
       .filterIsInstance<FirRegularClassSymbol>()
-      .singleOrNull { it.fqName.shortName() == fqName.shortName() }
+      .firstOrNull { it.fqName.shortName() == fqName.shortName() }
 
     return@cached classSymbol?.declarationSymbols ?: emptyList()
   }

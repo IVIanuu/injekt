@@ -160,7 +160,7 @@ private fun functionInjectablesScopeOf(
         ?.takeIf { it.isFun }
         ?.declarationSymbols
         ?.filterIsInstance<FirFunctionSymbol<*>>()
-        ?.singleOrNull { it.resolvedStatus.modality == Modality.ABSTRACT }
+        ?.firstOrNull { it.resolvedStatus.modality == Modality.ABSTRACT }
         ?.let { funInterfaceFunction ->
           buildSet {
             if (funInterfaceFunction.receiverParameter
