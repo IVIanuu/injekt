@@ -562,7 +562,10 @@ class InjectCallTransformer(
         listOf(
           ctx.irBuilder.irCallConstructor(
             irCtx.referenceClass(classifier.classId!!)!!.constructors.single(),
-            arguments.dropLast(1).map { it.toIrType(ctx).typeOrFail }
+            arguments.dropLast(1).map {
+              it.toIrType(ctx).typeOrNull
+                ?: irCtx.irBuiltIns.anyType.makeNullable()
+            }
           )
         )
       ).cast()
