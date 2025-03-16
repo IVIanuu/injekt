@@ -42,4 +42,16 @@ import org.junit.*
   ) {
     invokeSingleFile().shouldBeInstanceOf<Foo>()
   }
+
+  @Test fun testComposableInlineFunctionWithInjectParameters() = multiCodegen(
+    """
+      @Composable inline fun foo(foo: Foo = inject): Foo = foo
+    """,
+    """
+      fun invoke(@Provide foo: Foo) = runComposing { foo() }
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile(Foo())
+  }
 }

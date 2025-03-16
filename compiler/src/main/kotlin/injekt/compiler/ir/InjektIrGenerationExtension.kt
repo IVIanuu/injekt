@@ -8,8 +8,13 @@ package injekt.compiler.ir
 
 import injekt.compiler.*
 import org.jetbrains.kotlin.backend.common.extensions.*
+import org.jetbrains.kotlin.backend.common.lower.*
+import org.jetbrains.kotlin.ir.*
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.io.*
 
@@ -23,6 +28,41 @@ class InjektIrGenerationExtension(
     moduleFragment.transform(InjectCallTransformer(compilationDeclarations, pluginContext, ctx), null)
     moduleFragment.patchDeclarationParents()
     moduleFragment.addInjektMetadata(ctx, pluginContext)
+    moduleFragment.fixDefaultValueParameterReturnTypeForCompose(pluginContext)
     moduleFragment.dumpToFiles(dumpDir, ctx)
   }
+}
+
+
+/**
+ * Compose has a bug which makes inliner crash if a default value's type of a parameter
+ * in a inline @Composable function is of type Nothing
+ */
+fun IrModuleFragment.fixDefaultValueParameterReturnTypeForCompose(
+  irCtx: IrPluginContext
+) {
+  transform(
+    object : IrElementTransformerVoid() {
+      override fun visitValueParameter(declaration: IrValueParameter): IrStatement {
+        val result = super.visitValueParameter(declaration) as IrValueParameter
+        val defaultValue = result.defaultValue
+        if (defaultValue == null ||
+          !defaultValue.expression.type.isNothing()) return declaration
+
+        val function = result.parent as IrFunction
+        if (!function.hasAnnotation(InjektFqNames.Composable) ||
+          !function.isInline) return declaration
+
+        declaration.defaultValue = DeclarationIrBuilder(
+          irCtx,
+          result.symbol,
+          defaultValue.startOffset,
+          defaultValue.endOffset
+        ).run { irExprBody(irAs(irNull(), result.type)) }
+
+        return result
+      }
+    },
+    null
+  )
 }

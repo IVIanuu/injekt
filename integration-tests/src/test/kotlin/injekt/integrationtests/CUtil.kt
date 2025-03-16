@@ -198,6 +198,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
                   .also { it.mkdirs() },
                 InjektContext()
               )
+              moduleFragment.fixDefaultValueParameterReturnTypeForCompose(pluginContext)
             }
           }
         )
