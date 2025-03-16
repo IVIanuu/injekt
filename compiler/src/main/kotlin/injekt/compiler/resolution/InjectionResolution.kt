@@ -182,9 +182,7 @@ private fun InjectablesScope.resolveCandidates(
 
   val successes = mutableListOf<ResolutionResult.Success>()
   var failure: ResolutionResult.Failure? = null
-  val maxNesting = candidates.maxOf { it.ownerScope.nesting }
   val remaining = candidates
-    .filter { it.ownerScope.nesting == maxNesting }
     .let {
       try {
         it.sortedWith { a, b -> compareCandidate(a, b) }

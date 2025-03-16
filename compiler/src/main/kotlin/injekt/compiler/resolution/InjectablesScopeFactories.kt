@@ -234,7 +234,8 @@ private fun propertyInjectablesScopeOf(
         )
           .toInjektCallable(ctx)
     },
-    callContext = property.callContext(ctx),
+    callContext = if (property.isLocal) parent.callContext
+    else property.callContext(ctx),
     ctx = ctx
   )
 }

@@ -80,13 +80,15 @@ class ModuleTest {
     invokeSingleFile<(() -> Foo) -> Foo>()({ foo }) shouldBeSameInstanceAs foo
   }
 
-  @Test fun testModuleIdentity() = codegen(
+  @Test fun testModuleIdentity() = singleAndMultiCodegen(
     """
       class FooModule {
         @Provide val foo = Foo()
       }
       @Provide val fooModule1 = FooModule()
       @Provide val fooModule2 = FooModule()
+    """,
+    """
       fun invoke() = create<List<Foo>>()
     """
   ) {
@@ -94,11 +96,13 @@ class ModuleTest {
     foos shouldBe foos.distinct()
   }
 
-  @Test fun testLambdaModuleWithFunctionSubType() = codegen(
+  @Test fun testLambdaModuleWithFunctionSubType() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
       fun createBar(foo: Foo) = Bar(foo)
       @Provide val barProvider: @Provide KFunction1<Foo, Bar> = ::createBar
+    """,
+    """
       fun invoke() = create<Bar>()
     """
   ) {

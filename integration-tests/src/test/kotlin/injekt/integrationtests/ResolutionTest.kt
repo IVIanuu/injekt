@@ -193,17 +193,17 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "a"
   }
 
-  @Test fun testPrefersCloserFailureOverResolvableInjectable() = codegen(
+  @Test fun testPrefersFurtherSuccessOverCloserFailure() = codegen(
     """
       @Provide fun a() = "a"
       
       fun invoke() {
         @Provide fun b(long: Long) = "b"
         create<String>()
-      } 
+      }
     """
   ) {
-    compilationShouldHaveFailed()
+    invokeSingleFile() shouldBe "a"
   }
 
   @Test fun testPrefersCloserInjectableOverBetterType() = codegen(
@@ -220,7 +220,7 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "b"
   }
 
-  @Test fun testAmbiguousInjectables() = codegen(
+  @Test fun testAmbiguousInjectables() = singleAndMultiCodegen(
     """
       @Provide val a = "a"
       @Provide val b = "b"
@@ -351,6 +351,22 @@ class ResolutionTest {
     invokeSingleFile() shouldBe "sub"
   }
 
+  @Test fun testPrefersSuperClassSuccessOverSubClassFailure() = singleAndMultiCodegen(
+    """
+      abstract class SuperClass {
+        @Provide val superValue = "super"
+        @Provide class SubClass : SuperClass() {
+          @Provide fun subValue(value: Int) = "sub"
+        }
+      }
+    """,
+    """
+      fun invoke() = create<String>()
+    """
+  ) {
+    invokeSingleFile() shouldBe "super"
+  }
+
   @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
     """
       @Provide class A(b: B)
@@ -443,5 +459,20 @@ class ResolutionTest {
     config = { withCompose() }
   ) {
     compilationShouldHaveFailed("composable")
+  }
+
+  @Test fun testKeepsCallContextInVariableInitializer() = singleAndMultiCodegen(
+    """
+      @Provide @Composable fun composableFoo(): Foo = Foo()
+    """,
+    """
+      fun invoke() = runComposing {
+        val result = create<Foo>()
+        result
+      }
+    """,
+    config = { withCompose() }
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 }
