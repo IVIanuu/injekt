@@ -335,7 +335,7 @@ class ResolutionTest {
     compilationShouldHaveFailed("no injectable")
   }
 
-  @Test fun testSubClassInjectable() = singleAndMultiCodegen(
+  @Test fun testPrefersSubClassOverSuperClassInjectable() = singleAndMultiCodegen(
     """
       abstract class SuperClass {
         @Provide val superValue = "super"
