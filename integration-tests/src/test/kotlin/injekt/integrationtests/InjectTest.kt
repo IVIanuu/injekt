@@ -23,4 +23,23 @@ import org.junit.*
     val foo = Foo()
     invokeSingleFile(foo) shouldBeSameInstanceAs foo
   }
+
+  @Test fun testDoesNotModifyPropertyAccessors() = codegen(
+    """
+      class MyClass {
+        var foo: Foo? = null
+        fun injectFoo(@Provide bar: Bar): Foo {
+          this.foo = fooFromBar()
+          return foo!!
+        }
+
+        fun fooFromBar(bar: Bar = inject) = bar.foo
+      }
+    """,
+    """
+      fun invoke() = MyClass().injectFoo(Bar(Foo()))
+    """
+  ) {
+    invokeSingleFile().shouldBeInstanceOf<Foo>()
+  }
 }

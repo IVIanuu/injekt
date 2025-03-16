@@ -593,8 +593,7 @@ class InjectCallTransformer(
 
     // some ir transformations reuse the start and end offsets
     // we ensure that were not transforming wrong calls
-    if (!expression.symbol.owner.isPropertyAccessor &&
-      injectionResult.callee.symbol.fqName != result.symbol.owner.kotlinFqName)
+    if (injectionResult.callee.symbol.fqName != result.symbol.owner.kotlinFqName)
       return result
 
     return DeclarationIrBuilder(irCtx, result.symbol).irBlock {
@@ -607,7 +606,7 @@ class InjectCallTransformer(
           irScope = scope
         ).run { result.injectParameters(this, injectionResult.results) }
       } catch (e: Throwable) {
-        throw RuntimeException("Wtf ${expression.dump()}", e)
+        throw RuntimeException("Wtf ${result.dump()}", e)
       }
       rootContext.statements.forEach { +it }
       +result
