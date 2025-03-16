@@ -314,6 +314,15 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (aScopeNesting > bScopeNesting) return -1
   if (bScopeNesting > aScopeNesting) return 1
 
+  if (a is CallableInjectable && b is CallableInjectable) {
+    val ownerA = a.callable.parameterTypes[DISPATCH_RECEIVER_INDEX]
+    val ownerB = b.callable.parameterTypes[DISPATCH_RECEIVER_INDEX]
+    if (ownerA != null && ownerB != null) {
+      if (ownerA.isSubTypeOf(ownerB, ctx)) return -1
+      if (ownerB.isSubTypeOf(ownerA, ctx)) return 1
+    }
+  }
+
   return compareType(
     a.safeAs<CallableInjectable>()?.callable?.originalType,
     b.safeAs<CallableInjectable>()?.callable?.originalType
