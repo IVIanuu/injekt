@@ -335,6 +335,22 @@ class ResolutionTest {
     compilationShouldHaveFailed("no injectable")
   }
 
+  @Test fun testSubClassInjectable() = singleAndMultiCodegen(
+    """
+      abstract class SuperClass {
+        @Provide val superValue = "super"
+        @Provide class SubClass : SuperClass() {
+          @Provide val subValue = "sub"
+        }
+      }
+    """,
+    """
+      fun invoke() = create<String>()
+    """
+  ) {
+    invokeSingleFile() shouldBe "sub"
+  }
+
   @Test fun testCircularDependencyFails() = singleAndMultiCodegen(
     """
       @Provide class A(b: B)
