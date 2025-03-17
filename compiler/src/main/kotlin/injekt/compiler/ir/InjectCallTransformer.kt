@@ -64,7 +64,7 @@ class InjectCallTransformer(
 
   private fun ResolutionResult.Success.Value.usageKey(ctx: RootContext): Any =
     listOf(candidate::class, candidate.type, highestScope(ctx))
-  
+
   private fun ResolutionResult.Success.Value.highestScope(ctx: RootContext): InjectablesScope =
     ctx.highestScope.getOrPut(this) {
       val anchorScopes = mutableSetOf<InjectablesScope>()
@@ -188,8 +188,8 @@ class InjectCallTransformer(
             )
         }
 
-        body = DeclarationIrBuilder(irCtx, symbol).irBlockBody {
-          +irReturn(unwrappedExpression())
+        body = DeclarationIrBuilder(irCtx, symbol).run {
+          irExprBody(irReturn(unwrappedExpression()))
         }
 
         statements += this
@@ -257,11 +257,20 @@ class InjectCallTransformer(
           }
       }
 
-      this.body = irBuilder.irBlockBody {
-        +irReturn(
-          (dependencyScopeContext?.run { createExpression() } ?: createExpression())
-            .also { dependencyScopeContext?.statements?.let { +it } }
+      this.body = irBuilder.run {
+        val expression = irReturn(
+          dependencyScopeContext?.run { createExpression() }
+            ?: createExpression()
         )
+
+        if (dependencyScopeContext == null || dependencyScopeContext.statements.isEmpty())
+          irExprBody(expression)
+        else {
+          irBlockBody {
+            +dependencyScopeContext.statements
+            +expression
+          }
+        }
       }
     }
 
@@ -413,7 +422,7 @@ class InjectCallTransformer(
     else -> when {
       injectable.callable.symbol is FirPropertySymbol &&
           injectable.callable.symbol.isLocal ->
-            localVariableExpression(injectable, injectable.callable.symbol)
+        localVariableExpression(injectable, injectable.callable.symbol)
       injectable.callable.symbol is FirValueParameterSymbol ->
         parameterExpression(injectable, injectable.callable.symbol)
       else -> functionExpression(result, injectable, injectable.callable.symbol)
@@ -501,7 +510,7 @@ class InjectCallTransformer(
 
   private inline fun <reified T : FirBasedSymbol<*>> IrSymbol.toFirSymbol() =
     (owner.safeAs<IrMetadataSourceOwner>()?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol ?:
-      owner.safeAs<AbstractFir2IrLazyDeclaration<*>>()?.fir?.safeAs<FirMemberDeclaration>()?.symbol)
+    owner.safeAs<AbstractFir2IrLazyDeclaration<*>>()?.fir?.safeAs<FirMemberDeclaration>()?.symbol)
       ?.safeAs<T>()
 
   private fun FirClassifierSymbol<*>.toIrClassifierSymbol(): IrSymbol = when (this) {
@@ -546,7 +555,7 @@ class InjectCallTransformer(
       .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this }
       ?.cast<IrPropertySymbol>()
       ?: irCtx.referenceProperties(callableId)
-      .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this })
+        .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this })
       ?.owner
       ?.getter
       ?.symbol
@@ -596,7 +605,7 @@ class InjectCallTransformer(
     if (injectionResult.callee.symbol.fqName != result.symbol.owner.kotlinFqName)
       return result
 
-    return DeclarationIrBuilder(irCtx, result.symbol).irBlock {
+    return DeclarationIrBuilder(irCtx, result.symbol).run {
       val rootContext = RootContext(injectionResult, result.startOffset)
       try {
         ScopeContext(
@@ -608,8 +617,12 @@ class InjectCallTransformer(
       } catch (e: Throwable) {
         throw RuntimeException("Wtf ${result.dump()}", e)
       }
-      rootContext.statements.forEach { +it }
-      +result
+
+      return if (rootContext.statements.isEmpty()) result
+      else irBlock {
+        rootContext.statements.forEach { +it }
+        +result
+      }
     }
   }
 }
