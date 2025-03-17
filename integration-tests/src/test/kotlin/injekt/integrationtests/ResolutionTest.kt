@@ -197,9 +197,9 @@ class ResolutionTest {
     """
       @Provide fun a() = "a"
       
-      fun invoke() {
+      fun invoke(): String {
         @Provide fun b(long: Long) = "b"
-        create<String>()
+        return create<String>()
       }
     """
   ) {
