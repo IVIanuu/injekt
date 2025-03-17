@@ -18,7 +18,7 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
           context.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
     }
     .forEach { irFile ->
-      val file = File(irFile.fileEntry.name)
+      val sourceFile = File(irFile.fileEntry.name)
       val content = try {
         buildString {
           appendLine(
@@ -33,16 +33,16 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
       } catch (e: Throwable) {
         e.stackTraceToString()
       }
-      val newFile = dumpDir
+      val dumpFile = dumpDir
         .resolve(irFile.packageFqName.asString().replace(".", "/"))
         .also { it.mkdirs() }
-        .resolve(file.name.removeSuffix(".kt"))
+        .resolve(sourceFile.name.removeSuffix(".kt") + ".dump")
       try {
-        newFile.createNewFile()
-        newFile.writeText(content)
-        println("Generated $newFile:\n$content")
+        dumpFile.createNewFile()
+        dumpFile.writeText(content)
+        println("Generated $dumpFile:\n$content")
       } catch (e: Throwable) {
-        throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content", e)
+        throw RuntimeException("Failed to create file ${dumpFile.absolutePath}\n$content", e)
       }
     }
 }
