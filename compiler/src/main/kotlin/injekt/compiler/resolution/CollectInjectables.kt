@@ -62,11 +62,8 @@ fun InjektCallable.collectModuleInjectables(
   scope: InjectablesScope,
   addInjectable: (InjektCallable) -> Unit,
   addAddOnInjectable: (InjektCallable) -> Unit,
-  seenTypes: MutableSet<InjektType> = mutableSetOf(),
   ctx: InjektContext
 ) {
-  if (!seenTypes.add(type)) return
-
   if (typeArguments.any { it.key.isAddOn && it.value == it.key.defaultType }) {
     addAddOnInjectable(this)
     return
@@ -101,7 +98,6 @@ fun InjektCallable.collectModuleInjectables(
           scope = scope,
           addInjectable = addInjectable,
           addAddOnInjectable = addAddOnInjectable,
-          seenTypes = seenTypes,
           ctx = ctx
         )
     }
