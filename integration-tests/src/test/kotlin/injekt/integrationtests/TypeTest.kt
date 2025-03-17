@@ -184,6 +184,10 @@ class TypeTest {
     floatType shouldNotBeSubTypeOf comparable.withArguments(intType)
   }
 
+  @Test fun testStarProjectionIsNotSubTypeNormalType() = typeTest {
+    scope.withArguments(STAR_PROJECTION_TYPE) shouldNotBeSubTypeOf scope.withArguments(any)
+  }
+
   @Test fun testSimpleInference() = typeTest {
     val superType = typeParameter()
     val map = runInference(stringType, superType)
@@ -345,6 +349,7 @@ class TypeCheckerTestContext(session: FirSession) {
   val mapType = typeFor(StandardNames.FqNames.map)
   val nothing = typeFor(StandardNames.FqNames.nothing.toSafe())
   val nullableNothing = nothing.nullable()
+  val scope = typeFor(FqName("injekt.common.Scope"))
 
   val tag1 = typeFor(FqName("injekt.integrationtests.Tag1"))
   val tag2 = typeFor(FqName("injekt.integrationtests.Tag2"))

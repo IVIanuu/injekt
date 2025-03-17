@@ -58,39 +58,6 @@ fun InjektType.collectModuleInjectables(
   }
 }
 
-fun injectableReceiverOf(
-  index: Int,
-  type: ConeKotlinType,
-  containingFunctionSymbol: FirFunctionSymbol<*>,
-  startOffset: Int,
-  endOffset: Int,
-  ctx: InjektContext
-): FirValueParameterSymbol = buildValueParameter {
-  resolvePhase = FirResolvePhase.BODY_RESOLVE
-  moduleData = ctx.session.moduleData
-  origin = FirDeclarationOrigin.Source
-  isCrossinline = false
-  isNoinline = false
-  isVararg = false
-  source = containingFunctionSymbol.source!!.fakeElement(
-    KtFakeSourceElementKind.ReceiverFromType,
-    startOffset,
-    endOffset
-  )
-
-  name = when (index) {
-    DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-    EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-    else -> throw AssertionError("Unexpected receiver index $index")
-  }
-  symbol = FirValueParameterSymbol(name)
-  returnTypeRef = type.toFirResolvedTypeRef()
-  this.containingFunctionSymbol = containingFunctionSymbol
-
-  if (index == EXTENSION_RECEIVER_INDEX)
-    containingFunctionSymbol.receiverParameter?.annotations?.let { annotations += it }
-}.symbol
-
 fun InjektCallable.collectModuleInjectables(
   scope: InjectablesScope,
   addInjectable: (InjektCallable) -> Unit,
@@ -106,9 +73,6 @@ fun InjektCallable.collectModuleInjectables(
 
   val nextCallable = copy(type = type.copy(uniqueId = UUID.randomUUID().toString()))
   addInjectable(nextCallable)
-
-  if (nextCallable.parameterTypes.count { it.key != DISPATCH_RECEIVER_INDEX } > 0)
-    return
 
   nextCallable
     .type
@@ -183,3 +147,36 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
       )
     }
   }
+
+fun injectableReceiverOf(
+  index: Int,
+  type: ConeKotlinType,
+  containingFunctionSymbol: FirFunctionSymbol<*>,
+  startOffset: Int,
+  endOffset: Int,
+  ctx: InjektContext
+): FirValueParameterSymbol = buildValueParameter {
+  resolvePhase = FirResolvePhase.BODY_RESOLVE
+  moduleData = ctx.session.moduleData
+  origin = FirDeclarationOrigin.Source
+  isCrossinline = false
+  isNoinline = false
+  isVararg = false
+  source = containingFunctionSymbol.source!!.fakeElement(
+    KtFakeSourceElementKind.ReceiverFromType,
+    startOffset,
+    endOffset
+  )
+
+  name = when (index) {
+    DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
+    EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
+    else -> throw AssertionError("Unexpected receiver index $index")
+  }
+  symbol = FirValueParameterSymbol(name)
+  returnTypeRef = type.toFirResolvedTypeRef()
+  this.containingFunctionSymbol = containingFunctionSymbol
+
+  if (index == EXTENSION_RECEIVER_INDEX)
+    containingFunctionSymbol.receiverParameter?.annotations?.let { annotations += it }
+}.symbol

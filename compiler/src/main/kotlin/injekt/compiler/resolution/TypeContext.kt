@@ -69,7 +69,8 @@ private fun InjektType.isSubTypeOfSameClassifier(
   for (i in arguments.indices) {
     val argument = arguments[i]
     val parameter = superType.arguments[i]
-    if (argument.isStarProjection || parameter.isStarProjection) continue
+    if (parameter.isStarProjection) continue
+    if (argument.isStarProjection) return false
     val originalParameter = superType.classifier.defaultType.arguments[i]
     val argumentOk = when (effectiveVariance(parameter.variance, argument.variance, originalParameter.variance)) {
       TypeVariance.IN -> parameter.isSubTypeOf(argument, ctx)
