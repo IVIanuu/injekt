@@ -42,7 +42,7 @@ fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
         newFile.writeText(content)
         println("Generated $newFile:\n$content")
       } catch (e: Throwable) {
-        throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content")
+        throw RuntimeException("Failed to create file ${newFile.absolutePath}\n$content", e)
       }
     }
 }
