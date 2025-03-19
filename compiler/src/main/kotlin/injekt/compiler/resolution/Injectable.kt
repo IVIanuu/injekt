@@ -153,7 +153,7 @@ fun InjektCallable.injectableRequests(exclude: Set<Int>, ctx: InjektContext): Li
       parameterName = when (index) {
         DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
         EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-        else -> valueParameter!!.name
+        else -> valueParameter?.name ?: return@map null
       },
       parameterIndex = index,
       isRequired = valueParameter == null ||
