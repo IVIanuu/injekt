@@ -7,13 +7,15 @@ package injekt.ksp
 import com.google.auto.service.*
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.impl.kotlin.*
 import injekt.compiler.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
 @OptIn(UnsafeCastFunction::class) class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false)
+    (resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false) +
+        resolver.getSymbolsWithAnnotation(InjektFqNames.Tag.asFqNameString(), false))
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -46,7 +48,7 @@ import java.util.*
         for ((i, injectable) in injectables.withIndex()) {
           val hash = injectable.declarationHash()
 
-          appendLine("// $hash")
+          appendLine("/**$hash*/")
           appendLine("fun `${InjektFqNames.InjectablesLookup.callableName}`(")
           appendLine("  marker: $markerName,")
           repeat(i + 1) {
@@ -93,6 +95,13 @@ import java.util.*
         append(type.typeHash())
       }
     }
+
+    if (Modifier.INLINE in modifiers)
+      append(
+        this@declarationHash.cast<KSDeclarationImpl>()
+          .ktDeclaration
+          .text
+      )
   }
 
   private fun KSTypeReference.typeHash(): String = buildString {
