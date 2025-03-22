@@ -28,6 +28,10 @@ interface Scope<N> : ScopeDisposable {
   @InternalScopeApi fun put(key: Any, value: Any)
 
   @InternalScopeApi fun unlock()
+
+  companion object {
+    @InternalScopeApi val NULL = Any()
+  }
 }
 
 @OptIn(InternalScopeApi::class)
@@ -37,7 +41,7 @@ inline fun <T> Scope<*>.get(key: Any, init: () -> T): T {
     lock()
     get(key)?.let { return valueOrNull(it) }
 
-    val value = init() ?: NULL
+    val value = init() ?: Scope.NULL
     put(key, value)
 
     valueOrNull(value)
@@ -46,14 +50,12 @@ inline fun <T> Scope<*>.get(key: Any, init: () -> T): T {
   }
 }
 
-@PublishedApi internal fun <T> valueOrNull(value: Any): T {
+@InternalScopeApi @PublishedApi internal fun <T> valueOrNull(value: Any): T {
   @Suppress("UNCHECKED_CAST")
-  return (if (value !== NULL) value else null) as T
+  return (if (value !== Scope.NULL) value else null) as T
 }
 
 @RequiresOptIn annotation class InternalScopeApi
-
-@PublishedApi internal val NULL = Any()
 
 @OptIn(InternalScopeApi::class) private class ScopeImpl<N> : Scope<N> {
   private val values = hashMapOf<Any, Any>()
