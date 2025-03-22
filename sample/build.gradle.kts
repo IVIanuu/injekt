@@ -27,6 +27,10 @@ android {
   kotlinOptions { jvmTarget = "17" }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+  kotlinOptions.freeCompilerArgs += "-Xcontext-parameters"
+}
+
 dependencies {
   implementation(project(":common"))
   implementation(libs.androidxActivityCompose)

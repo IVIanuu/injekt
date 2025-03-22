@@ -33,8 +33,8 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
     return true
 
   if (this is FirValueParameterSymbol) {
-    val metadata = containingFunctionSymbol.callableMetadata(ctx)
-    val index = containingFunctionSymbol.valueParameterSymbols.indexOf(this)
+    val metadata = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().callableMetadata(ctx)
+    val index = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(this)
     if (index in metadata.injectParameters)
       return true
   }
@@ -53,7 +53,7 @@ val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
     is FirClassLikeSymbol<*> -> classId.asSingleFqName()
     is FirConstructorSymbol -> callableId.asSingleFqName().parent().child(SpecialNames.INIT)
-    is FirValueParameterSymbol -> containingFunctionSymbol.fqName.child(name)
+    is FirValueParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
     is FirCallableSymbol<*> -> callableId.asSingleFqName()
     is FirTypeParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
     else -> throw AssertionError("Unexpected $this")
@@ -164,9 +164,9 @@ fun findClassifier(
 
 fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> =
   ctx.cached("declarations_in_fq_name", fqName) {
-    val packageFqName = ctx.session.symbolProvider.getPackage(fqName)
+    val hasPackage = ctx.session.symbolProvider.hasPackage(fqName)
 
-    if (fqName.isRoot || packageFqName != null)
+    if (fqName.isRoot || hasPackage)
       return@cached buildList {
         ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
           ?.mapNotNull {

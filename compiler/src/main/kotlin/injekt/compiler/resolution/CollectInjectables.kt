@@ -151,7 +151,7 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
 fun injectableReceiverOf(
   index: Int,
   type: ConeKotlinType,
-  containingFunctionSymbol: FirFunctionSymbol<*>,
+  containingDeclarationSymbol: FirFunctionSymbol<*>,
   startOffset: Int,
   endOffset: Int,
   ctx: InjektContext
@@ -162,7 +162,7 @@ fun injectableReceiverOf(
   isCrossinline = false
   isNoinline = false
   isVararg = false
-  source = containingFunctionSymbol.source!!.fakeElement(
+  source = containingDeclarationSymbol.source!!.fakeElement(
     KtFakeSourceElementKind.ReceiverFromType,
     startOffset,
     endOffset
@@ -175,8 +175,8 @@ fun injectableReceiverOf(
   }
   symbol = FirValueParameterSymbol(name)
   returnTypeRef = type.toFirResolvedTypeRef()
-  this.containingFunctionSymbol = containingFunctionSymbol
+  this.containingDeclarationSymbol = containingDeclarationSymbol
 
   if (index == EXTENSION_RECEIVER_INDEX)
-    containingFunctionSymbol.receiverParameter?.annotations?.let { annotations += it }
+    containingDeclarationSymbol.receiverParameter?.annotations?.let { annotations += it }
 }.symbol

@@ -167,7 +167,7 @@ fun multiCodegen(
 fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
   fun baseCompilation(block: KotlinCompilation.() -> Unit) = KotlinCompilation().apply {
     inheritClassPath = true
-    jvmTarget = "1.8"
+    jvmTarget = "11"
     verbose = false
     block()
   }
@@ -180,7 +180,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     }
 
     supportsK2 = false
-    languageVersion = "1.9"
+    languageVersion = "2.0"
 
     compilerPluginRegistrars += object : CompilerPluginRegistrar() {
       override val supportsK2: Boolean

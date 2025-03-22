@@ -482,7 +482,7 @@ class InjectCallTransformer(
           else -> null
         }
       } else null)
-      ?: lambdaParametersMap[symbol] ?: symbol.containingFunctionSymbol.toIrCallableSymbol()
+      ?: lambdaParametersMap[symbol] ?: symbol.containingDeclarationSymbol.toIrCallableSymbol()
         .owner
         .valueParameters
         .singleOrNull { it.name == symbol.name }
@@ -537,7 +537,7 @@ class InjectCallTransformer(
     else -> throw AssertionError("Unexpected classifier $this")
   }
 
-  private fun FirCallableSymbol<*>.toIrCallableSymbol(): IrFunctionSymbol = when (this) {
+  private fun FirBasedSymbol<*>.toIrCallableSymbol(): IrFunctionSymbol = when (this) {
     is FirConstructorSymbol -> compilationDeclarations.declarations
       .singleOrNull { it.toFirSymbol<FirConstructorSymbol>() == this }
       ?.cast<IrConstructorSymbol>()
