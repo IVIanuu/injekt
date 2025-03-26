@@ -8,7 +8,8 @@ import injekt.*
 import kotlinx.atomicfu.locks.*
 import kotlin.annotation.AnnotationTarget.*
 
-@Tag @Target(CLASS, CONSTRUCTOR, TYPE) annotation class Scoped<N> {
+@Tag @Target(CLASS, CONSTRUCTOR, TYPE)
+annotation class Scoped<N> {
   @Provide companion object {
     @Provide inline fun <@AddOn T : @Scoped<N> S, S, N> scoped(
       scope: Scope<N>,
