@@ -214,7 +214,7 @@ class InjectableTest {
 
   @Test fun testInjectableFunctionExtensionReceiver() = singleAndMultiCodegen(
     """
-      fun @receiver:Provide Foo.bar() = Bar(create())
+      fun Foo.bar() = Bar(create())
     """,
     """
       fun invoke() = with(Foo()) { bar().foo }
@@ -225,7 +225,7 @@ class InjectableTest {
 
   @Test fun testInjectablePropertyExtensionReceiver() = singleAndMultiCodegen(
     """
-      val @receiver:Provide Foo.bar get() = Bar(create())
+      val Foo.bar get() = Bar(create())
     """,
     """
       fun invoke() = with(Foo()) { bar.foo }
@@ -325,8 +325,8 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testInjectableLambdaReceiver() = singleAndMultiCodegen("""
-      fun lambdaOf(block: (@Provide Foo).() -> Foo) = block
+  @Test fun testInjectableLambdaExtensionReceiver() = singleAndMultiCodegen("""
+      fun lambdaOf(block: Foo.() -> Foo) = block
     """,
     """
       fun invoke() = lambdaOf { create<Foo>() }(Foo())
@@ -354,8 +354,8 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testInjectableFunInterfaceReceiver() = singleAndMultiCodegen("""
-      fun interface Lambda<T> { fun @receiver:Provide T.invoke(): T }
+  @Test fun testInjectableFunInterfaceExtensionReceiver() = singleAndMultiCodegen("""
+      fun interface Lambda<T> { fun T.invoke(): T }
     """,
     """
       fun invoke() = with(Lambda<Foo> { create<Foo>() }) { with(Foo()) { invoke() } }

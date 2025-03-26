@@ -123,7 +123,7 @@ class ResolutionTest {
   @Test fun testPrefersFunctionExtensionReceiverInjectableOverInternalInjectable() = codegen(
     """
       @Provide val internalFoo = Foo()
-      fun @receiver:Provide Foo.invoke() = create<Foo>()
+      fun Foo.invoke() = create<Foo>()
     """
   ) {
     val expected = Foo()
@@ -133,7 +133,7 @@ class ResolutionTest {
   @Test fun testPrefersFunctionExtensionReceiverInjectableOverClassInjectable() = codegen(
     """
       class MyClass(@property:Provide val classFoo: Foo = Foo()) {
-        fun @receiver:Provide Foo.resolve() = create<Foo>()
+        fun Foo.resolve() = create<Foo>()
       }
 
       fun invoke(functionFoo: Foo): Foo {

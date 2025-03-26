@@ -181,10 +181,7 @@ private fun functionInjectablesScopeOf(
     else function.typeParameterSymbols)
       .map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList<FirValueParameterSymbol> {
-      if (function.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true ||
-        (function.receiverParameter != null &&
-            (lambdaValueParameterTypes?.get(0)?.isProvide == true ||
-                funInterfaceProvideValueParameters?.contains(EXTENSION_RECEIVER_INDEX) == true)))
+      if (function.receiverParameter != null)
         this += injectableReceiverOf(
           EXTENSION_RECEIVER_INDEX,
           function.receiverParameter!!.typeRef.coneType,
@@ -223,7 +220,7 @@ private fun propertyInjectablesScopeOf(
     owner = property,
     typeParameters = property.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList {
-      if (property.receiverParameter?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true)
+      if (property.receiverParameter != null)
         this += injectableReceiverOf(
           EXTENSION_RECEIVER_INDEX,
           property.receiverParameter!!.typeRef.coneType,
