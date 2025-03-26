@@ -49,7 +49,7 @@ val inject: Nothing = throw IllegalStateException("injekt compiler intrinsic")
 inline fun <T> create(x: T = inject): T = x
 
 /**
- * Marks the declaration as an tag which can then be used
+ * Marks the declaration as a tag which can then be used
  * to distinct types
  *
  * For example:
