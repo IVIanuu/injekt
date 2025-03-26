@@ -7,12 +7,10 @@
 package injekt.compiler.resolution
 
 import injekt.compiler.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.expressions.*
-import org.jetbrains.kotlin.fir.expressions.impl.*
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
@@ -148,30 +146,6 @@ private fun functionInjectablesScopeOf(
   "function_scope",
   function to parent.name
 ) {
-  val lambdaValueParameterTypes = function.safeAs<FirAnonymousFunctionSymbol>()
-    ?.fir?.typeRef?.coneType?.typeArguments?.map { it.toInjektType(ctx) }
-  val funInterfaceProvideValueParameters = function.safeAs<FirAnonymousFunctionSymbol>()
-    ?.let {
-      containingElements.getOrNull(containingElements.indexOf(function.fir) - 2)
-        ?.safeAs<FirFunctionCallImpl>()
-        ?.resolvedType
-        ?.toRegularClassSymbol(ctx.session)
-        ?.takeIf { it.isFun }
-        ?.declarationSymbols
-        ?.filterIsInstance<FirFunctionSymbol<*>>()
-        ?.firstOrNull { it.resolvedStatus.modality == Modality.ABSTRACT }
-        ?.let { funInterfaceFunction ->
-          buildSet {
-            if (funInterfaceFunction.receiverParameter
-                ?.hasAnnotation(InjektFqNames.Provide, ctx.session) == true)
-              this += EXTENSION_RECEIVER_INDEX
-            funInterfaceFunction.valueParameterSymbols.forEachIndexed { index, valueParameter ->
-              if (valueParameter.isInjectable(ctx))
-                this += index
-            }
-          }
-        }
-    }
   injectableScopeOrParentIfEmptyAndSameCallContext(
     name = "${if (function is FirConstructorSymbol) "CONSTRUCTOR" else "FUNCTION"} ${function.fqName}",
     parent = parent,
@@ -180,7 +154,7 @@ private fun functionInjectablesScopeOf(
       function.resolvedReturnType.toRegularClassSymbol(ctx.session)!!.typeParameterSymbols
     else function.typeParameterSymbols)
       .map { it.toInjektClassifier(ctx) },
-    initialInjectables = buildList<FirValueParameterSymbol> {
+    initialInjectables = buildList {
       if (function.receiverParameter != null)
         this += injectableReceiverOf(
           EXTENSION_RECEIVER_INDEX,
@@ -189,18 +163,17 @@ private fun functionInjectablesScopeOf(
           function.receiverParameter!!.source!!.startOffset,
           function.receiverParameter!!.source!!.endOffset,
           ctx
-        )
+        ).toInjektCallable(ctx)
+
+      this += function.resolvedContextParameters
+        .map { it.symbol.toInjektCallable(ctx) }
 
       this += function.valueParameterSymbols
         .filterIndexed { index, valueParameter ->
-          (valueParameter.isInjectable(ctx) ||
-              lambdaValueParameterTypes?.get(
-                index + (if (function.receiverParameter != null) 1 else 0)
-              )?.isProvide == true ||
-              funInterfaceProvideValueParameters?.contains(index) == true)
+          valueParameter.isInjectable(ctx)
         }
-    }
-      .map { it.toInjektCallable(ctx) },
+        .map { it.toInjektCallable(ctx) }
+    },
     callContext = function.callContext(ctx),
     ctx = ctx
   )
@@ -230,6 +203,9 @@ private fun propertyInjectablesScopeOf(
           ctx
         )
           .toInjektCallable(ctx)
+
+      this += property.resolvedContextParameters
+        .map { it.symbol.toInjektCallable(ctx) }
     },
     callContext = if (property.isLocal) parent.callContext
     else property.callContext(ctx),

@@ -169,6 +169,7 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
     inheritClassPath = true
     jvmTarget = "11"
     verbose = false
+    kotlincArguments += "-Xcontext-parameters"
     block()
   }
 

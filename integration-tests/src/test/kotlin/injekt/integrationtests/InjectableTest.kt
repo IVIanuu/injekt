@@ -223,9 +223,31 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testInjectableFunctionContextParameter() = singleAndMultiCodegen(
+    """
+      context(_: Foo) fun bar() = Bar(create())
+    """,
+    """
+      fun invoke() = with(Foo()) { bar().foo }
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testInjectablePropertyExtensionReceiver() = singleAndMultiCodegen(
     """
       val Foo.bar get() = Bar(create())
+    """,
+    """
+      fun invoke() = with(Foo()) { bar.foo }
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectablePropertyContextParameter() = singleAndMultiCodegen(
+    """
+      context(_: Foo) val bar get() = Bar(create())
     """,
     """
       fun invoke() = with(Foo()) { bar.foo }
@@ -308,23 +330,6 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testInjectableLambdaParameterUseSite() = codegen("""
-      fun invoke() = { foo: @Provide Foo -> create<Foo>() }(Foo())
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testInjectableLambdaParameterDeclarationSite() = singleAndMultiCodegen("""
-      fun lambdaOf(block: (@Provide Foo).() -> Foo) = block
-    """,
-    """
-      fun invoke() = lambdaOf { create<Foo>() }(Foo())
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
   @Test fun testInjectableLambdaExtensionReceiver() = singleAndMultiCodegen("""
       fun lambdaOf(block: Foo.() -> Foo) = block
     """,
@@ -335,30 +340,11 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
-  @Test fun testInjectableFunInterfaceParameterUseSite() = codegen(
-    """
-      fun interface Lambda<T> { fun invoke(t: T): T }
-      fun invoke() = Lambda<Foo> { foo: @Provide Foo -> create<Foo>() }.invoke(Foo())
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testInjectableFunInterfaceParameterDeclarationSite() = singleAndMultiCodegen("""
-      fun interface Lambda<T> { fun invoke(@Provide t: T): T }
+  @Test fun testInjectableLambdaContextParameter() = singleAndMultiCodegen("""
+      fun lambdaOf(block: context(Foo) () -> Foo) = block
     """,
     """
-      fun invoke() = Lambda<Foo> { create<Foo>() }.invoke(Foo())
-    """
-  ) {
-    invokeSingleFile().shouldBeTypeOf<Foo>()
-  }
-
-  @Test fun testInjectableFunInterfaceExtensionReceiver() = singleAndMultiCodegen("""
-      fun interface Lambda<T> { fun T.invoke(): T }
-    """,
-    """
-      fun invoke() = with(Lambda<Foo> { create<Foo>() }) { with(Foo()) { invoke() } }
+      fun invoke() = lambdaOf { create<Foo>() }(Foo())
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

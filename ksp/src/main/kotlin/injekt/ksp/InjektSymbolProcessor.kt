@@ -96,12 +96,13 @@ import java.util.*
       }
     }
 
-    if (Modifier.INLINE in modifiers)
-      append(
-        this@declarationHash.cast<KSDeclarationImpl>()
-          .ktDeclaration
-          .text
-      )
+    if (this@declarationHash is KSDeclarationImpl) {
+      val text = this@declarationHash.cast<KSDeclarationImpl>()
+        .ktDeclaration
+        .text
+      if (Modifier.INLINE in modifiers || "context" in text)
+        append(text)
+    }
   }
 
   private fun KSTypeReference.typeHash(): String = buildString {
