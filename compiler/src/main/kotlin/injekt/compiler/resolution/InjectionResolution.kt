@@ -313,8 +313,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   if (bScopeNesting > aScopeNesting) return 1
 
   if (a is CallableInjectable && b is CallableInjectable) {
-    val ownerA = a.callable.parameterTypes[DISPATCH_RECEIVER_INDEX]
-    val ownerB = b.callable.parameterTypes[DISPATCH_RECEIVER_INDEX]
+    val ownerA = a.callable.parameterTypes[DISPATCH_RECEIVER_NAME]
+    val ownerB = b.callable.parameterTypes[DISPATCH_RECEIVER_NAME]
     if (ownerA != null && ownerB != null) {
       if (ownerA.isSubTypeOf(ownerB, ctx)) return -1
       if (ownerB.isSubTypeOf(ownerA, ctx)) return 1

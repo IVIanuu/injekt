@@ -47,6 +47,28 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testInjectableFunctionWithExtensionReceiver() = singleAndMultiCodegen(
+    """
+      @Provide fun Foo.bar() = Bar(this)
+    """,
+    """
+      fun invoke() = with(Foo()) { create<Bar>() }.foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectableFunctionWithContextParameter() = singleAndMultiCodegen(
+    """
+      context(foo: Foo) @Provide fun bar() = Bar(foo)
+    """,
+    """
+      fun invoke() = with(Foo()) { create<Bar>() }.foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testTopLevelInjectableProperty() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
@@ -66,6 +88,28 @@ class InjectableTest {
     """,
     """
       fun invoke() = create<Foo>() 
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectablePropertyWithExtensionReceiver() = singleAndMultiCodegen(
+    """
+      @Provide val Foo.bar get() = Bar(this)
+    """,
+    """
+      fun invoke() = with(Foo()) { create<Bar>() }.foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectablePropertyWithContextParameter() = singleAndMultiCodegen(
+    """
+      context(foo: Foo) @Provide val bar get() = Bar(foo)
+    """,
+    """
+      fun invoke() = with(Foo()) { create<Bar>() }.foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

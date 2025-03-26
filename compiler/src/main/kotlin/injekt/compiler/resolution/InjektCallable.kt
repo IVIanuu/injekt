@@ -13,10 +13,10 @@ data class InjektCallable(
   val symbol: FirCallableSymbol<*>,
   val type: InjektType,
   val originalType: InjektType,
-  val parameterTypes: Map<Int, InjektType>,
+  val parameterTypes: Map<Name, InjektType>,
   val typeArguments: Map<InjektClassifier, InjektType>,
   val chainFqName: FqName,
-  val injectParameters: Set<Int>,
+  val injectParameters: Set<Name>,
   val callContext: CallContext
 )
 

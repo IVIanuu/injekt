@@ -122,7 +122,7 @@ class InjectCallTransformer(
         }
 
         if (!result.candidate.type.isNullableType ||
-          result.dependencyResults.keys.firstOrNull()?.parameterIndex != DISPATCH_RECEIVER_INDEX) expression
+          result.dependencyResults.keys.none { it.parameterName == DISPATCH_RECEIVER_NAME }) expression
         else irBuilder.irBlock {
           expression as IrFunctionAccessExpression
           val tmpDispatchReceiver = irTemporary(expression.dispatchReceiver!!)
@@ -146,13 +146,13 @@ class InjectCallTransformer(
     for ((request, result) in results) {
       if (result !is ResolutionResult.Success.Value) continue
       val expression = ctx.expressionFor(result)
-      when (request.parameterIndex) {
-        DISPATCH_RECEIVER_INDEX -> dispatchReceiver = expression
-        EXTENSION_RECEIVER_INDEX -> extensionReceiver = expression
+      when (request.parameterName) {
+        DISPATCH_RECEIVER_NAME -> dispatchReceiver = expression
+        EXTENSION_RECEIVER_NAME -> extensionReceiver = expression
         else -> putValueArgument(
           symbol.owner
             .valueParameters
-            .first { it.injektIndex() == request.parameterIndex }
+            .first { it.name == request.parameterName }
             .index,
           expression
         )

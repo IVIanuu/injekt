@@ -45,10 +45,10 @@ fun InjektType.collectModuleInjectables(
           this@buildList += declaration.toInjektCallable(ctx)
             .substitute(substitutionMap)
             .let { callable ->
-              if (callable.parameterTypes[DISPATCH_RECEIVER_INDEX] == this) callable
+              if (callable.parameterTypes[DISPATCH_RECEIVER_NAME] == this) callable
               else callable.copy(
                 parameterTypes = callable.parameterTypes.toMutableMap()
-                  .also { it[DISPATCH_RECEIVER_INDEX] = this }
+                  .also { it[DISPATCH_RECEIVER_NAME] = this }
               )
             }
         }
@@ -86,11 +86,11 @@ fun InjektCallable.collectModuleInjectables(
           originalType = if (nextCallable.type.isNullableType) innerCallable.type.withNullability(true)
           else innerCallable.type,
           parameterTypes = if (nextCallable.type.isNullableType &&
-            DISPATCH_RECEIVER_INDEX in innerCallable.parameterTypes) innerCallable.parameterTypes
+            DISPATCH_RECEIVER_NAME in innerCallable.parameterTypes) innerCallable.parameterTypes
             .toMutableMap().apply {
               put(
-                DISPATCH_RECEIVER_INDEX,
-                innerCallable.parameterTypes[DISPATCH_RECEIVER_INDEX]!!.withNullability(true)
+                DISPATCH_RECEIVER_NAME,
+                innerCallable.parameterTypes[DISPATCH_RECEIVER_NAME]!!.withNullability(true)
               )
             } else innerCallable.parameterTypes
         )
@@ -149,7 +149,7 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
   }
 
 fun injectableReceiverOf(
-  index: Int,
+  name: Name,
   type: ConeKotlinType,
   containingDeclarationSymbol: FirFunctionSymbol<*>,
   startOffset: Int,
@@ -168,15 +168,8 @@ fun injectableReceiverOf(
     endOffset
   )
 
-  name = when (index) {
-    DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-    EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-    else -> throw AssertionError("Unexpected receiver index $index")
-  }
+  this.name = name
   symbol = FirValueParameterSymbol(name)
   returnTypeRef = type.toFirResolvedTypeRef()
   this.containingDeclarationSymbol = containingDeclarationSymbol
-
-  if (index == EXTENSION_RECEIVER_INDEX)
-    containingDeclarationSymbol.receiverParameter?.annotations?.let { annotations += it }
 }.symbol

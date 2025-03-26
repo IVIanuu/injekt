@@ -26,8 +26,8 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 class CallableMetadata(
   val symbol: FirCallableSymbol<*>,
   val type: InjektType,
-  val parameterTypes: Map<Int, InjektType>,
-  val injectParameters: Set<Int>
+  val parameterTypes: Map<Name, InjektType>,
+  val injectParameters: Set<Name>
 )
 
 fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata =
@@ -52,12 +52,16 @@ fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata 
 
       val parameterTypes = buildMap {
         if (dispatchReceiverType != null)
-          this[DISPATCH_RECEIVER_INDEX] = dispatchReceiverType!!.toInjektType(ctx)
+          this[DISPATCH_RECEIVER_NAME] = dispatchReceiverType!!.toInjektType(ctx)
         if (receiverParameter != null)
-          this[EXTENSION_RECEIVER_INDEX] = receiverParameter!!.typeRef.coneType.toInjektType(ctx)
+          this[EXTENSION_RECEIVER_NAME] = receiverParameter!!.typeRef.coneType.toInjektType(ctx)
+        resolvedContextParameters.forEach { contextParameter ->
+          this[contextParameter.name] = contextParameter.returnTypeRef.coneType.toInjektType(ctx)
+        }
         if (this@callableMetadata is FirFunctionSymbol<*>)
-          valueParameterSymbols.forEachIndexed { index, valueParameter ->
-            this[index] = valueParameter.resolvedReturnType.toInjektType(ctx)
+          valueParameterSymbols.forEach { valueParameter ->
+            this[valueParameter.name] =
+              valueParameter.resolvedReturnType.toInjektType(ctx)
           }
       }
 
@@ -67,7 +71,7 @@ fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata 
           it.defaultValueSource?.getElementTextInContextForDebug() ==
               InjektFqNames.inject.callableName.asString()
         }
-        .mapTo(mutableSetOf()) { valueParameterSymbols.indexOf(it) }
+        .mapTo(mutableSetOf()) { it.name }
 
       CallableMetadata(this, type, parameterTypes, injectParameters)
     }
@@ -82,8 +86,8 @@ fun CallableMetadata.shouldBePersisted(ctx: InjektContext) = injectParameters.is
   val callableKey: String,
   val callableFqName: String,
   val type: PersistedInjektType,
-  val parameterTypes: Map<Int, PersistedInjektType>,
-  val injectParameters: Set<Int>,
+  val parameterTypes: Map<String, PersistedInjektType>,
+  val injectParameters: Set<String>,
   val typeParameterMetadata: List<PersistedClassifierMetadata>
 )
 
@@ -92,8 +96,9 @@ fun CallableMetadata.toPersistedCallableMetadata(ctx: InjektContext) = Persisted
   callableFqName = symbol.fqName.asString(),
   type = type.toPersistedInjektType(ctx),
   parameterTypes = parameterTypes
+    .mapKeys { it.key.asString() }
     .mapValues { it.value.toPersistedInjektType(ctx) },
-  injectParameters = injectParameters,
+  injectParameters = injectParameters.mapTo(mutableSetOf()) { it.asString() },
   typeParameterMetadata = symbol.typeParameterSymbols.map {
     it.classifierMetadata(ctx).toPersistedClassifierMetadata(ctx)
   }
@@ -103,8 +108,10 @@ fun PersistedCallableMetadata.toCallableMetadata(ctx: InjektContext) = try {
   CallableMetadata(
     symbol = findCallableForKey(callableKey, FqName(callableFqName), ctx),
     type = type.toInjektType(ctx),
-    parameterTypes = parameterTypes.mapValues { it.value.toInjektType(ctx) },
-    injectParameters = injectParameters
+    parameterTypes = parameterTypes
+      .mapKeys { it.key.asNameId() }
+      .mapValues { it.value.toInjektType(ctx) },
+    injectParameters = injectParameters.mapTo(mutableSetOf()) { it.asNameId() }
   )
 } catch (e: Throwable) {
   throw IllegalStateException("Failed to restore $this", e)

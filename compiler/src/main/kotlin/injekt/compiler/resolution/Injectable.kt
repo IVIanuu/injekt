@@ -47,8 +47,7 @@ class ListInjectable(
         type = element,
         callableFqName = chainFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-        parameterName = "element$index".asNameId(),
-        parameterIndex = index
+        parameterName = "element$index".asNameId()
       )
     }
 }
@@ -67,7 +66,6 @@ class LambdaInjectable(
       type = type.arguments.last(),
       callableFqName = chainFqName,
       parameterName = "instance".asNameId(),
-      parameterIndex = 0,
       isInline = request.isInline
     )
   )
@@ -119,14 +117,13 @@ class TypeKeyInjectable(
   override val chainFqName = FqName("typeKeyOf<${type.renderToString()}>")
   override val dependencies = type.allTypes
     .filter { it.classifier.isTypeParameter }
-    .mapIndexed { index, typeParameter ->
+    .map { typeParameter ->
       InjectableRequest(
         type = ownerScope.ctx.typeKeyClassifier!!.defaultType
           .withArguments(listOf(typeParameter.classifier.defaultType)),
         callableFqName = chainFqName,
         callableTypeArguments = type.classifier.typeParameters.zip(type.arguments).toMap(),
-        parameterName = "${typeParameter.classifier.fqName.shortName()}Key".asNameId(),
-        parameterIndex = index
+        parameterName = "${typeParameter.classifier.fqName.shortName()}Key".asNameId()
       )
     }
 }
@@ -136,28 +133,25 @@ data class InjectableRequest(
   val callableFqName: FqName,
   val callableTypeArguments: Map<InjektClassifier, InjektType> = emptyMap(),
   val parameterName: Name,
-  val parameterIndex: Int,
   val isRequired: Boolean = true,
   val isInline: Boolean = false
 )
 
-fun InjektCallable.injectableRequests(exclude: Set<Int>, ctx: InjektContext): List<InjectableRequest> =
-  parameterTypes.map { (index, type) ->
-    if (index in exclude) return@map null
+fun InjektCallable.injectableRequests(exclude: Set<Name>, ctx: InjektContext): List<InjectableRequest> =
+  parameterTypes.map { (name, type) ->
+    if (name in exclude) return@map null
     val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
-      ?.getOrNull(index)
+      ?.firstOrNull { it.name == name }
+      ?: symbol.resolvedContextParameters
+        .firstOrNull { it.name == name }
+        ?.symbol
     InjectableRequest(
       type = type,
       callableFqName = chainFqName,
       callableTypeArguments = typeArguments,
-      parameterName = when (index) {
-        DISPATCH_RECEIVER_INDEX -> DISPATCH_RECEIVER_NAME
-        EXTENSION_RECEIVER_INDEX -> EXTENSION_RECEIVER_NAME
-        else -> valueParameter?.name ?: return@map null
-      },
-      parameterIndex = index,
+      parameterName = name,
       isRequired = valueParameter == null ||
-          symbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(valueParameter) in injectParameters ||
+          valueParameter.name in injectParameters ||
           !valueParameter.hasDefaultValue,
       isInline = symbol.isInline &&
           valueParameter?.isNoinline != true &&

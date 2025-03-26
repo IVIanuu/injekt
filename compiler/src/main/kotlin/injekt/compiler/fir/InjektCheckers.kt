@@ -65,19 +65,20 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 
     val explicitArguments = buildSet {
       if (expression.dispatchReceiver != null)
-        this += DISPATCH_RECEIVER_INDEX
+        this += DISPATCH_RECEIVER_NAME
 
       if (expression.extensionReceiver != null)
-        this += EXTENSION_RECEIVER_INDEX
+        this += EXTENSION_RECEIVER_NAME
 
       expression.resolvedArgumentMapping?.forEach {
-        this += callee.valueParameterSymbols.indexOf(it.value.symbol)
+        this += it.value.symbol.name
       }
     }
 
     val requests = substitutedCallee.injectableRequests(
-      explicitArguments + callee.valueParameterSymbols.indices
-        .filter { it !in metadata.injectParameters },
+      explicitArguments + callee.valueParameterSymbols
+        .filter { it.name !in metadata.injectParameters }
+        .map { it.name },
       ctx
     )
 

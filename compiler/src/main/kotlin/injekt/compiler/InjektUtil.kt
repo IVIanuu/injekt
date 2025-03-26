@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.jvm.*
-import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import kotlin.experimental.*
@@ -34,8 +33,7 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
 
   if (this is FirValueParameterSymbol) {
     val metadata = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().callableMetadata(ctx)
-    val index = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().valueParameterSymbols.indexOf(this)
-    if (index in metadata.injectParameters)
+    if (name in metadata.injectParameters)
       return true
   }
 
@@ -76,13 +74,22 @@ fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
               typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
               listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
                 .plus(
+                  resolvedContextParameters
+                    .map {
+                      it.returnTypeRef
+                        .resolveJavaTypeIfNeeded(ctx)
+                        .coneType
+                    }
+                )
+                .plus(
                   (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
                     .map {
                       it.fir.returnTypeRef
                         .resolveJavaTypeIfNeeded(ctx)
                         .coneType
                     }
-                ).joinToString(",") { it.uniqueTypeKey(ctx) } + ":" +
+                )
+                .joinToString(",") { it.uniqueTypeKey(ctx) } + ":" +
               fir.returnTypeRef.resolveJavaTypeIfNeeded(ctx).coneType.uniqueTypeKey(ctx)
         }
         else -> error("Unexpected declaration $this")
@@ -116,19 +123,6 @@ inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R
 
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
-
-const val DISPATCH_RECEIVER_INDEX = -2
-const val EXTENSION_RECEIVER_INDEX = -1
-
-fun IrDeclaration.injektIndex(): Int {
-  if (parent is IrClass) return DISPATCH_RECEIVER_INDEX
-  val callable = parent.cast<IrFunction>()
-  return when {
-    this == callable.dispatchReceiverParameter -> DISPATCH_RECEIVER_INDEX
-    this == callable.extensionReceiverParameter -> EXTENSION_RECEIVER_INDEX
-    else -> callable.valueParameters.indexOf(this)
-  }
-}
 
 fun findCallableForKey(
   callableKey: String,

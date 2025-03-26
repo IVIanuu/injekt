@@ -125,7 +125,7 @@ private fun classInjectablesScopeOf(
     parent = classCompanionInjectablesScopeOf(clazz, parent, ctx),
     owner = clazz,
     initialInjectables = listOf(injectableReceiverOf(
-      DISPATCH_RECEIVER_INDEX,
+      DISPATCH_RECEIVER_NAME,
       clazz.defaultType(),
       clazz.declarationSymbols.filterIsInstance<FirConstructorSymbol>().first(),
       clazz.source!!.startOffset,
@@ -157,7 +157,7 @@ private fun functionInjectablesScopeOf(
     initialInjectables = buildList {
       if (function.receiverParameter != null)
         this += injectableReceiverOf(
-          EXTENSION_RECEIVER_INDEX,
+          EXTENSION_RECEIVER_NAME,
           function.receiverParameter!!.typeRef.coneType,
           function,
           function.receiverParameter!!.source!!.startOffset,
@@ -195,7 +195,7 @@ private fun propertyInjectablesScopeOf(
     initialInjectables = buildList {
       if (property.receiverParameter != null)
         this += injectableReceiverOf(
-          EXTENSION_RECEIVER_INDEX,
+          EXTENSION_RECEIVER_NAME,
           property.receiverParameter!!.typeRef.coneType,
           property.getterSymbol!!,
           property.receiverParameter!!.source!!.startOffset,
