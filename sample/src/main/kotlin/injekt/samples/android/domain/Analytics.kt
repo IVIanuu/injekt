@@ -10,7 +10,7 @@ import injekt.samples.android.util.*
 import kotlinx.coroutines.*
 
 @Provide class Analytics(
-  private val scope: ScopedCoroutineScope<AppScope>
+  private val scope: @For<AppScope> CoroutineScope
 ) {
   suspend fun log(message: String) = scope.launch {
     println(message)

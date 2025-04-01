@@ -34,7 +34,7 @@ data object AppScope
 // declare dependencies used in our App
 @Provide data class AppDependencies(
   val analytics: Analytics,
-  val coroutineScope: ScopedCoroutineScope<AppScope>,
+  val coroutineScope: @For<AppScope> CoroutineScope,
   // add a factory for activity dependencies to allow it to have its own scope
   // this creates a hierarchy of scopes similar to subcomponents in other di libs
   val mainActivityDependencies: (

@@ -29,7 +29,7 @@ sealed interface CounterEvent {
 // this makes code feel more naturally and makes it super easy testable
 @Provide @Composable fun CounterPresenter(
   repo: CounterRepo,
-  scope: ScopedCoroutineScope<ActivityScope>
+  scope: @For<ActivityScope> CoroutineScope
 ) = CounterState(repo.counter.collectAsState(0).value) { event ->
   scope.launch {
     when (event) {
