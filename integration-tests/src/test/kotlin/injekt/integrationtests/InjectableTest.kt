@@ -393,4 +393,21 @@ class InjectableTest {
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
+
+  @Test fun testInjectableLambdaParameterUseSite() = codegen("""
+      fun invoke() = { foo: @Provide Foo -> create<Foo>() }(Foo())
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectableLambdaParameterDeclarationSite() = singleAndMultiCodegen("""
+      fun lambdaOf(block: (@Provide Foo) -> Foo) = block
+    """,
+    """
+      fun invoke() = lambdaOf { create<Foo>() }(Foo())
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
 }

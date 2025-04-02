@@ -40,6 +40,7 @@ allprojects {
   plugins.withType<KotlinBasePlugin> {
     project.tasks.withType<KotlinCompilationTask<*>>().configureEach {
       compilerOptions {
+        this.freeCompilerArgs.add("-Xcontext-parameters")
         if (this is KotlinJvmCompilerOptions)
           if (project.name != "sample")
             jvmTarget.set(libs.versions.jvmTarget.map(JvmTarget::fromTarget))

@@ -7,6 +7,7 @@
 package injekt.compiler
 
 import injekt.compiler.fir.*
+import injekt.compiler.resolution.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
@@ -31,7 +32,10 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
     resolvedReturnType.toRegularClassSymbol(ctx.session)!!.isInjectable(ctx))
     return true
 
+
   if (this is FirValueParameterSymbol) {
+    if (resolvedReturnType.toInjektType(ctx).isProvide)
+      return true
     val metadata = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().callableMetadata(ctx)
     if (name in metadata.injectParameters)
       return true
