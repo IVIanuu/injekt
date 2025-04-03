@@ -10,6 +10,8 @@ class Foo
 
 class Bar(val foo: Foo)
 
+class Baz(val foo: Foo, val bar: Bar)
+
 interface Command
 
 class CommandA : Command

@@ -69,6 +69,19 @@ class InjectableTest {
     invokeSingleFile().shouldBeTypeOf<Foo>()
   }
 
+  @Test fun testInjectableFunctionWithMultipleAnonymousContextParameters() = singleAndMultiCodegen(
+    """
+      context(_: Foo, _: Bar) @Provide fun baz() = Baz(create(), create())
+    """,
+    """
+      fun invoke() = with(Foo()) { 
+        with(Bar(Foo())) { create<Baz>() }       
+      }.foo
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
   @Test fun testTopLevelInjectableProperty() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
@@ -273,6 +286,19 @@ class InjectableTest {
     """,
     """
       fun invoke() = with(Foo()) { bar().foo }
+    """
+  ) {
+    invokeSingleFile().shouldBeTypeOf<Foo>()
+  }
+
+  @Test fun testInjectableFunctionMultipleAnonymousContextParameters() = singleAndMultiCodegen(
+    """
+      context(_: Foo, _: Bar) fun baz(unit: Unit) = Baz(create(), create())
+    """,
+    """
+      fun invoke() = with(Foo()) { 
+        with(Bar(Foo())) { baz(Unit).foo } 
+      }
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()

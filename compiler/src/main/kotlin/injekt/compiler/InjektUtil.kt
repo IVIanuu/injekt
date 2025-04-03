@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.jvm.*
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import kotlin.experimental.*
@@ -55,7 +56,7 @@ val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
     is FirClassLikeSymbol<*> -> classId.asSingleFqName()
     is FirConstructorSymbol -> callableId.asSingleFqName().parent().child(SpecialNames.INIT)
-    is FirValueParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
+    is FirValueParameterSymbol -> containingDeclarationSymbol.fqName.child(injektName())
     is FirCallableSymbol<*> -> callableId.asSingleFqName()
     is FirTypeParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
     else -> throw AssertionError("Unexpected $this")
@@ -127,6 +128,26 @@ inline fun <T, R> Collection<T>.transform(@BuilderInference block: MutableList<R
 
 val DISPATCH_RECEIVER_NAME = Name.identifier("\$dispatchReceiver")
 val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
+
+fun FirValueParameterSymbol.injektName(): Name {
+  if (!name.isSpecial) return name
+  val containing = containingDeclarationSymbol.cast<FirCallableSymbol<*>>()
+  val indexInContextParameters = containing.resolvedContextParameters.indexOf(fir)
+  if (indexInContextParameters != -1)
+    return Name.identifier("\$contextParameter$indexInContextParameters")
+  return name
+}
+
+fun IrValueParameter.injektName(): Name {
+  if (!name.isSpecial) return name
+  val containing = parent.cast<IrFunction>()
+  val indexInContextParameters = containing.valueParameters
+    .filter { it.kind == IrParameterKind.Context }
+    .indexOf(this)
+  if (indexInContextParameters != -1)
+    return Name.identifier("\$contextParameter$indexInContextParameters")
+  return name
+}
 
 fun findCallableForKey(
   callableKey: String,

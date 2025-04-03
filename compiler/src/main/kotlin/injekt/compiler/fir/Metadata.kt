@@ -56,7 +56,7 @@ fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata 
         if (receiverParameter != null)
           this[EXTENSION_RECEIVER_NAME] = receiverParameter!!.typeRef.coneType.toInjektType(ctx)
         resolvedContextParameters.forEach { contextParameter ->
-          this[contextParameter.name] = contextParameter.returnTypeRef.coneType.toInjektType(ctx)
+          this[contextParameter.symbol.injektName()] = contextParameter.returnTypeRef.coneType.toInjektType(ctx)
         }
         if (this@callableMetadata is FirFunctionSymbol<*>)
           valueParameterSymbols.forEach { valueParameter ->

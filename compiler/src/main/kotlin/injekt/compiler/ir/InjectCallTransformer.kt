@@ -152,8 +152,9 @@ class InjectCallTransformer(
         else -> putValueArgument(
           symbol.owner
             .valueParameters
-            .first { it.name == request.parameterName }
-            .index,
+            .singleOrNull { it.injektName() == request.parameterName }
+            ?.index
+            ?: error("Wtf $request ${symbol.owner.dump()}"),
           expression
         )
       }
@@ -485,7 +486,7 @@ class InjectCallTransformer(
       ?: lambdaParametersMap[symbol] ?: symbol.containingDeclarationSymbol.toIrCallableSymbol()
         .owner
         .valueParameters
-        .singleOrNull { it.name == symbol.name }
+        .singleOrNull { it.injektName() == symbol.injektName() }
         ?.symbol
       ?: error("wtf $symbol")
   )
