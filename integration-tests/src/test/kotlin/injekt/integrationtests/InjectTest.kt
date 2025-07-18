@@ -16,8 +16,8 @@ import org.junit.*
 
   @Test fun testInjectConstructorValueParameter() = codegen(
     """
-      class Baz(val foo: Foo = inject)
-      fun invoke(foo: Foo = inject) = Baz().foo
+      class Quz(val foo: Foo = inject)
+      fun invoke(foo: Foo = inject) = Quz().foo
     """
   ) {
     val foo = Foo()

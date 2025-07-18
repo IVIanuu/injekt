@@ -25,7 +25,7 @@ class InjectableTest {
 
   @Test fun testMemberInjectableFunction() = singleAndMultiCodegen(
     """
-      @Provide class Baz {
+      @Provide class Quz {
         @Provide fun foo() = Foo()
       }
     """,
@@ -95,7 +95,7 @@ class InjectableTest {
 
   @Test fun testMemberInjectableProperty() = singleAndMultiCodegen(
     """
-      @Provide class Baz {
+      @Provide class Quz {
         @Provide val foo = Foo()
       }
     """,
@@ -131,10 +131,10 @@ class InjectableTest {
   @Test fun testTopLevelInjectableClass() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      @Provide class Baz(val foo: Foo)
+      @Provide class Quz(val foo: Foo)
     """,
     """
-      fun invoke() = create<Baz>().foo
+      fun invoke() = create<Quz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -193,10 +193,10 @@ class InjectableTest {
   @Test fun testInjectablePrimaryConstructor() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      class Baz @Provide constructor(val foo: Foo)
+      class Quz @Provide constructor(val foo: Foo)
     """,
     """
-      fun invoke() = create<Baz>().foo
+      fun invoke() = create<Quz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -205,12 +205,12 @@ class InjectableTest {
   @Test fun testInjectableSecondaryConstructor() = singleAndMultiCodegen(
     """
       @Provide val foo = Foo()
-      class Baz(val foo: Any) {
+      class Quz(val foo: Any) {
         @Provide constructor(foo: Foo) : this(foo as Any)
       }
     """,
     """
-      fun invoke() = create<Baz>().foo
+      fun invoke() = create<Quz>().foo
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
@@ -220,13 +220,13 @@ class InjectableTest {
     """
       @Provide val foo = Foo()
       @Provide fun bar(foo: Foo) = Bar(foo)
-      class Baz(val foo: Any) {
+      class Quz(val foo: Any) {
         @Provide constructor(foo: Foo) : this(foo as Any)
         @Provide constructor(bar: Bar) : this(bar.foo as Any)
       }
     """,
     """
-      fun invoke() = create<List<Baz>>().map { it.foo }
+      fun invoke() = create<List<Quz>>().map { it.foo }
     """
   ) {
     invokeSingleFile<List<Foo>>()
@@ -236,12 +236,12 @@ class InjectableTest {
 
   @Test fun testInjectableObject() = singleAndMultiCodegen(
     """
-      @Provide object Baz {
+      @Provide object Quz {
         val foo = Foo()
       }
     """,
     """
-      fun invoke() = create<Baz>().foo 
+      fun invoke() = create<Quz>().foo 
     """
   ) {
     invokeSingleFile().shouldBeTypeOf<Foo>()
