@@ -2,7 +2,7 @@
  * Copyright 2024 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, DirectDeclarationsAccess::class)
 
 package injekt.compiler.fir
 
@@ -39,7 +39,10 @@ class TagAnnotationTargetPatcher(
       .toSymbol(session)!!
       .cast<FirClassSymbol<*>>()
     val targetConstructorSymbol =
-      targetSymbol.primaryConstructorIfAny(session)!!
+      targetSymbol.declarationSymbols
+        .filterIsInstance<FirConstructorSymbol>()
+        .firstOrNull { it.isPrimary }
+        ?: return super.transformStatus(status, regularClass, containingClass, isLocal)
     val allowedTargetsValueParameterSymbol =
       targetConstructorSymbol.valueParameterSymbols.single()
 
