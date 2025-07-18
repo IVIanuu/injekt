@@ -17,20 +17,21 @@ class InjektFirExtensionRegistrar(private val ctx: InjektContext) : FirExtension
       TagAnnotationTargetPatcher(ctx)
     }
 
-    +FirAdditionalCheckersExtension.Factory { session ->
-      ctx.session = session
-      object : FirAdditionalCheckersExtension(session) {
-        override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
-          override val callableDeclarationCheckers = setOf(InjektCallableChecker)
-          override val classCheckers = setOf(InjektClassChecker)
-        }
+    if (!isIde)
+      +FirAdditionalCheckersExtension.Factory { session ->
+        ctx.session = session
+        object : FirAdditionalCheckersExtension(session) {
+          override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
+            override val callableDeclarationCheckers = setOf(InjektCallableChecker)
+            override val classCheckers = setOf(InjektClassChecker)
+          }
 
-        override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
-          override val functionCallCheckers = setOfNotNull(
-            if (isIde) null else InjectCallChecker(ctx)
-          )
+          override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
+            override val functionCallCheckers = setOfNotNull(
+              if (isIde) null else InjectCallChecker(ctx)
+            )
+          }
         }
       }
-    }
   }
 }
