@@ -12,7 +12,7 @@ dependencies {
   implementation(libs.autoService.annotations)
   ksp(libs.autoService.ksp)
   compileOnly(libs.kotlin.compilerEmbeddable)
-  compileOnly(libs.ksp.symbolProcessing)
+  //compileOnly(libs.ksp.symbolProcessing)
   compileOnly(libs.ksp.api)
 }
 

@@ -2,12 +2,15 @@
  * Copyright 2024 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class)
+@file:OptIn(UnsafeCastFunction::class, UnsafeDuringIrConstructionAPI::class,
+  DeprecatedForRemovalCompilerApi::class
+)
 
 package injekt.compiler.ir
 
 import injekt.compiler.*
 import injekt.compiler.resolution.*
+import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.backend.common.*
 import org.jetbrains.kotlin.backend.common.extensions.*
 import org.jetbrains.kotlin.backend.common.lower.*

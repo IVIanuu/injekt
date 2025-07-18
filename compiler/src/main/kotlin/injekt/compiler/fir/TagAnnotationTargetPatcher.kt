@@ -8,7 +8,6 @@ package injekt.compiler.fir
 
 import injekt.compiler.*
 import org.jetbrains.kotlin.fir.*
-import org.jetbrains.kotlin.fir.analysis.checkers.declaration.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.deserialization.*
 import org.jetbrains.kotlin.fir.expressions.builder.*
@@ -40,7 +39,7 @@ class TagAnnotationTargetPatcher(
       .toSymbol(session)!!
       .cast<FirClassSymbol<*>>()
     val targetConstructorSymbol =
-      targetSymbol.primaryConstructorSymbol(session)!!
+      targetSymbol.primaryConstructorIfAny(session)!!
     val allowedTargetsValueParameterSymbol =
       targetConstructorSymbol.valueParameterSymbols.single()
 

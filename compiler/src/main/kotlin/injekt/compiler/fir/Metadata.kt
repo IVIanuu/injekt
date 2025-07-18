@@ -2,7 +2,7 @@
  * Copyright 2024 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
 
 package injekt.compiler.fir
 
@@ -53,10 +53,11 @@ fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata 
       val parameterTypes = buildMap {
         if (dispatchReceiverType != null)
           this[DISPATCH_RECEIVER_NAME] = dispatchReceiverType!!.toInjektType(ctx)
-        if (receiverParameter != null)
-          this[EXTENSION_RECEIVER_NAME] = receiverParameter!!.typeRef.coneType.toInjektType(ctx)
-        resolvedContextParameters.forEach { contextParameter ->
-          this[contextParameter.symbol.injektName()] = contextParameter.returnTypeRef.coneType.toInjektType(ctx)
+        this@callableMetadata.isExtension
+        if (resolvedReceiverType != null)
+          this[EXTENSION_RECEIVER_NAME] = resolvedReceiverType!!.toInjektType(ctx)
+        contextParameterSymbols.forEach { contextParameter ->
+          this[contextParameter.injektName()] = contextParameter.resolvedReturnType.toInjektType(ctx)
         }
         if (this@callableMetadata is FirFunctionSymbol<*>)
           valueParameterSymbols.forEach { valueParameter ->

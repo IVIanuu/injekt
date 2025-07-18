@@ -3,13 +3,15 @@
  */
 
 @file:OptIn(SymbolInternals::class, UnsafeCastFunction::class,
-  InternalDiagnosticFactoryMethod::class
+  InternalDiagnosticFactoryMethod::class, DeprecatedForRemovalCompilerApi::class,
+  DirectDeclarationsAccess::class
 )
 
 package injekt.compiler.fir
 
 import injekt.compiler.*
 import injekt.compiler.resolution.*
+import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.fir.*
@@ -193,13 +195,19 @@ private fun checkOverrides(
     return true
   }
 
-  declaration.getDirectOverriddenSymbols(context)
+  (declaration.symbol.directOverriddenSymbolsSafe(context))
     .firstOrNull()
     ?.takeUnless { isValidOverride(it.fir.cast()) }
     ?.let {
       reporter.report(
         FirErrors.NOTHING_TO_OVERRIDE
-          .on(declaration.source!!, declaration.symbol, emptyList(), null),
+          .on(
+            declaration.source!!,
+            declaration.symbol,
+            emptyList(),
+            null,
+            context.languageVersionSettings
+          ),
         context
       )
     }

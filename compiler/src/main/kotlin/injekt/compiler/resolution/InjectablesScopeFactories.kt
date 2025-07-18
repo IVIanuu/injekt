@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class, DirectDeclarationsAccess::class)
 
 package injekt.compiler.resolution
 
@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 fun elementInjectablesScopeOf(
@@ -68,7 +67,6 @@ fun elementInjectablesScopeOf(
       is FirFunction -> functionInjectablesScopeOf(
         function = element.symbol,
         parent = scopeOf(remainingScopeOwners.dropLast(1)),
-        containingElements = containingElements,
         ctx = ctx
       )
 
@@ -140,7 +138,6 @@ private fun classInjectablesScopeOf(
 private fun functionInjectablesScopeOf(
   function: FirFunctionSymbol<*>,
   parent: InjectablesScope,
-  containingElements: List<FirElement>,
   ctx: InjektContext
 ): InjectablesScope = ctx.cached(
   "function_scope",
@@ -155,18 +152,18 @@ private fun functionInjectablesScopeOf(
     else function.typeParameterSymbols)
       .map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList {
-      if (function.receiverParameter != null)
+      if (function.resolvedReceiverType != null)
         this += injectableReceiverOf(
           EXTENSION_RECEIVER_NAME,
-          function.receiverParameter!!.typeRef.coneType,
+          function.resolvedReceiverType!!,
           function,
-          function.receiverParameter!!.source!!.startOffset,
-          function.receiverParameter!!.source!!.endOffset,
+          function.fir.receiverParameter!!.source!!.startOffset,
+          function.fir.receiverParameter!!.source!!.endOffset,
           ctx
         ).toInjektCallable(ctx)
 
-      this += function.resolvedContextParameters
-        .map { it.symbol.toInjektCallable(ctx) }
+      this += function.contextParameterSymbols
+        .map { it.toInjektCallable(ctx) }
 
       this += function.valueParameterSymbols
         .filterIndexed { index, valueParameter ->
@@ -193,19 +190,19 @@ private fun propertyInjectablesScopeOf(
     owner = property,
     typeParameters = property.typeParameterSymbols.map { it.toInjektClassifier(ctx) },
     initialInjectables = buildList {
-      if (property.receiverParameter != null)
+      if (property.resolvedReceiverType != null)
         this += injectableReceiverOf(
           EXTENSION_RECEIVER_NAME,
-          property.receiverParameter!!.typeRef.coneType,
+          property.resolvedReceiverType!!,
           property.getterSymbol!!,
-          property.receiverParameter!!.source!!.startOffset,
-          property.receiverParameter!!.source!!.endOffset,
+          property.fir.receiverParameter!!.source!!.startOffset,
+          property.fir.receiverParameter!!.source!!.endOffset,
           ctx
         )
           .toInjektCallable(ctx)
 
-      this += property.resolvedContextParameters
-        .map { it.symbol.toInjektCallable(ctx) }
+      this += property.contextParameterSymbols
+        .map { it.toInjektCallable(ctx) }
     },
     callContext = if (property.isLocal) parent.callContext
     else property.callContext(ctx),

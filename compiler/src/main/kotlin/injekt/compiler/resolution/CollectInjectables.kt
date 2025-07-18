@@ -2,7 +2,7 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class)
+@file:OptIn(UnsafeCastFunction::class, DirectDeclarationsAccess::class)
 
 package injekt.compiler.resolution
 
@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.resolve.providers.*
+import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
@@ -34,7 +35,12 @@ fun InjektType.collectModuleInjectables(
           declaration is FirCallableSymbol<*> &&
           (!declaration.isOverride ||
               declaration.safeAs<FirNamedFunctionSymbol>()
-                ?.directOverriddenFunctions(ctx.session, ctx.scopeSession)
+                ?.takeIf { it.getContainingClassSymbol() != null }
+                ?.overriddenFunctions(
+                  declaration.getContainingClassSymbol()!!.cast(),
+                  ctx.session,
+                  ctx.scopeSession
+                )
                 ?.firstOrNull()
                 ?.isInjectable(ctx) == false) &&
           (declaration.isInjectable(ctx) ||

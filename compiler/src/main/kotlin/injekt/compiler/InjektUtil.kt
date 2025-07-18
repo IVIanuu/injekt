@@ -2,12 +2,15 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class,
+  DeprecatedForRemovalCompilerApi::class, DirectDeclarationsAccess::class
+)
 
 package injekt.compiler
 
 import injekt.compiler.fir.*
 import injekt.compiler.resolution.*
+import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.*
 import org.jetbrains.kotlin.fir.declarations.*
@@ -77,11 +80,11 @@ fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
         else {
           "callable:$fqName:" +
               typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
-              listOfNotNull(dispatchReceiverType, receiverParameter?.typeRef?.coneType)
+              listOfNotNull(dispatchReceiverType, resolvedReceiverType)
                 .plus(
-                  resolvedContextParameters
+                  contextParameterSymbols
                     .map {
-                      it.returnTypeRef
+                      it.fir.returnTypeRef
                         .resolveJavaTypeIfNeeded(ctx)
                         .coneType
                     }
@@ -132,7 +135,7 @@ val EXTENSION_RECEIVER_NAME = Name.identifier("\$extensionReceiver")
 fun FirValueParameterSymbol.injektName(): Name {
   if (!name.isSpecial) return name
   val containing = containingDeclarationSymbol.cast<FirCallableSymbol<*>>()
-  val indexInContextParameters = containing.resolvedContextParameters.indexOf(fir)
+  val indexInContextParameters = containing.fir.contextParameters.indexOf(fir)
   if (indexInContextParameters != -1)
     return Name.identifier("\$contextParameter$indexInContextParameters")
   return name

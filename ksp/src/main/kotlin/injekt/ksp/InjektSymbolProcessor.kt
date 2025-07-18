@@ -7,15 +7,13 @@ package injekt.ksp
 import com.google.auto.service.*
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
-import com.google.devtools.ksp.symbol.impl.kotlin.*
-import injekt.compiler.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
 @OptIn(UnsafeCastFunction::class) class InjektSymbolProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> {
-    (resolver.getSymbolsWithAnnotation(InjektFqNames.Provide.asFqNameString(), false) +
-        resolver.getSymbolsWithAnnotation(InjektFqNames.Tag.asFqNameString(), false))
+    (resolver.getSymbolsWithAnnotation("injekt.Provide", false) +
+        resolver.getSymbolsWithAnnotation("injekt.Tag", false))
       .filterIsInstance<KSDeclaration>()
       .groupBy { it.containingFile }
       .forEach { processFile(it.key!!, it.value) }
@@ -25,7 +23,7 @@ import java.util.*
   private fun processFile(file: KSFile, injectables: List<KSDeclaration>) =
     environment.codeGenerator.createNewFile(
       dependencies = Dependencies(false, file),
-      packageName = InjektFqNames.InjectablesPackage.asString(),
+      packageName = "injekt.internal.injectables",
       fileName = "${file.fileName.removeSuffix(".kt")}Injectables_" +
           file.filePath.hashCode().toString().filter { it.isLetterOrDigit() },
     ).write(
@@ -39,7 +37,7 @@ import java.util.*
         appendLine("@file:Suppress(\"unused\", \"UNUSED_PARAMETER\")")
         appendLine()
 
-        appendLine("package ${InjektFqNames.InjectablesPackage}")
+        appendLine("package injekt.internal.injectables")
         appendLine()
 
         appendLine("object $markerName")
@@ -49,7 +47,7 @@ import java.util.*
           val hash = injectable.declarationHash()
 
           appendLine("/**$hash*/")
-          appendLine("fun `${InjektFqNames.InjectablesLookup.callableName}`(")
+          appendLine("fun `\$\$\$\$\$`(")
           appendLine("  marker: $markerName,")
           repeat(i + 1) {
             appendLine("  index$it: Byte,")
@@ -96,13 +94,13 @@ import java.util.*
       }
     }
 
-    if (this@declarationHash is KSDeclarationImpl) {
+    /*if (this@declarationHash is KSDeclarationImpl) {
       val text = this@declarationHash.cast<KSDeclarationImpl>()
         .ktDeclaration
         .text
       if (Modifier.INLINE in modifiers || "context" in text)
         append(text)
-    }
+    }*/
   }
 
   private fun KSTypeReference.typeHash(): String = buildString {

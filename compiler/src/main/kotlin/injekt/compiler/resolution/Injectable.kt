@@ -2,11 +2,12 @@
  * Copyright 2022 Manuel Wrage. Use of this source code is governed by the Apache 2.0 license.
  */
 
-@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class)
+@file:OptIn(UnsafeCastFunction::class, SymbolInternals::class, DirectDeclarationsAccess::class)
 
 package injekt.compiler.resolution
 
 import injekt.compiler.*
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.symbols.*
@@ -142,9 +143,8 @@ fun InjektCallable.injectableRequests(exclude: Set<Name>, ctx: InjektContext): L
     if (name in exclude) return@map null
     val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
       ?.firstOrNull { it.name == name }
-      ?: symbol.resolvedContextParameters
+      ?: symbol.contextParameterSymbols
         .firstOrNull { it.name == name }
-        ?.symbol
     InjectableRequest(
       type = type,
       callableFqName = chainFqName,

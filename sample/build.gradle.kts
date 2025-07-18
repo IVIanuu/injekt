@@ -28,7 +28,9 @@ android {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-  kotlinOptions.freeCompilerArgs += "-Xcontext-parameters"
+  compilerOptions {
+    freeCompilerArgs.add("-Xcontext-parameters")
+  }
 }
 
 dependencies {
