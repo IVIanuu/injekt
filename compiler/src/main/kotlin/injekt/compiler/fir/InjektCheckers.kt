@@ -29,12 +29,9 @@ import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker(MppCheckerKind.Common) {
-  override fun check(
-    expression: FirFunctionCall,
-    context: CheckerContext,
-    reporter: DiagnosticReporter
-  ) {
-    val file = context.containingFile ?: return
+  context(context: CheckerContext, reporter: DiagnosticReporter)
+  override fun check(expression: FirFunctionCall) {
+    val file = context.containingFileSymbol ?: return
 
     val callee = expression.calleeReference.toResolvedCallableSymbol()
       .safeAs<FirFunctionSymbol<*>>() ?: return
@@ -114,22 +111,20 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 }
 
 object InjektCallableChecker : FirCallableDeclarationChecker(MppCheckerKind.Common) {
-  override fun check(
-    declaration: FirCallableDeclaration,
-    context: CheckerContext,
-    reporter: DiagnosticReporter
-  ) {
+  context(context: CheckerContext, reporter: DiagnosticReporter)
+  override fun check(declaration: FirCallableDeclaration) {
     checkAddOnTypeParameters(
       declaration.typeParameters.map { it.symbol.fir },
       context,
       reporter
     )
-    checkOverrides(declaration, context, reporter)
+    checkOverrides(declaration)
   }
 }
 
 object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
-  override fun check(declaration: FirClass, context: CheckerContext, reporter: DiagnosticReporter) {
+  context(context: CheckerContext, reporter: DiagnosticReporter)
+  override fun check(declaration: FirClass) {
     val injectableConstructors = declaration.declarations
       .filterIsInstance<FirConstructor>()
       .filter { it.hasAnnotation(InjektFqNames.Provide, context.session) }
@@ -145,7 +140,7 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
 
     if (isInjectable)
       checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
-    
+
     if (declaration.hasAnnotation(InjektFqNames.Tag, context.session)) {
       declaration.constructors(context.session).forEach {
         if (it.valueParameterSymbols.isNotEmpty())
@@ -174,11 +169,8 @@ private fun checkAddOnTypeParameters(
     }
 }
 
-private fun checkOverrides(
-  declaration: FirCallableDeclaration,
-  context: CheckerContext,
-  reporter: DiagnosticReporter
-) {
+context(context: CheckerContext, reporter: DiagnosticReporter)
+private fun checkOverrides(declaration: FirCallableDeclaration) {
   fun isValidOverride(overriddenDeclaration: FirCallableDeclaration): Boolean {
     if (overriddenDeclaration.hasAnnotation(InjektFqNames.Provide, context.session) &&
       !declaration.hasAnnotation(InjektFqNames.Provide, context.session))
@@ -195,7 +187,7 @@ private fun checkOverrides(
     return true
   }
 
-  (declaration.symbol.directOverriddenSymbolsSafe(context))
+  (declaration.symbol.directOverriddenSymbolsSafe())
     .firstOrNull()
     ?.takeUnless { isValidOverride(it.fir.cast()) }
     ?.let {

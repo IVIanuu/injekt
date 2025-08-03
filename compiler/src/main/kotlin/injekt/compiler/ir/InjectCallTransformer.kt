@@ -505,7 +505,8 @@ class InjectCallTransformer(
     injectable.type.toIrType(this).typeOrNull!!,
     compilationDeclarations.declarations
       .singleOrNull {
-        it.owner.startOffset == symbol.source!!.startOffset &&
+        it.owner is IrVariable &&
+            (it.owner as IrVariable).name == symbol.name &&
             it.owner.endOffset == symbol.source!!.endOffset
       }
       ?.cast()
@@ -558,7 +559,7 @@ class InjectCallTransformer(
     is FirPropertySymbol -> (compilationDeclarations.declarations
       .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this }
       ?.cast<IrPropertySymbol>()
-      ?: irCtx.referenceProperties(callableId)
+      ?: irCtx.referenceProperties(callableId!!)
         .singleOrNull { it.toFirSymbol<FirPropertySymbol>() == this })
       ?.owner
       ?.getter

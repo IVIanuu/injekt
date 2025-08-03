@@ -314,11 +314,8 @@ private fun typeTest(assertions: TypeCheckerTestContext.() -> Unit) {
                       object : ExpressionCheckers() {
                         override val callCheckers: Set<FirCallChecker> = setOf(
                           object : FirCallChecker(MppCheckerKind.Platform) {
-                            override fun check(
-                              expression: FirCall,
-                              context: CheckerContext,
-                              reporter: DiagnosticReporter
-                            ) {
+                            context(context: CheckerContext, _: DiagnosticReporter)
+                            override fun check(expression: FirCall) {
                               assertions(TypeCheckerTestContext(context.session))
                             }
                           }

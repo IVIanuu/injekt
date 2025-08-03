@@ -60,7 +60,7 @@ val FirBasedSymbol<*>.fqName: FqName
     is FirClassLikeSymbol<*> -> classId.asSingleFqName()
     is FirConstructorSymbol -> callableId.asSingleFqName().parent().child(SpecialNames.INIT)
     is FirValueParameterSymbol -> containingDeclarationSymbol.fqName.child(injektName())
-    is FirCallableSymbol<*> -> callableId.asSingleFqName()
+    is FirCallableSymbol<*> -> callableId?.asSingleFqName() ?: FqName(name.asString())
     is FirTypeParameterSymbol -> containingDeclarationSymbol.fqName.child(name)
     else -> throw AssertionError("Unexpected $this")
   }

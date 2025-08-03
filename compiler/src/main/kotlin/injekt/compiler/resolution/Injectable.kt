@@ -84,7 +84,7 @@ class LambdaInjectable(
     .valueParameterSymbols
     .map { original ->
       buildValueParameterCopy(original.fir) {
-        symbol = FirValueParameterSymbol(original.name)
+        symbol = FirValueParameterSymbol()
       }.symbol
     }
 

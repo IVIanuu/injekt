@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
@@ -114,7 +115,9 @@ fun ConeKotlinType.toInjektType(
 ): InjektType {
   if (this is ConeErrorType) return ctx.nullableAnyType
   val unwrapped = when(val abbreviatedOrSelf = abbreviatedTypeOrSelf) {
-    is ConeCapturedType -> abbreviatedOrSelf.lowerType ?: return STAR_PROJECTION_TYPE
+    is ConeCapturedType -> with(SimpleClassicTypeSystemContext) {
+      abbreviatedOrSelf.lowerType()
+    }?.safeAs<ConeKotlinType>() ?: return STAR_PROJECTION_TYPE
     is ConeDefinitelyNotNullType -> abbreviatedOrSelf.original.unwrapLowerBound()
     is ConeFlexibleType -> abbreviatedOrSelf.lowerBound.unwrapLowerBound()
     is ConeSimpleKotlinType -> abbreviatedOrSelf

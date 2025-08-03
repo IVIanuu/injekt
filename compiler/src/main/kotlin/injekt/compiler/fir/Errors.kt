@@ -7,6 +7,7 @@ package injekt.compiler.fir
 import injekt.compiler.*
 import injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
+import org.jetbrains.kotlin.diagnostics.rendering.*
 
 private val psiElementClass by lazy {
   try {
@@ -17,6 +18,16 @@ private val psiElementClass by lazy {
     .kotlin
 }
 
+private object InjektErrors : KtDiagnosticsContainer() {
+  override fun getRendererFactory(): BaseDiagnosticRendererFactory = InjektErrorMessages
+}
+
+private object InjektErrorMessages : BaseDiagnosticRendererFactory() {
+  override val MAP by KtDiagnosticFactoryToRendererMap("injekt") { map ->
+    map.put(INJEKT_ERROR, message = "{0}", null)
+  }
+}
+
 private fun <A> error1(
   positioningStrategy: AbstractSourceElementPositioningStrategy =
     SourceElementPositioningStrategies.DEFAULT
@@ -24,6 +35,7 @@ private fun <A> error1(
   severity = Severity.ERROR,
   positioningStrategy = positioningStrategy,
   psiType = psiElementClass,
+  container = InjektErrors
 )
 
 val INJEKT_ERROR by error1<String>()

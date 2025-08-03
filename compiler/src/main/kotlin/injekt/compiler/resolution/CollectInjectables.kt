@@ -175,7 +175,7 @@ fun injectableReceiverOf(
   )
 
   this.name = name
-  symbol = FirValueParameterSymbol(name)
+  symbol = FirValueParameterSymbol()
   returnTypeRef = type.toFirResolvedTypeRef()
   this.containingDeclarationSymbol = containingDeclarationSymbol
 }.symbol

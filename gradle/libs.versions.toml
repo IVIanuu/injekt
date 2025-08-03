@@ -4,9 +4,9 @@ compose = "1.8.2"
 coroutines = "1.10.2"
 jdk = "23"
 jvmTarget = "11"
-kotlin = "2.2.0"
+kotlin = "2.2.20-Beta2"
 kotlinCompileTesting = "0.8.0"
-ksp = "2.2.0-2.0.2"
+ksp = "2.2.20-Beta2-2.0.2"
 
 [plugins]
 android-application = { id = "com.android.application", version = "8.11.1" }
