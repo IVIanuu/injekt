@@ -115,9 +115,9 @@ fun ConeKotlinType.toInjektType(
 ): InjektType {
   if (this is ConeErrorType) return ctx.nullableAnyType
   val unwrapped = when(val abbreviatedOrSelf = abbreviatedTypeOrSelf) {
-    is ConeCapturedType -> with(SimpleClassicTypeSystemContext) {
-      abbreviatedOrSelf.lowerType()
-    }?.safeAs<ConeKotlinType>() ?: return STAR_PROJECTION_TYPE
+    is ConeCapturedType -> safeAs<NewCapturedType>()
+      ?.lowerType
+      ?.safeAs<ConeKotlinType>() ?: return STAR_PROJECTION_TYPE
     is ConeDefinitelyNotNullType -> abbreviatedOrSelf.original.unwrapLowerBound()
     is ConeFlexibleType -> abbreviatedOrSelf.lowerBound.unwrapLowerBound()
     is ConeSimpleKotlinType -> abbreviatedOrSelf
