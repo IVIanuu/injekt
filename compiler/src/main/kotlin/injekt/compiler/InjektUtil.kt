@@ -36,7 +36,6 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
     resolvedReturnType.toRegularClassSymbol(ctx.session)!!.isInjectable(ctx))
     return true
 
-
   if (this is FirValueParameterSymbol) {
     if (resolvedReturnType.toInjektType(ctx).isProvide)
       return true
