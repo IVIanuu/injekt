@@ -194,12 +194,15 @@ fun compile(block: KotlinCompilation.() -> Unit = {}): JvmCompilationResult {
               pluginContext: IrPluginContext
             ) {
               dumpAllFiles = true
-              moduleFragment.dumpToFiles(
-                workingDir.resolve("injekt/dump")
-                  .also { it.mkdirs() },
-                InjektContext()
-              )
-              moduleFragment.fixDefaultValueParameterReturnTypeForCompose(pluginContext)
+              with(pluginContext) {
+                with(InjektContext()) {
+                  moduleFragment.dumpToFiles(
+                    workingDir.resolve("injekt/dump")
+                      .also { it.mkdirs() }
+                  )
+                }
+                moduleFragment.fixDefaultValueParameterReturnTypeForCompose()
+              }
             }
           }
         )

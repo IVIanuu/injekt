@@ -21,8 +21,8 @@ class InjectablesScope(
   val typeParameters: List<InjektClassifier> = emptyList(),
   val callContext: CallContext = CallContext.DEFAULT,
   val nesting: Int = parent?.nesting?.inc() ?: 0,
-  val ctx: InjektContext
-) {
+  override val ctx: InjektContext
+) : TypeCheckerContext by ctx {
   val resolutionChain: MutableList<Injectable> = parent?.resolutionChain ?: mutableListOf()
   val resultsByType = mutableMapOf<InjektType, ResolutionResult>()
   val resultsByCandidate = mutableMapOf<Injectable, ResolutionResult>()
@@ -58,13 +58,13 @@ class InjectablesScope(
   private val injectablesByRequest = mutableMapOf<CallableRequestKey, List<CallableInjectable>>()
 
   init {
-    for (injectable in initialInjectables)
-      injectable.collectModuleInjectables(
-        scope = this,
-        addInjectable = { injectables += it },
-        addAddOnInjectable = { addOnInjectables += AddOnInjectable(it) },
-        ctx = ctx
-      )
+    with(ctx) {
+      for (injectable in initialInjectables)
+        injectable.collectModuleInjectables(
+          addInjectable = { injectables += it },
+          addAddOnInjectable = { addOnInjectables += AddOnInjectable(it) }
+        )
+    }
 
     addOnInjectables.toList().forEach { collectAddOnInjectables(it) }
   }
@@ -77,12 +77,12 @@ class InjectablesScope(
     return if (request.type.uniqueId == null && request.type.classifier == ctx.listClassifier) emptyList()
     else injectablesForType(CallableRequestKey(request.type, requestingScope.allStaticTypeParameters))
       .filter { injectable ->
-        ctx.session.visibilityChecker.isVisible(
+        ctx._session.visibilityChecker.isVisible(
           if (injectable.callable.originalType.unwrapTags().classifier.symbol
             ?.safeAs<FirRegularClassSymbol>()?.classKind == ClassKind.OBJECT)
             injectable.callable.originalType.unwrapTags().classifier.symbol!!.fir.cast()
           else injectable.callable.symbol.fir,
-          ctx.session,
+          ctx._session,
           requestingScope.allScopes.firstNotNullOf { it.owner.safeAs<FirFileSymbol>()?.fir },
           requestingScope.allScopes.mapNotNull { it.owner?.fir },
           null,
@@ -99,7 +99,12 @@ class InjectablesScope(
 
         for (candidate in injectables) {
           if (key.type.uniqueId != null && candidate.type.uniqueId != key.type.uniqueId) continue
-          val context = candidate.type.runCandidateInference(key.type, key.staticTypeParameters, ctx = ctx)
+          val context = with(ctx) {
+            candidate.type.runCandidateInference(
+              key.type,
+              key.staticTypeParameters
+            )
+          }
           if (!context.isOk) continue
           this += CallableInjectable(
             this@InjectablesScope,
@@ -164,7 +169,7 @@ class InjectablesScope(
     singleElementType: InjektType,
     collectionElementType: InjektType,
     key: CallableRequestKey
-  ): List<Pair<InjektType, Boolean>> {
+  ): List<Pair<InjektType, Boolean>> = with(ctx) {
     if (injectables.isEmpty())
       return parent?.listElementsTypesForType(singleElementType, collectionElementType, key) ?: emptyList()
 
@@ -175,10 +180,16 @@ class InjectablesScope(
       for (candidate in injectables.toList()) {
         var isSingle = true
         var context =
-          candidate.type.runCandidateInference(singleElementType, key.staticTypeParameters, ctx = ctx)
+          candidate.type.runCandidateInference(
+            singleElementType,
+            key.staticTypeParameters
+          )
         if (!context.isOk) {
           isSingle = false
-          context = candidate.type.runCandidateInference(collectionElementType, key.staticTypeParameters, ctx = ctx)
+          context = candidate.type.runCandidateInference(
+            collectionElementType,
+            key.staticTypeParameters
+          )
         }
         if (!context.isOk) continue
 
@@ -199,33 +210,35 @@ class InjectablesScope(
       collectAddOnInjectables(addOnInjectable, candidateType)
   }
 
-  private fun collectAddOnInjectables(addOnInjectable: AddOnInjectable, candidateType: InjektType) {
+  private fun collectAddOnInjectables(
+    addOnInjectable: AddOnInjectable,
+    candidateType: InjektType
+  ) = with(ctx) {
     if (!addOnInjectable.processedCandidateTypes.add(candidateType) ||
       addOnInjectable in addOnInjectableChain) return
 
     val context = runAddOnInjectableInference(
       addOnInjectable.constraintType,
       candidateType,
-      allStaticTypeParameters,
-      ctx
+      allStaticTypeParameters
     )
     if (!context.isOk) return
 
     val substitutedInjectable = addOnInjectable.callable.substitute(context.fixedTypeVariables)
     addOnInjectableChain += addOnInjectable
 
-    substitutedInjectable.collectModuleInjectables(
-      scope = this,
-      addInjectable = { next ->
-        injectables += next
-        collectAddOnInjectables(next.type)
-      },
-      addAddOnInjectable = { next ->
-        AddOnInjectable(next)
-          .also { collectAddOnInjectables(it) }
-      },
-      ctx = ctx
-    )
+    with(ctx) {
+      substitutedInjectable.collectModuleInjectables(
+        addInjectable = { next ->
+          injectables += next
+          collectAddOnInjectables(next.type)
+        },
+        addAddOnInjectable = { next ->
+          AddOnInjectable(next)
+            .also { collectAddOnInjectables(it) }
+        }
+      )
+    }
 
     addOnInjectableChain -= addOnInjectable
   }

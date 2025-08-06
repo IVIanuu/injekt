@@ -29,7 +29,9 @@ class CallableInjectable(
   val callable: InjektCallable,
   override val type: InjektType
 ) : Injectable {
-  override val dependencies = callable.injectableRequests(emptySet(), ownerScope.ctx)
+  override val dependencies = with(ownerScope.ctx) {
+    callable.injectableRequests(emptySet())
+  }
   override val callContext: CallContext = callable.callContext
   override val chainFqName = callable.chainFqName
 }
@@ -71,12 +73,13 @@ class LambdaInjectable(
     )
   )
 
-  val valueParameterSymbols = findClassifier(
-    type.classifier.key,
-    type.classifier.fqName,
-    type.classifier.classId,
-    ownerScope.ctx
-  )
+  val valueParameterSymbols = with(ownerScope.ctx) {
+    findClassifier(
+      type.classifier.key,
+      type.classifier.fqName,
+      type.classifier.classId
+    )
+  }
     .cast<FirRegularClassSymbol>()
     .declarationSymbols
     .filterIsInstance<FirFunctionSymbol<*>>()
@@ -95,9 +98,11 @@ class LambdaInjectable(
     parent = ownerScope,
     initialInjectables = valueParameterSymbols
       .mapIndexed { index, parameter ->
-        parameter
-          .toInjektCallable(ownerScope.ctx, chainFqName.child(parameter.name))
-          .copy(type = type.arguments[index])
+        with(ownerScope.ctx) {
+          parameter
+            .toInjektCallable(chainFqName.child(parameter.name))
+            .copy(type = type.arguments[index])
+        }
       },
     callContext = dependencyCallContext,
     ctx = ownerScope.ctx
@@ -138,7 +143,8 @@ data class InjectableRequest(
   val isInline: Boolean = false
 )
 
-fun InjektCallable.injectableRequests(exclude: Set<Name>, ctx: InjektContext): List<InjectableRequest> =
+context(ctx: InjektContext)
+fun InjektCallable.injectableRequests(exclude: Set<Name>): List<InjectableRequest> =
   parameterTypes.map { (name, type) ->
     if (name in exclude) return@map null
     val valueParameter = symbol.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols
@@ -156,6 +162,6 @@ fun InjektCallable.injectableRequests(exclude: Set<Name>, ctx: InjektContext): L
       isInline = symbol.isInline &&
           valueParameter?.isNoinline != true &&
           valueParameter?.isCrossinline != true &&
-          valueParameter?.resolvedReturnType?.toInjektType(ctx)?.isNonKFunctionType() == true
+          valueParameter?.resolvedReturnType?.toInjektType()?.isNonKFunctionType() == true
     )
   }.filterNotNull()

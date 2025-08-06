@@ -4,7 +4,6 @@
 
 package injekt.compiler.fir
 
-import injekt.compiler.*
 import injekt.compiler.resolution.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.*
@@ -40,7 +39,7 @@ private fun <A> error1(
 
 val INJEKT_ERROR by error1<String>()
 
-fun InjectionResult.Error.render(ctx: InjektContext): String = buildString {
+fun InjectionResult.Error.render(): String = buildString {
   var indent = 0
   fun withIndent(block: () -> Unit) {
     indent++

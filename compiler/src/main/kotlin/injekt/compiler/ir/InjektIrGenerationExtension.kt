@@ -23,13 +23,17 @@ class InjektIrGenerationExtension(
   private val ctx: InjektContext
 ) : IrGenerationExtension {
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    val compilationDeclarations = CompilationDeclarations()
-    moduleFragment.transform(compilationDeclarations, null)
-    moduleFragment.transform(InjectCallTransformer(compilationDeclarations, pluginContext, ctx), null)
-    moduleFragment.patchDeclarationParents()
-    moduleFragment.addInjektMetadata(ctx, pluginContext)
-    moduleFragment.fixDefaultValueParameterReturnTypeForCompose(pluginContext)
-    moduleFragment.dumpToFiles(dumpDir, ctx)
+    with(ctx) {
+      with(pluginContext) {
+        val compilationDeclarations = CompilationDeclarations()
+        moduleFragment.transform(compilationDeclarations, null)
+        moduleFragment.transform(InjectCallTransformer(compilationDeclarations, pluginContext, ctx), null)
+        moduleFragment.patchDeclarationParents()
+        moduleFragment.addInjektMetadata()
+        moduleFragment.fixDefaultValueParameterReturnTypeForCompose()
+        moduleFragment.dumpToFiles(dumpDir)
+      }
+    }
   }
 }
 
@@ -38,9 +42,8 @@ class InjektIrGenerationExtension(
  * Compose has a bug which makes inliner crash if a default value's type of a parameter
  * in a inline @Composable function is of type Nothing
  */
-fun IrModuleFragment.fixDefaultValueParameterReturnTypeForCompose(
-  irCtx: IrPluginContext
-) {
+context(irCtx: IrPluginContext)
+fun IrModuleFragment.fixDefaultValueParameterReturnTypeForCompose() {
   transform(
     object : IrElementTransformerVoid() {
       override fun visitValueParameter(declaration: IrValueParameter): IrStatement {

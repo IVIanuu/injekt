@@ -11,11 +11,12 @@ import java.io.*
 
 var dumpAllFiles = false
 
-fun IrModuleFragment.dumpToFiles(dumpDir: File, context: InjektContext) {
+context(_: InjektContext)
+fun IrModuleFragment.dumpToFiles(dumpDir: File) {
   files
     .filter {
       dumpAllFiles ||
-          context.cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
+          cachedOrNull<_, Unit>(INJECTIONS_OCCURRED_IN_FILE_KEY, it.fileEntry.name) != null
     }
     .forEach { irFile ->
       val sourceFile = File(irFile.fileEntry.name)

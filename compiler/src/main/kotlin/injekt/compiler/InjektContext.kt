@@ -4,6 +4,7 @@
 
 package injekt.compiler
 
+import injekt.compiler.InjektContext.Companion.Null
 import injekt.compiler.resolution.*
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.plugin.*
@@ -14,47 +15,38 @@ import org.jetbrains.kotlin.name.*
 
 @Suppress("NewApi")
 class InjektContext : TypeCheckerContext {
-  lateinit var session: FirSession
+  lateinit var _session: FirSession
 
   @PublishedApi internal val maps = mutableMapOf<String, MutableMap<Any?, Any?>>()
-
-  fun <K, V> cachedOrNull(kind: String, key: K): V? =
-    maps[kind]?.get(key)?.takeIf { it !== Null } as? V
-
-  inline fun <K, V> cached(
-    kind: String,
-    key: K,
-    computation: () -> V
-  ): V = maps.getOrPut(kind) { mutableMapOf() }
-    .getOrPut(key) { computation() ?: Null }
-    .takeIf { it !== Null } as V
 
   override val ctx: InjektContext get() = this
 
   override fun isDenotable(type: InjektType): Boolean = true
 
   val listClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    session.symbolProvider.getClassLikeSymbolByClassId(StandardClassIds.List)!!.toInjektClassifier(this)
+    session.symbolProvider.getClassLikeSymbolByClassId(StandardClassIds.List)!!
+      .toInjektClassifier()
   }
   val collectionClassifier by lazy(LazyThreadSafetyMode.NONE) {
-    session.symbolProvider.getClassLikeSymbolByClassId(StandardClassIds.Collection)!!.toInjektClassifier(this)
+    session.symbolProvider.getClassLikeSymbolByClassId(StandardClassIds.Collection)!!
+      .toInjektClassifier()
   }
   val nullableNothingType by lazy(LazyThreadSafetyMode.NONE) {
-    session.builtinTypes.nullableNothingType.coneType.toInjektType(ctx = ctx)
+    session.builtinTypes.nullableNothingType.coneType.toInjektType()
   }
   val anyType by lazy(LazyThreadSafetyMode.NONE) {
-    session.builtinTypes.anyType.coneType.toInjektType(ctx = ctx)
+    session.builtinTypes.anyType.coneType.toInjektType()
   }
   val nullableAnyType by lazy(LazyThreadSafetyMode.NONE) {
     anyType.copy(isMarkedNullable = true)
   }
   val functionType by lazy(LazyThreadSafetyMode.NONE) {
     StandardClassIds.Function.createConeType(session, arrayOf(ConeStarProjection))
-      .toInjektType(ctx)
+      .toInjektType()
   }
   val typeKeyClassifier by lazy(LazyThreadSafetyMode.NONE) {
     session.symbolProvider.getClassLikeSymbolByClassId(InjektFqNames.TypeKey)
-      ?.toInjektClassifier(ctx)
+      ?.toInjektClassifier()
   }
 
   val scopeSession by lazy(LazyThreadSafetyMode.NONE) { ScopeSession() }
@@ -63,6 +55,21 @@ class InjektContext : TypeCheckerContext {
     val Null = Any()
   }
 }
+
+context(ctx: InjektContext) val session: FirSession get() = ctx._session
+
+context(ctx: InjektContext)
+fun <K, V> cachedOrNull(kind: String, key: K): V? =
+  ctx.maps[kind]?.get(key)?.takeIf { it !== Null } as? V
+
+context(ctx: InjektContext)
+inline fun <K, V> cached(
+  kind: String,
+  key: K,
+  computation: () -> V
+): V = ctx.maps.getOrPut(kind) { mutableMapOf() }
+  .getOrPut(key) { computation() ?: Null }
+  .takeIf { it !== Null } as V
 
 data class SourcePosition(val filePath: String, val endOffset: Int)
 

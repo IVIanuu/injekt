@@ -31,39 +31,40 @@ class CallableMetadata(
   val injectParameters: Set<Name>
 )
 
-fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata =
+context(ctx: InjektContext)
+fun FirCallableSymbol<*>.callableMetadata(): CallableMetadata =
   when {
-    this != originalOrSelf() -> originalOrSelf().callableMetadata(ctx)
-    this is FirPropertyAccessorSymbol -> propertySymbol.callableMetadata(ctx)
-    else -> ctx.cached("callable_metadata", uniqueKey(ctx)) {
-      decodeMetadata<PersistedCallableMetadata>(ctx)
-        ?.toCallableMetadata(ctx)
+    this != originalOrSelf() -> originalOrSelf().callableMetadata()
+    this is FirPropertyAccessorSymbol -> propertySymbol.callableMetadata()
+    else -> cached("callable_metadata", uniqueKey()) {
+      decodeMetadata<PersistedCallableMetadata>()
+        ?.toCallableMetadata()
         ?.let { return@cached it }
 
       val type = run {
         val tags = if (this is FirConstructorSymbol)
           buildList {
-            addAll(resolvedReturnType.toSymbol(ctx.session)!!.classifierMetadata(ctx).tags)
-            for (tagAnnotation in annotations.getTagAnnotations(ctx))
-              add(tagAnnotation.resolvedType.toInjektType(ctx))
+            addAll(resolvedReturnType.toSymbol(session)!!.classifierMetadata().tags)
+            for (tagAnnotation in annotations.getTagAnnotations())
+              add(tagAnnotation.resolvedType.toInjektType())
           }
         else emptyList()
-        tags.wrap(resolvedReturnType.toInjektType(ctx))
+        tags.wrap(resolvedReturnType.toInjektType())
       }
 
       val parameterTypes = buildMap {
         if (dispatchReceiverType != null)
-          this[DISPATCH_RECEIVER_NAME] = dispatchReceiverType!!.toInjektType(ctx)
+          this[DISPATCH_RECEIVER_NAME] = dispatchReceiverType!!.toInjektType()
         this@callableMetadata.isExtension
         if (resolvedReceiverType != null)
-          this[EXTENSION_RECEIVER_NAME] = resolvedReceiverType!!.toInjektType(ctx)
+          this[EXTENSION_RECEIVER_NAME] = resolvedReceiverType!!.toInjektType()
         contextParameterSymbols.forEach { contextParameter ->
-          this[contextParameter.injektName()] = contextParameter.resolvedReturnType.toInjektType(ctx)
+          this[contextParameter.injektName()] = contextParameter.resolvedReturnType.toInjektType()
         }
         if (this@callableMetadata is FirFunctionSymbol<*>)
           valueParameterSymbols.forEach { valueParameter ->
             this[valueParameter.name] =
-              valueParameter.resolvedReturnType.toInjektType(ctx)
+              valueParameter.resolvedReturnType.toInjektType()
           }
       }
 
@@ -79,10 +80,11 @@ fun FirCallableSymbol<*>.callableMetadata(ctx: InjektContext): CallableMetadata 
     }
   }
 
-fun CallableMetadata.shouldBePersisted(ctx: InjektContext) = injectParameters.isNotEmpty() ||
+context(ctx: InjektContext)
+fun CallableMetadata.shouldBePersisted() = injectParameters.isNotEmpty() ||
     type.shouldBePersisted() ||
     parameterTypes.values.any { it.shouldBePersisted() } ||
-    symbol.typeParameterSymbols.any { it.classifierMetadata(ctx).shouldBePersisted(ctx) }
+    symbol.typeParameterSymbols.any { it.classifierMetadata().shouldBePersisted() }
 
 @Serializable data class PersistedCallableMetadata(
   val callableKey: String,
@@ -93,26 +95,28 @@ fun CallableMetadata.shouldBePersisted(ctx: InjektContext) = injectParameters.is
   val typeParameterMetadata: List<PersistedClassifierMetadata>
 )
 
-fun CallableMetadata.toPersistedCallableMetadata(ctx: InjektContext) = PersistedCallableMetadata(
-  callableKey = symbol.uniqueKey(ctx),
+context(ctx: InjektContext)
+fun CallableMetadata.toPersistedCallableMetadata() = PersistedCallableMetadata(
+  callableKey = symbol.uniqueKey(),
   callableFqName = symbol.fqName.asString(),
-  type = type.toPersistedInjektType(ctx),
+  type = type.toPersistedInjektType(),
   parameterTypes = parameterTypes
     .mapKeys { it.key.asString() }
-    .mapValues { it.value.toPersistedInjektType(ctx) },
+    .mapValues { it.value.toPersistedInjektType() },
   injectParameters = injectParameters.mapTo(mutableSetOf()) { it.asString() },
   typeParameterMetadata = symbol.typeParameterSymbols.map {
-    it.classifierMetadata(ctx).toPersistedClassifierMetadata(ctx)
+    it.classifierMetadata().toPersistedClassifierMetadata()
   }
 )
 
-fun PersistedCallableMetadata.toCallableMetadata(ctx: InjektContext) = try {
+context(ctx: InjektContext)
+fun PersistedCallableMetadata.toCallableMetadata() = try {
   CallableMetadata(
-    symbol = findCallableForKey(callableKey, FqName(callableFqName), ctx),
-    type = type.toInjektType(ctx),
+    symbol = findCallableForKey(callableKey, FqName(callableFqName)),
+    type = type.toInjektType(),
     parameterTypes = parameterTypes
       .mapKeys { it.key.asNameId() }
-      .mapValues { it.value.toInjektType(ctx) },
+      .mapValues { it.value.toInjektType() },
     injectParameters = injectParameters.mapTo(mutableSetOf()) { it.asNameId() }
   )
 } catch (e: Throwable) {
@@ -128,66 +132,66 @@ class ClassifierMetadata(
   val tags by lazyTags
 }
 
-fun FirClassifierSymbol<*>.classifierMetadata(ctx: InjektContext): ClassifierMetadata =
-  ctx.cached("classifier_metadata", uniqueKey(ctx)) {
+context(ctx: InjektContext)
+fun FirClassifierSymbol<*>.classifierMetadata(): ClassifierMetadata =
+  cached("classifier_metadata", uniqueKey()) {
     when (this) {
       is FirTypeParameterSymbol -> {
         val index = containingDeclarationSymbol.typeParameterSymbols!!.indexOf(this)
         (containingDeclarationSymbol.safeAs<FirClassifierSymbol<*>>()
-          ?.decodeMetadata<PersistedClassifierMetadata>(ctx)
+          ?.decodeMetadata<PersistedClassifierMetadata>()
           ?.typeParameterMetadata ?:
         containingDeclarationSymbol.safeAs<FirCallableSymbol<*>>()
-          ?.decodeMetadata<PersistedCallableMetadata>(ctx)
+          ?.decodeMetadata<PersistedCallableMetadata>()
           ?.typeParameterMetadata)
           ?.let {
             it.getOrNull(index)
               ?: error("Wtf $this $containingDeclarationSymbol ${containingDeclarationSymbol.typeParameterSymbols}")
           }
-          ?.toClassifierMetadata(ctx)
+          ?.toClassifierMetadata()
           ?.let { return@cached it }
       }
-      is FirTypeAliasSymbol -> {
-        ctx.session.symbolProvider.getTopLevelFunctionSymbols(
-          classId.packageFqName,
-          (classId.shortClassName.asString() + "\$MetadataHolder").asNameId()
-        )
-          // for some reason there are multiple holders sometimes
-          // so just the first non null result
-          .firstNotNullOfOrNull { it.decodeMetadata<PersistedClassifierMetadata>(ctx) }
-          ?.toClassifierMetadata(ctx)
-          ?.let { return@cached it }
-      }
+      is FirTypeAliasSymbol -> session.symbolProvider.getTopLevelFunctionSymbols(
+        classId.packageFqName,
+        (classId.shortClassName.asString() + "\$MetadataHolder").asNameId()
+      )
+        // for some reason there are multiple holders sometimes
+        // so just the first non null result
+        .firstNotNullOfOrNull { it.decodeMetadata<PersistedClassifierMetadata>() }
+        ?.toClassifierMetadata()
+        ?.let { return@cached it }
       else -> {
-        decodeMetadata<PersistedClassifierMetadata>(ctx)
-          ?.toClassifierMetadata(ctx)
+        decodeMetadata<PersistedClassifierMetadata>()
+          ?.toClassifierMetadata()
           ?.let { return@cached it }
       }
     }
 
     val expandedType = (this as? FirTypeAliasSymbol)?.resolvedExpandedTypeRef
-      ?.coneType?.toInjektType(ctx)
+      ?.coneType?.toInjektType()
 
-    val isTag = hasAnnotation(InjektFqNames.Tag, ctx.session)
+    val isTag = hasAnnotation(InjektFqNames.Tag, session)
 
     val lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) {
       when {
         isTag -> listOf(ctx.anyType)
         expandedType != null -> listOf(expandedType)
-        this is FirTypeParameterSymbol -> resolvedBounds.map { it.coneType.toInjektType(ctx) }
-        else -> cast<FirClassLikeSymbol<*>>().getSuperTypes(ctx.session, recursive = false)
-          .map { it.toInjektType(ctx) }
+        this is FirTypeParameterSymbol -> resolvedBounds.map { it.coneType.toInjektType() }
+        else -> this.cast<FirClassLikeSymbol<*>>().getSuperTypes(session, recursive = false)
+          .map { it.toInjektType() }
       }
     }
 
     val lazyTags = lazy(LazyThreadSafetyMode.NONE) {
-      annotations.getTagAnnotations(ctx).map { it.resolvedType.toInjektType(ctx) }
+      annotations.getTagAnnotations().map { it.resolvedType.toInjektType() }
     }
     ClassifierMetadata(this, lazyTags, lazySuperTypes)
   }
 
-fun ClassifierMetadata.shouldBePersisted(ctx: InjektContext): Boolean =
+context(ctx: InjektContext)
+fun ClassifierMetadata.shouldBePersisted(): Boolean =
   tags.any { it.shouldBePersisted() } || superTypes.any { it.shouldBePersisted() }  ||
-      symbol.typeParameterSymbols?.any { it.classifierMetadata(ctx).shouldBePersisted(ctx) } == true
+      symbol.typeParameterSymbols?.any { it.classifierMetadata().shouldBePersisted() } == true
 
 @Serializable data class PersistedClassifierMetadata(
   val classifierKey: String,
@@ -198,21 +202,27 @@ fun ClassifierMetadata.shouldBePersisted(ctx: InjektContext): Boolean =
   val typeParameterMetadata: List<PersistedClassifierMetadata>
 )
 
-fun PersistedClassifierMetadata.toClassifierMetadata(ctx: InjektContext) = ClassifierMetadata(
-  symbol = findClassifier(classifierKey, FqName(classifierFqName), ClassId.fromString(classifierKey), ctx),
-  lazyTags = lazy(LazyThreadSafetyMode.NONE) { tags.map { it.toInjektType(ctx) } },
-  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toInjektType(ctx) } }
+context(ctx: InjektContext)
+fun PersistedClassifierMetadata.toClassifierMetadata() = ClassifierMetadata(
+  symbol = findClassifier(
+    classifierKey,
+    FqName(classifierFqName),
+    ClassId.fromString(classifierKey)
+  ),
+  lazyTags = lazy(LazyThreadSafetyMode.NONE) { tags.map { it.toInjektType() } },
+  lazySuperTypes = lazy(LazyThreadSafetyMode.NONE) { superTypes.map { it.toInjektType() } }
 )
 
-fun ClassifierMetadata.toPersistedClassifierMetadata(ctx: InjektContext): PersistedClassifierMetadata = PersistedClassifierMetadata(
-  classifierKey = symbol.uniqueKey(ctx),
+context(ctx: InjektContext)
+fun ClassifierMetadata.toPersistedClassifierMetadata(): PersistedClassifierMetadata = PersistedClassifierMetadata(
+  classifierKey = symbol.uniqueKey(),
   classifierFqName = symbol.fqName.asString(),
   classifierClassId = symbol.safeAs<FirClassLikeSymbol<*>>()?.classId?.toString(),
-  tags = tags.map { it.toPersistedInjektType(ctx) },
-  superTypes = superTypes.map { it.toPersistedInjektType(ctx) },
+  tags = tags.map { it.toPersistedInjektType() },
+  superTypes = superTypes.map { it.toPersistedInjektType() },
   typeParameterMetadata = symbol.safeAs<FirClassLikeSymbol<*>>()
     ?.typeParameterSymbols
-    ?.map { it.classifierMetadata(ctx).toPersistedClassifierMetadata(ctx) }
+    ?.map { it.classifierMetadata().toPersistedClassifierMetadata() }
     ?: emptyList()
 )
 
@@ -222,8 +232,9 @@ val json = Json { ignoreUnknownKeys = true }
 inline fun <reified T> T.encode(): String = json.encodeToString(this)
 inline fun <reified T> String.decode(): T = json.decodeFromString(this)
 
-private inline fun <reified T> FirBasedSymbol<*>.decodeMetadata(ctx: InjektContext): T? =
-  getAnnotationByClassId(InjektFqNames.InjektMetadata, ctx.session)
+context(ctx: InjektContext)
+private inline fun <reified T> FirBasedSymbol<*>.decodeMetadata(): T? =
+  getAnnotationByClassId(InjektFqNames.InjektMetadata, session)
     ?.argumentMapping
     ?.mapping
     ?.values
@@ -244,29 +255,30 @@ private inline fun <reified T> FirBasedSymbol<*>.decodeMetadata(ctx: InjektConte
   val isProvide: Boolean
 )
 
-fun InjektType.toPersistedInjektType(ctx: InjektContext): PersistedInjektType =
+context(ctx: InjektContext)
+fun InjektType.toPersistedInjektType(): PersistedInjektType =
   PersistedInjektType(
     classifierKey = classifier.key,
     classifierFqName = classifier.fqName.asString(),
     classifierClassId = classifier.classId?.toString(),
-    arguments = arguments.map { it.toPersistedInjektType(ctx) },
+    arguments = arguments.map { it.toPersistedInjektType() },
     isStarProjection = isStarProjection,
     variance = variance,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide
   )
 
-fun PersistedInjektType.toInjektType(ctx: InjektContext): InjektType =
+context(ctx: InjektContext)
+fun PersistedInjektType.toInjektType(): InjektType =
   if (isStarProjection) STAR_PROJECTION_TYPE
   else InjektType(
     classifier = findClassifier(
       classifierKey,
       FqName(classifierFqName),
-      classifierClassId?.let { ClassId.fromString(it) },
-      ctx
+      classifierClassId?.let { ClassId.fromString(it) }
     )
-      .toInjektClassifier(ctx),
-    arguments = arguments.map { it.toInjektType(ctx) },
+      .toInjektClassifier(),
+    arguments = arguments.map { it.toInjektType() },
     variance = variance,
     isMarkedNullable = isMarkedNullable,
     isProvide = isProvide

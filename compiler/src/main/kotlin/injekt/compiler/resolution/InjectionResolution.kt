@@ -94,7 +94,8 @@ sealed interface ResolutionResult {
   }
 }
 
-fun InjectablesScope.resolveRequests(
+context(scope: InjectablesScope)
+fun resolveRequests(
   callee: InjektCallable,
   requests: List<InjectableRequest>
 ): InjectionResult {
@@ -113,43 +114,47 @@ fun InjectablesScope.resolveRequests(
           failure = result
         }
     }
-  return if (failure == null) InjectionResult.Success(this, callee, successes)
-  else InjectionResult.Error(this, callee, failureRequest!!, failure)
+  return if (failure == null) InjectionResult.Success(scope, callee, successes)
+  else InjectionResult.Error(scope, callee, failureRequest!!, failure)
 }
 
-private fun InjectablesScope.resolveRequest(request: InjectableRequest): ResolutionResult {
-  resultsByType[request.type]?.let { return it }
+context(scope: InjectablesScope)
+private fun resolveRequest(request: InjectableRequest): ResolutionResult {
+  scope.resultsByType[request.type]?.let { return it }
 
   val result = tryToResolveRequestWithUserInjectables(request)
     ?: tryToResolveRequestWithBuiltInInjectable(request)
     ?: ResolutionResult.Failure.NoCandidates(request)
 
-  resultsByType[request.type] = result
+  scope.resultsByType[request.type] = result
   return result
 }
 
-private fun InjectablesScope.tryToResolveRequestWithUserInjectables(
+context(scope: InjectablesScope)
+private fun tryToResolveRequestWithUserInjectables(
   request: InjectableRequest
-): ResolutionResult? = injectablesForRequest(request, this)
+): ResolutionResult? = scope.injectablesForRequest(request, scope)
   .takeIf { it.isNotEmpty() }
   ?.let { resolveCandidates(request, it) }
 
-private fun InjectablesScope.tryToResolveRequestWithBuiltInInjectable(
+context(scope: InjectablesScope)
+private fun tryToResolveRequestWithBuiltInInjectable(
   request: InjectableRequest
-): ResolutionResult? = builtInInjectableForRequest(request)?.let { resolveCandidate(it) }
+): ResolutionResult? = scope.builtInInjectableForRequest(request)?.let { resolveCandidate(it) }
 
-private fun InjectablesScope.computeForCandidate(
+context(scope: InjectablesScope)
+private fun computeForCandidate(
   candidate: Injectable,
   compute: () -> ResolutionResult,
 ): ResolutionResult {
-  resultsByCandidate[candidate]?.let { return it }
+  scope.resultsByCandidate[candidate]?.let { return it }
 
   if (candidate.dependencies.isEmpty())
-    return compute().also { resultsByCandidate[candidate] = it }
+    return compute().also { scope.resultsByCandidate[candidate] = it }
 
-  if (resolutionChain.isNotEmpty())
-    for (i in resolutionChain.lastIndex downTo 0) {
-      val previousCandidate = resolutionChain[i]
+  if (scope.resolutionChain.isNotEmpty())
+    for (i in scope.resolutionChain.lastIndex downTo 0) {
+      val previousCandidate = scope.resolutionChain[i]
 
       val isSameCallable = if (candidate is CallableInjectable &&
         candidate.callable.symbol.fqName
@@ -162,19 +167,20 @@ private fun InjectablesScope.computeForCandidate(
 
       if (isSameCallable && previousCandidate.type == candidate.type) {
         val result = ResolutionResult.Failure.WithCandidate.DivergentInjectable(candidate)
-        resultsByCandidate[candidate] = result
+        scope.resultsByCandidate[candidate] = result
         return result
       }
     }
 
-  resolutionChain += candidate
+  scope.resolutionChain += candidate
   val result = compute()
-  resultsByCandidate[candidate] = result
-  resolutionChain -= candidate
+  scope.resultsByCandidate[candidate] = result
+  scope.resolutionChain -= candidate
   return result
 }
 
-private fun InjectablesScope.resolveCandidates(
+context(scope: InjectablesScope)
+private fun resolveCandidates(
   request: InjectableRequest,
   candidates: List<Injectable>
 ): ResolutionResult {
@@ -223,11 +229,15 @@ private fun InjectablesScope.resolveCandidates(
   }
 }
 
-private fun InjectablesScope.resolveCandidate(
+context(scope: InjectablesScope)
+private fun resolveCandidate(
   candidate: Injectable
 ): ResolutionResult = computeForCandidate(candidate) {
-  if (!callContext.canCall(candidate.callContext))
-    return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(callContext, candidate)
+  if (!scope.callContext.canCall(candidate.callContext))
+    return@computeForCandidate ResolutionResult.Failure.WithCandidate.CallContextMismatch(
+      scope.callContext,
+      candidate
+    )
 
   if (candidate is CallableInjectable)
     for ((typeParameter, typeArgument) in candidate.callable.typeArguments) {
@@ -243,16 +253,18 @@ private fun InjectablesScope.resolveCandidate(
     }
 
   if (candidate.dependencies.isEmpty())
-    return@computeForCandidate ResolutionResult.Success.Value(candidate, this, emptyMap())
+    return@computeForCandidate ResolutionResult.Success.Value(candidate, scope, emptyMap())
 
   val successDependencyResults = mutableMapOf<InjectableRequest, ResolutionResult.Success>()
-  for (dependency in candidate.dependencies)
-    when (val dependencyResult = (candidate.dependencyScope ?: this).resolveRequest(dependency)) {
+  for (dependency in candidate.dependencies) {
+    val dependencyResult = with((candidate.dependencyScope ?: scope)) { resolveRequest(dependency) }
+    when (dependencyResult) {
       is ResolutionResult.Success -> successDependencyResults[dependency] = dependencyResult
       is ResolutionResult.Failure -> when {
         !dependency.isRequired &&
             dependencyResult.unwrapDependencyFailure(dependency).second is ResolutionResult.Failure.NoCandidates ->
           successDependencyResults[dependency] = ResolutionResult.Success.DefaultValue
+
         else -> return@computeForCandidate ResolutionResult.Failure.WithCandidate.DependencyFailure(
           candidate,
           dependency,
@@ -260,15 +272,17 @@ private fun InjectablesScope.resolveCandidate(
         )
       }
     }
+  }
 
   return@computeForCandidate ResolutionResult.Success.Value(
     candidate,
-    this,
+    scope,
     successDependencyResults
   )
 }
 
-private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
+context(scope: InjectablesScope)
+private fun compareResult(a: ResolutionResult?, b: ResolutionResult?): Int {
   if (a === b) return 0
 
   if (a != null && b == null) return -1
@@ -287,7 +301,7 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
       return 1
 
     if (a is ResolutionResult.Success.Value && b is ResolutionResult.Success.Value)
-      return compareCandidate(a.candidate, b.candidate)
+      return with(scope.ctx) { compareCandidate(a.candidate, b.candidate) }
 
     return 0
   } else {
@@ -298,7 +312,8 @@ private fun InjectablesScope.compareResult(a: ResolutionResult?, b: ResolutionRe
   }
 }
 
-private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): Int {
+context(_: TypeCheckerContext)
+private fun compareCandidate(a: Injectable?, b: Injectable?): Int {
   if (a === b) return 0
 
   if (a != null && b == null) return -1
@@ -316,8 +331,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
     val ownerA = a.callable.parameterTypes[DISPATCH_RECEIVER_NAME]
     val ownerB = b.callable.parameterTypes[DISPATCH_RECEIVER_NAME]
     if (ownerA != null && ownerB != null) {
-      if (ownerA.isSubTypeOf(ownerB, ctx)) return -1
-      if (ownerB.isSubTypeOf(ownerA, ctx)) return 1
+      if (ownerA.isSubTypeOf(ownerB)) return -1
+      if (ownerB.isSubTypeOf(ownerA)) return 1
     }
   }
 
@@ -327,7 +342,8 @@ private fun InjectablesScope.compareCandidate(a: Injectable?, b: Injectable?): I
   )
 }
 
-private fun InjectablesScope.compareType(
+context(_: TypeCheckerContext)
+private fun compareType(
   a: InjektType?,
   b: InjektType?,
   comparedTypes: MutableSet<Pair<InjektType, InjektType>> = mutableSetOf()
@@ -369,12 +385,12 @@ private fun InjectablesScope.compareType(
   }
 
   if (a.classifier != b.classifier) {
-    val aSubTypeOfB = a.isSubTypeOf(b, ctx)
-    val bSubTypeOfA = b.isSubTypeOf(a, ctx)
+    val aSubTypeOfB = a.isSubTypeOf(b)
+    val bSubTypeOfA = b.isSubTypeOf(a)
     if (aSubTypeOfB && !bSubTypeOfA) return -1
     if (bSubTypeOfA && !aSubTypeOfB) return 1
-    val aCommonSuperType = a.superTypes.commonSuperType(ctx = ctx)
-    val bCommonSuperType = b.superTypes.commonSuperType(ctx = ctx)
+    val aCommonSuperType = a.superTypes.commonSuperType()
+    val bCommonSuperType = b.superTypes.commonSuperType()
     val diff = compareType(aCommonSuperType, bCommonSuperType, comparedTypes)
     if (diff < 0) return -1
     if (diff > 0) return 1

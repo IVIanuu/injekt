@@ -30,20 +30,20 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 
 class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker(MppCheckerKind.Common) {
   context(context: CheckerContext, reporter: DiagnosticReporter)
-  override fun check(expression: FirFunctionCall) {
+  override fun check(expression: FirFunctionCall): Unit = with(ctx) {
     val file = context.containingFileSymbol ?: return
 
     val callee = expression.calleeReference.toResolvedCallableSymbol()
       .safeAs<FirFunctionSymbol<*>>() ?: return
 
-    val metadata = callee.callableMetadata(ctx)
+    val metadata = callee.callableMetadata()
 
     if (metadata.injectParameters.isEmpty()) return
 
     val substitutionMap = buildMap {
       expression.typeArguments.forEachIndexed { index, argument ->
-        val parameter = callee.typeParameterSymbols[index].toInjektClassifier(ctx)
-        this[parameter] = argument.toConeTypeProjection().toInjektType(ctx)
+        val parameter = callee.typeParameterSymbols[index].toInjektClassifier()
+        this[parameter] = argument.toConeTypeProjection().toInjektType()
       }
 
       fun InjektType.putAll() {
@@ -54,12 +54,12 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
         }
       }
 
-      expression.dispatchReceiver?.resolvedType?.toInjektType(ctx)?.putAll()
-      expression.extensionReceiver?.resolvedType?.toInjektType(ctx)?.putAll()
+      expression.dispatchReceiver?.resolvedType?.toInjektType()?.putAll()
+      expression.extensionReceiver?.resolvedType?.toInjektType()?.putAll()
     }
 
     val substitutedCallee = callee
-      .toInjektCallable(ctx)
+      .toInjektCallable()
       .substitute(substitutionMap)
 
     val explicitArguments = buildSet {
@@ -77,13 +77,15 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
     val requests = substitutedCallee.injectableRequests(
       explicitArguments + callee.valueParameterSymbols
         .filter { it.name !in metadata.injectParameters }
-        .map { it.name },
-      ctx
+        .map { it.name }
     )
 
     if (requests.isEmpty()) return
 
-    val scope = elementInjectablesScopeOf(context.containingElements, expression, ctx)
+    val scope = elementInjectablesScopeOf(
+      context.containingElements,
+      expression
+    )
 
     // look up declarations to support incremental compilation
     context.session.lookupTracker?.recordLookup(
@@ -93,19 +95,21 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
       file.source
     )
 
-    when (val result = scope.resolveRequests(callee.toInjektCallable(ctx), requests)) {
-      is InjectionResult.Success -> {
-        ctx.cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
-        ctx.cached(
-          INJECTION_RESULT_KEY,
-          SourcePosition(
-            file.sourceFile!!.path!!,
-            expression.source!!.endOffset
-          )
-        ) { result }
+    with(scope) {
+      when (val result = resolveRequests(callee.toInjektCallable(), requests)) {
+        is InjectionResult.Success -> {
+          cached(INJECTIONS_OCCURRED_IN_FILE_KEY, file.sourceFile!!.path) { Unit }
+          cached<_, InjectionResult.Success>(
+            INJECTION_RESULT_KEY,
+            SourcePosition(
+              file.sourceFile!!.path!!,
+              expression.source!!.endOffset
+            )
+          ) { result }
+        }
+        is InjectionResult.Error ->
+          reporter.reportOn(expression.source!!, INJEKT_ERROR, result.render())
       }
-      is InjectionResult.Error ->
-        reporter.reportOn(expression.source!!, INJEKT_ERROR, result.render(ctx), context)
     }
   }
 }
@@ -113,11 +117,7 @@ class InjectCallChecker(private val ctx: InjektContext) : FirFunctionCallChecker
 object InjektCallableChecker : FirCallableDeclarationChecker(MppCheckerKind.Common) {
   context(context: CheckerContext, reporter: DiagnosticReporter)
   override fun check(declaration: FirCallableDeclaration) {
-    checkAddOnTypeParameters(
-      declaration.typeParameters.map { it.symbol.fir },
-      context,
-      reporter
-    )
+    checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir })
     checkOverrides(declaration)
   }
 }
@@ -133,28 +133,25 @@ object InjektClassChecker : FirClassChecker(MppCheckerKind.Common) {
         declaration.hasAnnotation(InjektFqNames.Provide, context.session)
 
     if (isInjectable && declaration.classKind == ClassKind.ENUM_CLASS)
-      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "enum class cannot be injectable", context)
+      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "enum class cannot be injectable")
 
     if (isInjectable && declaration.status.modality == Modality.ABSTRACT)
-      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "injectable cannot be abstract", context)
+      reporter.reportOn(declaration.source!!, INJEKT_ERROR, "injectable cannot be abstract")
 
     if (isInjectable)
-      checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir }, context, reporter)
+      checkAddOnTypeParameters(declaration.typeParameters.map { it.symbol.fir })
 
     if (declaration.hasAnnotation(InjektFqNames.Tag, context.session)) {
       declaration.constructors(context.session).forEach {
         if (it.valueParameterSymbols.isNotEmpty())
-          reporter.reportOn(it.source!!, INJEKT_ERROR, "tag cannot have value parameters", context)
+          reporter.reportOn(it.source!!, INJEKT_ERROR, "tag cannot have value parameters")
       }
     }
   }
 }
 
-private fun checkAddOnTypeParameters(
-  typeParameters: List<FirTypeParameter>,
-  context: CheckerContext,
-  reporter: DiagnosticReporter
-) {
+context(context: CheckerContext, reporter: DiagnosticReporter)
+private fun checkAddOnTypeParameters(typeParameters: List<FirTypeParameter>) {
   typeParameters
     .filter { it.hasAnnotation(InjektFqNames.AddOn, context.session) }
     .takeIf { it.size > 1 }

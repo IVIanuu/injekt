@@ -241,12 +241,11 @@ class TypeTest {
     val scoped = typeFor(FqName("injekt.common.Scoped"))
 
     val (scopedT, scopedU, scopedN) = collectDeclarationsInFqName(
-      FqName("injekt.common.Scoped.Companion"),
-      ctx
+      FqName("injekt.common.Scoped.Companion")
     )
       .single { it.fqName.shortName() == "scoped".asNameId() }
       .typeParameterSymbols!!
-      .map { it.toInjektClassifier(ctx) }
+      .map { it.toInjektClassifier() }
 
     val substitutionType = scoped.wrap(stringType)
       .let {
@@ -255,15 +254,15 @@ class TypeTest {
     val context = runAddOnInjectableInference(
       scopedT.defaultType,
       substitutionType,
-      emptyList(),
-      ctx
+      emptyList()
     )
     context.fixedTypeVariables[scopedT] shouldBe substitutionType
     context.fixedTypeVariables[scopedU] shouldBe stringType
     context.fixedTypeVariables[scopedN] shouldBe intType
   }
 
-  private fun TypeCheckerTestContext.runInference(
+  context(ctx: InjektContext)
+  private fun runInference(
     subType: InjektType,
     superType: InjektType,
     staticTypeParameters: List<InjektClassifier> = emptyList()
@@ -271,8 +270,7 @@ class TypeTest {
     val context = subType.runCandidateInference(
       superType,
       staticTypeParameters,
-      true,
-      ctx
+      true
     )
     return context.fixedTypeVariables
   }
@@ -294,7 +292,7 @@ class TypeTest {
   )
 }
 
-private fun typeTest(assertions: TypeCheckerTestContext.() -> Unit) {
+private fun typeTest(assertions: context(InjektContext) TypeCheckerTestContext.() -> Unit) {
   codegen(
     """
       fun invoke() = listOf<Unit>()
@@ -315,8 +313,8 @@ private fun typeTest(assertions: TypeCheckerTestContext.() -> Unit) {
                         override val callCheckers: Set<FirCallChecker> = setOf(
                           object : FirCallChecker(MppCheckerKind.Platform) {
                             context(context: CheckerContext, _: DiagnosticReporter)
-                            override fun check(expression: FirCall) {
-                              assertions(TypeCheckerTestContext(context.session))
+                            override fun check(expression: FirCall) = with(TypeCheckerTestContext(context.session)) {
+                              with(ctx) { assertions() }
                             }
                           }
                         )
@@ -333,7 +331,7 @@ private fun typeTest(assertions: TypeCheckerTestContext.() -> Unit) {
 }
 
 class TypeCheckerTestContext(session: FirSession) {
-  val ctx = InjektContext().also { it.session = session }
+  val ctx = InjektContext().also { it._session = session }
 
   val comparable = typeFor(StandardNames.FqNames.comparable)
   val any = typeFor(StandardNames.FqNames.any.toSafe())
@@ -408,14 +406,18 @@ class TypeCheckerTestContext(session: FirSession) {
     variance = variance
   ).defaultType
 
-  fun typeFor(fqName: FqName) = ctx.session.symbolProvider
-    .getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
-    ?.toInjektClassifier(ctx)?.defaultType ?: error("Wtf $fqName")
+  fun typeFor(fqName: FqName) = with(ctx) {
+    session.symbolProvider
+      .getClassLikeSymbolByClassId(ClassId.topLevel(fqName))
+      ?.toInjektClassifier()?.defaultType ?: error("Wtf $fqName")
+  }
 
+  context(ctx: InjektContext)
   infix fun InjektType.shouldBeAssignableTo(other: InjektType) {
     shouldBeAssignableTo(other, emptyList())
   }
 
+  context(ctx: InjektContext)
   fun InjektType.shouldBeAssignableTo(
     other: InjektType,
     staticTypeParameters: List<InjektClassifier> = emptyList()
@@ -423,17 +425,18 @@ class TypeCheckerTestContext(session: FirSession) {
     val context = runCandidateInference(
       other,
       staticTypeParameters,
-      true,
-      ctx
+      true
     )
     if (!context.isOk)
       throw AssertionError("'$this' is not assignable to '$other'")
   }
 
+  context(ctx: InjektContext)
   infix fun InjektType.shouldNotBeAssignableTo(other: InjektType) {
     shouldNotBeAssignableTo(other, emptyList())
   }
 
+  context(ctx: InjektContext)
   fun InjektType.shouldNotBeAssignableTo(
     other: InjektType,
     staticTypeParameters: List<InjektClassifier> = emptyList()
@@ -441,20 +444,21 @@ class TypeCheckerTestContext(session: FirSession) {
     val context = runCandidateInference(
       other,
       staticTypeParameters,
-      true,
-      ctx
+      true
     )
     if (context.isOk)
       throw AssertionError("'$this' is assignable to '$other'")
   }
 
+  context(ctx: InjektContext)
   infix fun InjektType.shouldBeSubTypeOf(other: InjektType) {
-    if (!isSubTypeOf(other, ctx))
+    if (!isSubTypeOf(other))
       throw AssertionError("'$this' is not sub type of '$other'")
   }
 
+  context(ctx: InjektContext)
   infix fun InjektType.shouldNotBeSubTypeOf(other: InjektType) {
-    if (isSubTypeOf(other, ctx))
+    if (isSubTypeOf(other))
       throw AssertionError("'$this' is sub type of '$other'")
   }
 }

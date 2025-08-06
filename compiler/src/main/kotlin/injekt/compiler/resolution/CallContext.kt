@@ -19,14 +19,15 @@ enum class CallContext { DEFAULT, SUSPEND, COMPOSABLE }
 fun CallContext.canCall(other: CallContext): Boolean =
   this == other || other == CallContext.DEFAULT
 
-fun FirCallableSymbol<*>.callContext(ctx: InjektContext): CallContext {
+context(_: InjektContext)
+fun FirCallableSymbol<*>.callContext(): CallContext {
   when {
     isSuspend -> return CallContext.SUSPEND
-    hasAnnotation(InjektFqNames.Composable, ctx.session) -> return CallContext.COMPOSABLE
+    hasAnnotation(InjektFqNames.Composable, session) -> return CallContext.COMPOSABLE
     else -> {
       if (this is FirAnonymousFunctionSymbol)
         fir.cast<FirAnonymousFunction>()
-          .typeRef.coneTypeOrNull?.toInjektType(ctx)
+          .typeRef.coneTypeOrNull?.toInjektType()
           ?.callContext
           ?.let { return it }
 

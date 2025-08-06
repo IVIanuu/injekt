@@ -68,16 +68,17 @@ fun InjektType.wrap(type: InjektType): InjektType {
   return withArguments(newArguments)
 }
 
-fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassifier =
-  ctx.cached("injekt_classifier", this) {
-    val metadata = classifierMetadata(ctx)
+context(ctx: InjektContext)
+fun FirClassifierSymbol<*>.toInjektClassifier(): InjektClassifier =
+  cached("injekt_classifier", this) {
+    val metadata = classifierMetadata()
 
     val typeParameters = typeParameterSymbols
-      ?.mapTo(mutableListOf()) { it.toInjektClassifier(ctx) }
+      ?.mapTo(mutableListOf()) { it.toInjektClassifier() }
 
-    if (typeParameters != null && isTagAnnotation(ctx))
+    if (typeParameters != null && isTagAnnotation())
       typeParameters += InjektClassifier(
-        key = "${uniqueKey(ctx)}.\$TT",
+        key = "${uniqueKey()}.\$TT",
         fqName = fqName.child("\$TT".asNameId()),
         classId = null,
         isTypeParameter = true,
@@ -86,36 +87,37 @@ fun FirClassifierSymbol<*>.toInjektClassifier(ctx: InjektContext): InjektClassif
       )
 
     InjektClassifier(
-      key = uniqueKey(ctx),
+      key = uniqueKey(),
       fqName = fqName,
-      classId = safeAs<FirClassLikeSymbol<*>>()?.classId,
+      classId = this.safeAs<FirClassLikeSymbol<*>>()?.classId,
       typeParameters = typeParameters ?: emptyList(),
       lazySuperTypes = metadata.lazySuperTypes,
       isTypeParameter = this is FirTypeParameterSymbol,
       isObject = this is FirRegularClassSymbol && classKind == ClassKind.OBJECT,
-      isTag = hasAnnotation(InjektFqNames.Tag, ctx.session),
+      isTag = hasAnnotation(InjektFqNames.Tag, session),
       isTypeAlias = this is FirTypeAliasSymbol,
       symbol = this,
       lazyTags = metadata.lazyTags,
-      isAddOn = hasAnnotation(InjektFqNames.AddOn, ctx.session),
+      isAddOn = hasAnnotation(InjektFqNames.AddOn, session),
       variance = (this as? FirTypeParameterSymbol)?.variance?.convertVariance() ?: TypeVariance.INV
     )
   }
 
-fun ConeTypeProjection.toInjektType(ctx: InjektContext): InjektType = when (kind) {
+context(ctx: InjektContext)
+fun ConeTypeProjection.toInjektType(): InjektType = when (kind) {
   ProjectionKind.STAR -> STAR_PROJECTION_TYPE
-  ProjectionKind.IN -> type!!.toInjektType(ctx, TypeVariance.IN)
-  ProjectionKind.OUT -> type!!.toInjektType(ctx, TypeVariance.OUT)
-  ProjectionKind.INVARIANT -> type!!.toInjektType(ctx, TypeVariance.INV)
+  ProjectionKind.IN -> type!!.toInjektType(TypeVariance.IN)
+  ProjectionKind.OUT -> type!!.toInjektType(TypeVariance.OUT)
+  ProjectionKind.INVARIANT -> type!!.toInjektType(TypeVariance.INV)
 }
 
+context(ctx: InjektContext)
 fun ConeKotlinType.toInjektType(
-  ctx: InjektContext,
   variance: TypeVariance = TypeVariance.INV,
 ): InjektType {
   if (this is ConeErrorType) return ctx.nullableAnyType
   val unwrapped = when(val abbreviatedOrSelf = abbreviatedTypeOrSelf) {
-    is ConeCapturedType -> safeAs<NewCapturedType>()
+    is ConeCapturedType -> this.safeAs<NewCapturedType>()
       ?.lowerType
       ?.safeAs<ConeKotlinType>() ?: return STAR_PROJECTION_TYPE
     is ConeDefinitelyNotNullType -> abbreviatedOrSelf.original.unwrapLowerBound()
@@ -124,29 +126,29 @@ fun ConeKotlinType.toInjektType(
   }
 
   val classifier = unwrapped.safeAs<ConeLookupTagBasedType>()?.lookupTag
-    ?.toSymbol(ctx.session)?.toInjektClassifier(ctx)
+    ?.toSymbol(session)?.toInjektClassifier()
     ?: return ctx.nullableAnyType
 
   val rawType = InjektType(
     classifier = classifier,
     isMarkedNullable = (!classifier.isTag || classifier.isTypeAlias) && unwrapped.isMarkedNullable,
     arguments = unwrapped.typeArguments
-      .map { it.toInjektType(ctx) }
+      .map { it.toInjektType() }
       .let {
         if (classifier.isTag && !classifier.isTypeAlias && it.size != classifier.typeParameters.size)
           it + List(classifier.typeParameters.size - it.size) { ctx.nullableAnyType }
         else it
       },
-    isProvide = unwrapped.customAnnotations.hasAnnotation(InjektFqNames.Provide, ctx.session),
+    isProvide = unwrapped.customAnnotations.hasAnnotation(InjektFqNames.Provide, session),
     isStarProjection = false,
     uniqueId = null,
     variance = variance
   )
 
-  val tags = unwrapped.customAnnotations.getTagAnnotations(ctx)
+  val tags = unwrapped.customAnnotations.getTagAnnotations()
   var result = if (tags.isNotEmpty()) {
     tags
-      .map { it.resolvedType.toInjektType(ctx) }
+      .map { it.resolvedType.toInjektType() }
       .map {
         it.copy(
           arguments = it.arguments,
@@ -392,8 +394,9 @@ fun InjektType.render(
 
 val InjektType.typeDepth: Int get() = (arguments.maxOfOrNull { it.typeDepth } ?: 0) + 1
 
-fun InjektType.isProvideFunctionType(ctx: InjektContext): Boolean =
-  isProvide && isSubTypeOf(ctx.functionType, ctx)
+context(ctx: InjektContext)
+fun InjektType.isProvideFunctionType(): Boolean =
+  isProvide && isSubTypeOf(ctx.functionType)
 
 fun InjektType.isNonKFunctionType(): Boolean =
   classifier.fqName.asString().let {

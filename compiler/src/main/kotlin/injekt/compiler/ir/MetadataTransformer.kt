@@ -25,7 +25,8 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 
-fun IrModuleFragment.addInjektMetadata(ctx: InjektContext, irCtx: IrPluginContext) {
+context(ctx: InjektContext, irCtx: IrPluginContext)
+fun IrModuleFragment.addInjektMetadata() {
   transform(
     object : IrElementTransformerVoid() {
       override fun visitDeclaration(declaration: IrDeclarationBase): IrStatement {
@@ -75,23 +76,23 @@ fun IrModuleFragment.addInjektMetadata(ctx: InjektContext, irCtx: IrPluginContex
         if (!declaration.isLocal && declaration.origin == IrDeclarationOrigin.DEFINED) {
           if (declaration is IrClass || declaration is IrTypeAlias) {
             val firClassifierSymbol = (if (declaration is IrTypeAlias)
-              ctx.session.symbolProvider.getClassLikeSymbolByClassId(declaration.classIdOrFail)
+              session.symbolProvider.getClassLikeSymbolByClassId(declaration.classIdOrFail)
             else declaration.safeAs<IrMetadataSourceOwner>()
               ?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol?.safeAs<FirClassifierSymbol<*>>())
               ?: error("wtf")
 
-            val classifierMetadata = firClassifierSymbol.classifierMetadata(ctx)
-            if (classifierMetadata.shouldBePersisted(ctx))
-              addMetadata(classifierMetadata.toPersistedClassifierMetadata(ctx).encode())
+            val classifierMetadata = firClassifierSymbol.classifierMetadata()
+            if (classifierMetadata.shouldBePersisted())
+              addMetadata(classifierMetadata.toPersistedClassifierMetadata().encode())
           }
 
           if (declaration is IrFunction || declaration is IrProperty) {
             val firCallableSymbol = declaration.safeAs<IrMetadataSourceOwner>()
               ?.metadata?.safeAs<FirMetadataSource>()?.fir?.symbol?.cast<FirCallableSymbol<*>>()!!
 
-            val callableMetadata = firCallableSymbol.callableMetadata(ctx)
-            if (callableMetadata.shouldBePersisted(ctx))
-              addMetadata(callableMetadata.toPersistedCallableMetadata(ctx).encode())
+            val callableMetadata = firCallableSymbol.callableMetadata()
+            if (callableMetadata.shouldBePersisted())
+              addMetadata(callableMetadata.toPersistedCallableMetadata().encode())
           }
         }
 

@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.*
 // todo replace with a diagnostic suppressor once/if available
 class TagAnnotationTargetPatcher(
   ctx: InjektContext
-) : FirStatusTransformerExtension(ctx.session) {
+) : FirStatusTransformerExtension(ctx._session) {
   override fun needTransformStatus(declaration: FirDeclaration): Boolean =
     declaration is FirRegularClass &&
         declaration.hasAnnotationSafe(InjektFqNames.Tag, session)

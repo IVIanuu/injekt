@@ -29,17 +29,18 @@ import kotlin.experimental.*
 
 fun String.asNameId() = Name.identifier(this)
 
-fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
-  if (hasAnnotation(InjektFqNames.Provide, ctx.session)) return true
+context(ctx: InjektContext)
+fun FirBasedSymbol<*>.isInjectable(): Boolean {
+  if (hasAnnotation(InjektFqNames.Provide, session)) return true
 
   if (this is FirConstructorSymbol && isPrimary &&
-    resolvedReturnType.toRegularClassSymbol(ctx.session)!!.isInjectable(ctx))
+    resolvedReturnType.toRegularClassSymbol(session)!!.isInjectable())
     return true
 
   if (this is FirValueParameterSymbol) {
-    if (resolvedReturnType.toInjektType(ctx).isProvide)
+    if (resolvedReturnType.toInjektType().isProvide)
       return true
-    val metadata = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().callableMetadata(ctx)
+    val metadata = containingDeclarationSymbol.cast<FirFunctionSymbol<*>>().callableMetadata()
     if (name in metadata.injectParameters)
       return true
   }
@@ -47,12 +48,14 @@ fun FirBasedSymbol<*>.isInjectable(ctx: InjektContext): Boolean {
   return false
 }
 
-fun List<FirAnnotation>.getTagAnnotations(ctx: InjektContext): List<FirAnnotation> = filter {
-  it.resolvedType.toRegularClassSymbol(ctx.session)?.isTagAnnotation(ctx) == true
+context(ctx: InjektContext)
+fun List<FirAnnotation>.getTagAnnotations(): List<FirAnnotation> = filter {
+  it.resolvedType.toRegularClassSymbol(session)?.isTagAnnotation() == true
 }
 
-fun FirClassifierSymbol<*>.isTagAnnotation(ctx: InjektContext): Boolean =
-  this is FirRegularClassSymbol && hasAnnotation(InjektFqNames.Tag, ctx.session)
+context(ctx: InjektContext)
+fun FirClassifierSymbol<*>.isTagAnnotation(): Boolean =
+  this is FirRegularClassSymbol && hasAnnotation(InjektFqNames.Tag, session)
 
 val FirBasedSymbol<*>.fqName: FqName
   get() = when (this) {
@@ -64,58 +67,65 @@ val FirBasedSymbol<*>.fqName: FqName
     else -> throw AssertionError("Unexpected $this")
   }
 
-private fun FirTypeRef.resolveJavaTypeIfNeeded(ctx: InjektContext): FirTypeRef =
+context(ctx: InjektContext)
+private fun FirTypeRef.resolveJavaTypeIfNeeded(): FirTypeRef =
   if (this is FirJavaTypeRef)
-    resolveIfJavaType(ctx.session, MutableJavaTypeParameterStack(), null, FirJavaTypeConversionMode.DEFAULT)
+    resolveIfJavaType(
+      session,
+      MutableJavaTypeParameterStack(),
+      null,
+      FirJavaTypeConversionMode.DEFAULT
+    )
   else this
 
-fun FirBasedSymbol<*>.uniqueKey(ctx: InjektContext): String =
-  ctx.cached("unique_key", this) {
-    try {
-      when (this) {
-        is FirTypeParameterSymbol -> "typeparameter:${containingDeclarationSymbol.uniqueKey(ctx)}:$name"
-        is FirClassLikeSymbol<*> -> "class_like:$fqName"
-        is FirCallableSymbol<*> -> if (this != originalOrSelf()) originalOrSelf().uniqueKey(ctx)
-        else {
-          "callable:$fqName:" +
-              typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
-              listOfNotNull(dispatchReceiverType, resolvedReceiverType)
-                .plus(
-                  contextParameterSymbols
-                    .map {
-                      it.fir.returnTypeRef
-                        .resolveJavaTypeIfNeeded(ctx)
-                        .coneType
-                    }
-                )
-                .plus(
-                  (safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
-                    .map {
-                      it.fir.returnTypeRef
-                        .resolveJavaTypeIfNeeded(ctx)
-                        .coneType
-                    }
-                )
-                .joinToString(",") { it.uniqueTypeKey(ctx) } + ":" +
-              fir.returnTypeRef.resolveJavaTypeIfNeeded(ctx).coneType.uniqueTypeKey(ctx)
-        }
-        else -> error("Unexpected declaration $this")
+context(ctx: InjektContext)
+fun FirBasedSymbol<*>.uniqueKey(): String = cached("unique_key", this) {
+  try {
+    when (this) {
+      is FirTypeParameterSymbol -> "typeparameter:${containingDeclarationSymbol.uniqueKey()}:$name"
+      is FirClassLikeSymbol<*> -> "class_like:$fqName"
+      is FirCallableSymbol<*> -> if (this != originalOrSelf()) originalOrSelf().uniqueKey()
+      else {
+        "callable:$fqName:" +
+            typeParameterSymbols.joinToString(",") { it.name.asString() } + ":" +
+            listOfNotNull(dispatchReceiverType, resolvedReceiverType)
+              .plus(
+                contextParameterSymbols
+                  .map {
+                    it.fir.returnTypeRef
+                      .resolveJavaTypeIfNeeded()
+                      .coneType
+                  }
+              )
+              .plus(
+                (this.safeAs<FirFunctionSymbol<*>>()?.valueParameterSymbols ?: emptyList())
+                  .map {
+                    it.fir.returnTypeRef
+                      .resolveJavaTypeIfNeeded()
+                      .coneType
+                  }
+              )
+              .joinToString(",") { it.uniqueTypeKey() } + ":" +
+            fir.returnTypeRef.resolveJavaTypeIfNeeded().coneType.uniqueTypeKey()
       }
-    } catch (e: Throwable) {
-      throw e
+      else -> error("Unexpected declaration $this")
     }
+  } catch (e: Throwable) {
+    throw e
   }
+}
 
-fun ConeKotlinType.uniqueTypeKey(ctx: InjektContext): String = ctx.cached("unique_key", this) {
+context(ctx: InjektContext)
+fun ConeKotlinType.uniqueTypeKey(): String = cached("unique_key", this) {
   buildString {
-    val finalType = fullyExpandedType(ctx.session)
+    val finalType = fullyExpandedType(session)
     append(
       finalType.safeAs<ConeClassLikeType>()?.classId?.asString()
         ?: finalType.safeAs<ConeLookupTagBasedType>()?.lookupTag?.name?.asString()
     )
     finalType.typeArguments.joinToString(",") {
       if (it.isStarProjection) "*"
-      else it.type?.uniqueTypeKey(ctx).orEmpty()
+      else it.type?.uniqueTypeKey().orEmpty()
     }.let { append(it) }
     if (finalType.isMarkedNullable) append("?")
   }
@@ -151,58 +161,59 @@ fun IrValueParameter.injektName(): Name {
   return name
 }
 
+context(ctx: InjektContext)
 fun findCallableForKey(
   callableKey: String,
-  callableFqName: FqName,
-  ctx: InjektContext,
-): FirCallableSymbol<*> = ctx.cached("callable_for_key", callableKey) {
-  collectDeclarationsInFqName(callableFqName.parent(), ctx)
+  callableFqName: FqName
+): FirCallableSymbol<*> = cached("callable_for_key", callableKey) {
+  collectDeclarationsInFqName(callableFqName.parent())
     .filterIsInstance<FirCallableSymbol<*>>()
-    .firstOrNull { it.uniqueKey(ctx) == callableKey }
+    .firstOrNull { it.uniqueKey() == callableKey }
     ?: error("Could not find callable for $callableKey $callableFqName " +
         "parent ${callableFqName.parent()} " +
-        "in ${collectDeclarationsInFqName(callableFqName.parent(), ctx).map { it to it.uniqueKey(ctx) }}")
+        "in ${collectDeclarationsInFqName(callableFqName.parent()).map { it to it.uniqueKey() }}")
 }
 
+context(ctx: InjektContext)
 fun findClassifier(
   classifierKey: String,
   classifierFqName: FqName,
-  classifierClassId: ClassId?,
-  ctx: InjektContext,
-): FirClassifierSymbol<*> = ctx.cached("classifier_for_key", classifierKey) {
-  classifierClassId?.let { ctx.session.symbolProvider.getClassLikeSymbolByClassId(it) }
-    ?: collectDeclarationsInFqName(classifierFqName.parent(), ctx)
+  classifierClassId: ClassId?
+): FirClassifierSymbol<*> = cached("classifier_for_key", classifierKey) {
+  classifierClassId?.let { session.symbolProvider.getClassLikeSymbolByClassId(it) }
+    ?: collectDeclarationsInFqName(classifierFqName.parent())
       .filterIsInstance<FirClassifierSymbol<*>>()
       .firstOrNull { it.fqName == classifierFqName }
-    ?: collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx)
+    ?: collectDeclarationsInFqName(classifierFqName.parent().parent())
       .filter { it.fqName.shortName() == classifierFqName.parent().shortName() }
       .flatMap { it.typeParameterSymbols ?: emptyList() }
-      .firstOrNull { it.uniqueKey(ctx) == classifierKey }
+      .firstOrNull { it.uniqueKey() == classifierKey }
     ?: error("Could not find classifier for $classifierKey $classifierFqName " +
-        "${collectDeclarationsInFqName(classifierFqName.parent(), ctx).map { it.uniqueKey(ctx) }} " +
-        "${collectDeclarationsInFqName(classifierFqName.parent().parent(), ctx).map { it.uniqueKey(ctx) }}")
+        "${collectDeclarationsInFqName(classifierFqName.parent()).map { it.uniqueKey() }} " +
+        "${collectDeclarationsInFqName(classifierFqName.parent().parent()).map { it.uniqueKey() }}")
 }
 
-fun collectDeclarationsInFqName(fqName: FqName, ctx: InjektContext): List<FirBasedSymbol<*>> =
-  ctx.cached("declarations_in_fq_name", fqName) {
-    val hasPackage = ctx.session.symbolProvider.hasPackage(fqName)
+context(ctx: InjektContext)
+fun collectDeclarationsInFqName(fqName: FqName): List<FirBasedSymbol<*>> =
+  cached("declarations_in_fq_name", fqName) {
+    val hasPackage = session.symbolProvider.hasPackage(fqName)
 
     if (fqName.isRoot || hasPackage)
       return@cached buildList {
-        ctx.session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
+        session.symbolProvider.symbolNamesProvider.getTopLevelClassifierNamesInPackage(fqName)
           ?.mapNotNull {
-            ctx.session.symbolProvider.getClassLikeSymbolByClassId(ClassId(fqName, it))
+            session.symbolProvider.getClassLikeSymbolByClassId(ClassId(fqName, it))
           }
           ?.forEach { add(it) }
 
-        ctx.session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(fqName)
+        session.symbolProvider.symbolNamesProvider.getTopLevelCallableNamesInPackage(fqName)
           ?.flatMap { name ->
-            ctx.session.symbolProvider.getTopLevelCallableSymbols(fqName, name)
+            session.symbolProvider.getTopLevelCallableSymbols(fqName, name)
           }
           ?.forEach { add(it) }
       }
 
-    val parentDeclarations = collectDeclarationsInFqName(fqName.parent(), ctx)
+    val parentDeclarations = collectDeclarationsInFqName(fqName.parent())
       .takeIf { it.isNotEmpty() } ?: return@cached emptyList()
 
     val classSymbol = parentDeclarations

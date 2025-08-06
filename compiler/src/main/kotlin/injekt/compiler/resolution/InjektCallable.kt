@@ -46,21 +46,20 @@ fun InjektCallable.substitute(map: Map<InjektClassifier, InjektType>): InjektCal
   )
 }
 
+context(ctx: InjektContext)
 fun FirCallableSymbol<*>.toInjektCallable(
-  ctx: InjektContext,
   chainFqName: FqName = FqName(fqName.pathSegments().filter { !it.isSpecial }.joinToString("."))
-): InjektCallable =
-  ctx.cached("injekt_callable", this) {
-    val metadata = callableMetadata(ctx)
-    InjektCallable(
-      symbol = this,
-      type = metadata.type,
-      originalType = metadata.type,
-      parameterTypes = metadata.parameterTypes,
-      typeArguments = typeParameterSymbols.map { it.toInjektClassifier(ctx) }
-        .associateWith { it.defaultType },
-      chainFqName = chainFqName,
-      injectParameters = metadata.injectParameters,
-      callContext = callContext(ctx)
-    )
-  }
+): InjektCallable = cached("injekt_callable", this) {
+  val metadata = callableMetadata()
+  InjektCallable(
+    symbol = this,
+    type = metadata.type,
+    originalType = metadata.type,
+    parameterTypes = metadata.parameterTypes,
+    typeArguments = typeParameterSymbols.map { it.toInjektClassifier() }
+      .associateWith { it.defaultType },
+    chainFqName = chainFqName,
+    injectParameters = metadata.injectParameters,
+    callContext = callContext()
+  )
+}

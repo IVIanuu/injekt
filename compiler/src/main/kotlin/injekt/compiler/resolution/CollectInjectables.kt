@@ -21,9 +21,9 @@ import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.utils.addToStdlib.*
 import java.util.*
 
-fun InjektType.collectModuleInjectables(
-  ctx: InjektContext
-): List<InjektCallable> = ctx.cached("module_injectables", this) {
+context(ctx: InjektContext)
+fun InjektType.collectModuleInjectables(): List<InjektCallable> =
+  cached("module_injectables", this) {
   buildList {
     fun InjektType.visit() {
       val classSymbol = classifier.symbol.safeAs<FirClassSymbol<*>>() ?: return
@@ -38,17 +38,17 @@ fun InjektType.collectModuleInjectables(
                 ?.takeIf { it.getContainingClassSymbol() != null }
                 ?.overriddenFunctions(
                   declaration.getContainingClassSymbol()!!.cast(),
-                  ctx.session,
+                  session,
                   ctx.scopeSession
                 )
                 ?.firstOrNull()
-                ?.isInjectable(ctx) == false) &&
-          (declaration.isInjectable(ctx) ||
-              (declaration.name.asString() == "invoke" && isProvideFunctionType(ctx)))) {
+                ?.isInjectable() == false) &&
+          (declaration.isInjectable() ||
+              (declaration.name.asString() == "invoke" && isProvideFunctionType()))) {
           val substitutionMap = classifier.typeParameters
-            .zip(subtypeView(declaration.dispatchReceiverType?.toInjektType(ctx)?.classifier!!)!!.arguments)
+            .zip(subtypeView(declaration.dispatchReceiverType?.toInjektType()?.classifier!!)!!.arguments)
             .toMap()
-          this@buildList += declaration.toInjektCallable(ctx)
+          this@buildList += declaration.toInjektCallable()
             .substitute(substitutionMap)
             .let { callable ->
               if (callable.parameterTypes[DISPATCH_RECEIVER_NAME] == this) callable
@@ -64,11 +64,10 @@ fun InjektType.collectModuleInjectables(
   }
 }
 
+context(scope: InjectablesScope, ctx: InjektContext)
 fun InjektCallable.collectModuleInjectables(
-  scope: InjectablesScope,
   addInjectable: (InjektCallable) -> Unit,
-  addAddOnInjectable: (InjektCallable) -> Unit,
-  ctx: InjektContext
+  addAddOnInjectable: (InjektCallable) -> Unit
 ) {
   if (typeArguments.any { it.key.isAddOn && it.value == it.key.defaultType }) {
     addAddOnInjectable(this)
@@ -82,7 +81,7 @@ fun InjektCallable.collectModuleInjectables(
 
   nextCallable
     .type
-    .collectModuleInjectables(ctx)
+    .collectModuleInjectables()
     .forEach { innerCallable ->
       innerCallable
         .copy(
@@ -101,47 +100,49 @@ fun InjektCallable.collectModuleInjectables(
             } else innerCallable.parameterTypes
         )
         .collectModuleInjectables(
-          scope = scope,
           addInjectable = addInjectable,
-          addAddOnInjectable = addAddOnInjectable,
-          ctx = ctx
+          addAddOnInjectable = addAddOnInjectable
         )
     }
 }
 
-fun FirRegularClassSymbol.collectInjectableConstructors(ctx: InjektContext) = declarationSymbols
+context(ctx: InjektContext)
+fun FirRegularClassSymbol.collectInjectableConstructors() = declarationSymbols
   .filterIsInstance<FirConstructorSymbol>()
-  .filter { it.isInjectable(ctx) }
+  .filter { it.isInjectable() }
 
-fun collectGlobalInjectables(ctx: InjektContext): List<InjektCallable> = collectPackagesWithInjectables(ctx)
-  .flatMap { collectPackageInjectables(it, ctx) }
+context(ctx: InjektContext)
+fun collectGlobalInjectables(): List<InjektCallable> = collectPackagesWithInjectables()
+  .flatMap { collectPackageInjectables(it) }
 
-fun collectPackageInjectables(packageFqName: FqName, ctx: InjektContext): List<InjektCallable> =
-  ctx.cached("injectables_in_package", packageFqName) {
-    if (packageFqName !in collectPackagesWithInjectables(ctx)) emptyList()
+context(ctx: InjektContext)
+fun collectPackageInjectables(packageFqName: FqName): List<InjektCallable> =
+  cached("injectables_in_package", packageFqName) {
+    if (packageFqName !in collectPackagesWithInjectables()) emptyList()
     else buildList {
       fun collectClassInjectables(classSymbol: FirClassSymbol<*>) {
         for (declarationSymbol in classSymbol.declarationSymbols) {
           if (declarationSymbol is FirConstructorSymbol &&
             ((declarationSymbol.isPrimary &&
-                classSymbol.isInjectable(ctx)) || declarationSymbol.isInjectable(ctx)))
-            this += declarationSymbol.toInjektCallable(ctx)
+                classSymbol.isInjectable()) || declarationSymbol.isInjectable()))
+            this += declarationSymbol.toInjektCallable()
 
           if (declarationSymbol is FirClassSymbol<*>)
             collectClassInjectables(declarationSymbol)
         }
       }
 
-      for (declaration in collectDeclarationsInFqName(packageFqName, ctx))
+      for (declaration in collectDeclarationsInFqName(packageFqName))
         if (declaration is FirRegularClassSymbol) collectClassInjectables(declaration)
-        else if (declaration is FirCallableSymbol<*> && declaration.isInjectable(ctx))
-          this += declaration.toInjektCallable(ctx)
+        else if (declaration is FirCallableSymbol<*> && declaration.isInjectable())
+          this += declaration.toInjektCallable()
     }
   }
 
-fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
-  ctx.cached("packages_with_injectables", Unit) {
-    ctx.session.symbolProvider.getTopLevelFunctionSymbols(
+context(ctx: InjektContext)
+fun collectPackagesWithInjectables(): Set<FqName> =
+  cached("packages_with_injectables", Unit) {
+    session.symbolProvider.getTopLevelFunctionSymbols(
       InjektFqNames.InjectablesLookup.packageName,
       InjektFqNames.InjectablesLookup.callableName
     ).mapTo(mutableSetOf()) {
@@ -154,16 +155,16 @@ fun collectPackagesWithInjectables(ctx: InjektContext): Set<FqName> =
     }
   }
 
+context(ctx: InjektContext)
 fun injectableReceiverOf(
   name: Name,
   type: ConeKotlinType,
   containingDeclarationSymbol: FirFunctionSymbol<*>,
   startOffset: Int,
-  endOffset: Int,
-  ctx: InjektContext
+  endOffset: Int
 ): FirValueParameterSymbol = buildValueParameter {
   resolvePhase = FirResolvePhase.BODY_RESOLVE
-  moduleData = ctx.session.moduleData
+  moduleData = session.moduleData
   origin = FirDeclarationOrigin.Source
   isCrossinline = false
   isNoinline = false
